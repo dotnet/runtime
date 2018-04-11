@@ -445,6 +445,17 @@
     <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
     <RuntimeDependenciesDebPkgName>$(DotnetRuntimeDependenciesPackageString)$(ProductVersion)</RuntimeDependenciesDebPkgName>
     <RuntimeDependenciesDebPkgName>$(RuntimeDependenciesDebPkgName.ToLower())</RuntimeDependenciesDebPkgName>
+
+   <HostPackageVersion>$(HostVersion)</HostPackageVersion>
+   <HostPackageRelease>1</HostPackageReleaseVersion>
+   <HostResolverPackageVersion>$(HostResolverVersion)</HostResolverPackageVersion>
+   <HostResolverPackageRelease>1</HostResolverPackageRelease>
+   <RuntimePackageVersion>$(SharedFrameworkNugetVersion)</RuntimePackageVersion>
+   <RuntimePackageRelease>1</RuntimePackageRelease>
+   <RuntimeDepsDebPackageVersion>$(RuntimeDepsDebVersion)</RuntimeDepsPackageVersion>
+   <RuntimeDepsDebPackageRelease>1</RuntimeDepsDebPackageRelease>
+   <RuntimeDepsRpmPackageVersion>$(RuntimeDepsRpmVersion)</RuntimeDepsRpmPackageVersion>
+   <RuntimeDepsRpmPackageRelease>1</RuntimeDepsRpmPackageRelease>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(BuildUpgradeableLinuxPackages)' == 'true'">

@@ -54,7 +54,7 @@
   <Target Name="GenerateSharedHostDeb">
     <PropertyGroup>
       <DebPackageName>$(SharedHostDebPkgName)</DebPackageName>
-      <DebPackageVersion>$(HostVersion)</DebPackageVersion>
+      <DebPackageVersion>$(HostPackageVersion)</DebPackageVersion>
       <InputRoot>$(SharedHostPublishRoot)</InputRoot>
       <DebFile>$(SharedHostInstallerFile)</DebFile>
       <ManPagesDir>$(ProjectDir)Documentation/manpages</ManPagesDir>
@@ -96,6 +96,9 @@
       <SharedHostTokenValue Include="%SHARED_HOST_BRAND_NAME%">
         <ReplacementString>$(SharedHostBrandName)</ReplacementString>
       </SharedHostTokenValue>
+      <SharedHostTokenValue Include="%SHARED_HOST_REVISION%">
+        <ReplacementString>$(HostPackageRelease)</ReplacementString>
+      </SharedHostTokenValue>
     </ItemGroup>
 
     <ReplaceFileContents InputFile="$(ConfigJsonFile)"
@@ -124,7 +127,7 @@
   <Target Name="GenerateHostFxrDeb">
     <PropertyGroup>
       <DebPackageName>$(HostFxrDebPkgName)</DebPackageName>
-      <DebPackageVersion>$(HostResolverVersion)</DebPackageVersion>
+      <DebPackageVersion>$(HostResolverPackageVersion)</DebPackageVersion>
       <InputRoot>$(HostFxrPublishRoot)</InputRoot>
       <DebFile>$(HostFxrInstallerFile)</DebFile>
       <ConfigJsonName>dotnet-hostfxr-debian_config.json</ConfigJsonName>
@@ -164,13 +167,16 @@
         <ReplacementString>$(HostFxrBrandName)</ReplacementString>
       </HostFxrTokenValue>
       <HostFxrTokenValue Include="%SHARED_HOST_DEBIAN_VERSION%">
-        <ReplacementString>$(HostVersion)</ReplacementString>
+        <ReplacementString>$(HostPackageVersion)</ReplacementString>
       </HostFxrTokenValue>
       <HostFxrTokenValue Include="%HOSTFXR_NUGET_VERSION%">
-        <ReplacementString>$(HostResolverVersion)</ReplacementString>
+        <ReplacementString>$(HostResolverPackageVersion)</ReplacementString>
       </HostFxrTokenValue>
       <HostFxrTokenValue Include="%HOSTFXR_DEBIAN_PACKAGE_NAME%">
         <ReplacementString>$(DebPackageName)</ReplacementString>
+      </HostFxrTokenValue>
+      <HostFxrTokenValue Include="%HOSTFXR_REVISION%">
+        <ReplacementString>$(HostResolverPackageRelease)</ReplacementString>
       </HostFxrTokenValue>
     </ItemGroup>
 
@@ -201,7 +207,7 @@
   
     <PropertyGroup>
       <DebPackageName>$(SharedFxDebPkgName)</DebPackageName>
-      <DebPackageVersion>$(SharedFrameworkNugetVersion)</DebPackageVersion>
+      <DebPackageVersion>$(RuntimePackageVersion)</DebPackageVersion>
       <InputRoot>$(SharedFrameworkPublishRoot)</InputRoot>
       <DebFile>$(SharedFrameworkInstallerFile)</DebFile>
       <ConfigJsonName>dotnet-sharedframework-debian_config.json</ConfigJsonName>
@@ -241,7 +247,7 @@
         <ReplacementString>$(HostFxrDebPkgName)</ReplacementString>
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%HOSTFXR_NUGET_VERSION%">
-        <ReplacementString>$(HostResolverVersion)</ReplacementString>
+        <ReplacementString>$(HostResolverPackageVersion)</ReplacementString>
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_DEBIAN_PACKAGE_NAME%">
         <ReplacementString>$(SharedFxDebPkgName)</ReplacementString>
@@ -250,7 +256,7 @@
         <ReplacementString>$(SharedFrameworkName)</ReplacementString>
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_NUGET_VERSION%">
-        <ReplacementString>$(SharedFrameworkNugetVersion)</ReplacementString>
+        <ReplacementString>$(RuntimePackageVersion)</ReplacementString>
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_BRAND_NAME%">
         <ReplacementString>$(SharedFrameworkBrandName)</ReplacementString>
@@ -259,8 +265,12 @@
         <ReplacementString>$(RuntimeDependenciesDebPkgName)</ReplacementString>
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_VERSION%">
-        <ReplacementString>$(RuntimeDepsDebVersion)</ReplacementString>
+        <ReplacementString>$(RuntimeDepsDebPackageVersion)</ReplacementString>
       </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_REVISION%">
+        <ReplacementString>$(RuntimePackageRelease)</ReplacementString>
+      </SharedFrameworkTokenValue>
+
     </ItemGroup>
 
     <ReplaceFileContents InputFile="$(ConfigJsonFile)"
@@ -289,7 +299,7 @@
   <Target Name="GenerateRuntimeDependenciesDeb">
     <PropertyGroup>
       <DebPackageName>$(RuntimeDependenciesDebPkgName)</DebPackageName>
-      <DebPackageVersion>$(SharedFrameworkNugetVersion)</DebPackageVersion>
+      <DebPackageVersion>$(RuntimeDepsDebPackageVersion)</DebPackageVersion>
       <DebFile>$(DotnetRuntimeDependenciesPackageInstallerFile)</DebFile>
       <ConfigJsonName>dotnet-runtime-deps-debian_config_$(OutputRid).json</ConfigJsonName>
       <ConfigJsonFile>$(debPackaginfConfigPath)$(ConfigJsonName)</ConfigJsonFile>
@@ -324,7 +334,10 @@
         <ReplacementString>$(RuntimeDependenciesDebPkgName)</ReplacementString>
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_VERSION%">
-        <ReplacementString>$(RuntimeDepsDebVersion)</ReplacementString>
+        <ReplacementString>$(RuntimeDepsDebPackageVersion)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_REVISION%">
+        <ReplacementString>$(RuntimeDepsDebPackageRelease)</ReplacementString>
       </SharedFrameworkTokenValue>
     </ItemGroup>
 

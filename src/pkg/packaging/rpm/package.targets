@@ -26,7 +26,7 @@
   <Target Name="GenerateSharedHostRpm">
     <PropertyGroup>
       <RpmPackageName>$(SharedHostRpmPkgName)</RpmPackageName>
-      <RpmPackageVersion>$(HostVersion)</RpmPackageVersion>
+      <RpmPackageVersion>$(HostPackageVersion)</RpmPackageVersion>
       <InputRoot>$(SharedHostPublishRoot)</InputRoot>
       <RpmFile>$(SharedHostInstallerFile)</RpmFile>
       <ManPagesDir>$(ProjectDir)Documentation/manpages</ManPagesDir>
@@ -72,6 +72,9 @@
       <SharedHostTokenValue Include="%SHARED_HOST_BRAND_NAME%">
         <ReplacementString>$(SharedHostBrandName)</ReplacementString>
       </SharedHostTokenValue>
+      <SharedHostTokenValue Include="%SHARED_HOST_REVISION%">
+        <ReplacementString>$(HostPackageRelease)</ReplacementString>
+      </SharedHostTokenValue>
     </ItemGroup>
 
     <ReplaceFileContents InputFile="$(ConfigJsonFile)"
@@ -108,7 +111,7 @@
   <Target Name="GenerateHostFxrRpm">
     <PropertyGroup>
       <RpmPackageName>$(HostFxrRpmPkgName)</RpmPackageName>
-      <RpmPackageVersion>$(HostResolverVersion)</RpmPackageVersion>
+      <RpmPackageVersion>$(HostResolverPackageVersion)</RpmPackageVersion>
       <InputRoot>$(HostFxrPublishRoot)</InputRoot>
       <RpmFile>$(HostFxrInstallerFile)</RpmFile>
       <ConfigJsonName>dotnet-hostfxr-rpm_config.json</ConfigJsonName>
@@ -148,13 +151,16 @@
         <ReplacementString>$(HostFxrBrandName)</ReplacementString>
       </HostFxrTokenValue>
       <HostFxrTokenValue Include="%SHARED_HOST_RPM_VERSION%">
-        <ReplacementString>$(HostVersion)</ReplacementString>
+        <ReplacementString>$(HostPackageVersion)</ReplacementString>
       </HostFxrTokenValue>
       <HostFxrTokenValue Include="%HOSTFXR_NUGET_VERSION%">
-        <ReplacementString>$(HostResolverVersion)</ReplacementString>
+        <ReplacementString>$(HostResolverPackageVersion)</ReplacementString>
       </HostFxrTokenValue>
       <HostFxrTokenValue Include="%HOSTFXR_RPM_PACKAGE_NAME%">
         <ReplacementString>$(RpmPackageName)</ReplacementString>
+      </HostFxrTokenValue>
+      <HostFxrTokenValue Include="%HOSTFXR_REVISION%">
+        <ReplacementString>$(HostResolverPackageRelease)</ReplacementString>
       </HostFxrTokenValue>
     </ItemGroup>
 
@@ -192,7 +198,7 @@
   <Target Name="GenerateSharedFrameworkRpm">
     <PropertyGroup>
       <RpmPackageName>$(SharedFxRpmPkgName)</RpmPackageName>
-      <RpmPackageVersion>$(SharedFrameworkNugetVersion)</RpmPackageVersion>
+      <RpmPackageVersion>$(RuntimePackageVersion)</RpmPackageVersion>
       <InputRoot>$(SharedFrameworkPublishRoot)</InputRoot>
       <RpmFile>$(SharedFrameworkInstallerFile)</RpmFile>
       <ConfigJsonName>dotnet-sharedframework-rpm_config.json</ConfigJsonName>
@@ -232,13 +238,13 @@
         <ReplacementString>$(HostFxrRpmPkgName)</ReplacementString>
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%HOSTFXR_NUGET_VERSION%">
-        <ReplacementString>$(HostResolverVersion)</ReplacementString>
+        <ReplacementString>$(HostResolverPackageVersion)</ReplacementString>
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_RPM_PACKAGE_NAME%">
         <ReplacementString>$(RuntimeDependenciesRpmPkgName)</ReplacementString>
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_VERSION%">
-        <ReplacementString>$(RuntimeDepsRpmVersion)</ReplacementString> 
+        <ReplacementString>$(RuntimeDepsRpmPackageVersion)</ReplacementString> 
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_RPM_PACKAGE_NAME%">
         <ReplacementString>$(SharedFxRpmPkgName)</ReplacementString>
@@ -247,10 +253,13 @@
         <ReplacementString>$(SharedFrameworkName)</ReplacementString>
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_NUGET_VERSION%">
-        <ReplacementString>$(SharedFrameworkNugetVersion)</ReplacementString>
+        <ReplacementString>$(RuntimePackageVersion)</ReplacementString>
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_BRAND_NAME%">
         <ReplacementString>$(SharedFrameworkBrandName)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_REVISION%">
+        <ReplacementString>$(RuntimePackageRelease)</ReplacementString>
       </SharedFrameworkTokenValue>
     </ItemGroup>
 
@@ -288,7 +297,7 @@
   <Target Name="GenerateRuntimeDependenciesRpm">
     <PropertyGroup>
       <RpmPackageName>$(RuntimeDependenciesRpmPkgName)</RpmPackageName>
-      <RpmPackageVersion>$(SharedFrameworkNugetVersion)</RpmPackageVersion>
+      <RpmPackageVersion>$(RuntimeDepsRpmPackageVersion)</RpmPackageVersion>
       <RpmFile>$(DotnetRuntimeDependenciesPackageInstallerFile)</RpmFile>
       <ConfigJsonName>dotnet-runtime-deps-rpm_config_$(OutputRid).json</ConfigJsonName>
       <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
@@ -328,8 +337,12 @@
         <ReplacementString>$(RuntimeDependenciesRpmPkgName)</ReplacementString>
       </RuntimeDependenciesTokenValue>
       <RuntimeDependenciesTokenValue Include="%RUNTIME_DEPS_VERSION%">
-        <ReplacementString>$(RuntimeDepsRpmVersion)</ReplacementString> 
+        <ReplacementString>$(RuntimeDepsRpmPackageVersion)</ReplacementString> 
       </RuntimeDependenciesTokenValue>
+      <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_REVISION%">
+        <ReplacementString>$(RuntimeDepsRpmPackageRelease)</ReplacementString>
+      </SharedFrameworkTokenValue>
+    </ItemGroup>
     </ItemGroup>
 
     <ReplaceFileContents InputFile="$(ConfigJsonFile)"
