@@ -3177,4 +3177,18 @@ L_3:
 			ldc.i4.0
 			ret
 	}
+
+  .method public hidebysig static int32 test_1_box_r8_r4_autoconv () cil managed
+  {
+		ldc.r8 1.234
+		box float64
+		unbox float64
+		ldind.r8
+		box float32
+		unbox float32
+		ldind.r4
+		conv.r8
+		conv.i4
+		ret
+	}
 }
