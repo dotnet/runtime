@@ -82,8 +82,9 @@ pal::proc_t pal::get_symbol(dll_t library, const char* name)
     auto result = dlsym(library, name);
     if (result == nullptr)
     {
-        trace::error(_X("Failed to resolve library symbol %s, error: %s"), name, dlerror());
+        trace::info(_X("Probed for and did not find library symbol %s, error: %s"), name, dlerror());
     }
+
     return result;
 }
 
