@@ -54,6 +54,8 @@ public:
     HRESULT StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBreakorAV, MethodContext* firstContext);
     bool reLoad(MethodContext* firstContext);
 
+    bool callJitStartup(ICorJitHost* newHost);
+
     bool resetConfig(MethodContext* firstContext);
 
     Result CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput);

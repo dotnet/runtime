@@ -190,7 +190,11 @@ HRESULT JitInstance::StartUp(char*          PathToJit,
     {
         mc      = firstContext;
         jitHost = new JitHost(*this);
-        pnjitStartup(jitHost);
+        if (!callJitStartup(jitHost))
+        {
+            LogError("jitStartup failed");
+            return -1;
+        }
     }
 
     pJitInstance = pngetJit();
@@ -256,7 +260,11 @@ bool JitInstance::reLoad(MethodContext* firstContext)
     {
         mc      = firstContext;
         jitHost = new JitHost(*this);
-        pnjitStartup(jitHost);
+        if (!callJitStartup(jitHost))
+        {
+            LogError("jitStartup failed");
+            return false;
+        }
     }
 
     pJitInstance = pngetJit();
@@ -465,17 +473,56 @@ void JitInstance::freeLongLivedArray(void* array)
     HeapFree(ourHeap, 0, array);
 }
 
+// Helper for calling pnjitStartup. Needed to allow SEH here.
+bool JitInstance::callJitStartup(ICorJitHost* jithost)
+{
+    // Calling into the collection, which could fail, especially
+    // for altjits. So protect the call.
+
+    struct Param : FilterSuperPMIExceptionsParam_CaptureException
+    {
+        JitInstance* pThis;
+        ICorJitHost* jithost;
+        bool         result;
+    } param;
+    param.pThis   = this;
+    param.jithost = jithost;
+    param.result  = false;
+
+    PAL_TRY(Param*, pParam, &param)
+    {
+        pParam->pThis->pnjitStartup(pParam->jithost);
+        pParam->result = true;
+    }
+    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)
+    {
+        SpmiException e(&param.exceptionPointers);
+
+        LogError("failed to call jitStartup.");
+        e.ShowAndDeleteMessage();
+    }
+    PAL_ENDTRY
+
+    return param.result;
+}
+
 // Reset JitConfig, that stores Enviroment variables.
 bool JitInstance::resetConfig(MethodContext* firstContext)
 {
-    if (pnjitStartup != nullptr)
+    if (pnjitStartup == nullptr)
     {
-        mc                   = firstContext;
-        ICorJitHost* newHost = new JitHost(*this);
-        pnjitStartup(newHost);
-        delete static_cast<JitHost*>(jitHost);
-        jitHost = newHost;
-        return true;
+        return false;
     }
-    return false;
+
+    mc = firstContext;
+    ICorJitHost* newHost = new JitHost(*this);
+
+    if (!callJitStartup(newHost))
+    {
+        return false;
+    }
+
+    delete static_cast<JitHost*>(jitHost);
+    jitHost = newHost;
+    return true;
 }
