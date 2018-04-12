@@ -49,6 +49,8 @@
     <!-- TODO: We should also think about pulling down the checksums or recomputing them -->
     <PropertyGroup>
       <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(BinDir)PackageDownload/</DownloadDirectory>
+      <!-- The SignFiles target needs OutDir to be defined -->
+      <OutDir>$(DownloadDirectory)</OutDir>
     </PropertyGroup>
 
     <MakeDir Directories="$(DownloadDirectory)" Condition="!Exists('$(DownloadDirectory)')" />
