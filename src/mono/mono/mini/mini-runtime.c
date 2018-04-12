@@ -3974,7 +3974,7 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 	mono_debugger_agent_stub_init ();
-#ifndef DISABLE_DEBUGGER_AGENT
+#ifndef DISABLE_SDB
 	mono_debugger_agent_init ();
 #endif
 

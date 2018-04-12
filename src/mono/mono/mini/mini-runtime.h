@@ -523,5 +523,10 @@ gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 
 #endif
 
+//have a global view of sdb disable
+#if !defined(MONO_ARCH_SOFT_DEBUG_SUPPORTED) || defined (DISABLE_DEBUGGER_AGENT)
+#define DISABLE_SDB 1
+#endif
+
 #endif /* __MONO_MINI_RUNTIME_H__ */
 

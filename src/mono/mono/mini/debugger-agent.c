@@ -88,14 +88,6 @@
 #define TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
 #endif
 
-#ifndef MONO_ARCH_SOFT_DEBUG_SUPPORTED
-#define DISABLE_SDB 1
-#endif
-
-#ifdef DISABLE_SOFT_DEBUG
-#define DISABLE_SDB 1
-#endif
-
 #ifndef DISABLE_SDB
 
 #include <mono/utils/mono-os-mutex.h>

@@ -1524,7 +1524,7 @@ static const char info[] =
 #ifdef MONO_BIG_ARRAYS
 	"bigarrays "
 #endif
-#if defined(MONO_ARCH_SOFT_DEBUG_SUPPORTED) && !defined(DISABLE_SOFT_DEBUG)
+#if !defined(DISABLE_SDB)
 	"softdebug "
 #endif
 		"\n"
