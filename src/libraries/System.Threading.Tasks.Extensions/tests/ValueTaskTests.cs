@@ -1245,6 +1245,76 @@ namespace System.Threading.Tasks.Tests
             Validate(new DelegateValueTaskSource<int> { OnCompletedFunc = (continuation, state, token, flags) => continuation(new object()) });
         }
 
+        [Fact]
+        public void NonGeneric_TornRead_DoesNotCrashOrHang()
+        {
+            // Validate that if we incur a torn read, we may get an exception, but we won't crash or hang.
+
+            object vtBoxed;
+
+            // _obj is null but other fields are from Task construction
+            vtBoxed = new ValueTask(Task.CompletedTask);
+            vtBoxed.GetType().GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, null);
+            Record.Exception(() =>
+            {
+                bool completed = ((ValueTask)vtBoxed).IsCompleted;
+                ((ValueTask)vtBoxed).GetAwaiter().GetResult();
+            });
+
+            // _obj is a Task but other fields are from result construction
+            vtBoxed = new ValueTask();
+            vtBoxed.GetType().GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, Task.CompletedTask);
+            Record.Exception(() =>
+            {
+                bool completed = ((ValueTask)vtBoxed).IsCompleted;
+                ((ValueTask)vtBoxed).GetAwaiter().GetResult();
+            });
+
+            // _obj is an IValueTaskSource but other fields are from Task construction
+            vtBoxed = new ValueTask(Task.CompletedTask);
+            vtBoxed.GetType().GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, ManualResetValueTaskSource.Completed(42));
+            Record.Exception(() =>
+            {
+                bool completed = ((ValueTask)vtBoxed).IsCompleted;
+                ((ValueTask)vtBoxed).GetAwaiter().GetResult();
+            });
+        }
+
+        [Fact]
+        public void Generic_TornRead_DoesNotCrashOrHang()
+        {
+            // Validate that if we incur a torn read, we may get an exception, but we won't crash or hang.
+
+            object vtBoxed;
+
+            // _obj is null but other fields are from Task construction
+            vtBoxed = new ValueTask<int>(Task.FromResult(42));
+            vtBoxed.GetType().GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, null);
+            Record.Exception(() =>
+            {
+                bool completed = ((ValueTask)vtBoxed).IsCompleted;
+                ((ValueTask)vtBoxed).GetAwaiter().GetResult();
+            });
+
+            // _obj is a Task but other fields are from result construction
+            vtBoxed = new ValueTask<int>(42);
+            vtBoxed.GetType().GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, Task.FromResult(42));
+            Record.Exception(() =>
+            {
+                bool completed = ((ValueTask)vtBoxed).IsCompleted;
+                ((ValueTask)vtBoxed).GetAwaiter().GetResult();
+            });
+
+            // _obj is an IValueTaskSource but other fields are from Task construction
+            vtBoxed = new ValueTask<int>(Task.FromResult(42));
+            vtBoxed.GetType().GetField("_obj", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(vtBoxed, ManualResetValueTaskSource.Completed(42));
+            Record.Exception(() =>
+            {
+                bool completed = ((ValueTask)vtBoxed).IsCompleted;
+                ((ValueTask)vtBoxed).GetAwaiter().GetResult();
+            });
+        }
+
         private sealed class DelegateValueTaskSource<T> : IValueTaskSource, IValueTaskSource<T>
         {
             public Func<short, ValueTaskSourceStatus> GetStatusFunc = null;
