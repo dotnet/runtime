@@ -67,7 +67,7 @@ namespace System
             }
 
             // Resurrect ourselves by re-registering for finalization.
-            if (!Environment.HasShutdownStarted && !AppDomain.CurrentDomain.IsFinalizingForUnload())
+            if (!Environment.HasShutdownStarted)
             {
                 GC.ReRegisterForFinalize(this);
             }
