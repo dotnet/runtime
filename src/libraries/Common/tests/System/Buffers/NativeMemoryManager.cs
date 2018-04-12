@@ -38,7 +38,7 @@ namespace System.Buffers
             }
         }
 
-        public override int Length => _length;
+        public override Memory<byte> Memory => CreateMemory(_length);
 
         public bool IsRetained
         {

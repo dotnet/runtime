@@ -37,7 +37,7 @@ namespace System.IO.Pipelines.Tests
                     _bufferPool.CurrentlyRentedBlocks++;
                 }
 
-                public override int Length => _array.Length;
+                public override Memory<byte> Memory => CreateMemory(_array.Length);
 
                 public bool IsDisposed => _array == null;
 

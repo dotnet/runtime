@@ -28,30 +28,20 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void MemoryManagerCtorDefault()
-        {
-            MemoryManager<int> managerInt = default;
-            Assert.Throws<ArgumentNullException>(() => new Memory<int>(managerInt, 0, 0));
-
-            managerInt = null;
-            Assert.Throws<ArgumentNullException>(() => new Memory<int>(managerInt, 0, 0));
-
-            MemoryManager<object> managerObject = default;
-            Assert.Throws<ArgumentNullException>(() => new Memory<object>(managerObject, 0, 0));
-        }
-
-        [Fact]
-        public static void MemoryManagerCtorInvalid()
+        public static void MemoryManagerMemoryCtorInvalid()
         {
             int[] a = { 91, 92, -93, 94 };
-            MemoryManager<int> manager = new CustomMemoryForTest<int>(a);
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(manager, 0, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(manager, -1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(manager, -1, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(manager, -1, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(manager, 0, a.Length + 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(manager, a.Length + 1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(manager, 1, a.Length));
+            CustomMemoryForTest<int> manager = new CustomMemoryForTest<int>(a);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => manager.Memory.Slice(a.Length + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => manager.Memory.Slice(0, a.Length + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => manager.Memory.Slice(a.Length + 1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => manager.Memory.Slice(1, a.Length));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => manager.CreateMemoryForTest(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => manager.CreateMemoryForTest(0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => manager.CreateMemoryForTest(-1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => manager.CreateMemoryForTest(-1, -1));
         }
 
         [Fact]
@@ -177,6 +167,5 @@ namespace System.MemoryTests
             Assert.Throws<ObjectDisposedException>(() => manager.GetSpan());
         }
     }
-
 }
 

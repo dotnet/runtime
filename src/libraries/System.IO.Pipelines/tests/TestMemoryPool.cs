@@ -119,12 +119,12 @@ namespace System.IO.Pipelines
                 return MemoryMarshal.TryGetArray(_owner.Memory, out segment);
             }
 
-            public override int Length
+            public override Memory<byte> Memory
             {
                 get
                 {
                     _pool.CheckDisposed();
-                    return _owner.Memory.Length;
+                    return _owner.Memory;
                 }
             }
 
