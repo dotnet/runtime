@@ -840,7 +840,7 @@ do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
 
 	memcpy (header, image->raw_data + offset, sizeof (MonoDotNetHeader));
 
-	if (header->pesig [0] != 'P' || header->pesig [1] != 'E')
+	if (header->pesig [0] != 'P' || header->pesig [1] != 'E' || header->pesig [2] || header->pesig [3])
 		return -1;
 
 	/* endian swap the fields common between PE and PE+ */
