@@ -10,15 +10,15 @@
   <PropertyGroup Condition="'$(BuildUpgradeableLinuxPackages)' == 'true' AND '$(InstallerExtension)' == '.deb'">
     
     <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
-    <HostPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">~$(VersionSuffix)</HostPackageRelease>
+    <HostPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</HostPackageVersion>
     
     <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
-    <HostResolverPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">~$(VersionSuffix)</HostResolverPackageRelease>
+    <HostResolverPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</HostResolverPackageVersion>
     
     <RuntimePackageVersion>$(ProductionVersion)</RuntimePackageVersion>
-    <RuntimePackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">~$(VersionSuffix)</RuntimePackageRelease>
+    <RuntimePackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(ProductionVersion)~$(VersionSuffix)</RuntimePackageVersion>
     
     <RuntimeDepsDebPackageVersion>$(ProductionVersion)</RuntimeDepsDebPackageVersion>
-    <RuntimeDepsDebPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">~$(VersionSuffix)</RuntimeDepsDebPackageRelease>
+    <RuntimeDepsDebPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</RuntimeDepsDebPackageVersion>
   </PropertyGroup>
 </Project>
