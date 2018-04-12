@@ -131,7 +131,13 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
 
 pal::proc_t pal::get_symbol(dll_t library, const char* name)
 {
-    return ::GetProcAddress(library, name);
+    auto result = ::GetProcAddress(library, name);
+    if (result == nullptr)
+    {
+        trace::info(_X("Probed for and did not resolve library symbol %s"), name);
+    }
+
+    return result;
 }
 
 void pal::unload_library(dll_t library)

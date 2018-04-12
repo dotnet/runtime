@@ -51,8 +51,6 @@ The proposal for this is to add an "any" tfm.
 
 Finally, a third issue is there is no way to turn off the global deps lightup (via `%DOTNET_ADDITIONAL_DEPS%`) for a single application if they run into issues with pulling in the additional deps. If the environment variable is set, and an application can't load because of the additional lightup deps, and the lightup isn't needed, there should be a way to turn it off so the app can load. One (poor) workaround would be to specify `--additional-deps` in the command-line to point to any empty file, but that would only work if the command line can be used in this way to launch the application.
 
-The proposal for this is to add a new runtimeconfig.json knob to disable `%DOTNET_ADDITIONAL_DEPS%`.
-
 ## 2.1 proposal (roll-backwards)
 In order to prevent having to co-release for roll-forward cases, and deploy all past versions, the followng rules are proposed:
 1) Instead of `requested_framework_version`, use `found_framework_version`
@@ -71,9 +69,15 @@ where 1 (minor) is the default.
 
 Similar to `applyPatches`, the app may or may not want to tighten or loosen the range of supported frameworks. The default of `minor` seems like a good fit for additional-deps.
 
+<strike>
 4) Similar to roll-forward, a release version will only "roll-backwards" to release versions, unless no release versions are found. Then it will attempt to find a compatible pre-release version.
+</strike>
 
+**Update** This requirement (4) is considered an optional feature and is not currently planned for 2.1.
+
+<strike>
 Note: some "roll-backwards" semantics are different than roll-forward semantics. The "apply patches" functionality that exists in roll-forward doesn't make sense here since we are going "backwards" and the nearest (most compatible) version already has patches applied and we don't want to take older patches. In addition, roll-forward will not go from pre-release to release (since breaking changes on new features may occur during pre-release-to-release versions), but again that doesn't make sense here since we are going backwards to pre-existing (compatible) versions.
+</strike>
 
 ## 2.1 proposal (add an "any" tfm to store)
 For example,
@@ -85,10 +89,14 @@ The `any` tfm would be used if the specified tfm (e.g. netcoreapp2.0) is not fou
 _Note: doesn't this make "uninstall" more difficult? Because multiple installs may write the same packages and try to remove packages that another installer created?_
 
 ## 2.1 proposal (add runtimeconfig knob to to disable `%DOTNET_ADDITIONAL_DEPS%`)
+<strike>
 Add an `additionalDepsLookup` option to the runtimeconfig with these values:
-
+  
   0) The `%DOTNET_ADDITIONAL_DEPS%` is not used
   1) `DOTNET_ADDITIONAL_DEPS` is used (the default)
+</strike>
+
+**Update** this is a nice-to-have feature and is no longer planned for 2.1.
 
 ## Long-term thoughts
 A lightup "extension" could be considered an application, and have its own `runtimeconfig.json` and `deps.json` file next to its corresponding assembly(s). In this way, it would specify the target framework version and thus compatibility with the hosting application could be established. Having an app-to-app dependency in this way is not currently supported.
