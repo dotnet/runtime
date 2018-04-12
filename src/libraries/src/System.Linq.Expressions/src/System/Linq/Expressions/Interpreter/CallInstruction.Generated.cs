@@ -42,7 +42,6 @@ namespace System.Linq.Expressions.Interpreter
                 return new ActionCallInstruction(target);
             }
 
-            if (t.IsEnum) return SlowCreate(target, pi);
             switch (t.GetTypeCode())
             {
                 case TypeCode.Object:
@@ -85,7 +84,6 @@ namespace System.Linq.Expressions.Interpreter
                 return new FuncCallInstruction<T0>(target);
             }
 
-            if (t.IsEnum) return SlowCreate(target, pi);
             switch (t.GetTypeCode())
             {
                 case TypeCode.Object:
@@ -128,7 +126,6 @@ namespace System.Linq.Expressions.Interpreter
                 return new FuncCallInstruction<T0, T1>(target);
             }
 
-            if (t.IsEnum) return SlowCreate(target, pi);
             switch (t.GetTypeCode())
             {
                 case TypeCode.Object:
