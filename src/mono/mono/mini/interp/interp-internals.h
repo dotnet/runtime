@@ -145,6 +145,8 @@ typedef struct {
 	InterpFrame *handler_frame;
 	/* IP to resume execution at */
 	gpointer handler_ip;
+	/* Clause that we are resuming to */
+	MonoJitExceptionInfo *handler_ei;
 } ThreadContext;
 
 extern int mono_interp_traceopt;
