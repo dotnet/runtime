@@ -150,6 +150,13 @@ namespace System
         }
 
         /// <summary>
+        /// Returns a reference to the 0th element of the Span. If the Span is empty, returns null reference.
+        /// It can be used for pinning and is required to support the use of span within a fixed statement.
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public unsafe ref readonly T GetPinnableReference() => ref (_length != 0) ? ref _pointer.Value : ref Unsafe.AsRef<T>(null);
+
+        /// <summary>
         /// Copies the contents of this read-only span into destination span. If the source
         /// and destinations overlap, this method behaves as if the original values in
         /// a temporary location before the destination is overwritten.
