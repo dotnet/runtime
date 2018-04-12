@@ -79,7 +79,6 @@ namespace System.MemoryTests
         {
             public OtherMemoryForTest() { }
 
-            public override int Length => 0;
             public override Span<T> GetSpan() => throw new NotImplementedException();
             public override MemoryHandle Pin(int elementIndex = 0) => throw new NotImplementedException();
             protected override void Dispose(bool disposing) => throw new NotImplementedException();
