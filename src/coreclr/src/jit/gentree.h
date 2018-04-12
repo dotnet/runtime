@@ -1553,34 +1553,7 @@ public:
         return OperIsIndirOrArrLength(gtOper);
     }
 
-    static bool OperIsImplicitIndir(genTreeOps gtOper)
-    {
-        switch (gtOper)
-        {
-            case GT_LOCKADD:
-            case GT_XADD:
-            case GT_XCHG:
-            case GT_CMPXCHG:
-            case GT_BLK:
-            case GT_OBJ:
-            case GT_DYN_BLK:
-            case GT_STORE_BLK:
-            case GT_STORE_OBJ:
-            case GT_STORE_DYN_BLK:
-            case GT_BOX:
-            case GT_ARR_INDEX:
-            case GT_ARR_ELEM:
-            case GT_ARR_OFFSET:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    bool OperIsImplicitIndir() const
-    {
-        return OperIsImplicitIndir(gtOper);
-    }
+    bool OperIsImplicitIndir() const;
 
     bool OperIsStore() const
     {
@@ -4287,6 +4260,17 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
         : GenTreeJitIntrinsic(GT_HWIntrinsic, type, op1, op2, baseType, size), gtHWIntrinsicId(hwIntrinsicID)
     {
     }
+
+    // Note that HW Instrinsic instructions are a sub class of GenTreeOp which only supports two operands
+    // However there are HW Instrinsic instructions that have 3 or even 4 operands and this is
+    // supported using a single op1 and using an ArgList for it:  gtNewArgList(op1, op2, op3)
+
+    bool OperIsMemoryLoad();        // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics,
+                                    // false otherwise
+    bool OperIsMemoryStore();       // Returns true for the HW Instrinsic instructions that have MemoryStore semantics,
+                                    // false otherwise
+    bool OperIsMemoryLoadOrStore(); // Returns true for the HW Instrinsic instructions that have MemoryLoad or
+                                    // MemoryStore semantics, false otherwise
 
 #if DEBUGGABLE_GENTREE
     GenTreeHWIntrinsic() : GenTreeJitIntrinsic()

@@ -816,9 +816,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         assert(insOfHWIntrinsic(intrinsic, baseType) != INS_invalid);
         assert(simdSize == 32 || simdSize == 16);
 
-        GenTree* retNode = nullptr;
-        GenTree* op1     = nullptr;
-        GenTree* op2     = nullptr;
+        GenTreeHWIntrinsic* retNode = nullptr;
+        GenTree*            op1     = nullptr;
+        GenTree*            op2     = nullptr;
 
         switch (numArgs)
         {
@@ -864,6 +864,22 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
             default:
                 unreached();
+        }
+
+        bool isMemoryStore = retNode->OperIsMemoryStore();
+        if (isMemoryStore || retNode->OperIsMemoryLoad())
+        {
+            if (isMemoryStore)
+            {
+                // A MemoryStore operation is an assignment
+                retNode->gtFlags |= GTF_ASG;
+            }
+
+            // This operation contains an implicit indirection
+            //   it could point into the gloabal heap or
+            //   it could throw a null reference exception.
+            //
+            retNode->gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
         }
         return retNode;
     }
