@@ -191,7 +191,7 @@ namespace System.Net.Sockets.Tests
                 saea.SetBuffer(m.Memory);
                 Assert.True(saea.MemoryBuffer.Equals(m.Memory));
                 Assert.Equal(0, saea.Offset);
-                Assert.Equal(m.Length, saea.Count);
+                Assert.Equal(m.Memory.Length, saea.Count);
                 Assert.Null(saea.Buffer);
             }
         }

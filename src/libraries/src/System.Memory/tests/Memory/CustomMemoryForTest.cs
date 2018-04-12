@@ -31,8 +31,6 @@ namespace System.MemoryTests
 
         public int OnNoRefencesCalledCount => _noReferencesCalledCount;
 
-        public override int Length => _length;
-
         public bool IsDisposed => _disposed;
 
         protected bool IsRetained => _referenceCount > 0;
@@ -104,6 +102,10 @@ namespace System.MemoryTests
                 _noReferencesCalledCount++;
             }
         }
+
+        public Memory<T> CreateMemoryForTest(int length) => CreateMemory(length);
+
+        public Memory<T> CreateMemoryForTest(int start, int length) => CreateMemory(start, length);
     }
 }
 

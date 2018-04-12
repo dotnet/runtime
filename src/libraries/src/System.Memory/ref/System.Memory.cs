@@ -93,7 +93,6 @@ namespace System
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
-        public Memory(System.Buffers.MemoryManager<T> manager, int start, int length) { throw null; }
         public Memory(T[] array) { throw null; }
         public Memory(T[] array, int start, int length) { throw null; }
         public static System.Memory<T> Empty { get { throw null; } }
@@ -275,8 +274,9 @@ namespace System.Buffers
     public abstract partial class MemoryManager<T> : System.Buffers.IMemoryOwner<T>, System.Buffers.IPinnable, System.IDisposable
     {
         protected MemoryManager() { }
-        public virtual int Length { get { throw null; } }
         public virtual System.Memory<T> Memory { get { throw null; } }
+        protected Memory<T> CreateMemory(int length) { throw null; }
+        protected Memory<T> CreateMemory(int start, int length) { throw null; }
         protected abstract void Dispose(bool disposing);
         public abstract System.Span<T> GetSpan();
         public abstract System.Buffers.MemoryHandle Pin(int elementIndex = 0);
