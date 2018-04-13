@@ -31,7 +31,7 @@ namespace System.SpanTests
             {
                 int[] a = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 };
 
-                Span<int> source = a.AsSpan().Slice(7, 5);
+                Span<int> source = a.AsSpan(7, 5);
 
                 Span<int> expected = new int[a.Length].AsSpan(i, 5);
                 Span<int> actual = a.AsSpan(i, 5);
@@ -93,7 +93,7 @@ namespace System.SpanTests
             {
                 int[] a = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 };
 
-                Span<int> source = a.AsSpan().Slice(7, 5);
+                Span<int> source = a.AsSpan(7, 5);
 
                 Span<int> expected = new int[a.Length].AsSpan(i, 5);
                 Span<int> actual = a.AsSpan(i, 5);
@@ -138,7 +138,7 @@ namespace System.SpanTests
         {
             byte[] a = new byte[16];
 
-            Assert.True(a.AsSpan().Slice(0, 12).Overlaps(a.AsSpan().Slice(8, 8), out int elementOffset));
+            Assert.True(a.AsSpan(0, 12).Overlaps(a.AsSpan(8, 8), out int elementOffset));
             Assert.Equal(8, elementOffset);
         }
 
@@ -147,7 +147,7 @@ namespace System.SpanTests
         {
             Guid[] a = new Guid[16];
 
-            Assert.True(a.AsSpan().Slice(0, 12).Overlaps(a.AsSpan().Slice(8, 8), out int elementOffset));
+            Assert.True(a.AsSpan(0, 12).Overlaps(a.AsSpan(8, 8), out int elementOffset));
             Assert.Equal(8, elementOffset);
         }
 

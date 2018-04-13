@@ -448,7 +448,7 @@ namespace System.Tests
             Assert.Equal(expected, dst);
 
             Span<char> dstSpan = new char[expected.Length];
-            s.AsSpan().Slice(sourceIndex, count).CopyTo(dstSpan.Slice(destinationIndex, count));
+            s.AsSpan(sourceIndex, count).CopyTo(dstSpan.Slice(destinationIndex, count));
             Assert.Equal(expected, dstSpan.ToArray());
         }
 
@@ -2608,11 +2608,11 @@ namespace System.Tests
             if (startIndex + length == s.Length)
             {
                 Assert.Equal(expected, s.Substring(startIndex));
-                Assert.Equal(expected, s.AsSpan().Slice(startIndex).ToString());
+                Assert.Equal(expected, s.AsSpan(startIndex).ToString());
             }
             Assert.Equal(expected, s.Substring(startIndex, length));
 
-            Assert.Equal(expected, s.AsSpan().Slice(startIndex, length).ToString());
+            Assert.Equal(expected, s.AsSpan(startIndex, length).ToString());
         }
 
         [Fact]
