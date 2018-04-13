@@ -9,4 +9,6 @@ TypesMustExist : Type 'System.Buffers.IPinnable' does not exist in the implement
 TypesMustExist : Type 'System.Buffers.MemoryManager<T>' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Buffers.MemoryManager<T>.CreateMemory(System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Buffers.MemoryManager<T>.CreateMemory(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 10
+MembersMustExist : Member 'System.ReadOnlySpan<T>.GetPinnableReference()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Span<T>.GetPinnableReference()' does not exist in the implementation but it does exist in the contract.
+Total Issues: 12
