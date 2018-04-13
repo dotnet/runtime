@@ -2319,7 +2319,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 			if (i >= sig->hasthis)
 				t = sig->params [i - sig->hasthis];
 			else
-				t = &mono_defaults.int_class->byval_arg;
+				t = m_class_get_byval_arg (mono_defaults.int_class);
 			t = mono_type_get_underlying_type (t);
 
 			if (!t->byref && t->type == MONO_TYPE_R4) {
@@ -10536,7 +10536,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *val;
 
 				val = handle_unbox_nullable (cfg, *sp, klass, context_used);
-				EMIT_NEW_VARLOADA (cfg, ins, get_vreg_to_inst (cfg, val->dreg), &val->klass->byval_arg);
+				EMIT_NEW_VARLOADA (cfg, ins, get_vreg_to_inst (cfg, val->dreg), m_class_get_byval_arg (val->klass));
 
 				*sp++= ins;
 			} else {
@@ -13628,7 +13628,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 					 * to determine when it needs to be global. So be conservative.
 					 */
 					if (!get_vreg_to_inst (cfg, vreg)) {
-						mono_compile_create_var_for_vreg (cfg, &mono_defaults.int64_class->byval_arg, OP_LOCAL, vreg);
+						mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (mono_defaults.int64_class), OP_LOCAL, vreg);
 
 						if (cfg->verbose_level > 2)
 							printf ("LONG VREG R%d made global.\n", vreg);

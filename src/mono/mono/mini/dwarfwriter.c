@@ -1788,7 +1788,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 		emit_type (w, t);
 	}
-	//emit_type (w, &mono_defaults.int32_class->byval_arg);
+	//emit_type (w, m_class_get_byval_arg (mono_defaults.int32_class));
 
 	/* Local types */
 	for (i = 0; i < header->num_locals; ++i) {

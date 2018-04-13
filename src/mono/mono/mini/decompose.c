@@ -1729,7 +1729,7 @@ mono_decompose_soft_float (MonoCompile *cfg)
 						/* FIXME: Optimize this */
 
 						/* Emit an r4->r8 conversion */
-						EMIT_NEW_VARLOADA_VREG (cfg, iargs [0], call2->inst.dreg, &mono_defaults.int32_class->byval_arg);
+						EMIT_NEW_VARLOADA_VREG (cfg, iargs [0], call2->inst.dreg, m_class_get_byval_arg (mono_defaults.int32_class));
 						conv = mono_emit_jit_icall (cfg, mono_fload_r4, iargs);
 						conv->dreg = ins->dreg;
 

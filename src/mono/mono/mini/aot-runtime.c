@@ -598,7 +598,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 		mono_error_set_bad_image_by_name (error, module->aot_name, "Invalid klass reftype %d", reftype);
 	}
 	//g_assert (klass);
-	//printf ("BLA: %s\n", mono_type_full_name (&klass->byval_arg));
+	//printf ("BLA: %s\n", mono_type_full_name (m_class_get_byval_arg (klass)));
 	*endbuf = p;
 	return klass;
 }

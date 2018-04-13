@@ -856,7 +856,7 @@ class_get_rgctx_template_oti (MonoClass *klass, int type_argc, guint32 slot, gbo
 {
 	g_assert ((temporary && do_free) || (!temporary && !do_free));
 
-	DEBUG (printf ("get slot: %s %d\n", mono_type_full_name (&class->byval_arg), slot));
+	DEBUG (printf ("get slot: %s %d\n", mono_type_full_name (m_class_get_byval_arg (class)), slot));
 
 	if (mono_class_is_ginst (klass) && !shared) {
 		MonoRuntimeGenericContextInfoTemplate oti;
@@ -1132,7 +1132,7 @@ get_wrapper_shared_type (MonoType *t)
 		// they are treated differently when a method has a vret arg,
 		// see get_call_info ().
 		return m_class_get_byval_arg (mono_defaults.object_class);
-		//return &mono_defaults.int_class->byval_arg;
+		//return m_class_get_byval_arg (mono_defaults.int_class);
 	case MONO_TYPE_GENERICINST: {
 		ERROR_DECL (error);
 		MonoClass *klass;
@@ -2631,7 +2631,7 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot,
 
 	info = fill_runtime_generic_context (class_vtable, rgctx, slot, NULL, FALSE, error);
 
-	DEBUG (printf ("get rgctx slot: %s %d -> %p\n", mono_type_full_name (&class_vtable->klass->byval_arg), slot, info));
+	DEBUG (printf ("get rgctx slot: %s %d -> %p\n", mono_type_full_name (m_class_get_byval_arg (class_vtable)), slot, info));
 
 	return info;
 }

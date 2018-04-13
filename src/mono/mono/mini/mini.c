@@ -770,7 +770,7 @@ mini_get_int_to_float_spill_area (MonoCompile *cfg)
 {
 #ifdef TARGET_X86
 	if (!cfg->iconv_raw_var) {
-		cfg->iconv_raw_var = mono_compile_create_var (cfg, &mono_defaults.int32_class->byval_arg, OP_LOCAL);
+		cfg->iconv_raw_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int32_class), OP_LOCAL);
 		cfg->iconv_raw_var->flags |= MONO_INST_VOLATILE; /*FIXME, use the don't regalloc flag*/
 	}
 	return cfg->iconv_raw_var;

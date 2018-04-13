@@ -578,7 +578,7 @@ get_valuetype_size_win64 (MonoClass *klass, gboolean pinvoke, ArgInfo *arg_info,
 
 	if (*arg_class == ARG_CLASS_MEMORY) {
 		/* Value type has a size that doesn't seem to fit register according to ABI. Try to used full stack size of type. */
-		*arg_size = mini_type_stack_size_full (&klass->byval_arg, NULL, pinvoke);
+		*arg_size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, pinvoke);
 	}
 
 	/*

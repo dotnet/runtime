@@ -7638,13 +7638,13 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_IID:
 	case MONO_PATCH_INFO_ADJUSTED_IID:
 		if (!can_encode_class (acfg, patch_info->data.klass)) {
-			//printf ("Skip: %s\n", mono_type_full_name (&patch_info->data.klass->byval_arg));
+			//printf ("Skip: %s\n", mono_type_full_name (m_class_get_byval_arg (patch_info->data.klass)));
 			return FALSE;
 		}
 		break;
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
 		if (!can_encode_class (acfg, patch_info->data.del_tramp->klass)) {
-			//printf ("Skip: %s\n", mono_type_full_name (&patch_info->data.klass->byval_arg));
+			//printf ("Skip: %s\n", mono_type_full_name (m_class_get_byval_arg (patch_info->data.klass)));
 			return FALSE;
 		}
 		break;
