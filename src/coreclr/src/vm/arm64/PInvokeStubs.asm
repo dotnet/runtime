@@ -80,15 +80,21 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
         ENDIF
 
         ; x0 = pTransitionBlock
-        add                 x0, sp, #__PWTB_TransitionBlock      
+        add                 x0, sp, #__PWTB_TransitionBlock
 
         ; save hidden arg
         mov                 x19, $HiddenArg 
 
+        ; save VASigCookieReg
+        mov                 x20, $VASigCookieReg
+
         bl                  $__PInvokeStubWorkerName
 
+        ; restore VASigCookieReg
+        mov                 $VASigCookieReg, x20
+
         ; restore hidden arg (method desc or unmanaged target)
-        mov                 $HiddenArg , x19
+        mov                 $HiddenArg, x19
 
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
