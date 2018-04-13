@@ -3301,13 +3301,10 @@ wait_for_tids (struct wait_data *wait, guint32 timeout, gboolean check_state_cha
 	for( i = 0; i < wait->num; i++)
 		mono_threads_close_thread_handle (wait->handles [i]);
 
-	if (ret == MONO_THREAD_INFO_WAIT_RET_TIMEOUT)
-		return;
-	
-	if (ret < wait->num) {
+	if (ret >= MONO_THREAD_INFO_WAIT_RET_SUCCESS_0 && ret < (MONO_THREAD_INFO_WAIT_RET_SUCCESS_0 + wait->num)) {
 		MonoInternalThread *internal;
 
-		internal = wait->threads [ret];
+		internal = wait->threads [ret - MONO_THREAD_INFO_WAIT_RET_SUCCESS_0];
 
 		mono_threads_lock ();
 		if (mono_g_hash_table_lookup (threads, (gpointer) internal->tid) == internal)
