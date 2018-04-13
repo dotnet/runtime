@@ -12,7 +12,6 @@ namespace System.Net.Mail
     {
         internal bool disposed = false;
         private MimePart _part = new MimePart();
-        private static readonly char[] s_fileShortNameIndicators = new char[] { '\\', ':' };
         private static readonly char[] s_contentCIDInvalidChars = new char[] { '<', '>' };
 
         internal AttachmentBase()
@@ -66,22 +65,6 @@ namespace System.Net.Mail
                 disposed = true;
                 _part.Dispose();
             }
-        }
-
-        internal static string ShortNameFromFile(string fileName)
-        {
-            string name;
-            int start = fileName.LastIndexOfAny(s_fileShortNameIndicators, fileName.Length - 1, fileName.Length);
-
-            if (start > 0)
-            {
-                name = fileName.Substring(start + 1, fileName.Length - start - 1);
-            }
-            else
-            {
-                name = fileName;
-            }
-            return name;
         }
 
         internal void SetContentFromFile(string fileName, ContentType contentType)
@@ -341,14 +324,14 @@ namespace System.Net.Mail
 
         public Attachment(string fileName) : base(fileName)
         {
-            Name = ShortNameFromFile(fileName);
+            Name = Path.GetFileName(fileName);
             MimePart.ContentDisposition = new ContentDisposition();
         }
 
         public Attachment(string fileName, string mediaType) :
             base(fileName, mediaType)
         {
-            Name = ShortNameFromFile(fileName);
+            Name = Path.GetFileName(fileName);
             MimePart.ContentDisposition = new ContentDisposition();
         }
 
@@ -357,7 +340,7 @@ namespace System.Net.Mail
         {
             if (contentType.Name == null || contentType.Name == string.Empty)
             {
-                Name = ShortNameFromFile(fileName);
+                Name = Path.GetFileName(fileName);
             }
             else
             {
