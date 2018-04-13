@@ -326,20 +326,25 @@ namespace System.Net.Http
                 return (uri.Scheme == UriScheme.Https || uri.Scheme == UriScheme.Wss) ? _secureProxyUri : _insecureProxyUri;
             }
 
-            // For anything else ask WinHTTP.
-            var proxyInfo = new Interop.WinHttp.WINHTTP_PROXY_INFO();
-            try
+            // For anything else ask WinHTTP. To improve performance, we don't call into
+            // WinHTTP if there was a recent failure to detect a PAC file on the network.
+            if (!_proxyHelper.RecentAutoDetectionFailure)
             {
-                if (_proxyHelper.GetProxyForUrl(_sessionHandle, uri, out proxyInfo))
+                var proxyInfo = new Interop.WinHttp.WINHTTP_PROXY_INFO();
+                try
                 {
-                    return GetUriFromString(Marshal.PtrToStringUni(proxyInfo.Proxy));
+                    if (_proxyHelper.GetProxyForUrl(_sessionHandle, uri, out proxyInfo))
+                    {
+                        return GetUriFromString(Marshal.PtrToStringUni(proxyInfo.Proxy));
+                    }
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(proxyInfo.Proxy);
+                    Marshal.FreeHGlobal(proxyInfo.ProxyBypass);
                 }
             }
-            finally
-            {
-                Marshal.FreeHGlobal(proxyInfo.Proxy);
-                Marshal.FreeHGlobal(proxyInfo.ProxyBypass);
-            }
+
             return null;
         }
 
