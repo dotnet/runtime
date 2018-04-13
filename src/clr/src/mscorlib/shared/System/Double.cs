@@ -297,7 +297,7 @@ namespace System
         // PositiveInfinity or NegativeInfinity for a number that is too
         // large or too small.
 
-        public static double Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        public static double Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.ParseDouble(s, style, NumberFormatInfo.GetInstance(provider));
