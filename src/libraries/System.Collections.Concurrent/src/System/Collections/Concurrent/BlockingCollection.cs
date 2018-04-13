@@ -57,7 +57,7 @@ namespace System.Collections.Concurrent
 
         #region Properties
         /// <summary>Gets the bounded capacity of this <see cref="T:System.Collections.Concurrent.BlockingCollection{T}"/> instance.</summary>
-        /// <value>The bounded capacity of this collection, or int.MaxValue if no bound was supplied.</value>
+        /// <value>The bounded capacity of this collection, or -1 if no bound was supplied.</value>
         /// <exception cref="T:System.ObjectDisposedException">The <see
         /// cref="T:System.Collections.Concurrent.BlockingCollection{T}"/> has been disposed.</exception>
         public int BoundedCapacity
