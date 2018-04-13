@@ -8,7 +8,7 @@
 
 // JIT_MemSet/JIT_MemCpy
 //
-// It is IMPORANT that the exception handling code is able to find these guys
+// It is IMPORTANT that the exception handling code is able to find these guys
 // on the stack, but on non-windows platforms we can just defer to the platform
 // implementation.
 //
