@@ -545,9 +545,9 @@ add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **a
 		MONO_INST_NEW(cfg, cmp, OP_COMPARE);	\
 		cmp->sreg1 = sp [0]->dreg;	\
 		cmp->sreg2 = sp [1]->dreg;	\
+		add_widen_op (cfg, cmp, &sp [0], &sp [1]);						\
 		type_from_op (cfg, cmp, sp [0], sp [1]);	\
 		CHECK_TYPE (cmp);	\
-		add_widen_op (cfg, cmp, &sp [0], &sp [1]);						\
 		type_from_op (cfg, ins, sp [0], sp [1]);							\
 		ins->inst_many_bb = (MonoBasicBlock **)mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);	\
 		GET_BBLOCK (cfg, tblock, target);		\
@@ -1436,10 +1436,21 @@ mono_compile_get_interface_var (MonoCompile *cfg, int slot, MonoInst *ins)
 {
 	MonoInst *res;
 	int pos, vnum;
+	MonoType *type;
+
+	/*
+	 * Use double for r4 stack vars to avoid narrowing with r4-r8 stack
+	 * merges.
+	 * FIXME: Only do this if there is indeed an r4-r8 merge.
+	 */
+	if (ins->type == STACK_R4)
+		type = m_class_get_byval_arg (mono_defaults.double_class);
+	else
+		type = type_from_stack_type (ins);
 
 	/* inlining can result in deeper stacks */ 
-	if (slot >= cfg->header->max_stack)
-		return mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+	if (cfg->inlined_method || slot >= cfg->header->max_stack)
+		return mono_compile_create_var (cfg, type, OP_LOCAL);
 
 	pos = ins->type - 1 + slot * STACK_MAX;
 
@@ -1452,11 +1463,11 @@ mono_compile_get_interface_var (MonoCompile *cfg, int slot, MonoInst *ins)
 	case STACK_OBJ:
 		if ((vnum = cfg->intvars [pos]))
 			return cfg->varinfo [vnum];
-		res = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+		res = mono_compile_create_var (cfg, type, OP_LOCAL);
 		cfg->intvars [pos] = res->inst_c0;
 		break;
 	default:
-		res = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+		res = mono_compile_create_var (cfg, type, OP_LOCAL);
 	}
 	return res;
 }
@@ -1534,10 +1545,7 @@ handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 				 * the bblock they are inlined to. See bug #58863 for an
 				 * example.
 				 */
-				if (cfg->inlined_method)
-					bb->out_stack [i] = mono_compile_create_var (cfg, type_from_stack_type (sp [i]), OP_LOCAL);
-				else
-					bb->out_stack [i] = mono_compile_get_interface_var (cfg, i, sp [i]);
+				bb->out_stack [i] = mono_compile_get_interface_var (cfg, i, sp [i]);
 			}
 		}
 	}
@@ -1561,6 +1569,7 @@ handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 	locals = bb->out_stack;
 	cfg->cbb = bb;
 	for (i = 0; i < count; ++i) {
+		sp [i] = convert_value (cfg, locals [i]->inst_vtype, sp [i]);
 		EMIT_NEW_TEMPSTORE (cfg, inst, locals [i]->inst_c0, sp [i]);
 		inst->cil_code = sp [i]->cil_code;
 		sp [i] = locals [i];
@@ -1588,6 +1597,7 @@ handle_stack_args (MonoCompile *cfg, MonoInst **sp, int count)
 			}
 			if (outb->in_stack != locals) {
 				for (i = 0; i < count; ++i) {
+					sp [i] = convert_value (cfg, outb->in_stack [i]->inst_vtype, sp [i]);
 					EMIT_NEW_TEMPSTORE (cfg, inst, outb->in_stack [i]->inst_c0, sp [i]);
 					inst->cil_code = sp [i]->cil_code;
 					sp [i] = locals [i];
