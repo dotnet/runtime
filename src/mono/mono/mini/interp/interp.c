@@ -4461,7 +4461,6 @@ array_constructed:
 			ip ++;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_END_ABORT_PROT)
-			/* FIXME We miss it if exception is thrown in finally clause */
 			mono_threads_end_abort_protected_block ();
 			ip ++;
 			MINT_IN_BREAK;

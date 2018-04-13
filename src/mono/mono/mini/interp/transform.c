@@ -4539,6 +4539,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 		if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 			ei->data.filter = (guint8*)(rtm->code + c->data.filter_offset);
 		} else if (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
+			ei->data.handler_end = (guint8*)(rtm->code + c->handler_offset + c->handler_len);
 		} else {
 			ei->data.catch_class = c->data.catch_class;
 		}
