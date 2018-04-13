@@ -288,7 +288,7 @@ namespace System.Net.Http
             {
                 await WriteAsciiStringAsync(HttpKnownHeaderNames.Cookie).ConfigureAwait(false);
                 await WriteTwoBytesAsync((byte)':', (byte)' ').ConfigureAwait(false);
-                await WriteAsciiStringAsync(cookiesFromContainer).ConfigureAwait(false);
+                await WriteStringAsync(cookiesFromContainer).ConfigureAwait(false);
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n').ConfigureAwait(false);
             }
         }
@@ -484,7 +484,7 @@ namespace System.Net.Http
                 }
 
                 // Start to read response.
-                _allowedReadLineBytes = _pool.Settings._maxResponseHeadersLength * 1024;
+                _allowedReadLineBytes = (int)Math.Min(int.MaxValue, _pool.Settings._maxResponseHeadersLength * 1024L);
 
                 // We should not have any buffered data here; if there was, it should have been treated as an error
                 // by the previous request handling.  (Note we do not support HTTP pipelining.)

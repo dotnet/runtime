@@ -640,7 +640,10 @@ namespace System.Net.Http
             }
         }
 
-        /// <summary>Disposes the </summary>
+        /// <summary>
+        /// Disposes the connection pool.  This is only needed when the pool currently contains
+        /// or has associated connections.
+        /// </summary>
         public void Dispose()
         {
             List<CachedConnection> list = _idleConnections;
@@ -679,7 +682,7 @@ namespace System.Net.Http
 
                 // Get the current time.  This is compared against each connection's last returned
                 // time to determine whether a connection is too old and should be closed.
-                DateTimeOffset now = DateTimeOffset.Now;
+                DateTimeOffset now = DateTimeOffset.UtcNow;
 
                 // Find the first item which needs to be removed.
                 int freeIndex = 0;
@@ -882,17 +885,8 @@ namespace System.Net.Http
             }
 
             /// <summary>Creates a connection.</summary>
-            public ValueTask<(HttpConnection, HttpResponseMessage)> CreateConnectionAsync()
-            {
-                try
-                {
-                    return _pool.CreateConnectionAsync(_request, _cancellationToken);
-                }
-                catch (Exception e)
-                {
-                    return new ValueTask<(HttpConnection, HttpResponseMessage)>(Threading.Tasks.Task.FromException<(HttpConnection, HttpResponseMessage)>(e));
-                }
-            }
+            public ValueTask<(HttpConnection, HttpResponseMessage)> CreateConnectionAsync() =>
+                _pool.CreateConnectionAsync(_request, _cancellationToken);
         }
     }
 }
