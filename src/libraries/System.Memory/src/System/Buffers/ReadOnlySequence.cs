@@ -52,7 +52,7 @@ namespace System.Buffers
         /// <summary>
         /// Gets <see cref="ReadOnlyMemory{T}"/> from the first segment.
         /// </summary>
-        public ReadOnlyMemory<T> First => GetFirstBuffer(_sequenceStart, _sequenceEnd);
+        public ReadOnlyMemory<T> First => GetFirstBuffer();
 
         /// <summary>
         /// A position to the start of the <see cref="ReadOnlySequence{T}"/>.
