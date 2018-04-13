@@ -95,6 +95,8 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_cmpss:
         case INS_cvtsi2sd:
         case INS_cvtsi2ss:
+        case INS_cvtsd2ss:
+        case INS_cvtss2sd:
         case INS_divpd:
         case INS_divps:
         case INS_divsd:
@@ -251,8 +253,6 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 {
     switch (ins)
     {
-        case INS_cvtsd2ss:
-        case INS_cvtss2sd:
         case INS_movhpd:
         case INS_movhps:
         case INS_movlpd:
