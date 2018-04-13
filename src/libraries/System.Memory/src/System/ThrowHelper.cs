@@ -133,6 +133,8 @@ namespace System
                 return CreateArgumentNullException(ExceptionArgument.startSegment);
             else if (endSegment == null)
                 return CreateArgumentNullException(ExceptionArgument.endSegment);
+            else if (startSegment != endSegment && startSegment.RunningIndex > endSegment.RunningIndex)
+                return CreateArgumentOutOfRangeException(ExceptionArgument.endSegment);
             else if ((uint)startSegment.Memory.Length < (uint)startIndex)
                 return CreateArgumentOutOfRangeException(ExceptionArgument.startIndex);
             else
