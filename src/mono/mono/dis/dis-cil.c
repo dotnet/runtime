@@ -317,6 +317,5 @@ disassemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContainer *conta
 			}
 		}
 	}
-	if (trys)
-		g_free (trys);
+	g_free (trys);
 }

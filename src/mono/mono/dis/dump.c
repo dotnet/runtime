@@ -284,8 +284,7 @@ dump_table_memberref (MonoImage *m)
 			 x ? x : "",
 			 sig);
 
-		if (x)
-			g_free (x);
+		g_free (x);
 		g_free (sig);
 	}
 }

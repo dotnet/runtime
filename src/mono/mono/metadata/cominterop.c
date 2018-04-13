@@ -621,8 +621,7 @@ mono_cominterop_init (void)
 	com_provider_env = g_getenv ("MONO_COM");
 	if (com_provider_env && !strcmp(com_provider_env, "MS"))
 		com_provider = MONO_COM_MS;
-	if (com_provider_env)
-		g_free (com_provider_env);
+	g_free (com_provider_env);
 
 	register_icall (cominterop_get_method_interface, "cominterop_get_method_interface", "ptr ptr", FALSE);
 	register_icall (cominterop_get_function_pointer, "cominterop_get_function_pointer", "ptr ptr int32", FALSE);

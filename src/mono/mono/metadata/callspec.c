@@ -342,9 +342,7 @@ mono_callspec_parse (const char *options, MonoCallSpec *spec, char **errstr)
 
 void mono_callspec_cleanup (MonoCallSpec *spec)
 {
-	if (spec->ops != NULL) {
-		g_free (spec->ops);
-	}
+	g_free (spec->ops);
 	memset (spec, 0, sizeof (*spec));
 }
 

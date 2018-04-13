@@ -210,8 +210,7 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 			mono_file_unmap ((gpointer) symfile->raw_contents, symfile->raw_contents_handle);
 	}
 
-	if (symfile->filename)
-		g_free (symfile->filename);
+	g_free (symfile->filename);
 	g_free (symfile);
 	mono_debugger_unlock ();
 }
