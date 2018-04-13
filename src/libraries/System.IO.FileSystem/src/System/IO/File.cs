@@ -836,7 +836,7 @@ namespace System.IO
                     int n = await fs.ReadAsync(rentedArray.AsMemory(bytesRead), cancellationToken).ConfigureAwait(false);
                     if (n == 0)
                     {
-                        return rentedArray.AsSpan().Slice(0, bytesRead).ToArray();
+                        return rentedArray.AsSpan(0, bytesRead).ToArray();
                     }
                     bytesRead += n;
                 }
