@@ -542,7 +542,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal(1000, bytesWritten);
 
             Assert.Equal(
-                input.AsSpan().Slice(4).ByteArrayToHex(),
+                input.AsSpan(4).ByteArrayToHex(),
                 output.ByteArrayToHex());
         }
 

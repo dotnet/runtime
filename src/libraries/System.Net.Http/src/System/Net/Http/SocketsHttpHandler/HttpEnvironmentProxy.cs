@@ -227,7 +227,7 @@ namespace System.Net.Http
             else
             {
                 host = value.Substring(0, separatorIndex);
-                if (!UInt16.TryParse(value.AsSpan().Slice(separatorIndex + 1), out port))
+                if (!UInt16.TryParse(value.AsSpan(separatorIndex + 1), out port))
                 {
                     return null;
                 }
