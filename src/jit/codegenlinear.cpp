@@ -602,6 +602,22 @@ void CodeGen::genCodeForBBlist()
                 {
                     instGen(INS_BREAKPOINT); // This should never get executed
                 }
+                // Do likewise for blocks that end in DOES_NOT_RETURN calls
+                // that were not caught by the above rules. This ensures that
+                // gc register liveness doesn't change across call instructions
+                // in fully-interruptible mode.
+                else
+                {
+                    GenTree* call = block->lastNode();
+
+                    if ((call != nullptr) && (call->gtOper == GT_CALL))
+                    {
+                        if ((call->gtCall.gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0)
+                        {
+                            instGen(INS_BREAKPOINT); // This should never get executed
+                        }
+                    }
+                }
 
                 break;
 
