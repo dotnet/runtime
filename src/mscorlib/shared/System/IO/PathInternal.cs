@@ -134,7 +134,7 @@ namespace System.IO
             // at the end.
             if (skip > 0)
             {
-                sb.Append(path.AsSpan().Slice(0, skip));
+                sb.Append(path.AsSpan(0, skip));
             }
 
             for (int i = skip; i < path.Length; i++)
