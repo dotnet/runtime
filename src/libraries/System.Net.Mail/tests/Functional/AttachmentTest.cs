@@ -33,6 +33,48 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        public void ConstructorPathName()
+        {
+            using (var tempFile = TempFile.Create(new byte[0]))
+            {
+                using (Attachment attach = new Attachment(tempFile.Path))
+                {
+                    Assert.Equal(Path.GetFileName(tempFile.Path), attach.Name);
+                }
+            }
+        }
+
+        [Fact]
+        public void ConstructorPathNameMediaType()
+        {
+            using (var tempFile = TempFile.Create(new byte[0]))
+            {
+                const string mediaType = "application/octet-stream";
+                string shortName = Path.GetFileName(tempFile.Path);
+                using (Attachment attach = new Attachment(tempFile.Path, mediaType))
+                {
+                    Assert.Equal(shortName, attach.Name);
+                    Assert.Equal(mediaType, attach.ContentType.MediaType);
+                }
+            }
+        }
+
+        [Fact]
+        public void ConstructorPathNameContentType()
+        {
+            using (var tempFile = TempFile.Create(new byte[0]))
+            {
+                const string mediaType = "application/octet-stream";
+                string shortName = Path.GetFileName(tempFile.Path);
+                using (Attachment attach = new Attachment(tempFile.Path, new Mime.ContentType(mediaType)))
+                {
+                    Assert.Equal(shortName, attach.Name);
+                    Assert.Equal(mediaType, attach.ContentType.MediaType);
+                }
+            }
+        }
+
+        [Fact]
         public void CreateAttachmentFromStringNullName()
         {
             Attachment attach = Attachment.CreateAttachmentFromString("", null, Encoding.ASCII, "application/octet-stream");
