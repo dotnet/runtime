@@ -40,7 +40,7 @@ namespace System.Net.Sockets
             { Interop.Error.EAFNOSUPPORT, SocketError.AddressFamilyNotSupported },
             { Interop.Error.EAGAIN, SocketError.WouldBlock },
             { Interop.Error.EALREADY, SocketError.AlreadyInProgress },
-            { Interop.Error.EBADF, SocketError.InvalidArgument },
+            { Interop.Error.EBADF, SocketError.OperationAborted },
             { Interop.Error.ECANCELED, SocketError.OperationAborted },
             { Interop.Error.ECONNABORTED, SocketError.ConnectionAborted },
             { Interop.Error.ECONNREFUSED, SocketError.ConnectionRefused },
@@ -101,7 +101,7 @@ namespace System.Net.Sockets
             { SocketError.HostUnreachable, Interop.Error.EHOSTUNREACH },
             { SocketError.InProgress, Interop.Error.EINPROGRESS },
             { SocketError.Interrupted, Interop.Error.EINTR },
-            { SocketError.InvalidArgument, Interop.Error.EINVAL }, // could also have been EBADF, though that's logically an invalid argument
+            { SocketError.InvalidArgument, Interop.Error.EINVAL },
             { SocketError.IOPending, Interop.Error.EINPROGRESS },
             { SocketError.IsConnected, Interop.Error.EISCONN },
             { SocketError.MessageSize, Interop.Error.EMSGSIZE },
