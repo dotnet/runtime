@@ -85,6 +85,7 @@ namespace System.Buffers
         {
             if (startSegment == null ||
                 endSegment == null ||
+                (startSegment != endSegment && startSegment.RunningIndex > endSegment.RunningIndex) ||
                 (uint)startSegment.Memory.Length < (uint)startIndex ||
                 (uint)endSegment.Memory.Length < (uint)endIndex ||
                 (startSegment == endSegment && endIndex < startIndex))

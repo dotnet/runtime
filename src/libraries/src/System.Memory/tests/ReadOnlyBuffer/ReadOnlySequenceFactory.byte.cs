@@ -4,8 +4,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
-using System.MemoryTests;
-using System.Text;
+using System.Linq;
 
 namespace System.Memory.Tests
 {
@@ -103,32 +102,25 @@ namespace System.Memory.Tests
             }
         }
 
-        public static ReadOnlySequence<T> CreateSegments(params T[][] inputs)
+        public static ReadOnlySequence<T> CreateSegments(params T[][] inputs) => CreateSegments((IEnumerable<T[]>)inputs);
+
+        public static ReadOnlySequence<T> CreateSegments(IEnumerable<T[]> inputs)
         {
-            if (inputs == null || inputs.Length == 0)
+            if (inputs == null || inputs.Count() == 0)
             {
                 throw new InvalidOperationException();
             }
 
-            int i = 0;
-
             BufferSegment<T> last = null;
             BufferSegment<T> first = null;
-
-            do
+            foreach(T[] input in inputs)
             {
-                T[] s = inputs[i];
-                int length = s.Length;
-                int dataOffset = length;
-                var chars = new T[length * 2];
-
-                for (int j = 0; j < length; j++)
-                {
-                    chars[dataOffset + j] = s[j];
-                }
-
-                Memory<T> memory = new Memory<T>(chars).Slice(length, length);
-
+                int length = input.Length;
+                int dataOffset = length / 2;
+                var items = new T[length * 2];
+                input.CopyTo(items, dataOffset);
+                Memory<T> memory = new Memory<T>(items, dataOffset, length);
+                
                 if (first == null)
                 {
                     first = new BufferSegment<T>(memory);
@@ -138,8 +130,7 @@ namespace System.Memory.Tests
                 {
                     last = last.Append(memory);
                 }
-                i++;
-            } while (i < inputs.Length);
+            }
 
             return new ReadOnlySequence<T>(first, 0, last, last.Memory.Length);
         }
