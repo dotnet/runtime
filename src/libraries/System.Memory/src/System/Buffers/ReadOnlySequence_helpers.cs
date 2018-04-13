@@ -81,62 +81,55 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ReadOnlyMemory<T> GetFirstBuffer(in SequencePosition start, in SequencePosition end)
+        private ReadOnlyMemory<T> GetFirstBuffer()
         {
-            SequenceType type;
-            int startIndex = 0;
-            int endIndex = 0;
-            object startObject = start.GetObject();
-            if (startObject != null)
-            {
-                GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out type, out startIndex, out endIndex);
-            }
-            else
-            {
-                type = SequenceType.Empty;
-            }
+            object startObject = _sequenceStart.GetObject();
 
-            int length = endIndex - startIndex;
-            object endObject = end.GetObject();
+            if (startObject == null)
+                return default;
 
-            if (type != SequenceType.MultiSegment && type != SequenceType.Empty && startObject != endObject)
-                ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
+            int startIndex = _sequenceStart.GetInteger();
+            int endIndex = _sequenceEnd.GetInteger();
 
-            ReadOnlyMemory<T> memory;
-            if (type == SequenceType.MultiSegment)
+            bool isMultiSegment = startObject != _sequenceEnd.GetObject();
+
+            if (startIndex >= 0)
             {
-                Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
-                ReadOnlySequenceSegment<T> startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject);
-                memory = startSegment.Memory;
-                if (startObject != endObject)
+                if (endIndex >= 0)  // SequenceType.MultiSegment
                 {
-                    length = memory.Length - startIndex;
+                    ReadOnlyMemory<T> memory = ((ReadOnlySequenceSegment<T>)startObject).Memory;
+                    if (isMultiSegment)
+                    {
+                        return memory.Slice(startIndex);
+                    }
+                    return memory.Slice(startIndex, endIndex - startIndex);
+                }
+                else // endIndex < 0, SequenceType.Array
+                {
+                    if (isMultiSegment)
+                        ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
+
+                    return new ReadOnlyMemory<T>((T[])startObject, startIndex, (endIndex & ReadOnlySequence.IndexBitMask) - startIndex);
                 }
             }
-            else if (type == SequenceType.Array)
+            else // startIndex < 0
             {
-                Debug.Assert(startObject is T[]);
+                if (isMultiSegment)
+                    ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
 
-                memory = new ReadOnlyMemory<T>(Unsafe.As<T[]>(startObject));
+                // The type == char check here is redundant. However, we still have it to allow
+                // the JIT to see when that the code is unreachable and eliminate it.
+                if (typeof(T) == typeof(char) && endIndex < 0)  // SequenceType.String
+                {
+                    // No need to remove the FlagBitMask since (endIndex - startIndex) == (endIndex & ReadOnlySequence.IndexBitMask) - (startIndex & ReadOnlySequence.IndexBitMask)
+                    return (ReadOnlyMemory<T>)(object)((string)startObject).AsMemory((startIndex & ReadOnlySequence.IndexBitMask), endIndex - startIndex);
+                }
+                else // endIndex >= 0, SequenceType.MemoryManager
+                {
+                    startIndex &= ReadOnlySequence.IndexBitMask;
+                    return ((MemoryManager<T>)startObject).Memory.Slice(startIndex, endIndex - startIndex);
+                }
             }
-            else if (type == SequenceType.MemoryManager)
-            {
-                Debug.Assert(startObject is MemoryManager<T>);
-
-                memory = (Unsafe.As<MemoryManager<T>>(startObject)).Memory;
-            }
-            else if (typeof(T) == typeof(char) && type == SequenceType.String)
-            {
-                Debug.Assert(startObject is string);
-
-                memory = (ReadOnlyMemory<T>)(object)(Unsafe.As<string>(startObject)).AsMemory();
-            }
-            else
-            {
-                return default;
-            }
-
-            return memory.Slice(startIndex, length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
