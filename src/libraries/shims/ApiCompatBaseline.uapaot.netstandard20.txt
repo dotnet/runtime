@@ -23,6 +23,8 @@ TypesMustExist : Type 'System.Buffers.MemoryManager<T>' does not exist in the im
 MembersMustExist : Member 'System.Runtime.InteropServices.MemoryMarshal.CreateFromPinnedArray<T>(T[], System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Buffers.MemoryManager<T>.CreateMemory(System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Buffers.MemoryManager<T>.CreateMemory(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlySpan<T>.GetPinnableReference()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Span<T>.GetPinnableReference()' does not exist in the implementation but it does exist in the contract.
 
 # Compat issues complaining about class vs delegate and class vs struct are because of a bug in APICompat tool where the implementation is picking
 # the wrong core assembly. It is picking System.Runtime instead of System.Private.CoreLib, there isn't any straight forward way to fix so baselining.
