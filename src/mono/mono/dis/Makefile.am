@@ -4,6 +4,8 @@ if HOST_WIN32
 export HOST_CC
 endif
 
+glib_libs = $(top_builddir)/mono/eglib/libeglib.la
+
 if SUPPORT_SGEN
 metadata_lib=$(top_builddir)/mono/metadata/libmonoruntimesgen.la
 gc_lib=$(top_builddir)/mono/sgen/libmonosgen.la
@@ -16,7 +18,7 @@ runtime_lib=	\
 	$(metadata_lib) \
 	$(gc_lib)	\
 	$(top_builddir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS)
+	$(glib_libs)
 
 if DISABLE_EXECUTABLES
 bin_PROGRAMS =
@@ -51,7 +53,7 @@ monodis_LDADD = 			\
 	$(runtime_lib)			\
 	$(LLVM_LIBS)			\
 	$(LLVM_LDFLAGS)			\
-	$(GLIB_LIBS)
+	$(glib_libs)
 
 if HOST_DARWIN
 monodis_LDFLAGS=-framework CoreFoundation -framework Foundation

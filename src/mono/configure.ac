@@ -834,10 +834,8 @@ AC_SUBST([WERROR_CFLAGS])
 AC_SUBST([SHARED_CFLAGS])
 
 GLIB_CFLAGS='-I$(top_srcdir)/mono/eglib -I$(top_builddir)/mono/eglib'
-GLIB_LIBS='$(top_builddir)/mono/eglib/libeglib.la -lm'
   
 AC_SUBST(GLIB_CFLAGS)
-AC_SUBST(GLIB_LIBS)
 
 # Enable support for fast thread-local storage
 # Some systems have broken support, so we allow to disable it.

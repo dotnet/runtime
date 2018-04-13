@@ -21,6 +21,8 @@ win32_sources = \
 
 platform_sources = $(win32_sources)
 
+glib_libs = $(top_builddir)/mono/eglib/libeglib.la
+
 # Use -m here. This will use / as directory separator (C:/WINNT).
 # The files that use MONO_ASSEMBLIES and/or MONO_CFG_DIR replace the
 # / by \ if running under WIN32.
@@ -122,7 +124,7 @@ libmono_icall_table_la_SOURCES = \
 libmono_icall_table_la_CFLAGS = $(SGEN_DEFINES)
 libmono_icall_table_la_LDFLAGS = $(libmonoldflags)
 if BITCODE
-libmono_icall_table_la_LIBADD = ../eglib/libeglib.la ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
+libmono_icall_table_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
 endif
 endif
 
@@ -141,7 +143,7 @@ libmono_ilgen_la_SOURCES = \
 libmono_ilgen_la_CFLAGS = $(SGEN_DEFINES)
 libmono_ilgen_la_LDFLAGS = $(libmonoldflags)
 if BITCODE
-libmono_ilgen_la_LIBADD = ../eglib/libeglib.la ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
+libmono_ilgen_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
 endif
 endif
 

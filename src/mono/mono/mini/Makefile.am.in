@@ -18,17 +18,19 @@ libgc_libs=$(monodir)/libgc/libmonogc.la
 libgc_static_libs=$(monodir)/libgc/libmonogc-static.la
 endif
 
+glib_libs = $(monodir)/mono/eglib/libeglib.la
+
 boehm_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS) \
+	$(glib_libs) \
 	$(libgc_libs)
 
 sgen_libs = \
 	$(monodir)/mono/metadata/libmonoruntimesgen.la	\
 	$(monodir)/mono/sgen/libmonosgen.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS)
+	$(glib_libs)
 
 if FULL_AOT_TESTS
 # if the tests are going to run with framework assemblies compiled with
@@ -153,7 +155,7 @@ noinst_LTLIBRARIES = $(mini_common_lib)
 if LOADED_LLVM
 lib_LTLIBRARIES += libmono-llvm.la
 libmono_llvm_la_SOURCES = mini-llvm.c mini-llvm-cpp.cpp llvm-jit.cpp
-libmono_llvm_la_LIBADD = $(GLIB_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
+libmono_llvm_la_LIBADD = $(glib_libs) $(LLVM_LIBS) $(LLVM_LDFLAGS)
 if HOST_DARWIN
 libmono_llvm_la_LDFLAGS=-Wl,-undefined -Wl,suppress -Wl,-flat_namespace
 else
@@ -221,7 +223,7 @@ endif
 
 mono_boehm_LDADD = \
 	$(MONO_LIB)		\
-	$(GLIB_LIBS)		\
+	$(glib_libs)		\
 	$(LLVMMONOF)		\
 	-lm			\
 	$(MONO_DTRACE_OBJECT)
@@ -231,7 +233,7 @@ mono_boehm_LDFLAGS = \
 
 mono_sgen_LDADD = \
 	$(MONO_SGEN_LIB)	\
-	$(GLIB_LIBS)		\
+	$(glib_libs)		\
 	$(LLVMMONOF)		\
 	-lm			\
 	$(MONO_DTRACE_OBJECT)
