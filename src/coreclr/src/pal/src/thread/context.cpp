@@ -26,6 +26,8 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/context.h"
 #include "pal/debug.h"
 #include "pal/thread.hpp"
+#include "pal/utils.h"
+#include "pal/virtual.h"
 
 #include <sys/ptrace.h> 
 #include <errno.h>
@@ -1438,8 +1440,29 @@ DBG_FlushInstructionCache(
                           IN LPCVOID lpBaseAddress,
                           IN SIZE_T dwSize)
 {
-    // Intrinsic should do the right thing across all platforms
+#ifndef _ARM_
+    // Intrinsic should do the right thing across all platforms (except Linux arm)
     __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
+#else // _ARM_
+    // On Linux/arm (at least on 3.10) we found that there is a problem with __do_cache_op (arch/arm/kernel/traps.c)
+    // implementing cacheflush syscall. cacheflush flushes only the first page in range [lpBaseAddress, lpBaseAddress + dwSize)
+    // and leaves other pages in undefined state which causes random tests failures (often due to SIGSEGV) with no particular pattern.
+    //
+    // As a workaround, we call __builtin___clear_cache on each page separately.
 
+    const SIZE_T pageSize = GetVirtualPageSize();
+    INT_PTR begin = (INT_PTR)lpBaseAddress;
+    const INT_PTR end = begin + dwSize;
+
+    while (begin < end)
+    {
+        INT_PTR endOrNextPageBegin = ALIGN_UP(begin + 1, pageSize);
+        if (endOrNextPageBegin > end)
+            endOrNextPageBegin = end;
+
+        __builtin___clear_cache((char *)begin, (char *)endOrNextPageBegin);
+        begin = endOrNextPageBegin;
+    }
+#endif // _ARM_
     return TRUE;
 }
