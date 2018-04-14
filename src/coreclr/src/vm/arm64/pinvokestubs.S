@@ -60,7 +60,13 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
         // save hidden arg
         mov                 x19, \HiddenArg 
 
+        // save VASigCookieReg
+        mov                 x20, \VASigCookieReg
+
         bl                  \__PInvokeStubWorkerName
+
+        // restore VASigCookieReg
+        mov                 \VASigCookieReg, x20
 
         // restore hidden arg (method desc or unmanaged target)
         mov                 \HiddenArg , x19
