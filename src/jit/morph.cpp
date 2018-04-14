@@ -5810,6 +5810,25 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
             break;
         }
 
+#if FEATURE_PREVENT_BAD_BYREFS
+
+        // Don't split up a byref calculation and create a new byref. E.g.,
+        // [byref]+ (ref, [int]+ (int, int)) => [byref]+ ([byref]+ (ref, int), int).
+        // Doing this transformation could create a situation where the first
+        // addition (that is, [byref]+ (ref, int) ) creates a byref pointer that
+        // no longer points within the ref object. If a GC happens, the byref won't
+        // get updated. This can happen, for instance, if one of the int components
+        // is negative. It also requires the address generation be in a fully-interruptible
+        // code region.
+        //
+        if (varTypeIsGC(op1->TypeGet()) && op2->TypeGet() == TYP_I_IMPL)
+        {
+            assert(varTypeIsGC(tree->TypeGet()) && (oper == GT_ADD));
+            break;
+        }
+
+#endif // FEATURE_PREVENT_BAD_BYREFS
+
         /* Change "(x op (y op z))" to "(x op y) op z" */
         /* ie.    "(op1 op (ad1 op ad2))" to "(op1 op ad1) op ad2" */
 
@@ -5951,7 +5970,7 @@ BasicBlock* Compiler::fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay, u
             const unsigned theStkDepth = fgGlobalMorph ? fgPtrArgCntCur : *stkDepth;
 #else
             // only x86 pushes args
-            const unsigned theStkDepth   = 0;
+            const unsigned theStkDepth = 0;
 #endif
 
             // Create/find the appropriate "range-fail" label
@@ -6224,6 +6243,27 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         addr = index;
     }
 
+#if FEATURE_PREVENT_BAD_BYREFS
+
+    // Be careful to only create the byref pointer when the full index expression is added to the array reference.
+    // We don't want to create a partial byref address expression that doesn't include the full index offset:
+    // a byref must point within the containing object. It is dangerous (especially when optimizations come into
+    // play) to create a "partial" byref that doesn't point exactly to the correct object; there is risk that
+    // the partial byref will not point within the object, and thus not get updated correctly during a GC.
+    // This is mostly a risk in fully-interruptible code regions.
+
+    /* Add the first element's offset */
+
+    GenTree* cns = gtNewIconNode(elemOffs, TYP_I_IMPL);
+
+    addr = gtNewOperNode(GT_ADD, TYP_I_IMPL, addr, cns);
+
+    /* Add the object ref to the element's offset */
+
+    addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
+
+#else // !FEATURE_PREVENT_BAD_BYREFS
+
     /* Add the object ref to the element's offset */
 
     addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
@@ -6233,6 +6273,8 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     GenTree* cns = gtNewIconNode(elemOffs, TYP_I_IMPL);
 
     addr = gtNewOperNode(GT_ADD, TYP_BYREF, addr, cns);
+
+#endif // !FEATURE_PREVENT_BAD_BYREFS
 
 #if SMALL_TREE_NODES
     assert((tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE) || GenTree::s_gtNodeSizes[GT_IND] == TREE_NODE_SZ_SMALL);
@@ -6329,6 +6371,35 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     GenTree* cnsOff = nullptr;
     if (addr->OperGet() == GT_ADD)
     {
+
+#if FEATURE_PREVENT_BAD_BYREFS
+
+        assert(addr->TypeGet() == TYP_BYREF);
+        assert(addr->gtOp.gtOp1->TypeGet() == TYP_REF);
+
+        addr = addr->gtOp.gtOp2;
+
+        // Look for the constant [#FirstElem] node here, or as the RHS of an ADD.
+
+        if (addr->gtOper == GT_CNS_INT)
+        {
+            cnsOff = addr;
+            addr   = nullptr;
+        }
+        else
+        {
+            if ((addr->OperGet() == GT_ADD) && (addr->gtOp.gtOp2->gtOper == GT_CNS_INT))
+            {
+                cnsOff = addr->gtOp.gtOp2;
+                addr   = addr->gtOp.gtOp1;
+            }
+
+            // Label any constant array index contributions with #ConstantIndex and any LclVars with GTF_VAR_ARR_INDEX
+            addr->LabelIndex(this);
+        }
+
+#else // !FEATURE_PREVENT_BAD_BYREFS
+
         if (addr->gtOp.gtOp2->gtOper == GT_CNS_INT)
         {
             cnsOff = addr->gtOp.gtOp2;
@@ -6346,6 +6417,8 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             addr = addr->gtOp.gtOp1;
         }
         assert(addr->TypeGet() == TYP_REF);
+
+#endif // !FEATURE_PREVENT_BAD_BYREFS
     }
     else if (addr->OperGet() == GT_CNS_INT)
     {
@@ -13477,9 +13550,25 @@ DONE_MORPHING_CHILDREN:
                 if (op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ))
                 {
                     /* Fold "((x+icon1)+icon2) to (x+(icon1+icon2))" */
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if FEATURE_PREVENT_BAD_BYREFS
+
+                    if (op1->gtOper == GT_ADD &&                          //
+                        !gtIsActiveCSE_Candidate(op1) &&                  //
+                        !op1->gtOverflow() &&                             //
+                        op1->gtOp.gtOp2->IsCnsIntOrI() &&                 //
+                        (op1->gtOp.gtOp2->OperGet() == op2->OperGet()) && //
+                        (op1->gtOp.gtOp2->TypeGet() != TYP_REF) &&        // Don't fold REFs
+                        (op2->TypeGet() != TYP_REF))                      // Don't fold REFs
+
+#else // !FEATURE_PREVENT_BAD_BYREFS
 
                     if (op1->gtOper == GT_ADD && !gtIsActiveCSE_Candidate(op1) && op1->gtOp.gtOp2->IsCnsIntOrI() &&
                         !op1->gtOverflow() && op1->gtOp.gtOp2->OperGet() == op2->OperGet())
+
+#endif // !FEATURE_PREVENT_BAD_BYREFS
+
                     {
                         cns1 = op1->gtOp.gtOp2;
                         op2->gtIntConCommon.SetIconValue(cns1->gtIntConCommon.IconValue() +
