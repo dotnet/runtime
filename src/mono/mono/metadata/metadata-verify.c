@@ -38,9 +38,7 @@
 #ifndef DISABLE_VERIFIER
 /*
  TODO add fail fast mode
- TODO add PE32+ support
  TODO verify the entry point RVA and content.
- TODO load_section_table and load_data_directories must take PE32+ into account
  TODO add section relocation support
  TODO verify the relocation table, since we really don't use, no need so far.
  TODO do full PECOFF resources verification 
@@ -233,9 +231,11 @@ typedef struct {
 	gboolean report_warning;
 	int stage;
 
+	// Mono really only requires 15 here, but verifies the extra is zeroed.
 	DataDirectory data_directories [16];
 	guint32 section_count;
 	SectionHeader *sections;
+	guint pe64; // short name for PE32+; actual PE64 proposal was rejected
 
 	OffsetAndSize metadata_streams [5]; //offset from begin of the image
 } VerifyContext;
@@ -443,8 +443,6 @@ verify_pe_header (VerifyContext *ctx)
 
 	if (offset > ctx->size - 20)
 		ADD_ERROR (ctx, g_strdup ("File with truncated pe header"));
-	if (read16 (pe_header) != 0x14c)
-		ADD_ERROR (ctx, g_strdup ("Invalid PE header Machine value"));
 }
 
 static void
@@ -464,27 +462,44 @@ verify_pe_optional_header (VerifyContext *ctx)
 	if (offset > ctx->size - header_size || header_size > ctx->size)
 		ADD_ERROR (ctx, g_strdup ("Invalid PE optional header size"));
 
-	if (read16 (pe_optional_header) == 0x10b) {
-		if (header_size != 224)
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid optional header size %d", header_size));
+	const guint16 magic = read16 (pe_optional_header);
 
-		/* LAMESPEC MS plays around this value and ignore it during validation
-		if (read32 (pe_optional_header + 28) != 0x400000)
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid Image base %x", read32 (pe_optional_header + 28)));*/
-		if (read32 (pe_optional_header + 32) != 0x2000)
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid Section Aligmnent %x", read32 (pe_optional_header + 32)));
-		file_alignment = read32 (pe_optional_header + 36);
-		if (file_alignment != 0x200 && file_alignment != 0x1000)
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid file Aligmnent %x", file_alignment));
-		/* All the junk in the middle is irrelevant, specially for mono. */
-		if (read32 (pe_optional_header + 92) > 0x10)
-			ADD_ERROR (ctx, g_strdup_printf ("Too many data directories %x", read32 (pe_optional_header + 92)));
-	} else {
-		if (read16 (pe_optional_header) == 0x20B)
-			ADD_ERROR (ctx, g_strdup ("Metadata verifier doesn't handle PE32+"));
-		else
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid optional header magic %d", read16 (pe_optional_header)));
-	}
+	if (magic == 0x20B) {
+		// Some fields are the same location for PE32 and PE32+.
+		// A few are offset by 4, 8, or 12, but we do not use them.
+		// Others are offset by 16.
+		// Some are missing.
+		ctx->pe64 = 16;
+	} else if (magic != 0x10b)
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid optional header magic %d", magic));
+
+	// Much of this is over-verification.
+	//
+	// File align and section align do not matter to Mono.
+	//
+	// Mono requires at least 15 data directories. More than that are ignored,
+	// except to require zeros in the 16th.
+	//
+	// Mono requires at least 216 (or pe64:232) size.
+
+	/* LAMESPEC MS plays around this value and ignore it during validation
+	if (read32 (pe_optional_header + 28) != 0x400000)
+	ADD_ERROR (ctx, g_strdup_printf ("Invalid Image base %x", read32 (pe_optional_header + 28)));*/
+	if (read32 (pe_optional_header + 32) != 0x2000)
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid Section Aligmnent %x", read32 (pe_optional_header + 32)));
+	file_alignment = read32 (pe_optional_header + 36);
+	if (file_alignment != 0x200 && file_alignment != 0x1000)
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid file Aligmnent %x", file_alignment));
+	/* All the junk in the middle is irrelevant, specially for mono. */
+
+	if (header_size != 224 + ctx->pe64)
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid optional header size %d", header_size));
+
+	const guint number_of_rvas_and_sizes = read32 (pe_optional_header + 92 + ctx->pe64);
+
+	// Data directories beyond 15 do not matter to mono.
+	if (number_of_rvas_and_sizes > 0x10)
+		ADD_ERROR (ctx, g_strdup_printf ("Too many data directories %x", number_of_rvas_and_sizes));
 }
 
 static void
@@ -492,12 +507,13 @@ load_section_table (VerifyContext *ctx)
 {
 	int i;
 	SectionHeader *sections;
-	guint32 offset =  pe_header_offset (ctx);
+	guint32 offset = pe_header_offset (ctx);
 	const char *ptr = ctx->data + offset;
 	guint16 num_sections = ctx->section_count = read16 (ptr + 2);
 
-	offset += 244;/*FIXME, this constant is different under PE32+*/
-	ptr += 244;
+	const guint optional_header_size = read16 (ptr + 16);
+	offset += optional_header_size + 20;
+	ptr += optional_header_size + 20;
 
 	if (num_sections * 40 > ctx->size - offset)
 		ADD_ERROR (ctx, g_strdup ("Invalid PE optional header size"));
@@ -551,19 +567,18 @@ is_valid_data_directory (int i)
 static void
 load_data_directories (VerifyContext *ctx)
 {
-	guint32 offset =  pe_header_offset (ctx) + 116; /*FIXME, this constant is different under PE32+*/
+	guint32 offset = pe_header_offset (ctx) + 116 + ctx->pe64;
 	const char *ptr = ctx->data + offset;
 	int i;
 
-	for (i = 0; i < 16; ++i) {
+	for (i = 0; i < 16; ++i, ptr += 8) {
 		guint32 rva = read32 (ptr);
 		guint32 size = read32 (ptr + 4);
 
 		/*LAMESPEC the authenticode data directory format is different. We don't support CAS, so lets ignore for now.*/
-		if (i == CERTIFICATE_TABLE_IDX) {
-			ptr += 8;
+		if (i == CERTIFICATE_TABLE_IDX)
 			continue;
-		}
+
 		if ((rva != 0 || size != 0) && !is_valid_data_directory (i))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid data directory %d", i));
 
@@ -573,8 +588,6 @@ load_data_directories (VerifyContext *ctx)
 		ctx->data_directories [i].rva = rva;
 		ctx->data_directories [i].size = size;
 		ctx->data_directories [i].translated_offset = translate_rva (ctx, rva);
-
-		ptr += 8;
 	}
 }
 
@@ -599,12 +612,8 @@ verify_hint_name_table (VerifyContext *ctx, guint32 import_rva, const char *tabl
 	g_assert (hint_table_rva != INVALID_OFFSET);
 	ptr = ctx->data + hint_table_rva + 2;
 
-	if (memcmp ("_CorExeMain", ptr, SIZE_OF_CORMAIN) && memcmp ("_CorDllMain", ptr, SIZE_OF_CORMAIN)) {
-		char name[SIZE_OF_CORMAIN];
-		memcpy (name, ptr, SIZE_OF_CORMAIN);
-		name [SIZE_OF_CORMAIN - 1] = 0;
-		ADD_ERROR (ctx, g_strdup_printf ("Invalid Hint / Name: '%s'", name));
-	}
+	if (memcmp ("_CorExeMain", ptr, SIZE_OF_CORMAIN) && memcmp ("_CorDllMain", ptr, SIZE_OF_CORMAIN))
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid Hint / Name: '%s'", ptr));
 }
 
 static void
@@ -642,12 +651,8 @@ verify_import_table (VerifyContext *ctx)
 		g_assert (name_rva != INVALID_OFFSET);
 		ptr = ctx->data + name_rva;
 	
-		if (memcmp ("mscoree.dll", ptr, SIZE_OF_MSCOREE)) {
-			char name[SIZE_OF_MSCOREE];
-			memcpy (name, ptr, SIZE_OF_MSCOREE);
-			name [SIZE_OF_MSCOREE - 1] = 0;
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Table Name: '%s'", name));
-		}
+		if (memcmp ("mscoree.dll", ptr, SIZE_OF_MSCOREE))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Table Name: '%s'", ptr));
 	}
 	
 	if (ilt_rva) {
