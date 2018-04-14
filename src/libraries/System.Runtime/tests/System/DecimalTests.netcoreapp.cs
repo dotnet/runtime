@@ -13,9 +13,25 @@ namespace System.Tests
         [MemberData(nameof(Parse_Valid_TestData))]
         public static void Parse_Span_Valid(string value, NumberStyles style, IFormatProvider provider, decimal expected)
         {
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+            decimal result;
+            if ((style & ~NumberStyles.Number) == 0 && style != NumberStyles.None)
+            {
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
+                {
+                    Assert.True(decimal.TryParse(value.AsSpan(), out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, decimal.Parse(value.AsSpan()));
+                }
+
+                Assert.Equal(expected, decimal.Parse(value.AsSpan(), provider: provider));
+            }
+
             Assert.Equal(expected, decimal.Parse(value.AsSpan(), style, provider));
 
-            Assert.True(decimal.TryParse(value.AsSpan(), style, provider, out decimal result));
+            Assert.True(decimal.TryParse(value.AsSpan(), style, provider, out result));
             Assert.Equal(expected, result);
         }
 
