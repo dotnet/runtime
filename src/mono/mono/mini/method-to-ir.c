@@ -1438,15 +1438,7 @@ mono_compile_get_interface_var (MonoCompile *cfg, int slot, MonoInst *ins)
 	int pos, vnum;
 	MonoType *type;
 
-	/*
-	 * Use double for r4 stack vars to avoid narrowing with r4-r8 stack
-	 * merges.
-	 * FIXME: Only do this if there is indeed an r4-r8 merge.
-	 */
-	if (ins->type == STACK_R4)
-		type = m_class_get_byval_arg (mono_defaults.double_class);
-	else
-		type = type_from_stack_type (ins);
+	type = type_from_stack_type (ins);
 
 	/* inlining can result in deeper stacks */ 
 	if (cfg->inlined_method || slot >= cfg->header->max_stack)
@@ -9756,7 +9748,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_STIND_I8:
 		case CEE_STIND_R4:
 		case CEE_STIND_R8:
-		case CEE_STIND_I:
+		case CEE_STIND_I: {
 			CHECK_STACK (2);
 			sp -= 2;
 
@@ -9765,6 +9757,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 			}
 
+			if (*ip == CEE_STIND_R4 && sp [1]->type == STACK_R8)
+				sp [1] = convert_value (cfg, m_class_get_byval_arg (mono_defaults.single_class), sp [1]);
 			NEW_STORE_MEMBASE (cfg, ins, stind_to_store_membase (*ip), sp [0]->dreg, 0, sp [1]->dreg);
 			ins->flags |= ins_flag;
 			ins_flag = 0;
@@ -9782,7 +9776,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 1;
 			++ip;
 			break;
-
+		}
 		case CEE_MUL:
 			CHECK_STACK (2);
 
