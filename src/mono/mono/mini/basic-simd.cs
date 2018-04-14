@@ -1473,8 +1473,8 @@ public class SimdTests {
 		return 0;
 	}
 	public static int test_0_vector16b_avg () {
-		Vector16b a = new Vector16b (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-		Vector16b b = new Vector16b (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
+		Vector16b a = new Vector16b (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,120);
+		Vector16b b = new Vector16b (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,180);
 		Vector16b c = a.Average (b);
 
 		if (c.V0 != 5)
@@ -1507,7 +1507,7 @@ public class SimdTests {
 			return 14;
 		if (c.V14 != 11)
 			return 15;
-		if (c.V15 != 12)
+		if (c.V15 != 150)
 			return 16;
 		return 0;
 	}
@@ -1658,8 +1658,8 @@ public class SimdTests {
 	}
 
 	public static int test_0_vecto8us_avg () {
-		Vector8us a = new Vector8us (1, 2, 3, 4, 5, 6, 7, 8);
-		Vector8us b = new Vector8us (9, 1, 1, 2, 3, 4, 5, 6);
+		Vector8us a = new Vector8us (1, 2, 3, 4, 5, 6, 7, 30000);
+		Vector8us b = new Vector8us (9, 1, 1, 2, 3, 4, 5, 40000);
 		Vector8us c = a.Average (b);
 
 		if (c.V0 != 5)
@@ -1676,7 +1676,7 @@ public class SimdTests {
 			return 6;
 		if (c.V6 != 6)
 			return 7;
-		if (c.V7 != 7)
+		if (c.V7 != 35000)
 			return 8;
 		return 0;
 	}

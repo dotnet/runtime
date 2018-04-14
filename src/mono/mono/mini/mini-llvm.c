@@ -6095,8 +6095,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_PADDW_SAT_UN:
 		case OP_PSUBB_SAT_UN:
 		case OP_PSUBW_SAT_UN:
-		case OP_PAVGB_UN:
-		case OP_PAVGW_UN:
 		case OP_PACKW:
 		case OP_PACKD:
 		case OP_PACKW_UN:
@@ -6109,6 +6107,35 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [1] = rhs;
 
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, simd_op_to_intrins (ins->opcode)), args, 2, dname);
+			break;
+		}
+		case OP_PAVGB_UN:
+		case OP_PAVGW_UN: {
+			LLVMValueRef val, ones_vec;
+			LLVMValueRef ones [32];
+			int vector_size = LLVMGetVectorSize (LLVMTypeOf (lhs));
+			LLVMTypeRef ext_elem_type = vector_size == 16 ? LLVMInt16Type () : LLVMInt32Type ();
+			LLVMTypeRef ext_type = LLVMVectorType (ext_elem_type, vector_size);
+
+			for (int i = 0; i < 32; ++i)
+				ones [i] = LLVMConstInt (ext_elem_type, 1, FALSE);
+			ones_vec = LLVMConstVector (ones, vector_size);
+
+#if LLVM_API_VERSION >= 500
+			/* Have to increase the vector element size to prevent overflows */
+			/* res = trunc ((zext (lhs) + zext (rhs) + 1) >> 1) */
+			val = LLVMBuildAdd (builder, LLVMBuildZExt (builder, lhs, ext_type, ""), LLVMBuildZExt (builder, rhs, ext_type, ""), "");
+			val = LLVMBuildAdd (builder, val, ones_vec, "");
+			val = LLVMBuildLShr (builder, val, ones_vec, "");
+			values [ins->dreg] = LLVMBuildTrunc (builder, val, LLVMTypeOf (lhs), "");
+#else
+			LLVMValueRef args [2];
+
+			args [0] = lhs;
+			args [1] = rhs;
+
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, simd_op_to_intrins (ins->opcode)), args, 2, dname);
+#endif
 			break;
 		}
 		case OP_PCMPEQB:
@@ -7459,7 +7486,7 @@ emit_method_inner (EmitContext *ctx)
 		g_assert (err == 0);
 #endif
 	} else {
-		//LLVMVerifyFunction(method, 0);
+		//LLVMVerifyFunction (method, 0);
 #if LLVM_API_VERSION > 100
 		MonoDomain *domain = mono_domain_get ();
 		MonoJitDomainInfo *domain_info;

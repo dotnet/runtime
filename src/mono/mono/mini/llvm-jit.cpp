@@ -244,21 +244,23 @@ public:
 
 			auto sym = CompileLayer.findSymbolIn (ModuleHandle, mangle (var->getName ()), true);
 			auto addr = sym.getAddress ();
-			g_assert (addr);
 #if LLVM_API_VERSION >= 500
+			g_assert ((bool)addr);
 			callee_addrs [i] = (gpointer)addr.get ();
 #else
+			g_assert (addr);
 			callee_addrs [i] = (gpointer)addr;
 #endif
 		}
 
 		auto ehsym = CompileLayer.findSymbolIn(ModuleHandle, "mono_eh_frame", false);
 		auto ehaddr = ehsym.getAddress ();
-		g_assert (ehaddr);
 #if LLVM_API_VERSION >= 500
+		g_assert ((bool)ehaddr);
 		*eh_frame = (gpointer)ehaddr.get ();
 		return (gpointer)BodyAddr.get ();
 #else
+		g_assert (ehaddr);
 		*eh_frame = (gpointer)ehaddr;
 		return (gpointer)BodyAddr;
 #endif
