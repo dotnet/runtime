@@ -171,12 +171,14 @@ HRESULT DataTargetReader::GetRemotePointerSize(ULONG32* pPointerSize)
     HRESULT hr = S_OK;
     CorDebugPlatform platform;
     IfFailRet(m_pDataTarget->GetPlatform(&platform));
-    if (platform == CORDB_PLATFORM_WINDOWS_X86)
+    if ((platform == CORDB_PLATFORM_WINDOWS_X86) || (platform == CORDB_PLATFORM_POSIX_X86) || (platform == CORDB_PLATFORM_MAC_X86))
         *pPointerSize = 4;
-    else if (platform == CORDB_PLATFORM_WINDOWS_AMD64)
+    else if ((platform == CORDB_PLATFORM_WINDOWS_AMD64) || (platform == CORDB_PLATFORM_POSIX_AMD64) || (platform == CORDB_PLATFORM_MAC_AMD64))
         *pPointerSize = 8;
-    else if (platform == CORDB_PLATFORM_WINDOWS_ARM)
+    else if ((platform == CORDB_PLATFORM_WINDOWS_ARM) || (platform == CORDB_PLATFORM_POSIX_ARM))
         *pPointerSize = 4;
+    else if ((platform == CORDB_PLATFORM_WINDOWS_ARM64) || (platform == CORDB_PLATFORM_POSIX_ARM64))
+        *pPointerSize = 8;
     else
         return CORDBG_E_UNSUPPORTED;
     return S_OK;
