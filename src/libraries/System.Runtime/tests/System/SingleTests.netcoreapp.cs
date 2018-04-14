@@ -91,9 +91,25 @@ namespace System.Tests
         [MemberData(nameof(Parse_Valid_TestData))]
         public static void Parse_Span_Valid(string value, NumberStyles style, IFormatProvider provider, float expected)
         {
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+            float result;
+            if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None)
+            {
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
+                {
+                    Assert.True(float.TryParse(value.AsSpan(), out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, float.Parse(value.AsSpan()));
+                }
+
+                Assert.Equal(expected, float.Parse(value.AsSpan(), provider: provider));
+            }
+
             Assert.Equal(expected, float.Parse(value.AsSpan(), style, provider));
 
-            Assert.True(float.TryParse(value.AsSpan(), style, provider, out float result));
+            Assert.True(float.TryParse(value.AsSpan(), style, provider, out result));
             Assert.Equal(expected, result);
         }
 
