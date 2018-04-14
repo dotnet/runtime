@@ -306,11 +306,18 @@ namespace System.Net.Http
             {
                 Debug.Assert(_pool.UsingProxy);
 
-                // If the hostname is an IPv6 address, uri.IdnHost will return the address without enclosing [].
-                // In this case, use uri.Host instead, which will correctly enclose with [].
-                // Note we don't need punycode encoding if it's an IP address, so using uri.Host is fine.
-                await WriteAsciiStringAsync(uri.HostNameType == UriHostNameType.IPv6 ?
-                    uri.Host : uri.IdnHost).ConfigureAwait(false);
+                // TODO: #28863 Uri.IdnHost is missing '[', ']' characters around IPv6 address.
+                // So, we need to add them manually for now.
+                if (uri.HostNameType == UriHostNameType.IPv6)
+                {
+                    await WriteByteAsync((byte)'[').ConfigureAwait(false);
+                    await WriteAsciiStringAsync(uri.IdnHost).ConfigureAwait(false);
+                    await WriteByteAsync((byte)']').ConfigureAwait(false);
+                }
+                else
+                {
+                    await WriteAsciiStringAsync(uri.IdnHost).ConfigureAwait(false);
+                }
 
                 if (!uri.IsDefaultPort)
                 {
@@ -387,11 +394,18 @@ namespace System.Net.Http
                         Debug.Assert(request.RequestUri.Scheme == Uri.UriSchemeHttp);
                         await WriteBytesAsync(s_httpSchemeAndDelimiter).ConfigureAwait(false);
 
-                        // If the hostname is an IPv6 address, uri.IdnHost will return the address without enclosing [].
-                        // In this case, use uri.Host instead, which will correctly enclose with [].
-                        // Note we don't need punycode encoding if it's an IP address, so using uri.Host is fine.
-                        await WriteAsciiStringAsync(request.RequestUri.HostNameType == UriHostNameType.IPv6 ?
-                            request.RequestUri.Host : request.RequestUri.IdnHost).ConfigureAwait(false);
+                        // TODO: #28863 Uri.IdnHost is missing '[', ']' characters around IPv6 address.
+                        // So, we need to add them manually for now.
+                        if (request.RequestUri.HostNameType == UriHostNameType.IPv6)
+                        {
+                            await WriteByteAsync((byte)'[').ConfigureAwait(false);
+                            await WriteAsciiStringAsync(request.RequestUri.IdnHost).ConfigureAwait(false);
+                            await WriteByteAsync((byte)']').ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            await WriteAsciiStringAsync(request.RequestUri.IdnHost).ConfigureAwait(false);
+                        }
 
                         if (!request.RequestUri.IsDefaultPort)
                         {
