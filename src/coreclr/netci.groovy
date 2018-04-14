@@ -3166,15 +3166,7 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
                 }
             }
 
-            def runScript = ""
-            if (isUbuntuArmJob) {
-                // Use 'runtesttilstable.sh' to rerun failing tests (in sequential mode);
-                // there are many tests that pass on rerun (currently), and we don't want
-                // that flakiness to affect overall test job robustness.
-                runScript = "${dockerCmd}./tests/runtesttilstable.sh"
-            } else {
-                runScript = "${dockerCmd}./tests/runtest.sh"
-            }
+            def runScript = "${dockerCmd}./tests/runtest.sh"
 
             shell("""\
 ${runScript} \\
