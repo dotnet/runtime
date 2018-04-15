@@ -83,6 +83,9 @@ mono_w32error_unix_to_win32 (guint32 error)
 #ifdef EHOSTDOWN
 	case EHOSTDOWN: return ERROR_DEV_NOT_EXIST;
 #endif
+#ifdef ENEEDAUTH
+	case ENEEDAUTH: return ERROR_ACCESS_DENIED;
+#endif
 
 	default:
 		g_warning ("%s: unknown error (%d) \"%s\"", __FILE__, error, g_strerror (error));
