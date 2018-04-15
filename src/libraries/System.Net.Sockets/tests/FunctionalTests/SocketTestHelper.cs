@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
@@ -269,7 +270,7 @@ namespace System.Net.Sockets.Tests
     // MemberDatas that are generally useful
     //
 
-    public abstract class MemberDatas
+    public abstract class MemberDatas : RemoteExecutorTestBase
     {
         public static readonly object[][] Loopbacks = new[]
         {
