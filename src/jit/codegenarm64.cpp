@@ -2707,14 +2707,14 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     //                                                # GT_XCHG storeDataReg === dataReg
     //     stxr exResult, storeDataReg, [addrReg]
     //     cbnz exResult, retry
+    //     dmb ish
 
     BasicBlock* labelRetry = genCreateTempLabel();
     genDefineTempLabel(labelRetry);
 
     emitAttr dataSize = emitActualTypeSize(data);
+
     // The following instruction includes a acquire half barrier
-    // TODO-ARM64-CQ Evaluate whether this is necessary
-    // https://github.com/dotnet/coreclr/issues/14346
     getEmitter()->emitIns_R_R(INS_ldaxr, dataSize, loadReg, addrReg);
 
     switch (treeNode->OperGet())
@@ -2742,11 +2742,11 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     }
 
     // The following instruction includes a release half barrier
-    // TODO-ARM64-CQ Evaluate whether this is necessary
-    // https://github.com/dotnet/coreclr/issues/14346
     getEmitter()->emitIns_R_R_R(INS_stlxr, dataSize, exResultReg, storeDataReg, addrReg);
 
     getEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
+
+    instGen_MemoryBarrier(INS_BARRIER_ISH);
 
     gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
 
@@ -2818,14 +2818,13 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     //     stxr exResult, dataReg, [addrReg]
     //     cbnz exResult, retry
     //   compareFail:
+    //     dmb ish
 
     BasicBlock* labelRetry       = genCreateTempLabel();
     BasicBlock* labelCompareFail = genCreateTempLabel();
     genDefineTempLabel(labelRetry);
 
     // The following instruction includes a acquire half barrier
-    // TODO-ARM64-CQ Evaluate whether this is necessary
-    // https://github.com/dotnet/coreclr/issues/14346
     getEmitter()->emitIns_R_R(INS_ldaxr, emitTypeSize(treeNode), targetReg, addrReg);
 
     if (comparand->isContainedIntOrIImmed())
@@ -2848,13 +2847,13 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     }
 
     // The following instruction includes a release half barrier
-    // TODO-ARM64-CQ Evaluate whether this is necessary
-    // https://github.com/dotnet/coreclr/issues/14346
     getEmitter()->emitIns_R_R_R(INS_stlxr, emitTypeSize(treeNode), exResultReg, dataReg, addrReg);
 
     getEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
 
     genDefineTempLabel(labelCompareFail);
+
+    instGen_MemoryBarrier(INS_BARRIER_ISH);
 
     gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
 
