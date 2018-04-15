@@ -5,6 +5,11 @@
     "Type": "VSTS",
     "BaseUrl": "https://devdiv.visualstudio.com/DefaultCollection"
   },
+  "PrivateRun": {
+    "property-overrides": {
+      "PB_PublishType": ""
+    }
+  },  
   "Pipelines": [
     {
       "Name": "Trusted-All-Linux",

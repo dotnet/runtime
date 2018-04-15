@@ -7,7 +7,7 @@
       "alwaysRun": false,
       "displayName": "Change permissions to agent folder for cleanup steps",
       "timeoutInMinutes": 0,
-      "refName": "Task1",
+      "condition": "succeeded()",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -16,18 +16,18 @@
       "inputs": {
         "filename": "sudo",
         "arguments": "chmod 777 -R .",
-        "workingFolder": "$(Agent.WorkFolder)",
+        "workingFolder": "",
         "failOnStandardError": "false"
       }
     },
     {
       "environment": {},
       "enabled": true,
-      "continueOnError": false,
+      "continueOnError": true,
       "alwaysRun": false,
       "displayName": "Delete files from $(PB_GitDirectory)",
       "timeoutInMinutes": 0,
-      "refName": "Task2",
+      "condition": "succeeded()",
       "task": {
         "id": "b7e8b412-0437-4065-9371-edc5881de25b",
         "versionSpec": "1.*",
@@ -43,9 +43,8 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "git clone",
+      "displayName": "Local git clone",
       "timeoutInMinutes": 0,
-      "refName": "Task3",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -63,9 +62,8 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "git checkout",
+      "displayName": "Local git checkout",
       "timeoutInMinutes": 0,
-      "refName": "Task4",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -83,9 +81,9 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Initialize tools",
+      "displayName": "Local initialize tools",
       "timeoutInMinutes": 0,
-      "refName": "Task5",
+      "condition": "succeeded()",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -94,7 +92,7 @@
       "inputs": {
         "filename": "$(PB_GitDirectory)/init-tools.sh",
         "arguments": "",
-        "workingFolder": "$(PB_GitDirectory)",
+        "workingFolder": "",
         "failOnStandardError": "false"
       }
     },
@@ -103,9 +101,9 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Initialize Docker",
+      "displayName": "Local initialize Docker",
       "timeoutInMinutes": 0,
-      "refName": "Task6",
+      "condition": "succeeded()",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -123,9 +121,9 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Generate Version Assets",
+      "displayName": "Docker git clone",
       "timeoutInMinutes": 0,
-      "refName": "Task7",
+      "condition": "succeeded()",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -133,7 +131,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/build-managed.sh -OfficialBuildId=$(OfficialBuildId) -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true",
+        "arguments": "run --rm $(PB_DockerCommonRunArgs) git clone $(PB_VsoCorefxGitUrl) $(PB_DockerVolumeName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -143,9 +141,9 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run sync.sh",
+      "displayName": "Docker git checkout",
       "timeoutInMinutes": 0,
-      "refName": "Task8",
+      "condition": "succeeded()",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -153,7 +151,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/sync.sh $(PB_SyncArguments)",
+        "arguments": "run --rm $(PB_DockerCommonRunArgs) git checkout $(SourceVersion)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -163,9 +161,8 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run build-native.sh",
+      "displayName": "Docker generate version assets",
       "timeoutInMinutes": 0,
-      "refName": "Task9",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -173,7 +170,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -e ROOTFS_DIR=$(ROOTFS_DIR) $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/build-native.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildNativeArguments)",
+        "arguments": "run --rm $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/build-managed.sh -OfficialBuildId=$(OfficialBuildId) -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -183,9 +180,8 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run build-managed.sh",
+      "displayName": "Docker run sync.sh",
       "timeoutInMinutes": 0,
-      "refName": "Task10",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -193,7 +189,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -e ROOTFS_DIR=$(ROOTFS_DIR) $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/build-managed.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildManagedArguments)",
+        "arguments": "run --rm $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/sync.sh $(PB_SyncArguments)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -203,9 +199,8 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run build-packages.sh",
+      "displayName": "Docker run build-native.sh",
       "timeoutInMinutes": 0,
-      "refName": "Task11",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -213,7 +208,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -e ROOTFS_DIR=$(ROOTFS_DIR) $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/build-packages.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildPackagesArguments)",
+        "arguments": "run --rm -e ROOTFS_DIR=$(ROOTFS_DIR) $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/build-native.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildNativeArguments)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -223,9 +218,8 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run publish-packages.sh",
+      "displayName": "Docker run build-managed.sh",
       "timeoutInMinutes": 0,
-      "refName": "Task12",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -233,7 +227,45 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/publish-packages.sh -AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -verbose -- /p:OverwriteOnPublish=false",
+        "arguments": "run --rm -e ROOTFS_DIR=$(ROOTFS_DIR) $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/build-managed.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildManagedArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Docker run build-packages.sh",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm -e ROOTFS_DIR=$(ROOTFS_DIR) $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/build-packages.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildPackagesArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Docker run publish-packages.sh",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/publish-packages.sh -AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -verbose -- /p:OverwriteOnPublish=false",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -243,22 +275,19 @@
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": true,
-      "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",
+      "displayName": "Local copy logs out of container",
       "timeoutInMinutes": 0,
       "condition": "succeededOrFailed()",
-      "refName": "CopyFiles1",
       "task": {
-        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
-        "versionSpec": "2.*",
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "SourceFolder": "$(PB_GitDirectory)",
-        "Contents": "*.log",
-        "TargetFolder": "$(Build.StagingDirectory)\\BuildLogs",
-        "CleanTargetFolder": "false",
-        "OverWrite": "false",
-        "flattenFolders": "false"
+        "filename": "docker",
+        "arguments": "run --rm -v $(Build.StagingDirectory):/docker_logs $(PB_DockerCommonRunArgs) find . -type f -name *.log -exec cp {} --target-directory=/docker_logs ;",
+        "workingFolder": "",
+        "failOnStandardError": "false"
       }
     },
     {
@@ -266,17 +295,16 @@
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": true,
-      "displayName": "Publish Artifact: BuildLogs",
+      "displayName": "Local publish artifact: BuildLogs",
       "timeoutInMinutes": 0,
       "condition": "succeededOrFailed()",
-      "refName": "PublishBuildArtifacts2",
       "task": {
         "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "PathtoPublish": "$(Build.StagingDirectory)\\BuildLogs",
+        "PathtoPublish": "$(Build.StagingDirectory)",
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
         "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)",
@@ -289,10 +317,9 @@
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
-      "displayName": "Cleanup Docker",
+      "displayName": "Local cleanup Docker",
       "timeoutInMinutes": 0,
       "condition": "always()",
-      "refName": "Task14",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -327,15 +354,6 @@
         "assignToRequestor": "true",
         "additionalFields": "{}"
       }
-    },
-    {
-      "enabled": false,
-      "definition": {
-        "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
-      },
-      "inputs": {
-        "additionalFields": "{}"
-      }
     }
   ],
   "variables": {
@@ -352,13 +370,16 @@
     "PB_Architecture": {
       "value": "arm"
     },
+    "PB_AssetRootUrl": {
+      "value": ""
+    },
     "PB_BuildArguments": {
       "value": "-BuildArch=$(PB_Architecture)"
     },
-    "PB_BuildNativeArguments": {
+    "PB_BuildManagedArguments": {
       "value": "$(PB_BuildArguments)"
     },
-    "PB_BuildManagedArguments": {
+    "PB_BuildNativeArguments": {
       "value": "$(PB_BuildArguments)"
     },
     "PB_BuildPackagesArguments": {
@@ -374,13 +395,13 @@
       "value": "Release"
     },
     "PB_DockerCommonRunArgs": {
-      "value": "--rm --name $(PB_DockerContainerName) -v \"$(PB_GitDirectory):$(PB_DockerVolumeName)\" -w=\"$(PB_DockerVolumeName)\" -e \"PACKAGEVERSIONPROPSURL=$(PB_PackageVersionPropsUrl)\" $(PB_DockerImageName)"
+      "value": "--name $(PB_DockerContainerName) -v \"$(PB_DockerContainerName):$(PB_DockerVolumeName)\" -w=\"$(PB_DockerVolumeName)\" -e \"PACKAGEVERSIONPROPSURL=$(PB_PackageVersionPropsUrl)\" $(PB_DockerImageName)"
     },
     "PB_DockerContainerName": {
       "value": "corefx-cross-$(Build.BuildId)"
     },
     "PB_DockerCopyDest": {
-      "value": "$(Build.BinariesDirectory)/docker_repo"
+      "value": "$(Build.StagingDirectory)"
     },
     "PB_DockerImageName": {
       "value": "$(PB_DockerRepository):$(PB_DockerTag)"
@@ -401,11 +422,19 @@
     "PB_Label": {
       "value": "$(Build.BuildNumber)"
     },
+    "PB_PackageVersionPropsUrl": {
+      "value": ""
+    },
+    "PB_SyncArguments": {
+      "value": "-p -- /p:ArchGroup=$(PB_Architecture)",
+      "allowOverride": true
+    },
     "PB_VsoAccountName": {
       "value": "dn-bot"
     },
     "PB_VsoCorefxGitUrl": {
-      "value": "https://$(PB_VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/$(PB_VsoRepositoryName)/"
+      "value": "https://$(PB_VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/$(PB_VsoRepositoryName)/",
+      "isSecret": true
     },
     "PB_VsoRepositoryName": {
       "value": "DotNet-CoreFX-Trusted"
@@ -428,16 +457,6 @@
     "VsoPassword": {
       "value": null,
       "isSecret": true
-    },
-    "PB_SyncArguments": {
-      "value": "-p -- /p:ArchGroup=$(PB_Architecture)",
-      "allowOverride": true
-    },
-    "PB_PackageVersionPropsUrl": {
-      "value": ""
-    },
-    "PB_AssetRootUrl": {
-      "value": ""
     }
   },
   "demands": [
@@ -469,8 +488,8 @@
       "reportBuildStatus": "true",
       "fetchDepth": "0",
       "gitLfsSupport": "false",
-      "skipSyncSource": "false",
-      "cleanOptions": "0",
+      "skipSyncSource": "true",
+      "cleanOptions": "3",
       "checkoutNestedSubmodules": "false",
       "labelSourcesFormat": "$(build.buildNumber)"
     },
@@ -486,8 +505,14 @@
   "quality": "definition",
   "drafts": [],
   "queue": {
+    "_links": {
+      "self": {
+        "href": "https://devdiv.visualstudio.com/DefaultCollection/_apis/build/Queues/36"
+      }
+    },
     "id": 36,
     "name": "DotNet-Build",
+    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/build/Queues/36",
     "pool": {
       "id": 39,
       "name": "DotNet-Build"
@@ -501,10 +526,10 @@
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
-    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
+    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items for Visual Studio and most active DevDiv products are in this account.",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418098432,
+    "revision": 418099111,
     "visibility": "organization"
   }
 }
