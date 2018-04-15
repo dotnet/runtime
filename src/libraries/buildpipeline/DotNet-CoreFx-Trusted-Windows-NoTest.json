@@ -392,7 +392,8 @@
       "allowOverride": true
     },
     "PB_VsoCorefxGitUrl": {
-      "value": "https://github.com/dotnet/corefx"
+      "value": "https://github.com/dotnet/corefx",
+      "isSecret": true
     },
     "PB_SourceBranch": {
       "value": "master",
