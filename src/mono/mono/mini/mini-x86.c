@@ -5500,10 +5500,11 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	g_assert (cfg->code_len < cfg->code_size);
 }
 
+MONO_NEVER_INLINE
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
-	/* not needed */
+	/* call/ret required (or likely other control transfer) */
 }
 
 void

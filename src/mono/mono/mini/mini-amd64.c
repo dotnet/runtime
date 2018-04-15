@@ -7704,10 +7704,11 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	return code;
 }
 
+MONO_NEVER_INLINE
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
-	/* Not needed */
+	/* call/ret required (or likely other control transfer) */
 }
 
 void
