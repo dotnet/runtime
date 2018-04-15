@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -1196,7 +1197,74 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class SendReceiveSync : SendReceive<SocketHelperArraySync> { }
+    public sealed class SendReceiveSync : SendReceive<SocketHelperArraySync>
+    {
+        [OuterLoop]
+        [Fact]
+        public void BlockingRead_DoesntRequireAnotherThreadPoolThread()
+        {
+            RemoteInvoke(() =>
+            {
+                // Set the max number of worker threads to a low value.
+                ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
+                ThreadPool.SetMaxThreads(Environment.ProcessorCount, completionPortThreads);
+
+                // Create twice that many socket pairs, for good measure.
+                (Socket, Socket)[] socketPairs = Enumerable.Range(0, Environment.ProcessorCount * 2).Select(_ => CreateConnectedSocketPair()).ToArray();
+                try
+                {
+                    // Ensure that on Unix all of the first socket in each pair are configured for sync-over-async.
+                    foreach ((Socket, Socket) pair in socketPairs)
+                    {
+                        pair.Item1.ForceNonBlocking(force: true);
+                    }
+
+                    // Queue a work item for each first socket to do a blocking receive.
+                    Task[] receives =
+                        (from pair in socketPairs
+                         select Task.Factory.StartNew(() => pair.Item1.Receive(new byte[1]), CancellationToken.None, TaskCreationOptions.PreferFairness, TaskScheduler.Default))
+                         .ToArray();
+
+                    // Give a bit of time for the pool to start executing the receives.  It's possible this won't be enough,
+                    // in which case the test we could get a false negative on the test, but we won't get spurious failures.
+                    Thread.Sleep(1000);
+
+                    // Now send to each socket.
+                    foreach ((Socket, Socket) pair in socketPairs)
+                    {
+                        pair.Item2.Send(new byte[1]);
+                    }
+
+                    // And wait for all the receives to complete.
+                    Assert.True(Task.WaitAll(receives, 60_000), "Expected all receives to complete within timeout");
+                }
+                finally
+                {
+                    foreach ((Socket, Socket) pair in socketPairs)
+                    {
+                        pair.Item1.Dispose();
+                        pair.Item2.Dispose();
+                    }
+                }
+            }).Dispose();
+        }
+
+        private static (Socket, Socket) CreateConnectedSocketPair()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                client.Connect(listener.LocalEndPoint);
+                Socket server = listener.Accept();
+
+                return (client, server);
+            }
+        }
+    }
+
     public sealed class SendReceiveSyncForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking> { }
     public sealed class SendReceiveApm : SendReceive<SocketHelperApm> { }
     public sealed class SendReceiveTask : SendReceive<SocketHelperTask> { }
