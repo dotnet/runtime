@@ -157,14 +157,6 @@ namespace System.Net.Sockets
             set
             {
                 Debug.Assert(value == -1 || value > 0, $"Unexpected value: {value}");
-
-                // We always implement timeouts using nonblocking I/O and AsyncContext,
-                // to avoid issues when switching from blocking I/O to nonblocking.
-                if (value != -1)
-                {
-                    SetHandleNonBlocking();
-                }
-
                 _receiveTimeout = value;
             }
         }
@@ -178,14 +170,6 @@ namespace System.Net.Sockets
             set
             {
                 Debug.Assert(value == -1 || value > 0, $"Unexpected value: {value}");
-
-                // We always implement timeouts using nonblocking I/O and AsyncContext,
-                // to avoid issues when switching from blocking I/O to nonblocking.
-                if (value != -1)
-                {
-                    SetHandleNonBlocking();
-                }
-
                 _sendTimeout = value;
             }
         }
@@ -349,7 +333,7 @@ namespace System.Net.Sockets
                 IntPtr acceptedFd;
                 if (!socketHandle.IsNonBlocking)
                 {
-                    errorCode = socketHandle.AsyncContext.Accept(socketAddress, ref socketAddressLen, -1, out acceptedFd);
+                    errorCode = socketHandle.AsyncContext.Accept(socketAddress, ref socketAddressLen, out acceptedFd);
                 }
                 else
                 {
