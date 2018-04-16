@@ -109,13 +109,13 @@ internal struct FieldAlignementTest
     // 3 bytes of padding
 
     public Int32 m_int2; // 4 bytes
-    // 4 bytes of padding
+    // 4 bytes of padding (0 bytes on x86/Unix according System V ABI as double 4-byte aligned)
 
     public double m_double1; // 8 bytes
     public char m_char1; // 1 byte
     public char m_char2; // 1 byte
     public char m_char3; // 1 byte
-    // 5 bytes of padding
+    // 5 bytes of padding (1 byte on x86/Unix according System V ABI as double 4-byte aligned)
 
     public double m_double2; // 8 bytes
     public byte m_byte3; // 1 byte
@@ -137,7 +137,7 @@ struct FieldAlignementTest_Decimal
     // This is because unlike fields of other types well known to mcg (like long, char etc.)
     // which need to be aligned according to their byte size, decimal is really a struct
     // with 8 byte alignment requirement.
-    public FieldAlignementTest p; // 80 bytes
+    public FieldAlignementTest p; // 80 bytes (72 bytes on x86/Unix)
 
     public short s; // 2 bytes
     // 6 bytes of padding
@@ -251,7 +251,14 @@ public class OffsetTest
     public static void TestFieldAlignment()
     {
         var t = typeof(FieldAlignementTest);
-        Assert.AreEqual(80, Marshal.SizeOf(t));
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
+        {
+            Assert.AreEqual(80, Marshal.SizeOf(t));
+        }
+        else
+        {
+            Assert.AreEqual(72, Marshal.SizeOf(t));
+        }
 
         Assert.AreEqual(new IntPtr(0), Marshal.OffsetOf(t, "m_byte1"));
         Assert.AreEqual(new IntPtr(2), Marshal.OffsetOf(t, "m_short1"));
@@ -259,26 +266,58 @@ public class OffsetTest
         Assert.AreEqual(new IntPtr(8), Marshal.OffsetOf(t, "m_int1"));
         Assert.AreEqual(new IntPtr(12), Marshal.OffsetOf(t, "m_byte2"));
         Assert.AreEqual(new IntPtr(16), Marshal.OffsetOf(t, "m_int2"));
-        Assert.AreEqual(new IntPtr(24), Marshal.OffsetOf(t, "m_double1"));
-        Assert.AreEqual(new IntPtr(32), Marshal.OffsetOf(t, "m_char1"));
-        Assert.AreEqual(new IntPtr(33), Marshal.OffsetOf(t, "m_char2"));
-        Assert.AreEqual(new IntPtr(34), Marshal.OffsetOf(t, "m_char3"));
-        Assert.AreEqual(new IntPtr(40), Marshal.OffsetOf(t, "m_double2"));
-        Assert.AreEqual(new IntPtr(48), Marshal.OffsetOf(t, "m_byte3"));
-        Assert.AreEqual(new IntPtr(49), Marshal.OffsetOf(t, "m_byte4"));
-        Assert.AreEqual(new IntPtr(56), Marshal.OffsetOf(t, "m_decimal1"));
-        Assert.AreEqual(new IntPtr(72), Marshal.OffsetOf(t, "m_char4"));
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
+        {
+            Assert.AreEqual(new IntPtr(24), Marshal.OffsetOf(t, "m_double1"));
+            Assert.AreEqual(new IntPtr(32), Marshal.OffsetOf(t, "m_char1"));
+            Assert.AreEqual(new IntPtr(33), Marshal.OffsetOf(t, "m_char2"));
+            Assert.AreEqual(new IntPtr(34), Marshal.OffsetOf(t, "m_char3"));
+            Assert.AreEqual(new IntPtr(40), Marshal.OffsetOf(t, "m_double2"));
+            Assert.AreEqual(new IntPtr(48), Marshal.OffsetOf(t, "m_byte3"));
+            Assert.AreEqual(new IntPtr(49), Marshal.OffsetOf(t, "m_byte4"));
+            Assert.AreEqual(new IntPtr(56), Marshal.OffsetOf(t, "m_decimal1"));
+            Assert.AreEqual(new IntPtr(72), Marshal.OffsetOf(t, "m_char4"));
+        }
+        else
+        {
+            Assert.AreEqual(new IntPtr(20), Marshal.OffsetOf(t, "m_double1"));
+            Assert.AreEqual(new IntPtr(28), Marshal.OffsetOf(t, "m_char1"));
+            Assert.AreEqual(new IntPtr(29), Marshal.OffsetOf(t, "m_char2"));
+            Assert.AreEqual(new IntPtr(30), Marshal.OffsetOf(t, "m_char3"));
+            Assert.AreEqual(new IntPtr(32), Marshal.OffsetOf(t, "m_double2"));
+            Assert.AreEqual(new IntPtr(40), Marshal.OffsetOf(t, "m_byte3"));
+            Assert.AreEqual(new IntPtr(41), Marshal.OffsetOf(t, "m_byte4"));
+            Assert.AreEqual(new IntPtr(48), Marshal.OffsetOf(t, "m_decimal1"));
+            Assert.AreEqual(new IntPtr(64), Marshal.OffsetOf(t, "m_char4"));
+        }
     }
 
     
     public static void TestFieldAlignment_Decimal()
     {
         var t = typeof(FieldAlignementTest_Decimal);
-        Assert.AreEqual(96, Marshal.SizeOf(t));
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
+        {
+            Assert.AreEqual(96, Marshal.SizeOf(t));
+        }
+        else
+        {
+            Assert.AreEqual(88, Marshal.SizeOf(t));
+        }
 
         Assert.AreEqual(new IntPtr(0), Marshal.OffsetOf(t, "b"));
         Assert.AreEqual(new IntPtr(8), Marshal.OffsetOf(t, "p"));
-        Assert.AreEqual(new IntPtr(88), Marshal.OffsetOf(t, "s"));
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
+        {
+            Assert.AreEqual(new IntPtr(88), Marshal.OffsetOf(t, "s"));
+        }
+        else
+        {
+            Assert.AreEqual(new IntPtr(80), Marshal.OffsetOf(t, "s"));
+        }
     }
 
     
