@@ -600,25 +600,27 @@ namespace System.ServiceProcess
             if (services == null || services.Length == 0)
                 throw new ArgumentException(SR.NoServices);
 
-            IntPtr entriesPointer = Marshal.AllocHGlobal((IntPtr)((services.Length + 1) * Marshal.SizeOf(typeof(SERVICE_TABLE_ENTRY))));
+            int sizeOfSERVICE_TABLE_ENTRY = Marshal.SizeOf<SERVICE_TABLE_ENTRY>();            
+
+            IntPtr entriesPointer = Marshal.AllocHGlobal(checked((services.Length + 1) * sizeOfSERVICE_TABLE_ENTRY));
             SERVICE_TABLE_ENTRY[] entries = new SERVICE_TABLE_ENTRY[services.Length];
             bool multipleServices = services.Length > 1;
-            IntPtr structPtr = (IntPtr)0;
+            IntPtr structPtr;
 
             for (int index = 0; index < services.Length; ++index)
             {
                 services[index].Initialize(multipleServices);
                 entries[index] = services[index].GetEntry();
-                structPtr = (IntPtr)((long)entriesPointer + Marshal.SizeOf(typeof(SERVICE_TABLE_ENTRY)) * index);
-                Marshal.StructureToPtr(entries[index], structPtr, true);
+                structPtr = entriesPointer + sizeOfSERVICE_TABLE_ENTRY * index;
+                Marshal.StructureToPtr(entries[index], structPtr, fDeleteOld: false);
             }
 
             SERVICE_TABLE_ENTRY lastEntry = new SERVICE_TABLE_ENTRY();
 
             lastEntry.callback = null;
             lastEntry.name = (IntPtr)0;
-            structPtr = (IntPtr)((long)entriesPointer + Marshal.SizeOf(typeof(SERVICE_TABLE_ENTRY)) * services.Length);
-            Marshal.StructureToPtr(lastEntry, structPtr, true);
+            structPtr = entriesPointer + sizeOfSERVICE_TABLE_ENTRY * services.Length;
+            Marshal.StructureToPtr(lastEntry, structPtr, fDeleteOld: false);
 
             // While the service is running, this function will never return. It will return when the service
             // is stopped.
@@ -712,7 +714,7 @@ namespace System.ServiceProcess
             SERVICE_TABLE_ENTRY entry = new SERVICE_TABLE_ENTRY();
 
             _nameFrozen = true;
-            entry.callback = (Delegate)_mainCallback;
+            entry.callback = _mainCallback;
             entry.name = _handleName;
             return entry;
         }
