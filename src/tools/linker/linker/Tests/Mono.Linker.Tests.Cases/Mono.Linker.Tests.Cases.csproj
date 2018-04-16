@@ -111,6 +111,7 @@
     <Compile Include="LinkXml\EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod.cs" />
     <Compile Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.cs" />
     <Compile Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.cs" />
+    <Compile Include="LinkXml\UnusedGenericTypeWithPreserveAllHasAllMembersPreserved.cs" />
     <Compile Include="LinkXml\UnusedTypePreservedByLinkXmlWithCommentIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypeWithNoDefinedPreserveHasAllMembersPreserved.cs" />
     <Compile Include="References\Individual\CanSkipUnresolved.cs" />
@@ -275,6 +276,7 @@
     <Content Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.xml" />
     <Content Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.xml" />
     <Content Include="LinkXml\UnusedFieldPreservedByLinkXmlIsKept.xml" />
+    <Content Include="LinkXml\UnusedGenericTypeWithPreserveAllHasAllMembersPreserved.xml" />
     <Content Include="LinkXml\UnusedMethodPreservedByLinkXmlIsKept.xml" />
     <Content Include="LinkXml\UnusedNestedTypePreservedByLinkXmlIsKept.xml" />
     <Content Include="LinkXml\UnusedPropertyPreservedByLinkXmlIsKept.xml" />
