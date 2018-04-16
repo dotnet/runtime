@@ -864,7 +864,7 @@ namespace System.Net.Sockets
         {
             if (!handle.IsNonBlocking)
             {
-                return handle.AsyncContext.Connect(socketAddress, socketAddressLen, -1);
+                return handle.AsyncContext.Connect(socketAddress, socketAddressLen);
             }
 
             SocketError errorCode;
@@ -1097,17 +1097,15 @@ namespace System.Net.Sockets
             {
                 if (optionName == SocketOptionName.ReceiveTimeout)
                 {
-                    // Note, setting a non-infinite timeout will force the handle into nonblocking mode
                     handle.ReceiveTimeout = optionValue == 0 ? -1 : optionValue;
-                    handle.TrackOption(optionLevel, optionName);
-                    return SocketError.Success;
+                    err = Interop.Sys.SetReceiveTimeout(handle, optionValue);
+                    return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
                 }
                 else if (optionName == SocketOptionName.SendTimeout)
                 {
-                    // Note, setting a non-infinite timeout will force the handle into nonblocking mode
                     handle.SendTimeout = optionValue == 0 ? -1 : optionValue;
-                    handle.TrackOption(optionLevel, optionName);
-                    return SocketError.Success;
+                    err = Interop.Sys.SetSendTimeout(handle, optionValue);
+                    return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
                 }
             }
             else if (optionLevel == SocketOptionLevel.IP)
