@@ -54,8 +54,9 @@ if [[ -n "$CROSSCOMPILE" ]]; then
         exit 1
     fi
     if [[ -z "$CONFIG_DIR" ]]; then
-      CONFIG_DIR="$project_root/cross/$build_arch"
+        CONFIG_DIR="$project_root/cross"
     fi
+    export TARGET_BUILD_ARCH=$build_arch
     cmake_extra_defines="$cmake_extra_defines -C $CONFIG_DIR/tryrun.cmake"
     cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$CONFIG_DIR/toolchain.cmake"
 fi
