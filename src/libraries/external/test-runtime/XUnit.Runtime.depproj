@@ -135,7 +135,7 @@
   <!-- System.Data.SqlClient tests require sni.dll in the test folder -->
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <PackageReference Include="runtime.native.System.Data.SqlClient.sni">
-      <Version>$(PackageVersion)-$(CoreFxExpectedPrerelease)</Version>
+      <Version>$(RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion)</Version>
     </PackageReference>
     <PackageToInclude Include="runtime.win-arm64.runtime.native.System.Data.SqlClient.sni"/>
     <PackageToInclude Include="runtime.win-x64.runtime.native.System.Data.SqlClient.sni"/>
@@ -155,7 +155,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <!-- Retrieve the UAP Tools to the TestHost folder -->
-  <Target Name="CopyUAPToolsToTestHost" 
+  <Target Name="CopyUAPToolsToTestHost"
           AfterTargets="RestorePackages"
           Condition="'$(TargetGroup)'=='uap'" >
 
@@ -175,12 +175,12 @@
     </ItemGroup>
 
     <Copy Condition="'$(UAPToolsFolder)'!=''"
-          SourceFiles="@(RunnerFolderContents)" 
+          SourceFiles="@(RunnerFolderContents)"
           DestinationFolder="$(TestHostRootPath)\Runner\%(RecursiveDir)"
           SkipUnchangedFiles="true"/>
 
     <Copy Condition="'$(UAPToolsFolder)'!=''"
-          SourceFiles="@(LauncherFolderContents)" 
+          SourceFiles="@(LauncherFolderContents)"
           DestinationFolder="$(TestHostRootPath)\Launcher\%(RecursiveDir)"
           SkipUnchangedFiles="true"/>
   </Target>
@@ -220,7 +220,7 @@
             Text="Error: looks the package $(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion) not restored or missing xunit.console.exe."
     />
     <ItemGroup>
-      <ReferenceCopyLocalPaths 
+      <ReferenceCopyLocalPaths
         Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\*.*"
         Exclude="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\xunit.console.exe.config"
       >
