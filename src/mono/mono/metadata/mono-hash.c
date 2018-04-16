@@ -227,7 +227,7 @@ rehash (MonoGHashTable *hash)
 	if (hash->gc_type & MONO_HASH_VALUE_GC)
 		mono_gc_register_root_wbarrier ((char*)data.values, sizeof (MonoObject*) * data.new_size, mono_gc_make_vector_descr (), hash->source, hash->key, hash->msg);
 
-	if (!mono_threads_are_safepoints_enabled () || mono_threads_is_hybrid_suspension_enabled ()) {
+	if (!mono_threads_are_safepoints_enabled ()) {
 		mono_gc_invoke_with_gc_lock (do_rehash, &data);
 	} else {
 		/* We cannot be preempted */

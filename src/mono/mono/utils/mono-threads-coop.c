@@ -509,14 +509,14 @@ mono_threads_assert_gc_unsafe_region (void)
 }
 
 gboolean
-mono_threads_are_safepoints_enabled (void)
+mono_threads_is_cooperative_suspension_enabled (void)
 {
-#if defined(USE_COOP_GC)
+#if defined(ENABLE_COOP_SUSPEND)
 	return TRUE;
 #else
 	static int is_coop_enabled = -1;
 	if (G_UNLIKELY (is_coop_enabled == -1))
-		is_coop_enabled = g_hasenv ("MONO_ENABLE_COOP") ? 1 : 0;
+		is_coop_enabled = (g_hasenv ("MONO_ENABLE_COOP") || g_hasenv ("MONO_ENABLE_COOP_SUSPEND")) ? 1 : 0;
 	return is_coop_enabled == 1;
 #endif
 }
@@ -524,12 +524,12 @@ mono_threads_are_safepoints_enabled (void)
 gboolean
 mono_threads_is_blocking_transition_enabled (void)
 {
-#if defined(USE_COOP_GC)
+#if defined(ENABLE_COOP_SUSPEND) || defined(ENABLE_HYBRID_SUSPEND)
 	return TRUE;
 #else
 	static int is_blocking_transition_enabled = -1;
 	if (G_UNLIKELY (is_blocking_transition_enabled == -1))
-		is_blocking_transition_enabled = (g_hasenv ("MONO_ENABLE_COOP") || g_hasenv ("MONO_ENABLE_BLOCKING_TRANSITION")) ? 1 : 0;
+		is_blocking_transition_enabled = (g_hasenv ("MONO_ENABLE_COOP") || g_hasenv ("MONO_ENABLE_COOP_SUSPEND") || g_hasenv ("MONO_ENABLE_HYBRID_SUSPEND") || g_hasenv ("MONO_ENABLE_BLOCKING_TRANSITION")) ? 1 : 0;
 	return is_blocking_transition_enabled == 1;
 #endif
 }
@@ -537,12 +537,12 @@ mono_threads_is_blocking_transition_enabled (void)
 gboolean
 mono_threads_is_hybrid_suspension_enabled (void)
 {
-#if defined(USE_HYBRID_SUSPEND)
+#if defined(ENABLE_HYBRID_SUSPEND)
 	return TRUE;
 #else
 	static int is_hybrid_suspension_enabled = -1;
 	if (G_UNLIKELY (is_hybrid_suspension_enabled == -1))
-		is_hybrid_suspension_enabled = g_hasenv ("MONO_ENABLE_COOP") && g_hasenv ("MONO_ENABLE_HYBRID_SUSPEND");
+		is_hybrid_suspension_enabled = (g_hasenv ("MONO_ENABLE_HYBRID_SUSPEND")) ? 1 : 0;
 	return is_hybrid_suspension_enabled == 1;
 #endif
 }

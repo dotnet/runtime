@@ -4567,8 +4567,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_GC_SAFE_POINT: {
-#if defined (USE_COOP_GC)
 			guint8 *buf [1];
+
+			g_assert (mono_threads_are_safepoints_enabled ());
 
 			arm_ldrx (code, ARMREG_IP1, ins->sreg1, 0);
 			/* Call it if it is non-null */
@@ -4576,7 +4577,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_cbzx (code, ARMREG_IP1, 0);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_threads_state_poll");
 			mono_arm_patch (buf [0], code, MONO_R_ARM64_CBZ);
-#endif
 			break;
 		}
 		case OP_FILL_PROF_CALL_CTX:

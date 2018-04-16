@@ -140,7 +140,7 @@ begin_preemptive_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 static BeginSuspendResult
 begin_suspend_for_running_thread (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
-	if (mono_threads_are_safepoints_enabled ())
+	if (mono_threads_is_cooperative_suspension_enabled ())
 		return begin_cooperative_suspend (info);
 	else
 		return begin_preemptive_suspend (info, interrupt_kernel);
@@ -169,7 +169,7 @@ begin_suspend_for_blocking_thread (MonoThreadInfo *info, gboolean interrupt_kern
 static gboolean
 check_async_suspend (MonoThreadInfo *info, BeginSuspendResult result)
 {
-	if (mono_threads_are_safepoints_enabled () && !mono_threads_is_hybrid_suspension_enabled ()) {
+	if (mono_threads_is_cooperative_suspension_enabled () && !mono_threads_is_hybrid_suspension_enabled ()) {
 		/* Async suspend can't async fail on coop */
 		g_assert (result == BeginSuspendOkCooperative);
 		return TRUE;
@@ -190,7 +190,7 @@ check_async_suspend (MonoThreadInfo *info, BeginSuspendResult result)
 static void
 resume_async_suspended (MonoThreadInfo *info)
 {
-	if (mono_threads_are_safepoints_enabled () && !mono_threads_is_hybrid_suspension_enabled ())
+	if (mono_threads_is_cooperative_suspension_enabled () && !mono_threads_is_hybrid_suspension_enabled ())
 		g_assert_not_reached ();
 
 	g_assert (mono_threads_suspend_begin_async_resume (info));
@@ -1125,7 +1125,6 @@ mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt
 	case KeepSuspended:
 		THREADS_SUSPEND_DEBUG ("CALLBACK tid %p (%s): KeepSuspended\n", (void*)id, interrupt_kernel ? "int" : "");
 		g_assert (!mono_threads_are_safepoints_enabled ());
-		/* FIXME: what if mono_threads_is_hybrid_suspension_enabled () ? */
 		break;
 	default:
 		g_error ("Invalid suspend_and_run callback return value %d", result);
@@ -1224,7 +1223,7 @@ mono_thread_info_get_suspend_state (MonoThreadInfo *info)
 		// This state is only valid for full cooperative suspend.  If
 		// we're preemptively suspending blocking threads, this is not
 		// a valid suspend state.
-		if (mono_threads_are_safepoints_enabled () && !mono_threads_is_hybrid_suspension_enabled ())
+		if (mono_threads_is_cooperative_suspension_enabled () && !mono_threads_is_hybrid_suspension_enabled ())
 			return &info->thread_saved_state [SELF_SUSPEND_STATE_INDEX];
 		break;
 	default:

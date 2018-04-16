@@ -1063,7 +1063,7 @@ with_unreal_default=no
 with_wasm_default=no
 
 with_bitcode_default=no
-with_cooperative_gc_default=no
+enable_cooperative_suspend_default=no
 
 INVARIANT_AOT_OPTIONS=nimt-trampolines=2000,ntrampolines=10000,nrgctx-fetch-trampolines=256,ngsharedvt-trampolines=4000
 
@@ -1090,7 +1090,7 @@ elif test x$with_runtime_preset = xbitcode; then
    DISABLE_MCS_DOCS_default=yes
    with_testing_aot_full_default=yes
    with_bitcode_default=yes
-   with_cooperative_gc_default=yes
+   enable_cooperative_suspend_default=yes
    TEST_PROFILE=testing_aot_full
    enable_llvm_default=yes
 
@@ -4513,26 +4513,34 @@ AC_ARG_WITH(lazy_gc_thread_creation, [  --with-lazy-gc-thread-creation=yes|no   
 	fi
 ], [with_lazy_gc_thread_creation=no])
 
-AC_ARG_WITH(cooperative_gc, [  --with-cooperative-gc=yes|no      Enable cooperative stop-the-world garbage collection (sgen only) (defaults to no)], [], [with_cooperative_gc=default])
+AC_ARG_WITH(cooperative_gc,        [  --with-cooperative-gc=yes|no        Enable cooperative stop-the-world garbage collection (sgen only) (defaults to no)], [AC_MSG_WARN([--with-cooperative-gc is deprecated, use --enable-cooperative-suspend instead])], [with_cooperative_gc=default])
+AC_ARG_ENABLE(cooperative_suspend, [  --enable-cooperative-suspend      Enable cooperative stop-the-world garbage collection (sgen only) (defaults to no)], [], [enable_cooperative_suspend=default])
 
-if test x$with_cooperative_gc = xdefault; then
-	with_cooperative_gc=$with_cooperative_gc_default
+if test x$enable_cooperative_suspend = xdefault -a test x$with_cooperative_gc != xdefault; then
+	enable_cooperative_suspend=$with_cooperative_gc
 fi
 
-if test x$with_cooperative_gc != xno; then
-	AC_DEFINE(USE_COOP_GC,1,[Enable cooperative stop-the-world garbage collection.])
+if test x$enable_cooperative_suspend = xdefault; then
+	enable_cooperative_suspend=$enable_cooperative_suspend_default
 fi
 
-AM_CONDITIONAL([ENABLE_COOP], [test x$with_cooperative_gc != xno])
+if test x$enable_cooperative_suspend != xno; then
+	AC_DEFINE(ENABLE_COOP_SUSPEND,1,[Enable cooperative stop-the-world garbage collection.])
+fi
 
-AC_ARG_WITH(hybrid_suspend, [ --with-hybrid-suspend=yes|no     Enable hybrid cooperative stop-the-world garbage collection (sgen only) - cooperative suspend for threads running managed and native code, and preemptive suspend for threads running native and P/Invoke code (defaults to no)], [
-	if test x$with_hybrid_suspend != xno ; then
-		AC_DEFINE(USE_HYBRID_SUSPEND,1,[Enable hybrid cooperative suspend for GC stop-the-world])
-	fi
-	if test x$with_cooperative_gc != xyes ; then
-		AC_MSG_ERROR([Hybrid suspend requires --with-cooperative-gc=yes])
-	fi
-], [with_hybrid_suspend=no])
+AM_CONDITIONAL([ENABLE_COOP_SUSPEND], [test x$enable_cooperative_suspend != xno])
+
+AC_ARG_ENABLE(hybrid_suspend, [ --enable-hybrid-suspend     Enable hybrid stop-the-world garbage collection (sgen only) - cooperative suspend for threads running managed and runtime code, and preemptive suspend for threads running native and P/Invoke code (defaults to no)], [], [enable_hybrid_suspend=no])
+
+if test x$enable_hybrid_suspend != xno -a x$enable_cooperative_suspend != xno ; then
+	AC_MSG_ERROR([Hybrid suspend and Cooperative suspend cannot be both enabled.])
+fi
+
+if test x$enable_hybrid_suspend != xno ; then
+	AC_DEFINE(ENABLE_HYBRID_SUSPEND,1,[Enable hybrid suspend for GC stop-the-world])
+fi
+
+AM_CONDITIONAL([ENABLE_HYBRID_SUSPEND], [test x$enable_hybrid_suspend != xno])
 
 AC_ARG_ENABLE(checked_build, [  --enable-checked-build=LIST      To enable checked build (expensive asserts), configure with a comma-separated LIST of checked build modules and then include that same list in the environment variable MONO_CHECK_MODE at runtime. Recognized checked build modules: all, gc, metadata, thread, private_types],[
 

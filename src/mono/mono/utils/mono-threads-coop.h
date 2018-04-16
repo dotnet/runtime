@@ -23,21 +23,25 @@ G_BEGIN_DECLS
 /* JIT specific interface */
 extern volatile size_t mono_polling_required;
 
-/* Runtime consumable API */
-
-gboolean
-mono_threads_are_safepoints_enabled (void);
-
-gboolean
-mono_threads_is_blocking_transition_enabled (void);
-
 /* Internal API */
 
 void
 mono_threads_state_poll (void);
 
 gboolean
+mono_threads_is_blocking_transition_enabled (void);
+
+gboolean
+mono_threads_is_cooperative_suspension_enabled (void);
+
+gboolean
 mono_threads_is_hybrid_suspension_enabled (void);
+
+static inline gboolean
+mono_threads_are_safepoints_enabled (void)
+{
+	return mono_threads_is_cooperative_suspension_enabled () || mono_threads_is_hybrid_suspension_enabled ();
+}
 
 static inline void
 mono_threads_safepoint (void)
