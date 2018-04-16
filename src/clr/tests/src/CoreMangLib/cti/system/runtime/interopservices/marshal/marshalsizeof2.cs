@@ -210,7 +210,17 @@ public class MarshalSizeOf2
         try
         {
             Type obj = typeof(TestMultiMemberStruct1);
-            int expectedSize = 16; // sizeof(double) + sizeof(int) + padding
+            int expectedSize;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
+            {
+                expectedSize = 16; // sizeof(double) + sizeof(int) + padding
+            }
+            else
+            {
+                // The System V ABI for i386 defines double as having 4-byte alignment
+                expectedSize = 12; // sizeof(double) + sizeof(int)
+            }
 
             int actualSize = Marshal.SizeOf(obj);
 

@@ -285,7 +285,27 @@ do                                                      \
         if (CorTypeInfo::IsPrimitiveType(corElemType))
         {
             pfwalk->m_managedSize = ((UINT32)CorTypeInfo::Size(corElemType)); // Safe cast - no primitive type is larger than 4gb!
+#if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
+            switch (corElemType)
+            {
+                // The System V ABI for i386 defines different packing for these types.
+                case ELEMENT_TYPE_I8:
+                case ELEMENT_TYPE_U8:
+                case ELEMENT_TYPE_R8:
+                {
+                    pfwalk->m_managedAlignmentReq = 4;
+                    break;
+                }
+
+                default:
+                {
+                    pfwalk->m_managedAlignmentReq = pfwalk->m_managedSize;
+                    break;
+                }
+            }
+#else // _TARGET_X86_ && UNIX_X86_ABI
             pfwalk->m_managedAlignmentReq = pfwalk->m_managedSize;
+#endif
         }
         else if (corElemType == ELEMENT_TYPE_PTR)
         {

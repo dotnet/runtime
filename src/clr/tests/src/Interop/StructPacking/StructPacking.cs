@@ -384,20 +384,20 @@ unsafe class Program
 
             succeeded &= Test<AutoLayoutDefaultPacking<double>>(
                 expectedSize: 12,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 4
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0
             );
 
             succeeded &= Test<AutoLayoutMinPacking<double>>(
                 expectedSize: 12,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 4
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0
             );
 
             succeeded &= Test<AutoLayoutMaxPacking<double>>(
                 expectedSize: 12,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 4
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0
             );
         }
 
@@ -603,20 +603,20 @@ unsafe class Program
 
             succeeded &= Test<AutoLayoutDefaultPacking<long>>(
                 expectedSize: 12,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 4
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0
             );
 
             succeeded &= Test<AutoLayoutMinPacking<long>>(
                 expectedSize: 12,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 4
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0
             );
 
             succeeded &= Test<AutoLayoutMaxPacking<long>>(
                 expectedSize: 12,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 4
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0
             );
         }
 
@@ -1016,20 +1016,20 @@ unsafe class Program
 
             succeeded &= Test<AutoLayoutDefaultPacking<ulong>>(
                 expectedSize: 12,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 4
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0
             );
 
             succeeded &= Test<AutoLayoutMinPacking<ulong>>(
                 expectedSize: 12,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 4
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0
             );
 
             succeeded &= Test<AutoLayoutMaxPacking<ulong>>(
                 expectedSize: 12,
-                expectedOffsetByte: 0,
-                expectedOffsetValue: 4
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0
             );
         }
 
