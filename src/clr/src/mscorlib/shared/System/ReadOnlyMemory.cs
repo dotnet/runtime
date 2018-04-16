@@ -235,8 +235,11 @@ namespace System
 
         /// <summary>
         /// Creates a handle for the memory.
-        /// The GC will not move the array until the returned <see cref="MemoryHandle"/>
+        /// The GC will not move the memory until the returned <see cref="MemoryHandle"/>
         /// is disposed, enabling taking and using the memory's address.
+        /// <exception cref="System.ArgumentException">
+        /// An instance with nonprimitive (non-blittable) members cannot be pinned.
+        /// </exception>
         /// </summary>
         public unsafe MemoryHandle Pin()
         {
