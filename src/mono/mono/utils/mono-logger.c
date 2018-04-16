@@ -344,7 +344,7 @@ mono_trace_set_mask_string (const char *value)
 gboolean
 mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask)
 {
-	return (level <= mono_internal_current_level && (mask & mono_internal_current_mask));
+	return MONO_TRACE_IS_TRACED (level, mask);
 }
 
 /**
