@@ -93,8 +93,22 @@ namespace System.Buffers
 
             bool isMultiSegment = startObject != _sequenceEnd.GetObject();
 
+            // The highest bit of startIndex and endIndex are used to infer the sequence type
+            // The code below is structured this way for performance reasons and is equivalent to the following:
+            // SequenceType type = GetSequenceType();
+            // if (type == SequenceType.MultiSegment) { ... }
+            // else if (type == SequenceType.Array) { ... }
+            // else if (type == SequenceType.String){ ... }
+            // else if (type == SequenceType.MemoryManager) { ... }
+
+            // Highest bit of startIndex: A = startIndex >> 31
+            // Highest bit of endIndex: B = endIndex >> 31
+
             if (startIndex >= 0)
             {
+                // A == 0 && B == 0 means SequenceType.MultiSegment
+                // A == 0 && B == 1 means SequenceType.Array
+
                 if (endIndex >= 0)  // SequenceType.MultiSegment
                 {
                     ReadOnlyMemory<T> memory = ((ReadOnlySequenceSegment<T>)startObject).Memory;
@@ -116,6 +130,9 @@ namespace System.Buffers
             {
                 if (isMultiSegment)
                     ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
+
+                // A == 1 && B == 1 means SequenceType.String
+                // A == 1 && B == 0 means SequenceType.MemoryManager
 
                 // The type == char check here is redundant. However, we still have it to allow
                 // the JIT to see when that the code is unreachable and eliminate it.
