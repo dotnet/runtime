@@ -3,7 +3,7 @@
   <Import Project="..\dir.props" />
   <PropertyGroup>
     <PackageVersion>1.6.0</PackageVersion>
-    <AssemblyVersion>1.4.3.0</AssemblyVersion>
+    <AssemblyVersion>1.4.4.0</AssemblyVersion>
     <AssemblyKey>MSFT</AssemblyKey>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsUAP>true</IsUAP>
