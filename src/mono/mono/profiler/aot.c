@@ -259,7 +259,7 @@ add_type (MonoProfiler *prof, MonoType *type)
 	switch (type->type) {
 #if 0
 	case MONO_TYPE_SZARRAY: {
-		int eid = add_type (prof, &type->data.klass->byval_arg);
+		int eid = add_type (prof, m_class_get_byval_arg (type->data.klass));
 		if (eid == -1)
 			return -1;
 		int id = prof->id ++;

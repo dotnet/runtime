@@ -1175,17 +1175,17 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
 	if ((cinfo->ret.storage != ArgValuetypeInReg) && (MONO_TYPE_ISSTRUCT (sig_ret) || mini_is_gsharedvt_variable_type (sig_ret))) {
-		cfg->vret_addr = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_ARG);
+		cfg->vret_addr = mono_compile_create_var (cfg, mono_get_int_type (), OP_ARG);
 	}
 
 	if (cfg->gen_sdb_seq_points) {
 		MonoInst *ins;
 
-		ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		ins->flags |= MONO_INST_VOLATILE;
 		cfg->arch.ss_tramp_var = ins;
 
-		ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		ins->flags |= MONO_INST_VOLATILE;
 		cfg->arch.bp_tramp_var = ins;
 	}
@@ -1308,7 +1308,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		if (i >= sig->hasthis)
 			t = sig->params [i - sig->hasthis];
 		else
-			t = m_class_get_byval_arg (mono_defaults.int_class);
+			t = mono_get_int_type ()
 
 		linfo->args [i].storage = LLVMArgNone;
 
@@ -1371,7 +1371,7 @@ emit_gc_param_slot_def (MonoCompile *cfg, int sp_offset, MonoType *t)
 
 		/* On x86, the offsets are from the sp value before the start of the call sequence */
 		if (t == NULL)
-			t = m_class_get_byval_arg (mono_defaults.int_class);
+			t = mono_get_int_type ();
 		EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, sp_offset, t);
 	}
 }
@@ -1444,7 +1444,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		if (i >= sig->hasthis)
 			t = sig->params [i - sig->hasthis];
 		else
-			t = m_class_get_byval_arg (mono_defaults.int_class);
+			t = mono_get_int_type ();
 		orig_type = t;
 		t = mini_get_underlying_type (t);
 
@@ -1535,7 +1535,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 							/* The unbox trampoline transforms this into a managed pointer */
 							emit_gc_param_slot_def (cfg, ainfo->offset, m_class_get_this_arg (mono_defaults.int_class));
 						else
-							emit_gc_param_slot_def (cfg, ainfo->offset, m_class_get_byval_arg (mono_defaults.object_class));
+							emit_gc_param_slot_def (cfg, ainfo->offset, mono_get_object_type ());
 					} else {
 						emit_gc_param_slot_def (cfg, ainfo->offset, orig_type);
 					}

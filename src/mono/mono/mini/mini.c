@@ -724,7 +724,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 			tree->flags = MONO_INST_VOLATILE;
 		tree->inst_c0 = num;
 		tree->type = STACK_I4;
-		tree->inst_vtype = m_class_get_byval_arg (mono_defaults.int32_class);
+		tree->inst_vtype = mono_get_int32_type ();
 		tree->klass = mono_class_from_mono_type (tree->inst_vtype);
 
 		set_vreg_to_inst (cfg, MONO_LVREG_LS (inst->dreg), tree);
@@ -736,7 +736,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 			tree->flags = MONO_INST_VOLATILE;
 		tree->inst_c0 = num;
 		tree->type = STACK_I4;
-		tree->inst_vtype = m_class_get_byval_arg (mono_defaults.int32_class);
+		tree->inst_vtype = mono_get_int32_type ();
 		tree->klass = mono_class_from_mono_type (tree->inst_vtype);
 
 		set_vreg_to_inst (cfg, MONO_LVREG_MS (inst->dreg), tree);
@@ -770,7 +770,7 @@ mini_get_int_to_float_spill_area (MonoCompile *cfg)
 {
 #ifdef TARGET_X86
 	if (!cfg->iconv_raw_var) {
-		cfg->iconv_raw_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int32_class), OP_LOCAL);
+		cfg->iconv_raw_var = mono_compile_create_var (cfg, mono_get_int32_type (), OP_LOCAL);
 		cfg->iconv_raw_var->flags |= MONO_INST_VOLATILE; /*FIXME, use the don't regalloc flag*/
 	}
 	return cfg->iconv_raw_var;
@@ -815,9 +815,9 @@ static MonoType*
 type_from_stack_type (MonoInst *ins)
 {
 	switch (ins->type) {
-	case STACK_I4: return m_class_get_byval_arg (mono_defaults.int32_class);
+	case STACK_I4: return mono_get_int32_type ();
 	case STACK_I8: return m_class_get_byval_arg (mono_defaults.int64_class);
-	case STACK_PTR: return m_class_get_byval_arg (mono_defaults.int_class);
+	case STACK_PTR: return mono_get_int_type ();
 	case STACK_R8: return m_class_get_byval_arg (mono_defaults.double_class);
 	case STACK_MP:
 		/* 
@@ -835,7 +835,7 @@ type_from_stack_type (MonoInst *ins)
 		 */
 		if (ins->klass && !m_class_is_valuetype (ins->klass))
 			return m_class_get_byval_arg (ins->klass);
-		return m_class_get_byval_arg (mono_defaults.object_class);
+		return mono_get_object_type ();
 	case STACK_VTYPE: return m_class_get_byval_arg (ins->klass);
 	default:
 		g_error ("stack type %d to montype not handled\n", ins->type);
@@ -959,12 +959,12 @@ mono_get_array_new_va_signature (int arity)
 	res->call_convention = MONO_CALL_C;
 #endif
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	res->params [0] = int_type;
 	for (i = 0; i < arity; i++)
 		res->params [i + 1] = int_type;
 
-	res->ret = m_class_get_byval_arg (mono_defaults.object_class);
+	res->ret = mono_get_object_type ();
 
 	g_hash_table_insert (sighash, GINT_TO_POINTER (arity), res);
 	mono_jit_unlock ();
@@ -2089,7 +2089,7 @@ mono_compile_create_vars (MonoCompile *cfg)
 #endif
 
 	if (cfg->method->save_lmf && cfg->create_lmf_var) {
-		MonoInst *lmf_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		MonoInst *lmf_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		lmf_var->flags |= MONO_INST_VOLATILE;
 		lmf_var->flags |= MONO_INST_LMF;
 		cfg->lmf_var = lmf_var;

@@ -738,7 +738,7 @@ mono_decompose_typecheck (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 	g_assert (is_isinst || ins->opcode == OP_CASTCLASS);
 	source = get_vreg_to_inst (cfg, ins->sreg1);
 	if (!source || source == (MonoInst *) -1)
-		source = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (mono_defaults.object_class), OP_LOCAL, ins->sreg1);
+		source = mono_compile_create_var_for_vreg (cfg, mono_get_object_type (), OP_LOCAL, ins->sreg1);
 	g_assert (source && source != (MonoInst *) -1);
 
 	MonoBasicBlock *first_bb;

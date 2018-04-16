@@ -714,7 +714,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 
 	j = 0;
 	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3 + sig->param_count - complex_count);
-	csig->params [j++] = m_class_get_byval_arg (mono_defaults.object_class);
+	csig->params [j++] = mono_get_object_type ();
 	csig->params [j++] = m_class_get_this_arg (byte_array_class);
 	csig->params [j++] = m_class_get_this_arg (byte_array_class);
 	for (i = 0; i < sig->param_count; i++) {
@@ -724,7 +724,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	if (copy_return)
 		csig->ret = sig->ret;
 	else
-		csig->ret = m_class_get_byval_arg (mono_defaults.void_class);
+		csig->ret = mono_get_void_type ();
 	csig->pinvoke = 1;
 	csig->hasthis = FALSE;
 
@@ -736,7 +736,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 
 	loc_serialized_exc = mono_mb_add_local (mb, m_class_get_byval_arg (byte_array_class));
 	if (complex_count > 0)
-		loc_array = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
+		loc_array = mono_mb_add_local (mb, mono_get_object_type ());
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		loc_return = mono_mb_add_local (mb, sig->ret);
 		ret_class = mono_class_from_mono_type (sig->ret);
@@ -1027,9 +1027,9 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error)
 	/* Locals */
 
 #ifndef DISABLE_JIT
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+	MonoType *object_type = mono_get_object_type ();
 	MonoType *byte_array_type = m_class_get_byval_arg (byte_array_class);
-	MonoType *int32_type = m_class_get_byval_arg (mono_defaults.int32_class);
+	MonoType *int32_type = mono_get_int32_type ();
 	if (complex_count > 0)
 		loc_array = mono_mb_add_local (mb, object_type);
 	loc_serialized_data = mono_mb_add_local (mb, byte_array_type);
@@ -1467,8 +1467,8 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_LDFLD);
 	g_free (name);
 
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *object_type = mono_get_object_type ();
+	MonoType *int_type = mono_get_int_type ();
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
 	sig->params [0] = object_type;
 	sig->params [1] = int_type;
@@ -1489,10 +1489,10 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 
 	/*
 	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-	csig->params [0] = &mono_defaults.object_class->byval_arg;
-	csig->params [1] = &mono_defaults.int_class->byval_arg;
-	csig->params [2] = &mono_defaults.int_class->byval_arg;
-	csig->ret = &klass->this_arg;
+	csig->params [0] = mono_get_object_type ();
+	csig->params [1] = mono_get_int_type ();
+	csig->params [2] = mono_get_int_type ();
+	csig->ret = m_class_get_this_arg (klass);
 	csig->pinvoke = 1;
 
 	mono_mb_emit_native_call (mb, csig, mono_load_remote_field_new);
@@ -1629,8 +1629,8 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_LDFLDA);
 	g_free (name);
 
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *object_type = mono_get_object_type ();
+	MonoType *int_type = mono_get_int_type ();
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
 	sig->params [0] = object_type;
 	sig->params [1] = int_type;
@@ -1768,9 +1768,9 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	g_free (name);
 
 	
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
-	MonoType *void_type = m_class_get_byval_arg (mono_defaults.void_class);
+	MonoType *object_type = mono_get_object_type ();
+	MonoType *int_type = mono_get_int_type ();
+	MonoType *void_type = mono_get_void_type ();
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 5);
 	sig->params [0] = object_type;
 	sig->params [1] = int_type;
@@ -1878,8 +1878,8 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 
 	if (!isint_sig) {
 		isint_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-		isint_sig->params [0] = m_class_get_byval_arg (mono_defaults.object_class);
-		isint_sig->ret = m_class_get_byval_arg (mono_defaults.object_class);
+		isint_sig->params [0] = mono_get_object_type ();
+		isint_sig->ret = mono_get_object_type ();
 		isint_sig->pinvoke = 0;
 	}
 

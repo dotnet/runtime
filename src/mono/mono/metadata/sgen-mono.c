@@ -292,8 +292,8 @@ mono_gc_get_specific_write_barrier (gboolean is_concurrent)
 
 	/* Create the IL version of mono_gc_barrier_generic_store () */
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	sig->ret = m_class_get_byval_arg (mono_defaults.void_class);
-	sig->params [0] = m_class_get_byval_arg (mono_defaults.int_class);
+	sig->ret = mono_get_void_type ();
+	sig->params [0] = mono_get_int_type ();
 
 	if (is_concurrent)
 		mb = mono_mb_new (mono_defaults.object_class, "wbarrier_conc", MONO_WRAPPER_WRITE_BARRIER);
@@ -1016,14 +1016,14 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 	else
 		num_params = 2;
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	csig = mono_metadata_signature_alloc (mono_defaults.corlib, num_params);
 	if (atype == ATYPE_STRING) {
 		csig->ret = m_class_get_byval_arg (mono_defaults.string_class);
 		csig->params [0] = int_type;
-		csig->params [1] = m_class_get_byval_arg (mono_defaults.int32_class);
+		csig->params [1] = mono_get_int32_type ();
 	} else {
-		csig->ret = m_class_get_byval_arg (mono_defaults.object_class);
+		csig->ret = mono_get_object_type ();
 		for (i = 0; i < num_params; i++)
 			csig->params [i] = int_type;
 	}

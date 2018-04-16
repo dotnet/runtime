@@ -2022,7 +2022,7 @@ is_valid_cattr_content (VerifyContext *ctx, MonoMethod *ctor, const char *ptr, g
 		} else if (kind == 0x50) {
 			type = m_class_get_byval_arg (mono_defaults.systemtype_class);
 		} else if (kind == 0x51) {
-			type = m_class_get_byval_arg (mono_defaults.object_class);
+			type = mono_get_object_type ();
 		} else if (kind == MONO_TYPE_SZARRAY) {
 			MonoClass *klass;
 			unsigned etype = 0;

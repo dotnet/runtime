@@ -1461,7 +1461,7 @@ inline static MonoInst *
 mono_get_domainvar (MonoCompile *cfg)
 {
 	if (!cfg->domainvar)
-		cfg->domainvar = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		cfg->domainvar = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 	return cfg->domainvar;
 }
 
@@ -1729,7 +1729,7 @@ mono_decompose_soft_float (MonoCompile *cfg)
 						/* FIXME: Optimize this */
 
 						/* Emit an r4->r8 conversion */
-						EMIT_NEW_VARLOADA_VREG (cfg, iargs [0], call2->inst.dreg, m_class_get_byval_arg (mono_defaults.int32_class));
+						EMIT_NEW_VARLOADA_VREG (cfg, iargs [0], call2->inst.dreg, mono_get_int32_type ());
 						conv = mono_emit_jit_icall (cfg, mono_fload_r4, iargs);
 						conv->dreg = ins->dreg;
 

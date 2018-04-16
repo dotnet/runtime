@@ -389,7 +389,7 @@ alloc_oti (MonoImage *image)
 	return (MonoRuntimeGenericContextInfoTemplate *)mono_image_alloc0 (image, size);
 }
 
-#define MONO_RGCTX_SLOT_USED_MARKER	((gpointer)m_class_get_byval_arg (mono_defaults.object_class))
+#define MONO_RGCTX_SLOT_USED_MARKER	((gpointer)mono_get_object_type ())
 
 /*
  * Return true if this info type has the notion of identify.
@@ -1120,7 +1120,7 @@ get_wrapper_shared_type (MonoType *t)
 	case MONO_TYPE_U2:
 		return m_class_get_byval_arg (mono_defaults.uint16_class);
 	case MONO_TYPE_I4:
-		return m_class_get_byval_arg (mono_defaults.int32_class);
+		return mono_get_int32_type ();
 	case MONO_TYPE_U4:
 		return m_class_get_byval_arg (mono_defaults.uint32_class);
 	case MONO_TYPE_OBJECT:
@@ -1131,8 +1131,8 @@ get_wrapper_shared_type (MonoType *t)
 		// FIXME: refs and intptr cannot be shared because
 		// they are treated differently when a method has a vret arg,
 		// see get_call_info ().
-		return m_class_get_byval_arg (mono_defaults.object_class);
-		//return m_class_get_byval_arg (mono_defaults.int_class);
+		return mono_get_object_type ();
+		//return mono_get_int_type ();
 	case MONO_TYPE_GENERICINST: {
 		ERROR_DECL (error);
 		MonoClass *klass;
@@ -1143,7 +1143,7 @@ get_wrapper_shared_type (MonoType *t)
 		int i;
 
 		if (!MONO_TYPE_ISSTRUCT (t))
-			return get_wrapper_shared_type (m_class_get_byval_arg (mono_defaults.object_class));
+			return get_wrapper_shared_type (mono_get_object_type ());
 
 		klass = mono_class_from_mono_type (t);
 		orig_ctx = &mono_class_get_generic_class (klass)->context;
@@ -1170,7 +1170,7 @@ get_wrapper_shared_type (MonoType *t)
 	}
 #if SIZEOF_VOID_P == 8
 	case MONO_TYPE_I8:
-		return m_class_get_byval_arg (mono_defaults.int_class);
+		return mono_get_int_type ();
 #endif
 	default:
 		break;
@@ -1233,7 +1233,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	csig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + ((sig->param_count + 1) * sizeof (MonoType*)));
 	memcpy (csig, sig, mono_metadata_signature_size (sig));
 	csig->param_count ++;
-	csig->params [sig->param_count] = m_class_get_byval_arg (mono_defaults.int_class);
+	csig->params [sig->param_count] = mono_get_int_type ();
 
 	/* Create the signature for the gsharedvt callconv */
 	gsharedvt_sig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + ((sig->param_count + 2) * sizeof (MonoType*)));
@@ -1241,8 +1241,8 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	pindex = 0;
 	/* The return value is returned using an explicit vret argument */
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		gsharedvt_sig->params [pindex ++] = m_class_get_byval_arg (mono_defaults.int_class);
-		gsharedvt_sig->ret = m_class_get_byval_arg (mono_defaults.void_class);
+		gsharedvt_sig->params [pindex ++] = mono_get_int_type ();
+		gsharedvt_sig->ret = mono_get_void_type ();
 	}
 	for (i = 0; i < sig->param_count; i++) {
 		gsharedvt_sig->params [pindex] = sig->params [i];
@@ -1253,7 +1253,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 		pindex ++;
 	}
 	/* Rgctx arg */
-	gsharedvt_sig->params [pindex ++] = m_class_get_byval_arg (mono_defaults.int_class);
+	gsharedvt_sig->params [pindex ++] = mono_get_int_type ();
 	gsharedvt_sig->param_count = pindex;
 
 	// FIXME: Use shared signatures
@@ -1339,8 +1339,8 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	pindex = 0;
 	/* The return value is returned using an explicit vret argument */
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		csig->params [pindex ++] = m_class_get_byval_arg (mono_defaults.int_class);
-		csig->ret = m_class_get_byval_arg (mono_defaults.void_class);
+		csig->params [pindex ++] = mono_get_int_type ();
+		csig->ret = mono_get_void_type ();
 	}
 	args_start = pindex;
 	if (sig->hasthis)
@@ -1354,14 +1354,14 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 		pindex ++;
 	}
 	/* Rgctx arg */
-	csig->params [pindex ++] = m_class_get_byval_arg (mono_defaults.int_class);
+	csig->params [pindex ++] = mono_get_int_type ();
 	csig->param_count = pindex;
 
 	/* Create the signature for the normal callconv */
 	normal_sig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + ((sig->param_count + 2) * sizeof (MonoType*)));
 	memcpy (normal_sig, sig, mono_metadata_signature_size (sig));
 	normal_sig->param_count ++;
-	normal_sig->params [sig->param_count] = m_class_get_byval_arg (mono_defaults.int_class);
+	normal_sig->params [sig->param_count] = mono_get_int_type ();
 
 	// FIXME: Use shared signatures
 	mb = mono_mb_new (mono_defaults.object_class, "gsharedvt_out_sig", MONO_WRAPPER_UNKNOWN);
@@ -1476,7 +1476,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	csig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + (sig->param_count * sizeof (MonoType*)));
 	memcpy (csig, sig, mono_metadata_signature_size (sig));
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	/* Create the signature for the callee callconv */
 	if (generic) {
 		/*
@@ -1484,7 +1484,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 		 * interp_entry_general (gpointer this_arg, gpointer res, gpointer *args, gpointer rmethod)
 		 */
 		entry_sig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + (4 * sizeof (MonoType*)));
-		entry_sig->ret = m_class_get_byval_arg (mono_defaults.void_class);
+		entry_sig->ret = mono_get_void_type ();
 		entry_sig->param_count = 4;
 		entry_sig->params [0] = int_type;
 		entry_sig->params [1] = int_type;
@@ -1503,7 +1503,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 		/* The return value is returned using an explicit vret argument */
 		if (sig->ret->type != MONO_TYPE_VOID) {
 			entry_sig->params [pindex ++] = int_type;
-			entry_sig->ret = m_class_get_byval_arg (mono_defaults.void_class);
+			entry_sig->ret = mono_get_void_type ();
 		}
 		for (i = 0; i < sig->param_count; i++) {
 			entry_sig->params [pindex] = sig->params [i];
@@ -1632,9 +1632,9 @@ mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_re
 {
 	MonoMethodSignature *sig = g_malloc0 (sizeof (MonoMethodSignature) + (32 * sizeof (MonoType*)));
 	int i, pindex;
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 
-	sig->ret = m_class_get_byval_arg (mono_defaults.void_class);
+	sig->ret = mono_get_void_type ();
 	sig->sentinelpos = -1;
 	pindex = 0;
 	if (has_this)
@@ -2631,7 +2631,7 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot,
 
 	info = fill_runtime_generic_context (class_vtable, rgctx, slot, NULL, FALSE, error);
 
-	DEBUG (printf ("get rgctx slot: %s %d -> %p\n", mono_type_full_name (m_class_get_byval_arg (class_vtable)), slot, info));
+	DEBUG (printf ("get rgctx slot: %s %d -> %p\n", mono_type_full_name (m_class_get_byval_arg (class_vtable->klass)), slot, info));
 
 	return info;
 }
@@ -3069,7 +3069,7 @@ get_object_generic_inst (int type_argc)
 
 	type_argv = (MonoType **)alloca (sizeof (MonoType*) * type_argc);
 
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+	MonoType *object_type = mono_get_object_type ();
 	for (i = 0; i < type_argc; ++i)
 		type_argv [i] = object_type;
 
@@ -3263,7 +3263,7 @@ mini_get_basic_type_from_generic (MonoType *type)
 		MonoType *constraint = type->data.generic_param->gshared_constraint;
 		/* The gparam constraint encodes the type this gparam can represent */
 		if (!constraint) {
-			return m_class_get_byval_arg (mono_defaults.object_class);
+			return mono_get_object_type ();
 		} else {
 			MonoClass *klass;
 
@@ -3288,7 +3288,7 @@ mini_type_get_underlying_type (MonoType *type)
 	type = mini_native_type_replace_type (type);
 
 	if (type->byref)
-		return m_class_get_byval_arg (mono_defaults.int_class);
+		return mono_get_int_type ();
 	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type (type))
 		return type;
 	type = mini_get_basic_type_from_generic (mono_type_get_underlying_type (type));
@@ -3301,7 +3301,7 @@ mini_type_get_underlying_type (MonoType *type)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY:
-		return m_class_get_byval_arg (mono_defaults.object_class);
+		return mono_get_object_type ();
 	default:
 		return type;
 	}

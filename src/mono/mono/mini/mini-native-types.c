@@ -449,7 +449,7 @@ mini_native_type_replace_type (MonoType *type)
 	klass = type->data.klass;
 
 	if (mono_class_is_magic_int (klass))
-		return type->byref ? m_class_get_this_arg (mono_defaults.int_class) : m_class_get_byval_arg (mono_defaults.int_class);
+		return type->byref ? m_class_get_this_arg (mono_defaults.int_class) : mono_get_int_type ();
 	if (mono_class_is_magic_float (klass))
 #if SIZEOF_VOID_P == 8
 		return type->byref ? m_class_get_this_arg (mono_defaults.double_class) : m_class_get_byval_arg (mono_defaults.double_class);

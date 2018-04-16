@@ -990,12 +990,12 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 
 	if (atype == ATYPE_STRING) {
 		csig->ret = m_class_get_byval_arg (mono_defaults.string_class);
-		csig->params [0] = m_class_get_byval_arg (mono_defaults.int_class);
-		csig->params [1] = m_class_get_byval_arg (mono_defaults.int32_class);
+		csig->params [0] = mono_get_int_type ();
+		csig->params [1] = mono_get_int32_type ();
 	} else {
-		csig->ret = m_class_get_byval_arg (mono_defaults.object_class);
-		csig->params [0] = m_class_get_byval_arg (mono_defaults.int_class);
-		csig->params [1] = m_class_get_byval_arg (mono_defaults.int32_class);
+		csig->ret = mono_get_object_type ();
+		csig->params [0] = mono_get_int_type ();
+		csig->params [1] = mono_get_int32_type ();
 	}
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_ALLOC);
@@ -1003,7 +1003,7 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 	if (slowpath)
 		goto always_slowpath;
 
-	bytes_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int32_class));
+	bytes_var = mono_mb_add_local (mb, mono_get_int32_type ());
 	if (atype == ATYPE_STRING) {
 		/* a string alloator method takes the args: (vtable, len) */
 		/* bytes = (offsetof (MonoString, chars) + ((len + 1) * 2)); */
@@ -1035,7 +1035,7 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 	}
 
 	/* int index = INDEX_FROM_BYTES(bytes); */
-	index_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int32_class));
+	index_var = mono_mb_add_local (mb, mono_get_int32_type ());
 	
 	mono_mb_emit_ldloc (mb, bytes_var);
 	mono_mb_emit_icon (mb, GRANULARITY - 1);
@@ -1047,8 +1047,8 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 	/* index var is already adjusted into bytes */
 	mono_mb_emit_stloc (mb, index_var);
 
-	my_fl_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
-	my_entry_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
+	my_fl_var = mono_mb_add_local (mb, mono_get_int_type ());
+	my_entry_var = mono_mb_add_local (mb, mono_get_int_type ());
 	/* my_fl = ((GC_thread)tsd) -> ptrfree_freelists + index; */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, 0x0D); /* CEE_MONO_TLS */
@@ -1097,8 +1097,8 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 		int start_var, end_var, start_loop;
 		/* end = my_entry + bytes; start = my_entry + sizeof (gpointer);
 		 */
-		start_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
-		end_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
+		start_var = mono_mb_add_local (mb, mono_get_int_type ());
+		end_var = mono_mb_add_local (mb, mono_get_int_type ());
 		mono_mb_emit_ldloc (mb, my_entry_var);
 		mono_mb_emit_ldloc (mb, bytes_var);
 		mono_mb_emit_byte (mb, MONO_CEE_ADD);

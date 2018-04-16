@@ -191,7 +191,7 @@ emit_fixed_buf_conv (MonoMethodBuilder *mb, MonoType *type, MonoType *etype, int
 		guint32 label2, label3;
 
 		/* Emit marshalling loop */
-		MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+		MonoType *int_type = mono_get_int_type ();
 		index_var = mono_mb_add_local (mb, int_type);
 		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
 		mono_mb_emit_stloc (mb, index_var);
@@ -321,8 +321,8 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			int array_var, src_var, dst_var, index_var;
 			guint32 label2, label3;
 
-			MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
-			array_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
+			MonoType *int_type = mono_get_int_type ();
+			array_var = mono_mb_add_local (mb, mono_get_object_type ());
 			src_var = mono_mb_add_local (mb, int_type);
 			dst_var = mono_mb_add_local (mb, int_type);
 
@@ -451,7 +451,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		MonoClass *klass = mono_class_from_mono_type (type);
 		int src_var, dst_var;
 
-		MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+		MonoType *int_type = mono_get_int_type ();
 		src_var = mono_mb_add_local (mb, int_type);
 		dst_var = mono_mb_add_local (mb, int_type);
 		
@@ -734,8 +734,8 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			int array_var, src_var, dst_var, index_var;
 			guint32 label2, label3;
 
-			MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
-			MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+			MonoType *int_type = mono_get_int_type ();
+			MonoType *object_type = mono_get_object_type ();
 			array_var = mono_mb_add_local (mb, object_type);
 			src_var = mono_mb_add_local (mb, int_type);
 			dst_var = mono_mb_add_local (mb, int_type);
@@ -809,7 +809,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 	case MONO_MARSHAL_CONV_OBJECT_STRUCT: {
 		int src_var, dst_var;
 
-		MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+		MonoType *int_type = mono_get_int_type ();
 		src_var = mono_mb_add_local (mb, int_type);
 		dst_var = mono_mb_add_local (mb, int_type);
 		
@@ -1022,7 +1022,7 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 					goto handle_enum;
 				}
 
-				MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+				MonoType *int_type = mono_get_int_type ();
 				src_var = mono_mb_add_local (mb, int_type);
 				dst_var = mono_mb_add_local (mb, int_type);
 	
@@ -1092,7 +1092,7 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 		default: {
 			int src_var, dst_var;
 
-			MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+			MonoType *int_type = mono_get_int_type ();
 			src_var = mono_mb_add_local (mb, int_type);
 			dst_var = mono_mb_add_local (mb, int_type);
 
@@ -1200,7 +1200,7 @@ mono_mb_emit_save_args (MonoMethodBuilder *mb, MonoMethodSignature *sig, gboolea
 {
 	int i, params_var, tmp_var;
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	/* allocate local (pointer) *params[] */
 	params_var = mono_mb_add_local (mb, int_type);
 	/* allocate local (pointer) tmp */
@@ -1243,7 +1243,7 @@ void
 mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 {
 	MonoType *t = mono_type_get_underlying_type (return_type);
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 
 	if (return_type->byref)
 		return_type = int_type;
@@ -1531,7 +1531,7 @@ emit_runtime_invoke_body_ilgen (MonoMethodBuilder *mb, const char **param_names,
 	 * }
 	 */
 
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+	MonoType *object_type = mono_get_object_type ();
 	/* allocate local 0 (object) tmp */
 	loc_res = mono_mb_add_local (mb, object_type);
 	/* allocate local 1 (object) exc */
@@ -1593,7 +1593,7 @@ emit_runtime_invoke_dynamic_ilgen (MonoMethodBuilder *mb)
 	int pos;
 	MonoExceptionClause *clause;
 
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+	MonoType *object_type = mono_get_object_type ();
 	/* allocate local 0 (object) tmp */
 	mono_mb_add_local (mb, object_type);
 	/* allocate local 1 (object) exc */
@@ -1708,7 +1708,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	if (sig->hasthis)
 		param_shift += 1;
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	MonoType *boolean_type = m_class_get_byval_arg (mono_defaults.boolean_class);
 	/* we allocate local for use with emit_struct_conv() */
 	/* allocate local 0 (pointer) src_ptr */
@@ -1983,7 +1983,7 @@ generate_check_cache (int obj_arg_position, int class_arg_position, int cache_ar
 {
 	int cache_miss_pos;
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	/* allocate local 0 (pointer) obj_vtable */
 	mono_mb_add_local (mb, int_type);
 	/* allocate local 1 (pointer) cached_vtable */
@@ -2128,8 +2128,8 @@ emit_marshal_array_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoMarshalNative encoding;
 
 	encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+	MonoType *int_type = mono_get_int_type ();
+	MonoType *object_type = mono_get_object_type ();
 
 	MonoClass *eklass = m_class_get_element_class (klass);
 
@@ -2825,7 +2825,7 @@ emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		      MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	MonoType *boolean_type = m_class_get_byval_arg (mono_defaults.boolean_class);
 
 	switch (action) {
@@ -3059,7 +3059,7 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, M
 	int array_slot_addr;
 
 	mono_mb_set_param_names (mb, param_names);
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	MonoType *int32_type = m_class_get_byval_arg (mono_defaults.int32_class);
 	MonoType *object_type_byref = m_class_get_this_arg (mono_defaults.object_class);
 
@@ -3099,7 +3099,7 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, M
 			/*Use this to debug/record stores that are going thru the slow path*/
 			MonoMethodSignature *csig;
 			csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-			csig->ret = m_class_get_byval_arg (mono_defaults.void_class);
+			csig->ret = mono_get_void_type ();
 			csig->params [0] = object_type;
 			csig->params [1] = int_type; /* this is a natural sized int */
 			csig->params [2] = object_type;
@@ -3468,7 +3468,7 @@ emit_stelemref_ilgen (MonoMethodBuilder *mb)
 	int aklass, vklass;
 	int array_slot_addr;
 	
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	MonoType *object_type_byref = m_class_get_this_arg (mono_defaults.object_class);
 
 	aklass = mono_mb_add_local (mb, int_type);
@@ -3595,8 +3595,8 @@ emit_array_address_ilgen (MonoMethodBuilder *mb, int rank, int elem_size)
 	int i, bounds, ind, realidx;
 	int branch_pos, *branch_positions;
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
-	MonoType *int32_type = m_class_get_byval_arg (mono_defaults.int32_class);
+	MonoType *int_type = mono_get_int_type ();
+	MonoType *int32_type = mono_get_int32_type ();
 
 	branch_positions = g_new0 (int, rank);
 
@@ -3734,8 +3734,8 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 	int i;
 	gboolean void_ret;
 
-	MonoType *int32_type = m_class_get_byval_arg (mono_defaults.int32_class);
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+	MonoType *int32_type = mono_get_int32_type ();
+	MonoType *object_type = mono_get_object_type ();
 
 	void_ret = sig->ret->type == MONO_TYPE_VOID && !method->string_ctor;
 
@@ -3941,7 +3941,7 @@ emit_synchronized_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		return;
 	}
 
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+	MonoType *object_type = mono_get_object_type ();
 	MonoType *boolean_type = m_class_get_byval_arg (mono_defaults.boolean_class);
 	/* this */
 	this_local = mono_mb_add_local (mb, object_type);
@@ -4063,7 +4063,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	int param_count = sig->param_count + sig->hasthis + 1;
 	int pos_leave, coop_gc_var, coop_gc_stack_dummy;
 	MonoExceptionClause *clause;
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+	MonoType *object_type = mono_get_object_type ();
 
 	/* local 0 (temp for exception object) */
 	mono_mb_add_local (mb, object_type);
@@ -4074,9 +4074,9 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 
 	if (mono_threads_is_blocking_transition_enabled ()) {
 		/* local 4, dummy local used to get a stack address for suspend funcs */
-		coop_gc_stack_dummy = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
+		coop_gc_stack_dummy = mono_mb_add_local (mb, mono_get_int_type ());
 		/* local 5, the local to be used when calling the suspend funcs */
-		coop_gc_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
+		coop_gc_var = mono_mb_add_local (mb, mono_get_int_type ());
 	}
 
 	/* clear exception arg */
@@ -4186,8 +4186,8 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	guint32 loc1;
 	int pos2;
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+	MonoType *int_type = mono_get_int_type ();
+	MonoType *object_type = mono_get_object_type ();
 
 	if (!ICustomMarshaler) {
 		MonoClass *klass = mono_class_try_get_icustom_marshaler_class ();
@@ -4488,7 +4488,7 @@ emit_marshal_asany_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 {
 	MonoMethodBuilder *mb = m->mb;
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN: {
 		MonoMarshalNative encoding = mono_marshal_get_string_encoding (m->piinfo, NULL);
@@ -4540,7 +4540,7 @@ emit_marshal_vtype_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	date_time_class = mono_class_get_date_time_class ();
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	MonoType *double_type = m_class_get_byval_arg (mono_defaults.double_class);
 
 	switch (action) {
@@ -4815,8 +4815,8 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoMarshalConv conv = mono_marshal_get_string_to_ptr_conv (m->piinfo, spec);
 	gboolean need_free;
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+	MonoType *int_type = mono_get_int_type ();
+	MonoType *object_type = mono_get_object_type ();
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
 		*conv_arg_type = int_type;
@@ -4981,7 +4981,7 @@ emit_marshal_safehandle_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			 MonoType **conv_arg_type, MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	MonoType *boolean_type = m_class_get_byval_arg (mono_defaults.boolean_class);
 
 	switch (action){
@@ -5141,7 +5141,7 @@ emit_marshal_handleref_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 {
 	MonoMethodBuilder *mb = m->mb;
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	switch (action){
 	case MARSHAL_ACTION_CONV_IN: {
 		conv_arg = mono_mb_add_local (mb, int_type);
@@ -5203,7 +5203,7 @@ emit_marshal_object_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoClass *klass = mono_class_from_mono_type (t);
 	int pos, pos2, loc;
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
 		*conv_arg_type = int_type;
@@ -5710,7 +5710,7 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	static MonoMethod *get_native_variant_for_object = NULL;
 	MonoType *variant_type = m_class_get_byval_arg (mono_class_get_variant_class ());
 	MonoType *variant_type_byref = m_class_get_this_arg (mono_class_get_variant_class ());
-	MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+	MonoType *object_type = mono_get_object_type ();
 
 	if (!get_object_for_native_variant)
 		get_object_for_native_variant = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1);
@@ -5826,7 +5826,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	sig = m->sig;
 	csig = m->csig;
 
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	MonoType *boolean_type = m_class_get_byval_arg (mono_defaults.boolean_class);
 	/* allocate local 0 (pointer) src_ptr */
 	mono_mb_add_local (mb, int_type);
@@ -6065,7 +6065,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 static void
 emit_struct_to_ptr_ilgen (MonoMethodBuilder *mb, MonoClass *klass)
 {
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	MonoType *boolean_type = m_class_get_byval_arg (mono_defaults.boolean_class);
 	if (m_class_is_blittable (klass)) {
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
@@ -6103,7 +6103,7 @@ emit_struct_to_ptr_ilgen (MonoMethodBuilder *mb, MonoClass *klass)
 static void
 emit_ptr_to_struct_ilgen (MonoMethodBuilder *mb, MonoClass *klass)
 {
-	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	MonoType *int_type = mono_get_int_type ();
 	if (m_class_is_blittable (klass)) {
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
 		mono_mb_emit_ldflda (mb, sizeof (MonoObject));

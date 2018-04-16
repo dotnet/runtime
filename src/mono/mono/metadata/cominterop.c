@@ -241,7 +241,7 @@ cominterop_method_signature (MonoMethod* method)
 		res->params[i+1] = sig->params[i];
 
 	// first arg is interface pointer
-	res->params[0] = m_class_get_byval_arg (mono_defaults.int_class);
+	res->params[0] = mono_get_int_type ();
 
 	if (preserve_sig) {
 		res->ret = sig->ret;
@@ -255,7 +255,7 @@ cominterop_method_signature (MonoMethod* method)
 		}
 
 		// return type is always int32 (HRESULT)
-		res->ret = m_class_get_byval_arg (mono_defaults.int32_class);
+		res->ret = mono_get_int32_type ();
 	}
 
 	// no pinvoke
@@ -1038,7 +1038,7 @@ mono_cominterop_get_native_wrapper (MonoMethod *method)
 			gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
 
 			// add local variables
-			ptr_this = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
+			ptr_this = mono_mb_add_local (mb, mono_get_int_type ());
 			if (!MONO_TYPE_IS_VOID (sig->ret))
 				retval =  mono_mb_add_local (mb, sig->ret);
 
@@ -1128,7 +1128,7 @@ mono_cominterop_get_invoke (MonoMethod *method)
 
 #ifndef DISABLE_JIT
 	/* get real proxy object, which is a ComInteropProxy in this case*/
-	mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
+	mono_mb_add_local (mb, mono_get_object_type ());
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoTransparentProxy, rp));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
@@ -1225,10 +1225,10 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 #ifdef DISABLE_JIT
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
-		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		*conv_arg_type = mono_get_int_type ();
 		break;
 	case MARSHAL_ACTION_MANAGED_CONV_IN:
-		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		*conv_arg_type = mono_get_int_type ();
 		break;
 	default:
 		break;
@@ -1238,7 +1238,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	case MARSHAL_ACTION_CONV_IN: {
 		guint32 pos_null = 0;
 
-		MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+		MonoType *int_type = mono_get_int_type ();
 		*conv_arg_type = int_type;
 		conv_arg = mono_mb_add_local (mb, int_type);
 
@@ -1281,7 +1281,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 			int ccw_obj;
 			guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
-			ccw_obj = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
+			ccw_obj = mono_mb_add_local (mb, mono_get_object_type ());
 
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, CEE_LDNULL);
@@ -1338,8 +1338,8 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	case MARSHAL_ACTION_CONV_RESULT: {
 		int ccw_obj, ret_ptr;
 		guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
-		ccw_obj = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
-		ret_ptr = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
+		ccw_obj = mono_mb_add_local (mb, mono_get_object_type ());
+		ret_ptr = mono_mb_add_local (mb, mono_get_int_type ());
 
 		/* store return value */
 		mono_mb_emit_stloc (mb, ret_ptr);
@@ -1386,11 +1386,11 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
 		int ccw_obj;
 		guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
-		ccw_obj = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
+		ccw_obj = mono_mb_add_local (mb, mono_get_object_type ());
 
 		klass = mono_class_from_mono_type (t);
 		conv_arg = mono_mb_add_local (mb, m_class_get_byval_arg (klass));
-		*conv_arg_type = m_class_get_byval_arg (mono_defaults.int_class);
+		*conv_arg_type = mono_get_int_type ();
 
 		mono_mb_emit_byte (mb, CEE_LDNULL);
 		mono_mb_emit_stloc (mb, conv_arg);
@@ -1480,7 +1480,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT: {
 		guint32 pos_null = 0;
 		int ccw_obj;
-		ccw_obj = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
+		ccw_obj = mono_mb_add_local (mb, mono_get_object_type ());
 
 		if (!AddRef)
 			AddRef = mono_class_get_method_from_name (mono_defaults.marshal_class, "AddRef", 1);
@@ -2343,7 +2343,7 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 
 #ifndef DISABLE_JIT
 	if (!preserve_sig)
-		hr = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int32_class));
+		hr = mono_mb_add_local (mb, mono_get_int32_type ());
 	else if (!MONO_TYPE_IS_VOID (sig->ret))
 		hr = mono_mb_add_local (mb, sig->ret);
 
@@ -2949,8 +2949,8 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 			static MonoMethod *get_value_impl = NULL;
 			static MonoMethod *variant_clear = NULL;
 
-			MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
-			conv_arg = safearray_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
+			MonoType *int_type = mono_get_int_type ();
+			conv_arg = safearray_var = mono_mb_add_local (mb, mono_get_object_type ());
 			indices_var = mono_mb_add_local (mb, int_type);
 			empty_var = mono_mb_add_local (mb, int_type);
 
@@ -2971,7 +2971,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 
 			label2 = mono_mb_emit_short_branch (mb, CEE_BRTRUE_S);
 
-			index_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int32_class));
+			index_var = mono_mb_add_local (mb, mono_get_int32_type ());
 			mono_mb_emit_byte (mb, CEE_LDC_I4_0);
 			mono_mb_emit_stloc (mb, index_var);
 
@@ -3067,8 +3067,8 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 			static MonoMethod *set_value_impl = NULL;
 			gboolean byValue = !t->byref && (t->attrs & PARAM_ATTRIBUTE_IN);
 
-			MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
-			MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+			MonoType *object_type = mono_get_object_type ();
+			MonoType *int_type = mono_get_int_type ();
 			result_var = mono_mb_add_local (mb, object_type);
 			indices_var = mono_mb_add_local (mb, int_type);
 			empty_var = mono_mb_add_local (mb, int_type);

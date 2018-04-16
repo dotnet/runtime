@@ -1869,7 +1869,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	sig_ret = mini_get_underlying_type (sig->ret);
 	if (cinfo->ret.storage == ArgValuetypeAddrInIReg || cinfo->ret.storage == ArgGsharedvtVariableInReg) {
-		cfg->vret_addr = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_ARG);
+		cfg->vret_addr = mono_compile_create_var (cfg, mono_get_int_type (), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			printf ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
@@ -1880,15 +1880,15 @@ mono_arch_create_vars (MonoCompile *cfg)
 		MonoInst *ins;
 
 		if (cfg->compile_aot) {
-			MonoInst *ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+			MonoInst *ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 			ins->flags |= MONO_INST_VOLATILE;
 			cfg->arch.seq_point_info_var = ins;
 		}
-		ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		ins->flags |= MONO_INST_VOLATILE;
 		cfg->arch.ss_tramp_var = ins;
 
-		ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		ins->flags |= MONO_INST_VOLATILE;
 		cfg->arch.bp_tramp_var = ins;
 	}
@@ -2068,7 +2068,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		if (i >= sig->hasthis)
 			t = sig->params [i - sig->hasthis];
 		else
-			t = m_class_get_byval_arg (mono_defaults.int_class);
+			t = mono_get_int_type ();
 		t = mini_type_get_underlying_type (t);
 
 		linfo->args [i].storage = LLVMArgNone;
@@ -2149,7 +2149,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		in = call->args [i];
 
 		if (sig->hasthis && i == 0)
-			t = m_class_get_byval_arg (mono_defaults.object_class);
+			t = mono_get_object_type ();
 		else
 			t = sig->params [i - sig->hasthis];
 
@@ -2195,7 +2195,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		in = call->args [i];
 
 		if (sig->hasthis && i == 0)
-			t = m_class_get_byval_arg (mono_defaults.object_class);
+			t = mono_get_object_type ();
 		else
 			t = sig->params [i - sig->hasthis];
 		t = mini_get_underlying_type (t);
@@ -2296,7 +2296,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			 * access it.
 			 */
 			if (!cfg->arch.vret_addr_loc) {
-				cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+				cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 				/* Prevent it from being register allocated or optimized away */
 				((MonoInst*)cfg->arch.vret_addr_loc)->flags |= MONO_INST_VOLATILE;
 			}

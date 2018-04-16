@@ -912,7 +912,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			ArgStorage storage;
 
 			if (sig->hasthis && (i == 0))
-				arg_type = m_class_get_byval_arg (mono_defaults.object_class);
+				arg_type = mono_get_object_type ();
 			else
 				arg_type = sig->params [i - sig->hasthis];
 
@@ -1030,7 +1030,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 
 	if (MONO_TYPE_ISSTRUCT ((sig->ret))) {
-		cfg->vret_addr = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_ARG);
+		cfg->vret_addr = mono_compile_create_var (cfg, mono_get_int_type (), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			printf ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
@@ -1303,7 +1303,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		in = call->args [i];
 
 		if (sig->hasthis && (i == 0))
-			arg_type = m_class_get_byval_arg (mono_defaults.object_class);
+			arg_type = mono_get_object_type ();
 		else
 			arg_type = sig->params [i - sig->hasthis];
 
@@ -2130,7 +2130,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint32 *code)
 		inst = cfg->args [i];
 
 		if (sig->hasthis && (i == 0))
-			arg_type = m_class_get_byval_arg (mono_defaults.object_class);
+			arg_type = mono_get_object_type ();
 		else
 			arg_type = sig->params [i - sig->hasthis];
 
@@ -3960,7 +3960,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		inst = cfg->args [i];
 
 		if (sig->hasthis && (i == 0))
-			arg_type = m_class_get_byval_arg (mono_defaults.object_class);
+			arg_type = mono_get_object_type ();
 		else
 			arg_type = sig->params [i - sig->hasthis];
 

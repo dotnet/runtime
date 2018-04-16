@@ -2854,7 +2854,7 @@ push_arg (VerifyContext *ctx, unsigned int arg, int take_addr)
 		else {
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method doesn't have argument %d", arg + 1));
 			if (check_overflow (ctx)) //FIXME: what sane value could we ever push?
-				stack_push_val (ctx, TYPE_I4, m_class_get_byval_arg (mono_defaults.int32_class));
+				stack_push_val (ctx, TYPE_I4, mono_get_int32_type ());
 		}
 	} else if (check_overflow (ctx)) {
 		/*We must let the value be pushed, otherwise we would get an underflow error*/
@@ -3142,7 +3142,7 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX], g
 	if (opcode == CEE_CGT_UN) {
 		if ((stack_slot_is_reference_value (a) && stack_slot_is_null_literal (b)) ||
 			(stack_slot_is_reference_value (b) && stack_slot_is_null_literal (a))) {
-			stack_push_val (ctx, TYPE_I4, m_class_get_byval_arg (mono_defaults.int32_class));
+			stack_push_val (ctx, TYPE_I4, mono_get_int32_type ());
 			return;
 		}
 	}
@@ -3173,7 +3173,7 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX], g
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Compare instruction is not verifiable (%s x %s) at 0x%04x", stack_slot_get_name (a), stack_slot_get_name (b), ctx->ip_offset)); 
  		res = res & ~NON_VERIFIABLE_RESULT;
  	}
- 	stack_push_val (ctx, TYPE_I4, m_class_get_byval_arg (mono_defaults.int32_class));
+ 	stack_push_val (ctx, TYPE_I4, mono_get_int32_type ());
 }
 
 static void
@@ -3687,7 +3687,7 @@ do_conversion (VerifyContext *ctx, int kind)
 
 	switch (kind) {
 	case TYPE_I4:
-		stack_push_val (ctx, TYPE_I4, m_class_get_byval_arg (mono_defaults.int32_class));
+		stack_push_val (ctx, TYPE_I4, mono_get_int32_type ());
 		break;
 	case TYPE_I8:
 		stack_push_val (ctx,TYPE_I8, m_class_get_byval_arg (mono_defaults.int64_class));
@@ -3696,7 +3696,7 @@ do_conversion (VerifyContext *ctx, int kind)
 		stack_push_val (ctx, TYPE_R8, m_class_get_byval_arg (mono_defaults.double_class));
 		break;
 	case TYPE_NATIVE_INT:
-		stack_push_val (ctx, TYPE_NATIVE_INT, m_class_get_byval_arg (mono_defaults.int_class));
+		stack_push_val (ctx, TYPE_NATIVE_INT, mono_get_int_type ());
 		break;
 	default:
 		g_error ("unknown type %02x in conversion", kind);
@@ -4033,7 +4033,7 @@ mono_type_from_opcode (int opcode) {
 	case CEE_LDELEM_I4:
 	case CEE_LDELEM_U4:
 	case CEE_STELEM_I4:
-		return m_class_get_byval_arg (mono_defaults.int32_class);
+		return mono_get_int32_type ();
 
 	case CEE_LDIND_I8:
 	case CEE_STIND_I8:
@@ -4057,13 +4057,13 @@ mono_type_from_opcode (int opcode) {
 	case CEE_STIND_I:
 	case CEE_LDELEM_I:
 	case CEE_STELEM_I:
-		return m_class_get_byval_arg (mono_defaults.int_class);
+		return mono_get_int_type ();
 
 	case CEE_LDIND_REF:
 	case CEE_STIND_REF:
 	case CEE_LDELEM_REF:
 	case CEE_STELEM_REF:
-		return m_class_get_byval_arg (mono_defaults.object_class);
+		return mono_get_object_type ();
 
 	default:
 		g_error ("unknown opcode %02x in mono_type_from_opcode ", opcode);
@@ -4162,7 +4162,7 @@ do_ldlen (VerifyContext *ctx)
 	if (stack_slot_get_type (value) != TYPE_COMPLEX || value->type->type != MONO_TYPE_SZARRAY)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type for ldlen at 0x%04x", ctx->ip_offset));
 
-	stack_push_val (ctx, TYPE_NATIVE_INT, m_class_get_byval_arg (mono_defaults.int_class));	
+	stack_push_val (ctx, TYPE_NATIVE_INT, mono_get_int_type ());
 }
 
 /*FIXME handle arrays that are not 0-indexed*/
@@ -4532,7 +4532,7 @@ do_localloc (VerifyContext *ctx)
 	/*TODO verify top type*/
 	/* top = */ stack_pop (ctx);
 
-	set_stack_value (ctx, stack_push (ctx), m_class_get_byval_arg (mono_defaults.int_class), FALSE);
+	set_stack_value (ctx, stack_push (ctx), mono_get_int_type (), FALSE);
 	CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Instruction localloc in never verifiable at 0x%04x", ctx->ip_offset));
 }
 
@@ -5368,21 +5368,21 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDC_I4_7:
 		case CEE_LDC_I4_8:
 			if (check_overflow (&ctx))
-				stack_push_val (&ctx, TYPE_I4, m_class_get_byval_arg (mono_defaults.int32_class));
+				stack_push_val (&ctx, TYPE_I4, mono_get_int32_type ());
 			++ip;
 			break;
 
 		case CEE_LDC_I4_S:
 			code_bounds_check (2);
 			if (check_overflow (&ctx))
-				stack_push_val (&ctx, TYPE_I4, m_class_get_byval_arg (mono_defaults.int32_class));
+				stack_push_val (&ctx, TYPE_I4, mono_get_int32_type ());
 			ip += 2;
 			break;
 
 		case CEE_LDC_I4:
 			code_bounds_check (5);
 			if (check_overflow (&ctx))
-				stack_push_val (&ctx,TYPE_I4, m_class_get_byval_arg (mono_defaults.int32_class));
+				stack_push_val (&ctx,TYPE_I4, mono_get_int32_type ());
 			ip += 5;
 			break;
 
@@ -5409,7 +5409,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_LDNULL:
 			if (check_overflow (&ctx))
-				stack_push_val (&ctx, TYPE_COMPLEX | NULL_LITERAL_MASK, m_class_get_byval_arg (mono_defaults.object_class));
+				stack_push_val (&ctx, TYPE_COMPLEX | NULL_LITERAL_MASK, mono_get_object_type ());
 			++ip;
 			break;
 

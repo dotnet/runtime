@@ -735,7 +735,7 @@ mono_create_spvar_for_region (MonoCompile *cfg, int region)
 	if (var)
 		return;
 
-	var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+	var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 	/* prevent it from being register allocated */
 	var->flags |= MONO_INST_VOLATILE;
 
@@ -757,7 +757,7 @@ mono_create_exvar_for_offset (MonoCompile *cfg, int offset)
 	if (var)
 		return var;
 
-	var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.object_class), OP_LOCAL);
+	var = mono_compile_create_var (cfg, mono_get_object_type (), OP_LOCAL);
 	/* prevent it from being register allocated */
 	var->flags |= MONO_INST_VOLATILE;
 
@@ -1285,7 +1285,7 @@ inline static MonoInst *
 mono_get_domainvar (MonoCompile *cfg)
 {
 	if (!cfg->domainvar)
-		cfg->domainvar = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		cfg->domainvar = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 	return cfg->domainvar;
 }
 
@@ -1299,7 +1299,7 @@ mono_get_got_var (MonoCompile *cfg)
 	if (!cfg->compile_aot || !cfg->backend->need_got_var || cfg->llvm_only)
 		return NULL;
 	if (!cfg->got_var) {
-		cfg->got_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		cfg->got_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 	}
 	return cfg->got_var;
 }
@@ -1308,7 +1308,7 @@ static void
 mono_create_rgctx_var (MonoCompile *cfg)
 {
 	if (!cfg->rgctx_var) {
-		cfg->rgctx_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		cfg->rgctx_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		/* force the var to be stack allocated */
 		cfg->rgctx_var->flags |= MONO_INST_VOLATILE;
 	}
@@ -1327,14 +1327,14 @@ mono_get_vtable_var (MonoCompile *cfg)
 static MonoType*
 type_from_stack_type (MonoInst *ins) {
 	switch (ins->type) {
-	case STACK_I4: return m_class_get_byval_arg (mono_defaults.int32_class);
+	case STACK_I4: return mono_get_int32_type ();
 	case STACK_I8: return m_class_get_byval_arg (mono_defaults.int64_class);
-	case STACK_PTR: return m_class_get_byval_arg (mono_defaults.int_class);
+	case STACK_PTR: return mono_get_int_type ();
 	case STACK_R4: return m_class_get_byval_arg (mono_defaults.single_class);
 	case STACK_R8: return m_class_get_byval_arg (mono_defaults.double_class);
 	case STACK_MP:
 		return m_class_get_this_arg (ins->klass);
-	case STACK_OBJ: return m_class_get_byval_arg (mono_defaults.object_class);
+	case STACK_OBJ: return mono_get_object_type ();
 	case STACK_VTYPE: return m_class_get_byval_arg (ins->klass);
 	default:
 		g_error ("stack type %d to monotype not handled\n", ins->type);
@@ -1698,7 +1698,7 @@ emit_push_lmf (MonoCompile *cfg)
 	 * Store lmf_addr in a variable, so it can be allocated to a global register.
 	 */
 	if (!cfg->lmf_addr_var)
-		cfg->lmf_addr_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		cfg->lmf_addr_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 
 #ifdef HOST_WIN32
 	ins = mono_create_tls_get (cfg, TLS_KEY_JIT_TLS);
@@ -1748,7 +1748,7 @@ emit_pop_lmf (MonoCompile *cfg)
 	 */
 	/* This could be called before emit_push_lmf () */
 	if (!cfg->lmf_addr_var)
-		cfg->lmf_addr_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		cfg->lmf_addr_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 	lmf_addr_reg = cfg->lmf_addr_var->dreg;
 
 	prev_lmf_reg = alloc_preg (cfg);
@@ -2321,7 +2321,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 			if (i >= sig->hasthis)
 				t = sig->params [i - sig->hasthis];
 			else
-				t = m_class_get_byval_arg (mono_defaults.int_class);
+				t = mono_get_int_type ();
 			t = mono_type_get_underlying_type (t);
 
 			if (!t->byref && t->type == MONO_TYPE_R4) {
@@ -2388,7 +2388,7 @@ mini_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, Mo
 
 	if (check_sp) {
 		if (!cfg->stack_inbalance_var)
-			cfg->stack_inbalance_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+			cfg->stack_inbalance_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 
 		MONO_INST_NEW (cfg, ins, OP_GET_SP);
 		ins->dreg = cfg->stack_inbalance_var->dreg;
@@ -2971,7 +2971,7 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 	if (!(method->flags & METHOD_ATTRIBUTE_STATIC) &&
 			!(context_used & MONO_GENERIC_CONTEXT_USED_METHOD) &&
 			!m_class_is_valuetype (method->klass))
-		EMIT_NEW_VARLOAD (cfg, this_ins, cfg->this_arg, m_class_get_byval_arg (mono_defaults.object_class));
+		EMIT_NEW_VARLOAD (cfg, this_ins, cfg->this_arg, mono_get_object_type ());
 
 	if (context_used_is_mrgctx (cfg, context_used)) {
 		MonoInst *mrgctx_loc, *mrgctx_var;
@@ -3663,7 +3663,7 @@ handle_unbox_gsharedvt (MonoCompile *cfg, MonoClass *klass, MonoInst *obj)
 		unbox_sig = (MonoMethodSignature *)mono_mempool_alloc0 (cfg->mempool, MONO_SIZEOF_METHOD_SIGNATURE + (1 * sizeof (MonoType *)));
 		unbox_sig->ret = m_class_get_byval_arg (klass);
 		unbox_sig->param_count = 1;
-		unbox_sig->params [0] = m_class_get_byval_arg (mono_defaults.object_class);
+		unbox_sig->params [0] = mono_get_object_type ();
 
 		if (cfg->llvm_only)
 			unbox_call = emit_llvmonly_calli (cfg, unbox_sig, &obj, addr);
@@ -3872,7 +3872,7 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 			 * construct that method at JIT time, so have to do things by hand.
 			 */
 			box_sig = (MonoMethodSignature *)mono_mempool_alloc0 (cfg->mempool, MONO_SIZEOF_METHOD_SIGNATURE + (1 * sizeof (MonoType *)));
-			box_sig->ret = m_class_get_byval_arg (mono_defaults.object_class);
+			box_sig->ret = mono_get_object_type ();
 			box_sig->param_count = 1;
 			box_sig->params [0] = m_class_get_byval_arg (klass);
 
@@ -7044,7 +7044,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 
 	arg_reg = alloc_preg (cfg);
 	MONO_EMIT_NEW_PCONST (cfg, arg_reg, NULL);
-	EMIT_NEW_VARLOADA_VREG (cfg, icall_args [3], arg_reg, m_class_get_byval_arg (mono_defaults.int_class));
+	EMIT_NEW_VARLOADA_VREG (cfg, icall_args [3], arg_reg, mono_get_int_type ());
 
 	g_assert (is_gsharedvt);
 	if (is_iface)
@@ -7742,7 +7742,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		info->entries = (MonoRuntimeGenericContextInfoTemplate *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoRuntimeGenericContextInfoTemplate) * info->count_entries);
 		cfg->gsharedvt_info = info;
 
-		var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		/* prevent it from being register allocated */
 		//var->flags |= MONO_INST_VOLATILE;
 		cfg->gsharedvt_info_var = var;
@@ -7751,7 +7751,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, var->dreg, ins->dreg);
 
 		/* Allocate locals */
-		locals_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+		locals_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		/* prevent it from being register allocated */
 		//locals_var->flags |= MONO_INST_VOLATILE;
 		cfg->gsharedvt_locals_var = locals_var;
@@ -8985,7 +8985,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_ADD_INS (cfg->cbb, store);
 
 				/* FIXME: This should be a managed pointer */
-				this_arg_temp = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+				this_arg_temp = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 
 				EMIT_NEW_TEMPLOAD (cfg, iargs [0], this_temp->inst_c0);
 				iargs [1] = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD);
@@ -12116,7 +12116,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 */
 
 				if (!cfg->dyn_call_var) {
-					cfg->dyn_call_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+					cfg->dyn_call_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 					/* prevent it from being register allocated */
 					cfg->dyn_call_var->flags |= MONO_INST_VOLATILE;
 				}
@@ -12167,7 +12167,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				g_assert (!mono_threads_is_blocking_transition_enabled ());
 
-				cfg->orig_domain_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
+				cfg->orig_domain_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 
 				EMIT_NEW_PCONST (cfg, ins, NULL);
 				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->orig_domain_var->dreg, ins->dreg);
@@ -13664,9 +13664,9 @@ mono_handle_global_vregs (MonoCompile *cfg)
 						switch (regtype) {
 						case 'i':
 							if (vreg_is_ref (cfg, vreg))
-								mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (mono_defaults.object_class), OP_LOCAL, vreg);
+								mono_compile_create_var_for_vreg (cfg, mono_get_object_type (), OP_LOCAL, vreg);
 							else
-								mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL, vreg);
+								mono_compile_create_var_for_vreg (cfg, mono_get_int_type (), OP_LOCAL, vreg);
 							break;
 						case 'l':
 							mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (mono_defaults.int64_class), OP_LOCAL, vreg);

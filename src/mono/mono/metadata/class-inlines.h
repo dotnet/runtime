@@ -9,6 +9,31 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/tabledefs.h>
 
+static inline MonoType*
+mono_get_void_type ()
+{
+	return m_class_get_byval_arg (mono_defaults.void_class);
+}
+
+static inline MonoType*
+mono_get_int32_type ()
+{
+	return m_class_get_byval_arg (mono_defaults.int32_class);
+}
+
+static inline MonoType*
+mono_get_int_type ()
+{
+	return m_class_get_byval_arg (mono_defaults.int_class);
+}
+
+static inline MonoType*
+mono_get_object_type ()
+{
+	return m_class_get_byval_arg (mono_defaults.object_class);
+}
+
+
 static inline gboolean
 mono_class_is_def (MonoClass *klass)
 {

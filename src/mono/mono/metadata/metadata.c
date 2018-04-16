@@ -1824,7 +1824,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 
 			   We ensure that the MonoClass is in a state that we can canonicalize to:
 
-			     klass->byval_arg.data.klass == klass
+			     klass->_byval_arg.data.klass == klass
 			     klass->this_arg.data.klass == klass
 
 			   If we can't canonicalize 'type', it doesn't matter, since later users of 'type' will do it.
@@ -3659,7 +3659,7 @@ compare_type_literals (MonoImage *image, int class_type, int type_type, MonoErro
 {
 	error_init (error);
 
-	/* byval_arg.type can be zero if we're decoding a type that references a class been loading.
+	/* _byval_arg.type can be zero if we're decoding a type that references a class been loading.
 	 * See mcs/test/gtest-440. and #650936.
 	 * FIXME This better be moved to the metadata verifier as it can catch more cases.
 	 */

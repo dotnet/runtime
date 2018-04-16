@@ -7319,7 +7319,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 	DEBUG_PRINTF (1, "[%p] Invoke result: %p, exc: %s, time: %ld ms.\n", (gpointer) (gsize) mono_native_thread_id_get (), res, exc ? m_class_get_name (exc->vtable->klass) : NULL, (long)mono_stopwatch_elapsed_ms (&watch));
 	if (exc) {
 		buffer_add_byte (buf, 0);
-		buffer_add_value (buf, m_class_get_byval_arg (mono_defaults.object_class), &exc, domain);
+		buffer_add_value (buf, mono_get_object_type (), &exc, domain);
 	} else {
 		gboolean out_this = FALSE;
 		gboolean out_args = FALSE;
@@ -7334,11 +7334,11 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 		} else if (sig->ret->type == MONO_TYPE_VOID && !m->string_ctor) {
 			if (!strcmp (m->name, ".ctor")) {
 				if (!m_class_is_valuetype (m->klass))
-					buffer_add_value (buf, m_class_get_byval_arg (mono_defaults.object_class), &this_arg, domain);
+					buffer_add_value (buf, mono_get_object_type (), &this_arg, domain);
 				else
 					buffer_add_value (buf, m_class_get_byval_arg (m->klass), this_buf, domain);
 			} else {
-				buffer_add_value (buf, m_class_get_byval_arg (mono_defaults.void_class), NULL, domain);
+				buffer_add_value (buf, mono_get_void_type (), NULL, domain);
 			}
 		} else if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
 			buffer_add_value (buf, sig->ret, &res, domain);
@@ -9815,7 +9815,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (m_class_is_valuetype (frame->api_method->klass)) {
 			if (!sig->hasthis) {
 				MonoObject *p = NULL;
-				buffer_add_value (buf, m_class_get_byval_arg (mono_defaults.object_class), &p, frame->domain);
+				buffer_add_value (buf, mono_get_object_type (), &p, frame->domain);
 			} else {
 				if (frame->ji->is_interp) {
 					guint8 *addr;

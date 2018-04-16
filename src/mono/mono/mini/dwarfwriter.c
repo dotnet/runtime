@@ -1141,7 +1141,7 @@ get_type_die (MonoDwarfWriter *w, MonoType *t)
 			/* Should return a pointer type to a reference */
 		}
 		// FIXME:
-		t = m_class_get_byval_arg (mono_defaults.int_class);
+		t = mono_get_int_type ();
 	}
 	for (j = 0; j < G_N_ELEMENTS (basic_types); ++j)
 		if (basic_types [j].type == t->type)
@@ -1201,7 +1201,7 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 			emit_class_dwarf_info (w, klass, FALSE);
 		}
 		// FIXME:
-		t = m_class_get_byval_arg (mono_defaults.int_class);
+		t = mono_get_int_type ();
 	}
 	for (j = 0; j < G_N_ELEMENTS (basic_types); ++j)
 		if (basic_types [j].type == t->type)
@@ -1788,7 +1788,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 		emit_type (w, t);
 	}
-	//emit_type (w, m_class_get_byval_arg (mono_defaults.int32_class));
+	//emit_type (w, mono_get_int32_type ());
 
 	/* Local types */
 	for (i = 0; i < header->num_locals; ++i) {
@@ -1873,7 +1873,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		emit_string (w, pname);
 		/* type */
 		if (!arg || arg->flags & MONO_INST_IS_DEAD)
-			emit_var_type (w, m_class_get_byval_arg (mono_defaults.int32_class));
+			emit_var_type (w, mono_get_int32_type ());
 		else
 			emit_var_type (w, t);
 
@@ -1930,7 +1930,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		}
 		/* type */
 		if (!ins || ins->flags & MONO_INST_IS_DEAD)
-			emit_var_type (w, m_class_get_byval_arg (mono_defaults.int32_class));
+			emit_var_type (w, mono_get_int32_type ());
 		else
 			emit_var_type (w, header->locals [i]);
 

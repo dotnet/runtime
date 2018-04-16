@@ -4643,7 +4643,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 			g_assert (m);
 
 			memset (&ctx, 0, sizeof (ctx));
-			args [0] = m_class_get_byval_arg (mono_defaults.object_class);
+			args [0] = mono_get_object_type ();
 			ctx.method_inst = mono_metadata_get_generic_inst (1, args);
 
 			m = mono_marshal_get_native_wrapper (mono_class_inflate_generic_method_checked (m, &ctx, error), TRUE, TRUE);

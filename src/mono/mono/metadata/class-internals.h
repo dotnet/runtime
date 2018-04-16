@@ -1012,6 +1012,7 @@ GENERATE_GET_CLASS_WITH_CACHE_DECL (variant)
 
 GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
 
+/* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */
 extern MonoDefaults mono_defaults;
 
 void

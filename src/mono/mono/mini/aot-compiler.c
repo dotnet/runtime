@@ -3913,7 +3913,7 @@ create_gsharedvt_inst (MonoAotCompile *acfg, MonoMethod *method, MonoGenericCont
 
 		args = g_new0 (MonoType*, inst->type_argc);
 		for (i = 0; i < inst->type_argc; ++i) {
-			args [i] = m_class_get_byval_arg (mono_defaults.int_class);
+			args [i] = mono_get_int_type ();
 		}
 		ctx->class_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
 	}
@@ -3941,9 +3941,9 @@ create_gsharedvt_inst (MonoAotCompile *acfg, MonoMethod *method, MonoGenericCont
 			}
 
 			if (ref_only)
-				args [i] = m_class_get_byval_arg (mono_defaults.object_class);
+				args [i] = mono_get_object_type ();
 			else
-				args [i] = m_class_get_byval_arg (mono_defaults.int_class);
+				args [i] = mono_get_int_type ();
 		}
 		ctx->method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
 	}
@@ -4027,7 +4027,7 @@ add_wrappers (MonoAotCompile *acfg)
 
 		/* Runtime invoke wrappers */
 
-		MonoType *void_type = m_class_get_byval_arg (mono_defaults.void_class);
+		MonoType *void_type = mono_get_void_type ();
 		MonoType *string_type = m_class_get_byval_arg (mono_defaults.string_class);
 
 		/* void runtime-invoke () [.cctor] */
@@ -5018,7 +5018,7 @@ add_generic_instances (MonoAotCompile *acfg)
 				type_argv = g_new0 (MonoType*, inst->type_argc);
 				for (i = 0; i < inst->type_argc; ++i) {
 					if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
-						type_argv [i] = m_class_get_byval_arg (mono_defaults.object_class);
+						type_argv [i] = mono_get_object_type ();
 					else
 						type_argv [i] = inst->type_argv [i];
 				}
@@ -5032,7 +5032,7 @@ add_generic_instances (MonoAotCompile *acfg)
 				type_argv = g_new0 (MonoType*, inst->type_argc);
 				for (i = 0; i < inst->type_argc; ++i) {
 					if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
-						type_argv [i] = m_class_get_byval_arg (mono_defaults.object_class);
+						type_argv [i] = mono_get_object_type ();
 					else
 						type_argv [i] = inst->type_argv [i];
 				}
@@ -5094,11 +5094,11 @@ add_generic_instances (MonoAotCompile *acfg)
 		MonoType *sbyte_type = m_class_get_byval_arg (mono_defaults.sbyte_class);
 		MonoType *int16_type = m_class_get_byval_arg (mono_defaults.int16_class);
 		MonoType *uint16_type = m_class_get_byval_arg (mono_defaults.uint16_class);
-		MonoType *int32_type = m_class_get_byval_arg (mono_defaults.int32_class);
+		MonoType *int32_type = mono_get_int32_type ();
 		MonoType *uint32_type = m_class_get_byval_arg (mono_defaults.uint32_class);
 		MonoType *int64_type = m_class_get_byval_arg (mono_defaults.int64_class);
 		MonoType *uint64_type = m_class_get_byval_arg (mono_defaults.uint64_class);
-		MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+		MonoType *object_type = mono_get_object_type ();
 
 		insts [ninsts ++] = byte_type;
 		insts [ninsts ++] = sbyte_type;
