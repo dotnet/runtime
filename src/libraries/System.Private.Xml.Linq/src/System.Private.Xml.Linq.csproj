@@ -5,7 +5,6 @@
     <ProjectGuid>{BAC347A3-9841-44FC-B1E3-2344D1152C23}</ProjectGuid>
     <AssemblyName>System.Private.Xml.Linq</AssemblyName>
     <RootNamespace>System.Xml</RootNamespace>
-    <DefineConstants>$(DefineConstants);SILVERLIGHT</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -71,6 +70,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
