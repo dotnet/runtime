@@ -231,22 +231,21 @@ namespace System.Net.Security
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(ReadAsync), "read"));
             }
 
-            while (true)
+            try
             {
-                int copyBytes;
-                if (_decryptedBytesCount != 0)
+                while (true)
                 {
-                    copyBytes = CopyDecryptedData(buffer);
+                    int copyBytes;
+                    if (_decryptedBytesCount != 0)
+                    {
+                        copyBytes = CopyDecryptedData(buffer);
 
-                    _sslState.FinishRead(null);
-                    _nestedRead = 0;
+                        _sslState.FinishRead(null);
 
-                    return copyBytes;
-                }
+                        return copyBytes;
+                    }
 
-                copyBytes = await adapter.LockAsync(buffer).ConfigureAwait(false);
-                try
-                {
+                    copyBytes = await adapter.LockAsync(buffer).ConfigureAwait(false);
                     if (copyBytes > 0)
                     {
                         return copyBytes;
@@ -319,21 +318,21 @@ namespace System.Net.Security
                         throw new IOException(SR.net_io_decrypt, message.GetException());
                     }
                 }
-                catch (Exception e)
-                {
-                    _sslState.FinishRead(null);
+            }
+            catch (Exception e)
+            {
+                _sslState.FinishRead(null);
 
-                    if (e is IOException)
-                    {
-                        throw;
-                    }
-
-                    throw new IOException(SR.net_io_read, e);
-                }
-                finally
+                if (e is IOException)
                 {
-                    _nestedRead = 0;
+                    throw;
                 }
+
+                throw new IOException(SR.net_io_read, e);
+            }
+            finally
+            {
+                _nestedRead = 0;
             }
         }
 
