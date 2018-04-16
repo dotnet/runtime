@@ -10,7 +10,7 @@ internal partial class Interop
     internal partial class Advapi32
     {
         [StructLayout(LayoutKind.Sequential)]
-        public class SERVICE_TABLE_ENTRY
+        public struct SERVICE_TABLE_ENTRY
         {
             public IntPtr name;
             public Delegate callback;
