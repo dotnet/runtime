@@ -7,7 +7,7 @@
          Having it like this enables people to build targetting netstandard and use the
          built assembly in Xamarin.
      -->
-    <AssemblyVersion>2.0.6.0</AssemblyVersion>
+    <AssemblyVersion>2.0.7.0</AssemblyVersion>
     <AssemblyKey>Open</AssemblyKey>
   </PropertyGroup>
 </Project>
