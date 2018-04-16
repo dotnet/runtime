@@ -94,7 +94,7 @@ namespace System.Threading
         private static int MAXIMUM_WAITERS = WAITERS_MASK;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int CompareExchange(ref int location, int value, int comparand, ref bool success)
+        private static int CompareExchange(ref int location, int value, int comparand, ref bool success)
         {
             int result = Interlocked.CompareExchange(ref location, value, comparand);
             success = (result == comparand);
