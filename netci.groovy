@@ -2419,6 +2419,17 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     buildCommands += "zip -r testnativebin.${lowerConfiguration}.zip ./bin/obj/Linux.arm.${configuration}/tests"
 
                     Utilities.addArchival(newJob, "coreroot.${lowerConfiguration}.zip,testnativebin.${lowerConfiguration}.zip", "")
+
+                    // We need to clean up the build machines; the docker build leaves newly built files with root permission, which
+                    // the cleanup task in Jenkins can't remove.
+                    newJob.with {
+                        publishers {
+                            azureVMAgentPostBuildAction {
+                                agentPostBuildAction('Delete agent after build execution (when idle).')
+                            }
+                        }
+                    }
+
                     break
                 default:
                     println("Unknown architecture: ${architecture}");
