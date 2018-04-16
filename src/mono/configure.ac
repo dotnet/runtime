@@ -4767,6 +4767,8 @@ else
   CSC=$CSC_LOCATION
 fi
 
+AM_CONDITIONAL([CSC_IS_ROSLYN], [test x$csc_compiler != xmcs])
+
 mono_cfg_root=$mono_build_root/runtime
 if test x$host_win32 = xyes; then
   if test "x$cross_compiling" = "xno"; then

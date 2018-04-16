@@ -682,10 +682,13 @@ TESTS_CS_SRC=		\
 	bug-59400.cs \
 	tailcall-generic-cast-cs.cs \
 	tailcall-interface.cs \
-	sizeof-empty-structs.cs \
 	bug-60843.cs	\
-	roslyn-bug-19038.cs	\
 	nested_type_visibility.cs
+
+# some tests fail to compile on mcs
+if CSC_IS_ROSLYN
+TESTS_CS_SRC += roslyn-bug-19038.cs sizeof-empty-structs.cs
+endif
 
 if AMD64
 TESTS_CS_SRC += async-exc-compilation.cs finally_guard.cs finally_block_ending_in_dead_bb.cs
