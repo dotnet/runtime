@@ -286,9 +286,10 @@ Histogram genTreeNsizHist(genTreeNsizHistBuckets);
 /*****************************************************************************/
 #if MEASURE_MEM_ALLOC
 
-unsigned  memSizeHistBuckets[] = {20, 50, 75, 100, 150, 250, 500, 1000, 5000, 0};
-Histogram memAllocHist(memSizeHistBuckets);
-Histogram memUsedHist(memSizeHistBuckets);
+unsigned  memAllocHistBuckets[] = {64, 128, 192, 256, 512, 1024, 4096, 8192, 0};
+Histogram memAllocHist(memAllocHistBuckets);
+unsigned  memUsedHistBuckets[] = {16, 32, 64, 128, 192, 256, 512, 1024, 4096, 8192, 0};
+Histogram memUsedHist(memUsedHistBuckets);
 
 #endif // MEASURE_MEM_ALLOC
 
