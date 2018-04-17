@@ -613,9 +613,6 @@ namespace System.Collections.Generic
 
             }
 
-            // Can be improved with "Ref Local Reassignment"
-            // https://github.com/dotnet/csharplang/blob/master/proposals/ref-local-reassignment.md
-            bool resized = false;
             bool updateFreeList = false;
             int index;
             if (_freeCount > 0)
@@ -630,14 +627,13 @@ namespace System.Collections.Generic
                 if (count == entries.Length)
                 {
                     Resize();
-                    resized = true;
+                    bucket = ref _buckets[hashCode % _buckets.Length];
                 }
                 index = count;
                 _count = count + 1;
                 entries = _entries;
             }
 
-            ref int targetBucket = ref resized ? ref _buckets[hashCode % _buckets.Length] : ref bucket;
             ref Entry entry = ref entries[index];
 
             if (updateFreeList)
@@ -646,11 +642,11 @@ namespace System.Collections.Generic
             }
             entry.hashCode = hashCode;
             // Value in _buckets is 1-based
-            entry.next = targetBucket - 1;
+            entry.next = bucket - 1;
             entry.key = key;
             entry.value = value;
             // Value in _buckets is 1-based
-            targetBucket = index + 1;
+            bucket = index + 1;
 
             // Value types never rehash
             if (default(TKey) == null && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
