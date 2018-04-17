@@ -13,6 +13,7 @@
 
 namespace DoubLink {
     using System;
+    using System.Runtime.CompilerServices;
 
     public class DoubLinkStay
     {
@@ -63,13 +64,7 @@ namespace DoubLink {
 
         public bool runTest(int iRep, int iObj)
         {
-            Mv_Doub = new DoubLink[iRep];
-            for(int i=0; i<20; i++)
-            {
-                SetLink(iRep, iObj);
-                MakeLeak(iRep);
-            }
-
+            CreateDLinkListsWithLeak(iRep, iObj, 20);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -81,6 +76,20 @@ namespace DoubLink {
             Console.WriteLine(" DLinkNodes finalized");
             return (DLinkNode.FinalCount==iRep*iObj*20);
 
+        }
+
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        // Do not inline the method that creates GC objects, because it could
+        // extend their live intervals until the end of the parent method.
+        public void CreateDLinkListsWithLeak(int iRep, int iObj, int iters)
+        {
+            Mv_Doub = new DoubLink[iRep];
+            for(int i = 0; i < iters; i++)
+            {
+                SetLink(iRep, iObj);
+                MakeLeak(iRep);
+            }
         }
 
         public void SetLink(int iRep, int iObj)

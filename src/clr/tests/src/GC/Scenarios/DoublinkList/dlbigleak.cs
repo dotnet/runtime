@@ -12,6 +12,7 @@
 
 namespace DoubLink {
     using System;
+    using System.Runtime.CompilerServices;
 
     public class DLBigLeak
     {
@@ -65,13 +66,7 @@ namespace DoubLink {
 
         public bool runTest(int iRep, int iObj)
         {
-            Mv_Doub = new DoubLink[iRep];
-            for(int i=0; i<10; i++)
-            {
-                SetLink(iRep, iObj);
-                MakeLeak(iRep);
-                GC.Collect();
-            }
+            CreateDLinkListsWithLeak(iRep, iObj, 10);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -82,6 +77,21 @@ namespace DoubLink {
             Console.Write(DLinkNode.FinalCount);
             Console.WriteLine(" DLinkNodes finalized");
             return (DLinkNode.FinalCount==iRep*iObj*10);
+        }
+
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        // Do not inline the method that creates GC objects, because it could
+        // extend their live intervals until the end of the parent method.
+        public void CreateDLinkListsWithLeak(int iRep, int iObj, int iters)
+        {
+            Mv_Doub = new DoubLink[iRep];
+            for (int i = 0; i < iters; i++)
+            {
+                SetLink(iRep, iObj);
+                MakeLeak(iRep);
+                GC.Collect();
+            }
         }
 
 
