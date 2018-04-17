@@ -43,7 +43,7 @@ public:
     // Using IDom of each basic block, compute the whole domTree. If a block "b" has IDom "i",
     // then, block "b" is dominated by "i". The mapping then is i -> { ..., b, ... }, in
     // other words, "domTree" is a tree represented by nodes mapped to their children.
-    static void ComputeDominators(Compiler* pCompiler, BlkToBlkSetMap* domTree);
+    static void ComputeDominators(Compiler* pCompiler, BlkToBlkVectorMap* domTree);
 
 private:
     // Ensures that the basic block graph has a root for the dominator graph, by ensuring
@@ -69,21 +69,21 @@ private:
     // as children.) Requires "preIndex" and "postIndex" to be initialized to 0 at entry into recursion.
     // Computes arrays "m_pDomPreOrder" and "m_pDomPostOrder" of block indices such that the blocks of a
     // "domTree" are in pre and postorder respectively.
-    void DomTreeWalk(BasicBlock* curBlock, BlkToBlkSetMap* domTree, int* preIndex, int* postIndex);
+    void DomTreeWalk(BasicBlock* curBlock, BlkToBlkVectorMap* domTree, int* preIndex, int* postIndex);
 #endif
 
-    // Requires all blocks to have computed "bbIDom." Requires "domTree" to be a preallocated BlkToBlkSetMap.
+    // Requires all blocks to have computed "bbIDom." Requires "domTree" to be a preallocated BlkToBlkVectorMap.
     // Helper to compute "domTree" from the pre-computed bbIDom of the basic blocks.
-    static void ConstructDomTreeForBlock(Compiler* pCompiler, BasicBlock* block, BlkToBlkSetMap* domTree);
+    static void ConstructDomTreeForBlock(Compiler* pCompiler, BasicBlock* block, BlkToBlkVectorMap* domTree);
 
     // Requires "postOrder" to hold the blocks of the flowgraph in topologically sorted order. Requires
     // count to be the valid entries in the "postOrder" array. Computes "domTree" as a adjacency list
     // like object, i.e., a set of blocks with a set of blocks as children defining the DOM relation.
-    void ComputeDominators(BasicBlock** postOrder, int count, BlkToBlkSetMap* domTree);
+    void ComputeDominators(BasicBlock** postOrder, int count, BlkToBlkVectorMap* domTree);
 
 #ifdef DEBUG
     // Display the dominator tree.
-    static void DisplayDominators(BlkToBlkSetMap* domTree);
+    static void DisplayDominators(BlkToBlkVectorMap* domTree);
 #endif // DEBUG
 
     // Compute flow graph dominance frontiers.
@@ -101,7 +101,7 @@ private:
     // Requires "domTree" to be the dominator tree relation defined by a DOM b.
     // Requires "pRenameState" to have counts and stacks at their initial state.
     // Assigns gtSsaNames to all variables.
-    void RenameVariables(BlkToBlkSetMap* domTree, SsaRenameState* pRenameState);
+    void RenameVariables(BlkToBlkVectorMap* domTree, SsaRenameState* pRenameState);
 
     // Requires "block" to be any basic block participating in variable renaming, and has at least a
     // definition that pushed a ssa number into the rename stack for a variable. Requires "pRenameState"
