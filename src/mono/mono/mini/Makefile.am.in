@@ -963,5 +963,6 @@ tags:
 if HAS_EXTENSION_MODULE
 else
 Makefile.am: Makefile.am.in
-	cp $< $@
+	echo "##################### Generated from Makefile.am.in, do not modify ##########################" > $@
+	cat $< >> $@
 endif
