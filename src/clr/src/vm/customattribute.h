@@ -172,7 +172,7 @@ public:
 
     // custom attributes utility functions
     static FCDECL5(VOID, ParseAttributeUsageAttribute, PVOID pData, ULONG cData, ULONG* pTargets, CLR_BOOL* pInherited, CLR_BOOL* pAllowMultiple);
-    static FCDECL5(LPVOID, CreateCaObject, ReflectModuleBaseObject* pAttributedModuleUNSAFE, ReflectMethodObject *pMethodUNSAFE, BYTE** ppBlob, BYTE* pEndBlob, INT32* pcNamedArgs);
+    static FCDECL6(LPVOID, CreateCaObject, ReflectModuleBaseObject* pAttributedModuleUNSAFE, ReflectClassBaseObject* pCaTypeUNSAFE, ReflectMethodObject *pMethodUNSAFE, BYTE** ppBlob, BYTE* pEndBlob, INT32* pcNamedArgs);
     static FCDECL7(void, GetPropertyOrFieldData, ReflectModuleBaseObject *pModuleUNSAFE, BYTE** ppBlobStart, BYTE* pBlobEnd, STRINGREF* pName, CLR_BOOL* pbIsProperty, OBJECTREF* pType, OBJECTREF* value);
     static FCDECL4(VOID, GetSecurityAttributes, ReflectModuleBaseObject *pModuleUNSAFE, DWORD tkToken, CLR_BOOL fAssembly, PTRARRAYREF* ppArray);
 
