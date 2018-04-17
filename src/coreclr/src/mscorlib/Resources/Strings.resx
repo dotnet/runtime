@@ -2297,7 +2297,7 @@
     <value>Invalid length for a Base-64 char array or string.</value>
   </data>
   <data name="Format_BadBoolean" xml:space="preserve">
-    <value>String was not recognized as a valid Boolean.</value>
+    <value>String '{0}' was not recognized as a valid Boolean.</value>
   </data>
   <data name="Format_BadDatePattern" xml:space="preserve">
     <value>Could not determine the order of year, month, and date from '{0}'.</value>
@@ -2321,7 +2321,7 @@
     <value>Cannot find a matching quote character for the character '{0}'.</value>
   </data>
   <data name="Format_BadTimeSpan" xml:space="preserve">
-    <value>String was not recognized as a valid TimeSpan.</value>
+    <value>String '{0}' was not recognized as a valid TimeSpan.</value>
   </data>
   <data name="Format_DateOutOfRange" xml:space="preserve">
     <value>The DateTime represented by the string '{0}' is out of range.</value>
@@ -3203,7 +3203,7 @@
     <value>Value was either too large or too small for a Single.</value>
   </data>
   <data name="Overflow_TimeSpanElementTooLarge" xml:space="preserve">
-    <value>The TimeSpan could not be parsed because at least one of the numeric components is out of range or contains too many digits.</value>
+    <value>The TimeSpan string '{0}' could not be parsed because at least one of the numeric components is out of range or contains too many digits.</value>
   </data>
   <data name="Overflow_TimeSpanTooLong" xml:space="preserve">
     <value>TimeSpan overflowed because the duration is too long.</value>
