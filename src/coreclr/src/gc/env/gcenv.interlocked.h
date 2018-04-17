@@ -10,6 +10,12 @@
 // Interlocked operations
 class Interlocked
 {
+private:
+
+#ifndef _MSC_VER
+    static void ArmInterlockedOperationBarrier();
+#endif // !_MSC_VER
+
 public:
 
     // Increment the value of the specified 32-bit variable as an atomic operation.
