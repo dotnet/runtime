@@ -44,6 +44,7 @@ namespace System.ServiceModel.Syndication
 
         private static bool Rfc3339DateTimeParser(string dateTimeString, out DateTimeOffset dto)
         {
+            dto = default(DateTimeOffset);
             dateTimeString = dateTimeString.Trim();
             if (dateTimeString.Length < 20)
             {
@@ -67,6 +68,7 @@ namespace System.ServiceModel.Syndication
 
         private static bool Rfc822DateTimeParser(string dateTimeString, out DateTimeOffset dto)
         {
+            dto = default(DateTimeOffset);
             StringBuilder dateTimeStringBuilder = new StringBuilder(dateTimeString.Trim());
             if (dateTimeStringBuilder.Length < 18)
             {
