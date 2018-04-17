@@ -55,6 +55,7 @@ namespace System.ServiceModel.Syndication
 
         private bool NotImplementedDateTimeParser(XmlDateTimeData XmlDateTimeData, out DateTimeOffset dateTimeOffset)
         {
+            dateTimeOffset = default(DateTimeOffset);
             return false;
         }
 
@@ -430,7 +431,7 @@ namespace System.ServiceModel.Syndication
         {
             try
             {
-                DateTimeOffset dateTimeOffset;
+                DateTimeOffset dateTimeOffset = default(DateTimeOffset);
                 var elementQualifiedName = new XmlQualifiedName(reader.LocalName, reader.NamespaceURI);
                 var xmlDateTimeData = new XmlDateTimeData(dateTimeString, elementQualifiedName);
                 object[] args = new object[] { xmlDateTimeData, dateTimeOffset };
