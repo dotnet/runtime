@@ -4015,9 +4015,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-#if !ReflectionOnly
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "dotnet-corefx #24265")]
-#endif
     public static void DCS_TypeWithPrimitiveKnownTypes()
     {
         var list = new TypeWithPrimitiveKnownTypes();
