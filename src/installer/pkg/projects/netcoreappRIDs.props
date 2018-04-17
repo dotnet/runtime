@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <OfficialBuildRID Include="linux-x64" />
+    <OfficialBuildRID Include="linux-musl-x64" />
     <OfficialBuildRID Include="rhel.6-x64" />
     <OfficialBuildRID Include="alpine.3.6-x64" />
     <OfficialBuildRID Include="osx-x64" />
@@ -27,8 +28,8 @@
       <Platform>arm64</Platform>
     </OfficialBuildRID>
 
-    <!-- The following RIDs are not officically supported and are not 
-         built during official builds, however we wish to include them 
+    <!-- The following RIDs are not officically supported and are not
+         built during official builds, however we wish to include them
          in our runtime.json to enable others to provide them.  -->
     <UnofficialBuildRID Include="tizen.4.0.0-armel">
       <Platform>armel</Platform>
