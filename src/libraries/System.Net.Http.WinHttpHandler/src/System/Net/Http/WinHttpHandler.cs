@@ -783,7 +783,7 @@ namespace System.Net.Http
                 // Specify an HTTP server.
                 connectHandle = Interop.WinHttp.WinHttpConnect(
                     _sessionHandle,
-                    state.RequestMessage.RequestUri.Host,
+                    state.RequestMessage.RequestUri.HostNameType == UriHostNameType.IPv6 ? "[" + state.RequestMessage.RequestUri.IdnHost + "]" : state.RequestMessage.RequestUri.IdnHost,
                     (ushort)state.RequestMessage.RequestUri.Port,
                     0);
                 ThrowOnInvalidHandle(connectHandle, nameof(Interop.WinHttp.WinHttpConnect));
