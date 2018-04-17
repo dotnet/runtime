@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Numerics.Hashing;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -39,6 +40,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private readonly RuntimeBinder _binder;
 
+        private readonly Type _callingContext;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CSharpGetMemberBinder" />.
         /// </summary>
@@ -55,7 +58,40 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             ResultIndexed = resultIndexed;
             _argumentInfo = BinderHelper.ToArray(argumentInfo);
+            _callingContext = callingContext;
             _binder = new RuntimeBinder(callingContext);
+        }
+
+        public int GetGetBinderEquivalenceHash()
+        {
+            int hash = _callingContext?.GetHashCode() ?? 0;
+            if (ResultIndexed)
+            {
+                hash = HashHelpers.Combine(hash, 1);
+            }
+            hash = HashHelpers.Combine(hash, Name.GetHashCode());
+            hash = BinderHelper.AddArgHashes(hash, _argumentInfo);
+
+            return hash;
+        }
+
+        public bool IsEquivalentTo(ICSharpBinder other)
+        {
+            var otherBinder = other as CSharpGetMemberBinder;
+            if (otherBinder == null)
+            {
+                return false;
+            }
+
+            if (Name != otherBinder.Name ||
+                ResultIndexed != otherBinder.ResultIndexed ||
+                _callingContext != otherBinder._callingContext ||
+                _argumentInfo.Length != otherBinder._argumentInfo.Length)
+            {
+                return false;
+            }
+
+            return BinderHelper.CompareArgInfos(_argumentInfo, otherBinder._argumentInfo);
         }
 
         /// <summary>

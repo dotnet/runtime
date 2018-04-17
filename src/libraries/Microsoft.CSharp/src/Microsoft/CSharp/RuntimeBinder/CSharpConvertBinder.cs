@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
+using System.Numerics.Hashing;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -51,6 +52,10 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private readonly RuntimeBinder _binder;
 
+        private readonly Type _callingContext;
+
+        private bool IsChecked => _binder.IsChecked;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CSharpConvertBinder" />.
         /// </summary>
@@ -66,7 +71,40 @@ namespace Microsoft.CSharp.RuntimeBinder
             base(type, conversionKind == CSharpConversionKind.ExplicitConversion)
         {
             ConversionKind = conversionKind;
+            _callingContext = callingContext;
             _binder = new RuntimeBinder(callingContext, isChecked);
+        }
+
+        public int GetGetBinderEquivalenceHash()
+        {
+            int hash = _callingContext?.GetHashCode() ?? 0;
+            hash = HashHelpers.Combine(hash, (int)ConversionKind);
+            if (IsChecked)
+            {
+                hash = HashHelpers.Combine(hash, 1);
+            }
+
+            hash = HashHelpers.Combine(hash, Type.GetHashCode());
+            return hash;
+        }
+
+        public bool IsEquivalentTo(ICSharpBinder other)
+        {
+            var otherBinder = other as CSharpConvertBinder;
+            if (otherBinder == null)
+            {
+                return false;
+            }
+
+            if (ConversionKind != otherBinder.ConversionKind ||
+                IsChecked != otherBinder.IsChecked ||
+                _callingContext != otherBinder._callingContext ||
+                Type != otherBinder.Type)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
