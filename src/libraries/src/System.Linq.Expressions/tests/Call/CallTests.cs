@@ -90,7 +90,6 @@ namespace System.Linq.Expressions.Tests
             MethodCallExpression call = Expression.Call(typeof(NonGenericClass).GetMethod("FooEnum"), p);
             Func<NonGenericClass.E1, NonGenericClass.E2> lambda = Expression.Lambda<Func<NonGenericClass.E1, NonGenericClass.E2>>(call, p).Compile(useInterpreter);
 
-            object boxed = new Mutable();
             Assert.Equal(NonGenericClass.E2.One, lambda(NonGenericClass.E1.One));
             Assert.Equal(NonGenericClass.E2.Two, lambda(NonGenericClass.E1.Two));
         }
