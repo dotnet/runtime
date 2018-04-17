@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Numerics.Hashing;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -37,14 +38,48 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private readonly RuntimeBinder _binder;
 
+        private readonly Type _callingContext;
+
         public CSharpInvokeConstructorBinder(
             CSharpCallFlags flags,
             Type callingContext,
             IEnumerable<CSharpArgumentInfo> argumentInfo)
         {
             Flags = flags;
+            _callingContext = callingContext;
             _argumentInfo = BinderHelper.ToArray(argumentInfo);
             _binder = new RuntimeBinder(callingContext);
+        }
+
+        public int GetGetBinderEquivalenceHash()
+        {
+            int hash = _callingContext?.GetHashCode() ?? 0;
+            hash = HashHelpers.Combine(hash, (int)Flags);
+            hash = HashHelpers.Combine(hash, Name.GetHashCode());
+
+            hash = BinderHelper.AddArgHashes(hash, TypeArguments, _argumentInfo);
+
+            return hash;
+        }
+
+        public bool IsEquivalentTo(ICSharpBinder other)
+        {
+            var otherBinder = other as CSharpInvokeConstructorBinder;
+            if (otherBinder == null)
+            {
+                return false;
+            }
+
+            if (Flags != otherBinder.Flags ||
+                _callingContext != otherBinder._callingContext ||
+                Name != otherBinder.Name ||
+                TypeArguments.Length != otherBinder.TypeArguments.Length ||
+                _argumentInfo.Length != otherBinder._argumentInfo.Length)
+            {
+                return false;
+            }
+
+            return BinderHelper.CompareArgInfos(TypeArguments, otherBinder.TypeArguments, _argumentInfo, otherBinder._argumentInfo);
         }
 
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
