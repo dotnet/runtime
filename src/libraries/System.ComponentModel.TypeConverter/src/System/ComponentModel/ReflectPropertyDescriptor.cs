@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Collections.Specialized;
 using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
-using System.Threading;
 
 namespace System.ComponentModel
 {
@@ -74,7 +72,9 @@ namespace System.ComponentModel
         private MethodInfo _shouldSerializeMethod;      // the should serialize method
         private MethodInfo _resetMethod;                // the reset property method
         private EventDescriptor _realChangedEvent;           // <propertyname>Changed event handler on object
+#if FEATURE_INOTIFYPROPERTYCHANGED
         private EventDescriptor _realIPropChangedEvent;      // INotifyPropertyChanged.PropertyChanged event handler on object
+#endif
         private readonly Type _receiverType;               // Only set if we are an extender
 
         /// <summary>
@@ -250,23 +250,21 @@ namespace System.ComponentModel
         {
             get
             {
+#if FEATURE_INOTIFYPROPERTYCHANGED
                 if (!_state[s_bitIPropChangedQueried])
                 {
-#if FEATURE_INOTIFYPROPERTYCHANGED
                     if (typeof(INotifyPropertyChanged).IsAssignableFrom(ComponentType))
                     {
                         _realIPropChangedEvent = TypeDescriptor.GetEvents(typeof(INotifyPropertyChanged))["PropertyChanged"];
                     }
-#endif
+    
                     _state[s_bitIPropChangedQueried] = true;
                 }
 
                 return _realIPropChangedEvent;
-            }
-            set
-            {
-                _realIPropChangedEvent = value;
-                _state[s_bitIPropChangedQueried] = true;
+#else
+                return null;
+#endif
             }
         }
 
@@ -320,7 +318,7 @@ namespace System.ComponentModel
 #if VERIFY_REFLECTION_CHANGE
                             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetProperty;
                             _propInfo = _componentClass.GetProperty(Name, bindingFlags, null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-#else 
+#else
                             _propInfo = _componentClass.GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
 #endif
                         }
