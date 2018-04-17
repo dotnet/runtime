@@ -163,7 +163,11 @@ namespace System.Diagnostics
 
             try
             {
-                baseKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, machineName);
+                if (machineName == ".")
+                    baseKey = Registry.LocalMachine;
+                else
+                    baseKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, machineName);
+
                 if (baseKey == null)
                     throw new InvalidOperationException(SR.Format(SR.RegKeyMissingShort, "HKEY_LOCAL_MACHINE", machineName));
 
