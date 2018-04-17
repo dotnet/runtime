@@ -20,7 +20,6 @@
 #include "field.h"
 #include "vars.hpp"
 #include "stringnative.h"
-#include "stringbuffer.h"
 #include "comutilnative.h"
 #include "metasig.h"
 #include "excep.h"

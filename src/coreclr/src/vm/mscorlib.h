@@ -885,11 +885,6 @@ DEFINE_METHOD(STRING,               INTERNAL_COPY,          InternalCopy,       
 DEFINE_METHOD(STRING,               WCSLEN,                 wcslen,                     SM_PtrChar_RetInt)
 DEFINE_PROPERTY(STRING,             LENGTH,                 Length,                     Int)
 
-DEFINE_CLASS_U(Text,                   StringBuilder,              StringBufferObject)
-DEFINE_FIELD_U(m_ChunkPrevious,            StringBufferObject,     m_ChunkPrevious)
-DEFINE_FIELD_U(m_MaxCapacity,              StringBufferObject,     m_MaxCapacity)
-DEFINE_FIELD_U(m_ChunkLength,              StringBufferObject,     m_ChunkLength)
-DEFINE_FIELD_U(m_ChunkOffset,              StringBufferObject,     m_ChunkOffset)
 DEFINE_CLASS(STRING_BUILDER,        Text,                   StringBuilder)
 DEFINE_PROPERTY(STRING_BUILDER,     LENGTH,                 Length,                     Int)
 DEFINE_PROPERTY(STRING_BUILDER,     CAPACITY,               Capacity,                   Int)
