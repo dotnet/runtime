@@ -98,7 +98,7 @@ namespace System.Collections.Immutable
                     if (value != this.KeyComparer)
                     {
                         var comparers = Comparers.Get(value, this.ValueComparer);
-                        var input = new MutationInput(SortedInt32KeyNode<HashBucket>.EmptyNode, comparers, 0);
+                        var input = new MutationInput(SortedInt32KeyNode<HashBucket>.EmptyNode, comparers);
                         var result = ImmutableDictionary<TKey, TValue>.AddRange(this, input);
 
                         _immutable = null;
@@ -372,7 +372,7 @@ namespace System.Collections.Immutable
             /// </summary>
             private MutationInput Origin
             {
-                get { return new MutationInput(this.Root, _comparers, _count); }
+                get { return new MutationInput(this.Root, _comparers); }
             }
 
             /// <summary>
