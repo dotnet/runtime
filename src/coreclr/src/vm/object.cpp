@@ -1300,63 +1300,6 @@ BOOL StringObject::SetTrailByte(BYTE bTrailByte) {
     return TRUE;
 }
 
-
-/*================================ReplaceBuffer=================================
-**This is a helper function designed to be used by N/Direct it replaces the entire
-**contents of the String with a new string created by some native method.  This 
-**will not be exposed through the StringBuilder class.
-==============================================================================*/
-void StringBufferObject::ReplaceBuffer(STRINGBUFFERREF *thisRef, __in_ecount(newLength) WCHAR *newBuffer, INT32 newLength) {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(newBuffer));
-        PRECONDITION(newLength>=0);
-        PRECONDITION(CheckPointer(thisRef));
-        PRECONDITION(IsProtectedByGCFrame(thisRef));
-    } CONTRACTL_END;
-
-    if(newLength > (*thisRef)->GetMaxCapacity())
-    {
-        COMPlusThrowArgumentOutOfRange(W("capacity"), W("ArgumentOutOfRange_Capacity"));
-    }
-
-    CHARARRAYREF newCharArray = AllocateCharArray((*thisRef)->GetAllocationLength(newLength+1));
-    (*thisRef)->ReplaceBuffer(&newCharArray, newBuffer, newLength);
-}
-
-
-/*================================ReplaceBufferAnsi=================================
-**This is a helper function designed to be used by N/Direct it replaces the entire
-**contents of the String with a new string created by some native method.  This 
-**will not be exposed through the StringBuilder class.
-**
-**This version does Ansi->Unicode conversion along the way. Although
-**making it a member of COMStringBuffer exposes more stringbuffer internals
-**than necessary, it does avoid requiring a temporary buffer to hold
-**the Ansi->Unicode conversion.
-==============================================================================*/
-void StringBufferObject::ReplaceBufferAnsi(STRINGBUFFERREF *thisRef, __in_ecount(newCapacity) CHAR *newBuffer, INT32 newCapacity) {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(newBuffer));
-        PRECONDITION(CheckPointer(thisRef));
-        PRECONDITION(IsProtectedByGCFrame(thisRef));
-        PRECONDITION(newCapacity>=0);
-    } CONTRACTL_END;
-
-    if(newCapacity > (*thisRef)->GetMaxCapacity())
-    {
-        COMPlusThrowArgumentOutOfRange(W("capacity"), W("ArgumentOutOfRange_Capacity"));
-    }
-
-    CHARARRAYREF newCharArray = AllocateCharArray((*thisRef)->GetAllocationLength(newCapacity+1));
-    (*thisRef)->ReplaceBufferWithAnsi(&newCharArray, newBuffer, newCapacity);
-}
-
 #ifdef USE_CHECKED_OBJECTREFS
 
 //-------------------------------------------------------------
