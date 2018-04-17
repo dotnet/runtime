@@ -28,24 +28,17 @@ namespace System.Collections.Immutable
             private readonly Comparers _comparers;
 
             /// <summary>
-            /// The current number of elements in the collection.
-            /// </summary>
-            private readonly int _count;
-
-            /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableDictionary{TKey, TValue}.MutationInput"/> struct.
             /// </summary>
             /// <param name="root">The root.</param>
             /// <param name="comparers">The comparers.</param>
-            /// <param name="count">The current number of elements in the collection.</param>
+            /// 
             internal MutationInput(
                 SortedInt32KeyNode<HashBucket> root,
-                Comparers comparers,
-                int count)
+                Comparers comparers)
             {
                 _root = root;
                 _comparers = comparers;
-                _count = count;
             }
 
             /// <summary>
@@ -56,7 +49,6 @@ namespace System.Collections.Immutable
             {
                 _root = map._root;
                 _comparers = map._comparers;
-                _count = map._count;
             }
 
             /// <summary>
@@ -97,14 +89,6 @@ namespace System.Collections.Immutable
             internal IEqualityComparer<HashBucket> HashBucketComparer
             {
                 get { return _comparers.HashBucketEqualityComparer; }
-            }
-
-            /// <summary>
-            /// Gets the current number of elements in the collection.
-            /// </summary>
-            internal int Count
-            {
-                get { return _count; }
             }
         }
     }
