@@ -370,7 +370,7 @@ namespace System.Collections.Concurrent
             /// Abstract property, returns whether or not the shared reader has already read the last 
             /// element of the source data 
             /// </summary>
-            protected abstract bool HasNoElementsLeft { get; set; }
+            protected abstract bool HasNoElementsLeft { get; }
 
             /// <summary>
             /// Get the current element in the current partition. Property required by IEnumerator interface
@@ -955,14 +955,6 @@ namespace System.Collections.Concurrent
                 override protected bool HasNoElementsLeft
                 {
                     get { return _hasNoElementsLeft.Value; }
-                    set
-                    {
-                        //we only set it from false to true once
-                        //we should never set it back in any circumstances
-                        Debug.Assert(value);
-                        Debug.Assert(!_hasNoElementsLeft.Value);
-                        _hasNoElementsLeft.Value = true;
-                    }
                 }
 
                 override public KeyValuePair<long, TSource> Current
@@ -1161,10 +1153,6 @@ namespace System.Collections.Concurrent
                     Debug.Assert(_sharedIndex != null);
                     // use the new Volatile.Read method because it is cheaper than Interlocked.Read on AMD64 architecture
                     return Volatile.Read(ref _sharedIndex.Value) >= SourceCount - 1;
-                }
-                set
-                {
-                    Debug.Fail("HasNoElementsLeft_Set should not be called");
                 }
             }
 
