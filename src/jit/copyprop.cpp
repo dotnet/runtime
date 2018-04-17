@@ -431,7 +431,7 @@ void Compiler::optVnCopyProp()
     CompAllocator allocator(this, CMK_CopyProp);
 
     // Compute the domTree to use.
-    BlkToBlkSetMap* domTree = new (&allocator) BlkToBlkSetMap(&allocator);
+    BlkToBlkVectorMap* domTree = new (&allocator) BlkToBlkVectorMap(&allocator);
     domTree->Reallocate(fgBBcount * 3 / 2); // Prime the allocation
     SsaBuilder::ComputeDominators(this, domTree);
 
@@ -474,12 +474,12 @@ void Compiler::optVnCopyProp()
         optBlockCopyProp(block, &curSsaName);
 
         // Add dom children to work on.
-        BlkSet* pBlkSet;
-        if (domTree->Lookup(block, &pBlkSet))
+        BlkVector* domChildren = domTree->LookupPointer(block);
+        if (domChildren != nullptr)
         {
-            for (BlkSet::KeyIterator child = pBlkSet->Begin(); !child.Equal(pBlkSet->End()); ++child)
+            for (BasicBlock* child : *domChildren)
             {
-                worklist->push_back(BlockWork(child.Get()));
+                worklist->push_back(BlockWork(child));
             }
         }
     }
