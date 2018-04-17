@@ -5300,12 +5300,15 @@ public:
 #define MAKEDLLNAME(x) MAKEDLLNAME_A(x)
 #endif
 
-#define PAL_SHLIB_PREFIX "lib"
+#define PAL_SHLIB_PREFIX    "lib"
+#define PAL_SHLIB_PREFIX_W  u"lib"
 
 #if __APPLE__
-#define PAL_SHLIB_SUFFIX ".dylib"
+#define PAL_SHLIB_SUFFIX    ".dylib"
+#define PAL_SHLIB_SUFFIX_W  u".dylib"
 #else
-#define PAL_SHLIB_SUFFIX ".so"
+#define PAL_SHLIB_SUFFIX    ".so"
+#define PAL_SHLIB_SUFFIX_W  u".so"
 #endif
 
 #define DBG_EXCEPTION_HANDLED            ((DWORD   )0x00010001L)    
