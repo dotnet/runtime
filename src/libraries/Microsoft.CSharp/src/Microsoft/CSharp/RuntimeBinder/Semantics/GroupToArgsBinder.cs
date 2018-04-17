@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Microsoft.CSharp.RuntimeBinder.Errors;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
@@ -325,7 +324,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                         if (null == pmethBest)
                         {
-                            _results.AmbiguousResult = pAmbig2.mpwi;
                             if (pAmbig1.@params != pAmbig2.@params ||
                                 pAmbig1.mpwi.MethProp().Params.Count != pAmbig2.mpwi.MethProp().Params.Count ||
                                 pAmbig1.mpwi.TypeArgs != pAmbig2.mpwi.TypeArgs ||

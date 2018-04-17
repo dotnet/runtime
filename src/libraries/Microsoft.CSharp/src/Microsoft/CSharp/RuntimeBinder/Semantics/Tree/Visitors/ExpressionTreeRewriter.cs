@@ -915,7 +915,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             AggregateType paramsArrayElementType = SymbolLoader.GetPredefindType(pt);
             ArrayType paramsArrayType = TypeManager.GetArray(paramsArrayElementType, 1, true);
             ExprConstant paramsArrayArg = ExprFactory.CreateIntegerConstant(parameterCount);
-            return ExprFactory.CreateArrayInit(paramsArrayType, args, paramsArrayArg, new int[] { parameterCount }, parameterCount);
+            return ExprFactory.CreateArrayInit(paramsArrayType, args, paramsArrayArg, new int[] { parameterCount });
         }
 
         private static void FixLiftedUserDefinedBinaryOperators(ExprBinOp expr, ref Expr pp1, ref Expr pp2)

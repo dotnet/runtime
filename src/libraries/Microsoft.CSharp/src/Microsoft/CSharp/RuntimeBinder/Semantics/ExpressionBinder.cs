@@ -1172,7 +1172,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             CType arrayType = (ArrayType)TypeManager.SubstType(mp.Params[mp.Params.Count - 1], type, pTypeArgs);
 
                             // Use an EK_ARRINIT even in the empty case so empty param arrays in attributes work.
-                            ExprArrayInit arrayInit = ExprFactory.CreateArrayInit(arrayType, null, null, new[] { 0 }, 1);
+                            ExprArrayInit arrayInit = ExprFactory.CreateArrayInit(arrayType, null, null, new[] { 0 });
                             arrayInit.GeneratedForParamArray = true;
                             arrayInit.OptionalArguments = named.Value;
 
@@ -1250,12 +1250,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CType elementType = subArr.ElementType;
 
             // Use an EK_ARRINIT even in the empty case so empty param arrays in attributes work.
-            ExprArrayInit exprArrayInit = ExprFactory.CreateArrayInit(substitutedArrayType, null, null, new[] { 0 }, 1);
+            ExprArrayInit exprArrayInit = ExprFactory.CreateArrayInit(substitutedArrayType, null, null, new[] { 0 });
             exprArrayInit.GeneratedForParamArray = true;
 
             if (it.AtEnd())
             {
-                exprArrayInit.DimensionSize = 0;
                 exprArrayInit.DimensionSizes[0] = 0;
                 exprArrayInit.OptionalArguments = null;
                 if (argsPtr == null)
@@ -1291,7 +1290,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     ExprFactory.AppendItemToList(expr, ref newList, ref newListTail);
                 }
 
-                exprArrayInit.DimensionSize = count;
                 exprArrayInit.DimensionSizes[0] = count;
                 exprArrayInit.OptionalArguments = newList;
                 ExprFactory.AppendItemToList(exprArrayInit, ref newArgs, ref newArgsTail);
