@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Numerics.Hashing;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -43,6 +44,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private readonly RuntimeBinder _binder;
 
+        private readonly Type _callingContext;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CSharpInvokeBinder" />.
         /// </summary>
@@ -56,8 +59,36 @@ namespace Microsoft.CSharp.RuntimeBinder
             base(BinderHelper.CreateCallInfo(ref argumentInfo, 1)) // discard 1 argument: the target object (even if static, arg is type)
         {
             _flags = flags;
+            _callingContext = callingContext;
             _argumentInfo = argumentInfo as CSharpArgumentInfo[];
             _binder = new RuntimeBinder(callingContext);
+        }
+
+        public int GetGetBinderEquivalenceHash()
+        {
+            int hash = _callingContext?.GetHashCode() ?? 0;
+            hash = HashHelpers.Combine(hash, (int)_flags);
+            hash = BinderHelper.AddArgHashes(hash, _argumentInfo);
+
+            return hash;
+        }
+
+        public bool IsEquivalentTo(ICSharpBinder other)
+        {
+            var otherBinder = other as CSharpInvokeBinder;
+            if (otherBinder == null)
+            {
+                return false;
+            }
+
+            if (_flags != otherBinder._flags ||
+                _callingContext != otherBinder._callingContext ||
+                _argumentInfo.Length != otherBinder._argumentInfo.Length)
+            {
+                return false;
+            }
+
+            return BinderHelper.CompareArgInfos(_argumentInfo, otherBinder._argumentInfo);
         }
 
         /// <summary>

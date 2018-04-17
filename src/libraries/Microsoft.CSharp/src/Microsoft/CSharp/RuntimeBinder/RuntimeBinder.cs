@@ -20,6 +20,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private readonly ExpressionBinder _binder;
 
+        internal bool IsChecked => _binder.Context.Checked;
+
         public RuntimeBinder(Type contextType, bool isChecked = false)
         {
             AggregateSymbol context;
@@ -160,14 +162,14 @@ namespace Microsoft.CSharp.RuntimeBinder
                 if (swt != null && swt.Sym.getKind() != SYMKIND.SK_MethodSymbol)
                 {
                     // The GetMember only has one argument, and we need to just take the first arg info.
-                    CSharpGetMemberBinder getMember = new CSharpGetMemberBinder(callPayload.Name, false, callPayload.CallingContext, new CSharpArgumentInfo[] { callPayload.GetArgumentInfo(0) });
+                    CSharpGetMemberBinder getMember = new CSharpGetMemberBinder(callPayload.Name, false, callPayload.CallingContext, new CSharpArgumentInfo[] { callPayload.GetArgumentInfo(0) }).TryGetExisting();
 
                     // The Invoke has the remaining argument infos. However, we need to redo the first one
                     // to correspond to the GetMember result.
                     CSharpArgumentInfo[] argInfos = callPayload.ArgumentInfoArray();
 
                     argInfos[0] = CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null);
-                    CSharpInvokeBinder invoke = new CSharpInvokeBinder(callPayload.Flags, callPayload.CallingContext, argInfos);
+                    CSharpInvokeBinder invoke = new CSharpInvokeBinder(callPayload.Flags, callPayload.CallingContext, argInfos).TryGetExisting();
 
                     DynamicMetaObject[] newArgs = new DynamicMetaObject[args.Length - 1];
                     Array.Copy(args, 1, newArgs, 0, args.Length - 1);
