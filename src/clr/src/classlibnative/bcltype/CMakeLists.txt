@@ -17,7 +17,6 @@ set(BCLTYPE_SOURCES
     oavariant.cpp
     objectnative.cpp
     stringnative.cpp
-    stringbuffer.cpp
     system.cpp
     varargsnative.cpp
     variant.cpp
