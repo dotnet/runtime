@@ -204,16 +204,22 @@ void check_metadata_store_local(void *from, void *to);
 #ifdef ENABLE_CHECKED_BUILD_THREAD
 
 #define CHECKED_BUILD_THREAD_TRANSITION(transition, info, from_state, suspend_count, next_state, suspend_count_delta) do {	\
-	checked_build_thread_transition (transition, info, from_state, suspend_count, next_state, suspend_count_delta);	\
+		checked_build_thread_transition (transition, info, from_state, suspend_count, next_state, suspend_count_delta, TRUE); \
 } while (0)
 
-void checked_build_thread_transition(const char *transition, void *info, int from_state, int suspend_count, int next_state, int suspend_count_delta);
+#define CHECKED_BUILD_THREAD_TRANSITION_NOBT(transition, info, from_state, suspend_count, next_state, suspend_count_delta) do {	\
+		checked_build_thread_transition (transition, info, from_state, suspend_count, next_state, suspend_count_delta, FALSE); \
+} while (0)
+
+void checked_build_thread_transition(const char *transition, void *info, int from_state, int suspend_count, int next_state, int suspend_count_delta, gboolean capture_backtrace);
 
 G_GNUC_NORETURN MONO_ATTR_FORMAT_PRINTF(1,2) void mono_fatal_with_history(const char *msg, ...);
 
 #else
 
 #define CHECKED_BUILD_THREAD_TRANSITION(transition, info, from_state, suspend_count, next_state, suspend_count_delta)
+
+#define CHECKED_BUILD_THREAD_TRANSITION_NOBT(transition, info, from_state, suspend_count, next_state, suspend_count_delta)
 
 #define mono_fatal_with_history g_error
 

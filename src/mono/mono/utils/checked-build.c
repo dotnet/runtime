@@ -84,9 +84,23 @@ mono_check_transition_limit (void)
 	return transition_limit;
 }
 
+#define MAX_NATIVE_BT 6
+#define MAX_NATIVE_BT_PROBE (MAX_NATIVE_BT + 5)
+#define MAX_TRANSITIONS (mono_check_transition_limit ())
+
 typedef struct {
-	GPtrArray *transitions;
+	const char *name;
+	int from_state, next_state, suspend_count, suspend_count_delta, size;
+	gpointer backtrace [MAX_NATIVE_BT_PROBE];
+} ThreadTransition;
+
+typedef struct {
 	guint32 in_gc_critical_region;
+	// ring buffer of transitions, indexed by two guint16 indices:
+	// push at buf_end, iterate from buf_start. valid range is
+	// buf_start ... buf_end - 1 mod MAX_TRANSITIONS
+	gint32 ringbuf;
+	ThreadTransition transitions [MONO_ZERO_LEN_ARRAY];
 } CheckState;
 
 static MonoNativeTlsKey thread_status;
@@ -104,19 +118,60 @@ get_state (void)
 {
 	CheckState *state = mono_native_tls_get_value (thread_status);
 	if (!state) {
-		state = g_new0 (CheckState, 1);
-		state->transitions = g_ptr_array_new ();
+		state = (CheckState*) g_malloc0 (sizeof (CheckState) + sizeof(ThreadTransition) * MAX_TRANSITIONS);
 		mono_native_tls_set_value (thread_status, state);
 	}
 
 	return state;
 }
 
-#ifdef ENABLE_CHECKED_BUILD_THREAD
+static inline void
+ringbuf_unpack (gint32 ringbuf, guint16 *buf_start, guint16 *buf_end)
+{
+	*buf_start = (guint16) (ringbuf >> 16);
+	*buf_end = (guint16) (ringbuf & 0x00FF);
+}
 
-#define MAX_NATIVE_BT 6
-#define MAX_NATIVE_BT_PROBE (MAX_NATIVE_BT + 5)
-#define MAX_TRANSITIONS (mono_check_transition_limit ())
+static inline gint32
+ringbuf_pack (guint16 buf_start, guint16 buf_end)
+{
+	return ((((gint32)buf_start) << 16) | ((gint32)buf_end));
+}
+
+static int
+ringbuf_size (guint32 ringbuf, int n)
+{
+	guint16 buf_start, buf_end;
+	ringbuf_unpack (ringbuf, &buf_start, &buf_end);
+	if (buf_end > buf_start)
+		return buf_end - buf_start;
+	else
+		return n - (buf_start - buf_end);
+}
+
+static guint16
+ringbuf_push (gint32 *ringbuf, int n)
+{
+	gint32 ringbuf_old, ringbuf_new;
+	guint16 buf_start, buf_end;
+	guint16 cur;
+retry:
+	ringbuf_old = *ringbuf;
+	ringbuf_unpack (ringbuf_old, &buf_start, &buf_end);
+	cur = buf_end++;
+	if (buf_end == n)
+		buf_end = 0;
+	if (buf_end == buf_start) {
+		if (++buf_start == n)
+			buf_start = 0;
+	}
+	ringbuf_new = ringbuf_pack (buf_start, buf_end);
+	if (mono_atomic_cas_i32 (ringbuf, ringbuf_new, ringbuf_old) != ringbuf_old)
+		goto retry;
+	return cur;
+}
+
+#ifdef ENABLE_CHECKED_BUILD_THREAD
 
 #ifdef HAVE_BACKTRACE_SYMBOLS
 
@@ -130,6 +185,8 @@ collect_backtrace (gpointer out_data[])
 static char*
 translate_backtrace (gpointer native_trace[], int size)
 {
+	if (size == 0)
+		return g_strdup ("");
 	char **names = backtrace_symbols (native_trace, size);
 	GString* bt = g_string_sized_new (100);
 
@@ -171,46 +228,35 @@ translate_backtrace (gpointer native_trace[], int size)
 
 #endif
 
-typedef struct {
-	const char *name;
-	int from_state, next_state, suspend_count, suspend_count_delta, size;
-	gpointer backtrace [MAX_NATIVE_BT_PROBE];
-} ThreadTransition;
-
-static void
-free_transition (ThreadTransition *t)
-{
-	g_free (t);
-}
-
 void
-checked_build_thread_transition (const char *transition, void *info, int from_state, int suspend_count, int next_state, int suspend_count_delta)
+checked_build_thread_transition (const char *transition, void *info, int from_state, int suspend_count, int next_state, int suspend_count_delta, gboolean capture_backtrace)
 {
 	if (!mono_check_mode_enabled (MONO_CHECK_MODE_THREAD))
 		return;
 
-	CheckState *state = get_state ();
 	/* We currently don't record external changes as those are hard to reason about. */
 	if (!mono_thread_info_is_current (info))
 		return;
 
-	if (state->transitions->len >= MAX_TRANSITIONS)
-		free_transition (g_ptr_array_remove_index (state->transitions, 0));
+	CheckState *state = get_state ();
 
-	ThreadTransition *t = g_new0 (ThreadTransition, 1);
+	guint16 cur = ringbuf_push (&state->ringbuf, MAX_TRANSITIONS);
+
+	ThreadTransition *t = &state->transitions[cur];
 	t->name = transition;
 	t->from_state = from_state;
 	t->next_state = next_state;
 	t->suspend_count = suspend_count;
 	t->suspend_count_delta = suspend_count_delta;
-	t->size = collect_backtrace (t->backtrace);
-	g_ptr_array_add (state->transitions, t);
+	if (capture_backtrace)
+		t->size = collect_backtrace (t->backtrace);
+	else
+		t->size = 0;
 }
 
 void
 mono_fatal_with_history (const char *msg, ...)
 {
-	int i;
 	GString* err = g_string_sized_new (100);
 
 	g_string_append_printf (err, "Assertion failure in thread %p due to: ", mono_native_thread_id_get ());
@@ -223,11 +269,14 @@ mono_fatal_with_history (const char *msg, ...)
 	if (mono_check_mode_enabled (MONO_CHECK_MODE_THREAD))
 	{
 		CheckState *state = get_state ();
+		guint16 cur, end;
+		int len = ringbuf_size (state->ringbuf, MAX_TRANSITIONS);
 
-		g_string_append_printf (err, "\nLast %d state transitions: (most recent first)\n", state->transitions->len);
+		g_string_append_printf (err, "\nLast %d state transitions: (most recent first)\n", len);
 
-		for (i = state->transitions->len - 1; i >= 0; --i) {
-			ThreadTransition *t = state->transitions->pdata [i];
+		ringbuf_unpack (state->ringbuf, &cur, &end);
+		while (cur != end) {
+			ThreadTransition *t = &state->transitions[cur];
 			char *bt = translate_backtrace (t->backtrace, t->size);
 			g_string_append_printf (err, "[%s] %s -> %s (%d) %s%d at:\n%s",
 				t->name,
@@ -238,6 +287,8 @@ mono_fatal_with_history (const char *msg, ...)
 				t->suspend_count_delta,
 				bt);
 			g_free (bt);
+			if (++cur == MAX_TRANSITIONS)
+				cur = 0;
 		}
 	}
 

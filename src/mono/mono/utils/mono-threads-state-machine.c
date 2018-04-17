@@ -106,6 +106,22 @@ trace_state_change_with_func (const char *transition, MonoThreadInfo *info, int 
 }
 
 static inline void
+trace_state_change_sigsafe (const char *transition, MonoThreadInfo *info, int cur_raw_state, int next_state, int suspend_count_delta, const char *func)
+{
+	check_thread_state (info);
+	THREADS_STATE_MACHINE_DEBUG ("[%s][%p] %s -> %s (%d -> %d) %s\n",
+		transition,
+		mono_thread_info_get_tid (info),
+		state_name (get_thread_state (cur_raw_state)),
+		state_name (next_state),
+		get_thread_suspend_count (cur_raw_state),
+		get_thread_suspend_count (cur_raw_state) + suspend_count_delta,
+		func);
+
+	CHECKED_BUILD_THREAD_TRANSITION_NOBT (transition, info, get_thread_state (cur_raw_state), get_thread_suspend_count (cur_raw_state), next_state, suspend_count_delta);
+}
+
+static inline void
 trace_state_change (const char *transition, MonoThreadInfo *info, int cur_raw_state, int next_state, int suspend_count_delta)
 // FIXME migrate all uses
 {
@@ -428,18 +444,18 @@ retry_state_change:
 
 	case STATE_SELF_SUSPENDED: //async suspend raced with self suspend and lost
 	case STATE_BLOCKING_SELF_SUSPENDED: //async suspend raced with blocking and lost
-		trace_state_change ("FINISH_ASYNC_SUSPEND", info, raw_state, cur_state, 0);
+		trace_state_change_sigsafe ("FINISH_ASYNC_SUSPEND", info, raw_state, cur_state, 0, "");
 		return FALSE; //let self suspend wait
 
 	case STATE_ASYNC_SUSPEND_REQUESTED:
 		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPENDED, suspend_count), raw_state) != raw_state)
 			goto retry_state_change;
-		trace_state_change ("FINISH_ASYNC_SUSPEND", info, raw_state, STATE_ASYNC_SUSPENDED, 0);
+		trace_state_change_sigsafe ("FINISH_ASYNC_SUSPEND", info, raw_state, STATE_ASYNC_SUSPENDED, 0, "");
 		return TRUE; //Async suspend worked, now wait for resume
 	case STATE_BLOCKING_SUSPEND_REQUESTED:
 		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_ASYNC_SUSPENDED, suspend_count), raw_state) != raw_state)
 			goto retry_state_change;
-		trace_state_change ("FINISH_ASYNC_SUSPEND", info, raw_state, STATE_BLOCKING_ASYNC_SUSPENDED, 0);
+		trace_state_change_sigsafe ("FINISH_ASYNC_SUSPEND", info, raw_state, STATE_BLOCKING_ASYNC_SUSPENDED, 0, "");
 		return TRUE; //Async suspend of blocking thread worked, now wait for resume
 
 /*
