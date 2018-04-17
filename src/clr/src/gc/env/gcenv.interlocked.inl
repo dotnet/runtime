@@ -11,6 +11,16 @@
 #include <intrin.h>
 #endif // _MSC_VER
 
+#ifndef _MSC_VER
+__forceinline void Interlocked::ArmInterlockedOperationBarrier()
+{
+#ifdef _ARM64_
+    // See PAL_ArmInterlockedOperationBarrier() in the PAL
+    __sync_synchronize();
+#endif // _ARM64_
+}
+#endif // !_MSC_VER
+
 // Increment the value of the specified 32-bit variable as an atomic operation.
 // Parameters:
 //  addend - variable to be incremented
@@ -23,7 +33,9 @@ __forceinline T Interlocked::Increment(T volatile *addend)
     static_assert(sizeof(long) == sizeof(T), "Size of long must be the same as size of T");
     return _InterlockedIncrement((long*)addend);
 #else
-    return __sync_add_and_fetch(addend, 1);
+    T result = __sync_add_and_fetch(addend, 1);
+    ArmInterlockedOperationBarrier();
+    return result;
 #endif
 }
 
@@ -39,7 +51,9 @@ __forceinline T Interlocked::Decrement(T volatile *addend)
     static_assert(sizeof(long) == sizeof(T), "Size of long must be the same as size of T");
     return _InterlockedDecrement((long*)addend);
 #else
-    return __sync_sub_and_fetch(addend, 1);
+    T result = __sync_sub_and_fetch(addend, 1);
+    ArmInterlockedOperationBarrier();
+    return result;
 #endif
 }
 
@@ -56,7 +70,9 @@ __forceinline T Interlocked::Exchange(T volatile *destination, T value)
     static_assert(sizeof(long) == sizeof(T), "Size of long must be the same as size of T");
     return _InterlockedExchange((long*)destination, value);
 #else
-    return __sync_swap(destination, value);
+    T result = __sync_swap(destination, value);
+    ArmInterlockedOperationBarrier();
+    return result;
 #endif
 }
 
@@ -75,7 +91,9 @@ __forceinline T Interlocked::CompareExchange(T volatile *destination, T exchange
     static_assert(sizeof(long) == sizeof(T), "Size of long must be the same as size of T");
     return _InterlockedCompareExchange((long*)destination, exchange, comparand);
 #else
-    return __sync_val_compare_and_swap(destination, comparand, exchange);
+    T result = __sync_val_compare_and_swap(destination, comparand, exchange);
+    ArmInterlockedOperationBarrier();
+    return result;
 #endif
 }
 
@@ -92,7 +110,9 @@ __forceinline T Interlocked::ExchangeAdd(T volatile *addend, T value)
     static_assert(sizeof(long) == sizeof(T), "Size of long must be the same as size of T");
     return _InterlockedExchangeAdd((long*)addend, value);
 #else
-    return __sync_fetch_and_add(addend, value);
+    T result = __sync_fetch_and_add(addend, value);
+    ArmInterlockedOperationBarrier();
+    return result;
 #endif
 }
 
@@ -108,6 +128,7 @@ __forceinline void Interlocked::And(T volatile *destination, T value)
     _InterlockedAnd((long*)destination, value);
 #else
     __sync_and_and_fetch(destination, value);
+    ArmInterlockedOperationBarrier();
 #endif
 }
 
@@ -123,6 +144,7 @@ __forceinline void Interlocked::Or(T volatile *destination, T value)
     _InterlockedOr((long*)destination, value);
 #else
     __sync_or_and_fetch(destination, value);
+    ArmInterlockedOperationBarrier();
 #endif
 }
 
@@ -142,7 +164,9 @@ __forceinline T Interlocked::ExchangePointer(T volatile * destination, T value)
     return (T)(TADDR)_InterlockedExchange((long volatile *)(void* volatile *)destination, (long)(void*)value);
 #endif
 #else
-    return (T)(TADDR)__sync_swap((void* volatile *)destination, value);
+    T result = (T)(TADDR)__sync_swap((void* volatile *)destination, value);
+    ArmInterlockedOperationBarrier();
+    return result;
 #endif
 }
 
@@ -156,7 +180,9 @@ __forceinline T Interlocked::ExchangePointer(T volatile * destination, std::null
     return (T)(TADDR)_InterlockedExchange((long volatile *)(void* volatile *)destination, (long)(void*)value);
 #endif
 #else
-    return (T)(TADDR)__sync_swap((void* volatile *)destination, value);
+    T result = (T)(TADDR)__sync_swap((void* volatile *)destination, value);
+    ArmInterlockedOperationBarrier();
+    return result;
 #endif
 }
 
@@ -178,7 +204,9 @@ __forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T e
     return (T)(TADDR)_InterlockedCompareExchange((long volatile *)(void* volatile *)destination, (long)(void*)exchange, (long)(void*)comparand);
 #endif
 #else
-    return (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, comparand, exchange);
+    T result = (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, comparand, exchange);
+    ArmInterlockedOperationBarrier();
+    return result;
 #endif
 }
 
@@ -192,7 +220,9 @@ __forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T e
     return (T)(TADDR)_InterlockedCompareExchange((long volatile *)(void* volatile *)destination, (long)(void*)exchange, (long)(void*)comparand);
 #endif
 #else
-    return (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, (void*)comparand, (void*)exchange);
+    T result = (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, (void*)comparand, (void*)exchange);
+    ArmInterlockedOperationBarrier();
+    return result;
 #endif
 }
 

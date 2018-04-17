@@ -3318,6 +3318,24 @@ BitScanReverse64(
     return bRet;
 }
 
+FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
+{
+#ifdef _ARM64_
+    // On arm64, most of the __sync* functions generate a code sequence like:
+    //   loop:
+    //     ldaxr (load acquire exclusive)
+    //     ...
+    //     stlxr (store release exclusive)
+    //     cbnz loop
+    //
+    // It is possible for a load following the code sequence above to be reordered to occur prior to the store above due to the
+    // release barrier, this is substantiated by https://github.com/dotnet/coreclr/pull/17508. Interlocked operations in the PAL
+    // require the load to occur after the store. This memory barrier should be used following a call to a __sync* function to
+    // prevent that reordering. Code generated for arm32 includes a 'dmb' after 'cbnz', so no issue there at the moment.
+    __sync_synchronize();
+#endif // _ARM64_
+}
+
 /*++
 Function:
 InterlockedIncrement
@@ -3345,7 +3363,9 @@ PALAPI
 InterlockedIncrement(
     IN OUT LONG volatile *lpAddend)
 {
-    return __sync_add_and_fetch(lpAddend, (LONG)1);
+    LONG result = __sync_add_and_fetch(lpAddend, (LONG)1);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 EXTERN_C
@@ -3356,7 +3376,9 @@ PALAPI
 InterlockedIncrement64(
     IN OUT LONGLONG volatile *lpAddend)
 {
-    return __sync_add_and_fetch(lpAddend, (LONGLONG)1);
+    LONGLONG result = __sync_add_and_fetch(lpAddend, (LONGLONG)1);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 /*++
@@ -3386,7 +3408,9 @@ PALAPI
 InterlockedDecrement(
     IN OUT LONG volatile *lpAddend)
 {
-    return __sync_sub_and_fetch(lpAddend, (LONG)1);
+    LONG result = __sync_sub_and_fetch(lpAddend, (LONG)1);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 #define InterlockedDecrementAcquire InterlockedDecrement
@@ -3400,7 +3424,9 @@ PALAPI
 InterlockedDecrement64(
     IN OUT LONGLONG volatile *lpAddend)
 {
-    return __sync_sub_and_fetch(lpAddend, (LONGLONG)1);
+    LONGLONG result = __sync_sub_and_fetch(lpAddend, (LONGLONG)1);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 /*++
@@ -3433,7 +3459,9 @@ InterlockedExchange(
     IN OUT LONG volatile *Target,
     IN LONG Value)
 {
-    return __sync_swap(Target, Value);
+    LONG result = __sync_swap(Target, Value);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 EXTERN_C
@@ -3445,7 +3473,9 @@ InterlockedExchange64(
     IN OUT LONGLONG volatile *Target,
     IN LONGLONG Value)
 {
-    return __sync_swap(Target, Value);
+    LONGLONG result = __sync_swap(Target, Value);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 /*++
@@ -3481,10 +3511,13 @@ InterlockedCompareExchange(
     IN LONG Exchange,
     IN LONG Comperand)
 {
-    return __sync_val_compare_and_swap(
-        Destination, /* The pointer to a variable whose value is to be compared with. */
-        Comperand, /* The value to be compared */
-        Exchange /* The value to be stored */);
+    LONG result =
+        __sync_val_compare_and_swap(
+            Destination, /* The pointer to a variable whose value is to be compared with. */
+            Comperand, /* The value to be compared */
+            Exchange /* The value to be stored */);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 #define InterlockedCompareExchangeAcquire InterlockedCompareExchange
@@ -3501,10 +3534,13 @@ InterlockedCompareExchange64(
     IN LONGLONG Exchange,
     IN LONGLONG Comperand)
 {
-    return __sync_val_compare_and_swap(
-        Destination, /* The pointer to a variable whose value is to be compared with. */
-        Comperand, /* The value to be compared */
-        Exchange /* The value to be stored */);
+    LONGLONG result =
+        __sync_val_compare_and_swap(
+            Destination, /* The pointer to a variable whose value is to be compared with. */
+            Comperand, /* The value to be compared */
+            Exchange /* The value to be stored */);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 /*++
@@ -3533,7 +3569,9 @@ InterlockedExchangeAdd(
     IN OUT LONG volatile *Addend,
     IN LONG Value)
 {
-    return __sync_fetch_and_add(Addend, Value);
+    LONG result = __sync_fetch_and_add(Addend, Value);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 EXTERN_C
@@ -3545,7 +3583,9 @@ InterlockedExchangeAdd64(
     IN OUT LONGLONG volatile *Addend,
     IN LONGLONG Value)
 {
-    return __sync_fetch_and_add(Addend, Value);
+    LONGLONG result = __sync_fetch_and_add(Addend, Value);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 EXTERN_C
@@ -3557,7 +3597,9 @@ InterlockedAnd(
     IN OUT LONG volatile *Destination,
     IN LONG Value)
 {
-    return __sync_fetch_and_and(Destination, Value);
+    LONG result = __sync_fetch_and_and(Destination, Value);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 EXTERN_C
@@ -3569,7 +3611,9 @@ InterlockedOr(
     IN OUT LONG volatile *Destination,
     IN LONG Value)
 {
-    return __sync_fetch_and_or(Destination, Value);
+    LONG result = __sync_fetch_and_or(Destination, Value);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 EXTERN_C
