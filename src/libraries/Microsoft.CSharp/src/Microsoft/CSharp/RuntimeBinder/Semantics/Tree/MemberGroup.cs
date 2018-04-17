@@ -39,11 +39,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // The object expression. NULL for a static invocation.
         public Expr OptionalObject { get; set; }
 
-        // The lhs that was bound to resolve this invocation. Set for static invocations only.
-        // We don't use the regular defines because we don't want to visit this guy in regular visitors,
-        // just in the visitors that create the node maps for LAF and refactoring.
-        public Expr OptionalLHS { get; set; }
-
         // The owning call of this member group. NEVER visit this thing.
         // The list of the methods that the memgroup is binding to. This list is formulated after binding
         // the name of the method. When we've attempted to bind the arguments, we populate the MethPropWithInst list.

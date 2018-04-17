@@ -16,8 +16,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static ExprField CreateField(CType type, Expr optionalObject, FieldWithType field) =>
             new ExprField(type, optionalObject, field);
 
-        public static ExprArrayInit CreateArrayInit(CType type, Expr arguments, Expr argumentDimensions, int[] dimSizes, int dimSize) =>
-            new ExprArrayInit(type, arguments, argumentDimensions, dimSizes, dimSize);
+        public static ExprArrayInit CreateArrayInit(CType type, Expr arguments, Expr argumentDimensions, int[] dimSizes) =>
+            new ExprArrayInit(type, arguments, argumentDimensions, dimSizes);
 
         public static ExprProperty CreateProperty(CType type, Expr optionalObjectThrough, Expr arguments, ExprMemberGroup memberGroup, PropWithType property, MethWithType setMethod) =>
             new ExprProperty(type, optionalObjectThrough, arguments, memberGroup, property, setMethod);

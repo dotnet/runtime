@@ -603,11 +603,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             ExprMemberGroup memgroup = ExprFactory.CreateMemGroup( // Tree
                 flags, name, typeArgumentsAsTypeArray, kind, callingType, null,
                 new CMemberLookupResults(TypeArray.Allocate(callingTypes.ToArray()), name));
-            if (callingObject is ExprClass)
-            {
-                memgroup.OptionalLHS = callingObject;
-            }
-            else
+            if (!(callingObject is ExprClass))
             {
                 memgroup.OptionalObject = callingObject;
             }
