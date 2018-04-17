@@ -2228,6 +2228,23 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [OuterLoop]
+        [Fact]
+        public async Task GetAsync_UnicodeHostName_SuccessStatusCodeInResponse()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            using (var client = new HttpClient(handler))
+            {
+                // international version of the Starbucks website
+                // punycode: xn--oy2b35ckwhba574atvuzkc.com                
+                string server = "http://\uc2a4\ud0c0\ubc85\uc2a4\ucf54\ub9ac\uc544.com";
+                using (HttpResponseMessage response = await client.GetAsync(server))
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+            }
+        }
+
         #region Post Methods Tests
 
         [OuterLoop] // TODO: Issue #11345
