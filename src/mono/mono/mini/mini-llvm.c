@@ -2847,7 +2847,7 @@ static void
 emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_type, LLVMValueRef method, int method_index)
 {
 	/*
-	 * Emit unbox trampoline using a tail call
+	 * Emit unbox trampoline using a tailcall
 	 */
 	LLVMValueRef tramp, call, *args;
 	LLVMBuilderRef builder;
@@ -2896,7 +2896,7 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 		mono_llvm_add_instr_attr (call, 1 + linfo->vret_arg_pindex, LLVM_ATTR_STRUCT_RET);
 
 	// FIXME: This causes assertions in clang
-	//mono_llvm_set_must_tail (call);
+	//mono_llvm_set_must_tailcall (call);
 	if (LLVMGetReturnType (method_type) == LLVMVoidType ())
 		LLVMBuildRetVoid (builder);
 	else
@@ -3531,7 +3531,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	lcall = emit_call (ctx, bb, &builder, callee, args, LLVMCountParamTypes (llvm_sig));
 
 	if (ins->opcode != OP_TAILCALL && ins->opcode != OP_TAILCALL_MEMBASE && LLVMGetInstructionOpcode (lcall) == LLVMCall)
-		mono_llvm_set_call_notail (lcall);
+		mono_llvm_set_call_notailcall (lcall);
 
 	/*
 	 * Modify cconv and parameter attributes to pass rgctx/imt correctly.

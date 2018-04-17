@@ -713,7 +713,7 @@ struct MonoCallInst {
 	guint stack_usage;
 	guint stack_align_amount;
 	guint is_virtual : 1;
-	guint tail_call : 1;
+	guint tailcall : 1;
 	/* If this is TRUE, 'fptr' points to a MonoJumpInfo instead of an address. */
 	guint fptr_is_patch : 1;
 	/*
@@ -1093,8 +1093,8 @@ typedef struct {
 	guint            emulate_long_shift_opts : 1;
 	guint            have_objc_get_selector : 1;
 	guint            have_generalized_imt_trampoline : 1;
-	guint            have_op_tail_call : 1;
-	gboolean         have_op_tail_call_membase : 1;
+	guint            have_op_tailcall : 1;
+	gboolean         have_op_tailcall_membase : 1;
 	gboolean	 have_volatile_non_param_register : 1;
 	guint            gshared_supported : 1;
 	guint            use_fpstack : 1;
@@ -1514,7 +1514,7 @@ typedef enum {
 	MONO_CFG_HAS_CALLS  = 1 << 1,
 	MONO_CFG_HAS_LDELEMA  = 1 << 2,
 	MONO_CFG_HAS_VARARGS  = 1 << 3,
-	MONO_CFG_HAS_TAIL     = 1 << 4,
+	MONO_CFG_HAS_TAILCALL = 1 << 4,
 	MONO_CFG_HAS_FPOUT    = 1 << 5, /* there are fp values passed in int registers */
 	MONO_CFG_HAS_SPILLUP  = 1 << 6, /* spill var slots are allocated from bottom to top */
 	MONO_CFG_HAS_CHECK_THIS  = 1 << 7,
@@ -2188,7 +2188,7 @@ gboolean  mono_arch_gsharedvt_sig_supported     (MonoMethodSignature *sig);
 gpointer  mono_arch_get_gsharedvt_trampoline    (MonoTrampInfo **info, gboolean aot);
 gpointer  mono_arch_get_gsharedvt_call_info     (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli);
 gboolean  mono_arch_opcode_needs_emulation      (MonoCompile *cfg, int opcode);
-gboolean  mono_arch_tail_call_supported         (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig);
+gboolean  mono_arch_tailcall_supported         (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig);
 int       mono_arch_translate_tls_offset        (int offset);
 gboolean  mono_arch_opcode_supported            (int opcode);
 void     mono_arch_setup_resume_sighandler_ctx  (MonoContext *ctx, gpointer func);

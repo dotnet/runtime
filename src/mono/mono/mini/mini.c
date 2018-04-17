@@ -3013,14 +3013,14 @@ init_backend (MonoBackend *backend)
 #endif
 	if (MONO_ARCH_USE_FPSTACK)
 		backend->use_fpstack = 1;
-#ifdef MONO_ARCH_HAVE_OP_TAIL_CALL
-	backend->have_op_tail_call = 1;
+#ifdef MONO_ARCH_HAVE_OP_TAILCALL
+	backend->have_op_tailcall = 1;
 #endif
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
 	backend->have_volatile_non_param_register = MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER;
-#ifdef MONO_ARCH_HAVE_OP_TAIL_CALL_MEMBASE
-	backend->have_op_tail_call_membase = 1;
+#ifdef MONO_ARCH_HAVE_OP_TAILCALL_MEMBASE
+	backend->have_op_tailcall_membase = 1;
 #endif
 #ifndef MONO_ARCH_MONITOR_ENTER_ADJUSTMENT
 	backend->monitor_enter_adjustment = 1;

@@ -252,7 +252,7 @@ typedef struct MonoCompileArch {
 #if !defined(MONO_CROSS_COMPILE) && !defined(TARGET_PS3)
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #endif
-#define MONO_ARCH_HAVE_OP_TAIL_CALL 1
+#define MONO_ARCH_HAVE_OP_TAILCALL 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 
 // Does the ABI have a volatile non-parameter register, so tailcall
@@ -375,7 +375,7 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code);
 #endif
 
 gboolean
-mono_ppc_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig);
+mono_ppc_tailcall_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig);
 
 void
 mono_ppc_patch (guchar *code, const guchar *target);

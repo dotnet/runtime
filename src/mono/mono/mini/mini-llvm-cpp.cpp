@@ -203,7 +203,7 @@ mono_llvm_build_fence (LLVMBuilderRef builder, BarrierKind kind)
 }
 
 void
-mono_llvm_set_must_tail (LLVMValueRef call_ins)
+mono_llvm_set_must_tailcall (LLVMValueRef call_ins)
 {
 	CallInst *ins = (CallInst*)unwrap (call_ins);
 
@@ -242,7 +242,7 @@ mono_llvm_set_call_preserveall_cc (LLVMValueRef func)
 }
 
 void
-mono_llvm_set_call_notail (LLVMValueRef func)
+mono_llvm_set_call_notailcall (LLVMValueRef func)
 {
 #if LLVM_API_VERSION > 100
 	unwrap<CallInst>(func)->setTailCallKind (CallInst::TailCallKind::TCK_NoTail);

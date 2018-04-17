@@ -1663,7 +1663,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 /*
  * mini_register_jump_site:
  *
- *   Register IP as a jump/tail call site which calls METHOD.
+ *   Register IP as a jump/tailcall site which calls METHOD.
  * This is needed because common_call_trampoline () cannot patch
  * the call site because the caller ip is not available for jumps.
  */
@@ -1691,7 +1691,7 @@ mini_register_jump_site (MonoDomain *domain, MonoMethod *method, gpointer ip)
 /*
  * mini_patch_jump_sites:
  *
- *   Patch jump/tail call sites calling METHOD so the jump to ADDR.
+ *   Patch jump/tailcall sites calling METHOD so the jump to ADDR.
  */
 void
 mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)

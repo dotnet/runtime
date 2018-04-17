@@ -1264,7 +1264,7 @@ is_supported_tailcall_helper (gboolean value, const char *svalue)
 #define IS_SUPPORTED_TAILCALL(x) (is_supported_tailcall_helper((x), #x))
 
 gboolean
-mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
 	MonoType *callee_ret;
 
@@ -1963,7 +1963,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	MonoMethodSignature *tmp_sig;
 	int sig_reg;
 
-	if (call->tail_call)
+	if (call->tailcall)
 		NOT_IMPLEMENTED;
 
 	g_assert (cinfo->sig_cookie.storage == ArgOnStack);
@@ -2155,7 +2155,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 		t = mini_get_underlying_type (t);
 		//XXX what about ArgGSharedVtOnStack here?
-		if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tail_call) {
+		if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tailcall) {
 			if (!t->byref) {
 				if (t->type == MONO_TYPE_R4)
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, AMD64_RSP, ainfo->offset, in->dreg);
@@ -2214,11 +2214,11 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgValuetypeAddrOnStack:
 		case ArgGSharedVtInReg:
 		case ArgGSharedVtOnStack: {
-			if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tail_call)
+			if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tailcall)
 				/* Already emitted above */
 				break;
 			//FIXME what about ArgGSharedVtOnStack ?
-			if (ainfo->storage == ArgOnStack && call->tail_call) {
+			if (ainfo->storage == ArgOnStack && call->tailcall) {
 				MonoInst *call_inst = (MonoInst*)call;
 				cfg->args [i]->flags |= MONO_INST_VOLATILE;
 				EMIT_NEW_ARGSTORE (cfg, call_inst, i, in);
@@ -2288,7 +2288,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			if (call->vret_var)
 				NULLIFY_INS (call->vret_var);
 		} else {
-			if (call->tail_call)
+			if (call->tailcall)
 				NOT_IMPLEMENTED;
 			/*
 			 * The valuetype is in RAX:RDX after the call, need to be copied to

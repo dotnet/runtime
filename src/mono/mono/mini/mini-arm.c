@@ -1734,7 +1734,7 @@ is_supported_tailcall_helper (gboolean value, const char *svalue)
 #define IS_SUPPORTED_TAILCALL(x) (is_supported_tailcall_helper((x), #x))
 
 gboolean
-mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
 	g_assert (caller_sig);
 	g_assert (callee_sig);
@@ -1744,8 +1744,8 @@ mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig
 	CallInfo *callee_info = get_call_info (NULL, callee_sig);
 
 	/*
-	 * Tail calls with more callee stack usage than the caller cannot be supported, since
-	 * the extra stack space would be left on the stack after the tail call.
+	 * Tailcalls with more callee stack usage than the caller cannot be supported, since
+	 * the extra stack space would be left on the stack after the tailcall.
 	 */
 	gboolean res = IS_SUPPORTED_TAILCALL (callee_info->stack_usage <= caller_info->stack_usage)
 				&& IS_SUPPORTED_TAILCALL (caller_info->ret.storage == callee_info->ret.storage);
@@ -2212,7 +2212,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	MonoMethodSignature *tmp_sig;
 	int sig_reg;
 
-	if (call->tail_call)
+	if (call->tailcall)
 		NOT_IMPLEMENTED;
 
 	g_assert (cinfo->sig_cookie.storage == RegTypeBase);

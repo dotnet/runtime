@@ -1929,7 +1929,7 @@ method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 }
 
 static void
-tail_call (MonoProfiler *prof, MonoMethod *method, MonoMethod *target)
+tailcall (MonoProfiler *prof, MonoMethod *method, MonoMethod *target)
 {
 	method_leave (prof, method, NULL);
 }
@@ -4218,7 +4218,7 @@ mono_profiler_init_log (const char *desc)
 	if (log_config.enter_leave) {
 		mono_profiler_set_method_enter_callback (handle, method_enter);
 		mono_profiler_set_method_leave_callback (handle, method_leave);
-		mono_profiler_set_method_tail_call_callback (handle, tail_call);
+		mono_profiler_set_method_tail_call_callback (handle, tailcall);
 		mono_profiler_set_method_exception_leave_callback (handle, method_exc_leave);
 	}
 

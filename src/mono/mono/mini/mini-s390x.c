@@ -7573,14 +7573,14 @@ mono_arch_opcode_supported (int opcode)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name	    - mono_arch_tail_call_supported.                        */
+/* Name	    - mono_arch_tailcall_supported.                        */
 /*                                                                  */
-/* Function - Check if a tail call is supported.                    */
+/* Function - Check if a tailcall is supported.                    */
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
 gboolean
-mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
 	CallInfo *c1, *c2;
 	gboolean res;

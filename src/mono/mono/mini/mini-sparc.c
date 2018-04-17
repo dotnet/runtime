@@ -2103,7 +2103,7 @@ emit_move_return_value (MonoInst *ins, guint32 *code)
  * emit_load_volatile_arguments:
  *
  *  Load volatile arguments from the stack to the original input registers.
- * Required before a tail call.
+ * Required before a tailcall.
  */
 static guint32*
 emit_load_volatile_arguments (MonoCompile *cfg, guint32 *code)

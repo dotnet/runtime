@@ -1638,7 +1638,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	MonoMethodSignature *tmp_sig;
 	MonoInst *sig_arg;
 
-	if (call->tail_call)
+	if (call->tailcall)
 		NOT_IMPLEMENTED;
 
 	/* FIXME: Add support for signature tokens to AOT */
@@ -3062,7 +3062,7 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
  * emit_load_volatile_arguments:
  *
  * Load volatile arguments from the stack to the original input registers.
- * Required before a tail call.
+ * Required before a tailcall.
  */
 static guint8 *
 emit_load_volatile_arguments(MonoCompile *cfg, guint8 *code)

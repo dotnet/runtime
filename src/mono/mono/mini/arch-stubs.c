@@ -59,9 +59,9 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 }
 #endif
 
-#ifndef MONO_ARCH_HAVE_OP_TAIL_CALL
+#ifndef MONO_ARCH_HAVE_OP_TAILCALL
 gboolean
-mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
 	return mono_metadata_signature_equal (caller_sig, callee_sig) && !MONO_TYPE_ISSTRUCT (callee_sig->ret);
 }

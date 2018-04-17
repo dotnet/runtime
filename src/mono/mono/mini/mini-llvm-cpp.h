@@ -87,7 +87,7 @@ LLVMValueRef
 mono_llvm_build_cmpxchg (LLVMBuilderRef builder, LLVMValueRef addr, LLVMValueRef comparand, LLVMValueRef value);
 
 void
-mono_llvm_set_must_tail (LLVMValueRef call_ins);
+mono_llvm_set_must_tailcall (LLVMValueRef call_ins);
 
 LLVMValueRef
 mono_llvm_create_constant_data_array (const uint8_t *data, int len);
@@ -102,7 +102,7 @@ void
 mono_llvm_set_call_preserveall_cc (LLVMValueRef call);
 
 void
-mono_llvm_set_call_notail (LLVMValueRef call);
+mono_llvm_set_call_notailcall (LLVMValueRef call);
 
 void
 mono_llvm_add_func_attr (LLVMValueRef func, AttrKind kind);
