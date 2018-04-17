@@ -27,7 +27,7 @@
     <CompileItem Include="$(CommonPath)\System\Net\Security\CertificateHelper.Windows.cs" />
     <CompileItem Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
     <CompileItem Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs" />
-    <CompileItem Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs" />
+    <CompileItem Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpAuthHelper.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpCertificateHelper.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpChannelBinding.cs" />
