@@ -670,7 +670,7 @@ FCIMPL2(Object*, RuntimeTypeHandle::CreateCaInstance, ReflectClassBaseObject* pC
     CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pCaTypeUNSAFE));
-        PRECONDITION(!pCaTypeUNSAFE->GetType().IsGenericVariable()); 
+        PRECONDITION(!pCaTypeUNSAFE->GetType().IsGenericVariable());
         PRECONDITION(pCaTypeUNSAFE->GetType().IsValueType() || CheckPointer(pCtorUNSAFE));
     }
     CONTRACTL_END;
@@ -694,10 +694,6 @@ FCIMPL2(Object*, RuntimeTypeHandle::CreateCaInstance, ReflectClassBaseObject* pC
         PRECONDITION(
             (!pCtor && gc.refCaType->GetType().IsValueType() && !gc.refCaType->GetType().GetMethodTable()->HasDefaultConstructor()) || 
             (pCtor == gc.refCaType->GetType().GetMethodTable()->GetDefaultConstructor()));
-
-        // If we relax this, we need to insure custom attributes construct properly for Nullable<T>
-        if (gc.refCaType->GetType().HasInstantiation())
-            COMPlusThrow(kNotSupportedException, W("Argument_GenericsInvalid"));
         
         gc.o = pCaMT->Allocate();
 
@@ -731,16 +727,20 @@ FCIMPL2(Object*, RuntimeTypeHandle::CreateCaInstance, ReflectClassBaseObject* pC
 }
 FCIMPLEND
 
-FCIMPL5(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAttributedModuleUNSAFE, ReflectMethodObject *pMethodUNSAFE, BYTE** ppBlob, BYTE* pEndBlob, INT32* pcNamedArgs)
+FCIMPL6(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAttributedModuleUNSAFE, ReflectClassBaseObject* pCaTypeUNSAFE, ReflectMethodObject *pMethodUNSAFE, BYTE** ppBlob, BYTE* pEndBlob, INT32* pcNamedArgs)
 {
     FCALL_CONTRACT;
 
     struct
     {
+        REFLECTCLASSBASEREF refCaType;
         OBJECTREF ca;
         REFLECTMETHODREF refCtor;
         REFLECTMODULEBASEREF refAttributedModule;
     } gc;
+    gc.refCaType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pCaTypeUNSAFE);
+    TypeHandle th = gc.refCaType->GetType();
+
     gc.ca = NULL;
     gc.refCtor = (REFLECTMETHODREF)ObjectToOBJECTREF(pMethodUNSAFE);
     gc.refAttributedModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pAttributedModuleUNSAFE);
@@ -749,10 +749,10 @@ FCIMPL5(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAt
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     MethodDesc* pCtorMD = gc.refCtor->GetMethod();
-
+    
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
     {
-        MethodDescCallSite ctorCallSite(pCtorMD);
+        MethodDescCallSite ctorCallSite(pCtorMD, th);
         MetaSig* pSig = ctorCallSite.GetMetaSig();
         BYTE* pBlob = *ppBlob;
 
@@ -766,10 +766,6 @@ FCIMPL5(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAt
         
         OBJECTREF *argToProtect = (OBJECTREF*)_alloca(cArgs * sizeof(OBJECTREF));
         memset((void*)argToProtect, 0, cArgs * sizeof(OBJECTREF));
-
-        // If we relax this, we need to insure custom attributes construct properly for Nullable<T>
-        if (pCtorMD->GetMethodTable()->HasInstantiation())
-            COMPlusThrow(kNotSupportedException, W("Argument_GenericsInvalid"));
 
         // load the this pointer
         argToProtect[0] = pCtorMD->GetMethodTable()->Allocate(); // this is the value to return after the ctor invocation
