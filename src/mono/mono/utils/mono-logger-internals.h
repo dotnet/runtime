@@ -58,10 +58,13 @@ mono_trace_pop (void);
 gboolean
 mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask);
 
+#define MONO_TRACE_IS_TRACED(level, mask) \
+	G_UNLIKELY ((level) <= mono_internal_current_level && ((mask) & mono_internal_current_mask))
+
 G_GNUC_UNUSED static void
 mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args)
 {
-	if(G_UNLIKELY (level <= mono_internal_current_level && (mask & mono_internal_current_mask)))
+	if (MONO_TRACE_IS_TRACED (level, mask))
 		mono_tracev_inner (level, mask, format, args);
 }
 
@@ -77,7 +80,7 @@ mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_li
 G_GNUC_UNUSED MONO_ATTR_FORMAT_PRINTF(3,4) static void
 mono_trace (GLogLevelFlags level, MonoTraceMask mask, const char *format, ...)
 {
-	if(G_UNLIKELY (level <= mono_internal_current_level && (mask & mono_internal_current_mask))) {
+	if (MONO_TRACE_IS_TRACED (level, mask)) {
 		va_list args;
 		va_start (args, format);
 		mono_tracev_inner (level, mask, format, args);
