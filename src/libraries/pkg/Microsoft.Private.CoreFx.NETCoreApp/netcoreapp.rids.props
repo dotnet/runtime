@@ -8,6 +8,7 @@
       <Platform>arm64</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="linux-x64" />
+    <OfficialBuildRID Include="linux-musl-x64" />
     <OfficialBuildRID Include="rhel.6-x64" />
     <OfficialBuildRID Include="alpine.3.6-x64" />
     <OfficialBuildRID Include="osx-x64" />
