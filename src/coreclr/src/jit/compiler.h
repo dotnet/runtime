@@ -1204,13 +1204,13 @@ struct FuncInfoDsc
 struct fgArgTabEntry
 {
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
     fgArgTabEntry()
     {
         otherRegNum = REG_NA;
         isStruct    = false; // is this a struct arg
     }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
 
     GenTree* node;   // Initially points at the Op1 field of 'parent', but if the argument is replaced with an GT_ASG or
                      // placeholder
@@ -1242,7 +1242,7 @@ struct fgArgTabEntry
     bool isNonStandard : 1; // True if it is an arg that is passed in a reg other than a standard arg reg, or is forced
                             // to be on the stack despite its arg list position.
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
     bool isStruct : 1; // True if this is a struct arg
 
     regNumber otherRegNum; // The (second) register to use when passing this argument.
@@ -1337,7 +1337,7 @@ public:
     fgArgTabEntry* AddRegArg(
         unsigned argNum, GenTree* node, GenTree* parent, regNumber regNum, unsigned numRegs, unsigned alignment);
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     fgArgTabEntry* AddRegArg(unsigned                                                         argNum,
                              GenTree*                                                         node,
                              GenTree*                                                         parent,
@@ -1347,13 +1347,13 @@ public:
                              const bool                                                       isStruct,
                              const regNumber                                                  otherRegNum   = REG_NA,
                              const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* const structDescPtr = nullptr);
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
     fgArgTabEntry* AddStkArg(unsigned argNum,
                              GenTree* node,
                              GenTree* parent,
                              unsigned numSlots,
-                             unsigned alignment FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(const bool isStruct));
+                             unsigned alignment UNIX_AMD64_ABI_ONLY_ARG(const bool isStruct));
 
     void           RemorphReset();
     fgArgTabEntry* RemorphRegArg(
@@ -2433,10 +2433,10 @@ public:
     unsigned short lvaTrackedCount;       // actual # of locals being tracked
     unsigned lvaTrackedCountInSizeTUnits; // min # of size_t's sufficient to hold a bit for all the locals being tracked
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     // Only for AMD64 System V cache the first caller stack homed argument.
     unsigned lvaFirstStackIncomingArgNum; // First argument with stack slot in the caller.
-#endif                                    // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif                                    // !UNIX_AMD64_ABI
 
 #ifdef DEBUG
     VARSET_TP lvaTrackedVars; // set of tracked variables
@@ -4586,8 +4586,7 @@ public:
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
     GenTree* fgDoNormalizeOnStore(GenTree* tree);
-    GenTree* fgMakeTmpArgNode(
-        unsigned tmpVarNum FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(const bool passedInRegisters));
+    GenTree* fgMakeTmpArgNode(unsigned tmpVarNum UNIX_AMD64_ABI_ONLY_ARG(const bool passedInRegisters));
 
     // The following check for loops that don't execute calls
     bool fgLoopCallMarked;
@@ -4925,7 +4924,7 @@ private:
     void fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
                                      GenTree*             args,
                                      unsigned             argIndex,
-                                     CORINFO_CLASS_HANDLE copyBlkClass FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(
+                                     CORINFO_CLASS_HANDLE copyBlkClass UNIX_AMD64_ABI_ONLY_ARG(
                                          const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structDescPtr));
 
     void fgFixupStructReturn(GenTree* call);
@@ -7018,7 +7017,7 @@ public:
 
     bool eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken);
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
 #ifdef DEBUG
     static void dumpSystemVClassificationType(SystemVClassificationType ct);
 #endif // DEBUG
@@ -7026,7 +7025,7 @@ public:
     void eeGetSystemVAmd64PassStructInRegisterDescriptor(
         /*IN*/ CORINFO_CLASS_HANDLE                                  structHnd,
         /*OUT*/ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
     template <typename ParamType>
     bool eeRunWithErrorTrap(void (*function)(ParamType*), ParamType* param)
@@ -9726,7 +9725,7 @@ public:
 
     static HelperCallProperties s_helperCallProperties;
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     static var_types GetTypeFromClassificationAndSizes(SystemVClassificationType classType, int size);
     static var_types GetEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
                                       unsigned                                                   slotNum);
@@ -9744,7 +9743,7 @@ public:
                              unsigned __int8*     offset1);
 
     void fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgument);
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
 
     void fgMorphMultiregStructArgs(GenTreeCall* call);
     GenTree* fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntryPtr);

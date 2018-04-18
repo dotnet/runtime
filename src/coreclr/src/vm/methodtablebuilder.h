@@ -2903,14 +2903,14 @@ private:
 
     VOID    CheckForNativeHFA();
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     // checks whether the struct is enregisterable.
     void SystemVAmd64CheckForPassStructInRegister();
     void SystemVAmd64CheckForPassNativeStructInRegister();
     // Store the eightbyte classification into the EEClass
     void StoreEightByteClassification(SystemVStructRegisterPassingHelper* helper);
 
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
     // this accesses the field size which is temporarily stored in m_pMTOfEnclosingClass
     // during class loading. Don't use any other time

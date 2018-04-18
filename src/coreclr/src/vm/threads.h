@@ -970,7 +970,7 @@ typedef DWORD (*AppropriateWaitFunc) (void *args, DWORD timeout, DWORD option);
 //                         ex: Windows/Unix ARM/ARM64, Unix-AMD64.
 //                         
 //                       
-// FEATURE_UNIX_AMD64_STRUCT_PASSING is a specific kind of FEATURE_MULTIREG_RETURN
+// UNIX_AMD64_ABI is a specific kind of FEATURE_MULTIREG_RETURN
 // [GcInfo v1 and v2]       specified by SystemV ABI for AMD64
 //                                   
 

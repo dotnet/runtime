@@ -31,9 +31,9 @@ inline void EEClassOptionalFields::Init()
     m_WinRTRedirectedTypeIndex = WinMDAdapter::RedirectedTypeIndex_Invalid;
 #endif // FEATURE_COMINTEROP
     m_cbModuleDynamicID = MODULE_NON_DYNAMIC_STATICS;
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
     m_numberEightBytes = 0;
-#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING    
+#endif // UNIX_AMD64_ABI    
 }
 #endif // !DACCESS_COMPILE
 
