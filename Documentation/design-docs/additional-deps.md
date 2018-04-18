@@ -94,7 +94,9 @@ For example,
 The `any` tfm would be used if the specified tfm (e.g. netcoreapp2.0) is not found:    
     `\dotnet\store\x64\netcoreapp2.0\microsoft.applicationinsights\2.4.0`
 
-_Note: doesn't this make "uninstall" more difficult? Because multiple installs may write the same packages and try to remove packages that another installer created?_
+_Possible risk: doesn't this make "uninstall" more difficult? Because multiple installs may write the same packages and try to remove packages that another installer created?_
+
+_Possible risk: we should not cross-gen these assemblies as cross-gen varies per release\TFM in incompatible ways._
 
 ## 2.1 proposal (change additional-deps processing order to avoid "downgrading")
 The current ordering for resolving deps files is:
@@ -111,7 +113,7 @@ The proposed ordering change for 2.1 is:
 
 In addition, the additional-deps will always look for assembly and file version information present in the deps files in order to support "upgrade" scenarios where the additional-deps brings a newer version of a given assembly. Note that these version checks only occur for managed assemblies, not native files nor resource assemblies.
 
-Note: there is some risk that changing the ordering may break other "non-lightup" scenarios. However, by always comparing version numbers that should be mitigated (for managed assemblies anyway).
+_Possible risk: Note: there is some risk that changing the ordering may break other "non-lightup" scenarios. However, by always comparing version numbers that should be mitigated (for managed assemblies anyway)._
 
 ## 2.1 proposal (add runtimeconfig knob to to disable `%DOTNET_ADDITIONAL_DEPS%`)
 <strike>
