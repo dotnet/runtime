@@ -52,8 +52,9 @@ namespace System.Reflection
                     }
                     else
                     {
-                        // this should be an invocable method, determine the other flags that participate in invocation
-                        invocationFlags |= RuntimeMethodHandle.GetSecurityFlags(this);
+                        // Check for byref-like types
+                        if (declaringType != null && declaringType.IsByRefLike)
+                            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
 
                         // Check for attempt to create a delegate class.
                         if (typeof(Delegate).IsAssignableFrom(DeclaringType))

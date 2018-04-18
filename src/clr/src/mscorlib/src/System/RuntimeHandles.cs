@@ -889,17 +889,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object InvokeMethod(object target, object[] arguments, Signature sig, bool constructor, bool wrapExceptions);
 
-        #region Private Invocation Helpers
-        internal static INVOCATION_FLAGS GetSecurityFlags(IRuntimeMethodInfo handle)
-        {
-            return (INVOCATION_FLAGS)RuntimeMethodHandle.GetSpecialSecurityFlags(handle);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static internal extern uint GetSpecialSecurityFlags(IRuntimeMethodInfo method);
-
-        #endregion
-
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, bool fAsRuntimeTypeArray);
 

@@ -28,29 +28,6 @@
 #include "dbginterface.h"
 #include "argdestination.h"
 
-// these flags are defined in XXXInfo.cs and only those that are used are replicated here
-#define INVOCATION_FLAGS_UNKNOWN                    0x00000000
-#define INVOCATION_FLAGS_INITIALIZED                0x00000001
-
-// it's used for both method and field to signify that no access is allowed
-#define INVOCATION_FLAGS_NO_INVOKE                  0x00000002
-
-// #define unused                                   0x00000004
-
-// because field and method are different we can reuse the same bits
-//method
-#define INVOCATION_FLAGS_IS_CTOR                    0x00000010
-#define INVOCATION_FLAGS_RISKY_METHOD               0x00000020
-// #define unused                                   0x00000040
-#define INVOCATION_FLAGS_IS_DELEGATE_CTOR           0x00000080
-#define INVOCATION_FLAGS_CONTAINS_STACK_POINTERS    0x00000100
-// field
-#define INVOCATION_FLAGS_SPECIAL_FIELD              0x00000010
-#define INVOCATION_FLAGS_FIELD_SPECIAL_CAST         0x00000020
-
-// temporary flag used for flagging invocation of method vs ctor
-#define INVOCATION_FLAGS_CONSTRUCTOR_INVOKE         0x10000000
-
 /**************************************************************************/
 /* if the type handle 'th' is a byref to a nullable type, return the
    type handle to the nullable type in the byref.  Otherwise return 
@@ -645,56 +622,6 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsInstanceOfType, ReflectClassBaseObject
     FC_INNER_RETURN(FC_BOOL_RET, IsInstanceOfTypeHelper(obj, refType));
 }
 FCIMPLEND
-
-FCIMPL1(DWORD, ReflectionInvocation::GetSpecialSecurityFlags, ReflectMethodObject *pMethodUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-    
-    DWORD dwFlags = 0;
-
-    struct
-    {
-        REFLECTMETHODREF refMethod;
-    }
-    gc;
-
-    gc.refMethod = (REFLECTMETHODREF)ObjectToOBJECTREF(pMethodUNSAFE);
-
-    if (!gc.refMethod)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    MethodDesc* pMethod = gc.refMethod->GetMethod();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    // this is an information that is critical for ctors, otherwise is not important
-    // we get it here anyway to simplify code
-    MethodTable *pMT = pMethod->GetMethodTable();
-    _ASSERTE(pMT);
-
-    // We should also check the return type here. 
-    // Is there an easier way to get the return type of a method?
-    MetaSig metaSig(pMethod);
-    TypeHandle retTH = metaSig.GetRetTypeHandleThrowing();
-    MethodTable *pRetMT = retTH.GetMethodTable();
-
-    // If either the declaring type or the return type contains stack pointers (ByRef or typedbyref), 
-    // the type cannot be boxed and thus cannot be invoked through reflection invocation.
-    if ( pMT->IsByRefLike() || (pRetMT != NULL && pRetMT->IsByRefLike()) )
-        dwFlags |= INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
-
-    // Is this a call to a potentially dangerous method? (If so, we're going
-    // to demand additional permission).
-    if (InvokeUtil::IsDangerousMethod(pMethod))
-        dwFlags |= INVOCATION_FLAGS_RISKY_METHOD;
-
-    HELPER_METHOD_FRAME_END();
-    return dwFlags;
-}
-FCIMPLEND
-
 
 /****************************************************************************/
 /* boxed Nullable<T> are represented as a boxed T, so there is no unboxed

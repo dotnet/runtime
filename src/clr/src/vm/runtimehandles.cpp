@@ -114,12 +114,6 @@ static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* p
 
     if (pCACtor != NULL)
     {
-        // Allowing a dangerous method to be called in custom attribute instantiation is, well, dangerous.
-        // E.g. a malicious user can craft a custom attribute record that fools us into creating a DynamicMethod
-        // object attached to typeof(System.Reflection.CustomAttribute) and thus gain access to mscorlib internals.
-        if (InvokeUtil::IsDangerousMethod(pCACtor))
-            return FALSE;
-
         _ASSERTE(pCACtor->IsCtor());
 
         dwAttr = pCACtor->GetAttrs();
