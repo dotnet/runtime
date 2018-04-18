@@ -41,7 +41,7 @@
             "Architecture": "x64",
             "PB_BuildType": null
           }
-        },		
+        },
         {
           "Name": "DotNet-CoreClr-Trusted-Linux",
           "Parameters": {
@@ -55,7 +55,22 @@
             "Architecture": "x64",
             "PB_BuildType": null
           }
-        },    
+        },
+        {
+          "Name": "DotNet-CoreClr-Trusted-Linux",
+          "Parameters": {
+            "DockerTag": "alpine-3.6-3148f11-20171119021156",
+            "Rid": "linux-musl",
+            "PB_OutputRID": "linux-musl",
+            "PB_AdditionalBuildArgs": "-portablebuild=false"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Linux-musl",
+            "Type": "build/product/",
+            "Architecture": "x64",
+            "PB_BuildType": null
+          }
+        },
         {
           "Name": "DotNet-CoreClr-Trusted-Mac",
           "Parameters": {
