@@ -22,7 +22,7 @@ namespace System.Reflection
         // because field and method are different we can reuse the same bits
         // method
         INVOCATION_FLAGS_IS_CTOR = 0x00000010,
-        INVOCATION_FLAGS_RISKY_METHOD = 0x00000020,
+        /* unused 0x00000020 */
         /* unused 0x00000040 */
         INVOCATION_FLAGS_IS_DELEGATE_CTOR = 0x00000080,
         INVOCATION_FLAGS_CONTAINS_STACK_POINTERS = 0x00000100,

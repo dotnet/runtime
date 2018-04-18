@@ -345,7 +345,6 @@ FCFuncStart(gRuntimeMethodHandle)
     QCFuncElement("Destroy", RuntimeMethodHandle::Destroy)
     FCFuncElement("GetResolver", RuntimeMethodHandle::GetResolver)
     FCFuncElement("GetLoaderAllocator", RuntimeMethodHandle::GetLoaderAllocator)
-    FCFuncElement("GetSpecialSecurityFlags", ReflectionInvocation::GetSpecialSecurityFlags)
 FCFuncEnd()
 
 FCFuncStart(gCOMDefaultBinderFuncs)
