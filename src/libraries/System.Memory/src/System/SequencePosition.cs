@@ -38,21 +38,17 @@ namespace System
         public int GetInteger() => _integer;
 
         /// <summary>
-        /// Returns true if left and right point at the same segment and have the same index.
+        /// Indicates whether the current <see cref="SequencePosition"/> is equal to another <see cref="SequencePosition"/>.
+        /// <see cref="SequencePosition"/> equality does not guarantee that they point to the same location in <see cref="System.Buffers.ReadOnlySequence{T}" />
         /// </summary>
-        public static bool operator ==(SequencePosition left, SequencePosition right) => left._integer == right._integer && left._object == right._object;
+        public bool Equals(SequencePosition other) => _integer == other._integer && object.Equals(this._object, other._object);
 
         /// <summary>
-        /// Returns true if left and right do not point at the same segment and have the same index.
+        /// Indicates whether the current <see cref="SequencePosition"/> is equal to another <see cref="object"/>.
+        /// <see cref="SequencePosition"/> equality does not guarantee that they point to the same location in <see cref="System.Buffers.ReadOnlySequence{T}" />
         /// </summary>
-        public static bool operator !=(SequencePosition left, SequencePosition right) => !(left == right);
-
-        /// <inheritdoc />
-        public bool Equals(SequencePosition other) => this == other;
-
-        /// <inheritdoc />
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object obj) => obj is SequencePosition other && this == other;
+        public override bool Equals(object obj) => obj is SequencePosition other && this.Equals(other);
 
         /// <inheritdoc />
         [EditorBrowsable(EditorBrowsableState.Never)]
