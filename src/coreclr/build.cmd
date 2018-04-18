@@ -738,7 +738,7 @@ if %__BuildTests% EQU 1 (
     REM TODO, remove once the toolset is open.
     if not "%__ToolsetDir%" == "" call :PrivateToolSet
 
-    set NEXTCMD=call %__ProjectDir%\test\runtest.cmd %__BuildArch% %__BuildType% GenerateLayoutOnly %__UnprocessedBuildArgs%
+    set NEXTCMD=call %__ProjectDir%\tests\runtest.cmd %__BuildArch% %__BuildType% GenerateLayoutOnly %__UnprocessedBuildArgs%
     echo %__MsgPrefix%!NEXTCMD!
     !NEXTCMD!
 
