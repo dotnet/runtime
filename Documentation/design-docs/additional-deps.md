@@ -41,11 +41,16 @@ So even if a roll-forward on a framework occurred here to "2.0.1", the directory
 Note that the app and each framework has its own `runtimeconfig.json` setting, which can be different because each defines the framework "name" and "version" for the next lowest framework which don't have to have the same "version".
 
 ### 2.0 issues
+
+#### Lightup components have to co-release with framework
+
 The primary issue is the use of the `requested_framework_version` folder naming convention:
 - Since it does not take into account newer framework versions, any "lightup" extensions must co-release with new framework(s) releases which is especially an issue with frequent patch releases. However, this is somewhat mitigated because most applications in their `runtimeconfig.json` do not target an explicit patch version, and just target `major.minor.0`
 - Since it does not take into account older framework versions, a "lightup" extensions should install all previous versions of deps files. Note that since some previous versions may require different assets in the deps.json file, for example every minor release, this issue primarily applies to frequent patch versions.
 
 The proposal for this is to "roll-backwards" starting with the "found" version.
+
+#### Roll-forward uses app's TFM
 
 A secondary issue with with the store's naming convention for framework. It contains a path such as:
    `\dotnet\store\x64\netcoreapp2.0\microsoft.applicationinsights\2.4.0`
@@ -53,9 +58,13 @@ where 'netcoreapp2.0' is a "tfm" (target framework moniker). During roll-forward
 
 The proposal for this is to add an "any" tfm.
 
+#### Downgrading assemblies
+
 Another issue with additional-deps is that it can "downgrade" assemblies that also exist in the framework. This means that if a file (e.g. assembly) is referenced by both the additional-deps.json files and the framework, the additional-deps file will be selected instead of the framework's file. This can cause issues when the additional-deps.json file is referecing an older version of the file, because that will be loaded and cause run-time issues
 
 The proposal for this is to change the ordering of the processing of additional-deps to make it occur after the framework files, but also support "upgrade" scenarios by allowing newer versions.
+
+#### No opt-out from global deps lightup
 
 Finally, a lower-priority issue is there is no way to turn off the global deps lightup (via `%DOTNET_ADDITIONAL_DEPS%`) for a single application if they run into issues with pulling in the additional deps. If the environment variable is set, and an application can't load because of the additional lightup deps, and the lightup isn't needed, there should be a way to turn it off so the app can load. One (poor) workaround would be to specify `--additional-deps` in the command-line to point to any empty file, but that would only work if the command line can be used in this way to launch the application.
 
@@ -63,7 +72,7 @@ Finally, a lower-priority issue is there is no way to turn off the global deps l
 In order to prevent having to co-release for roll-forward cases, and deploy all past versions, the followng rules are proposed:
 1) Instead of `requested_framework_version`, use `found_framework_version`
 
-Where "found" means the version that is being used at run time including roll-forward. For example, if an app requests `2.1.0` of `Microsoft.NETCore.App` in its runtimeconfig.json, but we actually found and are using `2.2.1` (because there were no "compatible" versions installed from 2.1.0 to 2.2.0), then look for the deps folder `shared/Microsoft.NETCore.App/2.1.1` first.
+Where "found" means the version that is being used at run time including roll-forward. For example, if an app requests `2.1.0` of `Microsoft.NETCore.App` in its runtimeconfig.json, but we actually found and are using `2.2.1` (because there were no "compatible" versions installed from 2.1.0 to 2.2.0), then look for the deps folder `shared/Microsoft.NETCore.App/2.2.1` first.
 
 2) If the `found_framework_version` folder does not exist, find the next closest by going "backwards" in versioning
 3) The next closest version only includes a lower minor or major if enabled by "roll-forward-by-no-candidate-fx"
