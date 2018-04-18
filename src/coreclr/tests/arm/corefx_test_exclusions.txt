@@ -1,4 +1,5 @@
 Microsoft.Win32.Registry.Tests
+Microsoft.Win32.SystemEvents.Tests # https://github.com/dotnet/coreclr/issues/17582
 System.Console.Tests
 System.Data.SqlClient.Tests
 System.Diagnostics.Process.Tests
