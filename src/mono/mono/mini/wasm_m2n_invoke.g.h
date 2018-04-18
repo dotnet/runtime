@@ -282,6 +282,16 @@ wasm_invoke_ff (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_fff (void *target_func, InterpMethodArguments *margs)
+{
+	float (*func)(float arg_0, float arg_1) = target_func;
+
+	float res = func (*(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)]);
+	*(float*)margs->retval = res;
+
+}
+
+static void
 wasm_invoke_di (void *target_func, InterpMethodArguments *margs)
 {
 	double (*func)(int arg_0) = target_func;
@@ -488,6 +498,8 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 		wasm_invoke_vifffffi (target_func, margs);
 	else if (!strcmp ("FF", cookie))
 		wasm_invoke_ff (target_func, margs);
+	else if (!strcmp ("FFF", cookie))
+		wasm_invoke_fff (target_func, margs);
 	else if (!strcmp ("DI", cookie))
 		wasm_invoke_di (target_func, margs);
 	else if (!strcmp ("FI", cookie))

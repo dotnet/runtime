@@ -55,6 +55,7 @@ class Driver {
 		"VIFFFF",
 		"VIFFFFFI",
 		"FF",
+		"FFF",
 		"DI",
 		"FI",
 		"IIL",
