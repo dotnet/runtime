@@ -193,8 +193,6 @@ namespace System
         public int GetInteger() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public object GetObject() { throw null; }
-        public static bool operator ==(System.SequencePosition left, System.SequencePosition right) { throw null; }
-        public static bool operator !=(System.SequencePosition left, System.SequencePosition right) { throw null; }
     }
     public readonly ref partial struct Span<T>
     {
