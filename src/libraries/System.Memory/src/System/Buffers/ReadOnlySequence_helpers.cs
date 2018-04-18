@@ -150,20 +150,18 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal SequencePosition Seek(in SequencePosition start, in SequencePosition end, int offset) => Seek(start, end, (long)offset);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal SequencePosition Seek(in SequencePosition start, in SequencePosition end, long offset)
+        private SequencePosition Seek(in SequencePosition start, in SequencePosition end, long offset, ExceptionArgument argument)
         {
-            GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
+            int startIndex = GetIndex(start);
+            int endIndex = GetIndex(end);
 
             object startObject = start.GetObject();
             object endObject = end.GetObject();
 
-            if (type == SequenceType.MultiSegment && startObject != endObject)
+            if (startObject != endObject)
             {
-                Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
-                var startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject);
+                Debug.Assert(startObject != null);
+                var startSegment = (ReadOnlySequenceSegment<T>)startObject;
 
                 int currentLength = startSegment.Memory.Length - startIndex;
 
@@ -171,22 +169,25 @@ namespace System.Buffers
                 if (currentLength > offset)
                     goto IsSingleSegment;
 
+                if (currentLength < 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+
                 // End of segment. Move to start of next.
-                return SeekMultiSegment(startSegment.Next, endObject, endIndex, offset - currentLength);
+                return SeekMultiSegment(startSegment.Next, endObject, endIndex, offset - currentLength, argument);
             }
 
             Debug.Assert(startObject == endObject);
 
             if (endIndex - startIndex < offset)
-                ThrowHelper.ThrowArgumentOutOfRangeException_OffsetOutOfRange();
+                ThrowHelper.ThrowArgumentOutOfRangeException(argument);
 
-            // Single segment Seek
+        // Single segment Seek
         IsSingleSegment:
             return new SequencePosition(startObject, startIndex + (int)offset);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static SequencePosition SeekMultiSegment(ReadOnlySequenceSegment<T> currentSegment, object endObject, int endPosition, long offset)
+        private static SequencePosition SeekMultiSegment(ReadOnlySequenceSegment<T> currentSegment, object endObject, int endIndex, long offset, ExceptionArgument argument)
         {
             Debug.Assert(currentSegment != null);
             Debug.Assert(offset >= 0);
@@ -205,91 +206,161 @@ namespace System.Buffers
             }
 
             // Hit the end of the segments but didn't reach the count
-            if (currentSegment == null || (currentSegment == endObject && endPosition < offset))
-                ThrowHelper.ThrowArgumentOutOfRangeException_OffsetOutOfRange();
+            if (currentSegment == null || endIndex < offset)
+                ThrowHelper.ThrowArgumentOutOfRangeException(argument);
 
         FoundSegment:
             return new SequencePosition(currentSegment, (int)offset);
         }
 
-        private static void CheckEndReachable(object startSegment, object endSegment)
+        private void BoundsCheck(in SequencePosition position)
         {
-            Debug.Assert(startSegment != null);
-            Debug.Assert(startSegment is ReadOnlySequenceSegment<T>);
-            Debug.Assert(endSegment != null);
+            uint sliceStartIndex = (uint)GetIndex(position);
+            uint startIndex = (uint)GetIndex(_sequenceStart);
+            uint endIndex = (uint)GetIndex(_sequenceEnd);
 
-            var current = Unsafe.As<ReadOnlySequenceSegment<T>>(startSegment);
+            object startObject = _sequenceStart.GetObject();
+            object endObject = _sequenceEnd.GetObject();
 
-            while (current.Next != null)
+            // Single-Segment Sequence
+            if (startObject == endObject)
             {
-                current = current.Next;
-                if (current == endSegment)
+                if (!InRange(sliceStartIndex, startIndex, endIndex))
                 {
-                    // Found end
-                    return;
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
                 }
             }
+            else
+            {
+                // Multi-Segment Sequence
+                // Storing this in a local since it is used twice within InRange()
+                ulong startRange = (ulong)(((ReadOnlySequenceSegment<T>)startObject).RunningIndex + startIndex);
+                if (!InRange(
+                    (ulong)(((ReadOnlySequenceSegment<T>)position.GetObject()).RunningIndex + sliceStartIndex),
+                    startRange,
+                    (ulong)(((ReadOnlySequenceSegment<T>)endObject).RunningIndex + endIndex)))
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+                }
+            }
+        }
 
-            ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
+        private void BoundsCheck(uint sliceStartIndex, object sliceStartObject, uint sliceEndIndex, object sliceEndObject)
+        {
+            uint startIndex = (uint)GetIndex(_sequenceStart);
+            uint endIndex = (uint)GetIndex(_sequenceEnd);
+
+            object startObject = _sequenceStart.GetObject();
+            object endObject = _sequenceEnd.GetObject();
+
+            // Single-Segment Sequence
+            if (startObject == endObject)
+            {
+                if (sliceStartObject != sliceEndObject ||
+                    sliceStartObject != startObject ||
+                    sliceStartIndex > sliceEndIndex ||
+                    sliceStartIndex < startIndex ||
+                    sliceEndIndex > endIndex)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+                }
+            }
+            else
+            {
+                // Multi-Segment Sequence
+                // This optimization works because we know sliceStartIndex, sliceEndIndex, startIndex, and endIndex are all >= 0
+                Debug.Assert(sliceStartIndex >= 0 && startIndex >= 0 && endIndex >= 0);
+
+                ulong sliceStartRange = (ulong)(((ReadOnlySequenceSegment<T>)sliceStartObject).RunningIndex + sliceStartIndex);
+                ulong sliceEndRange = (ulong)(((ReadOnlySequenceSegment<T>)sliceEndObject).RunningIndex + sliceEndIndex);
+
+                if (sliceStartRange > sliceEndRange)
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+
+                if (sliceStartRange < (ulong)(((ReadOnlySequenceSegment<T>)startObject).RunningIndex + startIndex)
+                    || sliceEndRange > (ulong)(((ReadOnlySequenceSegment<T>)endObject).RunningIndex + endIndex))
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+                }
+            }
+        }
+
+        private static SequencePosition GetEndPosition(ReadOnlySequenceSegment<T> startSegment, object startObject, int startIndex, object endObject, int endIndex, long length)
+        {
+            int currentLength = startSegment.Memory.Length - startIndex;
+
+            if (currentLength > length)
+            {
+                return new SequencePosition(startObject, startIndex + (int)length);
+            }
+
+            if (currentLength < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+
+            return SeekMultiSegment(startSegment.Next, endObject, endIndex, length - currentLength, ExceptionArgument.length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private long GetLength(in SequencePosition start, in SequencePosition end)
+        private SequenceType GetSequenceType()
         {
-            GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
+            // We take high order bits of two indexes and move them
+            // to a first and second position to convert to SequenceType
 
-            object startObject = start.GetObject();
-            object endObject = end.GetObject();
-            if (type == SequenceType.MultiSegment && startObject != endObject)
+            // if (start < 0  and end < 0)
+            // start >> 31 = -1, end >> 31 = -1
+            // 2 * (-1) + (-1) = -3, result = (SequenceType)3
+
+            // if (start < 0  and end >= 0)
+            // start >> 31 = -1, end >> 31 = 0
+            // 2 * (-1) + 0 = -2, result = (SequenceType)2
+
+            // if (start >= 0  and end >= 0)
+            // start >> 31 = 0, end >> 31 = 0
+            // 2 * 0 + 0 = 0, result = (SequenceType)0
+
+            // if (start >= 0  and end < 0)
+            // start >> 31 = 0, end >> 31 = -1
+            // 2 * 0 + (-1) = -1, result = (SequenceType)1
+
+            return (SequenceType)(-(2 * (_sequenceStart.GetInteger() >> 31) + (_sequenceEnd.GetInteger() >> 31)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetIndex(in SequencePosition position) => position.GetInteger() & ReadOnlySequence.IndexBitMask;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ReadOnlySequence<T> SliceImpl(in SequencePosition start, in SequencePosition end)
+        {
+            // In this method we reset high order bits from indices
+            // of positions that were passed in
+            // and apply type bits specific for current ReadOnlySequence type
+
+            return new ReadOnlySequence<T>(
+                start.GetObject(),
+                GetIndex(start) | (_sequenceStart.GetInteger() & ReadOnlySequence.FlagBitMask),
+                end.GetObject(),
+                GetIndex(end) | (_sequenceEnd.GetInteger() & ReadOnlySequence.FlagBitMask)
+            );
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private long GetLength()
+        {
+            int startIndex = GetIndex(_sequenceStart);
+            int endIndex = GetIndex(_sequenceEnd);
+            object startObject = _sequenceStart.GetObject();
+            object endObject = _sequenceEnd.GetObject();
+
+            if (startObject != endObject)
             {
-                Debug.Assert(startObject != null);
-                Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
-                Debug.Assert(endObject != null);
-                Debug.Assert(endObject is ReadOnlySequenceSegment<T>);
-
-                var startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject);
-                var endSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(endObject);
-                // (end.RunningIndex + endIndex) - (start.RunningIndex + startIndex) // (End offset) - (start offset)
-                return endSegment.RunningIndex - startSegment.RunningIndex - startIndex + endIndex; // Rearranged to avoid overflow
+                var startSegment = (ReadOnlySequenceSegment<T>)startObject;
+                var endSegment = (ReadOnlySequenceSegment<T>)endObject;
+                // (End offset) - (start offset)
+                return (endSegment.RunningIndex + endIndex) - (startSegment.RunningIndex + startIndex);
             }
 
-            Debug.Assert(startObject == endObject);
             // Single segment length
             return endIndex - startIndex;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void BoundsCheck(in SequencePosition start, in SequencePosition end)
-        {
-            GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
-
-            object startObject = start.GetObject();
-            object endObject = end.GetObject();
-            if (type == SequenceType.MultiSegment && startObject != endObject)
-            {
-                Debug.Assert(startObject != null);
-                Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
-                Debug.Assert(endObject != null);
-                Debug.Assert(endObject is ReadOnlySequenceSegment<T>);
-
-                var startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject);
-                var endSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(endObject);
-
-                // start.RunningIndex + startIndex <= end.RunningIndex + endIndex
-                if (startSegment.RunningIndex - endIndex <= endSegment.RunningIndex - startIndex) // Rearranged to avoid overflow
-                {
-                    // Mult-segment in bounds
-                    return;
-                }
-            }
-            else if (startIndex <= endIndex)
-            {
-                Debug.Assert(startObject == endObject);
-                // Single segment in bounds
-                return;
-            }
-
-            ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
         }
 
         internal bool TryGetReadOnlySequenceSegment(out ReadOnlySequenceSegment<T> startSegment, out int startIndex, out ReadOnlySequenceSegment<T> endSegment, out int endIndex)
@@ -402,6 +473,58 @@ namespace System.Buffers
             text = (string)Start.GetObject();
 
             return true;
+        }
+
+        private static bool InRange(uint value, uint start, uint end)
+        {
+            // _sequenceStart and _sequenceEnd must be well-formed
+            Debug.Assert(start <= int.MaxValue);
+            Debug.Assert(end <= int.MaxValue);
+            Debug.Assert(start <= end);
+
+            // The case, value > int.MaxValue, is invalid, and hence it shouldn't be in the range.
+            // If value > int.MaxValue, it is invariably greater than both 'start' and 'end'.
+            // In that case, the experession simplifies to value <= end, which will return false.
+
+            // The case, value < start, is invalid.
+            // In that case, (value - start) would underflow becoming larger than int.MaxValue.
+            // (end - start) can never underflow and hence must be within 0 and int.MaxValue. 
+            // So, we will correctly return false.
+
+            // The case, value > end, is invalid.
+            // In that case, the expression simplifies to value <= end, which will return false.
+            // This is because end > start & value > end implies value > start as well.
+
+            // In all other cases, value is valid, and we return true.
+
+            // Equivalent to: return (start <= value && value <= start)
+            return (value - start) <= (end - start);
+        }
+
+        private static bool InRange(ulong value, ulong start, ulong end)
+        {
+            // _sequenceStart and _sequenceEnd must be well-formed
+            Debug.Assert(start <= long.MaxValue);
+            Debug.Assert(end <= long.MaxValue);
+            Debug.Assert(start <= end);
+
+            // The case, value > long.MaxValue, is invalid, and hence it shouldn't be in the range.
+            // If value > long.MaxValue, it is invariably greater than both 'start' and 'end'.
+            // In that case, the experession simplifies to value <= end, which will return false.
+
+            // The case, value < start, is invalid.
+            // In that case, (value - start) would underflow becoming larger than long.MaxValue.
+            // (end - start) can never underflow and hence must be within 0 and long.MaxValue. 
+            // So, we will correctly return false.
+
+            // The case, value > end, is invalid.
+            // In that case, the expression simplifies to value <= end, which will return false.
+            // This is because end > start & value > end implies value > start as well.
+
+            // In all other cases, value is valid, and we return true.
+
+            // Equivalent to: return (start <= value && value <= start)
+            return (value - start) <= (end - start);
         }
     }
 }
