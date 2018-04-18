@@ -42,17 +42,19 @@ namespace Internal.Cryptography.Pal
             }
 
             List<ICertificatePal> certPals;
+            Exception openSslException;
 
             if (PkcsFormatReader.TryReadPkcs7Der(rawData, out certPals) ||
                 PkcsFormatReader.TryReadPkcs7Pem(rawData, out certPals) ||
-                PkcsFormatReader.TryReadPkcs12(rawData, password, out certPals))
+                PkcsFormatReader.TryReadPkcs12(rawData, password, out certPals, out openSslException))
             {
                 Debug.Assert(certPals != null);
 
                 return ListToLoaderPal(certPals);
             }
 
-            throw Interop.Crypto.CreateOpenSslCryptographicException();
+            Debug.Assert(openSslException != null);
+            throw openSslException;
         }
 
         public static ILoaderPal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
@@ -106,7 +108,9 @@ namespace Internal.Cryptography.Pal
             // Rewind, try again.
             CertificatePal.RewindBio(bio, bioPosition);
 
-            if (PkcsFormatReader.TryReadPkcs12(bio, password, out certPals))
+            // Capture the exception so in case of failure, the call to BioSeek does not override it.
+            Exception openSslException;
+            if (PkcsFormatReader.TryReadPkcs12(bio, password, out certPals, out openSslException))
             {
                 return ListToLoaderPal(certPals);
             }
@@ -114,14 +118,11 @@ namespace Internal.Cryptography.Pal
             // Since we aren't going to finish reading, leaving the buffer where it was when we got
             // it seems better than leaving it in some arbitrary other position.
             // 
-            // But, before seeking back to start, save the Exception representing the last reported
-            // OpenSSL error in case the last BioSeek would change it.
-            Exception openSslException = Interop.Crypto.CreateOpenSslCryptographicException();
-
             // Use BioSeek directly for the last seek attempt, because any failure here should instead
             // report the already created (but not yet thrown) exception.
             Interop.Crypto.BioSeek(bio, bioPosition);
-
+            
+            Debug.Assert(openSslException != null);
             throw openSslException;
         }
 
