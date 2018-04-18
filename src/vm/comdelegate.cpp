@@ -3221,11 +3221,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     }
 #endif
 
-    // Devdiv bug 296229: if the target method is dangerous, forcing the delegate creation to go through the 
-    // slow path where we will do a demand to ensure security.
-    if (InvokeUtil::IsDangerousMethod(pTargetMethod))
-        return NULL;
-
     // DELEGATE KINDS TABLE
     //
     //                                  _target         _methodPtr              _methodPtrAux       _invocationList     _invocationCount

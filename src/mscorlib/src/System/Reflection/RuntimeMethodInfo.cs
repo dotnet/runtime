@@ -50,8 +50,9 @@ namespace System.Reflection
                     }
                     else
                     {
-                        // this should be an invocable method, determine the other flags that participate in invocation
-                        invocationFlags = RuntimeMethodHandle.GetSecurityFlags(this);
+                        // Check for byref-like types
+                        if ((declaringType != null && declaringType.IsByRefLike) || ReturnType.IsByRefLike)
+                            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
                     }
 
                     m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;

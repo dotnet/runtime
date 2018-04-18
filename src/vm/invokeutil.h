@@ -259,8 +259,6 @@ public:
 
     static AccessCheckOptions::AccessCheckType GetInvocationAccessCheckType(BOOL targetRemoted = FALSE);
 
-    static bool IsDangerousMethod(MethodDesc *pMD);
-
 private:
     // Check accessability of a type or nested type.
     static void CheckAccessClass(RefSecContext *pCtx,
