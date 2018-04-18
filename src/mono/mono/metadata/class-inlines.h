@@ -10,25 +10,25 @@
 #include <mono/metadata/tabledefs.h>
 
 static inline MonoType*
-mono_get_void_type ()
+mono_get_void_type (void)
 {
 	return m_class_get_byval_arg (mono_defaults.void_class);
 }
 
 static inline MonoType*
-mono_get_int32_type ()
+mono_get_int32_type (void)
 {
 	return m_class_get_byval_arg (mono_defaults.int32_class);
 }
 
 static inline MonoType*
-mono_get_int_type ()
+mono_get_int_type (void)
 {
 	return m_class_get_byval_arg (mono_defaults.int_class);
 }
 
 static inline MonoType*
-mono_get_object_type ()
+mono_get_object_type (void)
 {
 	return m_class_get_byval_arg (mono_defaults.object_class);
 }
