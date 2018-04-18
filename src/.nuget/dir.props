@@ -5,7 +5,7 @@
   <PropertyGroup>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform>AnyCPU</PackagePlatform>
-    
+
     <!-- build the transport package which includes product and symbols in addition to standard packages -->
     <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">true</CreatePackedPackage>
 
@@ -26,8 +26,8 @@
     <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;Android;Linux</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
 
-    <!-- Identify OS family based upon the RuntimeOS, which could be distro specific (e.g. osx.10.12) or 
-         portable (e.g. osx). 
+    <!-- Identify OS family based upon the RuntimeOS, which could be distro specific (e.g. osx.10.12) or
+         portable (e.g. osx).
     -->
     <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
     <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(RuntimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
@@ -46,7 +46,7 @@
     <_isSupportedOSGroup Condition="!$(SupportedPackageOSGroups.Contains(';$(_derivedPackageTargetOSGroup);'))">false</_isSupportedOSGroup>
   </PropertyGroup>
 
-  <!-- _packageTargetOSGroup is used to control the runtime package imports, don't import runtime package targets for 
+  <!-- _packageTargetOSGroup is used to control the runtime package imports, don't import runtime package targets for
        an unsupported OS Group -->
   <PropertyGroup Condition="'$(PackageTargetRuntime)' != '' and '$(_isSupportedOSGroup)' == 'true'">
     <!-- Android will use Linux package definitions -->
@@ -65,6 +65,12 @@
 
   <Choose>
     <When Condition="'$(PackageRID)' != ''" />
+    <When Condition="'$(OutputRID)' != ''">
+      <PropertyGroup>
+        <!-- If OutputRID is explicitly set use that as the PackageRID -->
+        <PackageRID>$(OutputRID)</PackageRID>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(_runtimeOSFamily)' == 'win'">
       <PropertyGroup>
         <!-- Note: Windows builds are always portable (-PortableBuild=false is ignored) -->
@@ -127,6 +133,7 @@
 
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Linux;'))">
     <OfficialBuildRID Include="linux-x64" />
+    <OfficialBuildRID Include="linux-musl-x64" />
     <OfficialBuildRID Include="rhel.6-x64" />
     <OfficialBuildRID Include="alpine.3.6-x64" />
     <OfficialBuildRID Include="linux-arm">
@@ -155,7 +162,7 @@
     </OfficialBuildRID>
   </ItemGroup>
   <ItemGroup>
-    <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set, but 
+    <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set, but
          don't build the RID-specific package if we're in an unsupported os family -->
     <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
     <BuildRID Include="$(PackageRID)"
