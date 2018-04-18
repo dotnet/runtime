@@ -84,6 +84,18 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
+        public static void EnumArgAndReturn(bool useInterpreter)
+        {
+            ParameterExpression p = Expression.Parameter(typeof(NonGenericClass.E1));
+            MethodCallExpression call = Expression.Call(typeof(NonGenericClass).GetMethod("FooEnum"), p);
+            Func<NonGenericClass.E1, NonGenericClass.E2> lambda = Expression.Lambda<Func<NonGenericClass.E1, NonGenericClass.E2>>(call, p).Compile(useInterpreter);
+
+            Assert.Equal(NonGenericClass.E2.One, lambda(NonGenericClass.E1.One));
+            Assert.Equal(NonGenericClass.E2.Two, lambda(NonGenericClass.E1.Two));
+        }
+
+        [Theory]
+        [ClassData(typeof(CompilationTypes))]
         public static void MultiRankArrayWriteBack(bool useInterpreter)
         {
             ParameterExpression p = Expression.Parameter(typeof(Mutable[,]));
@@ -699,6 +711,23 @@ namespace System.Linq.Expressions.Tests
             public void InstanceMethod3(int i1, int i2, int i3) { }
             public void InstanceMethod4(int i1, int i2, int i3, int i4) { }
             public static void StaticMethod1(int i1) { }
+
+            public enum E1 : byte
+            {
+                One,
+                Two
+            }
+
+            public enum E2 : int
+            {
+                One,
+                Two
+            }
+
+            public static E2 FooEnum(E1 arg)
+            {
+                return (E2)arg;
+            }
         }
 
         public interface Interface1
