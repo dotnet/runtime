@@ -4996,13 +4996,13 @@ void ReportPointersFromValueTypeArg(promote_func *fn, ScanContext *sc, PTR_Metho
         return;
     }
 
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)    
+#if defined(UNIX_AMD64_ABI)    
     if (pSrc->IsStructPassedInRegs())
     {
         pSrc->ReportPointersFromStructInRegisters(fn, sc, pMT->GetNumInstanceFieldBytes());
         return;
     }
-#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
     ReportPointersFromValueType(fn, sc, pMT, pSrc->GetDestinationAddress());
 }

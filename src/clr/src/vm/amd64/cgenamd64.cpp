@@ -333,11 +333,11 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContextPointers->Rdi = NULL;
 #endif
     pRD->pCurrentContextPointers->Rcx = NULL;
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     pRD->pCurrentContextPointers->Rdx = (PULONG64)&m_Args->Rdx;
-#else // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#else // UNIX_AMD64_ABI
     pRD->pCurrentContextPointers->Rdx = NULL;
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
     pRD->pCurrentContextPointers->R8  = NULL;
     pRD->pCurrentContextPointers->R9  = NULL;
     pRD->pCurrentContextPointers->R10 = NULL;

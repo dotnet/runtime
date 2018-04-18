@@ -4302,9 +4302,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     struct regArgElem
     {
         unsigned varNum; // index into compiler->lvaTable[] for this register argument
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
         var_types type;   // the Jit type of this regArgTab entry
-#endif                    // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif                    // defined(UNIX_AMD64_ABI)
         unsigned trashBy; // index into this regArgTab[] table of the register that will be copied to this register.
                           // That is, for regArgTab[x].trashBy = y, argument register number 'y' will be copied to
                           // argument register number 'x'. Only used when circular = true.
@@ -4315,7 +4315,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         bool processed;   // true after we've processed the argument (and it is in its final location)
         bool circular;    // true if this register participates in a circular dependency loop.
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
 
         // For UNIX AMD64 struct passing, the type of the register argument slot can differ from
         // the type of the lclVar in ways that are not ascertainable from lvType.
@@ -4326,7 +4326,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             return type; // UNIX_AMD64 implementation
         }
 
-#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#else // !UNIX_AMD64_ABI
 
         // In other cases, we simply use the type of the lclVar to determine the type of the register.
         var_types getRegType(Compiler* compiler)
@@ -4340,7 +4340,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             return varDsc.lvType;
         }
 
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // !UNIX_AMD64_ABI
     } regArgTab[max(MAX_REG_ARG + 1, MAX_FLOAT_REG_ARG)] = {};
 
     unsigned   varNum;
@@ -4403,9 +4403,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             regType = varDsc->GetHfaType();
         }
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
         if (!varTypeIsStruct(regType))
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
         {
             // A struct might be passed  partially in XMM register for System V calls.
             // So a single arg might use both register files.
@@ -4417,7 +4417,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
         int slots = 0;
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
             CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
@@ -4502,7 +4502,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             regArgNum = firstRegSlot;
         }
         else
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
         {
             // Bingo - add it to our table
             regArgNum = genMapRegNumToRegArgNum(varDsc->lvArgReg, regType);
@@ -4512,10 +4512,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             // register)
             noway_assert(regArgTab[regArgNum].slot == 0);
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
             // Set the register type.
             regArgTab[regArgNum].type = regType;
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
 
             regArgTab[regArgNum].varNum = varNum;
             regArgTab[regArgNum].slot   = 1;
@@ -4584,14 +4584,14 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             regType          = regArgTab[regArgNum + i].getRegType(compiler);
             regNumber regNum = genMapRegArgNumToRegNum(regArgNum + i, regType);
 
-#if !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if !defined(UNIX_AMD64_ABI)
             // lvArgReg could be INT or FLOAT reg. So the following assertion doesn't hold.
             // The type of the register depends on the classification of the first eightbyte
             // of the struct. For information on classification refer to the System V x86_64 ABI at:
             // http://www.x86-64.org/documentation/abi.pdf
 
             assert((i > 0) || (regNum == varDsc->lvArgReg));
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
             // Is the arg dead on entry to the method ?
 
             if ((regArgMaskLive & genRegMask(regNum)) == 0)
@@ -4810,7 +4810,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     {
         emitAttr size;
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
         // If this is the wrong register file, just continue.
         if (regArgTab[argNum].type == TYP_UNDEF)
         {
@@ -4819,7 +4819,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             // The next register file processing will process it.
             continue;
         }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
         // If the arg is dead on entry to the method, skip it
 
         if (regArgTab[argNum].processed)
@@ -4887,9 +4887,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             // Must be <= MAX_PASS_MULTIREG_BYTES or else it wouldn't be passed in registers
             noway_assert(varDsc->lvSize() <= MAX_PASS_MULTIREG_BYTES);
 #endif // FEATURE_MULTIREG_ARGS
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
             storeType = regArgTab[argNum].type;
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // !UNIX_AMD64_ABI
             if (varDsc->lvIsHfaRegArg())
             {
 #ifdef _TARGET_ARM_
@@ -4926,13 +4926,13 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
             getEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, baseOffset);
 
-#ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifndef UNIX_AMD64_ABI
             // Check if we are writing past the end of the struct
             if (varTypeIsStruct(varDsc))
             {
                 assert(varDsc->lvSize() >= baseOffset + (unsigned)size);
             }
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // !UNIX_AMD64_ABI
 
             if (regArgTab[argNum].slot == 1)
             {
@@ -4965,7 +4965,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
         if (doingFloat)
         {
-#if defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
             insCopy = ins_Copy(TYP_DOUBLE);
             // Compute xtraReg here when we have a float argument
             assert(xtraReg == REG_NA);
@@ -4976,9 +4976,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #if defined(FEATURE_HFA)
             fpAvailMask &= RBM_ALLDOUBLE;
 #else
-#if !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if !defined(UNIX_AMD64_ABI)
 #error Error. Wrong architecture.
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // !defined(UNIX_AMD64_ABI)
 #endif // defined(FEATURE_HFA)
 
             if (fpAvailMask == RBM_NONE)
@@ -4987,9 +4987,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #if defined(FEATURE_HFA)
                 fpAvailMask &= RBM_ALLDOUBLE;
 #else
-#if !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if !defined(UNIX_AMD64_ABI)
 #error Error. Wrong architecture.
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // !defined(UNIX_AMD64_ABI)
 #endif // defined(FEATURE_HFA)
             }
 
@@ -5251,7 +5251,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             var_types regType = regArgTab[argNum].getRegType(compiler);
             regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
             if (regType == TYP_UNDEF)
             {
                 // This could happen if the reg in regArgTab[argNum] is of the other register file -
@@ -5260,7 +5260,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 regArgMaskLive &= ~genRegMask(regNum);
                 continue;
             }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
 
             noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
 #ifndef _TARGET_64BIT_
@@ -5348,7 +5348,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 destRegNum  = REG_NEXT(varDsc->lvRegNum);
             }
 #endif // !_TARGET_64BIT_
-#if (defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)) && defined(FEATURE_SIMD)
+#if (defined(UNIX_AMD64_ABI) || defined(_TARGET_ARM64_)) && defined(FEATURE_SIMD)
             else
             {
                 assert(regArgTab[argNum].slot == 2);
@@ -5359,7 +5359,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 noway_assert(regNum != destRegNum);
                 continue;
             }
-#endif // (defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARM64_)) && defined(FEATURE_SIMD)
+#endif // (defined(UNIX_AMD64_ABI) || defined(_TARGET_ARM64_)) && defined(FEATURE_SIMD)
             noway_assert(destRegNum != REG_NA);
             if (destRegNum != regNum)
             {
@@ -5415,7 +5415,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 argRegCount = 2;
             }
 #endif
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
             if (varTypeIsStruct(varDsc) && argNum < (argMax - 1) && regArgTab[argNum + 1].slot == 2)
             {
                 argRegCount          = 2;
@@ -5429,7 +5429,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 // but mark argNum as processed and clear regNum from the live mask.
                 destRegNum = regNum;
             }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
+#endif // defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
 #if defined(_TARGET_ARM64_) && defined(FEATURE_SIMD)
             if (varTypeIsSIMD(varDsc) && argNum < (argMax - 1) && regArgTab[argNum + 1].slot == 2)
             {
@@ -9421,7 +9421,7 @@ void CodeGen::genFnProlog()
         getEmitter()->emitMarkPrologEnd();
     }
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
     // The unused bits of Vector3 arguments must be cleared
     // since native compiler doesn't initize the upper bits to zeros.
     //
@@ -9429,7 +9429,7 @@ void CodeGen::genFnProlog()
     // genFnPrologCalleeRegArgs() for argument registers and
     // genEnregisterIncomingStackArgs() for stack arguments.
     genClearStackVec3ArgUpperBits();
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING && FEATURE_SIMD
+#endif // UNIX_AMD64_ABI && FEATURE_SIMD
 
     /*-----------------------------------------------------------------------------
      * Take care of register arguments first
@@ -11591,7 +11591,7 @@ instruction CodeGen::genMapShiftInsToShiftByConstantIns(instruction ins, int shi
 //
 unsigned CodeGen::getFirstArgWithStackSlot()
 {
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || defined(_TARGET_ARMARCH_)
+#if defined(UNIX_AMD64_ABI) || defined(_TARGET_ARMARCH_)
     unsigned baseVarNum = 0;
 #if defined(FEATURE_UNIX_AMR64_STRUCT_PASSING)
     baseVarNum = compiler->lvaFirstStackIncomingArgNum;

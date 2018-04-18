@@ -6425,7 +6425,7 @@ ReturnKind GetReturnKindFromMethodTable(Thread *pThread, EECodeInfo *codeInfo)
         return RT_ByRef;
     }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     // The Multi-reg return case using the classhandle is only implemented for AMD64 SystemV ABI.
     // On other platforms, multi-reg return is not supported with GcInfo v1.
     // So, the relevant information must be obtained from the GcInfo tables (which requires version2).
@@ -6452,7 +6452,7 @@ ReturnKind GetReturnKindFromMethodTable(Thread *pThread, EECodeInfo *codeInfo)
         ReturnKind structReturnKind = GetStructReturnKind(regKinds[0], regKinds[1]);
         return structReturnKind;
     }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
     return RT_Scalar;
 }
@@ -6468,10 +6468,10 @@ ReturnKind GetReturnKind(Thread *pThread, EECodeInfo *codeInfo)
     }
     else
     {
-#if !defined(FEATURE_MULTIREG_RETURN) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if !defined(FEATURE_MULTIREG_RETURN) || defined(UNIX_AMD64_ABI)
          // For ARM64 struct-return, GetReturnKindFromMethodTable() is not supported
         _ASSERTE(returnKind == GetReturnKindFromMethodTable(pThread, codeInfo));
-#endif // !FEATURE_MULTIREG_RETURN || FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // !FEATURE_MULTIREG_RETURN || UNIX_AMD64_ABI
     }
 
     _ASSERTE(IsValidReturnKind(returnKind));

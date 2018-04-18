@@ -954,7 +954,7 @@ void CodeGen::psiBegProlog()
         if (lclVarDsc1->lvIsRegArg)
         {
             bool isStructHandled = false;
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             if (varTypeIsStruct(lclVarDsc1))
             {
@@ -1002,7 +1002,7 @@ void CodeGen::psiBegProlog()
 
                 isStructHandled = true;
             }
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // !defined(UNIX_AMD64_ABI)
             if (!isStructHandled)
             {
 #ifdef DEBUG
