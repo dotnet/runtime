@@ -1,7 +1,11 @@
 # Additional-deps
 
 ## Summary
-This document describes current (2.0) and proposed (2.1) behavior for "light-up" scenarios regarding additional-deps functionality.
+This document describes current (2.0) and proposed (2.1) behavior for "light-up" scenarios regarding additional-deps functionality. The proposed behavior resolves the following issues:
+
+https://github.com/dotnet/core-setup/issues/3889
+
+https://github.com/dotnet/core-setup/issues/3884
 
 The `deps.json` file format specifies assets including managed assemblies, resource assemblies and native libraries to load.
 
@@ -49,7 +53,11 @@ where 'netcoreapp2.0' is a "tfm" (target framework moniker). During roll-forward
 
 The proposal for this is to add an "any" tfm.
 
-Finally, a third issue is there is no way to turn off the global deps lightup (via `%DOTNET_ADDITIONAL_DEPS%`) for a single application if they run into issues with pulling in the additional deps. If the environment variable is set, and an application can't load because of the additional lightup deps, and the lightup isn't needed, there should be a way to turn it off so the app can load. One (poor) workaround would be to specify `--additional-deps` in the command-line to point to any empty file, but that would only work if the command line can be used in this way to launch the application.
+Another issue with additional-deps is that it can "downgrade" assemblies that also exist in the framework. This means that if a file (e.g. assembly) is referenced by both the additional-deps.json files and the framework, the additional-deps file will be selected instead of the framework's file. This can cause issues when the additional-deps.json file is referecing an older version of the file, because that will be loaded and cause run-time issues
+
+The proposal for this is to change the ordering of the processing of additional-deps to make it occur after the framework files, but also support "upgrade" scenarios by allowing newer versions.
+
+Finally, a lower-priority issue is there is no way to turn off the global deps lightup (via `%DOTNET_ADDITIONAL_DEPS%`) for a single application if they run into issues with pulling in the additional deps. If the environment variable is set, and an application can't load because of the additional lightup deps, and the lightup isn't needed, there should be a way to turn it off so the app can load. One (poor) workaround would be to specify `--additional-deps` in the command-line to point to any empty file, but that would only work if the command line can be used in this way to launch the application.
 
 ## 2.1 proposal (roll-backwards)
 In order to prevent having to co-release for roll-forward cases, and deploy all past versions, the followng rules are proposed:
@@ -87,6 +95,23 @@ The `any` tfm would be used if the specified tfm (e.g. netcoreapp2.0) is not fou
     `\dotnet\store\x64\netcoreapp2.0\microsoft.applicationinsights\2.4.0`
 
 _Note: doesn't this make "uninstall" more difficult? Because multiple installs may write the same packages and try to remove packages that another installer created?_
+
+## 2.1 proposal (change additional-deps processing order to avoid "downgrading")
+The current ordering for resolving deps files is:
+  1) The app's deps file
+  2) The additional-deps file(s)
+  3) The framework(s) deps file(s)
+  
+The order is important because "first-in" wins. Since the additional-deps is before the framework, the additional-deps will "win" in all cases except during a minor\major roll-forward. The reason minor\major roll-forward is different is because the framework has special logic (new in 2.1) to compare assembly and file version numbers from the deps files, and pick the newest.
+
+The proposed ordering change for 2.1 is:
+  1) The app's deps file
+  2) The framework(s) deps file(s)
+  3) The additional-deps file(s)
+
+In addition, the additional-deps will always look for assembly and file version information present in the deps files in order to support "upgrade" scenarios where the additional-deps brings a newer version of a given assembly. Note that these version checks only occur for managed assemblies, not native files nor resource assemblies.
+
+Note: there is some risk that changing the ordering may break other "non-lightup" scenarios. However, by always comparing version numbers that should be mitigated (for managed assemblies anyway).
 
 ## 2.1 proposal (add runtimeconfig knob to to disable `%DOTNET_ADDITIONAL_DEPS%`)
 <strike>
