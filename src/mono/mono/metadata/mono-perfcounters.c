@@ -1945,7 +1945,7 @@ mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoA
 	g_assert_not_reached ();
 }
 
-int
+MonoBoolean
 mono_perfcounter_instance_exists (MonoString *instance, MonoString *category)
 {
 	g_assert_not_reached ();
