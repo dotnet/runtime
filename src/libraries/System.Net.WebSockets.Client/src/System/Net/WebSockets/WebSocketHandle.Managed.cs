@@ -174,7 +174,7 @@ namespace System.Net.WebSockets
 
                 if (response.StatusCode != HttpStatusCode.SwitchingProtocols)
                 {
-                    throw new WebSocketException(SR.net_webstatus_ConnectFailure);
+                    throw new WebSocketException(SR.Format(SR.net_WebSockets_Connect101Expected, (int) response.StatusCode));
                 }
 
                 // The Connection, Upgrade, and SecWebSocketAccept headers are required and with specific values.

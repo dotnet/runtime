@@ -34,19 +34,23 @@ namespace System.Net.WebSockets.Client.Tests
             get
             {
                 Uri server;
+                string exceptionMessage;
 
                 // Unknown server.
                 {
                     server = new Uri(string.Format("ws://{0}", Guid.NewGuid().ToString()));
-                    yield return new object[] { server };
+                    exceptionMessage = ResourceHelper.GetExceptionMessage("net_webstatus_ConnectFailure");
+
+                    yield return new object[] { server, exceptionMessage };
                 }
 
                 // Known server but not a real websocket endpoint.
                 {
                     server = System.Net.Test.Common.Configuration.Http.RemoteEchoServer;
                     var ub = new UriBuilder("ws", server.Host, server.Port, server.PathAndQuery);
+                    exceptionMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_Connect101Expected", (int) HttpStatusCode.OK);
 
-                    yield return new object[] { ub.Uri };
+                    yield return new object[] { ub.Uri, exceptionMessage };
                 }
             }
         }
