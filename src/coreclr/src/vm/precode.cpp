@@ -448,6 +448,9 @@ void Precode::ResetTargetInterlocked()
             UnexpectedPrecodeType("Precode::ResetTargetInterlocked", precodeType);
             break;
     }
+
+    // Although executable code is modified on x86/x64, a FlushInstructionCache() is not necessary on those platforms due to the
+    // interlocked operation above (see ClrFlushInstructionCache())
 }
 
 BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
@@ -492,15 +495,8 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
         break;
     }
 
-    //
-    // SetTargetInterlocked does not modify code on ARM so the flush instruction cache is
-    // not necessary.
-    //
-#if !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_)
-    if (ret) {
-        FlushInstructionCache(GetCurrentProcess(),this,SizeOf());
-    }
-#endif
+    // Although executable code is modified on x86/x64, a FlushInstructionCache() is not necessary on those platforms due to the
+    // interlocked operation above (see ClrFlushInstructionCache())
 
     _ASSERTE(!IsPointingToPrestub());
     return ret;
@@ -512,7 +508,7 @@ void Precode::Reset()
 
     MethodDesc* pMD = GetMethodDesc();
     Init(GetType(), pMD, pMD->GetLoaderAllocatorForCode());
-    FlushInstructionCache(GetCurrentProcess(),this,SizeOf());
+    ClrFlushInstructionCache(this, SizeOf());
 }
 
 /* static */ 
