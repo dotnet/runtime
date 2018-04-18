@@ -546,7 +546,7 @@ struct StubPrecode {
         CONTRACTL_END;
 
         EnsureWritableExecutablePages(&m_rel32);
-        return rel32SetInterlocked(&m_rel32, GetPreStubEntryPoint(), (MethodDesc*)GetMethodDesc());
+        rel32SetInterlocked(&m_rel32, GetPreStubEntryPoint(), (MethodDesc*)GetMethodDesc());
     }
 
     BOOL SetTargetInterlocked(TADDR target, TADDR expected)
