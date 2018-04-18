@@ -6828,8 +6828,10 @@ BOOL ThisPtrRetBufPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
     _ASSERTE(m_rel32 == REL32_JMP_SELF);
 
     // Use pMD == NULL to allocate the jump stub in non-dynamic heap that has the same lifetime as the precode itself
-    m_rel32 = rel32UsingJumpStub(&m_rel32, target, NULL /* pMD */, ((MethodDesc *)GetMethodDesc())->GetLoaderAllocatorForCode());
+    INT32 newRel32 = rel32UsingJumpStub(&m_rel32, target, NULL /* pMD */, ((MethodDesc *)GetMethodDesc())->GetLoaderAllocatorForCode());
 
+    _ASSERTE(IS_ALIGNED(&m_rel32, sizeof(INT32)));
+    FastInterlockExchange((LONG *)&m_rel32, (LONG)newRel32);
     return TRUE;
 }
 #endif // !DACCESS_COMPILE
