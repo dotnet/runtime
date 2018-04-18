@@ -16,10 +16,9 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public ConnectTest(ITestOutputHelper output) : base(output) { }
 
-        [ActiveIssue(20360, TargetFrameworkMonikers.NetFramework)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(UnavailableWebSocketServers))]
-        public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server)
+        public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server, string exceptionMessage)
         {
             using (var cws = new ClientWebSocket())
             {
@@ -29,7 +28,12 @@ namespace System.Net.WebSockets.Client.Tests
 
                 Assert.Equal(WebSocketError.Success, ex.WebSocketErrorCode);
                 Assert.Equal(WebSocketState.Closed, cws.State);
-                Assert.Equal(ResourceHelper.GetExceptionMessage("net_webstatus_ConnectFailure"), ex.Message);
+
+                // The .NET Native toolchain optimizes away exception messages.
+                if (!PlatformDetection.IsNetNative)
+                {
+                    Assert.Equal(exceptionMessage, ex.Message);
+                }
             }
         }
 
