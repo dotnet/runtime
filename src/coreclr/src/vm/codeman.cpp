@@ -4166,7 +4166,7 @@ PCODE ExecutionManager::GetCodeStartAddress(PCODE currentPC)
     EECodeInfo codeInfo(currentPC);
     if (!codeInfo.IsValid())
         return NULL;
-    return (PCODE)codeInfo.GetStartAddress();
+    return PINSTRToPCODE(codeInfo.GetStartAddress());
 }
 
 //**************************************************************************

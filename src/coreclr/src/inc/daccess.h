@@ -2414,7 +2414,7 @@ typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 //----------------------------------------------------------------------------
 //
 // A PCODE is a valid PC/IP value -- a pointer to an instruction, possibly including some processor mode bits.
-// (On ARM, for example, a PCODE value should should have the low-order THUMB_CODE bit set if the code should
+// (On ARM, for example, a PCODE value should have the low-order THUMB_CODE bit set if the code should
 // be executed in that mode.)
 //
 typedef TADDR PCODE;
