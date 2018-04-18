@@ -2219,7 +2219,7 @@ BOOL MethodTable::IsClassPreInited()
 
 //========================================================================================
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+#if defined(UNIX_AMD64_ABI_ITF)
 
 #if defined(_DEBUG) && defined(LOGGING)
 static
@@ -3153,7 +3153,7 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
     }
 }
 
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+#endif // defined(UNIX_AMD64_ABI_ITF)
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 //==========================================================================================

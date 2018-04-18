@@ -306,9 +306,9 @@ protected:
     void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
     void genEnregisterIncomingStackArgs();
     void genCheckUseBlockInit();
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
     void genClearStackVec3ArgUpperBits();
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING && FEATURE_SIMD
+#endif // UNIX_AMD64_ABI && FEATURE_SIMD
 
 #if defined(_TARGET_ARM64_)
     bool genInstrWithConstant(instruction ins,
