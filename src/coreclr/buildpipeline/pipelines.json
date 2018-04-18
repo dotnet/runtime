@@ -61,7 +61,7 @@
           "Parameters": {
             "DockerTag": "alpine-3.6-3148f11-20171119021156",
             "Rid": "linux-musl",
-            "PB_OutputRID": "linux-musl",
+            "PB_OutputRID": "linux-musl-x64",
             "PB_AdditionalBuildArgs": "-portablebuild=false"
           },
           "ReportingParameters": {
