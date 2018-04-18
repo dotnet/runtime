@@ -25,6 +25,11 @@ internal static partial class Interop
 
             //Call ssl specific initializer
             Ssl.EnsureLibSslInitialized();
+            if (Interop.Crypto.ErrPeekLastError() != 0)
+            {
+                // It is going to be wrapped in a type load exception but will have the error information
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
         }
 #endif
 

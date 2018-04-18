@@ -24,7 +24,6 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(HttpClientHandler.DangerousAcceptAnyServerCertificateValidator(null, null, null, SslPolicyErrors.None));
         }
 
-        [ActiveIssue(25676, TestPlatforms.Linux)]
         [Theory]
         [InlineData(SslProtocols.Tls, false)] // try various protocols to ensure we correctly set versions even when accepting all certs
         [InlineData(SslProtocols.Tls, true)]
