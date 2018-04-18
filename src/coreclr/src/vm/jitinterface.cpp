@@ -2256,7 +2256,7 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+#if defined(UNIX_AMD64_ABI_ITF)
     JIT_TO_EE_TRANSITION();
 
     _ASSERTE(structPassInRegDescPtr != nullptr);
@@ -2291,27 +2291,31 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
         }
         _ASSERTE(methodTablePtr != nullptr);
 
-        // If we have full support for FEATURE_UNIX_AMD64_STRUCT_PASSING, and not just the interface,
+        // If we have full support for UNIX_AMD64_ABI, and not just the interface,
         // then we've cached whether this is a reg passed struct in the MethodTable, computed during
         // MethodTable construction. Otherwise, we are just building in the interface, and we haven't
         // computed or cached anything, so we need to compute it now.
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
         bool canPassInRegisters = useNativeLayout ? methodTablePtr->GetLayoutInfo()->IsNativeStructPassedInRegisters()
                                                   : methodTablePtr->IsRegPassedStruct();
-#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#else // !defined(UNIX_AMD64_ABI)
+        bool canPassInRegisters = false;
         SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
-        bool canPassInRegisters = methodTablePtr->ClassifyEightBytes(&helper, 0, 0, useNativeLayout);
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        if (th.GetSize() <= CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS)
+        {
+            canPassInRegisters = methodTablePtr->ClassifyEightBytes(&helper, 0, 0, useNativeLayout);
+        }
+#endif // !defined(UNIX_AMD64_ABI)
 
         if (canPassInRegisters)
         {
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
             SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
             bool result = methodTablePtr->ClassifyEightBytes(&helper, 0, 0, useNativeLayout);
 
             // The answer must be true at this point.
             _ASSERTE(result);
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
             structPassInRegDescPtr->passedInRegisters = true;
 
@@ -2332,9 +2336,9 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     EE_TO_JIT_TRANSITION();
 
     return true;
-#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+#else // !defined(UNIX_AMD64_ABI_ITF)
     return false;
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+#endif // !defined(UNIX_AMD64_ABI_ITF)
 }
 
 /*********************************************************************/

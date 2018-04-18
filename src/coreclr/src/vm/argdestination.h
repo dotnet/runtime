@@ -28,7 +28,7 @@ public:
         m_argLocDescForStructInRegs(argLocDescForStructInRegs)
     {
         LIMITED_METHOD_CONTRACT;
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
         _ASSERTE((argLocDescForStructInRegs != NULL) || (offset != TransitionBlock::StructInRegsOffset));
 #elif defined(_TARGET_ARM64_)
         // This assert is not interesting on arm64. argLocDescForStructInRegs could be
@@ -85,7 +85,7 @@ public:
 #endif // !DACCESS_COMPILE
 #endif // defined(_TARGET_ARM64_)
 
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
 
     // Returns true if the ArgDestination represents a struct passed in registers.
     bool IsStructPassedInRegs()
@@ -257,7 +257,7 @@ public:
         _ASSERTE(remainingBytes == 0);
     }
 
-#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
 };
 

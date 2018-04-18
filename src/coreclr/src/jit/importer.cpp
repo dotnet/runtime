@@ -1090,7 +1090,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     GenTree*  dest      = nullptr;
     unsigned  destFlags = 0;
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
     assert(varTypeIsStruct(src) || (src->gtOper == GT_ADDR && src->TypeGet() == TYP_BYREF));
     // TODO-ARM-BUG: Does ARM need this?
     // TODO-ARM64-BUG: Does ARM64 need this?
@@ -1099,7 +1099,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
            src->gtOper == GT_COMMA || src->gtOper == GT_ADDR ||
            (src->TypeGet() != TYP_STRUCT &&
             (GenTree::OperIsSIMD(src->gtOper) || src->OperIsSimdHWIntrinsic() || src->gtOper == GT_LCL_FLD)));
-#else  // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#else  // !defined(UNIX_AMD64_ABI)
     assert(varTypeIsStruct(src));
 
     assert(src->gtOper == GT_LCL_VAR || src->gtOper == GT_FIELD || src->gtOper == GT_IND || src->gtOper == GT_OBJ ||
@@ -1107,7 +1107,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
            src->gtOper == GT_COMMA ||
            (src->TypeGet() != TYP_STRUCT &&
             (GenTree::OperIsSIMD(src->gtOper) || src->OperIsSimdHWIntrinsic() || src->gtOper == GT_LCL_FLD)));
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // !defined(UNIX_AMD64_ABI)
     if (destAddr->OperGet() == GT_ADDR)
     {
         GenTree* destNode = destAddr->gtGetOp1();
@@ -1187,7 +1187,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                 // but that method has not been updadted to include ARM.
                 impMarkLclDstNotPromotable(lcl->gtLclVarCommon.gtLclNum, src, structHnd);
                 lcl->gtFlags |= GTF_DONT_CSE;
-#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#elif defined(UNIX_AMD64_ABI)
                 // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
                 assert(!src->gtCall.IsVarargs() && "varargs not allowed for System V OSs.");
 
@@ -8473,7 +8473,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     retTypeDesc->InitializeStructReturnType(this, retClsHnd);
 #endif // FEATURE_MULTIREG_RET
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
 
     // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
     assert(!call->IsVarargs() && "varargs not allowed for System V OSs.");
@@ -8513,7 +8513,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
         call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
     }
 
-#else // not FEATURE_UNIX_AMD64_STRUCT_PASSING
+#else // not UNIX_AMD64_ABI
 
     // Check for TYP_STRUCT type that wraps a primitive type
     // Such structs are returned using a single register
@@ -8562,7 +8562,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 #endif // FEATURE_MULTIREG_RET
     }
 
-#endif // not FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // not UNIX_AMD64_ABI
 
     return call;
 }
@@ -8580,7 +8580,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
 
 #if defined(_TARGET_XARCH_)
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     // No VarArgs for CoreCLR on x64 Unix
     assert(!info.compIsVarArgs);
 
@@ -8610,9 +8610,9 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
 
         return impAssignMultiRegTypeToVar(op, retClsHnd);
     }
-#else  // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#else  // !UNIX_AMD64_ABI
     assert(info.compRetNativeType != TYP_STRUCT);
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // !UNIX_AMD64_ABI
 
 #elif FEATURE_MULTIREG_RET && defined(_TARGET_ARM_)
 
@@ -12536,14 +12536,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (varTypeIsStruct(op1))
                     {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
                         // Non-calls, such as obj or ret_expr, have to go through this.
                         // Calls with large struct return value have to go through this.
                         // Helper calls with small struct return value also have to go
                         // through this since they do not follow Unix calling convention.
                         if (op1->gtOper != GT_CALL || !IsMultiRegReturnedType(clsHnd) ||
                             op1->AsCall()->gtCallType == CT_HELPER)
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
                         {
                             op1 = impGetStructAddr(op1, clsHnd, (unsigned)CHECK_SPILL_ALL, false);
                         }
@@ -15984,7 +15984,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                                      (unsigned)CHECK_SPILL_ALL);
                 }
 
-#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(_TARGET_ARM_) || defined(UNIX_AMD64_ABI)
 #if defined(_TARGET_ARM_)
                 // TODO-ARM64-NYI: HFA
                 // TODO-AMD64-Unix and TODO-ARM once the ARM64 functionality is implemented the
@@ -15992,7 +15992,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                 if (IsHfa(retClsHnd))
                 {
 // Same as !IsHfa but just don't bother with impAssignStructPtr.
-#else  // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#else  // defined(UNIX_AMD64_ABI)
                 ReturnTypeDesc retTypeDesc;
                 retTypeDesc.InitializeStructReturnType(this, retClsHnd);
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
@@ -16005,7 +16005,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                     assert(retRegCount == MAX_RET_REG_COUNT);
                     // Same as !structDesc.passedInRegisters but just don't bother with impAssignStructPtr.
                     CLANG_FORMAT_COMMENT_ANCHOR;
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
 
                     if (fgNeedReturnSpillTemp())
                     {
@@ -16013,11 +16013,11 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                         {
 #if defined(_TARGET_ARM_)
                             impInlineInfo->retExpr = gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType);
-#else  // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#else  // defined(UNIX_AMD64_ABI)
                             // The inlinee compiler has figured out the type of the temp already. Use it here.
                             impInlineInfo->retExpr =
                                 gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
                         }
                     }
                     else
