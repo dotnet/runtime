@@ -29,7 +29,7 @@ namespace System.Buffers.Tests
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
                         SequencePosition pos = buffer.Start;
-                        while (pos != end)
+                        while (!pos.Equals(end))
                         {
                             pos = buffer.GetPosition(offset, pos);
                             localInt ^= pos.GetInteger();
@@ -60,7 +60,7 @@ namespace System.Buffers.Tests
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
                         SequencePosition pos = buffer.Start;
-                        while (pos != end)
+                        while (!pos.Equals(end))
                         {
                             pos = buffer.GetPosition(offset, pos);
                             localInt ^= pos.GetInteger();
@@ -131,7 +131,7 @@ namespace System.Buffers.Tests
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
                         SequencePosition pos = buffer.Start;
-                        while (pos != end)
+                        while (!pos.Equals(end))
                         {
                             pos = buffer.GetPosition(offset, pos);
                             localInt ^= pos.GetInteger();
@@ -160,7 +160,7 @@ namespace System.Buffers.Tests
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
                         SequencePosition pos = buffer.Start;
-                        while (pos != end)
+                        while (!pos.Equals(end))
                         {
                             pos = buffer.GetPosition(offset, pos);
                             localInt ^= pos.GetInteger();
