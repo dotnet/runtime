@@ -429,8 +429,8 @@ LOCAL_LABEL(CheckCardTable):
     cmp  x15,  x12
 
     ldr  x12, LOCAL_LABEL(wbs_ephemeral_high)
-    ccmp x15, x12, 0x0, ge
-    bgt  LOCAL_LABEL(Exit)
+    ccmp x15, x12, 0x0, hs
+    bhi  LOCAL_LABEL(Exit)
 
 LOCAL_LABEL(SkipEphemeralCheck):
     // Check if we need to update the card table
