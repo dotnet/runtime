@@ -63,6 +63,21 @@
         {
           "Name": "Core-Setup-Linux-Arm-BT",
           "Parameters": {
+            "PB_DockerTag": "alpine-3.6-3148f11-20171119021156",
+            "PB_TargetArchitecture": "x64",
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -PortableBuild=false -strip-symbols -SkipTests=$(PB_SkipTests)",
+            "PB_AdditionalMSBuildArguments":"/p:OutputRid=linux-musl-x64 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_PortableBuild": "false"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Linux-musl",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Linux-Arm-BT",
+          "Parameters": {
             "PB_DockerTag": "ubuntu-14.04-cross-e435274-20180323032140",
             "PB_TargetArchitecture": "arm",
             "PB_AdditionalBuildArguments":"-TargetArchitecture=arm -PortableBuild=true -SkipTests=true -CrossBuild=true -strip-symbols",
