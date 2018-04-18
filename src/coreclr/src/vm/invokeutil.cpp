@@ -649,9 +649,14 @@ void InvokeUtil::ValidField(TypeHandle th, OBJECTREF* value)
         COMPlusThrow(kArgumentException,W("Arg_ObjObj"));
 }
 
-// InternalCreateObject
-// This routine will create the specified object from the value
-OBJECTREF InvokeUtil::CreateObject(TypeHandle th, void * pValue) {
+//
+// CreateObjectAfterInvoke
+// This routine will create the specified object from the value returned by the Invoke target. 
+//
+// This does not handle the ELEMENT_TYPE_VALUETYPE case. The caller must preallocate the box object and
+// copy the value type into it afterward.
+//
+OBJECTREF InvokeUtil::CreateObjectAfterInvoke(TypeHandle th, void * pValue) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -665,6 +670,9 @@ OBJECTREF InvokeUtil::CreateObject(TypeHandle th, void * pValue) {
     CorElementType type = th.GetSignatureCorElementType();
     MethodTable *pMT = NULL;
     OBJECTREF obj = NULL;
+
+    // WARNING: pValue can be an inner reference into a managed object and it is not protected from GC. You must do nothing that
+    // triggers a GC until the all the data it points to has been captured in a GC-protected location.
 
     // Handle the non-table types
     switch (type) {
@@ -682,12 +690,8 @@ OBJECTREF InvokeUtil::CreateObject(TypeHandle th, void * pValue) {
         goto PrimitiveType;
 
     case ELEMENT_TYPE_VALUETYPE:
-    {
-        _ASSERTE(!th.IsTypeDesc());
-        pMT = th.AsMethodTable();
-        obj = pMT->Box(pValue);
+        _ASSERTE(!"You cannot use this function for arbitrary value types. You must preallocate a box object and copy the value in yourself.");
         break;
-    }
 
     case ELEMENT_TYPE_CLASS:        // Class
     case ELEMENT_TYPE_SZARRAY:      // Single Dim, Zero
@@ -718,14 +722,17 @@ OBJECTREF InvokeUtil::CreateObject(TypeHandle th, void * pValue) {
         {
             // Don't use MethodTable::Box here for perf reasons
             PREFIX_ASSUME(pMT != NULL);
-            obj = AllocateObject(pMT);
             DWORD size = pMT->GetNumInstanceFieldBytes();
-            memcpyNoGCRefs(obj->UnBox(), pValue, size);
+
+            UINT64 capturedValue;
+            memcpyNoGCRefs(&capturedValue, pValue, size); // Must capture the primitive value before we allocate the boxed object which can trigger a GC.
+
+            INDEBUG(pValue = (LPVOID)0xcccccccc); // We're about to allocate a GC object - can no longer trust pValue
+            obj = AllocateObject(pMT);
+            memcpyNoGCRefs(obj->UnBox(), &capturedValue, size);
         }
         break;
     
-    case ELEMENT_TYPE_BYREF:
-        COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefReturn"));
     case ELEMENT_TYPE_END:
     default:
         _ASSERTE(!"Unknown Type");
