@@ -7790,7 +7790,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee)
  *
  *  Transform the given GT_CALL tree for tail call code generation.
  */
-void Compiler::fgMorphTailCall(GenTreeCall* call)
+void Compiler::fgMorphTailCall(GenTreeCall* call, void* pfnCopyArgs)
 {
     JITDUMP("fgMorphTailCall (before):\n");
     DISPTREE(call);
@@ -7843,10 +7843,8 @@ void Compiler::fgMorphTailCall(GenTreeCall* call)
     }
 
     // Add the extra VSD parameter if needed
-    CorInfoHelperTailCallSpecialHandling flags = CorInfoHelperTailCallSpecialHandling(0);
     if (call->IsVirtualStub())
     {
-        flags = CORINFO_TAILCALL_STUB_DISPATCH_ARG;
 #ifdef LEGACY_BACKEND
         GenTree* arg;
         if (call->gtCallType == CT_INDIRECT)
@@ -7940,10 +7938,9 @@ void Compiler::fgMorphTailCall(GenTreeCall* call)
     call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
 
     // Lastly inject the pointer for the copy routine
-    noway_assert(call->callSig != NULL);
-    void* pfnCopyArgs = info.compCompHnd->getTailCallCopyArgsThunk(call->callSig, flags);
-    arg               = gtNewIconHandleNode(ssize_t(pfnCopyArgs), GTF_ICON_FTN_ADDR);
-    call->gtCallArgs  = gtNewListNode(arg, call->gtCallArgs);
+    noway_assert(pfnCopyArgs != nullptr);
+    arg              = gtNewIconHandleNode(ssize_t(pfnCopyArgs), GTF_ICON_FTN_ADDR);
+    call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
 
 // It is now a varargs tail call
 #ifdef LEGACY_BACKEND
@@ -8112,11 +8109,8 @@ void Compiler::fgMorphTailCall(GenTreeCall* call)
     // Tail call arg copying thunk will move this extra VSD parameter
     // to R11 before tail calling VSD stub. See CreateTailCallCopyArgsThunk()
     // in Stublinkerx86.cpp for more details.
-    CorInfoHelperTailCallSpecialHandling flags = CorInfoHelperTailCallSpecialHandling(0);
     if (call->IsVirtualStub())
     {
-        flags = CORINFO_TAILCALL_STUB_DISPATCH_ARG;
-
         GenTree* stubAddrArg = fgGetStubAddrArg(call);
         // And push the stub address onto the list of arguments
         call->gtCallArgs = gtNewListNode(stubAddrArg, call->gtCallArgs);
@@ -8127,10 +8121,9 @@ void Compiler::fgMorphTailCall(GenTreeCall* call)
     call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
 
     // Inject the pointer for the copy routine to be used for struct copying
-    noway_assert(call->callSig != nullptr);
-    void* pfnCopyArgs = info.compCompHnd->getTailCallCopyArgsThunk(call->callSig, flags);
-    arg               = gtNewIconHandleNode(ssize_t(pfnCopyArgs), GTF_ICON_FTN_ADDR);
-    call->gtCallArgs  = gtNewListNode(arg, call->gtCallArgs);
+    noway_assert(pfnCopyArgs != nullptr);
+    arg              = gtNewIconHandleNode(ssize_t(pfnCopyArgs), GTF_ICON_FTN_ADDR);
+    call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
 
 #else // !_TARGET_AMD64_
 
@@ -8715,13 +8708,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         call->gtCallMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
 #endif
 
-#ifdef FEATURE_PAL
-        if (!canFastTailCall && szFailReason == nullptr)
-        {
-            szFailReason = "Non fast tail calls disabled for PAL based systems.";
-        }
-#endif // FEATURE_PAL
-
         if (szFailReason == nullptr)
         {
             if (!fgCheckStmtAfterTailCall())
@@ -8729,6 +8715,21 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                 szFailReason = "Unexpected statements after the tail call";
             }
         }
+
+        void* pfnCopyArgs = nullptr;
+#if !defined(_TARGET_X86_)
+        if (!canFastTailCall && szFailReason == nullptr)
+        {
+            pfnCopyArgs =
+                info.compCompHnd->getTailCallCopyArgsThunk(call->callSig, call->IsVirtualStub()
+                                                                              ? CORINFO_TAILCALL_STUB_DISPATCH_ARG
+                                                                              : CORINFO_TAILCALL_NORMAL);
+            if (pfnCopyArgs == nullptr)
+            {
+                szFailReason = "TailCallCopyArgsThunk not available.";
+            }
+        }
+#endif // !_TARGET_X86_
 
         if (szFailReason != nullptr)
         {
@@ -8791,7 +8792,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         // fast calls.
         if (!canFastTailCall)
         {
-            fgMorphTailCall(call);
+            fgMorphTailCall(call, pfnCopyArgs);
         }
 
         // Implementation note : If we optimize tailcall to do a direct jump

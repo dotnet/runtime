@@ -13700,7 +13700,7 @@ void* CEEInfo::getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
 
     void * ftn = NULL;
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
+#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
 
     JIT_TO_EE_TRANSITION();
 
@@ -13710,7 +13710,7 @@ void* CEEInfo::getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
 
     EE_TO_JIT_TRANSITION();
 
-#endif // _TARGET_AMD64_ || _TARGET_ARM_
+#endif // (_TARGET_AMD64_ || _TARGET_ARM_) && !FEATURE_PAL
 
     return ftn;
 }
