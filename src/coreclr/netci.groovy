@@ -36,7 +36,7 @@ def static getOSGroup(def os) {
 class Constants {
 
     // We have very limited ARM64 hardware (used for ARM/ARMLB/ARM64 testing). So only allow certain branches to use it.
-    def static WindowsArm64Branches = [
+    def static LimitedHardwareBranches = [
                'master']
 
     // Innerloop build OS's
@@ -993,7 +993,8 @@ def static getDockerImageName(def architecture, def os, def isBuild) {
 }
 
 
-// We have a limited amount of some hardware. For these, scale back the periodic testing we do.
+// We have a limited amount of some hardware. For these, scale back the periodic testing we do,
+// and only allowing using this hardware in some specific branches.
 def static jobRequiresLimitedHardware(def architecture, def os) {
     if (((architecture == 'arm64') || (architecture == 'arm') || (architecture == 'armlb')) && (os == 'Windows_NT')) {
         // These test jobs require ARM64 hardware
@@ -1074,13 +1075,9 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
 
 def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob, def isWindowsBuildOnlyJob, def bidailyCrossList) {
 
-    // Limited Windows ARM64 hardware is restricted for non-PR triggers to certain branches.
-    if (os == 'Windows_NT') {
-        if ((architecture == 'arm64') || (architecture == 'arm') || (architecture == 'armlb')) {
-            if (!(branch in Constants.WindowsArm64Branches)) {
-                return
-            }
-        }
+    // Limited hardware is restricted for non-PR triggers to certain branches.
+    if (jobRequiresLimitedHardware(architecture, os) && (!(branch in Constants.LimitedHardwareBranches))) {
+        return
     }
 
     // Check scenario.
