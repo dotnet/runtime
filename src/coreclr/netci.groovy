@@ -1083,12 +1083,6 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         }
     }
 
-    if ((architecture == 'arm') && (os != 'Windows_NT') && isGCStressRelatedTesting(scenario)) {
-        // Non-Windows Arm GCStress jobs currently don't get cron or push triggers (until they are functional).
-        // See https://github.com/dotnet/coreclr/issues/17241.
-        return
-    }
-
     // Check scenario.
     switch (scenario) {
         case 'innerloop':
@@ -1104,28 +1098,51 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                         addGithubPushTriggerHelper(job)
                     }
                     break
-                case 'arm':
+                case 'arm64':
                     if (os == 'Windows_NT') {
-                        addGithubPushTriggerHelper(job)
+                        // Only the flow jobs get push triggers; the build and test jobs are triggered by the flow job.
+                        if (isFlowJob) {
+                            // We would normally want a per-push trigger, but with limited hardware we can't keep up.
+                            // Do the builds daily.
+                            addPeriodicTriggerHelper(job, '@daily')
+                        }
                     }
                     else {
-                        // Currently no push triggers, with limited arm Linux hardware.
-                        // TODO: If we have enough machine capacity, add some arm Linux push triggers.
-                        assert os == 'Ubuntu'
+                        // Only the flow jobs get push triggers; the build and test jobs are triggered by the flow job.
                         if (isFlowJob) {
+                            addPeriodicTriggerHelper(job, "H H/4 * * *")
+                        }
+                    }
+                    break
+                case 'arm':
+                    if (os == 'Windows_NT') {
+                        // Only the flow jobs get triggers; the build and test jobs are triggered by the flow job.
+                        if (isFlowJob) {
+                            // We would normally want a push trigger, but with limited hardware we can't keep up.
+                            // Do the builds daily.
+                            addPeriodicTriggerHelper(job, '@daily')
+                        }
+                    }
+                    else {
+                        assert os == 'Ubuntu'
+                        // Only the flow jobs get push triggers; the build and test jobs are triggered by the flow job.
+                        if (isFlowJob) {
+                            // Currently no push triggers, with limited arm Linux hardware.
+                            // TODO: If we have enough machine capacity, add some arm Linux push triggers.
                             addPeriodicTriggerHelper(job, '@daily')
                         }
                     }
                     break
                 case 'armem':
                 case 'armlb':
-                case 'x86_arm_altjit':
-                case 'x64_arm64_altjit':
                     addGithubPushTriggerHelper(job)
                     break
-                case 'arm64':
-                    // We would normally want a per-push trigger, but with limited hardware we can't keep up
-                    addPeriodicTriggerHelper(job, "H H/4 * * *")
+                case 'x86_arm_altjit':
+                case 'x64_arm64_altjit':
+                    // Only do altjit push triggers for Checked; don't waste time on Debug or Release.
+                    if (configuration == 'Checked') {
+                        addGithubPushTriggerHelper(job)
+                    }
                     break
                 default:
                     println("Unknown architecture: ${architecture}");
@@ -1155,10 +1172,19 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                         addGithubPushTriggerHelper(job)
                     }
                 }
-                // arm64 r2r jobs should only run daily.
+                // arm64 r2r jobs should only run weekly.
+                // arm64 r2r jobs are only run on Windows (Q: should they run on non-Windows?)
                 else if (architecture == 'arm64') {
                     if (os == 'Windows_NT') {
-                        addPeriodicTriggerHelper(job, '@daily')
+                        if (isFlowJob) {
+                            addPeriodicTriggerHelper(job, '@weekly')
+                        }
+                    }
+                }
+                // arm r2r jobs should only run weekly.
+                else if (architecture == 'arm') {
+                    if (isFlowJob) {
+                        addPeriodicTriggerHelper(job, '@weekly')
                     }
                 }
             }
@@ -1193,10 +1219,23 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                         addPeriodicTriggerHelper(job, 'H H * * 3,6') // some time every Wednesday and Saturday
                     }
                 }
-                // For x86, only add per-commit jobs for Windows
+                // For x86, only add periodic jobs for Windows
                 else if (architecture == 'x86') {
                     if (os == 'Windows_NT') {
                         addPeriodicTriggerHelper(job, 'H H * * 3,6') // some time every Wednesday and Saturday
+                    }
+                }
+                // arm64 r2r jobs are only run on Windows (Q: should they run on non-Windows?)
+                else if (architecture == 'arm64') {
+                    if (os == 'Windows_NT') {
+                        if (isFlowJob) {
+                            addPeriodicTriggerHelper(job, '@weekly')
+                        }
+                    }
+                }
+                else if (architecture == 'arm') {
+                    if (isFlowJob) {
+                        addPeriodicTriggerHelper(job, '@weekly')
                     }
                 }
             }
