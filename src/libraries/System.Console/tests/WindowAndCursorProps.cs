@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -132,20 +131,44 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior specific to Windows
+    [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // In appcontainer, the stream cannot be opened: there is no Console
     public static void Title_Get_Windows()
     {
         Assert.NotNull(Console.Title);
     }
 
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // In appcontainer, the stream cannot be opened: there is no Console
+    public static void Title_Get_Windows_NoNulls()
+    {
+        string title = Console.Title;
+        string trimmedTitle = title.TrimEnd('\0');
+
+        if (PlatformDetection.IsWindowsNanoServer)
+        {
+            // Nano server titles are currently broken
+            Assert.NotEqual(trimmedTitle, title);
+        }
+        else
+        {
+            Assert.Equal(trimmedTitle, title);
+        }
+    }
+
     [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Nano currently ignores set title
     [InlineData(0)]
     [InlineData(1)]
+    [InlineData(254)]
     [InlineData(255)]
     [InlineData(256)]
+    [InlineData(257)]
+    [InlineData(511)]
+    [InlineData(512)]
+    [InlineData(513)]
     [InlineData(1024)]
-    [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior specific to Windows
+    [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // In appcontainer, the stream cannot be opened: there is no Console
     public static void Title_Set_Windows(int lengthOfTitle)
     {
@@ -155,7 +178,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
             string newTitle = new string('a', int.Parse(lengthOfTitleString));
             Console.Title = newTitle;
 
-            if (newTitle.Length > 513 && PlatformDetection.IsWindows10Version1703OrGreater && !PlatformDetection.IsWindows10Version1709OrGreater)
+            if (newTitle.Length >= 511 && !PlatformDetection.IsNetCore && PlatformDetection.IsWindows10Version1703OrGreater && !PlatformDetection.IsWindows10Version1709OrGreater)
             {
                 // RS2 has a bug when getting the window title when the title length is longer than 513 character
                 Assert.Throws<IOException>(() => Console.Title);
@@ -187,8 +210,10 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
+    [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
     public static void Title_Set_Windows_GreaterThan24500Chars_ThrowsArgumentOutOfRangeException()
     {
+        // We don't explicitly throw on Core as this isn't technically correct
         string newTitle = new string('a', 24501);
         AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => Console.Title = newTitle);
     }

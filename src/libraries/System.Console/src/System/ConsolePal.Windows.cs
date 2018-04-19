@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 
 namespace System
 {
@@ -16,6 +15,16 @@ namespace System
         private const int DefaultConsoleBufferSize = 256; // default size of buffer used in stream readers/writers
 
         private static IntPtr s_InvalidHandleValue = new IntPtr(-1);
+
+        private static bool s_isWindows7 = GetIsWindows7();
+
+        private static bool GetIsWindows7()
+        {
+            // Version lies for all apps from the OS kick in starting with Windows 8 (6.2). They can
+            // also be added via appcompat (by the OS or the users) so this can only be used as a hint.
+            Version version = Environment.OSVersion.Version;
+            return version.Major == 6 && version.Minor == 1;
+        }
 
         public static Stream OpenStandardInput()
         {
@@ -600,31 +609,61 @@ namespace System
             }
         }
 
-        // Although msdn states that the max allowed limit is 65K,
-        // desktop limits this to 24500 as buffer sizes greater than it
-        // throw.
-        private const int MaxConsoleTitleLength = 24500;
-
-        public static string Title
+        public unsafe static string Title
         {
             get
             {
-                string title = null;
-                int titleLength = -1;
-                int r = Interop.Kernel32.GetConsoleTitle(out title, out titleLength);
+                Span<char> initialBuffer = stackalloc char[256];
+                ValueStringBuilder builder = new ValueStringBuilder(initialBuffer);
 
-                if (0 != r)
+                while (true)
                 {
-                    throw Win32Marshal.GetExceptionForWin32Error(r, string.Empty);
+                    uint result = Interop.Errors.ERROR_SUCCESS;
+
+                    fixed (char* c = &builder.GetPinnableReference())
+                    {
+                        result = Interop.Kernel32.GetConsoleTitleW(c, (uint)builder.Capacity);
+                    }
+
+                    // The documentation asserts that the console's title is stored in a shared 64KB buffer.
+                    // The magic number that used to exist here (24500) is likely related to that.
+                    // A full UNICODE_STRING is 32K chars...
+                    Debug.Assert(result <= short.MaxValue, "shouldn't be possible to grow beyond UNICODE_STRING size");
+
+                    if (result == 0)
+                    {
+                        int error = Marshal.GetLastWin32Error();
+                        switch (error)
+                        {
+                            case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
+                                // Typically this API truncates but there was a bug in RS2 so we'll make an attempt to handle
+                                builder.EnsureCapacity(builder.Capacity * 2);
+                                continue;
+                            case Interop.Errors.ERROR_SUCCESS:
+                                // The title is empty.
+                                break;
+                            default:
+                                throw Win32Marshal.GetExceptionForWin32Error(error, string.Empty);
+                        }
+                    }
+                    else if (result >= builder.Capacity - 1 || (s_isWindows7 && result >= builder.Capacity / sizeof(char) - 1))
+                    {
+                        // Our buffer was full. As this API truncates we need to increase our size and reattempt.
+                        // Note that Windows 7 copies count of bytes into the output buffer but returns count of chars
+                        // and as such our buffer is only "half" its actual size.
+                        //
+                        // (If we're Windows 10 with a version lie to 7 this will be inefficient so we'll want to remove
+                        //  this workaround when we no longer support Windows 7)
+                        builder.EnsureCapacity(builder.Capacity * 2);
+                        continue;
+                    }
+
+                    builder.Length = (int)result;
+                    break;
                 }
 
-                if (titleLength > MaxConsoleTitleLength)
-                    throw new InvalidOperationException(SR.ArgumentOutOfRange_ConsoleTitleTooLong);
-
-                Debug.Assert(title.Length == titleLength);
-                return title;
+                return builder.ToString();
             }
-
             set
             {
                 if (!Interop.Kernel32.SetConsoleTitle(value))
@@ -632,19 +671,18 @@ namespace System
             }
         }
 
-        private const int BeepFrequencyInHz = 800;
-        private const int BeepDurationInMs = 200;
-
         public static void Beep()
         {
+            const int BeepFrequencyInHz = 800;
+            const int BeepDurationInMs = 200;
             Interop.Kernel32.Beep(BeepFrequencyInHz, BeepDurationInMs);
         }
 
-        private const int MinBeepFrequency = 37;
-        private const int MaxBeepFrequency = 32767;
-
         public static void Beep(int frequency, int duration)
         {
+            const int MinBeepFrequency = 37;
+            const int MaxBeepFrequency = 32767;
+
             if (frequency < MinBeepFrequency || frequency > MaxBeepFrequency)
                 throw new ArgumentOutOfRangeException(nameof(frequency), frequency, SR.Format(SR.ArgumentOutOfRange_BeepFrequency, MinBeepFrequency, MaxBeepFrequency));
             if (duration <= 0)
