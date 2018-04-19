@@ -1117,6 +1117,37 @@ namespace System
             return result;
         }
 
+        private static DateTime ParseTimeOfDay(string time)
+        {
+            DateTime timeOfDay;
+            TimeSpan? timeOffset = TZif_ParseOffsetString(time);
+            if (timeOffset.HasValue)
+            {
+                // This logic isn't correct and can't be corrected until https://github.com/dotnet/corefx/issues/2618 is fixed.
+                // Some time zones use time values like, "26", "144", or "-2".
+                // This allows the week to sometimes be week 4 and sometimes week 5 in the month.
+                // For now, strip off any 'days' in the offset, and just get the time of day correct
+                timeOffset = new TimeSpan(timeOffset.Value.Hours, timeOffset.Value.Minutes, timeOffset.Value.Seconds);
+                if (timeOffset.Value < TimeSpan.Zero)
+                {
+                    timeOfDay = new DateTime(1, 1, 2, 0, 0, 0);
+                }
+                else
+                {
+                    timeOfDay = new DateTime(1, 1, 1, 0, 0, 0);
+                }
+
+                timeOfDay += timeOffset.Value;
+            }
+            else
+            {
+                // default to 2AM.
+                timeOfDay = new DateTime(1, 1, 1, 2, 0, 0);
+            }
+
+            return timeOfDay;
+        }
+
         private static TransitionTime TZif_CreateTransitionTimeFromPosixRule(string date, string time)
         {
             if (string.IsNullOrEmpty(date))
@@ -1138,48 +1169,90 @@ namespace System
                     throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_UnparseablePosixMDateString, date));
                 }
 
-                DateTime timeOfDay;
-                TimeSpan? timeOffset = TZif_ParseOffsetString(time);
-                if (timeOffset.HasValue)
-                {
-                    // This logic isn't correct and can't be corrected until https://github.com/dotnet/corefx/issues/2618 is fixed.
-                    // Some time zones use time values like, "26", "144", or "-2".
-                    // This allows the week to sometimes be week 4 and sometimes week 5 in the month.
-                    // For now, strip off any 'days' in the offset, and just get the time of day correct
-                    timeOffset = new TimeSpan(timeOffset.Value.Hours, timeOffset.Value.Minutes, timeOffset.Value.Seconds);
-                    if (timeOffset.Value < TimeSpan.Zero)
-                    {
-                        timeOfDay = new DateTime(1, 1, 2, 0, 0, 0);
-                    }
-                    else
-                    {
-                        timeOfDay = new DateTime(1, 1, 1, 0, 0, 0);
-                    }
-
-                    timeOfDay += timeOffset.Value;
-                }
-                else
-                {
-                    // default to 2AM.
-                    timeOfDay = new DateTime(1, 1, 1, 2, 0, 0);
-                }
-
-                return TransitionTime.CreateFloatingDateRule(timeOfDay, month, week, day);
+                return TransitionTime.CreateFloatingDateRule(ParseTimeOfDay(time), month, week, day);
             }
             else
             {
-                // Jn
-                // This specifies the Julian day, with n between 1 and 365.February 29 is never counted, even in leap years.
-
-                // n
-                // This specifies the Julian day, with n between 0 and 365.February 29 is counted in leap years.
-
-                // These two rules cannot be expressed with the current AdjustmentRules
-                // One of them *could* be supported if we relaxed the TransitionTime validation rules, and allowed
-                // "IsFixedDateRule = true, Month = 0, Day = n" to mean the nth day of the year, picking one of the rules above
-
-                throw new InvalidTimeZoneException(SR.InvalidTimeZone_JulianDayNotSupported);
+                if (date[0] != 'J')
+                {
+                    // should be n Julian day format which we don't support. 
+                    // 
+                    // This specifies the Julian day, with n between 0 and 365. February 29 is counted in leap years.
+                    //
+                    // n would be a relative number from the begining of the year. which should handle if the 
+                    // the year is a leap year or not.
+                    // 
+                    // In leap year, n would be counted as:
+                    // 
+                    // 0                30 31              59 60              90      335            365
+                    // |-------Jan--------|-------Feb--------|-------Mar--------|....|-------Dec--------|
+                    //
+                    // while in non leap year we'll have 
+                    // 
+                    // 0                30 31              58 59              89      334            364
+                    // |-------Jan--------|-------Feb--------|-------Mar--------|....|-------Dec--------|
+                    //
+                    // 
+                    // For example if n is specified as 60, this means in leap year the rule will start at Mar 1,
+                    // while in non leap year the rule will start at Mar 2.
+                    // 
+                    // If we need to support n format, we'll have to have a floating adjustment rule support this case.
+                    
+                    throw new InvalidTimeZoneException(SR.InvalidTimeZone_NJulianDayNotSupported);
+                }
+                
+                // Julian day
+                TZif_ParseJulianDay(date, out int month, out int day);
+                return TransitionTime.CreateFixedDateRule(ParseTimeOfDay(time), month, day);
             }
+        }
+
+        /// <summary>
+        /// Parses a string like Jn or n into month and day values.
+        /// </summary>
+        /// <returns>
+        /// true if the parsing succeeded; otherwise, false.
+        /// </returns>
+        private static void TZif_ParseJulianDay(string date, out int month, out int day)
+        {
+            // Jn
+            // This specifies the Julian day, with n between 1 and 365.February 29 is never counted, even in leap years.
+            Debug.Assert(date[0] == 'J');
+            Debug.Assert(!String.IsNullOrEmpty(date));
+            month = day = 0;
+
+            int index = 1;
+
+            if (index >= date.Length || ((uint)(date[index] - '0') > '9'-'0'))
+            {
+                throw new InvalidTimeZoneException(SR.InvalidTimeZone_InvalidJulianDay);
+            }
+
+            int julianDay = 0;
+
+            do
+            {
+                julianDay = julianDay * 10 + (int) (date[index] - '0');
+                index++;
+            } while (index < date.Length && ((uint)(date[index] - '0') <= '9'-'0'));
+
+            int[] days = GregorianCalendarHelper.DaysToMonth365;
+
+            if (julianDay == 0 || julianDay > days[days.Length - 1])
+            {
+                throw new InvalidTimeZoneException(SR.InvalidTimeZone_InvalidJulianDay);
+            }
+
+            int i = 1;
+            while (i < days.Length && julianDay > days[i])
+            {
+                i++;
+            }
+            
+            Debug.Assert(i > 0 && i < days.Length);
+
+            month = i;
+            day = julianDay - days[i - 1];
         }
 
         /// <summary>
