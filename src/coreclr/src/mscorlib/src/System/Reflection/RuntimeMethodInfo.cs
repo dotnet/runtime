@@ -41,7 +41,7 @@ namespace System.Reflection
                     //
                     // first take care of all the NO_INVOKE cases. 
                     if (ContainsGenericParameters ||
-                         (ReturnType.IsByRef && ReturnType.GetElementType().IsByRefLike) ||
+                         ReturnType.IsByRef ||
                          (declaringType != null && declaringType.ContainsGenericParameters) ||
                          ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs))
                     {
@@ -444,10 +444,10 @@ namespace System.Reflection
             {
                 throw new MemberAccessException();
             }
-            // ByRef to ByRefLike returns are not allowed in reflection
-            else if (ReturnType.IsByRef && ReturnType.GetElementType().IsByRefLike)
+            // ByRef return are not allowed in reflection
+            else if (ReturnType.IsByRef)
             {
-                throw new NotSupportedException(SR.NotSupported_ByRefToByRefLikeReturn);
+                throw new NotSupportedException(SR.NotSupported_ByRefReturn);
             }
 
             throw new TargetException();

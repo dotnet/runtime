@@ -898,5 +898,3 @@
 #define IDS_EE_NDIRECT_LOADLIB_MAC                 0x263f
 #define IDS_EE_NDIRECT_GETPROCADDRESS_UNIX         0x2640
 #define IDS_EE_ERROR_COM                           0x2641
-
-#define IDS_INVOKE_NULLREF_RETURNED             0x2642
