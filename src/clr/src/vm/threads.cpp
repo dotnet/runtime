@@ -1615,9 +1615,9 @@ Thread::Thread()
 #ifdef HAVE_GCCOVER
     m_pbDestCode = NULL;
     m_pbSrcCode = NULL;
-#ifdef _TARGET_X86_
+#if defined(GCCOVER_TOLERATE_SPURIOUS_AV)
     m_pLastAVAddress = NULL;
-#endif // _TARGET_X86_
+#endif // defined(GCCOVER_TOLERATE_SPURIOUS_AV)
 #endif // HAVE_GCCOVER
 
     m_fCompletionPortDrained = FALSE;

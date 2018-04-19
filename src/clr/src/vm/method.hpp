@@ -1876,6 +1876,14 @@ private:
     PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
     PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags);
 #endif // DACCESS_COMPILE
+
+#ifdef HAVE_GCCOVER
+private:
+    static CrstStatic m_GCCoverCrst;
+
+public:
+    static void Init();
+#endif
 };
 
 #ifndef DACCESS_COMPILE

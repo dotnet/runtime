@@ -114,6 +114,12 @@
 #define HAVE_GCCOVER
 #endif
 
+// Some platforms may see spurious AVs when GcCoverage is enabled because of races.
+// Enable further processing to see if they recur.
+#if defined(HAVE_GCCOVER) && (defined(_TARGET_X86_) || defined(_TARGET_AMD64_)) && !defined(FEATURE_PAL)
+#define GCCOVER_TOLERATE_SPURIOUS_AV
+#endif
+
 //Turns on a startup delay to allow simulation of slower and faster startup times.
 #define ENABLE_STARTUP_DELAY
 
