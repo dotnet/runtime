@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Security;
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+    using System.Security;
+#endif
 using System.Threading;
 
 namespace System.Diagnostics
@@ -308,7 +310,7 @@ namespace System.Diagnostics
                 }
 
                 Id = GenerateId();
-                Current = this;
+                SetCurrent(this);
             }
             return this;
         }
@@ -337,7 +339,7 @@ namespace System.Diagnostics
                     SetEndTime(GetUtcNow());
                 }
 
-                Current = Parent;
+                SetCurrent(Parent);
             }
         }
 
@@ -444,6 +446,17 @@ namespace System.Diagnostics
             // Use the first 8 bytes of the GUID as a random number.  
             Guid g = Guid.NewGuid();
             return *((long*)&g);
+        }
+
+        private static bool ValidateSetCurrent(Activity activity)
+        {
+            bool canSet = activity == null || (activity.Id != null && !activity.isFinished);
+            if (!canSet)
+            {
+                NotifyError(new InvalidOperationException("Trying to set an Activity that is not running"));
+            }
+
+            return canSet;
         }
 
         private string _rootId;
