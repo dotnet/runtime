@@ -56,7 +56,7 @@ namespace System.Diagnostics
             {
                 if (s_appName == null)
                 {
-                    s_appName = Assembly.GetEntryAssembly().GetName().Name;
+                    s_appName = Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
                 }
                 return s_appName;
             }
