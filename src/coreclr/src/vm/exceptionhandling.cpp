@@ -936,7 +936,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
     //
     {
 #ifndef USE_REDIRECT_FOR_GCSTRESS
-        if (IsGcMarker(pExceptionRecord->ExceptionCode, pContextRecord))
+        if (IsGcMarker(pContextRecord, pExceptionRecord))
         {
             returnDisposition = ExceptionContinueExecution;
             goto lExit;
@@ -5227,7 +5227,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         // A hardware exception is handled only if it happened in a jitted code or 
         // in one of the JIT helper functions (JIT_MemSet, ...)
         PCODE controlPc = GetIP(ex->GetContextRecord());
-        if (ExecutionManager::IsManagedCode(controlPc) && IsGcMarker(ex->GetExceptionRecord()->ExceptionCode, ex->GetContextRecord()))
+        if (ExecutionManager::IsManagedCode(controlPc) && IsGcMarker(ex->GetContextRecord(), ex->GetExceptionRecord()))
         {
             // Exception was handled, let the signal handler return to the exception context. Some registers in the context can
             // have been modified by the GC.
