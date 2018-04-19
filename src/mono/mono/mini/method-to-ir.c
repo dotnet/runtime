@@ -2814,11 +2814,10 @@ mono_emit_widen_call_res (MonoCompile *cfg, MonoInst *ins, MonoMethodSignature *
 static void
 emit_method_access_failure (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee)
 {
-	MonoInst *args [16];
-
-	args [0] = emit_get_rgctx_method (cfg, mono_method_check_context_used (caller), caller, MONO_RGCTX_INFO_METHOD);
-	args [1] = emit_get_rgctx_method (cfg, mono_method_check_context_used (callee), callee, MONO_RGCTX_INFO_METHOD);
-
+	MonoInst *args [ ] = {
+		emit_get_rgctx_method (cfg, mono_method_check_context_used (caller), caller, MONO_RGCTX_INFO_METHOD),
+		emit_get_rgctx_method (cfg, mono_method_check_context_used (callee), callee, MONO_RGCTX_INFO_METHOD)
+	};
 	mono_emit_jit_icall (cfg, mono_throw_method_access, args);
 }
 
@@ -3364,7 +3363,6 @@ emit_class_init (MonoCompile *cfg, MonoClass *klass)
 	} else {
 		int inited_reg;
 		MonoBasicBlock *inited_bb;
-		MonoInst *args [16];
 
 		inited_reg = alloc_ireg (cfg);
 
@@ -3375,8 +3373,7 @@ emit_class_init (MonoCompile *cfg, MonoClass *klass)
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, inited_reg, 0);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, inited_bb);
 
-		args [0] = vtable_arg;
-		mono_emit_jit_icall (cfg, mono_generic_class_init, args);
+		mono_emit_jit_icall (cfg, mono_generic_class_init, &vtable_arg);
 
 		MONO_START_BB (cfg, inited_bb);
 	}
@@ -4029,16 +4026,15 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	}
 
  	if (cfg->llvm_only) {
-		MonoInst *args [16];
-
 		if (virtual_) {
-			args [0] = obj;
-			args [1] = target;
-			args [2] = emit_get_rgctx_method (cfg, context_used, method, MONO_RGCTX_INFO_METHOD);
+			MonoInst *args [ ] = {
+				obj,
+				target,
+				emit_get_rgctx_method (cfg, context_used, method, MONO_RGCTX_INFO_METHOD)
+			};
 			mono_emit_jit_icall (cfg, mono_llvmonly_init_delegate_virtual, args);
 		} else {
-			args [0] = obj;
-			mono_emit_jit_icall (cfg, mono_llvmonly_init_delegate, args);
+			mono_emit_jit_icall (cfg, mono_llvmonly_init_delegate, &obj);
 		}
 
 		return obj;
