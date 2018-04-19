@@ -367,7 +367,7 @@ namespace Mono.Linker.Steps {
 					MarkField (type, field, name);
 		}
 
-		static FieldDefinition GetField (TypeDefinition type, string signature)
+		protected static FieldDefinition GetField (TypeDefinition type, string signature)
 		{
 			if (!type.HasFields)
 				return null;
@@ -520,7 +520,7 @@ namespace Mono.Linker.Steps {
 					MarkEvent (type, @event, name);
 		}
 
-		static EventDefinition GetEvent (TypeDefinition type, string signature)
+		protected static EventDefinition GetEvent (TypeDefinition type, string signature)
 		{
 			if (!type.HasEvents)
 				return null;
@@ -604,7 +604,7 @@ namespace Mono.Linker.Steps {
 					MarkProperty (type, property, name, accessors);
 		}
 
-		static PropertyDefinition GetProperty (TypeDefinition type, string signature)
+		protected static PropertyDefinition GetProperty (TypeDefinition type, string signature)
 		{
 			if (!type.HasProperties)
 				return null;
@@ -660,7 +660,7 @@ namespace Mono.Linker.Steps {
 			return GetAttribute (nav, _fullname);
 		}
 
-		static string[] GetAccessors (XPathNavigator nav)
+		protected static string[] GetAccessors (XPathNavigator nav)
 		{
 			string accessorsValue = GetAttribute (nav, _accessors);
 
