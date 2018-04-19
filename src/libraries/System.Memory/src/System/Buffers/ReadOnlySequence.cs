@@ -281,12 +281,12 @@ namespace System.Buffers
 
             if (startRange + (ulong)start > sliceRange)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException_OffsetOutOfRange();
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
             }
 
             int currentLength = startSegment.Memory.Length - (int)startIndex;
 
-            // Position in startSegment
+            // Position not in startSegment
             if (currentLength <= start)
             {
                 if (currentLength < 0)
@@ -357,13 +357,13 @@ namespace System.Buffers
 
             if (sliceRange + (ulong)length > endRange)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException_OffsetOutOfRange();
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
 
             int currentLength = sliceStartSegment.Memory.Length - (int)sliceStartIndex;
 
-            // Position in startSegment
-            if (currentLength <= length)
+            // Position not in startSegment
+            if (currentLength < length)
             {
                 if (currentLength < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
