@@ -4641,10 +4641,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_TAILCALL:
+		case OP_TAILCALL_REG:
 		case OP_TAILCALL_MEMBASE: {
 			call = (MonoCallInst*)ins;
 			int i, save_area_offset;
 			gboolean tailcall_membase = (ins->opcode == OP_TAILCALL_MEMBASE);
+			gboolean tailcall_reg = (ins->opcode == OP_TAILCALL_REG);
 
 			g_assert (!cfg->method->save_lmf);
 
@@ -4662,8 +4664,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			// FIXME hardcoding RAX here is not ideal.
 
-			if (tailcall_membase) {
-				amd64_mov_reg_membase (code, AMD64_RAX, ins->sreg1, ins->inst_offset, 8);
+			if (tailcall_reg) {
+				int const reg = ins->sreg1;
+				g_assert (reg > -1);
+				if (reg != AMD64_RAX)
+					amd64_mov_reg_reg (code, AMD64_RAX, reg, 8);
+			} else if (tailcall_membase) {
+				int const reg = ins->sreg1;
+				g_assert (reg > -1);
+				amd64_mov_reg_membase (code, AMD64_RAX, reg, ins->inst_offset, 8);
 			} else {
 				 if (cfg->compile_aot) {
 					mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method);
@@ -4695,6 +4704,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				amd64_push_reg (code, AMD64_RAX);
 				/* Copy arguments on the stack to our argument area */
+				// FIXME use rep mov for constant code size, before nonvolatiles
+				// restored, first saving rsi, rdi into volatiles
 				for (i = 0; i < call->stack_usage; i += sizeof(mgreg_t)) {
 					amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, i + 8, sizeof(mgreg_t));
 					amd64_mov_membase_reg (code, AMD64_RBP, ARGS_OFFSET + i, AMD64_RAX, sizeof(mgreg_t));

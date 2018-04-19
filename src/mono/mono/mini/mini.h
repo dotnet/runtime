@@ -273,7 +273,9 @@ enum {
 #define MONO_IS_STORE_MEMINDEX(ins) (((ins)->opcode >= OP_STORE_MEMINDEX) && ((ins)->opcode <= OP_STORER8_MEMINDEX))
 
 // OP_DYN_CALL is not a MonoCallInst
-#define MONO_IS_CALL(ins) (((ins)->opcode >= OP_VOIDCALL && (ins)->opcode <= OP_VCALL2_MEMBASE) || ((ins)->opcode == OP_TAILCALL || (ins)->opcode == OP_TAILCALL_MEMBASE))
+
+#define MONO_IS_CALL(ins) (((ins)->opcode >= OP_VOIDCALL && (ins)->opcode <= OP_VCALL2_MEMBASE) || \
+	(ins)->opcode == OP_TAILCALL || (ins)->opcode == OP_TAILCALL_MEMBASE || (ins)->opcode == OP_TAILCALL_REG)
 
 #define MONO_IS_JUMP_TABLE(ins) (((ins)->opcode == OP_JUMP_TABLE) ? TRUE : ((((ins)->opcode == OP_AOTCONST) && (ins->inst_i1 == (gpointer)MONO_PATCH_INFO_SWITCH)) ? TRUE : ((ins)->opcode == OP_SWITCH) ? TRUE : ((((ins)->opcode == OP_GOT_ENTRY) && ((ins)->inst_right->inst_i1 == (gpointer)MONO_PATCH_INFO_SWITCH)) ? TRUE : FALSE)))
 
@@ -1095,6 +1097,7 @@ typedef struct {
 	guint            have_generalized_imt_trampoline : 1;
 	guint            have_op_tailcall : 1;
 	gboolean         have_op_tailcall_membase : 1;
+	gboolean         have_op_tailcall_reg : 1;
 	gboolean	 have_volatile_non_param_register : 1;
 	guint            gshared_supported : 1;
 	guint            use_fpstack : 1;

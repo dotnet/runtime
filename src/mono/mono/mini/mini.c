@@ -3022,6 +3022,9 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_HAVE_OP_TAILCALL_MEMBASE
 	backend->have_op_tailcall_membase = 1;
 #endif
+#ifdef MONO_ARCH_HAVE_OP_TAILCALL_REG
+	backend->have_op_tailcall_reg = 1;
+#endif
 #ifndef MONO_ARCH_MONITOR_ENTER_ADJUSTMENT
 	backend->monitor_enter_adjustment = 1;
 #else
