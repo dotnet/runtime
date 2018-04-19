@@ -65,6 +65,16 @@ EXTERN_C void MarkMethodNotPitchingCandidate(MethodDesc* pMD);
 
 EXTERN_C void STDCALL ThePreStubPatch();
 
+#if defined(HAVE_GCCOVER)
+CrstStatic MethodDesc::m_GCCoverCrst;
+
+void MethodDesc::Init()
+{
+    m_GCCoverCrst.Init(CrstGCCover);
+}
+
+#endif
+
 //==========================================================================
 
 PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BOOL fFullBackPatch)
@@ -874,32 +884,49 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
         }
 
     _ASSERTE(pCode != NULL);
-    
+
+#ifdef HAVE_GCCOVER
+    // Instrument for coverage before trying to publish this version
+    // of the code as the native code, to avoid other threads seeing
+    // partially instrumented methods.
+    if (GCStress<cfg_instr_jit>::IsEnabled())
+    {
+        // Do the instrumentation and publish atomically, so that the
+        // instrumentation data always matches the published code.
+        CrstHolder gcCoverLock(&m_GCCoverCrst);
+
+        // Make sure no other thread has stepped in before us.
+        if ((pOtherCode = pConfig->IsJitCancellationRequested()))
+        {
+            return pOtherCode;
+        }
+
+        SetupGcCoverage(this, (BYTE*)pCode);
+
+        // This thread should always win the publishing race
+        // since we're under a lock.
+        if (!pConfig->SetNativeCode(pCode, &pOtherCode))
+        {
+            _ASSERTE(!"GC Cover native code publish failed");
+        }
+    }
+    else
+#endif // HAVE_GCCOVER
+
     // Aside from rejit, performing a SetNativeCodeInterlocked at this point
     // generally ensures that there is only one winning version of the native
     // code. This also avoid races with profiler overriding ngened code (see
     // matching SetNativeCodeInterlocked done after
     // JITCachedFunctionSearchStarted)
+    if (!pConfig->SetNativeCode(pCode, &pOtherCode))
     {
-        if (!pConfig->SetNativeCode(pCode, &pOtherCode))
-        {
-            // Another thread beat us to publishing its copy of the JITted code.
-            return pOtherCode;
-        }
-#if defined(FEATURE_JIT_PITCHING)
-        else
-        {
-            SavePitchingCandidate(this, *pSizeOfCode);
-        }
-#endif
+        // Another thread beat us to publishing its copy of the JITted code.
+        return pOtherCode;
     }
 
-#ifdef HAVE_GCCOVER
-    if (GCStress<cfg_instr_jit>::IsEnabled())
-    {
-        SetupGcCoverage(this, (BYTE*)pCode);
-    }
-#endif // HAVE_GCCOVER
+#if defined(FEATURE_JIT_PITCHING)
+    SavePitchingCandidate(this, *pSizeOfCode);
+#endif
 
     // We succeeded in jitting the code, and our jitted code is the one that's going to run now.
     pEntry->m_hrResultCode = S_OK;

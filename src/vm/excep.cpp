@@ -6811,34 +6811,39 @@ DWORD GetGcMarkerExceptionCode(LPVOID ip)
 }
 
 // Did we hit an DO_A_GC_HERE marker in JITted code?
-bool IsGcMarker(DWORD exceptionCode, CONTEXT *pContext)
+bool IsGcMarker(CONTEXT* pContext, EXCEPTION_RECORD *pExceptionRecord)
 {
+    DWORD exceptionCode = pExceptionRecord->ExceptionCode;
 #ifdef HAVE_GCCOVER
     WRAPPER_NO_CONTRACT;
 
     if (GCStress<cfg_any>::IsEnabled())
     {
-#ifdef _TARGET_X86_
-        // on x86 we can't suspend EE to update the GC marker instruction so
-        // we update it directly without suspending.  this can sometimes yield
-        // a STATUS_ACCESS_VIOLATION instead of STATUS_CLR_GCCOVER_CODE.  in
-        // this case we let the AV through and retry the instruction.  we'll
-        // track the IP of the instruction that generated an AV so we don't
-        // mix up a real AV with a "fake" AV.
-        // see comments in function DoGcStress for more details on this race.
-        // also make sure that the thread is actually in managed code since AVs
-        // outside of of JIT code will never be potential GC markers
+#if defined(GCCOVER_TOLERATE_SPURIOUS_AV)
+
+        // We sometimes can't suspend the EE to update the GC marker instruction so
+        // we update it directly without suspending.  This can sometimes yield
+        // a STATUS_ACCESS_VIOLATION instead of STATUS_CLR_GCCOVER_CODE.  In
+        // this case we let the AV through and retry the instruction as hopefully
+        // the race will have resolved.  We'll track the IP of the instruction
+        // that generated an AV so we don't mix up a real AV with a "fake" AV.
+        //
+        // See comments in function DoGcStress for more details on this race.
+        //
+        // Note these "fake" AVs will be reported by the kernel as reads from
+        // address 0xF...F so we also use that as a screen.
         Thread* pThread = GetThread();
         if (exceptionCode == STATUS_ACCESS_VIOLATION &&
             GCStress<cfg_instr>::IsEnabled() &&
+            pExceptionRecord->ExceptionInformation[0] == 0 &&
+            pExceptionRecord->ExceptionInformation[1] == ~0 &&
             pThread->GetLastAVAddress() != (LPVOID)GetIP(pContext) &&
-            pThread->PreemptiveGCDisabled() &&
             !IsIPInEE((LPVOID)GetIP(pContext)))
         {
             pThread->SetLastAVAddress((LPVOID)GetIP(pContext));
             return true;
         }
-#endif // _TARGET_X86_
+#endif // defined(GCCOVER_TOLERATE_SPURIOUS_AV)
 
         if (exceptionCode == STATUS_CLR_GCCOVER_CODE)
         {
@@ -7737,7 +7742,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     // NOTE: this is effectively ifdef (_TARGET_AMD64_ || _TARGET_ARM_), and does not actually trigger
     // a GC.  This will redirect the exception context to a stub which will
     // push a frame and cause GC.
-    if (IsGcMarker(exceptionCode, pContext))
+    if (IsGcMarker(pContext, pExceptionRecord))
     {
         return VEH_CONTINUE_EXECUTION;;
     }
@@ -8161,11 +8166,11 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
 
 #ifdef USE_REDIRECT_FOR_GCSTRESS
     // This is AMD64 & ARM specific as the macro above is defined for AMD64 & ARM only
-    bIsGCMarker = IsGcMarker(dwCode, pExceptionInfo->ContextRecord);
+    bIsGCMarker = IsGcMarker(pExceptionInfo->ContextRecord, pExceptionInfo->ExceptionRecord);
 #elif defined(_TARGET_X86_) && defined(HAVE_GCCOVER)
     // This is the equivalent of the check done in COMPlusFrameHandler, incase the exception is
     // seen by VEH first on x86.
-    bIsGCMarker = IsGcMarker(dwCode, pExceptionInfo->ContextRecord);
+    bIsGCMarker = IsGcMarker(pExceptionInfo->ContextRecord, pExceptionInfo->ExceptionRecord);
 #endif // USE_REDIRECT_FOR_GCSTRESS
 
     // Do not update the TLS with exception details for exceptions pertaining to GCStress

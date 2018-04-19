@@ -352,6 +352,10 @@ Crst NativeImageCache
     Unordered
 End
 
+Crst GCCover
+    AcquiredBefore LoaderHeap
+End
+
 Crst GCMemoryPressure
 End
 

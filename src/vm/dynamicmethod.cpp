@@ -280,6 +280,11 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     pNewMD->m_pszDebugClassName  = (LPUTF8)"dynamicclass";
     pNewMD->m_pszDebugMethodSignature = "DynamicMethod Signature not available";
 #endif // _DEBUG
+
+#ifdef HAVE_GCCOVER
+    pNewMD->m_GcCover = NULL;
+#endif
+
     pNewMD->SetNotInline(TRUE);
     pNewMD->GetLCGMethodResolver()->Reset();
 
