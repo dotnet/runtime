@@ -4813,9 +4813,9 @@ public:
 private:
     BYTE* m_pbDestCode;
     BYTE* m_pbSrcCode;
-#ifdef _TARGET_X86_
+#if defined(GCCOVER_TOLERATE_SPURIOUS_AV)
     LPVOID m_pLastAVAddress;
-#endif // _TARGET_X86_
+#endif // defined(GCCOVER_TOLERATE_SPURIOUS_AV)
 
 public:
     void CommitGCStressInstructionUpdate();
@@ -4841,7 +4841,7 @@ public:
         m_pbDestCode = NULL;
         m_pbSrcCode = NULL;
     }
-#ifdef _TARGET_X86_
+#if defined(GCCOVER_TOLERATE_SPURIOUS_AV)
     void SetLastAVAddress(LPVOID address)
     {
         LIMITED_METHOD_CONTRACT;
@@ -4852,7 +4852,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_pLastAVAddress;
     }
-#endif // _TARGET_X86_
+#endif // defined(GCCOVER_TOLERATE_SPURIOUS_AV)
 #endif // HAVE_GCCOVER
 
 #if defined(_DEBUG) && defined(FEATURE_STACK_PROBE)

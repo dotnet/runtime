@@ -766,7 +766,7 @@ void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThr
 #endif // _TARGET_X86_
 
 DWORD GetGcMarkerExceptionCode(LPVOID ip);
-bool IsGcMarker(DWORD exceptionCode, T_CONTEXT *pContext);
+bool IsGcMarker(T_CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord);
 
 void InitSavedExceptionInfo();
 

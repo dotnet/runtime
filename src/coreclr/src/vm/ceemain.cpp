@@ -1124,6 +1124,10 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #endif // _DEBUG
 
+#ifdef HAVE_GCCOVER
+        MethodDesc::Init();
+#endif
+
 #endif // !CROSSGEN_COMPILE
 
 ErrExit: ;

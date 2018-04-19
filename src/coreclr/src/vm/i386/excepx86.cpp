@@ -1347,7 +1347,7 @@ CPFH_FirstPassHandler(EXCEPTION_RECORD *pExceptionRecord,
     // Check to see if this exception is due to GCStress. Since the GCStress mechanism only injects these faults
     // into managed code, we only need to check for them in CPFH_FirstPassHandler.
     //
-    if (IsGcMarker(exceptionCode, pContext))
+    if (IsGcMarker(pContext, pExceptionRecord))
     {
         return ExceptionContinueExecution;
     }
@@ -1675,7 +1675,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
         // it is very easy to trash the last error. For example, a p/invoke called a native method
         // which sets last error. Before we getting the last error in the IL stub, it is trashed here
         DWORD dwLastError = GetLastError();
-        fIsGCMarker = IsGcMarker(pExceptionRecord->ExceptionCode, pContext);
+        fIsGCMarker = IsGcMarker(pContext, pExceptionRecord);
         if (!fIsGCMarker)
         {
             SaveCurrentExceptionInfo(pExceptionRecord, pContext);
@@ -3693,12 +3693,11 @@ AdjustContextForVirtualStub(
     pExceptionRecord->ExceptionAddress = (PVOID)callsite;
     SetIP(pContext, callsite);
 
-#ifdef HAVE_GCCOVER
+#if defined(GCCOVER_TOLERATE_SPURIOUS_AV)
     // Modify LastAVAddress saved in thread to distinguish between fake & real AV
     // See comments in IsGcMarker in file excep.cpp for more details
     pThread->SetLastAVAddress((LPVOID)GetIP(pContext));
-#endif    
-
+#endif // defined(GCCOVER_TOLERATE_SPURIOUS_AV)
 
     // put ESP back to what it was before the call.
     SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + sizeof(void*)));
