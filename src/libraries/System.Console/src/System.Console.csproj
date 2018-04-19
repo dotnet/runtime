@@ -170,6 +170,9 @@
     <Compile Include="$(CommonPath)\CoreLib\System\IO\Win32Marshal.cs">
       <Link>Common\CoreLib\System\IO\Win32Marshal.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\ValueStringBuilder.cs">
+      <Link>Common\CoreLib\System\Text\ValueStringBuilder.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Unix -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
@@ -272,6 +275,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
