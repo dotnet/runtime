@@ -39,7 +39,14 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static bool TryGetReadOnlyMemory<T>(ReadOnlySequence<T> sequence, out ReadOnlyMemory<T> memory)
         {
-            return sequence.TryGetReadOnlyMemory(out memory);
+            if (!sequence.IsSingleSegment)
+            {
+                memory = default;
+                return false;
+            }
+
+            memory = sequence.First;
+            return true;
         }
 
         /// <summary>
