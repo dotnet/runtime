@@ -3609,6 +3609,12 @@ get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			res->llvm_symbol = g_strdup_printf ("%s_%s_llvm", res->symbol, res->debug_sym);
 		else
 			res->llvm_symbol = g_strdup_printf ("%s_llvm", res->symbol);
+		if (strstr (res->llvm_symbol, acfg->temp_prefix) == res->llvm_symbol) {
+			/* The llvm symbol shouldn't be temporary, since the llvm generated object file references it */
+			char *tmp = res->llvm_symbol;
+			res->llvm_symbol = g_strdup (res->llvm_symbol + strlen (acfg->temp_prefix));
+			g_free (tmp);
+		}
 
 		g_hash_table_insert (acfg->patch_to_plt_entry [new_ji->type], new_ji, res);
 
