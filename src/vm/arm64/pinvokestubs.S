@@ -32,7 +32,6 @@
         // if null goto stub generation
         cbz                 x9, LOCAL_LABEL(\__PInvokeStubFuncName\()_0)
 
-
         EPILOG_BRANCH_REG   x9 
 
 LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
@@ -96,9 +95,9 @@ PINVOKE_STUB VarargPInvokeStub, VarargPInvokeGenILStub, VarargPInvokeStubWorker,
 //
 // in:
 // x15 = VASigCookie*
-// x14 = Unmanaged target
+// x12 = Unmanaged target
 //
-PINVOKE_STUB GenericPInvokeCalliHelper, GenericPInvokeCalliGenILStub, GenericPInvokeCalliStubWorker, x15, x14, 1
+PINVOKE_STUB GenericPInvokeCalliHelper, GenericPInvokeCalliGenILStub, GenericPInvokeCalliStubWorker, x15, x12, 1
 
 // ------------------------------------------------------------------
 // VarargPInvokeStub_RetBuffArg & VarargPInvokeGenILStub_RetBuffArg

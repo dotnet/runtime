@@ -1,4 +1,3 @@
 Invariant.Tests
 System.Diagnostics.Process.Tests
-System.Reflection.Emit.ILGeneration.Tests
 System.ValueTuple.Tests
