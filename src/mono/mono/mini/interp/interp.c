@@ -3575,8 +3575,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				}
 			}
 
-			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
-
 			interp_exec_method (&child_frame, context);
 
 			context->current_frame = frame;
