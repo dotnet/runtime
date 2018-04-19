@@ -72,14 +72,11 @@ simpleNode('Windows_NT','latest') {
                 def targetHelixQueues = []
                 if (params.TGroup == 'netcoreapp')
                 {
-                    targetHelixQueues = ['Windows.10.Amd64.Open',
-                                         'Windows.7.Amd64.Open',
-                                         'Windows.81.Amd64.Open',]
+                    targetHelixQueues = ['Windows.7.Amd64.Open',
+                                         'Windows.81.Amd64.Open',
+                                         'Windows.10.Amd64.ClientRS3.ES.Open',]
                     if (params.AGroup == 'x64') {
                         targetHelixQueues += ['Windows.10.Nano.Amd64.Open']
-                    }
-                    if (params.TestOuter) {
-                        targetHelixQueues += ['Windows.10.Amd64.ClientRS3.ES.Open']
                     }
                 } else if (params.TGroup == 'uap' || params.TGroup == 'netfx') {
                     targetHelixQueues = ['Windows.10.Amd64.ClientRS2.Open']
