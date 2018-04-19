@@ -100,10 +100,42 @@ namespace DefaultNamespace {
             Console.WriteLine("Repro with these values:");
             Console.WriteLine("iMem= {0} MB, iIter= {1}, iTable={2} iSeed={3}", iMem, iIter, iTable, iSeed );
 
-            LeakWheel mv_obj = new LeakWheel();
-            
+            LeakWheel my_obj = new LeakWheel();
 
-            if(mv_obj.RunGame())
+            while(!my_obj.RunGame())
+            {
+                GC.Collect(2);
+                GC.WaitForPendingFinalizers();
+                GC.Collect(2);
+
+                Console.WriteLine( "After Delete and GCed all Objects: {0}", GC.GetTotalMemory(false) );
+               
+            }
+            
+            GC.Collect(2);
+            GC.WaitForPendingFinalizers();
+
+            Thread.Sleep(100);
+            GC.Collect(2);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(2);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(2);
+            GC.WaitForPendingFinalizers();
+
+            Console.WriteLine("When test finished: {0}", GC.GetTotalMemory(false));
+            Console.WriteLine("Created VarAry objects: {0} Finalized VarAry Objects: {1}", Node.iVarAryCreat, Node.iVarAryFinal);
+            Console.WriteLine("Created BitArray objects: {0} Finalized BitArray Objects: {1}", Node.iBitAryCreat, Node.iBitAryFinal);
+            Console.WriteLine("Created small objects: {0} Finalized small Objects: {1}", Node.iSmallCreat, Node.iSmallFinal);
+            Console.WriteLine("Created BinaryTree objects: {0} Finalized BinaryTree Objects: {1}", Node.iBiTreeCreat, Node.iBiTreeFinal);
+            Console.WriteLine("Created Thread objects: {0} Finalized Thread Objects: {1}", Node.iThrdCreat, Node.iThrdFinal);
+
+
+            if (Node.iBitAryCreat == Node.iBitAryFinal &&
+                    Node.iBiTreeCreat == Node.iBiTreeFinal &&
+                    Node.iSmallCreat == Node.iSmallFinal &&
+                    Node.iThrdCreat == Node.iThrdFinal &&
+                    Node.iVarAryCreat == Node.iVarAryFinal)
             {
                 Console.WriteLine("Test Passed!");
                 return 100;
@@ -119,11 +151,12 @@ namespace DefaultNamespace {
             LstNode = null;
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public bool RunGame()
         {
             Dictionary<int, WeakReference> oTable = new Dictionary<int, WeakReference>(10);
             DestroyLstNode(); //the last node in the node chain//
-            Random  r = new Random (LeakWheel.iSeed);
+            Random r = new Random (LeakWheel.iSeed);
 
             for(int i=0; i<iIter; i++)
             {
@@ -132,41 +165,16 @@ namespace DefaultNamespace {
                 if( GC.GetTotalMemory(false)/(1024*1024) >= iMem )
                 {
                     DestroyLstNode();
-                    
-                    GC.Collect( );
-                    GC.WaitForPendingFinalizers();
-                    GC.Collect( );
 
-                    Console.WriteLine( "After Delete and GCed all Objects: {0}", GC.GetTotalMemory(false) );
-                }
-            }
-
+                    iIter -= i;  // Reduce the iteration count by how far we went
+                    return false;
+                } 
+            } 
             DestroyLstNode();
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-
-            Thread.Sleep(100);
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-
-            Console.WriteLine("When test finished: {0}", GC.GetTotalMemory(false));
-            Console.WriteLine("Created VarAry objects: {0} Finalized VarAry Objects: {1}", Node.iVarAryCreat, Node.iVarAryFinal);
-            Console.WriteLine("Created BitArray objects: {0} Finalized BitArray Objects: {1}", Node.iBitAryCreat, Node.iBitAryFinal);
-            Console.WriteLine("Created small objects: {0} Finalized small Objects: {1}", Node.iSmallCreat, Node.iSmallFinal);
-            Console.WriteLine("Created BinaryTree objects: {0} Finalized BinaryTree Objects: {1}", Node.iBiTreeCreat, Node.iBiTreeFinal);
-            Console.WriteLine("Created Thread objects: {0} Finalized Thread Objects: {1}", Node.iThrdCreat, Node.iThrdFinal);
-
-
-            return (Node.iBitAryCreat == Node.iBitAryFinal &&
-                    Node.iBiTreeCreat == Node.iBiTreeFinal &&
-                    Node.iSmallCreat == Node.iSmallFinal &&
-                    Node.iThrdCreat == Node.iThrdFinal &&
-                    Node.iVarAryCreat == Node.iVarAryFinal);
+            return true;
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public void SpinWheel( Dictionary<int, WeakReference> oTable,  Node node, Random r )
         {
             int iKey;//the index which the new node will be set at
@@ -205,6 +213,7 @@ namespace DefaultNamespace {
             //}
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public void DeleteNode( int iKey, Dictionary<int, WeakReference> oTable)
         {
             //iSwitch is 0, delete one child Node at iKey;
