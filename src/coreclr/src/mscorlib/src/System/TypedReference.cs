@@ -29,7 +29,7 @@ namespace System
             if (flds == null)
                 throw new ArgumentNullException(nameof(flds));
             if (flds.Length == 0)
-                throw new ArgumentException(SR.Arg_ArrayZeroError);
+                throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(flds));
 
             IntPtr[] fields = new IntPtr[flds.Length];
             // For proper handling of Nullable<T> don't change GetType() to something like 'IsAssignableFrom'
@@ -42,14 +42,14 @@ namespace System
                     throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo);
 
                 if (field.IsInitOnly || field.IsStatic)
-                    throw new ArgumentException(SR.Argument_TypedReferenceInvalidField);
+                    throw new ArgumentException(SR.Format(SR.Argument_TypedReferenceInvalidField, field.Name));
 
                 if (targetType != field.GetDeclaringTypeInternal() && !targetType.IsSubclassOf(field.GetDeclaringTypeInternal()))
                     throw new MissingMemberException(SR.MissingMemberTypeRef);
 
                 RuntimeType fieldType = (RuntimeType)field.FieldType;
                 if (fieldType.IsPrimitive)
-                    throw new ArgumentException(SR.Arg_TypeRefPrimitve);
+                    throw new ArgumentException(SR.Format(SR.Arg_TypeRefPrimitve, field.Name));
 
                 if (i < (flds.Length - 1) && !fieldType.IsValueType)
                     throw new MissingMemberException(SR.MissingMemberNestErr);
