@@ -12679,6 +12679,7 @@ DONE_MORPHING_CHILDREN:
     GenTree*      cns2;
     size_t        ival1, ival2;
     GenTree*      lclVarTree;
+    GenTree*      effectiveOp1;
     FieldSeqNode* fieldSeq = nullptr;
 
     switch (oper)
@@ -12691,14 +12692,16 @@ DONE_MORPHING_CHILDREN:
                 lclVarTree->gtFlags |= GTF_VAR_DEF;
             }
 
-            if (op1->gtEffectiveVal()->OperIsConst())
+            effectiveOp1 = op1->gtEffectiveVal();
+
+            if (effectiveOp1->OperIsConst())
             {
                 op1              = gtNewOperNode(GT_IND, tree->TypeGet(), op1);
                 tree->gtOp.gtOp1 = op1;
             }
 
             /* If we are storing a small type, we might be able to omit a cast */
-            if ((op1->gtOper == GT_IND) && varTypeIsSmall(op1->TypeGet()))
+            if ((effectiveOp1->gtOper == GT_IND) && varTypeIsSmall(effectiveOp1->TypeGet()))
             {
                 if (!gtIsActiveCSE_Candidate(op2) && (op2->gtOper == GT_CAST) && !op2->gtOverflow())
                 {
@@ -12708,12 +12711,12 @@ DONE_MORPHING_CHILDREN:
                     // castType is larger or the same as op1's type
                     // then we can discard the cast.
 
-                    if (varTypeIsSmall(castType) && (genTypeSize(castType) >= genTypeSize(op1->TypeGet())))
+                    if (varTypeIsSmall(castType) && (genTypeSize(castType) >= genTypeSize(effectiveOp1->TypeGet())))
                     {
                         tree->gtOp.gtOp2 = op2 = op2->gtCast.CastOp();
                     }
                 }
-                else if (op2->OperIsCompare() && varTypeIsByte(op1->TypeGet()))
+                else if (op2->OperIsCompare() && varTypeIsByte(effectiveOp1->TypeGet()))
                 {
                     /* We don't need to zero extend the setcc instruction */
                     op2->gtType = TYP_BYTE;
