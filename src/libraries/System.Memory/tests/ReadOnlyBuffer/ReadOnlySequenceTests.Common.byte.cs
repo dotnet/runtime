@@ -72,5 +72,41 @@ namespace System.Memory.Tests
             Assert.Equal("Hello", Encoding.ASCII.GetString(helloBytes));
             Assert.Equal(" World", Encoding.ASCII.GetString(worldBytes));
         }
+
+        [Fact]
+        public static void SliceStartPositionAndLength()
+        {
+            var segment1 = new BufferSegment<byte>(new byte[10]);
+            BufferSegment<byte> segment2 = segment1.Append(new byte[10]);
+
+            var buffer = new ReadOnlySequence<byte>(segment1, 0, segment2, 10);
+
+            ReadOnlySequence<byte> sliced = buffer.Slice(buffer.GetPosition(10), 10);
+            Assert.Equal(10, sliced.Length);
+
+            Assert.Equal(segment2, sliced.Start.GetObject());
+            Assert.Equal(segment2, sliced.End.GetObject());
+
+            Assert.Equal(0, sliced.Start.GetInteger());
+            Assert.Equal(10, sliced.End.GetInteger());
+        }
+
+        [Fact]
+        public static void SliceStartAndEndPosition()
+        {
+            var segment1 = new BufferSegment<byte>(new byte[10]);
+            BufferSegment<byte> segment2 = segment1.Append(new byte[10]);
+
+            var buffer = new ReadOnlySequence<byte>(segment1, 0, segment2, 10);
+
+            ReadOnlySequence<byte> sliced = buffer.Slice(10, buffer.GetPosition(20));
+            Assert.Equal(10, sliced.Length);
+
+            Assert.Equal(segment2, sliced.Start.GetObject());
+            Assert.Equal(segment2, sliced.End.GetObject());
+
+            Assert.Equal(0, sliced.Start.GetInteger());
+            Assert.Equal(10, sliced.End.GetInteger());
+        }
     }
 }
