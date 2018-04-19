@@ -5329,9 +5329,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		cfg->stat_code_reallocs++;
 	}
 
-	/*
-	 * Keep in sync with OP_JMP
-	 */
 	code = cfg->native_code + cfg->code_len;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {

@@ -6675,9 +6675,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		cfg->stat_code_reallocs++;
 	}
 
-	/*
-	 * Keep in sync with OP_JMP
-	 */
 	code = cfg->native_code + cfg->code_len;
 
 	/* Save the uwind state which is needed by the out-of-line code */
