@@ -105,12 +105,30 @@ typedef struct {
 
 static MonoNativeTlsKey thread_status;
 
+static mono_mutex_t backtrace_mutex;
+
+
 void
 checked_build_init (void)
 {
 	// Init state for get_state, which can be called either by gc or thread mode
 	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC | MONO_CHECK_MODE_THREAD))
 		mono_native_tls_alloc (&thread_status, NULL);
+#if HAVE_BACKTRACE_SYMBOLS
+	mono_os_mutex_init (&backtrace_mutex);
+#endif
+}
+
+static gboolean
+backtrace_mutex_trylock (void)
+{
+	return mono_os_mutex_trylock (&backtrace_mutex) == 0;
+}
+
+static void
+backtrace_mutex_unlock (void)
+{
+	return mono_os_mutex_unlock (&backtrace_mutex);
 }
 
 static CheckState*
@@ -179,7 +197,42 @@ retry:
 static int
 collect_backtrace (gpointer out_data[])
 {
+#if defined (__GNUC__) && !defined (__clang__)
+	/* GNU libc backtrace calls _Unwind_Backtrace in libgcc, which internally may take a lock. */
+	/* Suppose we're using hybrid suspend and T1 is in GC Unsafe and T2 is
+	 * GC Safe.  T1 will be coop suspended, and T2 will be async suspended.
+	 * Suppose T1 is in RUNNING, and T2 just changed from RUNNING to
+	 * BLOCKING and it is in trace_state_change to record this fact.
+	 *
+	 * suspend initiator: switches T1 to ASYNC_SUSPEND_REQUESTED
+	 * suspend initiator: switches T2 to BLOCKING_SUSPEND_REQUESTED and sends a suspend signal
+	 * T1: calls mono_threads_transition_state_poll (),
+	 * T1: switches to SELF_SUSPENDED and starts trace_state_change ()
+	 * T2: is still in checked_build_thread_transition for the RUNNING->BLOCKING transition and calls backtrace ()
+	 * T2: suspend signal lands while T2 is in backtrace() holding a lock; T2 switches to BLOCKING_ASYNC_SUSPENDED () and waits for resume
+	 * T1: calls backtrace (), waits for the lock ()
+	 * suspend initiator: waiting for T1 to suspend.
+	 *
+	 * At this point we're deadlocked.
+	 *
+	 * So what we'll do is try to take a lock before calling backtrace and
+	 * only collect a backtrace if there is no contention.
+	 */
+	int i;
+	for (i = 0; i < 2; i++ ) {
+		if (backtrace_mutex_trylock ()) {
+			int sz = backtrace (out_data, MAX_NATIVE_BT_PROBE);
+			backtrace_mutex_unlock ();
+			return sz;
+		} else {
+			mono_thread_info_yield ();
+		}
+	}
+	/* didn't get a backtrace, oh well. */
+	return 0;
+#else
 	return backtrace (out_data, MAX_NATIVE_BT_PROBE);
+#endif
 }
 
 static char*

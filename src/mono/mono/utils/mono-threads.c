@@ -102,6 +102,8 @@ void
 mono_threads_notify_initiator_of_suspend (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-NOTIFY-SUSPEND] %p\n", mono_thread_info_get_tid (info));
+	// check that the thread is really in a valid suspended state.
+	g_assert (mono_thread_info_get_suspend_state (info) != NULL);
 	mono_atomic_inc_i32 (&suspend_posts);
 	mono_os_sem_post (&suspend_semaphore);
 }
@@ -141,7 +143,9 @@ begin_preemptive_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 static BeginSuspendResult
 begin_suspend_for_running_thread (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
-	if (mono_threads_is_cooperative_suspension_enabled ())
+	/* If we're using full cooperative suspend or hybrid suspend,
+	 * cooperatively suspend RUNNING threads */
+	if (mono_threads_are_safepoints_enabled ())
 		return begin_cooperative_suspend (info);
 	else
 		return begin_preemptive_suspend (info, interrupt_kernel);

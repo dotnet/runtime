@@ -523,8 +523,7 @@ until its resumed before continuing.
 
 It returns one of:
 -Ok: Done with blocking, just move on;
--Wait: This thread was async suspended, wait for resume
--NotifyAndWait: This thread was suspended while in blocking, it must notify the initiator if it was suspended preemptively and wait for resume.
+-Wait: This thread was suspended while in blocking, wait for resume.
 */
 MonoDoneBlockingResult
 mono_threads_transition_done_blocking (MonoThreadInfo* info, const char *func)
@@ -547,7 +546,7 @@ retry_state_change:
 		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_SELF_SUSPENDED, suspend_count), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("DONE_BLOCKING", info, raw_state, STATE_BLOCKING_SELF_SUSPENDED, 0);
-		return DoneBlockingNotifyAndWait;
+		return DoneBlockingWait;
 /*
 STATE_RUNNING: //Blocking was aborted and not properly restored
 STATE_ASYNC_SUSPEND_REQUESTED: //Blocking was aborted, not properly restored and now there's a pending suspend
@@ -568,10 +567,9 @@ This is required to be able to bail out of blocking in case we're back to inside
 
 It returns one of:
 -Ignore: Thread was not in blocking, nothing to do;
--IgnoreAndPool: Thread was not blocking and there's a pending suspend that needs to be processed;
+-IgnoreAndPoll: Thread was not blocking and there's a pending suspend that needs to be processed;
 -Ok: Blocking state successfully aborted;
--Wait: Blocking state successfully aborted, there's a pending suspend to be processed though
--NotifyAndWait: Blocking state was successfully aborted but the thread was preemptively suspended while in blocking, it must notify the initiator and wait for resume.
+-Wait: Blocking state successfully aborted, there's a pending suspend to be processed though, wait for resume.
 */
 MonoAbortBlockingResult
 mono_threads_transition_abort_blocking (THREAD_INFO_TYPE* info)
@@ -602,7 +600,7 @@ retry_state_change:
 		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_SELF_SUSPENDED, suspend_count), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ABORT_BLOCKING", info, raw_state, STATE_BLOCKING_SELF_SUSPENDED, 0);
-		return AbortBlockingNotifyAndWait;
+		return AbortBlockingWait;
 /*
 STATE_ASYNC_SUSPENDED:
 STATE_SELF_SUSPENDED: Code should not be running while suspended.

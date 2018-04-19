@@ -23,6 +23,7 @@
 #endif
 
 #include "mono-threads-debug.h"
+#include "mono-threads-coop.h"
 
 gint
 mono_threads_suspend_search_alternative_signal (void)
@@ -147,6 +148,21 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	if (!mono_threads_transition_finish_async_suspend (current)) {
 		current->suspend_can_continue = TRUE;
 		THREADS_SUSPEND_DEBUG ("\tlost race with self suspend %p\n", mono_thread_info_get_tid (current));
+		/* Under full preemptive suspend, there is no self suspension,
+		 * so no race.
+		 *
+		 * Under full cooperative suspend, there is no signal, so no
+		 * race.
+		 *
+		 * Under hybrid a blocking thread could race done/abort
+		 * blocking with the signal handler running: if the done/abort
+		 * blocking win, they will wait for a resume - the signal
+		 * handler should notify the suspend initiator that the thread
+		 * suspended, and then immediately return and let the thread
+		 * continue waiting on the resume semaphore.
+		 */
+		g_assert (mono_threads_is_hybrid_suspension_enabled ());
+		mono_threads_notify_initiator_of_suspend (current);
 		goto done;
 	}
 

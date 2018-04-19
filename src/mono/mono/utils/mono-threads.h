@@ -626,8 +626,7 @@ typedef enum {
 
 typedef enum {
 	DoneBlockingOk, //exited blocking fine
-	DoneBlockingWait, //thread should end suspended
-	DoneBlockingNotifyAndWait, // thread was preemptively suspended while in blocking, notify suspend initiator and wait for resume
+	DoneBlockingWait, //thread should end suspended and wait for resume
 } MonoDoneBlockingResult;
 
 
@@ -636,7 +635,6 @@ typedef enum {
 	AbortBlockingIgnoreAndPoll, //Ignore and poll
 	AbortBlockingOk, //Abort worked
 	AbortBlockingWait, //Abort worked, but should wait for resume
-	AbortBlockingNotifyAndWait, // thread was preemptively suspended while in blocking, notify suspend initiator and wait for resume
 } MonoAbortBlockingResult;
 
 

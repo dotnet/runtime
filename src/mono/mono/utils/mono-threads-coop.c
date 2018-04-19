@@ -312,14 +312,14 @@ mono_threads_exit_gc_safe_region_unbalanced_internal (gpointer cookie, MonoStack
 	case DoneBlockingOk:
 		info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].valid = FALSE;
 		break;
-	case DoneBlockingNotifyAndWait:
-		// in full coop NotifyAndWait doesn't notify
-		if (mono_threads_is_hybrid_suspension_enabled ()) {
-			mono_threads_notify_initiator_of_suspend (info);
-		}
-		mono_thread_info_wait_for_resume (info);
-		break;
 	case DoneBlockingWait:
+		/* If full coop suspend, we're just waiting for the initiator
+		 * to resume us.  If hybrid suspend, we were either self
+		 * suspended cooperatively from async_suspend_requested (same
+		 * as full coop), or we were suspended preemptively while in
+		 * blocking and we're waiting for two things: the suspend
+		 * signal handler to run and notify the initiator and
+		 * immediately return, and then for the resume. */
 		THREADS_SUSPEND_DEBUG ("state polling done, notifying of resume\n");
 		mono_thread_info_wait_for_resume (info);
 		break;
@@ -418,14 +418,14 @@ mono_threads_enter_gc_unsafe_region_unbalanced_with_info (MonoThreadInfo *info, 
 	case AbortBlockingOk:
 		info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].valid = FALSE;
 		break;
-	case AbortBlockingNotifyAndWait:
-		// in full coop, notify and wait doesn't need to notify
-		if (mono_threads_is_hybrid_suspension_enabled ()) {
-			mono_threads_notify_initiator_of_suspend (info);
-		}
-		mono_thread_info_wait_for_resume (info);
-		break;
 	case AbortBlockingWait:
+		/* If full coop suspend, we're just waiting for the initiator
+		 * to resume us.  If hybrid suspend, we were either self
+		 * suspended cooperatively from async_suspend_requested (same
+		 * as full coop), or we were suspended preemptively while in
+		 * blocking and we're waiting for two things: the suspend
+		 * signal handler to run and notify the initiator and
+		 * immediately return, and then for the resume. */
 		mono_thread_info_wait_for_resume (info);
 		break;
 	default:
