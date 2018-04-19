@@ -782,7 +782,7 @@
     <value>A null or zero length string does not represent a valid Type.</value>
   </data>
   <data name="Arg_TypeRefPrimitve" xml:space="preserve">
-    <value>TypedReferences cannot be redefined as primitives.</value>
+    <value>TypedReferences cannot be redefined as primitives. Field name '{0}'.</value>
   </data>
   <data name="Arg_TypeUnloadedException" xml:space="preserve">
     <value>Type had been unloaded.</value>
@@ -1520,7 +1520,7 @@
     <value>The DaylightTransitionStart property must not equal the DaylightTransitionEnd property.</value>
   </data>
   <data name="Argument_TypedReferenceInvalidField" xml:space="preserve">
-    <value>Field in TypedReferences cannot be static or init only.</value>
+    <value>Field '{0}' in TypedReferences cannot be static or init only.</value>
   </data>
   <data name="Argument_TypeIsWinRTType" xml:space="preserve">
     <value>The type must not be a Windows Runtime type.</value>
