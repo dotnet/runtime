@@ -2734,8 +2734,11 @@
   <data name="InvalidTimeZone_InvalidRegistryData" xml:space="preserve">
     <value>The time zone ID '{0}' was found on the local computer, but the registry information was corrupt.</value>
   </data>
-  <data name="InvalidTimeZone_JulianDayNotSupported" xml:space="preserve">
-    <value>Julian dates in POSIX strings are unsupported.</value>
+  <data name="InvalidTimeZone_InvalidJulianDay" xml:space="preserve">
+    <value>Invalid Julian day in POSIX strings.</value>
+  </data>
+  <data name="InvalidTimeZone_NJulianDayNotSupported" xml:space="preserve">
+    <value>Julian n day in POSIX strings is not supported.</value>
   </data>
   <data name="InvalidTimeZone_NoTTInfoStructures" xml:space="preserve">
     <value>There are no ttinfo structures in the tzfile.  At least one ttinfo structure is required in order to construct a TimeZoneInfo object.</value>
