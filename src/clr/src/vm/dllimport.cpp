@@ -2253,31 +2253,9 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
                 // if we ever NGEN CALLI stubs, this would have to be done differently
                 _ASSERTE(!SF_IsNGENedStub(dwStubFlags));
 
-#ifndef CROSSGEN_COMPILE
-
-#ifdef _TARGET_X86_
-
-                {
-                    // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
-                    // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
-                    EmitLoadStubContext(pcsEmit, dwStubFlags);
-                }
-
-
-#else // _TARGET_X86_
-
-                {
-                    // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
-                    EmitLoadStubContext(pcsEmit, dwStubFlags);
-#ifndef _TARGET_ARM_
-                    pcsEmit->EmitLDC(1);
-                    pcsEmit->EmitSHR_UN();
-#endif
-                }
-
-#endif // _TARGET_X86_
-
-#endif // CROSSGEN_COMPILE
+                // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
+                // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
+                EmitLoadStubContext(pcsEmit, dwStubFlags);
             }
             else
 #ifdef FEATURE_COMINTEROP
