@@ -2863,17 +2863,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_fmovs (code, ins->sreg1 + 1, ins->dreg + 1);
 #endif
 			break;
-		case OP_JMP:
-			if (cfg->method->save_lmf)
-				NOT_IMPLEMENTED;
-
-			code = emit_load_volatile_arguments (cfg, code);
-			mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
-			sparc_set_template (code, sparc_o7);
-			sparc_jmpl (code, sparc_o7, sparc_g0, sparc_g0);
-			/* Restore parent frame in delay slot */
-			sparc_restore_imm (code, sparc_g0, 0, sparc_g0);
-			break;
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
 			/* Might be misaligned in case of vtypes so use a byte load */
@@ -4438,6 +4427,12 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 
 gboolean
 mono_arch_opcode_supported (int opcode)
+{
+	return FALSE;
+}
+
+gboolean
+mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
 	return FALSE;
 }

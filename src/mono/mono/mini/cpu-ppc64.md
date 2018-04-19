@@ -52,7 +52,6 @@ relaxed_nop: len:4
 break: len:40
 seq_point: len:48
 il_seq_point: len:0
-jmp: len:96
 call: dest:a clob:c len:36
 br: len:4
 throw: src1:i len:40

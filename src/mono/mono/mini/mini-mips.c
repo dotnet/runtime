@@ -3783,21 +3783,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 #endif
 			break;
-		case OP_JMP:
-			code = emit_load_volatile_arguments(cfg, code);
-
-			/*
-			 * Pop our stack, then jump to specified method (tail-call)
-			 * Keep in sync with mono_arch_emit_epilog
-			 */
-			code = mono_arch_emit_epilog_sub (cfg, code);
-
-			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code,
-					     MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
-			mips_load (code, mips_t9, 0);
-			mips_jr (code, mips_t9);
-			mips_nop (code);
-			break;
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
 			mips_lw (code, mips_zero, ins->sreg1, 0);
@@ -5318,9 +5303,6 @@ mono_arch_emit_epilog_sub (MonoCompile *cfg, guint8 *code)
 		cfg->stat_code_reallocs++;
 	}
 
-	/*
-	 * Keep in sync with OP_JMP
-	 */
 	if (code)
 		code = cfg->native_code + pos;
 	else
@@ -5879,6 +5861,12 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 
 gboolean
 mono_arch_opcode_supported (int opcode)
+{
+	return FALSE;
+}
+
+gboolean
+mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
 	return FALSE;
 }

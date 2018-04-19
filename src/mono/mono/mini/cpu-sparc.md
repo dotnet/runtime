@@ -49,7 +49,6 @@
 #
 label: len:0
 break: len:64
-jmp: len:64
 br: len:8
 
 throw: src1:i len:64

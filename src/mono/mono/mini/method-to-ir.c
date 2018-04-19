@@ -7175,8 +7175,6 @@ is_supported_tailcall (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmethod
 		// Interface method dispatch has the same problem.
 		//
 		|| IS_NOT_SUPPORTED_TAILCALL ((vtable_arg || is_interface) && !cfg->backend->have_volatile_non_param_register)
-
-		|| IS_NOT_SUPPORTED_TAILCALL ((vtable_arg || cfg->gshared) && !cfg->backend->have_op_tailcall)
 		)
 		return FALSE;
 
@@ -8321,7 +8319,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				link_bblock (cfg, cfg->cbb, end_bblock);
 				ip += 5;
 				break;
-			} else if (cfg->backend->have_op_tailcall) {
+			} else {
 				/* Handle tailcalls similarly to calls */
 				DISABLE_AOT (cfg);
 
@@ -8340,15 +8338,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				mono_arch_emit_call (cfg, call);
 				cfg->param_area = MAX(cfg->param_area, call->stack_usage);
 				MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
-			} else {
-				for (i = 0; i < num_args; ++i)
-					/* Prevent arguments from being optimized away */
-					arg_array [i]->flags |= MONO_INST_VOLATILE;
-
-				MONO_INST_NEW_CALL (cfg, call, OP_JMP);
-				ins = (MonoInst*)call;
-				ins->inst_p0 = cmethod;
-				MONO_ADD_INS (cfg->cbb, ins);
 			}
 
 			ip += 5;
@@ -8487,7 +8476,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean pass_mrgctx = FALSE;
 			MonoInst *vtable_arg = NULL;
 			gboolean check_this = FALSE;
-			gboolean supported_tailcall = FALSE;
 			gboolean tailcall = FALSE;
 			gboolean need_seq_point = FALSE;
 			guint32 call_opcode = *ip;
@@ -8499,7 +8487,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean constrained_partial_call = FALSE;
 			MonoMethod *cil_method;
 			gboolean common_call = FALSE;
-			gboolean tailcall_remove_ret = FALSE;
+			const gboolean tailcall_remove_ret = FALSE;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
@@ -8925,7 +8913,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				  Inlining and stack traces are not guaranteed however. */
 			/* FIXME: runtime generic context pointer for jumps? */
 			/* FIXME: handle this for generic sharing eventually */
-			supported_tailcall = inst_tailcall && is_supported_tailcall (cfg, method, cmethod, fsig, call_opcode, virtual_, vtable_arg, is_interface);
+			tailcall = inst_tailcall && is_supported_tailcall (cfg, method, cmethod, fsig, call_opcode, virtual_, vtable_arg, is_interface);
 
 			// http://www.mono-project.com/docs/advanced/runtime/docs/generic-sharing/
 			// 1. Non-generic non-static methods of reference types have access to the
@@ -8935,11 +8923,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			// 3. Generic methods need to be passed a pointer to the MRGCTX in the MONO_ARCH_RGCTX_REG register
 			if (inst_tailcall)
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TAILCALL,
-					    "tail.%s %s -> %s supported_tailcall:%d gshared:%d vtable_arg:%d",
-					    mono_opcode_name (*ip), method->name, cmethod->name, supported_tailcall, cfg->gshared, !!vtable_arg);
-
-			// Handle tailcalls similarly to normal calls.
-			tailcall = supported_tailcall && cfg->backend->have_op_tailcall;
+					    "tail.%s %s -> %s tailcall:%d gshared:%d vtable_arg:%d",
+					    mono_opcode_name (*ip), method->name, cmethod->name, tailcall, cfg->gshared, !!vtable_arg);
 
 			/* Calling virtual generic methods */
 			if (virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) &&
@@ -9280,39 +9265,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			/* Tail prefix / tailcall optimization */
 
-			if (supported_tailcall) {
-				MonoCallInst *call;
-
+			if (tailcall) {
 				/* Prevent inlining of methods with tailcalls (the call stack would be altered) */
 				INLINE_FAILURE ("tailcall");
-
-				//printf ("HIT: %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
-
-				if (!cfg->backend->have_op_tailcall) {
-					mini_profiler_emit_tail_call (cfg, cmethod);
-
-					MONO_INST_NEW_CALL (cfg, call, OP_JMP);
-					call->tailcall = TRUE;
-					call->method = cmethod;
-					call->signature = mono_method_signature (cmethod);
-
-					/*
-					 * We implement tailcalls by storing the actual arguments into the 
-					 * argument variables, then emitting a CEE_JMP.
-					 */
-					for (i = 0; i < n; ++i) {
-						/* Prevent argument from being register allocated */
-						arg_array [i]->flags |= MONO_INST_VOLATILE;
-						EMIT_NEW_ARGSTORE (cfg, ins, i, sp [i]);
-					}
-					ins = (MonoInst*)call;
-					ins->inst_p0 = cmethod;
-					ins->inst_p1 = arg_array [0];
-					MONO_ADD_INS (cfg->cbb, ins);
-
-					tailcall_remove_ret = TRUE;
-					goto call_end;
-				}
 			}
 
 			/*
@@ -9352,7 +9307,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			if (ins_flag & MONO_INST_TAILCALL)
-				test_tailcall (cfg, supported_tailcall);
+				test_tailcall (cfg, tailcall);
 
 			/* End of call, INS should contain the result of the call, if any */
 

@@ -1095,7 +1095,6 @@ typedef struct {
 	guint            emulate_long_shift_opts : 1;
 	guint            have_objc_get_selector : 1;
 	guint            have_generalized_imt_trampoline : 1;
-	guint            have_op_tailcall : 1;
 	gboolean         have_op_tailcall_membase : 1;
 	gboolean         have_op_tailcall_reg : 1;
 	gboolean	 have_volatile_non_param_register : 1;
@@ -1402,14 +1401,6 @@ typedef struct {
 
 	/* Patches which describe absolute addresses embedded into the native code */
 	GHashTable *abs_patches;
-
-	/* If the arch passes valuetypes by address, then for methods
-	   which use JMP the arch code should use these local
-	   variables to store the addresses of incoming valuetypes.
-	   The addresses should be stored in mono_arch_emit_prolog()
-	   and can be used when emitting code for OP_JMP.  See
-	   mini-ppc.c. */
-	MonoInst **tailcall_valuetype_addrs;
 
 	/* Used to implement move_i4_to_f on archs that can't do raw
 	copy between an ireg and a freg. This is an int32 var.*/

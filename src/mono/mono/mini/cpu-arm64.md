@@ -52,7 +52,6 @@
 nop: len:4
 relaxed_nop: len:4
 break: len:20
-jmp: len:92
 br: len:16
 switch: src1:i len:12
 # See the comment in resume_from_signal_handler, we can't copy the fp regs from sigctx to MonoContext on linux,
