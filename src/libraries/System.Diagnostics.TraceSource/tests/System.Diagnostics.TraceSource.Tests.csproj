@@ -6,6 +6,8 @@
     <AssemblyName>System.Diagnostics.TraceSource.Tests</AssemblyName>
     <ProjectGuid>{7B32D24D-969A-4F7F-8461-B43E15E5D553}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
@@ -30,6 +32,18 @@
     <Compile Include="TraceSwitchClassTests.cs" />
     <Compile Include="TraceTestHelper.cs" />
     <Compile Include="CorrelationManagerTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="DefaultTraceListenerClassTests.netcoreapp.cs" />
+    <Compile Include="$(CommonPath)\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs">
+      <Link>Common\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
