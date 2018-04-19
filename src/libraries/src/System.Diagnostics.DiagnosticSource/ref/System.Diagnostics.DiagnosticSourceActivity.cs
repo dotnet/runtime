@@ -34,7 +34,7 @@ namespace System.Diagnostics {
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
        [System.Security.SecuritySafeCriticalAttribute]
 #endif
-        private set {}
+        set {}
     }
   }
   public abstract partial class DiagnosticSource {
