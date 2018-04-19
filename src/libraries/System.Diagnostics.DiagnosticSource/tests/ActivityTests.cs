@@ -532,6 +532,62 @@ namespace System.Diagnostics.Tests
             Assert.Same(originalActivity, Activity.Current);
         }
 
+        /// <summary>
+        /// Tests that Activity.Current could be set
+        /// </summary>
+        [Fact]
+        public async Task ActivityCurrentSet()
+        {
+            Activity activity = new Activity("activity");
+
+            // start Activity in the 'child' context
+            await Task.Run(() => activity.Start());
+
+            Assert.Null(Activity.Current);
+            Activity.Current = activity;
+            Assert.Same(activity, Activity.Current);
+        }
+
+        /// <summary>
+        /// Tests that Activity.Current could be set to null
+        /// </summary>
+        [Fact]
+        public void ActivityCurrentSetToNull()
+        {
+            Activity started = new Activity("started").Start();
+
+            Activity.Current = null;
+            Assert.Null(Activity.Current);
+        }
+
+        /// <summary>
+        /// Tests that Activity.Current could not be set to Activity
+        /// that has not been started yet
+        /// </summary>
+        [Fact]
+        public void ActivityCurrentNotSetToNotStarted()
+        {
+            Activity started = new Activity("started").Start();
+            Activity notStarted = new Activity("notStarted");
+
+            Activity.Current = notStarted;
+            Assert.Same(started, Activity.Current);
+        }
+
+        /// <summary>
+        /// Tests that Activity.Current could not be set to stopped Activity
+        /// </summary>
+        [Fact]
+        public void ActivityCurrentNotSetToStopped()
+        {
+            Activity started = new Activity("started").Start();
+            Activity stopped = new Activity("stopped").Start();
+            stopped.Stop();
+
+            Activity.Current = stopped;
+            Assert.Same(started, Activity.Current);
+        }
+
         private class TestObserver : IObserver<KeyValuePair<string, object>>
         {
             public string EventName { get; private set; }
