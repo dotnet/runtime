@@ -124,9 +124,9 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
 ;
 ; in:
 ; x15 = VASigCookie*
-; x14 = Unmanaged target
+; x12 = Unmanaged target
 ;
-        PINVOKE_STUB GenericPInvokeCalli, x15, x14, {true}
+        PINVOKE_STUB GenericPInvokeCalli, x15, x12, {true}
 
 ; ------------------------------------------------------------------
 ; VarargPInvokeStub_RetBuffArg & VarargPInvokeGenILStub_RetBuffArg

@@ -1746,8 +1746,8 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_PINVOKE_COOKIE_PARAM          RBM_R15
 
   // GenericPInvokeCalliHelper unmanaged target Parameter 
-  #define REG_PINVOKE_TARGET_PARAM          REG_R14
-  #define RBM_PINVOKE_TARGET_PARAM          RBM_R14
+  #define REG_PINVOKE_TARGET_PARAM          REG_R12
+  #define RBM_PINVOKE_TARGET_PARAM          RBM_R12
 
   // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM     REG_R12
