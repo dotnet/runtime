@@ -25,14 +25,6 @@ LEAF_ENTRY GenericPInvokeCalliHelper, _TEXT
         jz              C_FUNC(GenericPInvokeCalliGenILStub)
 
         //
-        // We need to distinguish between a MethodDesc* and an unmanaged target in PInvokeStubForHost().
-        // The way we do this is to shift the managed target to the left by one bit and then set the
-        // least significant bit to 1.  This works because MethodDesc* are always 8-byte aligned.
-        //
-        shl             PINVOKE_CALLI_TARGET_REGISTER, 1
-        or              PINVOKE_CALLI_TARGET_REGISTER, 1
-
-        //
         // jump to existing IL stub
         //
         jmp             rax
