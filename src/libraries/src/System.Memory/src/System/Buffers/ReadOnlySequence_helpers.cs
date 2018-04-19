@@ -365,92 +365,45 @@ namespace System.Buffers
 
         internal bool TryGetReadOnlySequenceSegment(out ReadOnlySequenceSegment<T> startSegment, out int startIndex, out ReadOnlySequenceSegment<T> endSegment, out int endIndex)
         {
-            GetTypeAndIndices(Start.GetInteger(), End.GetInteger(), out SequenceType type, out startIndex, out endIndex);
+            object startObject = _sequenceStart.GetObject();
 
-            if (type != SequenceType.MultiSegment)
+            // Default or not MultiSegment
+            if (startObject == null || GetSequenceType() != SequenceType.MultiSegment)
             {
                 startSegment = null;
+                startIndex = 0;
                 endSegment = null;
+                endIndex = 0;
                 return false;
             }
+            
+            Debug.Assert(_sequenceEnd.GetObject() != null);
 
-            Debug.Assert(Start.GetObject() != null);
-            Debug.Assert(Start.GetObject() is ReadOnlySequenceSegment<T>);
-            Debug.Assert(End.GetObject() != null);
-            Debug.Assert(End.GetObject() is ReadOnlySequenceSegment<T>);
-
-            startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(Start.GetObject());
-            endSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(End.GetObject());
+            startSegment = (ReadOnlySequenceSegment<T>)startObject;
+            startIndex = GetIndex(_sequenceStart);
+            endSegment = (ReadOnlySequenceSegment<T>)_sequenceEnd.GetObject();
+            endIndex = GetIndex(_sequenceEnd);
             return true;
         }
 
         internal bool TryGetArray(out ArraySegment<T> segment)
         {
-            GetTypeAndIndices(Start.GetInteger(), End.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
-
-            if (type != SequenceType.Array)
+            if (GetSequenceType() != SequenceType.Array)
             {
                 segment = default;
                 return false;
             }
 
-            Debug.Assert(Start.GetObject() != null);
-            Debug.Assert(Start.GetObject() is T[]);
+            Debug.Assert(_sequenceStart.GetObject() != null);
 
-            segment = new ArraySegment<T>(Unsafe.As<T[]>(Start.GetObject()), startIndex, endIndex - startIndex);
-            return true;
-        }
-
-        internal bool TryGetReadOnlyMemory(out ReadOnlyMemory<T> memory)
-        {
-            GetTypeAndIndices(Start.GetInteger(), End.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
-
-            object startObject = Start.GetObject();
-            object endObject = End.GetObject();
-
-            Debug.Assert(startObject != null);
-            Debug.Assert(endObject != null);
-
-            int length = endIndex - startIndex;
-            if (startObject != endObject)
-            {
-                // Can't get ReadOnlyMemory from multi-block segments
-                memory = default;
-                return false;
-            }
-            else if (type == SequenceType.Array)
-            {
-                Debug.Assert(startObject is T[]);
-
-                memory = new ReadOnlyMemory<T>(Unsafe.As<T[]>(startObject));
-            }
-            else if (type == SequenceType.MemoryManager)
-            {
-                Debug.Assert(startObject is MemoryManager<T>);
-
-                memory = Unsafe.As<MemoryManager<T>>(startObject).Memory;
-            }
-            else if (typeof(T) == typeof(char) && type == SequenceType.String)
-            {
-                Debug.Assert(startObject is string);
-
-                var text = Unsafe.As<string>(startObject);
-                memory = (ReadOnlyMemory<T>)(object)text.AsMemory();
-            }
-            else // ReadOnlySequenceSegment
-            {
-                Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
-
-                memory = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject).Memory;
-            }
-
-            memory = memory.Slice(startIndex, length);
+            int startIndex = GetIndex(_sequenceStart);
+            segment = new ArraySegment<T>((T[])_sequenceStart.GetObject(), startIndex, GetIndex(_sequenceEnd) - startIndex);
             return true;
         }
 
         internal bool TryGetString(out string text, out int start, out int length)
         {
-            if (typeof(T) != typeof(char))
+            if (typeof(T) != typeof(char) || GetSequenceType() != SequenceType.String)
             {
                 start = 0;
                 length = 0;
@@ -458,20 +411,11 @@ namespace System.Buffers
                 return false;
             }
 
-            GetTypeAndIndices(Start.GetInteger(), End.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
+            Debug.Assert(_sequenceStart.GetObject() != null);
 
-            if (type != SequenceType.String)
-            {
-                start = 0;
-                length = 0;
-                text = null;
-                return false;
-            }
-
-            start = startIndex;
-            length = endIndex - startIndex;
-            text = (string)Start.GetObject();
-
+            start = GetIndex(_sequenceStart);
+            length = GetIndex(_sequenceEnd) - start;
+            text = (string)_sequenceStart.GetObject();
             return true;
         }
 
