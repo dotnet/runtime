@@ -301,6 +301,10 @@
     "PB_SymbolExpirationInDays": {
       "value": "30"
     },
+    "AgentToolsPath": {
+      "value": "",
+      "allowOverride": true
+    }
   },
   "retentionRules": [
     {
