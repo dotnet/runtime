@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace System
 {
@@ -271,24 +269,12 @@ namespace System
             set { SetCursorPosition(CursorLeft, value); }
         }
 
-        private const int MaxConsoleTitleLength = 24500; // same value as in .NET Framework
-
         public static string Title
         {
             get { return ConsolePal.Title; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                if (value.Length > MaxConsoleTitleLength)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_ConsoleTitleTooLong);
-                }
-
-                ConsolePal.Title = value;
+                ConsolePal.Title = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 
