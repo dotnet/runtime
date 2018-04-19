@@ -510,17 +510,6 @@ namespace System.Buffers
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void GetTypeAndIndices(int start, int end, out SequenceType sequenceType, out int startIndex, out int endIndex)
-        {
-            startIndex = start & ReadOnlySequence.IndexBitMask;
-            endIndex = end & ReadOnlySequence.IndexBitMask;
-            // We take high order bits of two indexes index and move them
-            // to a first and second position to convert to BufferType
-            // Masking with 2 is required to only keep the second bit of Start.GetInteger()
-            sequenceType = Start.GetObject() == null ? SequenceType.Empty : (SequenceType)((((uint)Start.GetInteger() >> 30) & 2) | (uint)End.GetInteger() >> 31);
-        }
-
         /// <summary>
         /// An enumerator over the <see cref="ReadOnlySequence{T}"/>
         /// </summary>
