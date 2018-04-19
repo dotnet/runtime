@@ -1538,7 +1538,6 @@ BEGIN
 
     IDS_EE_TORNSTATE                        "Unexpected change made to file '%1'."
 
-    IDS_INVOKE_NULLREF_RETURNED             "The target method returned a null reference."
 END
 
 // These strings are generated from within the EE for streams
