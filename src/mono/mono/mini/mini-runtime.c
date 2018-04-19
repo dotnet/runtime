@@ -2180,7 +2180,7 @@ lookup_start:
 		if (mono_aot_mode == MONO_AOT_MODE_INTERP && method->wrapper_type == MONO_WRAPPER_UNKNOWN) {
 			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 			g_assert (info);
-			if (info->subtype == WRAPPER_SUBTYPE_INTERP_IN)
+			if (info->subtype == WRAPPER_SUBTYPE_INTERP_IN || info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)
 				/* AOT'd wrappers for interp must be owned by root domain */
 				domain = mono_get_root_domain ();
 		}

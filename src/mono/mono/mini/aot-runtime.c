@@ -1057,6 +1057,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				if (!sig)
 					return FALSE;
 				ref->method = mini_get_interp_in_wrapper (sig);
+			} else if (subtype == WRAPPER_SUBTYPE_INTERP_LMF) {
+				ref->method = mini_get_interp_lmf_wrapper ();
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG) {
 				MonoMethodSignature *sig = decode_signature (module, p, &p);
 				if (!sig)
