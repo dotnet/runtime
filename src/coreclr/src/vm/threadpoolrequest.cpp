@@ -420,14 +420,15 @@ void UnManagedPerAppDomainTPCount::QueueUnmanagedWorkRequest(LPTHREAD_START_ROUT
     _ASSERTE(pWorkRequest != NULL);
     PREFIX_ASSUME(pWorkRequest != NULL);
 
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadPoolEnqueue) && 
+        !ThreadpoolMgr::AreEtwQueueEventsSpeciallyHandled(function))
+        FireEtwThreadPoolEnqueue(pWorkRequest, GetClrInstanceId());
+
     m_lock.Init(LOCK_TYPE_DEFAULT);
     
     {
         SpinLock::Holder slh(&m_lock);
 
-        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadPoolEnqueue) && 
-            !ThreadpoolMgr::AreEtwQueueEventsSpeciallyHandled(function))
-            FireEtwThreadPoolEnqueue(pWorkRequest, GetClrInstanceId());
         ThreadpoolMgr::EnqueueWorkRequest(pWorkRequest);
         pWorkRequest.SuppressRelease();
         m_NumRequests++;
