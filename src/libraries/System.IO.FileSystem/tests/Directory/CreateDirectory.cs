@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,9 +17,42 @@ namespace System.IO.Tests
             return Directory.CreateDirectory(path);
         }
 
+        public virtual bool IsDirectoryCreate => true;
+
         #endregion
 
         #region UniversalTests
+
+        [Fact]
+        public void FileNameIsToString_NotFullPath()
+        {
+            // We're checking that we're maintaining the original path
+            RemoteInvoke(() =>
+            {
+                Environment.CurrentDirectory = TestDirectory;
+                string subdir = Path.GetRandomFileName();
+                DirectoryInfo info = Create(subdir);
+                Assert.Equal(subdir, info.ToString());
+            }).Dispose();
+        }
+
+        [Fact]
+        public void FileNameIsToString_FullPath()
+        {
+            string subdir = Path.GetRandomFileName();
+            string fullPath = Path.Combine(TestDirectory, subdir);
+            DirectoryInfo info = Create(fullPath);
+            if (PlatformDetection.IsFullFramework && IsDirectoryCreate)
+            {
+                // I think this was accidental. In Core we want to be consistent with constructing
+                // an Info manually then calling Create on it.
+                Assert.Equal(subdir, info.ToString());
+            }
+            else
+            {
+                Assert.Equal(fullPath, info.ToString());
+            }
+        }
 
         [Fact]
         public void NullAsPath_ThrowsArgumentNullException()
