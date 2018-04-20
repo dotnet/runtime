@@ -29,6 +29,9 @@
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetGroup)' != 'netstandard'">
     <Compile Include="System\Reflection\DispatchProxy.cs" />
     <Compile Include="System\Reflection\DispatchProxyGenerator.cs" />
+    <Compile Include="$(CommonPath)\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs">
+      <Link>Common\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />
