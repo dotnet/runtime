@@ -22,16 +22,16 @@ namespace System.Net.Http.Functional.Tests
             BytePerChunk
         }
 
-        protected static string GetResponseForContentMode(string content, ContentMode mode)
+        protected static string GetResponseForContentMode(string content, ContentMode mode, bool connectionClose = false)
         {
             switch (mode)
             {
                 case ContentMode.ContentLength:
-                    return LoopbackServer.GetHttpResponse(content: content);
+                    return LoopbackServer.GetHttpResponse(content: content, connectionClose: connectionClose);
                 case ContentMode.SingleChunk:
-                    return LoopbackServer.GetSingleChunkHttpResponse(content: content);
+                    return LoopbackServer.GetSingleChunkHttpResponse(content: content, connectionClose: connectionClose);
                 case ContentMode.BytePerChunk:
-                    return LoopbackServer.GetBytePerChunkHttpResponse(content: content);
+                    return LoopbackServer.GetBytePerChunkHttpResponse(content: content, connectionClose: connectionClose);
                 default:
                     Assert.True(false);
                     return null;
@@ -90,6 +90,8 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
+                        server.ListenSocket.Close(); // Shut down the listen socket so attempts at additional connections would fail on the client
+
                         string response = GetResponseForContentMode(simpleContent, mode);
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
@@ -251,17 +253,16 @@ namespace System.Net.Http.Functional.Tests
                 async server =>
                 {
                     string content = new string('a', totalSize);
-                    string response = GetResponseForContentMode(content, mode);
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestHeaderAsync();
                         try
                         {
-                            await connection.Writer.WriteAsync(response);
+                            await connection.Writer.WriteAsync(GetResponseForContentMode(content, mode, connectionClose: false));
                         }
                         catch (Exception) { }     // Eat errors from client disconnect.
 
-                        await server.AcceptConnectionSendCustomResponseAndCloseAsync(response);
+                        await server.AcceptConnectionSendCustomResponseAndCloseAsync(GetResponseForContentMode(content, mode, connectionClose: true));
                     });
                 });
         }

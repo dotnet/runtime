@@ -141,7 +141,7 @@ namespace System.Net.Test.Common
             // We'll close the connection after reading the request header and sending the response.
             await AcceptConnectionAsync(async connection =>
             {
-                lines = await connection.ReadRequestHeaderAndSendResponseAsync(statusCode, additionalHeaders, content);
+                lines = await connection.ReadRequestHeaderAndSendResponseAsync(statusCode, additionalHeaders + "Connection: close\r\n", content);
             });
 
             return lines;
@@ -278,16 +278,18 @@ namespace System.Net.Test.Common
             return null;
         }
 
-        public static string GetHttpResponse(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null) =>
+        public static string GetHttpResponse(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null, bool connectionClose = false) =>
             $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
+            (connectionClose ? "Connection: close\r\n" : "") +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
             $"Content-Length: {(content == null ? 0 : content.Length)}\r\n" +
             additionalHeaders +
             "\r\n" +
             content;
 
-        public static string GetSingleChunkHttpResponse(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null) =>
+        public static string GetSingleChunkHttpResponse(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null, bool connectionClose = false) =>
             $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
+            (connectionClose ? "Connection: close\r\n" : "") +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
             "Transfer-Encoding: chunked\r\n" +
             additionalHeaders +
@@ -298,8 +300,9 @@ namespace System.Net.Test.Common
             $"0\r\n" +
             $"\r\n";
 
-        public static string GetBytePerChunkHttpResponse(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null) =>
+        public static string GetBytePerChunkHttpResponse(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null, bool connectionClose = false) =>
             $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
+            (connectionClose ? "Connection: close\r\n" : "") +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
             "Transfer-Encoding: chunked\r\n" +
             additionalHeaders +

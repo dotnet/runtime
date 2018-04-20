@@ -201,7 +201,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
-        [ActiveIssue(9543)] // fails sporadically with 'WinHttpException : The server returned an invalid or unrecognized response' or 'TaskCanceledException : A task was canceled'
+        [ActiveIssue(9543)] // consistently fails with errors about client credentials being invalid
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(6, false)]
@@ -213,12 +213,6 @@ namespace System.Net.Http.Functional.Tests
             if (!BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
             {
                 _output.WriteLine($"Skipping {nameof(Manual_CertificateSentMatchesCertificateReceived_Success)}()");
-                return;
-            }
-
-            if (!UseSocketsHttpHandler)
-            {
-                // Issue #9543: fails sporadically on WinHttpHandler/CurlHandler
                 return;
             }
 
@@ -241,7 +235,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         SslStream sslStream = Assert.IsType<SslStream>(connection.Stream);
                         Assert.Equal(cert, sslStream.RemoteCertificate);
-                        await connection.ReadRequestHeaderAndSendResponseAsync();
+                        await connection.ReadRequestHeaderAndSendResponseAsync(additionalHeaders: "Connection: close\r\n");
                     }));
             };
 
