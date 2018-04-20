@@ -36,7 +36,7 @@ namespace System.Diagnostics
 #endif
             set
             {
-                if (ValidateSetCurrent)
+                if (ValidateSetCurrent(value))
                 {
                     SetCurrent(value);
                 }
