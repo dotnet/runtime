@@ -455,15 +455,7 @@ namespace System.Buffers
                 if (Length < int.MaxValue)
                 {
 #if !FEATURE_PORTABLE_SPAN
-                    return string.Create((int)Length, charSequence, (span, sequence) =>
-                    {
-                        foreach (ReadOnlyMemory<char> readOnlyMemory in sequence)
-                        {
-                            ReadOnlySpan<char> sourceSpan = readOnlyMemory.Span;
-                            sourceSpan.CopyTo(span);
-                            span = span.Slice(sourceSpan.Length);
-                        }
-                    });
+                    return string.Create((int)Length, charSequence, (span, sequence) => sequence.CopyTo(span)); 
 #else
                     return new string(charSequence.ToArray());
 #endif
