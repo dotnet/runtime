@@ -37,7 +37,7 @@ namespace System.IO
 
             FileSystem.CreateDirectory(fullPath);
 
-            return new DirectoryInfo(fullPath, null);
+            return new DirectoryInfo(path, fullPath, isNormalized: true);
         }
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.

@@ -47,7 +47,7 @@ namespace System.IO
                 // but don't mangle the root.
                 string parentName = Path.GetDirectoryName(PathInternal.IsRoot(FullPath) ? FullPath : PathInternal.TrimEndingDirectorySeparator(FullPath));
                 return parentName != null ? 
-                    new DirectoryInfo(parentName, null) :
+                    new DirectoryInfo(parentName, isNormalized: true) :
                     null;
             }
         }
