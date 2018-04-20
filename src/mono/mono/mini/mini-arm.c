@@ -1604,9 +1604,8 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		add_general (&gr, &stack_size, &cinfo->sig_cookie, TRUE);
 	}
 
-	/* align stack size to 8 */
 	DEBUG (g_print ("      stack size: %d (%d)\n", (stack_size + 15) & ~15, stack_size));
-	stack_size = (stack_size + 7) & ~7;
+	stack_size = (stack_size + MONO_ARCH_FRAME_ALIGNMENT) & ~MONO_ARCH_FRAME_ALIGNMENT;
 
 	cinfo->stack_usage = stack_size;
 	return cinfo;
