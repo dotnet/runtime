@@ -2528,7 +2528,8 @@ static bool configEnableISA(InstructionSet isa)
         case InstructionSet_AVX:
             return JitConfig.EnableAVX() != 0;
         case InstructionSet_AVX2:
-            return JitConfig.EnableAVX2() != 0;
+            // Don't enable AVX2 when AVX is disabled
+            return (JitConfig.EnableAVX() != 0) && (JitConfig.EnableAVX2() != 0);
 
         case InstructionSet_AES:
             return JitConfig.EnableAES() != 0;
@@ -2548,7 +2549,15 @@ static bool configEnableISA(InstructionSet isa)
             return false;
     }
 #else
-    return true;
+    // We have a retail config switch that can disable AVX/AVX2 instructions
+    if ((isa == InstructionSet_AVX) || (isa == InstructionSet_AVX2))
+    {
+        return JitConfig.EnableAVX() != 0;
+    }
+    else
+    {
+        return true;
+    }
 #endif
 }
 #endif // _TARGET_XARCH_
