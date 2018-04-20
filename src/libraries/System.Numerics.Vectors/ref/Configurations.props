@@ -3,6 +3,7 @@
   <PropertyGroup>
     <PackageConfigurations>
       netstandard1.0;
+      net45;
       netstandard;
       net46;
     </PackageConfigurations>

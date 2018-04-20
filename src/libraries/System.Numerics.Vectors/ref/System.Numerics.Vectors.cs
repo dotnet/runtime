@@ -301,7 +301,7 @@ namespace System.Numerics
         public Vector(T value) { throw null; }
         public Vector(T[] values) { throw null; }
         public Vector(T[] values, int index) { throw null; }
-#if netcoreapp
+#if HAS_SPAN
         public Vector(Span<T> values) { throw null; }
 #endif
         public static int Count { get { throw null; } }
