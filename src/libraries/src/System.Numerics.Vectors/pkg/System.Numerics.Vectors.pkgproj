@@ -6,11 +6,11 @@
     <MinClientVersion>2.8.6</MinClientVersion>
   </PropertyGroup>
   <ItemGroup>
+    <HarvestIncludePaths Include="ref\netstandard1.0;ref\netstandard2.0">
+      <SupportedFramework>netcore45;wp8;wpa81;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
+    </HarvestIncludePaths>
     <ProjectReference Include="..\ref\System.Numerics.Vectors.csproj">
-      <SupportedFramework>net45;netcore45;wp8;wpa81;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
-      <!-- Make sure this doesn't get stripped during harvesting.
-           We have an implementation that will work on desktop, thus needs a unique assembly version -->
-      <Preserve>true</Preserve>
+      <SupportedFramework>net45</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Numerics.Vectors.csproj" />
   </ItemGroup>
@@ -21,7 +21,7 @@
     <InboxOnTargetFramework Include="xamarinmac20" />
     <InboxOnTargetFramework Include="xamarintvos10" />
     <InboxOnTargetFramework Include="xamarinwatchos10" />
-    <InboxOnTargetFramework Include="netcoreapp2.1" />
+    <InboxOnTargetFramework Include="netcoreapp2.0" />
     <InboxOnTargetFramework Include="uap10.0.16299" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -3,11 +3,14 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{650277B5-9423-4ACE-BB54-2659995B21C7}</ProjectGuid>
-    <IsTargetingNetFx Condition="'$(TargetGroup)'=='netfx' OR '$(TargetGroup)'=='net46'">true</IsTargetingNetFx>
-    <IsTargetingNetCoreApp Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap'">true</IsTargetingNetCoreApp>
-    <IsPartialFacadeAssembly Condition="'$(IsTargetingNetFx)'=='true'">true</IsPartialFacadeAssembly>
-    <DefineConstants Condition="'$(IsTargetingNetCoreApp)'=='true'">$(DefineConstants);netcoreapp</DefineConstants>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)'=='true' AND '$(TargetGroup)' != 'net45'">true</IsPartialFacadeAssembly>
+    <DefineConstants Condition="'$(TargetsNetCoreApp)'=='true' OR '$(TargetsUap)' == 'true'">$(DefineConstants);HAS_SPAN</DefineConstants>
+    <!-- Must match version supported by frameworks which support 4.1.* inbox.
+         Can be removed when API is added and this assembly is versioned to 4.2.* -->
+    <AssemblyVersion Condition="'$(TargetsNetFx)' != 'true'">4.1.3.0</AssemblyVersion>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
@@ -23,14 +26,14 @@
   <ItemGroup>
     <Compile Include="System.Numerics.Vectors.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsTargetingNetFx)'=='true'">
+  <ItemGroup Condition="'$(TargetsNetFx)'=='true'">
     <Reference Include="mscorlib" />
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">
     <Reference Include="System.Runtime" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsTargetingNetCoreApp)'=='true'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)'=='true' OR '$(TargetsUap)' == 'true'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
