@@ -93,7 +93,10 @@ namespace SingLink {
                 //Console.WriteLine("after number {0} singlink is set: {1}", i, GC.GetTotalMemory(false) );
 
                 Delete();
+
+                GC.Collect();
                 GC.WaitForPendingFinalizers();
+                GC.Collect();
 
             }
             //Console.WriteLine("total allocated memory: {0}", GC.GetTotalMemory(false));

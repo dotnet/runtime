@@ -6,6 +6,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 public class Test {
 
@@ -45,15 +46,9 @@ public class Test {
             obj = new Dummy();
         }
 
-        public bool RunTest() {
-
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public void RunTest() {
             obj=null;
-            GC.Collect();
-
-            GC.WaitForPendingFinalizers();  // makes sure Finalize() is called.
-
-            return Dummy.visited;
-
         }
     }
 
@@ -90,8 +85,15 @@ Line 23
 ******************* END *****************************");
         }
 
+        temp.RunTest();
 
-        if (temp.RunTest()) {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();  // makes sure Finalize() is called.
+        GC.Collect();
+
+
+        if (Dummy.visited) 
+        {
             Console.WriteLine("Test for Finalize() & WaitForPendingFinalizers() passed!");
             return 100;
         }

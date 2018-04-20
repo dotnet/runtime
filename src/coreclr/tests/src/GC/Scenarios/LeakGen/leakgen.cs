@@ -5,6 +5,7 @@
 
 namespace LGen {
     using System;
+    using System.Runtime.CompilerServices;
 
     public class LeakGen
     {
@@ -52,7 +53,6 @@ namespace LGen {
             }
         }
 
-
         public bool runTest(int iRep, int iObj)
         {
 
@@ -71,6 +71,7 @@ namespace LGen {
         }
 
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public void MakeLeak(int iObj)
         {
             int [] mem;

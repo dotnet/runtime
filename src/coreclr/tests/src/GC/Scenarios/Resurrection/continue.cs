@@ -4,6 +4,7 @@
 
 namespace DefaultNamespace {
     using System;
+    using System.Runtime.CompilerServices;
    
 
     internal class Continue
@@ -15,7 +16,9 @@ namespace DefaultNamespace {
         public class CreateObj
         {
             BNode obj;
+
 #pragma warning restore 0414
+            [MethodImplAttribute(MethodImplOptions.NoInlining)]
             public CreateObj()
             {
                 Continue mv_Obj = new Continue();
@@ -30,17 +33,16 @@ namespace DefaultNamespace {
                 Console.WriteLine(" Nodes were created.");
             }
 
-
-            public bool RunTest()
+            [MethodImplAttribute(MethodImplOptions.NoInlining)]
+            public void DestroyObj()
             {
                 obj = null;
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
+            }
 
-                Console.Write(BNode.icFinalNode); 
-                Console.WriteLine(" Nodes were finalized and resurrected.");
 
+            [MethodImplAttribute(MethodImplOptions.NoInlining)]
+            public void ResurrectNodes()
+            {
                 for (int i = 0; i < BNode.rlNodeCount; i++)
                 {
                     BNode oldNode = (BNode)BNode.rlNode[i];
@@ -51,16 +53,29 @@ namespace DefaultNamespace {
                     oldNode = null;
                     BNode.rlNode[ i ] = null;
                 }
+            }
+
+            public bool RunTest()
+            {
+                DestroyObj();
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+
+                Console.Write(BNode.icFinalNode); 
+                Console.WriteLine(" Nodes were finalized and resurrected.");
+
+                ResurrectNodes();
 
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
 
                 return ( BNode.icCreateNode == BNode.icFinalNode );
-
             }
-
         }
+
 
         public static int Main()
         {

@@ -19,8 +19,10 @@ public class Test
 
         temp1 = GCUtil.GetTarget(handle);
         Console.WriteLine(temp1);
+
         GC.Collect();
         GC.WaitForPendingFinalizers();
+        GC.Collect();
 
         temp2 = GCUtil.GetTarget(handle);
         Console.WriteLine(temp2);

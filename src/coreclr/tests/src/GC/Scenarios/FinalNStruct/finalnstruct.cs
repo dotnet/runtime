@@ -11,47 +11,42 @@
 
 namespace NStruct {
     using System;
+    using System.Runtime.CompilerServices;
 
     internal class FinalNStruct
     {
 
-        public static STRMAP[] CreateObj(int iObj)
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void CreateObj(int iObj)
         {
-
             STRMAP []strmap = new STRMAP[iObj];
             for (int i=0; i< iObj; i++ ) //allocate 3100KB
             {
                 strmap[i] = new STRMAP();
             }
-            return strmap;
-
-        }
-
-        public static bool RunTest(int iObj,STRMAP []strmap)
-        {
-
             for( int i=0; i< iObj; i++ )
             {
                 strmap[i] = null;
             }
+        }
 
+        public static bool RunTest()
+        {
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
 
             return ( FinalizeCount.icFinal == FinalizeCount.icCreat );
-
         }
 
         public static int Main(String [] args){
-
             int iObj = 100;
-            STRMAP []strmaptemp;
 
             Console.WriteLine("Test should return with ExitCode 100 ...");
 
-            strmaptemp = CreateObj(iObj);
-            if (RunTest(iObj,strmaptemp))
+            CreateObj(iObj);
+
+            if (RunTest())
             {
                 Console.WriteLine( "Created objects number is same with finalized objects." );
                 Console.WriteLine( "Test Passed !" );

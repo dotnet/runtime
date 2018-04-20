@@ -6,6 +6,7 @@
 //
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 
@@ -34,6 +35,7 @@ public class GCUtil
     }
 
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void FreePins()
     {
         foreach (GCHandle gch in list)
@@ -45,6 +47,7 @@ public class GCUtil
     }
 
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void FreeNonPins()
     {
         blist.Clear();
@@ -70,6 +73,7 @@ public class GCUtil
 
 
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void FreePins2()
     {
         foreach (GCHandle gch in list2)
@@ -82,6 +86,7 @@ public class GCUtil
 
 
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void FreeNonPins2()
     {
         blist2.Clear();
