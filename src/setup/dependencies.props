@@ -9,18 +9,18 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>67153e2b1b8f5e473151f162f5c9bf848d0b69e8</CoreFxCurrentRef>
-    <CoreClrCurrentRef>67153e2b1b8f5e473151f162f5c9bf848d0b69e8</CoreClrCurrentRef>
-    <StandardCurrentRef>a9c6e48169cdc88a5d85f275d6b468476f4351ca</StandardCurrentRef>
-    <BuildToolsCurrentRef>67153e2b1b8f5e473151f162f5c9bf848d0b69e8</BuildToolsCurrentRef>
+    <CoreFxCurrentRef>807c5b1aab825f6c4fde32b333bbe7d6ab59678e</CoreFxCurrentRef>
+    <CoreClrCurrentRef>807c5b1aab825f6c4fde32b333bbe7d6ab59678e</CoreClrCurrentRef>
+    <StandardCurrentRef>807c5b1aab825f6c4fde32b333bbe7d6ab59678e</StandardCurrentRef>
+    <BuildToolsCurrentRef>807c5b1aab825f6c4fde32b333bbe7d6ab59678e</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview3-26419-05</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview3-26420-06</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview3-26419-05</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.2.0-preview1-26419-06</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <NETStandardLibraryPackageVersion>2.0.2</NETStandardLibraryPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview3-26420-06</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.2.0-preview1-26420-06</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <NETStandardLibraryPackageVersion>2.0.3</NETStandardLibraryPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.4.1</MicrosoftDiaSymReaderNativePackageVersion>
   </PropertyGroup>
 
@@ -44,7 +44,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>2.2.0-preview1-02719-02</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>2.2.0-preview1-02719-03</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
