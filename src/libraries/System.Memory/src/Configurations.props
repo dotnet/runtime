@@ -4,13 +4,12 @@
     <PackageConfigurations>
       netstandard1.1;
       netstandard;
-      netcoreapp-Windows_NT;
-      netcoreapp-Unix;
-      uap10.0.16299-Windows_NT;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
       uap-Windows_NT;
+      netcoreapp-Windows_NT;
+      netcoreapp-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
