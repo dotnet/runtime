@@ -843,7 +843,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		return TRUE;
 	} else if (*lmf) {
-		g_assert ((((guint64)(*lmf)->previous_lmf) & 2) == 0);
+		g_assert ((((gsize)(*lmf)->previous_lmf) & 2) == 0);
 
 		if ((ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL))) {
 			frame->ji = ji;
@@ -865,7 +865,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
 
 		/* Check if we are in a trampoline LMF frame */
-		if ((guint32)((*lmf)->previous_lmf) & 1) {
+		if ((gsize)((*lmf)->previous_lmf) & 1) {
 			/* lmf->esp is set by the trampoline code */
 			new_ctx->esp = (*lmf)->esp;
 		}

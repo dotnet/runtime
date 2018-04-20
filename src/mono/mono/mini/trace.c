@@ -143,7 +143,9 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 	g_free (fname);
 
 	if (!ebp) {
+#pragma GCC diagnostic ignored "-Wframe-address"
 		printf (") ip: %p\n", MONO_RETURN_ADDRESS_N (1));
+#pragma GCC diagnostic pop
 		goto unlock;
 	}
 

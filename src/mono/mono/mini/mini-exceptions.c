@@ -384,7 +384,7 @@ arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 				   StackFrameInfo *frame)
 {
 	if (!ji && *lmf) {
-		if (((guint64)(*lmf)->previous_lmf) & 2) {
+		if (((gsize)(*lmf)->previous_lmf) & 2) {
 			MonoLMFExt *ext = (MonoLMFExt*)(*lmf);
 
 			memset (frame, 0, sizeof (StackFrameInfo));
@@ -406,7 +406,7 @@ arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 				g_assert_not_reached ();
 			}
 
-			*lmf = (MonoLMF *)(((guint64)(*lmf)->previous_lmf) & ~3);
+			*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~3);
 
 			return TRUE;
 		}
@@ -700,10 +700,10 @@ unwinder_unwind_frame (Unwinder *unwinder,
 		/* Process debugger invokes */
 		/* The DEBUGGER_INVOKE should be returned before the first interpreter frame for the invoke */
 		if (unwinder->last_frame_addr > (gpointer)(*lmf)) {
-			if (((guint64)(*lmf)->previous_lmf) & 2) {
+			if (((gsize)(*lmf)->previous_lmf) & 2) {
 				MonoLMFExt *ext = (MonoLMFExt*)(*lmf);
 				if (ext->debugger_invoke) {
-					*lmf = (MonoLMF *)(((guint64)(*lmf)->previous_lmf) & ~7);
+					*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~7);
 					frame->type = FRAME_TYPE_DEBUGGER_INVOKE;
 					return TRUE;
 				}

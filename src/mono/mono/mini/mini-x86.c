@@ -74,9 +74,6 @@ static mono_mutex_t mini_arch_mutex;
 
 #define OP_SEQ_POINT_BP_OFFSET 7
 
-static guint8*
-emit_load_aotconst (guint8 *start, guint8 *code, MonoCompile *cfg, MonoJumpInfo **ji, int dreg, int tramp_type, gconstpointer target);
-
 const char*
 mono_arch_regname (int reg)
 {
@@ -6344,17 +6341,6 @@ mono_arch_emit_load_got_addr (guint8 *start, guint8 *code, MonoCompile *cfg, Mon
 	x86_pop_reg (code, MONO_ARCH_GOT_REG);
 	x86_alu_reg_imm (code, X86_ADD, MONO_ARCH_GOT_REG, 0xf0f0f0f0);
 
-	return code;
-}
-
-static guint8*
-emit_load_aotconst (guint8 *start, guint8 *code, MonoCompile *cfg, MonoJumpInfo **ji, int dreg, int tramp_type, gconstpointer target)
-{
-	if (cfg)
-		mono_add_patch_info (cfg, code - cfg->native_code, tramp_type, target);
-	else
-		g_assert_not_reached ();
-	x86_mov_reg_membase (code, dreg, MONO_ARCH_GOT_REG, 0xf0f0f0f0, 4);
 	return code;
 }
 
