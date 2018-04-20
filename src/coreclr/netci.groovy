@@ -1430,6 +1430,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
     }
 
      def arm64Users = [
+        'adityamandaleeka',
         'AndyAyersMS',
         'briansull',
         'BruceForstall',
