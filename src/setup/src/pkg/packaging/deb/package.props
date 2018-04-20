@@ -7,4 +7,18 @@
     <consumingProjectDirectory>$(IntermediateOutputRootPath)$(toolConsumerProjectName)</consumingProjectDirectory>
     <debPackaginfConfigPath>$(PackagingRoot)deb/</debPackaginfConfigPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(BuildUpgradeableLinuxPackages)' == 'true' AND '$(InstallerExtension)' == '.deb'">
+    
+    <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
+    <HostPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</HostPackageVersion>
+    
+    <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
+    <HostResolverPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</HostResolverPackageVersion>
+    
+    <RuntimePackageVersion>$(ProductionVersion)</RuntimePackageVersion>
+    <RuntimePackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(ProductionVersion)~$(VersionSuffix)</RuntimePackageVersion>
+    
+    <RuntimeDepsDebPackageVersion>$(ProductionVersion)</RuntimeDepsDebPackageVersion>
+    <RuntimeDepsDebPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</RuntimeDepsDebPackageVersion>
+  </PropertyGroup>
 </Project>

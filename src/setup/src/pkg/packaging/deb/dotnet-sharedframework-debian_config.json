@@ -11,7 +11,7 @@
 
     "release":{
         "package_version":"1.0.0.0",
-        "package_revision":"1",
+        "package_revision":"%SHARED_FRAMEWORK_REVISION%",
         "urgency" : "low",
         "changelog_message" : "https://github.com/dotnet/core/tree/master/release-notes"
     },
@@ -29,6 +29,11 @@
     },
 
     "debian_dependencies":{
-        "%HOSTFXR_DEBIAN_PACKAGE_NAME%" : {}
+        "%HOSTFXR_DEBIAN_PACKAGE_NAME%" : {
+           "package_version": "%HOSTFXR_NUGET_VERSION%"
+         },
+         "%RUNTIME_DEPS_DEBIAN_PACKAGE_NAME%" : {
+            "package_version": "%RUNTIME_DEPS_VERSION%"
+        } 
     }
 }

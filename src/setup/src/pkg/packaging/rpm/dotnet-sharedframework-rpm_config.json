@@ -13,7 +13,7 @@
 
     "release":{
         "package_version":"1.0.0.0",
-        "package_revision":"1",
+        "package_revision":"%SHARED_FRAMEWORK_REVISION%",
         "urgency" : "low",
         "changelog_message" : "https://github.com/dotnet/core/tree/master/release-notes"
     },
@@ -32,8 +32,12 @@
     
   "rpm_dependencies": [{
       "package_name": "%HOSTFXR_RPM_PACKAGE_NAME%",
-      "package_version": ""
-    }],
+      "package_version": "%HOSTFXR_NUGET_VERSION%"
+      },
+      {
+       "package_name": "%RUNTIME_DEPS_RPM_PACKAGE_NAME%",
+       "package_version": "%RUNTIME_DEPS_VERSION%"
+      }],
    
     "directories" : [
         "/usr/share/dotnet/shared",
