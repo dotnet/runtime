@@ -16,25 +16,15 @@ namespace System.Memory.Tests
 
         internal class StringTestSequenceFactory : ReadOnlySequenceFactory<char>
         {
-            static string s_stringData = InitalizeStringData();
-
-            static string InitalizeStringData()
-            {
-                IEnumerable<int> ascii = Enumerable.Range(' ', (char)0x7f - ' ');
-
-                return new string(ascii.Concat(ascii)
-                    .Concat(ascii)
-                    .Concat(ascii)
-                    .Concat(ascii)
-                    .Concat(ascii)
-                    .Concat(ascii)
-                    .Select(c => (char)c)
-                    .ToArray());
-            }
-
             public override ReadOnlySequence<char> CreateOfSize(int size)
             {
-                return new ReadOnlySequence<char>(s_stringData.AsMemory(10, size));
+                IEnumerable<int> ascii = Enumerable.Range(' ', (char)0x7f - ' ');
+                IEnumerable<int> items = ascii;
+                for(int i = (size + 20) / ascii.Count(); i > 0; i--)
+                    items = items.Concat(ascii);
+
+                var str = new string(items.Select(c => (char)c).ToArray());
+                return new ReadOnlySequence<char>(str.AsMemory(10, size));
             }
 
             public override ReadOnlySequence<char> CreateWithContent(char[] data)
