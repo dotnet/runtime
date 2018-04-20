@@ -2867,7 +2867,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			} else {
 				/* defer allocation to execution-time */
 				ADD_CODE (td, MINT_LDSTR_TOKEN);
-				ADD_CODE (td, get_data_item_index (td, (gpointer) token));
+				ADD_CODE (td, get_data_item_index (td, GUINT_TO_POINTER (token)));
 			}
 			PUSH_TYPE(td, STACK_TYPE_O, mono_defaults.string_class);
 			break;
