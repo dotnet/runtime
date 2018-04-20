@@ -84,7 +84,7 @@ extern "C" int32_t HttpNative_MultiWait(CURLM* multiHandle,
         // passed to curl_multi_wait.  See https://github.com/dotnet/corefx/issues/9751.  So if we have a libcurl
         // prior to that version, we need to do our own poll to get the status of the extra file descriptor.
         //
-        if (curl_version_info(CURLVERSION_NOW)->version_num >= 0x073200)
+        if (curl_version_info(CURLVERSION_NOW)->version_num >= 0x072000)
         {
             *isExtraFileDescriptorActive = (extraFds.revents & CURL_WAIT_POLLIN) != 0;
         }

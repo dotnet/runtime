@@ -43,7 +43,7 @@ static_assert(PAL_CURL_VERSION_PSL == CURL_VERSION_PSL, "");
 // Based on docs/libcurl/symbols-in-versions in libcurl source tree,
 // the CURL_VERSION_HTTP2 was introduced in libcurl 7.33.0 and
 // the CURLPIPE_MULTIPLEX was introduced in libcurl 7.43.0.
-#define MIN_VERSION_WITH_CURLPIPE_MULTIPLEX 0x074300
+#define MIN_VERSION_WITH_CURLPIPE_MULTIPLEX 0x072B00
 
 extern "C" int32_t HttpNative_GetSupportedFeatures()
 {
