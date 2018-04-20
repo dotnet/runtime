@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 
@@ -252,25 +253,31 @@ namespace GC_Microbenchmarks
         }
 
 
+        public bool ClearList()
+        {
+            if (m_list != null)
+            {
+                m_list.Clear();
+                m_list = null;
+                return ( (m_list.Count > 0) && (m_list[0] is FNode));
+            }
+            return false;
+        }
+
+
         // releases references to allocated objects
         // times GC.Collect()
         // if objects are finalizable, also times GC.WaitForPendingFinalizers()
         public void Deallocate()
         {
-            bool finalizable = false;
-
-            if (m_list != null)
-            {
-                finalizable  = ( (m_list.Count > 0) && (m_list[0] is FNode));
-                m_list.Clear();
-                m_list = null;
-            }
+            bool finalizable = ClearList();
 
             GC.Collect();
 
             if (finalizable)
             {
                 GC.WaitForPendingFinalizers();
+                GC.Collect();
             }
 
         }

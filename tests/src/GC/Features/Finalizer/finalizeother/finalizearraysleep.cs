@@ -6,54 +6,50 @@
 
 using System;
 using System.Threading;
+using System.Runtime.CompilerServices;
 
 public class Test {
 
-	public class Dummy {
-		public static int count=0;
-		~Dummy() {
-			count++;
-			Thread.Sleep(1000);
-		}
-	}
+    public class Dummy {
+        public static int count=0;
+        ~Dummy() {
+            count++;
+            Thread.Sleep(1000);
+        }
+    }
 
-	public class CreateObj {
-		public Dummy[] obj;
-                public int ExitCode = 0;		
+    public class CreateObj {
+        public Dummy[] obj;
+        public int ExitCode = 0;		
 
-		public CreateObj() {
-		obj = new Dummy[10];
+        public CreateObj() {
+            obj = new Dummy[10];
 
-		for(int i=0;i<10;i++) {
-			obj[i] = new Dummy();
-		}
-		}
-	
-		public void RunTest() {		
+            for(int i=0;i<10;i++) {
+                obj[i] = new Dummy();
+            }
+        }
 
-		obj=null;     // making sure collect is called even with /debug
-		GC.Collect();
-		GC.WaitForPendingFinalizers();
-		
-		if(Dummy.count == 10) {     // all objects in array finalized!
-			ExitCode = 100;
-			//Console.WriteLine("Test for Finalize() for array of objects passed!");
-		}
-		else {
-			ExitCode = 1;
-			//Console.WriteLine("Test for Finalize() for array of objects failed!");
-		}
-		}
-	}
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public void RunTest() {		
+            obj=null;     // making sure collect is called even with /debug
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+    }
 
-	public static int Main() {
-		CreateObj temp = new CreateObj();
-		temp.RunTest();
+    public static int Main() {
+        CreateObj temp = new CreateObj();
+        temp.RunTest();
 
-		if(temp.ExitCode==100)
-			Console.WriteLine("Test for Finalize() for array of objects passed!");
-		else 
-			Console.WriteLine("Test for Finalize() for array of objects failed!");
-                return temp.ExitCode;				
-	}
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        if (Dummy.count == 10)
+            Console.WriteLine("Test for Finalize() for array of objects passed!");
+        else 
+            Console.WriteLine("Test for Finalize() for array of objects failed!");
+        return temp.ExitCode;				
+    }
 }

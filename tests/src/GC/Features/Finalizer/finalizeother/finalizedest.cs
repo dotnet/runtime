@@ -5,6 +5,7 @@
 // Tests Finalize() and WaitForPendingFinalizers()
 
 using System;
+using System.Runtime.CompilerServices;
 
 public class Test
 {
@@ -12,7 +13,7 @@ public class Test
     public class Dummy
     {
 
-        public static bool visited;
+        public static bool visited=false;
 
         ~Dummy()
         {
@@ -33,22 +34,23 @@ public class Test
             obj = new Dummy();
         }
 
-        public bool RunTest()
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void RunTest()
         {
             obj=null;
-            GC.Collect();
-
-            GC.WaitForPendingFinalizers();  // makes sure Finalize() is called.
-
-            return Dummy.visited;
         }
     }
 
     public static int Main()
     {
         CreateObj temp = new CreateObj();
+        temp.RunTest();
 
-        if (temp.RunTest())
+        GC.Collect(); 
+        GC.WaitForPendingFinalizers();  // makes sure Finalize() is called.
+        GC.Collect(); 
+
+        if (Dummy.visited)
         {
             Console.WriteLine("Test Passed");
             return 100;

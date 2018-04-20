@@ -5,6 +5,7 @@
 // Tests Finalize() with Inheritance
 
 using System;
+using System.Runtime.CompilerServices;
 
 namespace One
 {
@@ -61,6 +62,7 @@ namespace Three {
             d = new D();
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public bool RunTest()
         {
             A a = c;
@@ -83,7 +85,12 @@ namespace Three {
         {
             CreateObj temp = new CreateObj();
 
-            if (temp.RunTest())
+            temp.RunTest();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            if (C.count == 2)
             {
                 Console.WriteLine("Test Passed");
                 return 100;

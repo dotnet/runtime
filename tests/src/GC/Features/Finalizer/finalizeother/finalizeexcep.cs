@@ -5,58 +5,53 @@
 // Tests Exception handling in Finalize() 
 
 using System;
+using System.Runtime.CompilerServices;
 
 public class Test {
 
-	public class List {
-		public int val;
-		public List next;
-	}
-	public class Dummy {
+    public class List {
+        public int val;
+        public List next;
+    }
 
-		public static bool visited;
-	
-		~Dummy() {
-			List lst = new List();
-			Console.WriteLine("In Finalize() of Dummy");
-			try {
-				Console.WriteLine(lst.next.val);    // should throw nullreference exception
-			} catch(NullReferenceException) {
+    public class Dummy {
+        public static bool visited;
+
+        ~Dummy() {
+            List lst = new List();
+            Console.WriteLine("In Finalize() of Dummy");
+            try {
+                Console.WriteLine(lst.next.val);    // should throw nullreference exception
+            } catch(NullReferenceException) {
                 Console.WriteLine("Caught NullReferenceException in Finalize()");				
                 visited=true;
-			}
-			
-			
-		}
-	}
+            }
+        }
+    }
 
-	public class CreateObj {
-		public Dummy obj;
+    public class CreateObj {
+        public Dummy obj;
 
-		public CreateObj() {
-			obj = new Dummy();
-		}
+        public CreateObj() {
+            obj = new Dummy();
+        }
 
-		public bool RunTest() {
-			obj=null;
-			GC.Collect();
-		
-			GC.WaitForPendingFinalizers();  // makes sure Finalize() is called.
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] 
+        public void RunTest() {
+            obj=null;
+        }
+    }
 
-			if(Dummy.visited == true) {
-                return true;
-			}
-			else {
-                return false;
-			}
-		}
-	}
+    public static int Main() {
 
-	public static int Main() {
+        CreateObj temp= new CreateObj();
+        temp.RunTest();
 
-		CreateObj temp= new CreateObj();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();  // makes sure Finalize() is called.
+        GC.Collect();
 
-        if (temp.RunTest())
+        if (Dummy.visited)
         {
             Console.WriteLine("Test for Exception handling in Finalize() passed!");
             return 100;
@@ -66,7 +61,7 @@ public class Test {
             Console.WriteLine("Test for Exception handling in Finalize() failed!");
             return 1;
         }
-		
-		
-	}
+
+
+    }
 }

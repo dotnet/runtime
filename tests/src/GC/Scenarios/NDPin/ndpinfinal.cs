@@ -13,7 +13,9 @@ namespace DefaultNamespace {
 
     using System;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
+
 
     internal class NDPinFinal
     {
@@ -55,6 +57,24 @@ namespace DefaultNamespace {
             }
         }
 
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void RemoveN()
+        {
+            m_n = null;
+        }
+
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void RemovePinList(int iObj)
+        {
+            for ( int i=0; i< iObj; i++ )
+            {
+                pinList[i] = null;
+            }
+        }
+
+
         public static bool RunTest(int iObj)
         {
 
@@ -64,18 +84,17 @@ namespace DefaultNamespace {
                 return false;
             }
 
-            m_n = null;
+            RemoveN();
+
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
             
-            for( int i=0; i< iObj; i++ )
-            {
-                pinList[i] = null;
-            }
+            RemovePinList(iObj);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            GC.Collect();
            
             if( cFinalObj == cCreatObj )
             {

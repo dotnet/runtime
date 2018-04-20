@@ -10,6 +10,7 @@
 
 namespace DefaultNamespace {
     using System;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
 
     internal class RootMem
@@ -17,6 +18,12 @@ namespace DefaultNamespace {
         internal long [] l;
         internal static GCHandle [] root;
         internal static int n;
+
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void AllocRoot()
+        {
+        }
 
         public static int Main( String [] args )
         {
@@ -32,30 +39,28 @@ namespace DefaultNamespace {
                  rm_obj = new RootMem( n );
                  root[n] = GCHandle.Alloc(rm_obj );
             }
-            //Console.WriteLine("After save objects to Root and before GCed: "+GC.GetTotalMemory(false) );
+
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
-            //Console.WriteLine("After save objects to Root and after GCed: "+GC.GetTotalMemory(false) );
 
             Object v;
             for( int i=0; i< iSize; i++)
             {
                 v = ( root[i]) ;
             }
-            //Console.WriteLine("After Get objects from root and before GCed: "+GC.GetTotalMemory(false) );
+
             GC.Collect();
-            //Console.WriteLine("After Get objects from root and after GCed: "+GC.GetTotalMemory(false) );
 
             for( int i=0; i<iSize; i++ )
             {
                 root[i].Free();
             }
-            //Console.WriteLine("After free root and before GCed: "+GC.GetTotalMemory(false) );
+
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
-            //Console.WriteLine("After free root and after GCed: "+GC.GetTotalMemory(false) );
+
             try
             {
                 for( int i=0; i<iSize; i++ )
