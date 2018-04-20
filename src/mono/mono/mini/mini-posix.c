@@ -73,6 +73,7 @@
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 #include <mach/clock.h>
+#include <mono/utils/mono-merp.h>
 #endif
 
 #if defined(HOST_WATCHOS)
@@ -209,6 +210,20 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 		mono_handle_native_crash ("SIGABRT", ctx, info);
 	}
 }
+
+#ifdef TARGET_OSX
+MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
+{
+	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
+	MONO_SIG_HANDLER_GET_CONTEXT;
+
+	if (mono_merp_enabled ())
+		mono_handle_native_crash ("SIGTERM", ctx, info);
+
+	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+	exit (1);
+}
+#endif
 
 #if (defined (USE_POSIX_BACKEND) && defined (SIGRTMIN)) || defined (SIGPROF)
 #define HAVE_PROFILER_SIGNAL
@@ -360,6 +375,15 @@ remove_signal_handler (int signo)
 		g_assert (sigaction (signo, saved_action, NULL) != -1);
 	}
 }
+
+#ifdef TARGET_OSX
+void
+mini_register_sigterm_handler (void)
+{
+	/* always catch SIGTERM, conditionals inside of handler */
+	add_signal_handler (SIGTERM, sigterm_signal_handler, 0);
+}
+#endif
 
 void
 mono_runtime_posix_install_handlers (void)
