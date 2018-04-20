@@ -132,20 +132,27 @@ namespace System.Tests
             (string CallerMemberName, string SourceFilePath, int SourceLineNumber) expectedStackFrame,
             string reportedCallStack, int skipFrames)
         {
-            Console.WriteLine("* ExceptionTests - reported call stack:\n{0}", reportedCallStack);
-            const string frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)\([^)]*\)\sin\s(?<filePath>.*)\:line\s(?<lineNumber>[\d]+)";
-
-            using (var sr = new StringReader(reportedCallStack))
+            try
             {
-                for (int i = 0; i < skipFrames; i++)
-                    sr.ReadLine();
-                string frame = sr.ReadLine();
-                Assert.NotNull(frame);
-                var match = Regex.Match(frame, frameParserRegex);
-                Assert.True(match.Success);
-                Assert.Equal(expectedStackFrame.CallerMemberName, match.Groups["memberName"].Value);
-                Assert.Equal(expectedStackFrame.SourceFilePath, match.Groups["filePath"].Value);
-                Assert.Equal(expectedStackFrame.SourceLineNumber, Convert.ToInt32(match.Groups["lineNumber"].Value));
+                const string frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)\([^)]*\)\sin\s(?<filePath>.*)\:line\s(?<lineNumber>[\d]+)";
+
+                using (var sr = new StringReader(reportedCallStack))
+                {
+                    for (int i = 0; i < skipFrames; i++)
+                        sr.ReadLine();
+                    string frame = sr.ReadLine();
+                    Assert.NotNull(frame);
+                    var match = Regex.Match(frame, frameParserRegex);
+                    Assert.True(match.Success);
+                    Assert.Equal(expectedStackFrame.CallerMemberName, match.Groups["memberName"].Value);
+                    Assert.Equal(expectedStackFrame.SourceFilePath, match.Groups["filePath"].Value);
+                    Assert.Equal(expectedStackFrame.SourceLineNumber, Convert.ToInt32(match.Groups["lineNumber"].Value));
+                }
+            }
+            catch
+            {
+                Console.WriteLine("* ExceptionTests - reported call stack:\n{0}", reportedCallStack);
+                throw;
             }
         }
 
