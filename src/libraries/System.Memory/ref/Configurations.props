@@ -4,12 +4,11 @@
     <PackageConfigurations>
       netstandard1.1;
       netstandard;
-      netcoreapp;
-      uap10.0.16299;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
       uap;
+      netcoreapp;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
