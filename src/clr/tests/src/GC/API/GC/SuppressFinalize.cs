@@ -5,6 +5,7 @@
 // Tests SuppressFinalize()
 
 using System;
+using System.Runtime.CompilerServices;
 
 public class Test {
 
@@ -17,16 +18,21 @@ public class Test {
 		}
 	}
 
-	public static int Main() {
-
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    public static void RunTest()
+    {
 		Dummy obj1 = new Dummy();
-	
 		GC.SuppressFinalize(obj1);	// should not call the Finalizer() for obj1
 		obj1=null;
-			
+    }
+
+	public static int Main()
+    {
+        RunTest();
+
 		GC.Collect();
-		
 		GC.WaitForPendingFinalizers();   // call all Finalizers.
+		GC.Collect();
 
 		if(Dummy.visited == false) {
 			Console.WriteLine("Test for SuppressFinalize() passed!");

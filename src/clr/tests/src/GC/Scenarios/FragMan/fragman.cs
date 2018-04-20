@@ -11,6 +11,7 @@
 
 namespace DefaultNamespace {
     using System;
+    using System.Runtime.CompilerServices;
 
     public class FragMan
     {
@@ -26,6 +27,7 @@ namespace DefaultNamespace {
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            GC.Collect();
 
             if (FragNode.Finalized == 0)
             {
@@ -45,7 +47,7 @@ namespace DefaultNamespace {
 
         public FragMan( )
         {
-            buildTree( );
+            buildTree();
             fnM = CvA_FNodes[12];
             CvA_FNodes = null;
             enumNode( fnM );
@@ -83,6 +85,7 @@ namespace DefaultNamespace {
         }
 
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public void buildTree( )
         {
             CvA_FNodes = new FragNode[26];

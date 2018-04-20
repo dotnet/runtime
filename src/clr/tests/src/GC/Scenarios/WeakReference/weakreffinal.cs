@@ -5,6 +5,7 @@
 namespace DefaultNamespace {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
 
     internal class CreateObj
     {
@@ -31,6 +32,7 @@ namespace DefaultNamespace {
             return result;
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public void DeleteObj(int iObj,int iSwitch)
         {
             for( int i= 0; i< iObj; i++ )

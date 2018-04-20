@@ -7,6 +7,7 @@
 // Also tests the target of the handle.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 public class Test
@@ -37,13 +38,17 @@ public class Test
             copy = handle;
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public void DestroyObj()
+        {
+            obj = null;
+        }    
+
         public bool RunTest()
         {
-            // ensuring that GC happens even with /debug mode
-            obj = null;
             GC.Collect();
-
             GC.WaitForPendingFinalizers();
+            GC.Collect();
 
             bool ans1 = handle.IsAllocated;
             bool ans2 = copy.IsAllocated;
