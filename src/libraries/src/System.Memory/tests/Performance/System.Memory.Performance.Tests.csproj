@@ -38,6 +38,12 @@
     <Compile Include="..\ReadOnlyBuffer\BufferSegment.cs">
       <Link>Common\System\Memory\Tests\BufferSegment.cs</Link>
     </Compile>
+    <Compile Include="..\ReadOnlyBuffer\ReadOnlySequenceFactory.byte.cs">
+      <Link>Common\System\Memory\Tests\ReadOnlySequenceFactory.byte.cs</Link>
+    </Compile>
+    <Compile Include="..\ReadOnlyBuffer\ReadOnlySequenceFactory.char.cs">
+      <Link>Common\System\Memory\Tests\ReadOnlySequenceFactory.char.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">
