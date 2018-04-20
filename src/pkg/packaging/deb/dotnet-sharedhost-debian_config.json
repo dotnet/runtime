@@ -11,7 +11,7 @@
 
     "release":{
         "package_version":"1.0.0.0",
-        "package_revision":"1",
+        "package_revision":"%SHARED_HOST_REVISION%",
         "urgency" : "low",
         "changelog_message" : "https://github.com/dotnet/core/tree/master/release-notes"
     },
@@ -29,9 +29,9 @@
     },
 
     "debian_dependencies":{
-        "%RUNTIME_DEPS_DEBIAN_PACKAGE_NAME%" : {
-            "package_version": "%RUNTIME_DEPS_VERSION%"
-        } 
+        "libc6":{},
+        "libgcc1":{},
+        "libstdc++6":{}
      },
 
     "package_conflicts" : [
