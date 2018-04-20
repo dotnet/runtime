@@ -75,7 +75,7 @@ namespace System.Net.Http.Functional.Tests
                 string requestUriString = "https://localhost:" + server.Port.ToString();
                 tasks[1] = client.GetStringAsync(requestUriString);
 
-                await Task.WhenAll(tasks).TimeoutAfter(15 * 1000);
+                await tasks.WhenAllOrAnyFailed(15 * 1000);
 
                 if (serverAuxRecordDetectedInconclusive)
                 {

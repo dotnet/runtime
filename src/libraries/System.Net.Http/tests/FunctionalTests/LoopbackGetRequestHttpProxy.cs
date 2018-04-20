@@ -131,7 +131,7 @@ namespace System.Net.Http.Functional.Tests
                         clientSocket.Shutdown(SocketShutdown.Send);
                     });
                     // Relay bidirectional data including close.
-                    await Task.WhenAll(clientCopyTask, serverCopyTask).ConfigureAwait(false);
+                    await new[] { clientCopyTask, serverCopyTask }.WhenAllOrAnyFailed().ConfigureAwait(false);
                     return result;
                 }
 

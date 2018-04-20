@@ -69,7 +69,7 @@ namespace System.Net.Http.Functional.Tests
                 if (!IsCurlHandler) // libcurl sends Basic auth preemptively when only basic creds are provided; other handlers wait for 407.
                 {
                     await server.AcceptConnectionSendResponseAndCloseAsync(
-                        HttpStatusCode.ProxyAuthenticationRequired, "Connection: close\r\nProxy-Authenticate: Basic\r\n");
+                        HttpStatusCode.ProxyAuthenticationRequired, "Proxy-Authenticate: Basic\r\n");
                 }
 
                 List<string> headers = await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK);

@@ -78,11 +78,11 @@ namespace System.Net.Test.Common
 
                 if (success)
                 {
-                    await connection.SendResponseAsync();
+                    await connection.SendResponseAsync(additionalHeaders: "Connection: close\r\n");
                 }
                 else
                 {
-                    await connection.SendResponseAsync(HttpStatusCode.Unauthorized, authenticateHeaders);
+                    await connection.SendResponseAsync(HttpStatusCode.Unauthorized, "Connection: close\r\n" + authenticateHeaders);
                 }
             });
 

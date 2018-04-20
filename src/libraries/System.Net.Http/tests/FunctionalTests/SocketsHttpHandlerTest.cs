@@ -216,6 +216,7 @@ namespace System.Net.Http.Functional.Tests
                     string response = GetResponseForContentMode(content, mode);
                     await server.AcceptConnectionAsync(async connection =>
                     {
+                        server.ListenSocket.Close(); // Shut down the listen socket so attempts at additional connections would fail on the client
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
                     });
@@ -254,17 +255,16 @@ namespace System.Net.Http.Functional.Tests
                 async server =>
                 {
                     string content = new string('a', totalSize);
-                    string response = GetResponseForContentMode(content, mode);
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestHeaderAsync();
                         try
                         {
-                            await connection.Writer.WriteAsync(response);
+                            await connection.Writer.WriteAsync(GetResponseForContentMode(content, mode, connectionClose: false));
                         }
                         catch (Exception) { }     // Eat errors from client disconnect.
 
-                        await server.AcceptConnectionSendCustomResponseAndCloseAsync(response);
+                        await server.AcceptConnectionSendCustomResponseAndCloseAsync(GetResponseForContentMode(content, mode, connectionClose: true));
                     });
                 });
         }
@@ -305,9 +305,9 @@ namespace System.Net.Http.Functional.Tests
                 async server =>
                 {
                     string content = new string('a', ContentLength);
-                    string response = GetResponseForContentMode(content, mode);
                     await server.AcceptConnectionAsync(async connection =>
                     {
+                        string response = GetResponseForContentMode(content, mode, connectionClose: false);
                         await connection.ReadRequestHeaderAsync();
                         try
                         {
@@ -316,6 +316,7 @@ namespace System.Net.Http.Functional.Tests
                         }
                         catch (Exception) { }     // Eat errors from client disconnect.
 
+                        response = GetResponseForContentMode(content, mode, connectionClose: true);
                         await server.AcceptConnectionSendCustomResponseAndCloseAsync(response);
                     });
                 });
@@ -877,14 +878,22 @@ namespace System.Net.Http.Functional.Tests
             {
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
+                    var releaseServer = new TaskCompletionSource<bool>();
+
                     // Make multiple requests iteratively.
-                    for (int i = 0; i < 2; i++)
+
+                    Task serverTask1 = server.AcceptConnectionAsync(async connection =>
                     {
-                        Task<string> request = client.GetStringAsync(uri);
-                        string response = LoopbackServer.GetHttpResponse() + "here is a bunch of garbage";
-                        await server.AcceptConnectionSendCustomResponseAndCloseAsync(response);
-                        await request;
-                    }
+                        await connection.Writer.WriteAsync(LoopbackServer.GetHttpResponse(connectionClose: false) + "here is a bunch of garbage");
+                        await releaseServer.Task; // keep connection alive on the server side
+                    });
+                    await client.GetStringAsync(uri);
+
+                    Task serverTask2 = server.AcceptConnectionSendCustomResponseAndCloseAsync(LoopbackServer.GetHttpResponse(connectionClose: true));
+                    await new[] { client.GetStringAsync(uri), serverTask2 }.WhenAllOrAnyFailed();
+
+                    releaseServer.SetResult(true);
+                    await serverTask1;
                 });
             }
         }
