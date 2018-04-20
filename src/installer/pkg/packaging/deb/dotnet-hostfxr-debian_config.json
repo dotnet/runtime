@@ -11,7 +11,7 @@
 
     "release":{
         "package_version":"1.0.0.0",
-        "package_revision":"1",
+        "package_revision":"%HOSTFXR_REVISION%",
         "urgency" : "low",
         "changelog_message" : "https://github.com/dotnet/core/tree/master/release-notes"
     },
@@ -31,6 +31,9 @@
     "debian_dependencies":{
         "dotnet-host" : {
             "package_version": "%SHARED_HOST_DEBIAN_VERSION%"
-        }
+        },
+        "libc6":{},
+        "libgcc1":{},
+        "libstdc++6":{}
     }
 }
