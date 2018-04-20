@@ -14,7 +14,7 @@ namespace System.Memory.Tests
         public static ReadOnlySequenceFactory<T> MemoryFactory { get; } = new MemoryTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> SingleSegmentFactory { get; } = new SingleSegmentTestSequenceFactory();
         public static ReadOnlySequenceFactory<T> SegmentPerItemFactory { get; } = new BytePerSegmentTestSequenceFactory();
-        public static ReadOnlySequenceFactory<T> SplitInThree { get; } = new SplitInThreeSegmentsTestSequenceFactory();
+        public static ReadOnlySequenceFactory<T> SplitInThree { get; } = new SegmentsTestSequenceFactory(3);
 
         public abstract ReadOnlySequence<T> CreateOfSize(int size);
         public abstract ReadOnlySequence<T> CreateWithContent(T[] data);
@@ -46,6 +46,35 @@ namespace System.Memory.Tests
                 var startSegment = new T[data.Length + 20];
                 Array.Copy(data, 0, startSegment, 10, data.Length);
                 return new ReadOnlySequence<T>(new Memory<T>(startSegment, 10, data.Length));
+            }
+        }
+
+        internal class SegmentsTestSequenceFactory : ReadOnlySequenceFactory<T>
+        {
+            public SegmentsTestSequenceFactory(int segmentsCount)
+            {
+                SegmentsCount = segmentsCount;
+            }
+
+            public int SegmentsCount { get; }
+
+            public override ReadOnlySequence<T> CreateOfSize(int size)
+            {
+                return CreateWithContent(new T[size]);
+            }
+
+            public override ReadOnlySequence<T> CreateWithContent(T[] data)
+            {
+                var inputs = new List<ReadOnlyMemory<T>>(SegmentsCount);
+                int start = 0;
+                for (int i = 1; i <= SegmentsCount; i++)
+                {
+                    int end = (int)((long)data.Length * i / SegmentsCount);
+                    inputs.Add(data.AsMemory(start, end - start));
+                    start = end;
+                }
+
+                return CreateSegments(inputs);
             }
         }
 
@@ -84,27 +113,9 @@ namespace System.Memory.Tests
             }
         }
 
-        internal class SplitInThreeSegmentsTestSequenceFactory : ReadOnlySequenceFactory<T>
-        {
-            public override ReadOnlySequence<T> CreateOfSize(int size)
-            {
-                return CreateWithContent(new T[size]);
-            }
+        public static ReadOnlySequence<T> CreateSegments(params T[][] inputs) => CreateSegments(inputs.Select(input => (ReadOnlyMemory<T>)input.AsMemory()));
 
-            public override ReadOnlySequence<T> CreateWithContent(T[] data)
-            {
-                var third = data.Length / 3;
-
-                return CreateSegments(
-                    data.AsSpan(0, third).ToArray(),
-                    data.AsSpan(third, third).ToArray(),
-                    data.AsSpan(2 * third, data.Length - 2 * third).ToArray());
-            }
-        }
-
-        public static ReadOnlySequence<T> CreateSegments(params T[][] inputs) => CreateSegments((IEnumerable<T[]>)inputs);
-
-        public static ReadOnlySequence<T> CreateSegments(IEnumerable<T[]> inputs)
+        public static ReadOnlySequence<T> CreateSegments(IEnumerable<ReadOnlyMemory<T>> inputs)
         {
             if (inputs == null || inputs.Count() == 0)
             {
@@ -113,13 +124,13 @@ namespace System.Memory.Tests
 
             BufferSegment<T> last = null;
             BufferSegment<T> first = null;
-            foreach(T[] input in inputs)
+            foreach(ReadOnlyMemory<T> input in inputs)
             {
                 int length = input.Length;
                 int dataOffset = length / 2;
-                var items = new T[length * 2];
-                input.CopyTo(items, dataOffset);
-                Memory<T> memory = new Memory<T>(items, dataOffset, length);
+                
+                Memory<T> memory = new Memory<T>(new T[length * 2], dataOffset, length);
+                input.CopyTo(memory);
                 
                 if (first == null)
                 {
