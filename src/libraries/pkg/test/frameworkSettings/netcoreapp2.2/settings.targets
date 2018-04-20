@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- Enable targeting netcoreapp2.2 even in an older CLI -->
+    <NETCoreAppMaximumVersion>2.2</NETCoreAppMaximumVersion>
+    <!-- use the most recent MS.NETCore.App we have from upstack -->
+    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppPackageVersion)</RuntimeFrameworkVersion>
+  </PropertyGroup>
+</Project>

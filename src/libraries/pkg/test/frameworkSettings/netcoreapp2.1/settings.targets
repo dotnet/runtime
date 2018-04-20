@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- Enable targeting netcoreapp2.1 even in an older CLI -->
     <NETCoreAppMaximumVersion>2.1</NETCoreAppMaximumVersion>
-    <!-- use the most recent MS.NETCore.App we have from upstack -->
-    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppPackageVersion)</RuntimeFrameworkVersion>
+    <!-- use the most recent MS.NETCore.App we have from upstack, needs to be updated to final 2.1 build -->
+    <RuntimeFrameworkVersion>2.1.0-rc1-26419-02</RuntimeFrameworkVersion>
   </PropertyGroup>
 </Project>
