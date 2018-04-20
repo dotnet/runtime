@@ -82,7 +82,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			yield break;
 		}
 
-		public bool IsIgnored (out string reason)
+		public virtual bool IsIgnored (out string reason)
 		{
 			var ignoreAttribute = _testCaseTypeDefinition.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == nameof (IgnoreTestCaseAttribute));
 			if (ignoreAttribute != null) {
