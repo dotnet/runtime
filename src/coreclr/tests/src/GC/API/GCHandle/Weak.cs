@@ -6,6 +6,7 @@
 // will be collected.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 public class Test
@@ -31,30 +32,24 @@ public class Test
             GCHandle handle = GCHandle.Alloc(obj, GCHandleType.Weak);
         }
 
-        public bool RunTest()
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public void RunTest()
         {
             // ensuring that GC happens even with /debug mode
             obj = null;
-            GC.Collect();
-
-            GC.WaitForPendingFinalizers();
-
-            if (Dummy.flag == 99)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
         }
     }
 
     public static int Main()
     {
         CreateObj temp = new CreateObj();
+        temp.RunTest();
 
-        if (temp.RunTest())
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        if (Dummy.flag == 99)
         {
             Console.WriteLine("Test for GCHandleType.Weak passed!");
             return 100;

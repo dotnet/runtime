@@ -5,6 +5,7 @@
 // Tests KeepAlive()
 
 using System;
+using System.Runtime.CompilerServices;
 
 public class Test
 {
@@ -27,11 +28,19 @@ public class Test
             obj = new Dummy();
         }
 
-        public void RunTest()
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public void DestroyObj()
         {
             obj = null;     // this will collect the obj even if we have KeepAlive()		
+        }
+
+        public void RunTest()
+        {
+            DestroyObj();
+
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            GC.Collect();
 
             GC.KeepAlive(obj);  // will keep alive 'obj' till this point
         }

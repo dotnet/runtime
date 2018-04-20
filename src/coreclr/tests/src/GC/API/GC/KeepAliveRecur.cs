@@ -28,6 +28,7 @@ public class Test
 
         GC.Collect();
         GC.WaitForPendingFinalizers();
+        GC.Collect();
 
         foo(o);     //Recursive call
 

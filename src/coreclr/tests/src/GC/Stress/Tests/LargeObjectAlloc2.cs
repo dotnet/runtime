@@ -9,6 +9,7 @@
 
 
 using System;
+using System.Runtime.CompilerServices;
 
 namespace LargeObjectTest
 {
@@ -54,10 +55,29 @@ namespace LargeObjectTest
     {
         public static int ExitCode = -1;
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static bool AllocAndCollect(int loop)
+        {
+            LargeObject largeobj;
+            try
+            {
+                largeobj = new LargeObject();
+                TestLibrary.Logging.WriteLine("Allocated LargeObject");
+            }
+            catch (Exception e)
+            {
+                TestLibrary.Logging.WriteLine("Failure to allocate at loop {0}\n", loop);
+                TestLibrary.Logging.WriteLine("Caught Exception: {0}", e);
+                return false;
+            }
+
+            largeobj = null;
+            return true;
+        }
+
         public static int Main()
         {
             int loop = 0;
-            LargeObject largeobj;
 
             TestLibrary.Logging.WriteLine("Test should pass with ExitCode 100\n");
 
@@ -66,24 +86,22 @@ namespace LargeObjectTest
             {
                 loop++;
                 TestLibrary.Logging.Write(String.Format("LOOP: {0}\n", loop));
-                try
+
+                if (!AllocAndCollect(loop))
                 {
-                    largeobj = new LargeObject();
-                    TestLibrary.Logging.WriteLine("Allocated LargeObject");
-                }
-                catch (Exception e)
-                {
-                    TestLibrary.Logging.WriteLine("Failure to allocate at loop {0}\n", loop);
-                    TestLibrary.Logging.WriteLine("Caught Exception: {0}", e);
                     return 1;
                 }
-                largeobj = null;
+
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
+                GC.Collect();
+
                 TestLibrary.Logging.WriteLine("LargeObject Collected\n");
             }
+
             TestLibrary.Logging.WriteLine("Test Passed");
             GC.Collect();
+            GC.WaitForPendingFinalizers();
 
             return ExitCode;
         }

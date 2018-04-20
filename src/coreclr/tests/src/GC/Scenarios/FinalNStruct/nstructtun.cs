@@ -4,6 +4,7 @@
 
 namespace NStruct {
     using System;
+    using System.Runtime.CompilerServices;
 
     internal class NStructTun
     {
@@ -14,18 +15,23 @@ namespace NStruct {
 #pragma warning disable 0414
             private STRMAP Strmap;
 #pragma warning restore 0414
+
             public CreateObj(int Rep)
             {
                  for( int i=0; i< Rep; i++ )
                  {
                     Strmap = new STRMAP();
                  }
-             }
+            }
+         
+            [MethodImplAttribute(MethodImplOptions.NoInlining)]
+            public void DeleteStrmap()
+            {
+                Strmap=null;
+            }
 
             public bool RunTest()
             {
-                Strmap=null;
-
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();

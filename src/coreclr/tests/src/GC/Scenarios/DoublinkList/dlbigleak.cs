@@ -107,6 +107,7 @@ namespace DoubLink {
         }
 
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public void MakeLeak(int iRep)
         {
 

@@ -16,6 +16,7 @@
  */
 
 using System;
+using System.Runtime.CompilerServices;
 
 public class Test
 {
@@ -47,6 +48,7 @@ public class Test
     }
 
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void RunTest2()
     {
         Dummy2 obj2 = new Dummy2();
@@ -66,6 +68,7 @@ public class Test
         //for (int i=0; i<5; i++) {
         GC.Collect();
         GC.WaitForPendingFinalizers();
+        GC.Collect();
         //}
 
         GC.KeepAlive(obj);  // will keep obj alive until this point

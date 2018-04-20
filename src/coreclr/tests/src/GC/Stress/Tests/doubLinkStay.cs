@@ -4,6 +4,7 @@
 
 
 using System;
+using System.Runtime.CompilerServices;
 
 
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
@@ -75,7 +76,6 @@ namespace DoubLink
                 MakeLeak(iRep);
             }
 
-
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
@@ -87,6 +87,7 @@ namespace DoubLink
             return (DLinkNode.FinalCount == iRep * iObj * 20);
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public void SetLink(int iRep, int iObj)
         {
             for (int i = 0; i < iRep; i++)
@@ -96,6 +97,7 @@ namespace DoubLink
         }
 
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public void MakeLeak(int iRep)
         {
             for (int i = 0; i < iRep; i++)

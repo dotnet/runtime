@@ -16,8 +16,9 @@
 
 namespace App {
     using System;
-    using System.Reflection;
     using System.Collections.Generic;
+    using System.Reflection;
+    using System.Runtime.CompilerServices;
 
     class ReflectObj
     {
@@ -112,6 +113,7 @@ namespace App {
 
             }
 
+            [MethodImplAttribute(MethodImplOptions.NoInlining)]
             public void CreateMoreObj()
             {
                 rtype = new Type[0];

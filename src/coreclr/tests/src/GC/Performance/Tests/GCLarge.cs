@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 
 internal class List
 {
@@ -24,23 +25,27 @@ internal class List
             CreateLargeObjects();
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            GC.Collect();
         }
 
         //Large Object Collection (half array)
         CreateLargeObjectsHalf();
         GC.Collect();
         GC.WaitForPendingFinalizers();
+        GC.Collect();
 
         for(long i = 0; i < iterations; i++)
         {
             CreateLargeObjectsHalf();
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            GC.Collect();
         }
 
         //Promote from Gen1 to Gen2
         SmallGC [] sgc;
         sgc = new SmallGC [LOOP];
+
         for (int j = 0; j < LOOP; j++)
             sgc[j] = new SmallGC(0);
 
@@ -51,6 +56,7 @@ internal class List
 
         GC.Collect();
         GC.WaitForPendingFinalizers();
+        GC.Collect();
                     
         for(long i = 0; i < iterations; i++)
         {
@@ -110,6 +116,7 @@ internal class List
         }
     }
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static List PopulateList(int len)
     {
         if (len == 0) return null;
@@ -127,6 +134,7 @@ internal class List
         }
         return Node;
     }
+
     public static int ValidateList(List First, int len)
     {
         List tmp1 = First;
@@ -151,6 +159,7 @@ internal class List
     }
 
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void CreateLargeObjects()
     {
         LargeGC [] lgc;
@@ -159,6 +168,7 @@ internal class List
             lgc[i] = new LargeGC();
     }
 
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void CreateLargeObjectsHalf()
     {
         LargeGC [] lgc;

@@ -93,6 +93,7 @@ namespace DoubLink {
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            GC.Collect();
 
             //do a second GC collect since some nodes may have been still alive at the time of first collect
             GC.Collect();

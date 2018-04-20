@@ -10,6 +10,7 @@
 
 namespace DefaultNamespace {
     using System;
+    using System.Runtime.CompilerServices;
     using System.Collections.Generic;
 
     internal class BaseFinal
@@ -104,18 +105,15 @@ namespace DefaultNamespace {
             //Console.WriteLine("after all objects were created, the heapsize is " + GC.GetTotalMemory(false));
         }
 
-        public bool RunTest()
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public void DestroyNode()
         {
             obj = null;
+        }
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            Console.Write(BNode.icFinalNode);
-            Console.WriteLine(" Nodes were finalized and resurrected.");
-            //Console.WriteLine("after all objects were deleted and resurrected in Finalize() , the heapsize is " + GC.GetTotalMemory(false));
-
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public void ResurrectNodes()
+        {
             for(int i=0; i< BNode.rlNode.Count; i++)
             {
                 BNode oldNode = (BNode)BNode.rlNode[ i ];
@@ -126,6 +124,21 @@ namespace DefaultNamespace {
                 oldNode = null;
                 BNode.rlNode[ i ] = null;
             }
+        }
+
+        public bool RunTest()
+        {
+            DestroyNode();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Console.Write(BNode.icFinalNode);
+            Console.WriteLine(" Nodes were finalized and resurrected.");
+            //Console.WriteLine("after all objects were deleted and resurrected in Finalize() , the heapsize is " + GC.GetTotalMemory(false));
+
+            ResurrectNodes(); 
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
