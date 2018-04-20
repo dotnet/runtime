@@ -290,13 +290,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
-            if (IsWinHttpHandler)
-            {
-                // Issue #27064:
-                // Throws WinHttpException ("The server returned an invalid or unrecognized response")
-                // while parsing headers.
-                return;
-            }
             if (IsNetfxHandler)
             {
                 // Throws HttpRequestException wrapping a WebException for the canceled request
@@ -318,7 +311,7 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask1 = server.AcceptConnectionAsync(async connection1 =>
                     {
                         await connection1.ReadRequestHeaderAsync();
-                        await connection1.Writer.WriteAsync($"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\n");
+                        await connection1.Writer.WriteAsync($"HTTP/1.1 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\n");
                         serverAboutToBlock.SetResult(true);
                         await blockServerResponse.Task;
                         await connection1.Writer.WriteAsync("Content-Length: 5\r\n\r\nhello");

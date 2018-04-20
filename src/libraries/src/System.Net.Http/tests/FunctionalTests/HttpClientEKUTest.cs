@@ -62,7 +62,7 @@ namespace System.Net.Http.Functional.Tests
                 string requestUriString = GetUriStringAndConfigureHandler(options, server, handler);
                 tasks[1] = client.GetStringAsync(requestUriString);
 
-                await Task.WhenAll(tasks).TimeoutAfter(TestTimeoutMilliseconds);
+                await tasks.WhenAllOrAnyFailed(TestTimeoutMilliseconds);
             }
         }
 
@@ -108,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.ClientCertificates.Add(clientCertificateNoEku);
                 tasks[1] = client.GetStringAsync(requestUriString);
 
-                await Task.WhenAll(tasks).TimeoutAfter(TestTimeoutMilliseconds);
+                await tasks.WhenAllOrAnyFailed(TestTimeoutMilliseconds);
             }
         }
 

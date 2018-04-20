@@ -150,7 +150,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             Task<List<string>> requestLines = server.AcceptConnectionSendResponseAndCloseAsync();
                             Task<HttpResponseMessage> response = client.GetAsync(url);
-                            await Task.WhenAll(response, requestLines);
+                            await new Task[] { response, requestLines }.WhenAllOrAnyFailed();
 
                             AssertNoHeadersAreInjected(requestLines.Result);
                             response.Result.Dispose();
@@ -361,7 +361,7 @@ namespace System.Net.Http.Functional.Tests
                         {
                             Task<List<string>> requestLines = server.AcceptConnectionSendResponseAndCloseAsync();
                             Task<HttpResponseMessage> response = client.GetAsync(url);
-                            await Task.WhenAll(response, requestLines);
+                            await new Task[] { response, requestLines }.WhenAllOrAnyFailed();
 
                             AssertHeadersAreInjected(requestLines.Result, parentActivity);
                             response.Result.Dispose();
