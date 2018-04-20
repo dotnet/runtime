@@ -60,6 +60,28 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public async Task SslStream_ServerLocalCertificateSelectionCallbackReturnsNull_Throw()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+
+            var selectionCallback = new LocalCertificateSelectionCallback((object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] issuers) =>
+            {
+                return null;
+            });
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var server = new SslStream(serverStream, false, null, selectionCallback))
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            {
+                await Assert.ThrowsAsync<NotSupportedException>(async () =>
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false)), server.AuthenticateAsServerAsync(certificate))
+                );
+            }
+        }
+
+        [Fact]
         public async Task SslStream_StreamToStream_Successive_ClientWrite_Sync_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
