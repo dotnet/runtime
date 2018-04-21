@@ -296,35 +296,38 @@ def main(args):
     # runtime with the runtime built in the coreclr build. The result will be that perhaps
     # some, hopefully few, corefx tests will fail, but the builds will never fail.
 
+    # Cross build corefx for arm64 on x64.
+    # Cross build corefx for arm32 on x86.
+
+    build_native_args = ''
+    if not Is_windows and arch == 'arm' :
+        # We need to force clang5.0; we are building in a docker container that doesn't have
+        # clang3.9, which is currently the default used by build-native.sh. We need to pass
+        # "-cross", but we also pass "-portable", which build-native.sh normally passes
+        # (there doesn't appear to be a way to pass these individually).
+        build_native_args = '-AdditionalArgs:"-portable -cross" -Clang:clang5.0'
+
+    command = ' '.join(('build-native.cmd' if Is_windows else './build-native.sh',
+                        config_args,
+                        build_native_args))
+    log(command)
+    returncode = 0 if testing else os.system(command)
+    if returncode != 0:
+        sys.exit(1)
+
+    command = ' '.join(('build-managed.cmd' if Is_windows else './build-managed.sh', config_args))
+    log(command)
+    returncode = 0 if testing else os.system(command)
+    if returncode != 0:
+        sys.exit(1)
+
     if not Is_windows and arch == 'arm64' :
-        # Cross build corefx for arm64 on x64
-        command = ' '.join(('./build-native.sh', config_args))
-        log(command)
-        returncode = 0 if testing else os.system(command)
-        if returncode != 0:
-            sys.exit(1)
-
-        command = ' '.join(('./build-managed.sh', '-release'))
-        log(command)
-        returncode = 0 if testing else os.system(command)
-        if returncode != 0:
-            sys.exit(1)
-
         # Rename runtime to arm64
         os.rename(os.path.join(fx_root,'bin','runtime', 'netcoreapp-%s-%s-%s' % (clr_os, 'Release', 'x64')),
                   os.path.join(fx_root,'bin','runtime', 'netcoreapp-%s-%s-%s' % (clr_os, 'Release', 'arm64')))
 
         os.rename(os.path.join(fx_root,'bin','testhost', 'netcoreapp-%s-%s-%s' % (clr_os, 'Release', 'x64')),
                   os.path.join(fx_root,'bin','testhost', 'netcoreapp-%s-%s-%s' % (clr_os, 'Release', 'arm64')))
-
-    else:
-        command = ' '.join(('build.cmd' if Is_windows else './build.sh',
-                            config_args))
-        log(command)
-        returncode = 0 if testing else os.system(command)
-        if returncode != 0:
-            sys.exit(1)
-
 
     # Override the built corefx runtime (which it picked up by copying from packages determined
     # by its dependencies.props file). Note that we always build Release corefx.
