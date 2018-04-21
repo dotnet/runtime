@@ -40,7 +40,7 @@ namespace System.IO
         private bool _initializing = false;
 
         // Buffer size
-        private int _internalBufferSize = 8192;
+        private uint _internalBufferSize = 8192;
 
         // Used for synchronization
         private bool _disposed;
@@ -223,7 +223,7 @@ namespace System.IO
         {
             get
             {
-                return _internalBufferSize;
+                return (int)_internalBufferSize;
             }
             set
             {
@@ -235,7 +235,7 @@ namespace System.IO
                     }
                     else
                     {
-                        _internalBufferSize = value;
+                        _internalBufferSize = (uint)value;
                     }
 
                     Restart();
@@ -359,8 +359,6 @@ namespace System.IO
             }
         }
 
-        /// <devdoc>
-        /// </devdoc>
         protected override void Dispose(bool disposing)
         {
             try
@@ -390,32 +388,29 @@ namespace System.IO
             }
         }
 
-        /// <devdoc>
-        ///     Sees if the name given matches the name filter we have.
-        /// </devdoc>
-        /// <internalonly/>
-        private bool MatchPattern(string relativePath)
+        /// <summary>
+        /// Sees if the name given matches the name filter we have.
+        /// </summary>
+        private bool MatchPattern(ReadOnlySpan<char> relativePath)
         {
-            ReadOnlySpan<char> name = IO.Path.GetFileName(relativePath.AsSpan());
+            ReadOnlySpan<char> name = IO.Path.GetFileName(relativePath);
             return name.Length > 0
                 ? FileSystemName.MatchesSimpleExpression(_filter, name, ignoreCase: !PathInternal.IsCaseSensitive)
                 : false;
         }
 
-        /// <devdoc>
-        ///     Raises the event to each handler in the list.
-        /// </devdoc>
-        /// <internalonly/>
+        /// <summary>
+        /// Raises the event to each handler in the list.
+        /// </summary>
         private void NotifyInternalBufferOverflowEvent()
         {
             _onErrorHandler?.Invoke(this, new ErrorEventArgs(
                     new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, _directory))));
         }
 
-        /// <devdoc>
-        ///     Raises the event to each handler in the list.
-        /// </devdoc>
-        /// <internalonly/>
+        /// <summary>
+        /// Raises the event to each handler in the list.
+        /// </summary>
         private void NotifyRenameEventArgs(WatcherChangeTypes action, string name, string oldName)
         {
             // filter if there's no handler or neither new name or old name match a specified pattern
@@ -427,28 +422,55 @@ namespace System.IO
             }
         }
 
-        /// <devdoc>
-        ///     Raises the event to each handler in the list.
-        /// </devdoc>
-        /// <internalonly/>
-        private void NotifyFileSystemEventArgs(WatcherChangeTypes changeType, string name)
+        /// <summary>
+        /// Raises the event to each handler in the list.
+        /// </summary>
+        private void NotifyRenameEventArgs(WatcherChangeTypes action, ReadOnlySpan<char> name, ReadOnlySpan<char> oldName)
         {
-            FileSystemEventHandler handler = null;
+            // filter if there's no handler or neither new name or old name match a specified pattern
+            RenamedEventHandler handler = _onRenamedHandler;
+            if (handler != null &&
+                (MatchPattern(name) || MatchPattern(oldName)))
+            {
+                handler(this, new RenamedEventArgs(action, _directory, name.IsEmpty ? null : name.ToString(), oldName.IsEmpty ? null : oldName.ToString()));
+            }
+        }
+
+        private FileSystemEventHandler GetHandler(WatcherChangeTypes changeType)
+        {
             switch (changeType)
             {
                 case WatcherChangeTypes.Created:
-                    handler = _onCreatedHandler;
-                    break;
+                    return _onCreatedHandler;
                 case WatcherChangeTypes.Deleted:
-                    handler = _onDeletedHandler;
-                    break;
+                    return _onDeletedHandler;
                 case WatcherChangeTypes.Changed:
-                    handler = _onChangedHandler;
-                    break;
-                default:
-                    Debug.Fail("Unknown FileSystemEvent change type!  Value: " + changeType);
-                    break;
+                    return _onChangedHandler;
             }
+
+            Debug.Fail("Unknown FileSystemEvent change type!  Value: " + changeType);
+            return null;
+        }
+
+        /// <summary>
+        /// Raises the event to each handler in the list.
+        /// </summary>
+        private void NotifyFileSystemEventArgs(WatcherChangeTypes changeType, ReadOnlySpan<char> name)
+        {
+            FileSystemEventHandler handler = GetHandler(changeType);
+
+            if (handler != null && MatchPattern(name.IsEmpty ? _directory : name))
+            {
+                handler(this, new FileSystemEventArgs(changeType, _directory, name.IsEmpty ? null : name.ToString()));
+            }
+        }
+
+        /// <summary>
+        /// Raises the event to each handler in the list.
+        /// </summary>
+        private void NotifyFileSystemEventArgs(WatcherChangeTypes changeType, string name)
+        {
+            FileSystemEventHandler handler = GetHandler(changeType);
 
             if (handler != null && MatchPattern(string.IsNullOrEmpty(name) ? _directory : name))
             {
