@@ -10,7 +10,7 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>807c5b1aab825f6c4fde32b333bbe7d6ab59678e</CoreFxCurrentRef>
-    <CoreClrCurrentRef>807c5b1aab825f6c4fde32b333bbe7d6ab59678e</CoreClrCurrentRef>
+    <CoreClrCurrentRef>581dd183ff854d5d5f1a0d4a5da5ea63309c9d07</CoreClrCurrentRef>
     <StandardCurrentRef>807c5b1aab825f6c4fde32b333bbe7d6ab59678e</StandardCurrentRef>
     <BuildToolsCurrentRef>807c5b1aab825f6c4fde32b333bbe7d6ab59678e</BuildToolsCurrentRef>
   </PropertyGroup>
@@ -19,7 +19,7 @@
     <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview3-26420-06</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview3-26420-06</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.2.0-preview1-26420-06</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.2.0-preview1-26421-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <NETStandardLibraryPackageVersion>2.0.3</NETStandardLibraryPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.4.1</MicrosoftDiaSymReaderNativePackageVersion>
   </PropertyGroup>
