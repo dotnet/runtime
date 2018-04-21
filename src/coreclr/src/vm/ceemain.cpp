@@ -2923,6 +2923,7 @@ static void TerminateIPCManager(void)
 // Impl for UtilLoadStringRC Callback: In VM, we let the thread decide culture
 // copy culture name into szBuffer and return length
 // ---------------------------------------------------------------------------
+extern BOOL g_fFatalErrorOccuredOnGCThread;
 static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
 {
     CONTRACTL
@@ -2945,7 +2946,23 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
 
         Thread * pThread = GetThread();
 
-        if (pThread != NULL) {
+        // When fatal errors have occured our invariants around GC modes may be broken and attempting to transition to co-op may hang
+        // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
+        // getting localized with a non-default thread-specific culture.
+        // A canonical stack trace that gets here is a fatal error in the GC that comes through:
+        // coreclr.dll!GetThreadUICultureNames
+        // coreclr.dll!CCompRC::LoadLibraryHelper
+        // coreclr.dll!CCompRC::LoadLibrary
+        // coreclr.dll!CCompRC::GetLibrary
+        // coreclr.dll!CCompRC::LoadString
+        // coreclr.dll!CCompRC::LoadString
+        // coreclr.dll!SString::LoadResourceAndReturnHR
+        // coreclr.dll!SString::LoadResourceAndReturnHR
+        // coreclr.dll!SString::LoadResource
+        // coreclr.dll!EventReporter::EventReporter
+        // coreclr.dll!EEPolicy::LogFatalError
+        // coreclr.dll!EEPolicy::HandleFatalError
+        if (pThread != NULL && !g_fFatalErrorOccuredOnGCThread) {
 
             // Switch to cooperative mode, since we'll be looking at managed objects
             // and we don't want them moving on us.
@@ -3075,8 +3092,24 @@ static int GetThreadUICultureId(__out LocaleIDValue* pLocale)
 
     Thread * pThread = GetThread();
 
-    if (pThread != NULL) {
-
+    // When fatal errors have occured our invariants around GC modes may be broken and attempting to transition to co-op may hang
+    // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
+    // getting localized with a non-default thread-specific culture.
+    // A canonical stack trace that gets here is a fatal error in the GC that comes through:
+    // coreclr.dll!GetThreadUICultureNames
+    // coreclr.dll!CCompRC::LoadLibraryHelper
+    // coreclr.dll!CCompRC::LoadLibrary
+    // coreclr.dll!CCompRC::GetLibrary
+    // coreclr.dll!CCompRC::LoadString
+    // coreclr.dll!CCompRC::LoadString
+    // coreclr.dll!SString::LoadResourceAndReturnHR
+    // coreclr.dll!SString::LoadResourceAndReturnHR
+    // coreclr.dll!SString::LoadResource
+    // coreclr.dll!EventReporter::EventReporter
+    // coreclr.dll!EEPolicy::LogFatalError
+    // coreclr.dll!EEPolicy::HandleFatalError
+    if (pThread != NULL && !g_fFatalErrorOccuredOnGCThread)
+    {
         // Switch to cooperative mode, since we'll be looking at managed objects
         // and we don't want them moving on us.
         GCX_COOP();
@@ -3134,7 +3167,24 @@ static int GetThreadUICultureId(__out LocaleIDValue* pLocale)
 
     Thread * pThread = GetThread();
 
-    if (pThread != NULL) {
+    // When fatal errors have occured our invariants around GC modes may be broken and attempting to transition to co-op may hang
+    // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
+    // getting localized with a non-default thread-specific culture.
+    // A canonical stack trace that gets here is a fatal error in the GC that comes through:
+    // coreclr.dll!GetThreadUICultureNames
+    // coreclr.dll!CCompRC::LoadLibraryHelper
+    // coreclr.dll!CCompRC::LoadLibrary
+    // coreclr.dll!CCompRC::GetLibrary
+    // coreclr.dll!CCompRC::LoadString
+    // coreclr.dll!CCompRC::LoadString
+    // coreclr.dll!SString::LoadResourceAndReturnHR
+    // coreclr.dll!SString::LoadResourceAndReturnHR
+    // coreclr.dll!SString::LoadResource
+    // coreclr.dll!EventReporter::EventReporter
+    // coreclr.dll!EEPolicy::LogFatalError
+    // coreclr.dll!EEPolicy::HandleFatalError
+    if (pThread != NULL && !g_fFatalErrorOccuredOnGCThread)
+    {
 
         // Switch to cooperative mode, since we'll be looking at managed objects
         // and we don't want them moving on us.
