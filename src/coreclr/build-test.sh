@@ -240,22 +240,13 @@ build_Tests()
 
     echo "Starting the Managed Tests Build..."
 
-    __ManagedTestBuiltMarker=${__TestBinDir}/managed_test_build
+    build_Tests_internal "Tests_Managed" "$__ProjectDir/tests/build.proj" "$__up" "Managed tests build (build tests)"
 
-    if [ ! -f $__ManagedTestBuiltMarker ]; then
-
-        build_Tests_internal "Tests_Managed" "$__ProjectDir/tests/build.proj" "$__up" "Managed tests build (build tests)"
-
-        if [ $? -ne 0 ]; then
-            echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
-            exit 1
-        else
-            echo "Tests have been built."
-            echo "Create marker \"${__ManagedTestBuiltMarker}\""
-            touch $__ManagedTestBuiltMarker
-        fi
+    if [ $? -ne 0 ]; then
+        echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
+        exit 1
     else
-        echo "Managed Tests had been built before."
+        echo "Managed tests build success!"
     fi
 
     if [ $__BuildTestWrappers -ne -0 ]; then
