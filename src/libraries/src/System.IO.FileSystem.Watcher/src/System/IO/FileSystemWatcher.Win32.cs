@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -143,16 +143,15 @@ namespace System.IO
 
                 // Get the overlapped pointer to use for this iteration.
                 overlappedPointer = state.ThreadPoolBinding.AllocateNativeOverlapped(state.PreAllocatedOverlapped);
-                int size;
                 continueExecuting = Interop.Kernel32.ReadDirectoryChangesW(
                     state.DirectoryHandle,
                     state.Buffer, // the buffer is kept pinned for the duration of the sync and async operation by the PreAllocatedOverlapped
                     _internalBufferSize,
                     _includeSubdirectories,
-                    (int)_notifyFilters,
-                    out size,
+                    (uint)_notifyFilters,
+                    null,
                     overlappedPointer,
-                    IntPtr.Zero);
+                    null);
             }
             catch (ObjectDisposedException)
             {
@@ -242,124 +241,95 @@ namespace System.IO
             }
         }
 
-        private void ParseEventBufferAndNotifyForEach(byte[] buffer)
+        private unsafe void ParseEventBufferAndNotifyForEach(byte[] buffer)
         {
             Debug.Assert(buffer != null);
             Debug.Assert(buffer.Length > 0);
 
-            // Parse each event from the buffer and notify appropriate delegates
-
-            /******
-                Format for the buffer is the following C struct:
-
-                typedef struct _FILE_NOTIFY_INFORMATION {
-                   DWORD NextEntryOffset;
-                   DWORD Action;
-                   DWORD FileNameLength;
-                   WCHAR FileName[1];
-                } FILE_NOTIFY_INFORMATION;
-
-                NOTE1: FileNameLength is length in bytes.
-                NOTE2: The Filename is a Unicode string that's NOT NULL terminated.
-                NOTE3: A NextEntryOffset of zero means that it's the last entry
-            *******/
-
-            // Parse the file notify buffer:
-            int offset = 0;
-            int nextOffset, action, nameLength;
-            string oldName = null;
-            string name = null;
-
-            do
+            fixed (byte* b = buffer)
             {
-                unsafe
+                Interop.Kernel32.FILE_NOTIFY_INFORMATION* info = (Interop.Kernel32.FILE_NOTIFY_INFORMATION*)b;
+
+                ReadOnlySpan<char> oldName = ReadOnlySpan<char>.Empty;
+
+                // Parse each event from the buffer and notify appropriate delegates
+                do
                 {
-                    fixed (byte* buffPtr = &buffer[0])
+                    // A slightly convoluted piece of code follows.  Here's what's happening:
+                    //
+                    // We wish to collapse the poorly done rename notifications from the
+                    // ReadDirectoryChangesW API into a nice rename event. So to do that,
+                    // it's assumed that a FILE_ACTION_RENAMED_OLD_NAME will be followed
+                    // immediately by a FILE_ACTION_RENAMED_NEW_NAME in the buffer, which is
+                    // all that the following code is doing.
+                    //
+                    // On a FILE_ACTION_RENAMED_OLD_NAME, it asserts that no previous one existed
+                    // and saves its name.  If there are no more events in the buffer, it'll
+                    // assert and fire a RenameEventArgs with the Name field null.
+                    //
+                    // If a NEW_NAME action comes in with no previous OLD_NAME, we assert and fire
+                    // a rename event with the OldName field null.
+                    //
+                    // If the OLD_NAME and NEW_NAME actions are indeed there one after the other,
+                    // we'll fire the RenamedEventArgs normally and clear oldName.
+                    //
+                    // If the OLD_NAME is followed by another action, we assert and then fire the
+                    // rename event with the Name field null and then fire the next action.
+                    //
+                    // In case it's not a OLD_NAME or NEW_NAME action, we just fire the event normally.
+                    //
+                    // (Phew!)
+
+                    switch (info->Action)
                     {
-                        // Get next offset:
-                        nextOffset = *((int*)(buffPtr + offset));
-
-                        // Get change flag:
-                        action = *((int*)(buffPtr + offset + 4));
-
-                        // Get filename length (in bytes):
-                        nameLength = *((int*)(buffPtr + offset + 8));
-                        name = new string((char*)(buffPtr + offset + 12), 0, nameLength / 2);
-                    }
-                }
-
-                /* A slightly convoluted piece of code follows.  Here's what's happening:
-
-                   We wish to collapse the poorly done rename notifications from the
-                   ReadDirectoryChangesW API into a nice rename event. So to do that,
-                   it's assumed that a FILE_ACTION_RENAMED_OLD_NAME will be followed
-                   immediately by a FILE_ACTION_RENAMED_NEW_NAME in the buffer, which is
-                   all that the following code is doing.
-
-                   On a FILE_ACTION_RENAMED_OLD_NAME, it asserts that no previous one existed
-                   and saves its name.  If there are no more events in the buffer, it'll
-                   assert and fire a RenameEventArgs with the Name field null.
-
-                   If a NEW_NAME action comes in with no previous OLD_NAME, we assert and fire
-                   a rename event with the OldName field null.
-
-                   If the OLD_NAME and NEW_NAME actions are indeed there one after the other,
-                   we'll fire the RenamedEventArgs normally and clear oldName.
-
-                   If the OLD_NAME is followed by another action, we assert and then fire the
-                   rename event with the Name field null and then fire the next action.
-
-                   In case it's not a OLD_NAME or NEW_NAME action, we just fire the event normally.
-
-                   (Phew!)
-                 */
-
-                // If the action is RENAMED_FROM, save the name of the file
-                if (action == Interop.Kernel32.FileOperations.FILE_ACTION_RENAMED_OLD_NAME)
-                {
-                    oldName = name;
-                }
-                else if (action == Interop.Kernel32.FileOperations.FILE_ACTION_RENAMED_NEW_NAME)
-                {
-                    // oldName may be null here if we received a FILE_ACTION_RENAMED_NEW_NAME with no old name
-                    NotifyRenameEventArgs(WatcherChangeTypes.Renamed, name, oldName);
-                    oldName = null;
-                }
-                else
-                {
-                    if (oldName != null)
-                    {
-                        // Previous FILE_ACTION_RENAMED_OLD_NAME with no new name
-                        NotifyRenameEventArgs(WatcherChangeTypes.Renamed, null, oldName);
-                        oldName = null;
-                    }
-
-                    switch (action)
-                    {
-                        case Interop.Kernel32.FileOperations.FILE_ACTION_ADDED:
-                            NotifyFileSystemEventArgs(WatcherChangeTypes.Created, name);
+                        case Interop.Kernel32.FileAction.FILE_ACTION_RENAMED_OLD_NAME:
+                            // Action is renamed from, save the name of the file
+                            oldName = info->FileName;
                             break;
-                        case Interop.Kernel32.FileOperations.FILE_ACTION_REMOVED:
-                            NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, name);
-                            break;
-                        case Interop.Kernel32.FileOperations.FILE_ACTION_MODIFIED:
-                            NotifyFileSystemEventArgs(WatcherChangeTypes.Changed, name);
+                        case Interop.Kernel32.FileAction.FILE_ACTION_RENAMED_NEW_NAME:
+                            // oldName may be empty if we didn't receive FILE_ACTION_RENAMED_OLD_NAME first
+                            NotifyRenameEventArgs(
+                                WatcherChangeTypes.Renamed,
+                                info->FileName,
+                                oldName);
+                            oldName = ReadOnlySpan<char>.Empty;
                             break;
                         default:
-                            Debug.Fail("Unknown FileSystemEvent action type!  Value: " + action);
+                            if (!oldName.IsEmpty)
+                            {
+                                // Previous FILE_ACTION_RENAMED_OLD_NAME with no new name
+                                NotifyRenameEventArgs(WatcherChangeTypes.Renamed, ReadOnlySpan<char>.Empty, oldName);
+                                oldName = ReadOnlySpan<char>.Empty;
+                            }
+
+                            switch (info->Action)
+                            {
+                                case Interop.Kernel32.FileAction.FILE_ACTION_ADDED:
+                                    NotifyFileSystemEventArgs(WatcherChangeTypes.Created, info->FileName);
+                                    break;
+                                case Interop.Kernel32.FileAction.FILE_ACTION_REMOVED:
+                                    NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, info->FileName);
+                                    break;
+                                case Interop.Kernel32.FileAction.FILE_ACTION_MODIFIED:
+                                    NotifyFileSystemEventArgs(WatcherChangeTypes.Changed, info->FileName);
+                                    break;
+                                default:
+                                    Debug.Fail($"Unknown FileSystemEvent action type!  Value: {info->Action}");
+                                    break;
+                            }
+
                             break;
                     }
+
+                    info = info->NextEntryOffset == 0 ? null : (Interop.Kernel32.FILE_NOTIFY_INFORMATION*)((byte*)info + info->NextEntryOffset);
+                } while (info != null);
+
+                if (!oldName.IsEmpty)
+                {
+                    // Previous FILE_ACTION_RENAMED_OLD_NAME with no new name
+                    NotifyRenameEventArgs(WatcherChangeTypes.Renamed, ReadOnlySpan<char>.Empty, oldName);
                 }
-
-                offset += nextOffset;
-            } while (nextOffset != 0);
-
-            if (oldName != null)
-            {
-                // Previous FILE_ACTION_RENAMED_OLD_NAME with no new name
-                NotifyRenameEventArgs(WatcherChangeTypes.Renamed, null, oldName);
-                oldName = null;
-            }
+            } // fixed()
         }
 
         /// <summary>

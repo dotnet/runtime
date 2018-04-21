@@ -475,8 +475,8 @@ namespace System.IO.Tests
 
                 fsw.Renamed += (o, e) =>
                 {
-                    Assert.Equal(e.OldFullPath, file.Path);
-                    Assert.Equal(e.FullPath, newPath);
+                    Assert.Equal(file.Path, e.OldFullPath);
+                    Assert.Equal(newPath, e.FullPath);
                 };
 
                 fsw.EnableRaisingEvents = true;
@@ -485,9 +485,9 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]                        
+        [Fact]
         public void FileSystemWatcher_Path()
-        {            
+        {
             FileSystemWatcher watcher = new FileSystemWatcher();
             Assert.Equal(String.Empty, watcher.Path);
 
