@@ -225,13 +225,16 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Memory<T> Slice(int start)
         {
-            int actualLength = _length & RemoveFlagsBitMask;
+            // Used to maintain the high-bit which indicates whether the Memory has been pre-pinned or not.
+            int capturedLength = _length;
+            int actualLength = capturedLength & RemoveFlagsBitMask;
             if ((uint)start > (uint)actualLength)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
             }
 
-            return new Memory<T>(_object, _index + start, actualLength - start);
+            // It is expected for (capturedLength - start) to be negative if the memory is already pre-pinned.
+            return new Memory<T>(_object, _index + start, capturedLength - start);
         }
 
         /// <summary>
@@ -245,13 +248,16 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Memory<T> Slice(int start, int length)
         {
-            int actualLength = _length & RemoveFlagsBitMask;
+            // Used to maintain the high-bit which indicates whether the Memory has been pre-pinned or not.
+            int capturedLength = _length;
+            int actualLength = capturedLength & RemoveFlagsBitMask;
             if ((uint)start > (uint)actualLength || (uint)length > (uint)(actualLength - start))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException();
             }
 
-            return new Memory<T>(_object, _index + start, length);
+            // Set the high-bit to match the this._length high bit (1 for pre-pinned, 0 for unpinned).
+            return new Memory<T>(_object, _index + start, length | (capturedLength & ~RemoveFlagsBitMask));
         }
 
         /// <summary>
