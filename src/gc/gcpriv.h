@@ -1733,7 +1733,7 @@ protected:
     PER_HEAP
     void set_brick (size_t index, ptrdiff_t val);
     PER_HEAP
-    int brick_entry (size_t index);
+    int get_brick_entry (size_t index);
 #ifdef MARK_ARRAY
     PER_HEAP
     unsigned int mark_array_marked (uint8_t* add);
