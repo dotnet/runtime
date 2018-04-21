@@ -27,6 +27,7 @@
     <Compile Include="TInt.cs" />
     <Compile Include="TestException.cs" />
     <Compile Include="TestHelpers.cs" />
+    <Compile Include="TestMemory.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Span\AsSpan.cs" />
