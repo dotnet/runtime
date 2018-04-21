@@ -6594,19 +6594,13 @@ void gc_heap::set_brick (size_t index, ptrdiff_t val)
 }
 
 inline
-int gc_heap::brick_entry (size_t index)
+int gc_heap::get_brick_entry (size_t index)
 {
-    int val = brick_table [index];
-    if (val == 0)
-    {
-        return -32768;
-    }
-    else if (val < 0)
-    {
-        return val;
-    }
-    else
-        return val-1;
+#ifdef MULTIPLE_HEAPS
+    return VolatileLoadWithoutBarrier(&brick_table [index]);
+#else
+    return brick_table[index];
+#endif
 }
 
 
@@ -17155,7 +17149,7 @@ uint8_t* gc_heap::find_object (uint8_t* interior, uint8_t* low)
 #endif //MULTIPLE_HEAPS
 #endif //FFIND_OBJECT
 
-    int brick_entry = brick_table [brick_of (interior)];
+    int brick_entry = get_brick_entry(brick_of (interior));
     if (brick_entry == 0)
     {
         // this is a pointer to a large object
@@ -27326,7 +27320,7 @@ uint8_t* gc_heap::find_first_object (uint8_t* start, uint8_t* first_object)
             {
                 break;
             }
-            if ((brick_entry =  brick_table [ prev_brick ]) >= 0)
+            if ((brick_entry = get_brick_entry(prev_brick)) >= 0)
             {
                 break;
             }
