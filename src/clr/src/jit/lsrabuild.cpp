@@ -680,6 +680,44 @@ regMaskTP LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
     return killMask;
 }
 
+#ifdef FEATURE_HW_INTRINSICS
+//------------------------------------------------------------------------
+// getKillSetForHWIntrinsic: Determine the liveness kill set for a GT_STOREIND node.
+// If the GT_STOREIND will generate a write barrier, determine the specific kill
+// set required by the case-specific, platform-specific write barrier. If no
+// write barrier is required, the kill set will be RBM_NONE.
+//
+// Arguments:
+//    tree - the GT_STOREIND node
+//
+// Return Value:    a register mask of the registers killed
+//
+regMaskTP LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
+{
+    regMaskTP killMask = RBM_NONE;
+#ifdef _TARGET_XARCH_
+    switch (node->gtHWIntrinsicId)
+    {
+        case NI_SSE2_MaskMove:
+            // maskmovdqu uses edi as the implicit address register.
+            // Although it is set as the srcCandidate on the address, if there is also a fixed
+            // assignment for the definition of the address, resolveConflictingDefAndUse() may
+            // change the register assignment on the def or use of a tree temp (SDSU) when there
+            // is a conflict, and the FixedRef on edi won't be sufficient to ensure that another
+            // Interval will not be allocated there.
+            // Issue #17674 tracks this.
+            killMask = RBM_EDI;
+            break;
+
+        default:
+            // Leave killMask as RBM_NONE
+            break;
+    }
+#endif // _TARGET_XARCH_
+    return killMask;
+}
+#endif // FEATURE_HW_INTRINSICS
+
 //------------------------------------------------------------------------
 // getKillSetForNode:   Return the registers killed by the given tree node.
 //
@@ -852,6 +890,12 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             }
             break;
 #endif // PROFILING_SUPPORTED
+
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWIntrinsic:
+            killMask = getKillSetForHWIntrinsic(tree->AsHWIntrinsic());
+            break;
+#endif // FEATURE_HW_INTRINSICS
 
         default:
             // for all other 'tree->OperGet()' kinds, leave 'killMask' = RBM_NONE
