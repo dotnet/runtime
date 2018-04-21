@@ -1216,6 +1216,8 @@ inline void DoLogForFailFastException(LPCWSTR pszMessage, PEXCEPTION_POINTERS pE
     EX_END_CATCH(SwallowAllExceptions)
 }
 
+//This starts FALSE and then converts to true if HandleFatalError has ever been called by a GC thread
+BOOL g_fFatalErrorOccuredOnGCThread = FALSE;
 //
 // Log an error to the event log if possible, then throw up a dialog box.
 //
@@ -1349,7 +1351,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
         //Give a managed debugger a chance if this fatal error is on a managed thread.
         Thread *pThread = GetThread();
 
-        if (pThread)
+        if (pThread && !g_fFatalErrorOccuredOnGCThread)
         {
             GCX_COOP();
 
@@ -1491,6 +1493,9 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     UNREACHABLE();
 }
 
+
+
+
 void DECLSPEC_NORETURN EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage /* = NULL */, PEXCEPTION_POINTERS pExceptionInfo /* = NULL */, LPCWSTR errorSource /* = NULL */, LPCWSTR argExceptionString /* = NULL */)
 {
     WRAPPER_NO_CONTRACT;
@@ -1525,6 +1530,14 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR addres
         // This is fatal error.  We do not care about SO mode any more.
         // All of the code from here on out is robust to any failures in any API's that are called.
         CONTRACT_VIOLATION(GCViolation | ModeViolation | SOToleranceViolation | FaultNotFatal | TakesLockViolation);
+
+
+        // Setting g_fFatalErrorOccuredOnGCThread allows code to avoid attempting to make GC mode transitions which could
+        // block indefinately if the fatal error occured during the GC.
+        if (IsGCSpecialThread() && GCHeapUtilities::IsGCInProgress())
+        {
+            g_fFatalErrorOccuredOnGCThread = TRUE;
+        }
 
         // ThreadStore lock needs to be released before continuing with the FatalError handling should 
         // because debugger is going to take CrstDebuggerMutex, whose lock level is higher than that of 
