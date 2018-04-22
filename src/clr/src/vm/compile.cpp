@@ -924,8 +924,11 @@ void FakePromote(PTR_PTR_Object ppObj, ScanContext *pSC, uint32_t dwFlags)
         MODE_ANY;
     } CONTRACTL_END;
 
-    _ASSERTE(*ppObj == NULL);
-    *(CORCOMPILE_GCREFMAP_TOKENS *)ppObj = (dwFlags & GC_CALL_INTERIOR) ? GCREFMAP_INTERIOR : GCREFMAP_REF;
+    CORCOMPILE_GCREFMAP_TOKENS newToken = (dwFlags & GC_CALL_INTERIOR) ? GCREFMAP_INTERIOR : GCREFMAP_REF;
+
+    _ASSERTE((*ppObj == NULL) || (*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == newToken));
+
+    *(CORCOMPILE_GCREFMAP_TOKENS *)ppObj = newToken;
 }
 
 //=================================================================================
