@@ -1,7 +1,3 @@
 deb http://ftp.debian.org/debian/ jessie main contrib non-free
 deb-src http://ftp.debian.org/debian/ jessie main contrib non-free
 
-# Stable repo is the only repo that has llvm for armel
-deb http://ftp.debian.org/debian/ stable main contrib non-free
-deb-src http://ftp.debian.org/debian/ stable main contrib non-free
-
