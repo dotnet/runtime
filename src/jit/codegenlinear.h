@@ -316,7 +316,7 @@ bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, G
 void genCallInstruction(GenTreeCall* call);
 void genJmpMethod(GenTree* jmp);
 BasicBlock* genCallFinally(BasicBlock* block);
-void genCodeForJumpTrue(GenTree* tree);
+void genCodeForJumpTrue(GenTreeOp* jtrue);
 #ifdef _TARGET_ARM64_
 void genCodeForJumpCompare(GenTreeOp* tree);
 #endif // _TARGET_ARM64_

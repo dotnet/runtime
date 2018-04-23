@@ -5756,6 +5756,18 @@ public:
         return Is(c) || Is(rest...);
     }
 
+    // Indicate whether the condition should be swapped in order to avoid generating
+    // multiple branches. This happens for certain floating point conditions on XARCH,
+    // see GenConditionDesc and its associated mapping table for more details.
+    bool PreferSwap() const
+    {
+#ifdef _TARGET_XARCH_
+        return Is(GenCondition::FLT, GenCondition::FLE, GenCondition::FGTU, GenCondition::FGEU);
+#else
+        return false;
+#endif
+    }
+
     const char* Name() const
     {
         // clang-format off
@@ -5867,6 +5879,23 @@ public:
 
         assert(condition.m_code < _countof(reverse));
         return GenCondition(reverse[condition.m_code]);
+    }
+
+    static GenCondition Swap(GenCondition condition)
+    {
+        // clang-format off
+        static const Code swap[]
+        {
+        //  EQ    NE    LT    LE    GE    GT    F  NF
+            NONE, NONE, SGT,  SGE,  SLE,  SLT,  S, NS,
+            EQ,   NE,   UGT,  UGE,  ULE,  ULT,  C, NC,
+            FEQ,  FNE,  FGT,  FGE,  FLE,  FLT,  O, NO,
+            FEQU, FNEU, FGTU, FGEU, FLEU, FLTU, P, NP
+        };
+        // clang-format on
+
+        assert(condition.m_code < _countof(swap));
+        return GenCondition(swap[condition.m_code]);
     }
 };
 

@@ -2131,6 +2131,27 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 #endif // !defined(_TARGET_64BIT_)
 
 //------------------------------------------------------------------------
+// genCodeForJumpTrue: Generate code for a GT_JTRUE node.
+//
+// Arguments:
+//    jtrue - The node
+//
+void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+    assert(jtrue->OperIs(GT_JTRUE));
+
+    GenCondition condition = GenCondition::FromRelop(jtrue->gtGetOp1());
+
+    if (condition.PreferSwap())
+    {
+        condition = GenCondition::Swap(condition);
+    }
+
+    inst_JCC(condition, compiler->compCurBB->bbJumpDest);
+}
+
+//------------------------------------------------------------------------
 // genCodeForJcc: Generate code for a GT_JCC node.
 //
 // Arguments:

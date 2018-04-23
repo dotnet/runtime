@@ -1893,19 +1893,8 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         // The type of the operands has to be the same and no implicit conversions at this stage.
         assert(op1Type == op2Type);
 
-        bool reverseOps;
-        if ((cmp->gtFlags & GTF_RELOP_NAN_UN) != 0)
-        {
-            // Unordered comparison case
-            reverseOps = cmp->OperIs(GT_GT, GT_GE);
-        }
-        else
-        {
-            reverseOps = cmp->OperIs(GT_LT, GT_LE);
-        }
-
         GenTree* otherOp;
-        if (reverseOps)
+        if (GenCondition::FromFloatRelop(cmp).PreferSwap())
         {
             otherOp = op1;
         }
