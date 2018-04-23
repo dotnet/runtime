@@ -1137,7 +1137,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
     {
-        genSetRegToCond(targetReg, tree);
+        inst_SETCC(GenCondition::FromRelop(tree), tree->TypeGet(), targetReg);
         genProduceReg(tree);
     }
 }
