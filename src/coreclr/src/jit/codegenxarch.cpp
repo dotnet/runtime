@@ -1468,8 +1468,8 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
     { },        // FLEU
     { },        // FGEU
     { },        // FGTU
-    { EJ_jpe }, // P
-    { EJ_jpo }, // NP
+    { EJ_jp  }, // P
+    { EJ_jnp }, // NP
 };
 // clang-format on
 
@@ -6002,7 +6002,7 @@ void CodeGen::genJumpKindsForTree(GenTree* cmpTree, emitJumpKind jmpKind[2], boo
                     break;
 
                 case GT_NE:
-                    jmpKind[0] = EJ_jpe;
+                    jmpKind[0] = EJ_jp;
                     jmpKind[1] = EJ_jne;
                     break;
 
@@ -6038,7 +6038,7 @@ void CodeGen::genJumpKindsForTree(GenTree* cmpTree, emitJumpKind jmpKind[2], boo
                     break;
 
                 case GT_EQ:
-                    jmpKind[0]        = EJ_jpe;
+                    jmpKind[0]        = EJ_jp;
                     jmpKind[1]        = EJ_je;
                     jmpToTrueLabel[0] = false;
                     break;
