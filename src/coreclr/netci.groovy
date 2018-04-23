@@ -3315,10 +3315,8 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
             }
 
             if (doCoreFxTesting) {
-                // This isn't in corefx yet:
-                //    --test-exclude-file \${WORKSPACE}/tests/${architecture}/corefx_linux_test_exclusions.txt
                 shell("""\
-\${WORKSPACE}/${workspaceRelativeFxRootLinux}/run-test.sh --sequential --runtime \${WORKSPACE}/${workspaceRelativeFxRootLinux}/bin/testhost/netcoreapp-Linux-Release-${architecture} --arch ${architecture} --corefx-tests \${WORKSPACE}/${workspaceRelativeFxRootLinux}/bin --configurationGroup Release""")
+\${WORKSPACE}/${workspaceRelativeFxRootLinux}/run-test.sh --sequential --test-exclude-file \${WORKSPACE}/tests/${architecture}/corefx_linux_test_exclusions.txt --runtime \${WORKSPACE}/${workspaceRelativeFxRootLinux}/bin/testhost/netcoreapp-Linux-Release-${architecture} --arch ${architecture} --corefx-tests \${WORKSPACE}/${workspaceRelativeFxRootLinux}/bin --configurationGroup Release""")
             }
             else {
                 def runScript = "${dockerCmd}./tests/runtest.sh"
