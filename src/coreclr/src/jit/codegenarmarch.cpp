@@ -3334,40 +3334,25 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
     { EJ_hs }, // C
     { EJ_lo }, // NC
 
-    { },       // FEQ
-    { },       // FNE
-    { },       // FLT
-    { },       // FLE
-    { },       // FGE
-    { },       // FGT
-    { EJ_vs }, // O
-    { EJ_vc }, // NO
+    { EJ_eq },                // FEQ
+    { EJ_gt, GT_AND, EJ_lo }, // FNE
+    { EJ_lo },                // FLT
+    { EJ_ls },                // FLE
+    { EJ_ge },                // FGE
+    { EJ_gt },                // FGT
+    { EJ_vs },                // O
+    { EJ_vc },                // NO
 
-    { },       // FEQU
-    { },       // FNEU
-    { },       // FLTU
-    { },       // FLEU
-    { },       // FGEU
-    { },       // FGTU
-    { },       // P
-    { },       // NP
+    { EJ_eq, GT_OR, EJ_vs },  // FEQU
+    { EJ_ne },                // FNEU
+    { EJ_lt },                // FLTU
+    { EJ_le },                // FLEU
+    { EJ_hs },                // FGEU
+    { EJ_hi },                // FGTU
+    { },                      // P
+    { },                      // NP
 };
 // clang-format on
-
-//------------------------------------------------------------------------
-// genCodeForJcc: Produce code for a GT_JCC node.
-//
-// Arguments:
-//    tree - the node
-//
-void CodeGen::genCodeForJcc(GenTreeCC* tree)
-{
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
-
-    const GenConditionDesc& desc = GenConditionDesc::Get(tree->gtCondition);
-
-    inst_JMP(desc.jumpKind, compiler->compCurBB->bbJumpDest);
-}
 
 //------------------------------------------------------------------------
 // genCodeForSetcc: Generates code for a GT_SETCC node.
@@ -3375,11 +3360,6 @@ void CodeGen::genCodeForJcc(GenTreeCC* tree)
 // Arguments:
 //    setcc - the GT_SETCC node
 //
-// Assumptions:
-//    The condition represents an integer comparison. This code doesn't
-//    have the necessary logic to deal with floating point comparisons,
-//    in fact it doesn't even know if the comparison is integer or floating
-//    point because SETCC nodes do not have any operands.
 //
 
 void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
@@ -3387,10 +3367,18 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     regNumber dstReg = setcc->gtRegNum;
     assert(genIsValidIntReg(dstReg));
 
+#ifdef _TARGET_ARM64_
     const GenConditionDesc& desc = GenConditionDesc::Get(setcc->gtCondition);
 
-#ifdef _TARGET_ARM64_
-    inst_SET(desc.jumpKind, dstReg);
+    inst_SET(desc.jumpKind1, dstReg);
+
+    if (desc.oper != GT_NONE)
+    {
+        BasicBlock* labelNext = genCreateTempLabel();
+        inst_JMP((desc.oper == GT_OR) ? desc.jumpKind1 : emitter::emitReverseJumpKind(desc.jumpKind1), labelNext);
+        inst_SET(desc.jumpKind2, dstReg);
+        genDefineTempLabel(labelNext);
+    }
 #else
     // Emit code like that:
     //   ...
@@ -3403,7 +3391,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     //   ...
 
     BasicBlock* labelTrue = genCreateTempLabel();
-    getEmitter()->emitIns_J(emitter::emitJumpKindToIns(desc.jumpKind), labelTrue);
+    inst_JCC(setcc->gtCondition, labelTrue);
 
     getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(setcc->TypeGet()), dstReg, 0);
 
