@@ -1708,6 +1708,7 @@ FOUND_AM:
     return true;
 }
 
+#ifdef LEGACY_BACKEND
 /*****************************************************************************
 *  The condition to use for (the jmp/set for) the given type of operation
 *
@@ -1858,6 +1859,7 @@ emitJumpKind CodeGen::genJumpKindForOper(genTreeOps cmp, CompareKind compareKind
     assert(result != EJ_COUNT);
     return result;
 }
+#endif // LEGACY_BACKEND
 
 #ifdef _TARGET_ARMARCH_
 //------------------------------------------------------------------------
@@ -1899,9 +1901,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     // Compare with the GC cookie constant
     getEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, regGSConst, regGSValue);
 
-    BasicBlock*  gsCheckBlk = genCreateTempLabel();
-    emitJumpKind jmpEqual   = genJumpKindForOper(GT_EQ, CK_SIGNED);
-    inst_JMP(jmpEqual, gsCheckBlk);
+    BasicBlock* gsCheckBlk = genCreateTempLabel();
+    inst_JMP(EJ_eq, gsCheckBlk);
     // regGSConst and regGSValue aren't needed anymore, we can use them for helper call
     genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN, regGSConst);
     genDefineTempLabel(gsCheckBlk);
