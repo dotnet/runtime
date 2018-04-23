@@ -5999,67 +5999,6 @@ void CodeGen::genJumpKindsForTree(GenTree* cmpTree, emitJumpKind jmpKind[2], boo
 // Arguments:
 //    treeNode - the compare tree
 //
-// Return Value:
-//    None.
-// Comments:
-// SSE2 instruction ucomis[s|d] is performs unordered comparison and
-// updates rFLAGS register as follows.
-//        Result of compare         ZF  PF CF
-//        -----------------        ------------
-//        Unordered                 1   1   1     <-- this result implies one of operands of compare is a NAN.
-//        Greater                   0   0   0
-//        Less Than                 0   0   1
-//        Equal                     1   0   0
-//
-// From the above table the following equalities follow. As per ECMA spec *.UN opcodes perform
-// unordered comparison of floating point values.  That is *.UN comparisons result in true when
-// one of the operands is a NaN whereas ordered comparisons results in false.
-//
-//    Opcode          Amd64 equivalent         Comment
-//    ------          -----------------        --------
-//    BLT.UN(a,b)      ucomis[s|d] a, b        Jb branches if CF=1, which means either a<b or unordered from the above
-//                     jb                      table
-//
-//    BLT(a,b)         ucomis[s|d] b, a        Ja branches if CF=0 and ZF=0, which means b>a that in turn implies a<b
-//                     ja
-//
-//    BGT.UN(a,b)      ucomis[s|d] b, a        branch if b<a or unordered ==> branch if a>b or unordered
-//                     jb
-//
-//    BGT(a, b)        ucomis[s|d] a, b        branch if a>b
-//                     ja
-//
-//    BLE.UN(a,b)      ucomis[s|d] a, b        jbe branches if CF=1 or ZF=1, which implies a<=b or unordered
-//                     jbe
-//
-//    BLE(a,b)         ucomis[s|d] b, a        jae branches if CF=0, which mean b>=a or a<=b
-//                     jae
-//
-//    BGE.UN(a,b)      ucomis[s|d] b, a        branch if b<=a or unordered ==> branch if a>=b or unordered
-//                     jbe
-//
-//    BGE(a,b)         ucomis[s|d] a, b        branch if a>=b
-//                     jae
-//
-//    BEQ.UN(a,b)      ucomis[s|d] a, b        branch if a==b or unordered.  There is no BEQ.UN opcode in ECMA spec.
-//                     je                      This case is given for completeness, in case if JIT generates such
-//                                             a gentree internally.
-//
-//    BEQ(a,b)         ucomis[s|d] a, b        From the above table, PF=0 and ZF=1 corresponds to a==b.
-//                     jpe L1
-//                     je <true label>
-//                 L1:
-//
-//    BNE(a,b)         ucomis[s|d] a, b        branch if a!=b.  There is no BNE opcode in ECMA spec. This case is
-//                     jne                     given for completeness, in case if JIT generates such a gentree
-//                                             internally.
-//
-//    BNE.UN(a,b)      ucomis[s|d] a, b        From the above table, PF=1 or ZF=0 implies unordered or a!=b
-//                     jpe <true label>
-//                     jne <true label>
-//
-// As we can see from the above equalities that the operands of a compare operator need to be
-// reversed in case of BLT/CLT, BGT.UN/CGT.UN, BLE/CLE, BGE.UN/CGE.UN.
 void CodeGen::genCompareFloat(GenTree* treeNode)
 {
     assert(treeNode->OperIsCompare());
@@ -6079,22 +6018,12 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     instruction ins;
     emitAttr    cmpAttr;
 
-    bool reverseOps;
-    if ((tree->gtFlags & GTF_RELOP_NAN_UN) != 0)
-    {
-        // Unordered comparison case
-        reverseOps = (tree->gtOper == GT_GT || tree->gtOper == GT_GE);
-    }
-    else
-    {
-        reverseOps = (tree->gtOper == GT_LT || tree->gtOper == GT_LE);
-    }
+    GenCondition condition = GenCondition::FromFloatRelop(treeNode);
 
-    if (reverseOps)
+    if (condition.PreferSwap())
     {
-        GenTree* tmp = op1;
-        op1          = op2;
-        op2          = tmp;
+        condition = GenCondition::Swap(condition);
+        std::swap(op1, op2);
     }
 
     ins     = ins_FloatCompare(op1Type);
@@ -6105,7 +6034,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
     {
-        genSetRegToCond(targetReg, tree);
+        inst_SETCC(condition, treeNode->TypeGet(), targetReg);
         genProduceReg(tree);
     }
 }
@@ -6214,7 +6143,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
     {
-        genSetRegToCond(targetReg, tree);
+        inst_SETCC(GenCondition::FromIntegralRelop(tree), tree->TypeGet(), targetReg);
         genProduceReg(tree);
     }
 }
