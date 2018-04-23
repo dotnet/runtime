@@ -5,11 +5,19 @@
     <AssemblyName>System.ServiceModel.Syndication</AssemblyName>
     <ProjectGuid>{C2AB129B-E3EC-465B-B1B7-0F7D414B1E74}</ProjectGuid>
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
+    <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
-  <ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Compile Include="$(MsBuildThisFileDirectory)\**\*.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System.ServiceModel" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
