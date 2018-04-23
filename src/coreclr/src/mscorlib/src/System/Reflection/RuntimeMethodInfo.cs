@@ -41,7 +41,7 @@ namespace System.Reflection
                     //
                     // first take care of all the NO_INVOKE cases. 
                     if (ContainsGenericParameters ||
-                         ReturnType.IsByRef ||
+                         IsDisallowedByRefType(ReturnType) ||
                          (declaringType != null && declaringType.ContainsGenericParameters) ||
                          ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs))
                     {
@@ -60,6 +60,15 @@ namespace System.Reflection
 
                 return m_invocationFlags;
             }
+        }
+
+        private bool IsDisallowedByRefType(Type type)
+        {
+            if (!type.IsByRef)
+                return false;
+
+            Type elementType = type.GetElementType();
+            return elementType.IsByRefLike || elementType == typeof(void);
         }
         #endregion
 
@@ -444,10 +453,13 @@ namespace System.Reflection
             {
                 throw new MemberAccessException();
             }
-            // ByRef return are not allowed in reflection
             else if (ReturnType.IsByRef)
             {
-                throw new NotSupportedException(SR.NotSupported_ByRefReturn);
+                Type elementType = ReturnType.GetElementType();
+                if (elementType.IsByRefLike)
+                    throw new NotSupportedException(SR.NotSupported_ByRefToByRefLikeReturn);    
+                if (elementType == typeof(void))
+                    throw new NotSupportedException(SR.NotSupported_ByRefToVoidReturn);
             }
 
             throw new TargetException();
