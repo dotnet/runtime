@@ -1432,6 +1432,47 @@ void CodeGen::genCodeForJumpTrue(GenTree* tree)
     }
 }
 
+// clang-format off
+const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
+{
+    { },        // NONE
+    { },        // 1
+    { EJ_jl  }, // SLT
+    { EJ_jle }, // SLE
+    { EJ_jge }, // SGE
+    { EJ_jg  }, // SGT
+    { EJ_js  }, // S
+    { EJ_jns }, // NS
+
+    { EJ_je  }, // EQ
+    { EJ_jne }, // NE
+    { EJ_jb  }, // ULT
+    { EJ_jbe }, // ULE
+    { EJ_jae }, // UGE
+    { EJ_ja  }, // UGT
+    { EJ_jb  }, // C
+    { EJ_jae }, // NC
+                        
+    { },        // FEQ
+    { },        // FNE
+    { },        // FLT
+    { },        // FLE
+    { },        // FGE
+    { },        // FGT
+    { EJ_jo  }, // O
+    { EJ_jno }, // NO
+                        
+    { },        // FEQU
+    { },        // FNEU
+    { },        // FLTU
+    { },        // FLEU
+    { },        // FGEU
+    { },        // FGTU
+    { EJ_jpe }, // P
+    { EJ_jpo }, // NP
+};
+// clang-format on
+
 //------------------------------------------------------------------------
 // genCodeForJcc: Produce code for a GT_JCC node.
 //
@@ -1442,10 +1483,9 @@ void CodeGen::genCodeForJcc(GenTreeCC* tree)
 {
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
 
-    CompareKind  compareKind = ((tree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
-    emitJumpKind jumpKind    = genJumpKindForOper(tree->gtCondition, compareKind);
+    const GenConditionDesc& desc = GenConditionDesc::Get(tree->gtCondition);
 
-    inst_JMP(jumpKind, compiler->compCurBB->bbJumpDest);
+    inst_JMP(desc.jumpKind, compiler->compCurBB->bbJumpDest);
 }
 
 //------------------------------------------------------------------------
@@ -1463,15 +1503,12 @@ void CodeGen::genCodeForJcc(GenTreeCC* tree)
 
 void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
 {
-    regNumber    dstReg      = setcc->gtRegNum;
-    CompareKind  compareKind = setcc->IsUnsigned() ? CK_UNSIGNED : CK_SIGNED;
-    emitJumpKind jumpKind    = genJumpKindForOper(setcc->gtCondition, compareKind);
-
+    regNumber dstReg = setcc->gtRegNum;
     assert(genIsValidIntReg(dstReg) && isByteReg(dstReg));
-    // Make sure nobody is setting GTF_RELOP_NAN_UN on this node as it is ignored.
-    assert((setcc->gtFlags & GTF_RELOP_NAN_UN) == 0);
 
-    inst_SET(jumpKind, dstReg);
+    const GenConditionDesc& desc = GenConditionDesc::Get(setcc->gtCondition);
+
+    inst_SET(desc.jumpKind, dstReg);
     inst_RV_RV(ins_Move_Extend(TYP_UBYTE, true), dstReg, dstReg, TYP_UBYTE, emitTypeSize(TYP_UBYTE));
     genProduceReg(setcc);
 }
