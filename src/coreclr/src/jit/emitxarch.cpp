@@ -11054,8 +11054,8 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
         case INS_seta:
         case INS_sets:
         case INS_setns:
-        case INS_setpe:
-        case INS_setpo:
+        case INS_setp:
+        case INS_setnp:
         case INS_setl:
         case INS_setge:
         case INS_setle:
@@ -12245,8 +12245,8 @@ BYTE* emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
             assert(INS_ja  + (INS_l_jmp - INS_jmp) == INS_l_ja);
             assert(INS_js  + (INS_l_jmp - INS_jmp) == INS_l_js);
             assert(INS_jns + (INS_l_jmp - INS_jmp) == INS_l_jns);
-            assert(INS_jpe + (INS_l_jmp - INS_jmp) == INS_l_jpe);
-            assert(INS_jpo + (INS_l_jmp - INS_jmp) == INS_l_jpo);
+            assert(INS_jp  + (INS_l_jmp - INS_jmp) == INS_l_jp);
+            assert(INS_jnp + (INS_l_jmp - INS_jmp) == INS_l_jnp);
             assert(INS_jl  + (INS_l_jmp - INS_jmp) == INS_l_jl);
             assert(INS_jge + (INS_l_jmp - INS_jmp) == INS_l_jge);
             assert(INS_jle + (INS_l_jmp - INS_jmp) == INS_l_jle);
