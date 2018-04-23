@@ -4302,10 +4302,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_TAILCALL:
-		case OP_TAILCALL_MEMBASE: {
-			guint64 free_reg = 0;
-			int branch_reg = -1;
-			gboolean tailcall_membase = FALSE;
+		case OP_TAILCALL_MEMBASE:
+		case OP_TAILCALL_REG: {
+			int branch_reg = ARMREG_IP0;
+			guint64 free_reg = 1 << ARMREG_IP1;
 			call = (MonoCallInst*)ins;
 
 			g_assert (!cfg->method->save_lmf);
@@ -4313,15 +4313,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			switch (ins->opcode) {
 			case OP_TAILCALL:
 				free_reg = (1 << ARMREG_IP0) | (1 << ARMREG_IP1);
-				branch_reg = ARMREG_IP0;
-				tailcall_membase = FALSE;
+				break;
+
+			case OP_TAILCALL_REG:
+				g_assert (sreg1 != -1);
+				g_assert (sreg1 != ARMREG_IP0);
+				g_assert (sreg1 != ARMREG_IP1);
+				if ((sreg1 << 1) & MONO_ARCH_CALLEE_SAVED_REGS) {
+					arm_movx (code, branch_reg, sreg1);
+				} else {
+					free_reg = (1 << ARMREG_IP0) | (1 << ARMREG_IP1);
+					branch_reg = sreg1;
+				}
 				break;
 
 			case OP_TAILCALL_MEMBASE:
-				free_reg = (1 << ARMREG_IP0);
-				branch_reg = ARMREG_IP1;
-				tailcall_membase = TRUE;
-				// Get jmp address before restoring nonvolatiles, in case basereg is nonvolatile.
+				g_assert (ins->inst_basereg != -1);
+				g_assert (ins->inst_basereg != ARMREG_IP0);
+				g_assert (ins->inst_basereg != ARMREG_IP1);
 				code = emit_ldrx (code, branch_reg, ins->inst_basereg, ins->inst_offset);
 				break;
 
@@ -4337,19 +4346,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Destroy frame */
 			code = mono_arm_emit_destroy_frame (code, cfg->stack_offset, free_reg);
 
-			if (tailcall_membase) {
-				// nothing
-			} else if (cfg->compile_aot) {
-				/* This is not a PLT patch */
-				code = emit_aotconst (cfg, code, ARMREG_IP0, MONO_PATCH_INFO_METHOD_JUMP, call->method);
-			} else {
-				mono_add_patch_info_rel (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method, MONO_R_ARM64_B);
-				arm_b (code, code);
-				cfg->thunk_area += THUNK_SIZE;
-			}
-
-			if (branch_reg >= 0)
+			switch (ins->opcode) {
+			case OP_TAILCALL:
+				if (cfg->compile_aot) {
+					/* This is not a PLT patch */
+					code = emit_aotconst (cfg, code, branch_reg, MONO_PATCH_INFO_METHOD_JUMP, call->method);
+				} else {
+					mono_add_patch_info_rel (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method, MONO_R_ARM64_B);
+					arm_b (code, code);
+					cfg->thunk_area += THUNK_SIZE;
+					break;
+				}
+				// fallthrough
+			case OP_TAILCALL_MEMBASE:
+			case OP_TAILCALL_REG:
 				arm_brx (code, branch_reg);
+				break;
+
+			default:
+				g_assert_not_reached ();
+			}
 
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
