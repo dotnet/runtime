@@ -100,15 +100,6 @@ private:
     };
     static emitJumpKind genJumpKindForOper(genTreeOps cmp, CompareKind compareKind);
 
-    // For a given compare oper tree, returns the conditions to use with jmp/set in 'jmpKind' array.
-    // The corresponding elements of jmpToTrueLabel indicate whether the target of the jump is to the
-    // 'true' label or a 'false' label.
-    //
-    // 'true' label corresponds to jump target of the current basic block i.e. the target to
-    // branch to on compare condition being true.  'false' label corresponds to the target to
-    // branch to on condition being false.
-    static void genJumpKindsForTree(GenTree* cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2]);
-
     static bool genShouldRoundFP();
 
     GenTreeIndir indirForm(var_types type, GenTree* base);
