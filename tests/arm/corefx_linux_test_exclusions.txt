@@ -5,4 +5,7 @@ System.Diagnostics.Process.Tests
 System.Drawing.Common.Tests
 System.IO.FileSystem.Tests
 System.IO.Ports.Tests
+System.Linq.Expressions.Tests        # https://github.com/dotnet/coreclr/issues/17738
 System.Management.Tests
+System.Net.Http.Functional.Tests     # https://github.com/dotnet/coreclr/issues/17739
+System.Net.NameResolution.Pal.Tests  # https://github.com/dotnet/coreclr/issues/17740
