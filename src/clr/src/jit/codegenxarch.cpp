@@ -1453,40 +1453,37 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
     { EJ_jb  }, // C
     { EJ_jae }, // NC
                         
-    { },        // FEQ
-    { },        // FNE
-    { },        // FLT
-    { },        // FLE
-    { },        // FGE
-    { },        // FGT
-    { EJ_jo  }, // O
-    { EJ_jno }, // NO
+    // Floating point compare instructions (UCOMISS, UCOMISD etc.) set the condition flags as follows:
+    //    ZF PF CF  Meaning   
+    //   ---------------------
+    //    1  1  1   Unordered 
+    //    0  0  0   Greater   
+    //    0  0  1   Less Than 
+    //    1  0  0   Equal     
+    //
+    // Since ZF and CF are also set when the result is unordered, in some cases we first need to check
+    // PF before checking ZF/CF. In general, ordered conditions will result in a jump only if PF is not
+    // set and unordered conditions will result in a jump only if PF is set.
+
+    { EJ_jnp, GT_AND, EJ_je  }, // FEQ
+    { EJ_jne                 }, // FNE
+    { EJ_jnp, GT_AND, EJ_jb  }, // FLT
+    { EJ_jnp, GT_AND, EJ_jbe }, // FLE
+    { EJ_jae                 }, // FGE
+    { EJ_ja                  }, // FGT
+    { EJ_jo                  }, // O
+    { EJ_jno                 }, // NO
                         
-    { },        // FEQU
-    { },        // FNEU
-    { },        // FLTU
-    { },        // FLEU
-    { },        // FGEU
-    { },        // FGTU
-    { EJ_jp  }, // P
-    { EJ_jnp }, // NP
+    { EJ_je                }, // FEQU
+    { EJ_jp, GT_OR, EJ_jne }, // FNEU
+    { EJ_jb                }, // FLTU
+    { EJ_jbe               }, // FLEU
+    { EJ_jp, GT_OR, EJ_jae }, // FGEU
+    { EJ_jp, GT_OR, EJ_ja  }, // FGTU
+    { EJ_jp                }, // P
+    { EJ_jnp               }, // NP
 };
 // clang-format on
-
-//------------------------------------------------------------------------
-// genCodeForJcc: Produce code for a GT_JCC node.
-//
-// Arguments:
-//    tree - the node
-//
-void CodeGen::genCodeForJcc(GenTreeCC* tree)
-{
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
-
-    const GenConditionDesc& desc = GenConditionDesc::Get(tree->gtCondition);
-
-    inst_JMP(desc.jumpKind, compiler->compCurBB->bbJumpDest);
-}
 
 //------------------------------------------------------------------------
 // genCodeForSetcc: Generates a setcc instruction for a GT_SETCC node.
@@ -1494,11 +1491,6 @@ void CodeGen::genCodeForJcc(GenTreeCC* tree)
 // Arguments:
 //    tree - the GT_SETCC node
 //
-// Assumptions:
-//    The condition represents an integer comparison. This code doesn't
-//    have the necessary logic to deal with floating point comparisons,
-//    in fact it doesn't even know if the comparison is integer or floating
-//    point because SETCC nodes do not have any operands.
 //
 
 void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
@@ -1508,7 +1500,16 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
 
     const GenConditionDesc& desc = GenConditionDesc::Get(setcc->gtCondition);
 
-    inst_SET(desc.jumpKind, dstReg);
+    inst_SET(desc.jumpKind1, dstReg);
+
+    if (desc.oper != GT_NONE)
+    {
+        BasicBlock* labelNext = genCreateTempLabel();
+        inst_JMP((desc.oper == GT_OR) ? desc.jumpKind1 : emitter::emitReverseJumpKind(desc.jumpKind1), labelNext);
+        inst_SET(desc.jumpKind2, dstReg);
+        genDefineTempLabel(labelNext);
+    }
+
     inst_RV_RV(ins_Move_Extend(TYP_UBYTE, true), dstReg, dstReg, TYP_UBYTE, emitTypeSize(TYP_UBYTE));
     genProduceReg(setcc);
 }
