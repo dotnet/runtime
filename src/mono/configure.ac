@@ -4642,6 +4642,7 @@ if test "x$enable_btls" = "xyes"; then
 		;;
 	arm)
 		btls_arch=arm
+		btls_cflags="-DOPENSSL_NO_ASM=1"
 		;;
 	armsoft)
 		btls_arch=arm
