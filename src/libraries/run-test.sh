@@ -43,6 +43,9 @@ usage()
     echo "                                      specified by --corefx-tests"
     echo "    --test-dir-file <path>            Run tests only in the directories specified by the file at <path>. Paths are"
     echo "                                      listed one line, relative to the directory specified by --corefx-tests"
+    echo "    --test-exclude-file <path>        Do not run tests in the directories specified by the file at <path>. Paths are"
+    echo "                                      listed one line, relative to the directory specified by --corefx-tests"
+    echo "    --timeout <time>                  Specify a per-test timeout value (using 'timeout' tool syntax; default is 10 minutes (10m))"
     echo
     echo "Runtime Code Coverage options:"
     echo "    --coreclr-coverage                Optional argument to get coreclr code coverage reports"
@@ -136,8 +139,8 @@ ensure_binaries_are_present()
 {
   if [ ! -d $Runtime ]
   then
-	echo "error: Coreclr $OS binaries not found at $Runtime"
-	exit 1
+    echo "error: Coreclr $OS binaries not found at $Runtime"
+    exit 1
   fi
 }
 
@@ -199,6 +202,13 @@ run_test()
     exit 0
   fi
 
+  if [ -n "$TestExcludeFile" ]; then
+    if grep -q $testProject "$TestExcludeFile" ; then
+      echo "Excluding $testProject"
+      exit 0
+    fi
+  fi
+
   dirName="$1/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
   if [ ! -d "$dirName" ]; then
     echo "Nothing to test in $testProject"
@@ -214,9 +224,9 @@ run_test()
 
   echo
   echo "Running tests in $dirName"
-  echo "./RunTests.sh $Runtime"
+  echo "${TimeoutTool}./RunTests.sh $Runtime"
   echo
-  ./RunTests.sh "$Runtime"
+  ${TimeoutTool}./RunTests.sh "$Runtime"
   exitCode=$?
 
   if [ $exitCode -ne 0 ]
@@ -283,6 +293,7 @@ coreclr_code_coverage()
 
 RunTestSequential=0
 ((serverGC = 0))
+TimeoutTime=10m
 
 while [[ $# > 0 ]]
 do
@@ -330,6 +341,12 @@ do
         --test-dir-file)
         TestDirFile=$2
         ;;
+        --test-exclude-file)
+        TestExcludeFile=$2
+        ;;
+        --timeout)
+        TimeoutTime=$2
+        ;;
         --outerloop)
         OuterLoop=""
         ;;
@@ -374,6 +391,12 @@ export PAL_OUTPUTDEBUGSTRING="1"
 if [ "$LANG" == "" ]
 then
     export LANG="en_US.UTF-8"
+fi
+
+# Is the 'timeout' tool available?
+TimeoutTool=
+if hash timeout 2>/dev/null ; then
+  TimeoutTool="timeout --kill-after=30s $TimeoutTime "
 fi
 
 ensure_binaries_are_present
