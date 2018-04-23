@@ -2193,3 +2193,17 @@ void CodeGen::inst_JCC(GenCondition condition, BasicBlock* target)
         genDefineTempLabel(labelNext);
     }
 }
+
+//------------------------------------------------------------------------
+// genCodeForSetcc: Generate code for a GT_SETCC node.
+//
+// Arguments:
+//    setcc - The node
+//
+void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
+{
+    assert(setcc->OperIs(GT_SETCC));
+
+    inst_SETCC(setcc->gtCondition, setcc->TypeGet(), setcc->gtRegNum);
+    genProduceReg(setcc);
+}
