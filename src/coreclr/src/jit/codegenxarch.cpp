@@ -1372,66 +1372,6 @@ void CodeGen::genCodeForBT(GenTreeOp* bt)
     getEmitter()->emitIns_R_R(INS_bt, emitTypeSize(type), op2->gtRegNum, op1->gtRegNum);
 }
 
-//------------------------------------------------------------------------
-// genCodeForJumpTrue: Generates code for jmpTrue statement.
-//
-// Arguments:
-//    tree - The GT_JTRUE tree node.
-//
-// Return Value:
-//    None
-//
-void CodeGen::genCodeForJumpTrue(GenTree* tree)
-{
-    GenTree* cmp = tree->gtOp.gtOp1;
-
-    assert(cmp->OperIsCompare());
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
-
-#if !defined(_TARGET_64BIT_)
-    // Long-typed compares should have been handled by Lowering::LowerCompare.
-    assert(!varTypeIsLong(cmp->gtGetOp1()));
-#endif
-
-    // Get the "kind" and type of the comparison.  Note that whether it is an unsigned cmp
-    // is governed by a flag NOT by the inherent type of the node
-    // TODO-XArch-CQ: Check if we can use the currently set flags.
-    emitJumpKind jumpKind[2];
-    bool         branchToTrueLabel[2];
-    genJumpKindsForTree(cmp, jumpKind, branchToTrueLabel);
-
-    BasicBlock* skipLabel = nullptr;
-    if (jumpKind[0] != EJ_NONE)
-    {
-        BasicBlock* jmpTarget;
-        if (branchToTrueLabel[0])
-        {
-            jmpTarget = compiler->compCurBB->bbJumpDest;
-        }
-        else
-        {
-            // This case arises only for ordered GT_EQ right now
-            assert((cmp->gtOper == GT_EQ) && ((cmp->gtFlags & GTF_RELOP_NAN_UN) == 0));
-            skipLabel = genCreateTempLabel();
-            jmpTarget = skipLabel;
-        }
-
-        inst_JMP(jumpKind[0], jmpTarget);
-    }
-
-    if (jumpKind[1] != EJ_NONE)
-    {
-        // the second conditional branch always has to be to the true label
-        assert(branchToTrueLabel[1]);
-        inst_JMP(jumpKind[1], compiler->compCurBB->bbJumpDest);
-    }
-
-    if (skipLabel != nullptr)
-    {
-        genDefineTempLabel(skipLabel);
-    }
-}
-
 // clang-format off
 const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
 {
@@ -1821,7 +1761,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_JTRUE:
-            genCodeForJumpTrue(treeNode);
+            genCodeForJumpTrue(treeNode->AsOp());
             break;
 
         case GT_JCC:
