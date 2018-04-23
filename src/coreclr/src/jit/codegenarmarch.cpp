@@ -3313,6 +3313,47 @@ void CodeGen::genCodeForJumpTrue(GenTree* tree)
     }
 }
 
+// clang-format off
+const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
+{
+    { },       // NONE
+    { },       // 1
+    { EJ_lt }, // SLT
+    { EJ_le }, // SLE
+    { EJ_ge }, // SGE
+    { EJ_gt }, // SGT
+    { EJ_mi }, // S
+    { EJ_pl }, // NS
+
+    { EJ_eq }, // EQ
+    { EJ_ne }, // NE
+    { EJ_lo }, // ULT
+    { EJ_ls }, // ULE
+    { EJ_hs }, // UGE
+    { EJ_hi }, // UGT
+    { EJ_hs }, // C
+    { EJ_lo }, // NC
+
+    { },       // FEQ
+    { },       // FNE
+    { },       // FLT
+    { },       // FLE
+    { },       // FGE
+    { },       // FGT
+    { EJ_vs }, // O
+    { EJ_vc }, // NO
+
+    { },       // FEQU
+    { },       // FNEU
+    { },       // FLTU
+    { },       // FLEU
+    { },       // FGEU
+    { },       // FGTU
+    { },       // P
+    { },       // NP
+};
+// clang-format on
+
 //------------------------------------------------------------------------
 // genCodeForJcc: Produce code for a GT_JCC node.
 //
@@ -3323,10 +3364,9 @@ void CodeGen::genCodeForJcc(GenTreeCC* tree)
 {
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
 
-    CompareKind  compareKind = ((tree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
-    emitJumpKind jumpKind    = genJumpKindForOper(tree->gtCondition, compareKind);
+    const GenConditionDesc& desc = GenConditionDesc::Get(tree->gtCondition);
 
-    inst_JMP(jumpKind, compiler->compCurBB->bbJumpDest);
+    inst_JMP(desc.jumpKind, compiler->compCurBB->bbJumpDest);
 }
 
 //------------------------------------------------------------------------
@@ -3344,16 +3384,13 @@ void CodeGen::genCodeForJcc(GenTreeCC* tree)
 
 void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
 {
-    regNumber    dstReg      = setcc->gtRegNum;
-    CompareKind  compareKind = setcc->IsUnsigned() ? CK_UNSIGNED : CK_SIGNED;
-    emitJumpKind jumpKind    = genJumpKindForOper(setcc->gtCondition, compareKind);
-
+    regNumber dstReg = setcc->gtRegNum;
     assert(genIsValidIntReg(dstReg));
-    // Make sure nobody is setting GTF_RELOP_NAN_UN on this node as it is ignored.
-    assert((setcc->gtFlags & GTF_RELOP_NAN_UN) == 0);
+
+    const GenConditionDesc& desc = GenConditionDesc::Get(setcc->gtCondition);
 
 #ifdef _TARGET_ARM64_
-    inst_SET(jumpKind, dstReg);
+    inst_SET(desc.jumpKind, dstReg);
 #else
     // Emit code like that:
     //   ...
@@ -3366,7 +3403,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     //   ...
 
     BasicBlock* labelTrue = genCreateTempLabel();
-    getEmitter()->emitIns_J(emitter::emitJumpKindToIns(jumpKind), labelTrue);
+    getEmitter()->emitIns_J(emitter::emitJumpKindToIns(desc.jumpKind), labelTrue);
 
     getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(setcc->TypeGet()), dstReg, 0);
 
