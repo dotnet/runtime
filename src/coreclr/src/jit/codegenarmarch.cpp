@@ -3321,20 +3321,20 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
 // clang-format on
 
 //------------------------------------------------------------------------
-// genCodeForSetcc: Generates code for a GT_SETCC node.
+// inst_SETCC: Generate code to set a register to 0 or 1 based on a condition.
 //
 // Arguments:
-//    setcc - the GT_SETCC node
+//   condition - The condition
+//   type      - The type of the value to be produced
+//   dstReg    - The destination register to be set to 1 or 0
 //
-//
-
-void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
+void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstReg)
 {
-    regNumber dstReg = setcc->gtRegNum;
+    assert(varTypeIsIntegral(type));
     assert(genIsValidIntReg(dstReg));
 
 #ifdef _TARGET_ARM64_
-    const GenConditionDesc& desc = GenConditionDesc::Get(setcc->gtCondition);
+    const GenConditionDesc& desc = GenConditionDesc::Get(condition);
 
     inst_SET(desc.jumpKind1, dstReg);
 
@@ -3357,19 +3357,17 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     //   ...
 
     BasicBlock* labelTrue = genCreateTempLabel();
-    inst_JCC(setcc->gtCondition, labelTrue);
+    inst_JCC(condition, labelTrue);
 
-    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(setcc->TypeGet()), dstReg, 0);
+    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(type), dstReg, 0);
 
     BasicBlock* labelNext = genCreateTempLabel();
     getEmitter()->emitIns_J(INS_b, labelNext);
 
     genDefineTempLabel(labelTrue);
-    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(setcc->TypeGet()), dstReg, 1);
+    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(type), dstReg, 1);
     genDefineTempLabel(labelNext);
 #endif
-
-    genProduceReg(setcc);
 }
 
 //------------------------------------------------------------------------

@@ -1426,19 +1426,19 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
 // clang-format on
 
 //------------------------------------------------------------------------
-// genCodeForSetcc: Generates a setcc instruction for a GT_SETCC node.
+// inst_SETCC: Generate code to set a register to 0 or 1 based on a condition.
 //
 // Arguments:
-//    tree - the GT_SETCC node
+//   condition - The condition
+//   type      - The type of the value to be produced
+//   dstReg    - The destination register to be set to 1 or 0
 //
-//
-
-void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
+void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstReg)
 {
-    regNumber dstReg = setcc->gtRegNum;
+    assert(varTypeIsIntegral(type));
     assert(genIsValidIntReg(dstReg) && isByteReg(dstReg));
 
-    const GenConditionDesc& desc = GenConditionDesc::Get(setcc->gtCondition);
+    const GenConditionDesc& desc = GenConditionDesc::Get(condition);
 
     inst_SET(desc.jumpKind1, dstReg);
 
@@ -1450,8 +1450,10 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
         genDefineTempLabel(labelNext);
     }
 
-    inst_RV_RV(ins_Move_Extend(TYP_UBYTE, true), dstReg, dstReg, TYP_UBYTE, emitTypeSize(TYP_UBYTE));
-    genProduceReg(setcc);
+    if (!varTypeIsByte(type))
+    {
+        getEmitter()->emitIns_R_R(INS_movzx, EA_1BYTE, dstReg, dstReg);
+    }
 }
 
 //------------------------------------------------------------------------
