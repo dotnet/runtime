@@ -255,6 +255,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Disjoint items not supported on NetFX")]
         public static void SyndicationFeed_Rss_TestDisjointItems()
         {
             using (XmlReader reader = XmlReader.Create(@"RssDisjointItems.xml"))
@@ -275,6 +276,7 @@ namespace System.ServiceModel.Syndication.Tests
 
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Disjoint items not supported on NetFX")]
         public static void SyndicationFeed_Atom_TestDisjointItems()
         {
             using (XmlReader reader = XmlReader.Create(@"AtomDisjointItems.xml"))
@@ -294,6 +296,7 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Deferred date exception throwing not implemented on NetFX")]
         public static void SyndicationFeed_Rss_WrongDateFormat()
         {
             // *** SETUP *** \\
