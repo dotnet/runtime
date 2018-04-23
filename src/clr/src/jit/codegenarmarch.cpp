@@ -282,7 +282,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_JTRUE:
-            genCodeForJumpTrue(treeNode);
+            genCodeForJumpTrue(treeNode->AsOp());
             break;
 
 #ifdef _TARGET_ARM64_
@@ -3276,40 +3276,6 @@ void CodeGen::genJumpKindsForTree(GenTree* cmpTree, emitJumpKind jmpKind[2], boo
                     unreached();
             }
         }
-    }
-}
-
-//------------------------------------------------------------------------
-// genCodeForJumpTrue: Generates code for jmpTrue statement.
-//
-// Arguments:
-//    tree - The GT_JTRUE tree node.
-//
-// Return Value:
-//    None
-//
-void CodeGen::genCodeForJumpTrue(GenTree* tree)
-{
-    GenTree* cmp = tree->gtOp.gtOp1;
-    assert(cmp->OperIsCompare());
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
-
-    // Get the "kind" and type of the comparison.  Note that whether it is an unsigned cmp
-    // is governed by a flag NOT by the inherent type of the node
-    emitJumpKind jumpKind[2];
-    bool         branchToTrueLabel[2];
-    genJumpKindsForTree(cmp, jumpKind, branchToTrueLabel);
-    assert(jumpKind[0] != EJ_NONE);
-
-    // On ARM the branches will always branch to the true label
-    assert(branchToTrueLabel[0]);
-    inst_JMP(jumpKind[0], compiler->compCurBB->bbJumpDest);
-
-    if (jumpKind[1] != EJ_NONE)
-    {
-        // the second conditional branch always has to be to the true label
-        assert(branchToTrueLabel[1]);
-        inst_JMP(jumpKind[1], compiler->compCurBB->bbJumpDest);
     }
 }
 
