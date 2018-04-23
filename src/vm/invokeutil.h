@@ -105,7 +105,7 @@ public:
     // Given a type, this routine will convert an return value representing that
     //  type into an ObjectReference.  If the type is a primitive, the 
     //  value is wrapped in one of the Value classes.
-    static OBJECTREF CreateObject(TypeHandle th, void * pValue);
+    static OBJECTREF CreateObjectAfterInvoke(TypeHandle th, void * pValue);
 
     // This is a special purpose Exception creation function.  It
     //  creates the TargetInvocationExeption placing the passed
