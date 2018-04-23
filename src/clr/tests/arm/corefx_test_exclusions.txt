@@ -4,6 +4,8 @@ System.Console.Tests
 System.Data.SqlClient.Tests
 System.Diagnostics.Process.Tests
 System.Drawing.Common.Tests
+System.Net.HttpListener.Tests      # https://github.com/dotnet/coreclr/issues/17584
 System.IO.FileSystem.Tests
 System.IO.Ports.Tests
 System.Management.Tests
+System.Runtime.Tests               # https://github.com/dotnet/coreclr/issues/17585
