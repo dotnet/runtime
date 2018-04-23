@@ -62,12 +62,10 @@ if(CLR_CMAKE_PLATFORM_UNIX_ARM)
    # we have to set the triple by adding a compiler argument
    add_compile_options(-mthumb)
    add_compile_options(-mfpu=vfpv3)
+   add_compile_options(-march=armv7-a)
    if(ARM_SOFTFP)
      add_definitions(-DARM_SOFTFP)
      add_compile_options(-mfloat-abi=softfp)
-     add_compile_options(-target armv7-linux-gnueabi)
-   else()
-     add_compile_options(-target armv7-linux-gnueabihf)
    endif(ARM_SOFTFP)
 endif(CLR_CMAKE_PLATFORM_UNIX_ARM)
 
