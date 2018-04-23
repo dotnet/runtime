@@ -1331,13 +1331,13 @@ void CodeGen::genRangeCheck(GenTree* oper)
         //  constant operand in the second position
         src1    = arrLen;
         src2    = arrIndex;
-        jmpKind = genJumpKindForOper(GT_LE, CK_UNSIGNED);
+        jmpKind = EJ_ls;
     }
     else
     {
         src1    = arrIndex;
         src2    = arrLen;
-        jmpKind = genJumpKindForOper(GT_GE, CK_UNSIGNED);
+        jmpKind = EJ_hs;
     }
 
     var_types bndsChkType = genActualType(src2->TypeGet());
@@ -1480,8 +1480,7 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     emit->emitIns_R_R_I(ins_Load(TYP_INT), EA_PTRSIZE, tmpReg, arrReg, offset); // a 4 BYTE sign extending load
     emit->emitIns_R_R(INS_cmp, EA_4BYTE, tgtReg, tmpReg);
 
-    emitJumpKind jmpGEU = genJumpKindForOper(GT_GE, CK_UNSIGNED);
-    genJumpToThrowHlpBlk(jmpGEU, SCK_RNGCHK_FAIL);
+    genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL);
 
     genProduceReg(arrIndex);
 }
@@ -1688,7 +1687,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 
         // Generate the range check.
         getEmitter()->emitInsBinary(INS_cmp, emitActualTypeSize(TYP_I_IMPL), index, &arrLen);
-        genJumpToThrowHlpBlk(genJumpKindForOper(GT_GE, CK_UNSIGNED), SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
+        genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
     }
 
     // Can we use a ScaledAdd instruction?
