@@ -1122,7 +1122,7 @@ no_intrinsic:
 			}
 			ADD_CODE (td, MINT_BOX);
 			ADD_CODE (td, get_data_item_index (td, constrained_class));
-			ADD_CODE (td, csignature->param_count | ((td->sp - 1)->type != STACK_TYPE_MP ? 0 : BOX_NOT_CLEAR_VT_SP));
+			ADD_CODE (td, csignature->param_count | ((td->sp - 1 - csignature->param_count)->type != STACK_TYPE_MP ? 0 : BOX_NOT_CLEAR_VT_SP));
 		} else if (!m_class_is_valuetype (constrained_class)) {
 			/* managed pointer on the stack, we need to deref that puppy */
 			ADD_CODE (td, MINT_LDIND_I);
@@ -1151,7 +1151,7 @@ no_intrinsic:
 					}
 					ADD_CODE (td, MINT_BOX);
 					ADD_CODE (td, get_data_item_index (td, constrained_class));
-					ADD_CODE (td, csignature->param_count | ((td->sp - 1)->type != STACK_TYPE_MP ? 0 : BOX_NOT_CLEAR_VT_SP));
+					ADD_CODE (td, csignature->param_count | ((td->sp - 1 - csignature->param_count)->type != STACK_TYPE_MP ? 0 : BOX_NOT_CLEAR_VT_SP));
 				}
 			}
 			is_virtual = FALSE;
