@@ -33,6 +33,8 @@
 
   <PropertyGroup>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
+    <NETCoreAppFrameworkMoniker>.NETCoreApp,Version=v2.2</NETCoreAppFrameworkMoniker>
+    <NETCoreAppFramework>netcoreapp2.2</NETCoreAppFramework>
   </PropertyGroup>
 
   <!--
@@ -220,10 +222,6 @@
 
   <PropertyGroup>
     <ExeSuffix Condition="'$(OSGroup)'=='Windows_NT'">.exe</ExeSuffix>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <Framework>netcoreapp2.1</Framework>
   </PropertyGroup>
 
   <Import Project="$(HostMachineInfoProps)"
@@ -457,17 +455,17 @@
    <RuntimeDepsRpmPackageVersion>$(RuntimeDepsRpmVersion)</RuntimeDepsRpmPackageVersion>
    <RuntimeDepsRpmPackageRelease>1</RuntimeDepsRpmPackageRelease>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(BuildUpgradeableLinuxPackages)' == 'true'">
     <PackageNameSuffix>$(MajorVersion).$(MinorVersion)</PackageNameSuffix>
     <InstallerNameSuffix>-upgrade</InstallerNameSuffix>
-    
+
     <SharedHostInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm' ">$(SharedHostInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerNameSuffix)$(InstallerExtension)</SharedHostInstallerFile>
     <HostFxrInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">$(HostFxrInstallerStart)$(HostResolverVersion)-$(TargetArchitecture)$(InstallerNameSuffix)$(InstallerExtension)</HostFxrInstallerFile>
     <SharedFrameworkInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">$(SharedFrameworkInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerNameSuffix)$(InstallerExtension)</SharedFrameworkInstallerFile>
 
     <DotnetRuntimeDependenciesPackageInstallerFile>$(DotnetRuntimeDependenciesPackageInstallerStart)$(ProductMoniker)$(InstallerNameSuffix)$(InstallerExtension)</DotnetRuntimeDependenciesPackageInstallerFile>
-    
+
     <HostFxrDebPkgName>$(DotnetHostFxrString)$(PackageNameSuffix)</HostFxrDebPkgName>
     <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
     <SharedFxDebPkgName>$(DotnetRuntimeString)$(PackageNameSuffix)</SharedFxDebPkgName>

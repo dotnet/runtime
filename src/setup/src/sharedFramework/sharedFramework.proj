@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <CommonProjectArgs>$(MSBuildPassThroughPropertyList) /p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(PackageTargetRid)</CommonProjectArgs>
+    <CommonProjectArgs>$(MSBuildPassThroughPropertyList) /p:TargetFramework=$(NETCoreAppFramework) /p:RuntimeIdentifier=$(PackageTargetRid)</CommonProjectArgs>
 
     <!-- SFP is short for SharedFrameworkPublish. Using an abreviation to prevent long path issues. -->
     <SharedFrameworkIntermediatePackagesDir>$(IntermediateOutputRootPath)SFP.packages\</SharedFrameworkIntermediatePackagesDir>
@@ -28,11 +28,11 @@
 
   <Target Name="PublishSharedFrameworkAndSharedHost"
           DependsOnTargets="RestoreLockedCoreHost">
-    
+
     <PropertyGroup>
       <SharedFrameworkSourceRoot>$(MSBuildThisFileDirectory)framework</SharedFrameworkSourceRoot>
       <CommonSharedFrameworkArgs>$(CommonProjectArgs) /p:RuntimeFrameworkVersion=$(SharedFrameworkNugetVersion)</CommonSharedFrameworkArgs>
-    </PropertyGroup>  
+    </PropertyGroup>
 
     <RemoveDir Directories="$(SharedFrameworkNameAndVersionRoot)" />
 
@@ -64,9 +64,9 @@
     <Delete Files="@(ToDelete)" />
 
     <!-- Rename deps file -->
-    <Move SourceFiles="$(SharedFrameworkNameAndVersionRoot)\framework.deps.json" 
+    <Move SourceFiles="$(SharedFrameworkNameAndVersionRoot)\framework.deps.json"
           DestinationFiles="$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json" />
-    
+
     <!-- Use the muxer we intended to consume (either restored a shipped version or the one we built) -->
     <!-- Ensure the host is executable.  See https://github.com/NuGet/Home/issues/4424 -->
     <Exec Command="chmod u+x $(CoreHostLockedDir)dotnet$(ExeSuffix)"
@@ -80,7 +80,7 @@
     <ItemGroup>
       <SharedFrameworkSymbols Include="$(PackageSymbolsBinDir)Microsoft.NETCore.App/**/*.pdb" />
       <SharedFrameworkSymbols Include="$(PackageSymbolsBinDir)Microsoft.NETCore.App/**/*$(SymbolFileExtension)" />
-      <SharedFrameworkSymbols Include="$(PackageSymbolsBinDir)Microsoft.NETCore.App/**/*$(CrossGenSymbolExtension)" 
+      <SharedFrameworkSymbols Include="$(PackageSymbolsBinDir)Microsoft.NETCore.App/**/*$(CrossGenSymbolExtension)"
                               Condition="'$(CrossGenSymbolExtension)' != ''" />
     </ItemGroup>
     <RemoveDir Directories="$(SharedFrameworkPublishSymbolsDir)"
@@ -124,7 +124,7 @@
       <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='Windows_NT'">win</RuntimeGraphGeneratorRuntime>
       <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='OSX'">osx</RuntimeGraphGeneratorRuntime>
       <RuntimeGraphGeneratorRuntime Condition="$(OutputRID.StartsWith('alpine'))">alpine</RuntimeGraphGeneratorRuntime>
-      <RuntimeGraphGeneratorRuntime Condition="'$(RuntimeGraphGeneratorRuntime)'==''">linux</RuntimeGraphGeneratorRuntime>      
+      <RuntimeGraphGeneratorRuntime Condition="'$(RuntimeGraphGeneratorRuntime)'==''">linux</RuntimeGraphGeneratorRuntime>
     </PropertyGroup>
 
     <ItemGroup>
@@ -133,7 +133,7 @@
       <TrimPkgsFromDeps Include="microsoft.netcore.dotnetapphost" />
       <TrimPkgsFromDeps Include="microsoft.netcore.dotnethostresolver" />
     </ItemGroup>
-    
+
     <ProcessSharedFrameworkDeps AssetsFilePath="$(SharedFrameworkAssetsFile)"
                                 DepsFilePath="$(SharedFrameworkDepsFile)"
                                 PackagesToRemove="@(TrimPkgsFromDeps)"
