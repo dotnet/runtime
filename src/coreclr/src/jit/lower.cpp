@@ -915,16 +915,16 @@ bool Lowering::TryLowerSwitchToBitTest(
     // Rewire the blocks as needed and figure out the condition to use for JCC.
     //
 
-    genTreeOps bbSwitchCondition = GT_NONE;
-    bbSwitch->bbJumpKind         = BBJ_COND;
+    GenCondition bbSwitchCondition;
+    bbSwitch->bbJumpKind = BBJ_COND;
 
     comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
     comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
 
     if (bbSwitch->bbNext == bbCase0)
     {
-        // GT_LT + GTF_UNSIGNED generates JC so we jump to bbCase1 when the bit is set
-        bbSwitchCondition    = GT_LT;
+        // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
+        bbSwitchCondition    = GenCondition::C;
         bbSwitch->bbJumpDest = bbCase1;
 
         comp->fgAddRefPred(bbCase0, bbSwitch);
@@ -934,8 +934,8 @@ bool Lowering::TryLowerSwitchToBitTest(
     {
         assert(bbSwitch->bbNext == bbCase1);
 
-        // GT_GE + GTF_UNSIGNED generates JNC so we jump to bbCase0 when the bit is not set
-        bbSwitchCondition    = GT_GE;
+        // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
+        bbSwitchCondition    = GenCondition::NC;
         bbSwitch->bbJumpDest = bbCase0;
 
         comp->fgAddRefPred(bbCase0, bbSwitch);
@@ -951,7 +951,7 @@ bool Lowering::TryLowerSwitchToBitTest(
     GenTree*  bitTest      = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
     bitTest->gtFlags |= GTF_SET_FLAGS;
     GenTreeCC* jcc = new (comp, GT_JCC) GenTreeCC(GT_JCC, bbSwitchCondition);
-    jcc->gtFlags |= GTF_UNSIGNED | GTF_USE_FLAGS;
+    jcc->gtFlags |= GTF_USE_FLAGS;
 
     LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, bitTest, jcc);
 
@@ -2518,8 +2518,8 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
         GenTree* jcc    = cmpUse.User();
         jcc->gtOp.gtOp1 = nullptr;
         jcc->ChangeOper(GT_JCC);
-        jcc->gtFlags |= (cmp->gtFlags & GTF_UNSIGNED) | GTF_USE_FLAGS;
-        jcc->AsCC()->gtCondition = condition;
+        jcc->gtFlags |= GTF_USE_FLAGS;
+        jcc->AsCC()->gtCondition = GenCondition::FromIntegralRelop(condition, cmp->IsUnsigned());
     }
     else
     {
@@ -2527,7 +2527,7 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
         cmp->gtOp.gtOp2 = nullptr;
         cmp->ChangeOper(GT_SETCC);
         cmp->gtFlags |= GTF_USE_FLAGS;
-        cmp->AsCC()->gtCondition = condition;
+        cmp->AsCC()->gtCondition = GenCondition::FromIntegralRelop(condition, cmp->IsUnsigned());
     }
 
     return cmp->gtNext;
@@ -2729,7 +2729,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         if (lsh->OperIs(GT_LSH) && varTypeIsIntOrI(lsh->TypeGet()) && lsh->gtGetOp1()->IsIntegralConst(1) &&
             BlockRange().TryGetUse(cmp, &cmpUse))
         {
-            genTreeOps condition = cmp->OperIs(GT_TEST_NE) ? GT_LT : GT_GE;
+            GenCondition condition = cmp->OperIs(GT_TEST_NE) ? GenCondition::C : GenCondition::NC;
 
             cmp->SetOper(GT_BT);
             cmp->gtType = TYP_VOID;
@@ -2755,7 +2755,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 cmpUse.ReplaceWith(comp, cc);
             }
 
-            cc->gtFlags |= GTF_USE_FLAGS | GTF_UNSIGNED;
+            cc->gtFlags |= GTF_USE_FLAGS;
 
             return cmp->gtNext;
         }
@@ -2812,10 +2812,10 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 ccOp = GT_SETCC;
             }
 
-            genTreeOps condition = cmp->OperGet();
+            GenCondition condition = GenCondition::FromIntegralRelop(cmp);
             cc->ChangeOper(ccOp);
             cc->AsCC()->gtCondition = condition;
-            cc->gtFlags |= GTF_USE_FLAGS | (cmp->gtFlags & GTF_UNSIGNED);
+            cc->gtFlags |= GTF_USE_FLAGS;
 
             return next;
         }
