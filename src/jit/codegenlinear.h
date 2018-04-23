@@ -20,7 +20,6 @@ void genCodeForDivMod(GenTreeOp* treeNode);
 void genCodeForMul(GenTreeOp* treeNode);
 void genCodeForMulHi(GenTreeOp* treeNode);
 void genLeaInstruction(GenTreeAddrMode* lea);
-void genSetRegToCond(regNumber dstReg, GenTree* tree);
 
 #if defined(_TARGET_ARMARCH_)
 void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);

@@ -1237,54 +1237,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
 }
 
-//------------------------------------------------------------------------
-// genSetRegToCond: Generate code to materialize a condition into a register.
-//
-// Arguments:
-//   dstReg - The target register to set to 1 or 0
-//   tree - The GenTree Relop node that was used to set the Condition codes
-//
-// Return Value: none
-//
-// Preconditions:
-//    The condition codes must already have been appropriately set.
-//
-void CodeGen::genSetRegToCond(regNumber dstReg, GenTree* tree)
-{
-    // Emit code like that:
-    //   ...
-    //   beq True
-    //   bvs True    ; this second branch is typically absent
-    //   movs rD, #0
-    //   b Next
-    // True:
-    //   movs rD, #1
-    // Next:
-    //   ...
-
-    emitJumpKind jumpKind[2];
-    bool         branchToTrueLabel[2];
-    genJumpKindsForTree(tree, jumpKind, branchToTrueLabel);
-
-    BasicBlock* labelTrue = genCreateTempLabel();
-    getEmitter()->emitIns_J(emitter::emitJumpKindToIns(jumpKind[0]), labelTrue);
-
-    if (jumpKind[1] != EJ_NONE)
-    {
-        getEmitter()->emitIns_J(emitter::emitJumpKindToIns(jumpKind[1]), labelTrue);
-    }
-
-    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(tree->gtType), dstReg, 0);
-
-    BasicBlock* labelNext = genCreateTempLabel();
-    getEmitter()->emitIns_J(INS_b, labelNext);
-
-    genDefineTempLabel(labelTrue);
-    getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(tree->gtType), dstReg, 1);
-    genDefineTempLabel(labelNext);
-}
-
-//------------------------------------------------------------------------
 // genLongToIntCast: Generate code for long to int casts.
 //
 // Arguments:

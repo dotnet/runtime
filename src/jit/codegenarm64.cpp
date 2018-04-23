@@ -3128,63 +3128,6 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     gcInfo.gcMarkRegPtrVal(oldOp1Reg, type2);
 }
 
-//-------------------------------------------------------------------------------------------
-// genSetRegToCond:  Set a register 'dstReg' to the appropriate one or zero value
-//                   corresponding to a binary Relational operator result.
-//
-// Arguments:
-//   dstReg          - The target register to set to 1 or 0
-//   tree            - The GenTree Relop node that was used to set the Condition codes
-//
-// Return Value:     none
-//
-// Notes:
-//    A full 64-bit value of either 1 or 0 is setup in the 'dstReg'
-//-------------------------------------------------------------------------------------------
-
-void CodeGen::genSetRegToCond(regNumber dstReg, GenTree* tree)
-{
-    emitJumpKind jumpKind[2];
-    bool         branchToTrueLabel[2];
-    genJumpKindsForTree(tree, jumpKind, branchToTrueLabel);
-    assert(jumpKind[0] != EJ_NONE);
-
-    // Set the reg according to the flags
-    inst_SET(jumpKind[0], dstReg);
-
-    // Do we need to use two operation to set the flags?
-    //
-    if (jumpKind[1] != EJ_NONE)
-    {
-        emitter* emit    = getEmitter();
-        bool     ordered = ((tree->gtFlags & GTF_RELOP_NAN_UN) == 0);
-        insCond  secondCond;
-
-        // The only ones that require two operations are the
-        // floating point compare operations of BEQ or BNE.UN
-        //
-        if (tree->gtOper == GT_EQ)
-        {
-            // This must be an ordered comparison.
-            assert(ordered);
-            assert(jumpKind[1] == EJ_vs); // We complement this value
-            secondCond = INS_COND_VC;     // for the secondCond
-        }
-        else // gtOper == GT_NE
-        {
-            // This must be BNE.UN (unordered comparison)
-            assert((tree->gtOper == GT_NE) && !ordered);
-            assert(jumpKind[1] == EJ_lo); // We complement this value
-            secondCond = INS_COND_HS;     // for the secondCond
-        }
-
-        // The second instruction is a 'csinc' instruction that either selects the previous dstReg
-        // or increments the ZR register, which produces a 1 result.
-
-        emit->emitIns_R_R_R_COND(INS_csinc, EA_8BYTE, dstReg, dstReg, REG_ZR, secondCond);
-    }
-}
-
 //------------------------------------------------------------------------
 // genIntToFloatCast: Generate code to cast an int/long to float/double
 //
