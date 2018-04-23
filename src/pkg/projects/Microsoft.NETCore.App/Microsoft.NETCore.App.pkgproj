@@ -6,10 +6,6 @@
 
   <PropertyGroup>
     <Version>$(SharedFrameworkNugetVersion)</Version>
-
-    <!-- This corresponds to TFM we want the SharedFX to target and should be updated when needed. -->
-
-    <NETCoreAppFramework>netcoreapp2.1</NETCoreAppFramework>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
     <ShouldCreateLayout>false</ShouldCreateLayout>
@@ -43,7 +39,7 @@
     <Dependency Include="_._">
       <TargetFramework>.NETCoreApp2.0</TargetFramework>
     </Dependency>
-    
+
     <!-- references the host packages -->
     <Dependency Include="Microsoft.NETCore.DotNetHostPolicy">
        <Version>$(HostPolicyVersion)</Version>
@@ -55,7 +51,7 @@
     <File Include="$(PlaceHolderFile)">
       <TargetPath>ref/netcoreapp</TargetPath>
     </File>
-    
+
     <File Include="$(PropsFile)">
       <TargetPath>build/$(NETCoreAppFramework)</TargetPath>
     </File>
@@ -73,18 +69,18 @@
       <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
     </ProjectReference>
   </ItemGroup>
-  
+
   <Target Name="GenerateFileVersionProps" BeforeTargets="GenerateNuSpec" Condition="'$(PackageTargetRuntime)' == ''">
     <MSBuild Projects="@(ProjectReference)"
-             Condition="'%(ProjectReference.PackageTargetRuntime)' == '$(PackageRID)' OR 
-                        '%(ProjectReference.BuidOnRID)' == '$(PackageRID)' OR 
+             Condition="'%(ProjectReference.PackageTargetRuntime)' == '$(PackageRID)' OR
+                        '%(ProjectReference.BuidOnRID)' == '$(PackageRID)' OR
                         ('$(IncludeAllRuntimePackagesInPlatformManifest)' == 'true' AND
-                         '%(ProjectReference.PackageTargetRuntime)' != '' AND 
+                         '%(ProjectReference.PackageTargetRuntime)' != '' AND
                          '%(ProjectReference.ExcludeFromPlatformManifest)' != 'true')"
              Targets="GetPackageFiles">
       <Output TaskParameter="TargetOutputs" ItemName="SharedFrameworkRuntimeFiles" />
     </MSBuild>
-    
+
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
                               PackageId="$(Id)"
                               PackageVersion="$(Version)"
