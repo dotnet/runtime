@@ -420,3 +420,4 @@ private:
 };
 
 void inst_JCC(GenCondition condition, BasicBlock* target);
+void inst_SETCC(GenCondition condition, var_types type, regNumber dstReg);
