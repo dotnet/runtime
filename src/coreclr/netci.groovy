@@ -334,7 +334,15 @@ class Constants {
     def static validLinuxArmScenarios = [
                'innerloop',
                'normal',
+               // 'ilrt'
                'r2r',
+               // 'longgc'
+               // 'formatting'
+               // 'gcsimulator'
+               // 'jitdiff'
+               // 'standalone_gc'
+               // 'gc_reliability_framework'
+               // 'illink'
                'r2r_jitstress1',
                'r2r_jitstress2',
                'r2r_jitstressregs1',
@@ -349,6 +357,7 @@ class Constants {
                'r2r_jitforcerelocs',
                'r2r_gcstress15',
                'minopts',
+               'tieredcompilation',
                'forcerelocs',
                'jitstress1',
                'jitstress2',
@@ -369,6 +378,26 @@ class Constants {
                'jitstress2_jitstressregs0x80',
                'jitstress2_jitstressregs0x1000',
                'tailcallstress',
+               // 'jitsse2only'                          // Only relevant to xarch
+               // 'jitnosimd'
+               // 'jitincompletehwintrinsic'
+               // 'jitx86hwintrinsicnoavx'
+               // 'jitx86hwintrinsicnoavx2'
+               // 'jitx86hwintrinsicnosimd'
+               // 'jitnox86hwintrinsic'
+               'corefx_baseline',
+               'corefx_minopts',
+               'corefx_tieredcompilation',
+               'corefx_jitstress1',
+               'corefx_jitstress2',
+               'corefx_jitstressregs1',
+               'corefx_jitstressregs2',
+               'corefx_jitstressregs3',
+               'corefx_jitstressregs4',
+               'corefx_jitstressregs8',
+               'corefx_jitstressregs0x10',
+               'corefx_jitstressregs0x80',
+               'corefx_jitstressregs0x1000',
                'gcstress0x3',
                'gcstress0xc',
                'zapdisable',
@@ -755,6 +784,16 @@ def static isValidPrTriggeredInnerLoopJob(os, architecture, configuration, isBui
     }
 
     return true
+}
+
+def static getFxBranch(def branch) {
+    def fxBranch = branch
+    // Map 'dev/unix_test_workflow' to 'master' so we can test CoreFX jobs in the CoreCLR dev/unix_test_workflow
+    // branch even though CoreFX doesn't have such a branch.
+    if (branch == 'dev/unix_test_workflow') {
+        fxBranch = 'master'
+    }
+    return fxBranch
 }
 
 def static setJobTimeout(newJob, isPR, architecture, configuration, scenario, isBuildOnly) {
@@ -2151,8 +2190,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         if (doCoreFxTesting) {
                             def workspaceRelativeFxRoot = "_/fx"
                             def absoluteFxRoot = "%WORKSPACE%\\_\\fx"
+                            def fxBranch = getFxBranch(branch)
 
-                            buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${envScriptPath}"
+                            buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${envScriptPath}"
 
                             // Archive and process (only) the test results
                             Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
@@ -2252,8 +2292,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         def workspaceRelativeFxRootLinux = "_/fx"
                         def workspaceRelativeFxRootWin = "_\\fx"
                         def absoluteFxRoot = "%WORKSPACE%\\_\\fx"
+                        def fxBranch = getFxBranch(branch)
 
-                        buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${envScriptPath} -no_run_tests"
+                        buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${envScriptPath} -no_run_tests"
 
                         // Zip up the CoreFx runtime and tests. We don't need the CoreCLR binaries; they have been copied to the CoreFX tree.
                         buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('${workspaceRelativeFxRootWin}\\bin\\testhost\\netcoreapp-Windows_NT-Release-arm', '${workspaceRelativeFxRootWin}\\fxruntime.zip')\"";
@@ -2358,8 +2399,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         // Build and text corefx
                         def workspaceRelativeFxRoot = "_/fx"
                         def absoluteFxRoot = "\$WORKSPACE/${workspaceRelativeFxRoot}"
+                        def fxBranch = getFxBranch(branch)
 
-                        buildCommands += "python -u \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${branch} -env_script ${scriptFileName}"
+                        buildCommands += "python -u \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${scriptFileName}"
 
                         // Archive and process (only) the test results
                         Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
@@ -2432,30 +2474,58 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                     // Cross build the Ubuntu/arm product using docker with a docker image that contains the correct
                     // Ubuntu cross-compilation toolset (running on a Ubuntu x64 host).
+                    // For CoreFX testing, we only need the product build; we don't need to generate the layouts. The product
+                    // build is then copied into the corefx layout by the run-corefx-test.py script. For CoreFX testing, we
+                    // ZIP up the generated CoreFX runtime and tests.
 
                     def dockerImage = getDockerImageName(architecture, os, true)
                     def dockerCmd = "docker run -i --rm -v \${WORKSPACE}:\${WORKSPACE} -w \${WORKSPACE} -e ROOTFS_DIR=/crossrootfs/arm -e CAC_ROOTFS_DIR=/crossrootfs/x86 ${dockerImage} "
 
                     buildCommands += "${dockerCmd}\${WORKSPACE}/build.sh ${lowerConfiguration} ${architecture} cross crosscomponent"
 
-                    // Then, using the same docker image, generate the CORE_ROOT layout using build-test.sh to
-                    // download the appropriate CoreFX packages.
-                    // Note that docker should not be necessary here, for the "generatelayoutonly" case, but we use it
-                    // just to be consistent with the "build.sh" case -- so both are run with the same environment.
+                    if (doCoreFxTesting) {
+                        def scriptFileName = "\$WORKSPACE/set_stress_test_env.sh"
 
-                    buildCommands += "${dockerCmd}\${WORKSPACE}/build-test.sh ${lowerConfiguration} ${architecture} cross generatelayoutonly"
+                        def envScriptCmds = envScriptCreate(os, scriptFileName)
+                        envScriptCmds += envScriptSetStressModeVariables(os, Constants.jitStressModeScenarios[scenario], scriptFileName)
+                        envScriptCmds += envScriptFinalize(os, scriptFileName)
+                        buildCommands += envScriptCmds
 
-                    // ZIP up for the test job (created in the flow job code):
-                    // (1) the built CORE_ROOT, /home/user/coreclr/bin/tests/Linux.arm.Checked/Tests/Core_Root,
-                    //     used by runtest.sh as the "--coreOverlayDir" argument.
-                    // (2) the native parts of the test build: /home/user/coreclr/bin/obj/Linux.arm.Checked/tests,
-                    //     used by runtest.sh as the "--testNativeBinDir" argument.
+                        // Build and text corefx
+                        def workspaceRelativeFxRootLinux = "_/fx"
+                        def absoluteFxRoot = "\$WORKSPACE/${workspaceRelativeFxRootLinux}"
+                        def fxBranch = getFxBranch(branch)
 
-                    // These commands are assumed to be run from the root of the workspace.
-                    buildCommands += "zip -r coreroot.${lowerConfiguration}.zip ./bin/tests/Linux.arm.${configuration}/Tests/Core_Root"
-                    buildCommands += "zip -r testnativebin.${lowerConfiguration}.zip ./bin/obj/Linux.arm.${configuration}/tests"
+                        buildCommands += "${dockerCmd}python -u \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${scriptFileName} -no_run_tests"
 
-                    Utilities.addArchival(newJob, "coreroot.${lowerConfiguration}.zip,testnativebin.${lowerConfiguration}.zip", "")
+                        // Docker creates files with root permission, so we need to zip in docker also, or else we'll get permission errors.
+                        buildCommands += "${dockerCmd}zip -r ${workspaceRelativeFxRootLinux}/fxruntime.zip ${workspaceRelativeFxRootLinux}/bin/testhost/netcoreapp-Linux-Release-${architecture}"
+                        buildCommands += "${dockerCmd}zip -r ${workspaceRelativeFxRootLinux}/fxtests.zip ${workspaceRelativeFxRootLinux}/bin/tests"
+
+                        Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/fxruntime.zip")
+                        Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/fxtests.zip")
+                        Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/run-test.sh")
+                    }
+                    else {
+                        // Then, using the same docker image, generate the CORE_ROOT layout using build-test.sh to
+                        // download the appropriate CoreFX packages.
+                        // Note that docker should not be necessary here, for the "generatelayoutonly" case, but we use it
+                        // just to be consistent with the "build.sh" case -- so both are run with the same environment.
+
+                        buildCommands += "${dockerCmd}\${WORKSPACE}/build-test.sh ${lowerConfiguration} ${architecture} cross generatelayoutonly"
+
+                        // ZIP up for the test job (created in the flow job code):
+                        // (1) the built CORE_ROOT, /home/user/coreclr/bin/tests/Linux.arm.Checked/Tests/Core_Root,
+                        //     used by runtest.sh as the "--coreOverlayDir" argument.
+                        // (2) the native parts of the test build: /home/user/coreclr/bin/obj/Linux.arm.Checked/tests,
+                        //     used by runtest.sh as the "--testNativeBinDir" argument.
+
+                        // These commands are assumed to be run from the root of the workspace.
+                        buildCommands += "zip -r coreroot.${lowerConfiguration}.zip ./bin/tests/Linux.arm.${configuration}/Tests/Core_Root"
+                        buildCommands += "zip -r testnativebin.${lowerConfiguration}.zip ./bin/obj/Linux.arm.${configuration}/tests"
+
+                        Utilities.addArchival(newJob, "coreroot.${lowerConfiguration}.zip,testnativebin.${lowerConfiguration}.zip", "")
+                    }
 
                     // We need to clean up the build machines; the docker build leaves newly built files with root permission, which
                     // the cleanup task in Jenkins can't remove.
@@ -2466,7 +2536,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             }
                         }
                     }
-
                     break
                 default:
                     println("Unknown architecture: ${architecture}");
@@ -2586,8 +2655,18 @@ def static shouldGenerateJob(def scenario, def isPR, def architecture, def confi
 
             case 'arm':
                 // We use build only jobs for Windows arm cross-compilation corefx testing, so we need to generate builds for that.
-                if (! (isBuildOnly && isCoreFxScenario(scenario)) ) {
-                    return false
+                // No "regular" Windows arm corefx jobs, e.g.
+                // For Ubuntu arm corefx testing, we use regular jobs (not "build only" since only Windows has "build only", and
+                // the Ubuntu arm "regular" jobs don't run tests anyway).
+                if (os == 'Windows_NT') {
+                    if (! (isBuildOnly && isCoreFxScenario(scenario)) ) {
+                        return false
+                    }
+                }
+                else {
+                    if (!isCoreFxScenario(scenario)) {
+                        return false
+                    }
                 }
                 break
 
@@ -2754,8 +2833,9 @@ Constants.allScenarios.each { scenario ->
                                                Utilities.getFullJobName(project,
                                                                         getJobName(lowerConfiguration, 'x64' , 'windows_nt', 'normal', true),
                                                                         false)
+                        def fxBranch = getFxBranch(branch)
                         def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' +
-                                           Utilities.getFolderName(branch)
+                                           Utilities.getFolderName(fxBranch)
 
                         def arm_abi = 'arm'
                         def corefx_os = 'linux'
@@ -3009,6 +3089,9 @@ def static CreateWindowsArmTestJob(def dslFactory, def project, def architecture
 def static CreateOtherTestJob(def dslFactory, def project, def branch, def architecture, def os, def configuration, def scenario, def isPR, def inputCoreCLRBuildName, def inputTestsBuildName)
 {
     def isUbuntuArmJob = ((os == "Ubuntu") && (architecture == 'arm')) // ARM Ubuntu running on hardware (not emulator)
+    def doCoreFxTesting = isCoreFxScenario(scenario)
+
+    def workspaceRelativeFxRootLinux = "_/fx" // only used for CoreFX testing
 
     def osGroup = getOSGroup(os)
     def jobName = getJobName(configuration, architecture, os, scenario, false) + "_tst"
@@ -3109,10 +3192,15 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
         }
     }
 
+    // The ARM Ubuntu corefx test job doesn't depend on a Windows test build, and hence inputTestsBuildName
+    // will be null in this case.
+
     def jobFolder = getJobFolder(scenario)
     def newJob = dslFactory.job(Utilities.getFullJobName(project, jobName, isPR, jobFolder)) {
         parameters {
-            stringParam('CORECLR_WINDOWS_BUILD', '', 'Build number to copy CoreCLR Windows test binaries from')
+            if (inputTestsBuildName != null) {
+                stringParam('CORECLR_WINDOWS_BUILD', '', 'Build number to copy CoreCLR Windows test binaries from')
+            }
             stringParam('CORECLR_BUILD', '', "Build number to copy CoreCLR ${osGroup} binaries from")
         }
 
@@ -3121,11 +3209,12 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
 
             // Coreclr build containing the tests and mscorlib
             // pri1 jobs still need to copy windows_nt built tests
-            assert inputTestsBuildName != null
-            copyArtifacts(inputTestsBuildName) {
-                excludePatterns('**/testResults.xml', '**/*.ni.dll')
-                buildSelector {
-                    buildNumber('${CORECLR_WINDOWS_BUILD}')
+            if (inputTestsBuildName != null) {
+                copyArtifacts(inputTestsBuildName) {
+                    excludePatterns('**/testResults.xml', '**/*.ni.dll')
+                    buildSelector {
+                        buildNumber('${CORECLR_WINDOWS_BUILD}')
+                    }
                 }
             }
 
@@ -3153,7 +3242,8 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
             else if (architecture == 'x86') {
                 shell("mkdir ./bin/CoreFxNative")
 
-                def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' + Utilities.getFolderName(branch)
+                def fxBranch = getFxBranch(branch)
+                def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' + Utilities.getFolderName(fxBranch)
 
                 copyArtifacts("${corefxFolder}/ubuntu16.04_x86_release") {
                     includePatterns('bin/build.tar.gz')
@@ -3166,22 +3256,31 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
                 shell("tar -xf ./bin/CoreFxNative/bin/build.tar.gz -C ./bin/CoreFxBinDir")
             }
 
-            // Unzip the tests first.  Exit with 0
-            shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/${osGroup}.${architecture}.${configuration} || exit 0")
-            shell("rm -r ./bin/tests/${osGroup}.${architecture}.${configuration}/Tests/Core_Root || exit 0")
+            // CoreFX testing downloads the CoreFX tests, not the coreclr tests. Also, unzip the built CoreFX layout/runtime directories.
+            if (doCoreFxTesting) {
+                shell("unzip -o ${workspaceRelativeFxRootLinux}/fxtests.zip || exit 0")
+                shell("unzip -o ${workspaceRelativeFxRootLinux}/fxruntime.zip || exit 0")
+            }
+            else {
+                // Unzip the tests first.  Exit with 0
+                shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/${osGroup}.${architecture}.${configuration} || exit 0")
+                shell("rm -r ./bin/tests/${osGroup}.${architecture}.${configuration}/Tests/Core_Root || exit 0")
+            }
 
             // For arm Ubuntu (on hardware), we do the "build-test" step on the build machine, not on the test
             // machine. The arm Ubuntu test machines do no building -- they have no CLI, for example.
             // We should probably do the "generatelayoutonly" step on the build machine for all architectures.
             // However, it's believed that perhaps there's an issue with executable permission bits not getting
             // copied correctly.
-            if (isUbuntuArmJob) {
-                def lowerConfiguration = configuration.toLowerCase()
-                shell("unzip -o ./coreroot.${lowerConfiguration}.zip || exit 0")      // unzips to ./bin/tests/Linux.arm.${configuration}/Tests/Core_Root
-                shell("unzip -o ./testnativebin.${lowerConfiguration}.zip || exit 0") // unzips to ./bin/obj/Linux.arm.${configuration}/tests
-            }
-            else {
-                shell("./build-test.sh ${architecture} ${configuration} generatelayoutonly")
+            if (!doCoreFxTesting) {
+                if (isUbuntuArmJob) {
+                    def lowerConfiguration = configuration.toLowerCase()
+                    shell("unzip -o ./coreroot.${lowerConfiguration}.zip || exit 0")      // unzips to ./bin/tests/Linux.arm.${configuration}/Tests/Core_Root
+                    shell("unzip -o ./testnativebin.${lowerConfiguration}.zip || exit 0") // unzips to ./bin/obj/Linux.arm.${configuration}/tests
+                }
+                else {
+                    shell("./build-test.sh ${architecture} ${configuration} generatelayoutonly")
+                }
             }
 
             // Execute the tests
@@ -3194,8 +3293,9 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
                 dockerCmd = dockerPrefix + "${dockerImage} "
             }
 
-            // If we are running a stress mode, we'll set those variables first
-            if (isJitStressScenario(scenario)) {
+            // If we are running a stress mode, we'll set those variables first.
+            // For CoreFX, the stress variables are already built into the CoreFX test build per-test wrappers.
+            if (!doCoreFxTesting && isJitStressScenario(scenario)) {
                 def scriptFileName = "\${WORKSPACE}/set_stress_test_env.sh"
                 def envScriptCmds = envScriptCreate(os, scriptFileName)
                 envScriptCmds += envScriptSetStressModeVariables(os, Constants.jitStressModeScenarios[scenario], scriptFileName)
@@ -3214,14 +3314,22 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
                 }
             }
 
-            def runScript = "${dockerCmd}./tests/runtest.sh"
+            if (doCoreFxTesting) {
+                // This isn't in corefx yet:
+                //    --test-exclude-file \${WORKSPACE}/tests/${architecture}/corefx_linux_test_exclusions.txt
+                shell("""\
+\${WORKSPACE}/${workspaceRelativeFxRootLinux}/run-test.sh --sequential --runtime \${WORKSPACE}/${workspaceRelativeFxRootLinux}/bin/testhost/netcoreapp-Linux-Release-${architecture} --arch ${architecture} --corefx-tests \${WORKSPACE}/${workspaceRelativeFxRootLinux}/bin --configurationGroup Release""")
+            }
+            else {
+                def runScript = "${dockerCmd}./tests/runtest.sh"
 
-            shell("""\
+                shell("""\
 ${runScript} \\
     --testRootDir=\"\${WORKSPACE}/bin/tests/${osGroup}.${architecture}.${configuration}\" \\
     --coreOverlayDir=\"\${WORKSPACE}/bin/tests/${osGroup}.${architecture}.${configuration}/Tests/Core_Root\" \\
     --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
     --copyNativeTestBin --limitedDumpGeneration ${testOpts}""")
+            }
 
             if (isGcReliabilityFramework(scenario)) {
                 // runtest.sh doesn't actually execute the reliability framework - do it here.
@@ -3246,8 +3354,14 @@ ${runScript} \\
         summaries.emit(newJob)
     }
 
-    Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/coreclrtests.*.txt")
-    Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
+    if (doCoreFxTesting) {
+        Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/bin/**/testResults.xml")
+        Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRootLinux}/bin/**/testResults.xml")
+    }
+    else {
+        Utilities.addArchival(newJob, "bin/tests/${osGroup}.${architecture}.${configuration}/coreclrtests.*.txt")
+        Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
+    }
 
     return newJob
 }
@@ -3282,6 +3396,7 @@ def static CreateTestJob(def dslFactory, def project, def branch, def architectu
 }
 
 // Create a flow job to tie together a build job with the given test job.
+// The 'inputTestsBuildName' argument might be null if the flow job doesn't depend on a Windows build job.
 // Returns the new flow job.
 def static CreateFlowJob(def dslFactory, def project, def branch, def architecture, def os, def configuration, def scenario, def isPR, def fullTestJobName, def inputCoreCLRBuildName, def inputTestsBuildName)
 {
@@ -3292,14 +3407,7 @@ def static CreateFlowJob(def dslFactory, def project, def branch, def architectu
 
     def newFlowJob = null
 
-    def windowsArmJob = ((os == "Windows_NT") && (architecture in Constants.armWindowsCrossArchitectureList))
-    if (windowsArmJob) {
-
-        assert inputTestsBuildName == null
-
-        // For Windows arm jobs there is no reason to build a parallel test job.
-        // The product build supports building and archiving the tests.
-
+    if (inputTestsBuildName == null) {
         newFlowJob = dslFactory.buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR, jobFolder)) {
                         buildFlow("""\
 coreclrBuildJob = build(params, '${inputCoreCLRBuildName}')
@@ -3449,8 +3557,8 @@ def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def c
             return false
         }
 
-        // CoreFx JIT stress tests currently only implemented for Windows ARM.
-        if (isCoreFxScenario(scenario) && !( (architecture == 'arm') && (os == 'Windows_NT') )) {
+        // On Windows, CoreFx tests currently not implemented for ARM64 or ARMLB.
+        if (isCoreFxScenario(scenario) && (os == 'Windows_NT') && ((architecture == 'arm64') || (architecture == 'armlb'))) {
             return false
         }
     }
@@ -3532,14 +3640,20 @@ Constants.allScenarios.each { scenario ->
                         return
                     }
 
+                    def windowsArmJob = ((os == "Windows_NT") && (architecture in Constants.armWindowsCrossArchitectureList))
+                    def doCoreFxTesting = isCoreFxScenario(scenario)
+
                     // Figure out the job name of the CoreCLR build the test will depend on.
 
                     def inputCoreCLRBuildScenario = scenario == 'innerloop' ? 'innerloop' : 'normal'
                     def inputCoreCLRBuildIsBuildOnly = false
-                    if (isCoreFxScenario(scenario)) {
+                    if (doCoreFxTesting) {
                         // Every CoreFx test depends on its own unique build.
                         inputCoreCLRBuildScenario = scenario
-                        inputCoreCLRBuildIsBuildOnly = true
+                        if (windowsArmJob) {
+                            // Only Windows ARM corefx jobs use "build only" jobs. Others, such as Ubuntu ARM corefx, use "regular" jobs.
+                            inputCoreCLRBuildIsBuildOnly = true
+                        }
                     }
                     def inputCoreCLRFolderName = getJobFolder(inputCoreCLRBuildScenario)
                     def inputCoreCLRBuildName = projectFolder + '/' +
@@ -3548,11 +3662,12 @@ Constants.allScenarios.each { scenario ->
                     // Figure out the name of the build job that the test job will depend on.
                     // For Windows ARM tests, this is not used, as the CoreCLR build creates the tests. For other
                     // tests (e.g., Linux ARM), we depend on a Windows build to get the tests.
+                    // For CoreFX tests, however, Linux doesn't need the Windows build for the tests, since the
+                    // CoreFX build creates the tests.
 
                     def inputTestsBuildName = null
 
-                    def windowsArmJob = ((os == "Windows_NT") && (architecture in Constants.armWindowsCrossArchitectureList))
-                    if (!windowsArmJob) {
+                    if (!windowsArmJob && !doCoreFxTesting) {
                         def testBuildScenario = scenario == 'innerloop' ? 'innerloop' : 'normal'
 
                         def inputTestsBuildArch = architecture
