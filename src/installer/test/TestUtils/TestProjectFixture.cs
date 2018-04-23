@@ -53,11 +53,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string dotnetInstallPath = null,
             string currentRid = null,
             string builtDotnetOutputPath = null,
-            string framework = "netcoreapp2.1")
+            string framework = null)
         {
             ValidateRequiredDirectories(repoDirectoriesProvider);
 
             _testProjectName = testProjectName;
+            _framework = framework ?? Environment.GetEnvironmentVariable("MNA_TFM");
 
             _exeExtension = exeExtension ?? RuntimeInformationExtensions.GetExeExtensionForCurrentOSPlatform();
             _sharedLibraryExtension = sharedLibraryExtension
@@ -77,7 +78,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _currentRid = currentRid ?? repoDirectoriesProvider.TargetRID;
 
             _builtDotnet = new DotNetCli(repoDirectoriesProvider.BuiltDotnet);
-            _framework = framework;
             InitializeTestProject(
                 _testProjectName,
                 _testProjectSourceDirectory,
@@ -297,6 +297,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
 
             storeArgs.Add($"/p:MNAVersion={_repoDirectoriesProvider.MicrosoftNETCoreAppVersion}");
+            storeArgs.Add($"/p:NETCoreAppFramework={_framework}");
 
             // Ensure the project's OutputType isn't 'Exe', since that causes issues with 'dotnet store'
             storeArgs.Add("/p:OutputType=Library");
@@ -371,6 +372,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             restoreArgs.Add("--disable-parallel");
 
             restoreArgs.Add($"/p:MNAVersion={_repoDirectoriesProvider.MicrosoftNETCoreAppVersion}");
+            restoreArgs.Add($"/p:NETCoreAppFramework={_framework}");
 
             if (extraMSBuildProperties != null)
             {
