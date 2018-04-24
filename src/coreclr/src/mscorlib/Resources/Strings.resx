@@ -223,6 +223,9 @@
   <data name="Arg_CannotHaveNegativeValue" xml:space="preserve">
     <value>String cannot contain a minus sign if the base is not 10.</value>
   </data>
+  <data name="Arg_CannotMixComparisonInfrastructure" xml:space="preserve">
+    <value>The usage of IKeyComparer and IHashCodeProvider/IComparer interfaces cannot be mixed; use one or the other.</value>
+  </data>
   <data name="Arg_CATypeResolutionFailed" xml:space="preserve">
     <value>Failed to resolve type from string "{0}" which was embedded in custom attribute blob.</value>
   </data>
@@ -1620,6 +1623,9 @@
   </data>
   <data name="ArgumentNull_Collection" xml:space="preserve">
     <value>Collection cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_Dictionary" xml:space="preserve">
+    <value>Dictionary cannot be null.</value>
   </data>
   <data name="ArgumentNull_FileName" xml:space="preserve">
     <value>File name cannot be null.</value>
