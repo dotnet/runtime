@@ -2957,6 +2957,7 @@ public:
         WRAPPER_NO_CONTRACT;
 
 #ifdef _WIN64
+        // See code:GenericPInvokeCalliHelper
         return ((m_Datum != NULL) && !(dac_cast<TADDR>(m_Datum) & 0x1));
 #else // _WIN64
         return ((dac_cast<TADDR>(m_Datum) & ~0xffff) != 0);
