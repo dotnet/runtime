@@ -6,4 +6,11 @@
     <!-- use the most recent MS.NETCore.App we have from upstack -->
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppPackageVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Temporarily suppress checking closure of Memory and Threading.Tasks.Extensions
+         These wil fail until we get an updated Microsoft.NETCore.App.
+         https://github.com/dotnet/corefx/issues/29249 -->
+    <IgnoredReference Include="System.Memory" />
+    <IgnoredReference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
 </Project>

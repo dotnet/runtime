@@ -17,16 +17,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap10.0.16299-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap10.0.16299-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Memory.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true' and '$(TargetGroup)' != 'uap10.0.16299'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.1' Or '$(TargetGroup)' == 'uap10.0.16299'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.1'">
     <Reference Include="System.Globalization" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
