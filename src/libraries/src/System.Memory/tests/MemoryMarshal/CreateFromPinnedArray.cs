@@ -34,10 +34,9 @@ namespace System.SpanTests
             Memory<string> pinnedMemory = MemoryMarshal.CreateFromPinnedArray(a, 4, 3);
             pinnedMemory.Validate("94", "95", "96");
         }
-
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Re-enable after new coreclr build is available.")]
+        
         [Fact]
-        public static unsafe void CreateFromPinnedArrayIntSliceRemainsPinned()
+        public static void CreateFromPinnedArrayIntSliceRemainsPinned()
         {
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98 };
             Memory<int> pinnedMemory = MemoryMarshal.CreateFromPinnedArray(a, 3, 5);
@@ -67,10 +66,9 @@ namespace System.SpanTests
             Assert.Equal(testPinnedMemory._index + 1, testSlice._index);
             Assert.Equal(expectedLength, testSlice._length);
         }
-
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Re-enable after new coreclr build is available.")]
+        
         [Fact]
-        public static unsafe void CreateFromPinnedArrayIntReadOnlyMemorySliceRemainsPinned()
+        public static void CreateFromPinnedArrayIntReadOnlyMemorySliceRemainsPinned()
         {
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98 };
             ReadOnlyMemory<int> pinnedMemory = MemoryMarshal.CreateFromPinnedArray(a, 3, 5);
