@@ -1230,7 +1230,7 @@ namespace System.Runtime.Serialization
             {
                 OpCode opCode = GetLdelemOpCode(arrayElementType.GetTypeCode());
                 if (opCode.Equals(OpCodes.Nop))
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayTypeIsNotSupported, DataContract.GetClrTypeFullName(arrayElementType))));
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayTypeIsNotSupported_GeneratingCode, DataContract.GetClrTypeFullName(arrayElementType))));
                 if (_codeGenTrace != CodeGenTrace.None)
                     EmitSourceInstruction(opCode.ToString());
                 _ilGen.Emit(opCode);
@@ -1292,7 +1292,7 @@ namespace System.Runtime.Serialization
             {
                 OpCode opCode = GetStelemOpCode(arrayElementType.GetTypeCode());
                 if (opCode.Equals(OpCodes.Nop))
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayTypeIsNotSupported, DataContract.GetClrTypeFullName(arrayElementType))));
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayTypeIsNotSupported_GeneratingCode, DataContract.GetClrTypeFullName(arrayElementType))));
                 if (_codeGenTrace != CodeGenTrace.None)
                     EmitSourceInstruction(opCode.ToString());
                 EmitStackTop(arrayElementType);

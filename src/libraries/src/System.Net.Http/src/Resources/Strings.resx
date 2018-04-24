@@ -349,7 +349,7 @@
     <value>Stream does not support writing.</value>
   </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
-    <value>Can not access a closed Stream.</value>
+    <value>Cannot access a closed stream.</value>
   </data>
   <data name="net_http_libcurl_callback_notsupported_sslbackend" xml:space="preserve">
     <value>The handler does not support custom handling of certificates with this combination of libcurl ({0}) and its SSL backend ("{1}"). An SSL backend based on "{2}" is required. Consider using System.Net.Http.SocketsHttpHandler.</value>
@@ -433,7 +433,7 @@
     <value>Server implementation is not supported</value>
   </data>
   <data name="net_nego_protection_level_not_supported" xml:space="preserve">
-    <value>Requested protection level is not supported with the gssapi implementation currently installed.</value>
+    <value>Requested protection level is not supported with the GSSAPI implementation currently installed.</value>
   </data>
   <data name="net_context_buffer_too_small" xml:space="preserve">
     <value>Insufficient buffer space. Required: {0} Actual: {1}.</value>

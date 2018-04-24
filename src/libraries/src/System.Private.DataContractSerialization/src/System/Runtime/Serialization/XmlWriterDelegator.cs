@@ -286,7 +286,7 @@ namespace System.Runtime.Serialization
 
         private Exception CreateInvalidPrimitiveTypeException(Type type)
         {
-            return new InvalidDataContractException(SR.Format(SR.InvalidPrimitiveType, DataContract.GetClrTypeFullName(type)));
+            return new InvalidDataContractException(SR.Format(SR.InvalidPrimitiveType_Serialization, DataContract.GetClrTypeFullName(type)));
         }
 
         internal void WriteAnyType(object value)

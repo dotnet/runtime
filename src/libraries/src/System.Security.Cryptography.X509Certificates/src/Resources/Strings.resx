@@ -269,7 +269,7 @@
       <value>The platform does not have a definition for an X509 certificate store named '{0}' with a StoreLocation of '{1}', and does not support creating it.</value>
   </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
-    <value>Enumeration has not started.  Call MoveNext.</value>
+    <value>Enumeration has not started. Call MoveNext.</value>
   </data>
   <data name="NotSupported_ECDsa_Csp" xml:space="preserve">
     <value>CryptoApi ECDsa keys are not supported.</value>

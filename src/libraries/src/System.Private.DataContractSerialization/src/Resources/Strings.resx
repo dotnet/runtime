@@ -123,7 +123,7 @@
   <data name="ArrayExceededSizeAttribute" xml:space="preserve">
     <value>Array length '{0}' provided by Size attribute is not equal to the number of array elements '{1}' from namespace '{2}' found.</value>
   </data>
-  <data name="ArrayTypeIsNotSupported" xml:space="preserve">
+  <data name="ArrayTypeIsNotSupported_GeneratingCode" xml:space="preserve">
     <value>An internal error has occurred. '{0}[]' is not supported when generating code for serialization.</value>
   </data>
   <data name="CannotDeserializeRefAtTopLevel" xml:space="preserve">
@@ -333,7 +333,7 @@
   <data name="InvalidNonNullReturnValueByIsAny" xml:space="preserve">
     <value>Method '{0}.{1}()' returns a non-null value. The return value must be null since IsAny</value>
   </data>
-  <data name="InvalidPrimitiveType" xml:space="preserve">
+  <data name="InvalidPrimitiveType_Serialization" xml:space="preserve">
     <value>Type '{0}' is not a valid serializable type.</value>
   </data>
   <data name="InvalidReturnTypeOnGetSchemaMethod" xml:space="preserve">
@@ -535,7 +535,7 @@
     <value>Unexpected end of file.</value>
   </data>
   <data name="UnknownConstantType" xml:space="preserve">
-    <value>Unrecognized constant type '{0}'.</value>
+    <value>Internal Error: Unrecognized constant type {0}.</value>
   </data>
   <data name="ValueMustBeNonNegative" xml:space="preserve">
     <value>The value of this argument must be non-negative.</value>
@@ -732,7 +732,7 @@
   <data name="XmlInvalidDepth" xml:space="preserve">
     <value>Cannot call '{0}' while Depth is '{1}'.</value>
   </data>
-  <data name="XmlInvalidEncoding" xml:space="preserve">
+  <data name="XmlInvalidEncoding_UTF8" xml:space="preserve">
     <value>XML encoding must be 'UTF-8'.</value>
   </data>
   <data name="XmlInvalidFFFE" xml:space="preserve">

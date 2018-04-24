@@ -174,7 +174,7 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(domain));
             }
-            throw new CannotUnloadAppDomainException(SR.NotSupported);
+            throw new CannotUnloadAppDomainException(SR.NotSupported_Platform);
         }
 
         public Assembly Load(byte[] rawAssembly) => Assembly.Load(rawAssembly);

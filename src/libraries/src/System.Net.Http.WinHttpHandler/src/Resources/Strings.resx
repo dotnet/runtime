@@ -116,7 +116,7 @@
     <value>Stream does not support writing.</value>
   </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
-    <value>Can not access a closed Stream.</value>
+    <value>Cannot access a closed stream.</value>
   </data>
   <data name="net_http_content_stream_already_read" xml:space="preserve">
     <value>The stream was already consumed. It cannot be read again.</value>

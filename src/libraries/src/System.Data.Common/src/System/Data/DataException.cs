@@ -679,7 +679,7 @@ namespace System.Data
         public static Exception ColumnTypeConflict(string name) => _Data(SR.Format(SR.Xml_ColumnConflict, name));
         public static Exception CannotConvert(string name, string type) => _Data(SR.Format(SR.Xml_CannotConvert, name, type));
         public static Exception MissingRefer(string name) => _Data(SR.Format(SR.Xml_MissingRefer, Keywords.REFER, Keywords.XSD_KEYREF, name));
-        public static Exception InvalidPrefix(string name) => _Data(SR.Format(SR.Xml_InvalidPrefix, name));
+        public static Exception InvalidPrefix(string name) => _Data(SR.Format(SR.Xml_InvalidPrefix_SpecialCharacters, name));
         public static Exception CanNotDeserializeObjectType() => _InvalidOperation(SR.Xml_CanNotDeserializeObjectType);
         public static Exception IsDataSetAttributeMissingInSchema() => _Data(SR.Xml_IsDataSetAttributeMissingInSchema);
         public static Exception TooManyIsDataSetAtributeInSchema() => _Data(SR.Xml_TooManyIsDataSetAtributeInSchema);

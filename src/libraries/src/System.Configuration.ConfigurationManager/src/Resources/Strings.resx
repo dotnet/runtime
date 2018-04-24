@@ -94,10 +94,7 @@
   </data>
   <!--
     other exceptions
-  -->
-  <data name="Argument_AddingDuplicate" xml:space="preserve">
-    <value>An entry with the same key already exists.</value>
-  </data>
+  -->  
   <data name="Config_add_configurationsection_already_added" xml:space="preserve">
     <value>Cannot add a ConfigurationSection that already belongs to the Configuration.</value>
   </data>
@@ -597,7 +594,7 @@
     <value>The machine.config file '{0}' was not found.</value>
   </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
-    <value>Cannot access a closed Stream.</value>
+    <value>Cannot access a closed stream.</value>
   </data>
   <data name="Unable_to_convert_type_from_string" xml:space="preserve">
     <value>Could not find a type-converter to convert object if type '{0}' from string.</value>

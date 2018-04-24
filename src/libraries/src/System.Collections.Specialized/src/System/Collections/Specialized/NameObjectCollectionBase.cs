@@ -372,7 +372,7 @@ namespace System.Collections.Specialized
 
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
             }
 
             if (array.Length - index < _entriesArray.Count)
@@ -620,7 +620,7 @@ namespace System.Collections.Specialized
 
                 if (index < 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
                 }
 
                 if (array.Length - index < _coll.Count)

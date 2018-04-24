@@ -356,7 +356,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     default:
-                        throw MakeException(SR.InternalError);
+                        throw MakeException(SR.InternalError_ScanRegex);
                 }
 
                 ScanBlank();
@@ -420,7 +420,7 @@ namespace System.Text.RegularExpressions
                             break;
 
                         default:
-                            throw MakeException(SR.InternalError);
+                            throw MakeException(SR.InternalError_ScanRegex);
                     }
 
                     ScanBlank();

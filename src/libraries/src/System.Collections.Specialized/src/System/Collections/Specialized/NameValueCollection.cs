@@ -208,7 +208,7 @@ namespace System.Collections.Specialized
 
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
             }
 
             if (dest.Length - index < Count)

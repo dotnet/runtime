@@ -101,7 +101,7 @@
   <data name="Xml_MissingTable" xml:space="preserve"><value>Cannot load diffGram. Table '{0}' is missing in the destination dataset.</value></data>
   <data name="Xml_MissingSQL" xml:space="preserve"><value>Cannot load diffGram. The 'sql' node is missing.</value></data>
   <data name="Xml_ColumnConflict" xml:space="preserve"><value>Column name '{0}' is defined for different mapping types.</value></data>
-  <data name="Xml_InvalidPrefix" xml:space="preserve"><value>Prefix '{0}' is not valid, because it contains special characters.</value></data>
+  <data name="Xml_InvalidPrefix_SpecialCharacters" xml:space="preserve"><value>Prefix '{0}' is not valid, because it contains special characters.</value></data>
   <data name="Xml_NestedCircular" xml:space="preserve"><value>Circular reference in self-nested table '{0}'.</value></data>
   <data name="Xml_FoundEntity" xml:space="preserve"><value>DataSet cannot expand entities. Use XmlValidatingReader and set the EntityHandling property accordingly.</value></data>
   <data name="Xml_PolymorphismNotSupported" xml:space="preserve"><value>Type '{0}' does not implement IXmlSerializable interface therefore can not proceed with serialization.</value></data>
@@ -370,7 +370,7 @@
   <data name="Range_Argument" xml:space="preserve"><value>Min ({0}) must be less than or equal to max ({1}) in a Range object.</value></data>
   <data name="Range_NullRange" xml:space="preserve"><value>This is a null range.</value></data>
   <data name="RecordManager_MinimumCapacity" xml:space="preserve"><value>MinimumCapacity must be non-negative.</value></data>
-  <data name="SqlConvert_ConvertFailed" xml:space="preserve"><value> Cannot convert object of type '{0}' to object of type '{1}'.</value></data>
+  <data name="SqlConvert_ConvertFailed" xml:space="preserve"><value>Cannot convert object of type '{0}' to object of type '{1}'.</value></data>
   <data name="DataSet_DefaultDataException" xml:space="preserve"><value>Data Exception.</value></data>
   <data name="DataSet_DefaultConstraintException" xml:space="preserve"><value>Constraint Exception.</value></data>
   <data name="DataSet_DefaultDeletedRowInaccessibleException" xml:space="preserve"><value>Deleted rows inaccessible.</value></data>
@@ -418,9 +418,9 @@
   <data name="ADP_NoQuoteChange" xml:space="preserve"><value>The QuotePrefix and QuoteSuffix properties cannot be changed once an Insert, Update, or Delete command has been generated.</value></data>
   <data name="ADP_MissingSourceCommand" xml:space="preserve"><value>The DataAdapter.SelectCommand property needs to be initialized.</value></data>
   <data name="ADP_MissingSourceCommandConnection" xml:space="preserve"><value>The DataAdapter.SelectCommand.Connection property needs to be initialized;</value></data>
-  <data name="ADP_InvalidMultipartName" xml:space="preserve"><value>{0} "{1}".</value></data>
-  <data name="ADP_InvalidMultipartNameQuoteUsage" xml:space="preserve"><value>{0} "{1}", incorrect usage of quotes.</value></data>
-  <data name="ADP_InvalidMultipartNameToManyParts" xml:space="preserve"><value>{0} "{1}", the current limit of "{2}" is insufficient.</value></data>
+  <data name="ADP_InvalidMultipartName" xml:space="preserve"><value>{0} '{1}'.</value></data>
+  <data name="ADP_InvalidMultipartNameQuoteUsage" xml:space="preserve"><value>{0} '{1}', incorrect usage of quotes.</value></data>
+  <data name="ADP_InvalidMultipartNameToManyParts" xml:space="preserve"><value>{0} '{1}', the current limit of '{2}' is insufficient.</value></data>
   <data name="ADP_ColumnSchemaExpression" xml:space="preserve"><value>The column mapping from SourceColumn '{0}' failed because the DataColumn '{1}' is a computed column.</value></data>
   <data name="ADP_ColumnSchemaMismatch" xml:space="preserve"><value>Inconvertible type mismatch between SourceColumn '{0}' of {1} and the DataColumn '{2}' of {3}.</value></data>
   <data name="ADP_ColumnSchemaMissing1" xml:space="preserve"><value>Missing the DataColumn '{0}' for the SourceColumn '{2}'.</value></data>

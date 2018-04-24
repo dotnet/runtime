@@ -120,7 +120,7 @@
   <data name="DsmlNonHttpUri" xml:space="preserve">
     <value>The URI that is supplied must be either "http" or "https".</value>
   </data>
-  <data name="NoNegativeTime" xml:space="preserve">
+  <data name="NoNegativeTimeLimit" xml:space="preserve">
     <value>A negative value is not permitted for the time limit.</value>
   </data>
   <data name="NoNegativeSizeLimit" xml:space="preserve">
@@ -446,9 +446,6 @@
   </data>
   <data name="ValidValueType" xml:space="preserve">
     <value>The value must be a string, byte[], or Uri type.</value>
-  </data>
-  <data name="SupportedPlatforms" xml:space="preserve">
-    <value>System.DirectoryServices.Protocols namespace is only supported on Windows 2000 and later operating systems.</value>
   </data>
   <data name="TLSNotSupported" xml:space="preserve">
     <value>Transport layer security is not supported on Windows 2000.</value>

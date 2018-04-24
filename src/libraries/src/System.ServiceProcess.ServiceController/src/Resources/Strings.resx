@@ -71,7 +71,7 @@
     <value>The value of argument '{0}' ({1}) is invalid for Enum type '{2}'.</value>
   </data>
   <data name="InvalidParameter" xml:space="preserve">
-    <value>Invalid value {1} for parameter {0}.</value>
+    <value>Invalid value '{1}' for parameter '{0}'.</value>
   </data>
   <data name="NoMachineName" xml:space="preserve">
     <value>MachineName was not set.</value>

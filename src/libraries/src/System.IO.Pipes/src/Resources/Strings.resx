@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non negative number is required.</value>
+    <value>Non-negative number required.</value>
   </data>
   <data name="ArgumentOutOfRange_NeedValidPipeAccessRights" xml:space="preserve">
     <value>Invalid PipeAccessRights value.</value>
@@ -136,7 +136,7 @@
     <value>serverName cannot be an empty string.  Use \\\".\\\" for current machine.</value>
   </data>
   <data name="Argument_InvalidHandle" xml:space="preserve">
-    <value>Invalid handle.</value>
+    <value>Handle has been disposed or is invalid.</value>
   </data>
   <data name="ArgumentNull_Buffer" xml:space="preserve">
     <value>Buffer cannot be null.</value>
@@ -202,7 +202,7 @@
     <value>Could not find file '{0}'.</value>
   </data>
   <data name="IO_AlreadyExists_Name" xml:space="preserve">
-    <value>Cannot create \"{0}\" because a file or directory with the same name already exists.</value>
+    <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
   </data>
   <data name="IO_FileExists_Name" xml:space="preserve">
     <value>The file '{0}' already exists.</value>
@@ -210,7 +210,7 @@
   <data name="IO_IO_PipeBroken" xml:space="preserve">
     <value>Pipe is broken.</value>
   </data>
-  <data name="IO_OperationAborted" xml:space="preserve">
+  <data name="IO_OperationAborted_Unexpected" xml:space="preserve">
     <value>IO operation was aborted unexpectedly.</value>
   </data>
   <data name="IO_SharingViolation_File" xml:space="preserve">
@@ -271,7 +271,7 @@
     <value>The name of a pipe on this platform must be a valid file name or a valid absolute path to a file name.</value>
   </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
-    <value>Cannot access a closed Stream.</value>
+    <value>Cannot access a closed stream.</value>
   </data>
   <data name="PlatformNotSupported_OperatingSystemError" xml:space="preserve">
     <value>The operating system returned error '{0}' indicating that the operation is not supported.</value>

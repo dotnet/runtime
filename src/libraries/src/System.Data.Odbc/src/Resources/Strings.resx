@@ -328,7 +328,7 @@
     <value>There is already an open DataReader associated with this Command which must be closed first.</value>
   </data>
   <data name="ADP_DeriveParametersNotSupported" xml:space="preserve">
-    <value>{0} DeriveParameters only supports CommandType.StoredProcedure, not CommandType.{1}.</value>
+    <value>{0} DeriveParameters only supports CommandType.StoredProcedure, not CommandType. {1}.</value>
   </data>
   <data name="ADP_InvalidCommandTimeout" xml:space="preserve">
     <value>Invalid CommandTimeout value {0}; the value must be &gt;= 0.</value>

@@ -71,7 +71,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         ' default constructor
         Public Sub New()
-            MyBase.New(GetResourceString(SR.InternalError))
+            MyBase.New(GetResourceString(SR.InternalError_VisualBasicRuntime))
         End Sub
 
     End Class

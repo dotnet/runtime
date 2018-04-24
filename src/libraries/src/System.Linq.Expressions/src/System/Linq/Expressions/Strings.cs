@@ -815,7 +815,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// A string like "Invalid argument value"
         /// </summary>
-        internal static string InvalidArgumentValue => SR.InvalidArgumentValue;
+        internal static string InvalidArgumentValue_ParamName => SR.InvalidArgumentValue_ParamName;
 
         /// <summary>
         /// A string like "Non-empty collection required"

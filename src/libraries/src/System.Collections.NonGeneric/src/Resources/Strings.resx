@@ -58,7 +58,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Argument_AddingDuplicate__" xml:space="preserve">
+  <data name="Argument_AddingDuplicate" xml:space="preserve">
+    <value>An item with the same key has already been added. Key: {0}</value>
+  </data>
+  <data name="Argument_AddingDuplicate_OldAndNewKeys " xml:space="preserve">
     <value>Item has already been added. Key in dictionary: '{0}'  Key being added: '{1}'</value>
   </data>
   <data name="Argument_ImplementIComparable" xml:space="preserve">
@@ -110,7 +113,7 @@
     <value>Enumeration already finished.</value>
   </data>
   <data name="InvalidOperation_EnumFailedVersion" xml:space="preserve">
-    <value>Collection was modified; enumeration operation may not execute.</value>
+    <value>Collection was modified after the enumerator was instantiated.</value>
   </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started. Call MoveNext.</value>

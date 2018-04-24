@@ -953,7 +953,7 @@ namespace System.Collections
                 {
                     if (add)
                     {
-                        throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate__, _buckets[bucketNumber].key, key));
+                        throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate_OldAndNewKeys , _buckets[bucketNumber].key, key));
                     }
                     _isWriterInProgress = true;
                     _buckets[bucketNumber].val = nvalue;
@@ -1236,11 +1236,11 @@ namespace System.Collections
 
             if (serKeys == null)
             {
-                throw new SerializationException(SR.Serialization_MissingKeys);
+                throw new SerializationException(SR.Serialization_MissingKeys_Hashtable);
             }
             if (serValues == null)
             {
-                throw new SerializationException(SR.Serialization_MissingValues);
+                throw new SerializationException(SR.Serialization_MissingValues_Hashtable);
             }
             if (serKeys.Length != serValues.Length)
             {

@@ -130,7 +130,7 @@
   <data name="InvalidRelationshipType" xml:space="preserve">
     <value>Relationship Type cannot contain only spaces or be empty.</value>
   </data>
-  <data name="InvalidToken" xml:space="preserve">
+  <data name="InvalidToken_ContentType" xml:space="preserve">
     <value>A token is not valid. Refer to RFC 2616 for correct grammar of content types.</value>
   </data>
   <data name="InvalidTypeSubType" xml:space="preserve">
