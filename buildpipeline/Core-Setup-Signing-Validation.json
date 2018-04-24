@@ -4,6 +4,29 @@
       "environment": {},
       "enabled": true,
       "continueOnError": true,
+      "displayName": "run begin.ps1",
+      "timeoutInMinutes": 0,
+      "alwaysRun": true,
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "targetType": "inline",
+        "filePath": "",
+        "arguments": "",
+        "script": "if (Test-Path \"$(AgentToolsPath)\\begin.ps1\") {\n   \"$(AgentToolsPath)\\begin.ps1 script found. Executing...\"\n    & $(AgentToolsPath)\\begin.ps1\n} else {\n   \"$(AgentToolsPath)\\begin.ps1 script does not exist. Moving on...\"\n}",
+        "errorActionPreference": "continue",
+        "failOnStderr": "false",
+        "ignoreLASTEXITCODE": "true",
+        "workingDirectory": ""
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
       "alwaysRun": false,
       "displayName": "Cleanup previous build if present",
       "timeoutInMinutes": 0,
@@ -156,6 +179,29 @@
         "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)",
         "Parallel": "false",
         "ParallelCount": "8"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "run end.ps1",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "targetType": "inline",
+        "filePath": "",
+        "arguments": "",
+        "script": "if (Test-Path \"$(AgentToolsPath)\\end.ps1\") {\n   \"$(AgentToolsPath)\\end.ps1 script found. Executing...\"\n    & $(AgentToolsPath)\\end.ps1\n} else {\n   \"$(AgentToolsPath)\\end.ps1 script does not exist. Moving on...\"\n}",
+        "errorActionPreference": "continue",
+        "failOnStderr": "false",
+        "ignoreLASTEXITCODE": "true",
+        "workingDirectory": ""
       }
     }
   ],
