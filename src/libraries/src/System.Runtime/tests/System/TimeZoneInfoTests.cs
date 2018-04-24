@@ -33,6 +33,7 @@ namespace System.Tests
         private static string s_strCatamarca = s_isWindows ? "Argentina Standard Time" : "America/Argentina/Catamarca";
         private static string s_strLisbon = s_isWindows ? "GMT Standard Time" : "Europe/Lisbon";
         private static string s_strNewfoundland = s_isWindows ? "Newfoundland Standard Time" : "America/St_Johns";
+        private static string s_strIran = s_isWindows ? "Iran Standard Time" : "Asia/Tehran";
 
         private static TimeZoneInfo s_myUtc = TimeZoneInfo.Utc;
         private static TimeZoneInfo s_myLocal = TimeZoneInfo.Local;
@@ -311,6 +312,13 @@ namespace System.Tests
             time3 = new DateTime(2003, 10, 26, 3, 0, 1);
             VerifyConvert(time3, s_strGMT, s_strTonga, time3.AddHours(13));
             VerifyConvert(time3, s_strTonga, s_strGMT, time3.AddHours(-12));
+
+            // Iran has Utc offset 4:30 during the DST and 3:30 during standard time.
+            time3 = new DateTime(2018, 4, 20, 7, 0, 0, DateTimeKind.Utc);
+            VerifyConvert(time3, s_strIran, time3.AddHours(4.5), DateTimeKind.Unspecified); // DST time
+
+            time3 = new DateTime(2018, 1, 20, 7, 0, 0, DateTimeKind.Utc);
+            VerifyConvert(time3, s_strIran, time3.AddHours(3.5), DateTimeKind.Unspecified); // DST time
         }
 
         [Fact]
@@ -1849,7 +1857,7 @@ namespace System.Tests
         }
 
         /// <summary>
-        /// Ensure Africa/Johannesburg transitions from +3 to +2 at 
+        /// Ensure Africa/Johannesburg transitions from +3 to +2 at
         /// 1943-02-20T23:00:00Z, and not a tick before that.
         /// See https://github.com/dotnet/coreclr/issues/2185
         /// </summary>
@@ -1863,7 +1871,7 @@ namespace System.Tests
             Assert.Equal(TimeSpan.FromHours(3), s_johannesburgTz.GetUtcOffset(transition.AddTicks(-1)));
             Assert.Equal(TimeSpan.FromHours(2), s_johannesburgTz.GetUtcOffset(transition));
         }
-        
+
         public static IEnumerable<object[]> Equals_TestData()
         {
             yield return new object[] { s_casablancaTz, s_casablancaTz, true };
@@ -2012,10 +2020,10 @@ namespace System.Tests
         /// </summary>
         /// <remarks>
         /// Windows uses the current daylight savings rules for early times.
-        /// 
+        ///
         /// OSX before High Sierra version has V1 tzfiles, which means for early times it uses the first standard offset in the tzfile.
         /// For Pacific Standard Time it is UTC-8.  For Sydney, it is UTC+10.
-        /// 
+        ///
         /// Other Unix distros use V2 tzfiles, which use local mean time (LMT), which is based on the solar time.
         /// The Pacific Standard Time LMT is UTC-07:53.  For Sydney, LMT is UTC+10:04.
         /// </remarks>
