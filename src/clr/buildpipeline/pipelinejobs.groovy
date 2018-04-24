@@ -14,10 +14,10 @@ def branch = GithubBranchName
 // will have a trigger that can be
 // **************************
 
-def alpine36Pipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/alpine.3.6.groovy')
+def linmuslPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/linux-musl.groovy')
 
 def configurations = [
-    ['TGroup':"netcoreapp", 'Pipeline':alpine36Pipeline, 'Name':'Alpine.3.6' ,'ForPR':"Debug-x64", 'Arch':['x64']],
+    ['TGroup':"netcoreapp", 'Pipeline':linmuslPipeline, 'Name':'Linux-musl' ,'ForPR':"Debug-x64", 'Arch':['x64']],
 ]
 
 configurations.each { config ->
