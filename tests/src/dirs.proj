@@ -34,7 +34,7 @@
     </ItemGroup>
 
     <!-- Unix builds do not support subgroups -->
-    <ItemGroup Condition="$(__BuildOS) != 'Windows_NT' And $(__TestGroupToBuild) == '1' And $(TestBuildSlice) == '1'">
+    <ItemGroup Condition="$(__BuildOS) != 'Windows_NT'" >
       <Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
