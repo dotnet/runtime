@@ -651,9 +651,6 @@ typedef struct {
 
 MONO_COLD void mono_set_pending_exception (MonoException *exc);
 
-MONO_COLD void
-mono_set_pending_exception_handle (MonoExceptionHandle exc);
-
 /* remoting and async support */
 
 MonoAsyncResult *
