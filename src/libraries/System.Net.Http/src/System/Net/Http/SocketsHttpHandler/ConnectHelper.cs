@@ -54,9 +54,7 @@ namespace System.Net.Http
                 saea.Initialize(cancellationToken);
 
                 // Configure which server to which to connect.
-                saea.RemoteEndPoint = IPAddress.TryParse(host, out IPAddress address) ?
-                    (EndPoint)new IPEndPoint(address, port) :
-                    new DnsEndPoint(host, port);
+                saea.RemoteEndPoint = new DnsEndPoint(host, port);
 
                 // Initiate the connection.
                 if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, saea))
