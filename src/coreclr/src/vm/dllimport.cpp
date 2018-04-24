@@ -2256,6 +2256,11 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
                 // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
                 // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
+#ifdef _WIN64
+                // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
+                pcsEmit->EmitLDC(1);
+                pcsEmit->EmitSHR_UN();
+#endif
             }
             else
 #ifdef FEATURE_COMINTEROP
