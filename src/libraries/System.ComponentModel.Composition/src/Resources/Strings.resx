@@ -79,7 +79,7 @@
   <data name="CardinalityMismatch_NoExports" xml:space="preserve">
     <value>No exports were found that match the constraint: {0}</value>
   </data>
-  <data name="CardinalityMismatch_TooManyExports" xml:space="preserve">
+  <data name="CardinalityMismatch_TooManyExports_Constraint" xml:space="preserve">
     <value>More than one export was found that matches the constraint: {0}</value>
   </data>
   <data name="ImportEngine_ComposeTookTooManyIterations" xml:space="preserve">

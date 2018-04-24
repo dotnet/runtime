@@ -228,7 +228,7 @@ namespace System.Collections.Specialized
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
             if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
 
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Arg_InsufficientSpace);
@@ -388,7 +388,7 @@ namespace System.Collections.Specialized
                 if (array == null)
                     throw new ArgumentNullException(nameof(array));
                 if (index < 0)
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
 
                 for (DictionaryNode node = _list.head; node != null; node = node.next)
                 {

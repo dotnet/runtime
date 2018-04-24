@@ -192,7 +192,7 @@ namespace System.Collections
 
             int i = Array.BinarySearch(keys, 0, _size, key, comparer);
             if (i >= 0)
-                throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate__, GetKey(i), key));
+                throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate_OldAndNewKeys, GetKey(i), key));
             Insert(~i, key, value);
         }
 

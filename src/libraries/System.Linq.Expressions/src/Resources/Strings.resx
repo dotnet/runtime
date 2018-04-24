@@ -481,7 +481,7 @@
   <data name="PdbGeneratorNeedsExpressionCompiler" xml:space="preserve">
     <value>DebugInfoGenerator created by CreatePdbGenerator can only be used with LambdaExpression.CompileToMethod.</value>
   </data>
-  <data name="InvalidArgumentValue" xml:space="preserve">
+  <data name="InvalidArgumentValue_ParamName" xml:space="preserve">
     <value>Invalid argument value</value>
   </data>
   <data name="NonEmptyCollectionRequired" xml:space="preserve">

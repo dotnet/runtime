@@ -258,7 +258,7 @@
   <data name="InterpolationColorsLengthsDiffer" xml:space="preserve">
     <value>Colors and positions do not have the same number of elements.</value>
   </data>
-  <data name="InvalidArgument" xml:space="preserve">
+  <data name="InvalidArgumentValue" xml:space="preserve">
     <value>Value of '{1}' is not valid for '{0}'.</value>
   </data>
   <data name="InvalidBoundArgument" xml:space="preserve">

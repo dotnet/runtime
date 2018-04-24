@@ -220,7 +220,7 @@
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
   <data name="SqlConvert_ConvertFailed" xml:space="preserve">
-    <value> Cannot convert object of type '{0}' to object of type '{1}'.</value>
+    <value>Cannot convert object of type '{0}' to object of type '{1}'.</value>
   </data>
   <data name="SQL_WrongType" xml:space="preserve">
     <value>Expecting argument of type {1}, but received type {0}.</value>
@@ -1180,10 +1180,10 @@
     <value>NTLM authentication is not possible with default credentials on this platform.</value>
   </data>
   <data name="net_nego_not_supported_empty_target_with_defaultcreds" xml:space="preserve">
-    <value>Target name should be non-empty if default credentials are passed.</value>
+    <value>Target name should be non empty if default credentials are passed.</value>
   </data>
   <data name="net_nego_server_not_supported" xml:space="preserve">
-    <value>Server implementation is not supported.</value>
+    <value>Server implementation is not supported</value>
   </data>
   <data name="net_nego_protection_level_not_supported" xml:space="preserve">
     <value>Requested protection level is not supported with the GSSAPI implementation currently installed.</value>
@@ -1252,7 +1252,7 @@
     <value>The requested collection ({0}) is not defined.</value>
   </data>
   <data name="MDF_UnsupportedVersion" xml:space="preserve">
-    <value> requested collection ({0}) is not supported by this version of the provider.</value>
+    <value>The requested collection ({0}) is not supported by this version of the provider.</value>
   </data>
   <data name="MDF_MissingRestrictionColumn" xml:space="preserve">
     <value>One or more of the required columns of the restrictions collection is missing.</value>

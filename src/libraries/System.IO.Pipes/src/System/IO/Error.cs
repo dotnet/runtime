@@ -34,7 +34,7 @@ namespace System.IO
 
         internal static Exception GetOperationAborted()
         {
-            return new IOException(SR.IO_OperationAborted);
+            return new IOException(SR.IO_OperationAborted_Unexpected);
         }
     }
 }

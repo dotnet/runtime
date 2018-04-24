@@ -59,7 +59,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
-    <value>Capacity overflowed and went negative.</value>
+    <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>
   <data name="Serialization_NonSerType" xml:space="preserve">
     <value>Type '{0}' in Assembly '{1}' is not marked as serializable.</value>

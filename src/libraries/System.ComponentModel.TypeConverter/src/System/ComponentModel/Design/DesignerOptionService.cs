@@ -53,7 +53,7 @@ namespace System.ComponentModel.Design
 
             if (name.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidArgument, name.Length.ToString(CultureInfo.CurrentCulture), (0).ToString(CultureInfo.CurrentCulture)), "name.Length");
+                throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, name.Length.ToString(CultureInfo.CurrentCulture), (0).ToString(CultureInfo.CurrentCulture)), "name.Length");
             }
 
             return new DesignerOptionCollection(this, parent, name, value);

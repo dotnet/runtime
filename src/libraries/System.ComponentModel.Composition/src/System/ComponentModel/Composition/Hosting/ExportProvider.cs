@@ -111,7 +111,7 @@ namespace System.ComponentModel.Composition.Hosting
                     throw new ImportCardinalityMismatchException(string.Format(CultureInfo.CurrentCulture, SR.CardinalityMismatch_NoExports, definition.ToString()));
                 default:
                     Assumes.IsTrue(result == ExportCardinalityCheckResult.TooManyExports);
-                    throw new ImportCardinalityMismatchException(string.Format(CultureInfo.CurrentCulture, SR.CardinalityMismatch_TooManyExports, definition.ToString()));
+                    throw new ImportCardinalityMismatchException(string.Format(CultureInfo.CurrentCulture, SR.CardinalityMismatch_TooManyExports_Constraint, definition.ToString()));
             }
         }
 

@@ -153,7 +153,7 @@ namespace System.Xml
             // We only validate that they are the only attributes that exist.  Encoding can have any value.
             if (_attributeCount > 1)
             {
-                if (CheckDeclAttribute(1, "encoding", null, true, SR.XmlInvalidEncoding))
+                if (CheckDeclAttribute(1, "encoding", null, true, SR.XmlInvalidEncoding_UTF8))
                 {
                     if (_attributeCount == 3 && !CheckStandalone(2))
                         XmlExceptionHelper.ThrowXmlException(this, new XmlException(SR.Format(SR.XmlMalformedDecl)));

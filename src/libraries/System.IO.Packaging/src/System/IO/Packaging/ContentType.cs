@@ -430,13 +430,13 @@ namespace System.IO.Packaging
         private static string ValidateToken(string token)
         {
             if (String.IsNullOrEmpty(token))
-                throw new ArgumentException(SR.InvalidToken);
+                throw new ArgumentException(SR.InvalidToken_ContentType);
 
             for (int i = 0; i < token.Length; i++)
             {
                 if (!IsAsciiLetterOrDigit(token[i]) && !IsAllowedCharacter(token[i]))
                 {
-                    throw new ArgumentException(SR.InvalidToken);
+                    throw new ArgumentException(SR.InvalidToken_ContentType);
                 }
             }
 

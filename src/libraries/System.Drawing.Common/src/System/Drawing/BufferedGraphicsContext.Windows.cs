@@ -80,7 +80,7 @@ namespace System.Drawing
             {
                 if (value.Width <= 0 || value.Height <= 0)
                 {
-                    throw new ArgumentException(SR.Format(SR.InvalidArgument, nameof(MaximumBuffer), value), nameof(value));
+                    throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, nameof(MaximumBuffer), value), nameof(value));
                 }
 
                 // If we've been asked to decrease the size of the maximum buffer,
