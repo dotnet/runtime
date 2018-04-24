@@ -306,6 +306,7 @@ TESTS_CS_SRC=		\
 	exception17.cs		\
 	exception18.cs		\
 	exception19.cs		\
+	exception20.cs		\
 	typeload-unaligned.cs	\
 	struct.cs		\
 	valuetype-gettype.cs	\

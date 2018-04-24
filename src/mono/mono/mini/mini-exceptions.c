@@ -1563,23 +1563,25 @@ build_native_trace (MonoError *error)
 #endif
 }
 
+/* This can be called more than once on a MonoException. */
 static void
-setup_stack_trace (MonoException *mono_ex, GSList *dynamic_methods, GList **trace_ips)
+setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trace_ips)
 {
 	if (mono_ex) {
-		*trace_ips = g_list_reverse (*trace_ips);
+		GList *trace_ips_copy = g_list_copy (trace_ips);
+		trace_ips_copy = g_list_reverse (trace_ips_copy);
 		ERROR_DECL (error);
-		MonoArray *ips_arr = mono_glist_to_array (*trace_ips, mono_defaults.int_class, error);
+		MonoArray *ips_arr = mono_glist_to_array (trace_ips_copy, mono_defaults.int_class, error);
 		mono_error_assert_ok (error);
 		MONO_OBJECT_SETREF (mono_ex, trace_ips, ips_arr);
 		MONO_OBJECT_SETREF (mono_ex, native_trace_ips, build_native_trace (error));
 		mono_error_assert_ok (error);
-		if (dynamic_methods) {
+		if (*dynamic_methods) {
 			/* These methods could go away anytime, so save a reference to them in the exception object */
 			GSList *l;
-			MonoMList *list = NULL;
+			MonoMList *list = (MonoMList*)mono_ex->dynamic_methods;
 
-			for (l = dynamic_methods; l; l = l->next) {
+			for (l = *dynamic_methods; l; l = l->next) {
 				guint32 dis_link;
 				MonoDomain *domain = mono_domain_get ();
 
@@ -1598,10 +1600,13 @@ setup_stack_trace (MonoException *mono_ex, GSList *dynamic_methods, GList **trac
 			}
 
 			MONO_OBJECT_SETREF (mono_ex, dynamic_methods, list);
+
+			g_slist_free (*dynamic_methods);
+			*dynamic_methods = NULL;
 		}
+
+		g_list_free (trace_ips_copy);
 	}
-	g_list_free (*trace_ips);
-	*trace_ips = NULL;
 }
 
 typedef enum {
@@ -1698,8 +1703,8 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 
 		unwind_res = unwinder_unwind_frame (&unwinder, domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 		if (!unwind_res) {
-			setup_stack_trace (mono_ex, dynamic_methods, &trace_ips);
-			g_slist_free (dynamic_methods);
+			setup_stack_trace (mono_ex, &dynamic_methods, trace_ips);
+			g_list_free (trace_ips);
 			return result;
 		}
 
@@ -1785,6 +1790,8 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 					ex_obj = obj;
 
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+					setup_stack_trace (mono_ex, &dynamic_methods, trace_ips);
+
 #ifndef DISABLE_PERFCOUNTERS
 					mono_atomic_inc_i32 (&mono_perfcounters->exceptions_filters);
 #endif
@@ -1837,8 +1844,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 					filter_idx ++;
 
 					if (filtered) {
-						setup_stack_trace (mono_ex, dynamic_methods, &trace_ips);
-						g_slist_free (dynamic_methods);
+						g_list_free (trace_ips);
 						/* mono_debugger_agent_handle_exception () needs this */
 						mini_set_abort_threshold (&frame);
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
@@ -1852,8 +1858,8 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 				ERROR_DECL_VALUE (isinst_error);
 				error_init (&isinst_error);
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst_checked (ex_obj, catch_class, error)) {
-					setup_stack_trace (mono_ex, dynamic_methods, &trace_ips);
-					g_slist_free (dynamic_methods);
+					setup_stack_trace (mono_ex, &dynamic_methods, trace_ips);
+					g_list_free (trace_ips);
 
 					if (out_ji)
 						*out_ji = ji;
