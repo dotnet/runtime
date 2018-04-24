@@ -36,12 +36,6 @@
       "values": ["x64", "x86", "arm", "arm64", "armel"],
       "defaultValue": "x64"
     },
-    "Framework":{
-      "description": "Build the specified framework (netcoreapp1.0, netcoreapp1.1, netcoreapp2.0, or netcoreapp2.1 default: netcoreapp2.1)",
-      "valueType": "property",
-      "values": ["netcoreapp1.0", "netcoreapp1.1", "netcoreapp2.0", "netcoreapp2.1"],
-      "defaultValue": "netcoreapp2.1"
-    },    
     "ConfigurationGroup": {
       "description": "Sets the configuration group as Release or Debug.",
       "valueType": "property",
@@ -65,7 +59,7 @@
       "valueType": "property",
       "values": ["true", "false"],
       "defaultValue": false
-    },    
+    },
     "Project": {
       "description": "Project where the commands are going to be applied.",
       "valueType": "passThrough",
@@ -281,13 +275,12 @@
           "settings": {
             "PortableBuild":"true"
           }
-        }        
+        }
       },
       "defaultValues":{
         "toolName": "msbuild",
         "settings": {
            "TargetArchitecture": "default",
-           "Framework": "default",
            "OSGroup": "default",
            "MsBuildLogging":"/flp:v=n;LogFile=msbuild-cmake.log"
         }
@@ -305,9 +298,8 @@
       "defaultValues":{
         "toolName": "msbuild",
         "settings": {
-          "Architecture": "default", 
+          "Architecture": "default",
            "TargetArchitecture": "default",
-           "Framework": "default",
            "OSGroup": "default",
            "MsBuildLogging":"/flp:v=n;LogFile=msbuild.log"
         }
