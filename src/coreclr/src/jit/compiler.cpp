@@ -2118,6 +2118,7 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     Vector128ByteHandle   = nullptr;
     Vector128LongHandle   = nullptr;
     Vector128UIntHandle   = nullptr;
+    Vector128ULongHandle  = nullptr;
 #if defined(_TARGET_XARCH_)
     Vector256FloatHandle  = nullptr;
     Vector256DoubleHandle = nullptr;
@@ -2128,6 +2129,7 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     Vector256ByteHandle   = nullptr;
     Vector256LongHandle   = nullptr;
     Vector256UIntHandle   = nullptr;
+    Vector256ULongHandle  = nullptr;
 #endif // defined(_TARGET_XARCH_)
 #endif // FEATURE_HW_INTRINSICS
 #endif // FEATURE_SIMD
