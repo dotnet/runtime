@@ -47,7 +47,7 @@ display_error_message()
 execute_with_retry() {
     local count=0
     local retries=${retries:-5}
-    local waitFactor=${waitFactor:-6} 
+    local waitFactor=${waitFactor:-6}
     until "$@"; do
         local exit=$?
         count=$(( $count + 1 ))
@@ -55,7 +55,7 @@ execute_with_retry() {
             local wait=$(( waitFactor ** (( count - 1 )) ))
             echo "Retry $count/$retries exited $exit, retrying in $wait seconds..."
             sleep $wait
-        else    
+        else
             say_err "Retry $count/$retries exited $exit, no more retries left."
             return $exit
         fi
@@ -93,14 +93,12 @@ if [ ! -e $__DOTNET_PATH ]; then
                 if [ -e /etc/os-release ]; then
                     source /etc/os-release
                     if [[ $ID == "alpine" ]]; then
-                        # remove the last version digit
-                        VERSION_ID=${VERSION_ID%.*}
-                    __PKG_RID=alpine.$VERSION_ID
+                        __PKG_RID=linux-musl
                     fi
                 elif [ -e /etc/redhat-release ]; then
                     redhatRelease=$(</etc/redhat-release)
                     if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
-                    __PKG_RID=rhel.6
+                        __PKG_RID=rhel.6
                     fi
                 fi
 
