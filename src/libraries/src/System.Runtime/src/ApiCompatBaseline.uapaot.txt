@@ -1,6 +1,0 @@
-Compat issues with assembly System.Runtime:
-MembersMustExist : Member 'System.Buffers.MemoryManager<T>.CreateMemory(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Buffers.MemoryManager<T>.CreateMemory(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ReadOnlySpan<T>.GetPinnableReference()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Span<T>.GetPinnableReference()' does not exist in the implementation but it does exist in the contract.
-Total Issues: 12
