@@ -3180,11 +3180,22 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					ADD_CODE (td, 1);
 					ADD_CODE (td, mt == MINT_TYPE_VT ? MINT_STSFLD_VT : MINT_STSFLD);
 					ADD_CODE (td, get_data_item_index (td, field));
+
+					/* the vtable of the field might not be initialized at this point */
+					MonoClass *fld_klass = mono_class_from_mono_type (field->type);
+					mono_class_vtable_checked (domain, fld_klass, error);
+					goto_if_nok (error, exit);
 				} else {
 					ADD_CODE (td, MINT_STFLD_I1 + mt - MINT_TYPE_I1);
 					ADD_CODE (td, m_class_is_valuetype (klass) ? field->offset - sizeof(MonoObject) : field->offset);
-					if (mt == MINT_TYPE_VT)
+					if (mt == MINT_TYPE_VT) {
 						ADD_CODE (td, get_data_item_index (td, field));
+
+						/* the vtable of the field might not be initialized at this point */
+						MonoClass *fld_klass = mono_class_from_mono_type (field->type);
+						mono_class_vtable_checked (domain, fld_klass, error);
+						goto_if_nok (error, exit);
+					}
 				}
 			}
 			if (mt == MINT_TYPE_VT) {
@@ -3239,6 +3250,12 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			mt = mint_type (ftype);
 			ADD_CODE(td, mt == MINT_TYPE_VT ? MINT_STSFLD_VT : MINT_STSFLD);
 			ADD_CODE(td, get_data_item_index (td, field));
+
+			/* the vtable of the field might not be initialized at this point */
+			MonoClass *fld_klass = mono_class_from_mono_type (field->type);
+			mono_class_vtable_checked (domain, fld_klass, error);
+			goto_if_nok (error, exit);
+
 			if (mt == MINT_TYPE_VT) {
 				MonoClass *klass = mono_class_from_mono_type (ftype);
 				int size = mono_class_value_size (klass, NULL);
