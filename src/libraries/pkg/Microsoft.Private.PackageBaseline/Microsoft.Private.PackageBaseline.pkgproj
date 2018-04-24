@@ -2,7 +2,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <PackageVersion>2.3.0</PackageVersion>
     <HarvestStablePackage>false</HarvestStablePackage>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <PackageIndexFileName>packageIndex.json</PackageIndexFileName>
@@ -19,7 +18,7 @@
   <Target Name="StampPackageIndex" BeforeTargets="GenerateNuSpec">
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <Copy SourceFiles="$(PackageIndexFileName)" DestinationFolder="$(IntermediateOutputPath)" OverwriteReadOnlyFiles="true" />
-    
+
     <UpdatePackageIndex PackageIndexFile="$(IntermediateOutputPath)$(PackageIndexFileName)"
                         PreRelease="$(VersionSuffix)" />
   </Target>
