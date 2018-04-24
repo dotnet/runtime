@@ -1605,7 +1605,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	}
 
 	DEBUG (g_print ("      stack size: %d (%d)\n", (stack_size + 15) & ~15, stack_size));
-	stack_size = (stack_size + MONO_ARCH_FRAME_ALIGNMENT) & ~MONO_ARCH_FRAME_ALIGNMENT;
+	stack_size = ALIGN_TO (stack_size, MONO_ARCH_FRAME_ALIGNMENT);
 
 	cinfo->stack_usage = stack_size;
 	return cinfo;
