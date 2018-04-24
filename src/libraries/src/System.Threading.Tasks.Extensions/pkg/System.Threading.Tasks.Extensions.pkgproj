@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Threading.Tasks.Extensions.csproj">
-      <SupportedFramework>net45;netcore45;netcoreapp1.0;wpa81;wp8;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net45</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Threading.Tasks.Extensions.csproj" />
 
@@ -19,4 +19,15 @@
     <SuppressMetaPackage Include="NETStandard.Library" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <ItemGroup>
+    <!--
+      All frameworks except net45 support the frozen 4.2.0.0 api version. Need to include this after dir.targets to
+      have DefaultValidateionFramework defined. Normally this wouldn't be necessary but the harvested supported
+      frameworks all complain if we don't lift the version of the assembly they support. This won't be any issue
+      once the 4.5.0 package is stable and we can harvest it.
+    -->
+    <SupportedFramework Include="@(DefaultValidateFramework)">
+      <Version>4.2.0.0</Version>
+    </SupportedFramework>
+  </ItemGroup>
 </Project>
