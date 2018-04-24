@@ -90,7 +90,7 @@
     </PropertyGroup>
     <Exec Command="$(DotnetToolCommand) test $(TestArgs) --logger &quot;trx;LogFileName=$(TestResultsXml)&quot;"
           WorkingDirectory="$(TestWorkingDirectory)"
-          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir);TEST_ARTIFACTS=$(SystemPathTestsOutputDir);TEST_TARGETRID=$(TestTargetRid);BUILDRID=$(OutputRid);BUILD_ARCHITECTURE=$(TargetArchitecture);BUILD_CONFIGURATION=$(ConfigurationGroup);MNA_VERSION=$(ProductVersion);DOTNET_SDK_PATH=$(DotnetCliPath)"
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir);TEST_ARTIFACTS=$(SystemPathTestsOutputDir);TEST_TARGETRID=$(TestTargetRid);BUILDRID=$(OutputRid);BUILD_ARCHITECTURE=$(TargetArchitecture);BUILD_CONFIGURATION=$(ConfigurationGroup);MNA_VERSION=$(ProductVersion);MNA_TFM=$(NETCoreAppFramework);DOTNET_SDK_PATH=$(DotnetCliPath)"
           Condition="'$(TestProjectFilename)' != 'HostActivationTests' or '$(IsCrossArch)' != 'true'"
           ContinueOnError="true"
           IgnoreStandardErrorWarningFormat="true"
