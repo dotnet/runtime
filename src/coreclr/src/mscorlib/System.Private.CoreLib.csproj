@@ -131,10 +131,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\GcSettings.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Collections\CompatibleComparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\EmptyReadOnlyDictionaryInternal.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Hashtable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\IHashCodeProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ArrayWithOffset.cs" />
