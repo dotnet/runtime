@@ -19,14 +19,13 @@
     <IgnoredTypes Include="System.ServiceModel.Channels.HttpRequestMessageExtensionMethods" />
   </ItemGroup>
 
-  <!-- this target must run before ResolvePackageDependenciesForBuild so
+  <!-- this target must run before ResolveLockFileReferences so
        that the SDK targets de-dup the References it adds against those
        that come from packages -->
   <Target Name="ReferenceEntireFramework" 
-          BeforeTargets="ResolvePackageDependenciesForBuild" 
-          DependsOnTargets="GetReferenceAssemblyPaths" 
-          Condition="'$(TargetFrameworkDirectory)' != ''">
-    <ItemGroup>
+          BeforeTargets="ResolveLockFileReferences" 
+          DependsOnTargets="GetFrameworkPaths;GetReferenceAssemblyPaths">
+    <ItemGroup Condition="'$(TargetFrameworkDirectory)' != ''">
       <!-- TargetFrameworkDirectory may contain many paths -->
       <_frameworkDirectoriesToInclude Include="$(TargetFrameworkDirectory)" />
 
