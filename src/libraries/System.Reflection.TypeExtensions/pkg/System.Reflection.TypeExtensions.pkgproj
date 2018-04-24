@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Reflection.TypeExtensions.csproj">
-      <SupportedFramework>net461;netcoreapp2.1;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net461</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.TypeExtensions.csproj" />
     <HarvestIncludePaths Include="ref/net46;lib/net46" />
@@ -21,12 +21,7 @@
     <File Include="$(PlaceholderFile)">
       <TargetPath>runtimes/aot/lib/uap10.0.16299</TargetPath>
     </File>
-    <InboxOnTargetFramework Include="MonoAndroid10" />
-    <InboxOnTargetFramework Include="MonoTouch10" />
-    <InboxOnTargetFramework Include="xamarinios10" />
-    <InboxOnTargetFramework Include="xamarinmac20" />
-    <InboxOnTargetFramework Include="xamarintvos10" />
-    <InboxOnTargetFramework Include="xamarinwatchos10" />
+    <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
     <!-- this package is part of the implementation closure of NETStandard.Library
          therefore it cannot reference NETStandard.Library -->
     <SuppressMetaPackage Include="NETStandard.Library" />

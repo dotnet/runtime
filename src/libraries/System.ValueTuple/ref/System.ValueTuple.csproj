@@ -6,7 +6,7 @@
     <RootNamespace>System</RootNamespace>
     <!-- Must match version supported by frameworks which support 4.0.* inbox.
          Can be removed when API is added and this assembly is versioned to 4.1.* -->
-    <AssemblyVersion Condition="'$(TargetGroup)' != 'netfx'">4.0.3.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetsNetFx)' != 'true' and '$(TargetGroup)' != 'portable_net40+sl4+win8+wp8'">4.0.3.0</AssemblyVersion>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
