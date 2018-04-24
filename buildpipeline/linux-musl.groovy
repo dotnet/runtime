@@ -11,6 +11,6 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:alpine-3.6-3148f11-2017111
     }
 
     stage ('Build Product') {
-        sh "./build.sh -ConfigurationGroup=${params.CGroup} -TargetArchitecture=${params.AGroup} -PortableBuild=false -strip-symbols -SkipTests=false -- /p:OutputRid=alpine.3.6-${params.AGroup}"
+        sh "./build.sh -ConfigurationGroup=${params.CGroup} -TargetArchitecture=${params.AGroup} -PortableBuild=false -strip-symbols -SkipTests=false -- /p:OutputRid=linux-musl-${params.AGroup}"
     }
 }
