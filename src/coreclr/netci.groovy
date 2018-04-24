@@ -1373,6 +1373,13 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             if (os in bidailyCrossList) {
                 break
             }
+            // ARM corefx testing uses non-flow jobs to provide the configuration-specific
+            // build for the flow job. We don't need cron jobs for these. Note that the
+            // Windows ARM jobs depend on a Windows "build only" job that exits the trigger
+            // function very early, so only non-Windows gets here.
+            if ((architecture == 'arm') && isCoreFxScenario(scenario) && !isFlowJob) {
+                break
+            }
             assert (os == 'Windows_NT') || (os in Constants.crossList)
             if (jobRequiresLimitedHardware(architecture, os)) {
                 addPeriodicTriggerHelper(job, '@weekly')
