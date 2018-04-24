@@ -21,11 +21,14 @@ init_rid_plat()
             if [[ "$ID" == "centos" ]]; then
                 ID="rhel"
             fi
-            if [[ "$ID" == "rhel" || "$ID" == "alpine" ]]; then
+            if [[ "$ID" == "rhel" ]]; then
                 # remove the last version number
                 VERSION_ID=${VERSION_ID%.*}
             fi
             __rid_plat="$ID.$VERSION_ID"
+            if [[ "$ID" == "alpine" ]]; then
+                __rid_plat="linux-musl"
+            fi
         elif [ -e /etc/redhat-release ]; then
             local redhatRelease=$(</etc/redhat-release)
             if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
