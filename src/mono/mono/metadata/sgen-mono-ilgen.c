@@ -173,6 +173,7 @@ emit_nursery_check_ilgen (MonoMethodBuilder *mb, gboolean is_concurrent)
 static void
 emit_managed_allocater_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean profiler, int atype)
 {
+#ifdef MANAGED_ALLOCATION
 	int p_var, size_var, real_size_var, thread_var G_GNUC_UNUSED;
 	int tlab_next_addr_var, new_next_var;
 	guint32 fastpath_branch, max_size_branch, no_oom_branch;
@@ -533,6 +534,9 @@ emit_managed_allocater_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 
 	mono_mb_emit_byte (mb, CEE_RET);
 	mb->init_locals = FALSE;
+#else
+	g_assert_not_reached ();
+#endif /* MANAGED_ALLOCATION */
 }
 
 void
