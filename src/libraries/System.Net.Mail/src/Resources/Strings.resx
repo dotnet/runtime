@@ -99,7 +99,7 @@
     <value>Server implementation is not supported</value>
   </data>
   <data name="net_nego_protection_level_not_supported" xml:space="preserve">
-    <value>Requested protection level is not supported with the gssapi implementation currently installed.</value>
+    <value>Requested protection level is not supported with the GSSAPI implementation currently installed.</value>
   </data>
   <data name="SSPIInvalidHandleType" xml:space="preserve">
     <value>'{0}' is not a supported handle type.</value>

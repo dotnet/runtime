@@ -152,7 +152,7 @@ namespace System.Drawing
 
             if (uri.IsUnc)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidArgument, nameof(filePath), filePath));
+                throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, nameof(filePath), filePath));
             }
 
             if (!uri.IsFile)

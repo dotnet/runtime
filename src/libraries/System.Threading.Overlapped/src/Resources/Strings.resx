@@ -62,7 +62,7 @@
     <value>'handle' has already been bound to the thread pool, or was not opened for asynchronous I/O.</value>
   </data>
   <data name="Argument_InvalidHandle" xml:space="preserve">
-    <value>'handle' has been disposed or is an invalid handle.</value>
+    <value>Handle has been disposed or is invalid.</value>
   </data>
   <data name="Argument_NativeOverlappedAlreadyFree" xml:space="preserve">
     <value>'overlapped' has already been freed.</value>

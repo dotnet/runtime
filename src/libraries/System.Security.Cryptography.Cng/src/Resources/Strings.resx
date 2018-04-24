@@ -134,7 +134,7 @@
     <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
   </data>
   <data name="Cryptography_InvalidCurveOid" xml:space="preserve">
-    <value>The specified Oid is not valid. The Oid.FriendlyName property must be set, or be determined from Oid.Value.</value>
+    <value>The specified Oid is not valid. The Oid.FriendlyName or Oid.Value property must be set.</value>
   </data>
   <data name="Cryptography_InvalidIVSize" xml:space="preserve">
     <value>Specified initialization vector (IV) does not match the block size for this algorithm.</value>

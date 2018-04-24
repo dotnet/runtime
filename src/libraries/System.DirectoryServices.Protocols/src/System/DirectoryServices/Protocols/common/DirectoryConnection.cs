@@ -28,7 +28,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (value < TimeSpan.Zero)
                 {
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.NoNegativeTime), nameof(value));
+                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.NoNegativeTimeLimit), nameof(value));
                 }
 
                 _connectionTimeOut = value;

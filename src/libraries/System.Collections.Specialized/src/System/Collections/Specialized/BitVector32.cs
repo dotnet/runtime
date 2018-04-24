@@ -174,7 +174,7 @@ namespace System.Collections.Specialized
         {
             if (maxValue < 1)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidValue, nameof(maxValue), 1), nameof(maxValue));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidValue_TooSmall, nameof(maxValue), 1), nameof(maxValue));
             }
 
             short offset = (short)(priorOffset + CountBitsSet(priorMask));

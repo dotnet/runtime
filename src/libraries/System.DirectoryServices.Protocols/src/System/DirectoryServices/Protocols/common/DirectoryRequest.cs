@@ -311,7 +311,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (value < TimeSpan.Zero)
                 {
-                    throw new ArgumentException(SR.NoNegativeTime, nameof(value));
+                    throw new ArgumentException(SR.NoNegativeTimeLimit, nameof(value));
                 }
 
                 // Prevent integer overflow.

@@ -103,7 +103,7 @@
   <data name="IncompleteSlashP" xml:space="preserve">
     <value>Incomplete \\p{X} character escape.</value>
   </data>
-  <data name="InternalError" xml:space="preserve">
+  <data name="InternalError_ScanRegex" xml:space="preserve">
     <value>Internal error in ScanRegex.</value>
   </data>
   <data name="InvalidGroupName" xml:space="preserve">

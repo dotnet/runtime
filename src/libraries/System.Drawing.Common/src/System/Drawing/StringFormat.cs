@@ -256,7 +256,7 @@ namespace System.Drawing
         {
             if (firstTabOffset < 0)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidArgument, "firstTabOffset", firstTabOffset));
+                throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, nameof(firstTabOffset), firstTabOffset));
             }
 
             foreach (float tabStop in tabStops) // Emulate Windows GDI+ behavior.

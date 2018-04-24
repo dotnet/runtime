@@ -131,10 +131,7 @@
   </data>
   <data name="Arg_InvalidHandle" xml:space="preserve">
     <value>Invalid handle.</value>
-  </data>
-  <data name="Arg_InvalidSearchPattern" xml:space="preserve">
-    <value>Search pattern cannot contain '..' to move up directories and can be contained only internally in file/directory names, as in 'a..b'.</value>
-  </data>
+  </data>  
   <data name="Arg_Path2IsRooted" xml:space="preserve">
     <value>Second path fragment must not be a drive or UNC name.</value>
   </data>
@@ -277,7 +274,7 @@
     <value>Access to the path '{0}' is denied.</value>
   </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
-    <value>Cannot access a closed Stream.</value>
+    <value>Cannot access a closed stream.</value>
   </data>
   <data name="PlatformNotSupported_FileEncryption" xml:space="preserve">
     <value>File encryption is not supported on this platform.</value>

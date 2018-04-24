@@ -299,7 +299,7 @@
     <value>Unexpected PDB Checksum data signature value.</value>
   </data>
   <data name="InvalidPdbChecksumDataFormat" xml:space="preserve">
-    <value>Invalid PDB Checksum data data format.</value>
+    <value>Invalid PDB Checksum data format.</value>
   </data>
   <data name="UnexpectedSignatureHeader" xml:space="preserve">
     <value>Expected signature header for '{0}', but found '{1}' (0x{2:x2}).</value>

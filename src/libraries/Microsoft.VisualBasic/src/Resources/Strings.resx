@@ -71,7 +71,7 @@
     <value>Loop control variable of type '{1}' does not implement the 'System.IComparable' interface.</value>
   </data>
   <data name="Argument_InvalidValue" xml:space="preserve">
-    <value>Arguments are not valid.</value>
+    <value>Value was invalid.</value>
   </data>
   <data name="ForLoop_CommonType2" xml:space="preserve">
     <value>Cannot convert start value of type '{0}' and step value of type '{1}' to a common numeric type.</value>
@@ -91,7 +91,7 @@
   <data name="ForLoop_UnacceptableRelOperator2" xml:space="preserve">
     <value>Parameter types of '{0}' must be of type '{1}' to be used in a 'For' statement.</value>
   </data>
-  <data name="InternalError" xml:space="preserve">
+  <data name="InternalError_VisualBasicRuntime" xml:space="preserve">
     <value>Internal error in the Microsoft Visual Basic runtime.</value>
   </data>
   <data name="Argument_InvalidNullValue1" xml:space="preserve">

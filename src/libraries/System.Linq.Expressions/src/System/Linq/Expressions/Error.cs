@@ -1368,7 +1368,7 @@ namespace System.Linq.Expressions
 
         internal static Exception InvalidArgumentValue(string paramName)
         {
-            return new ArgumentException(Strings.InvalidArgumentValue, paramName);
+            return new ArgumentException(Strings.InvalidArgumentValue_ParamName, paramName);
         }
 
         internal static Exception NonEmptyCollectionRequired(string paramName)
