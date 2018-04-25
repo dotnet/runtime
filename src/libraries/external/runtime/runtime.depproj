@@ -3,8 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <NugetRuntimeIdentifier>$(PackageRID)</NugetRuntimeIdentifier>
-    <!-- Set to alpine until we get a published linux-musl runtime package -->
-    <NugetRuntimeIdentifier Condition="'$(RuntimeOS)' == 'linux-musl'">alpine.3.6-x64</NugetRuntimeIdentifier>
     <RidSpecificAssets>true</RidSpecificAssets>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
   </PropertyGroup>

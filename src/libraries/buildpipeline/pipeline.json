@@ -52,22 +52,6 @@
           "Name": "DotNet-CoreFx-Trusted-Linux",
           "Parameters": {
             "PB_DockerTag": "alpine-3.6-3148f11-20171119021156",
-            "PB_BuildArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -stripSymbols -RuntimeOS=alpine.3.6 -- /p:PortableBuild=false /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
-            "PB_BuildTestsArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -RuntimeOS=alpine.3.6 -- /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false",
-            "PB_SyncArguments": "-p -BuildTests=false -RuntimeOS=alpine.3.6 -- /p:ArchGroup=x64 /p:PortableBuild=false /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
-            "PB_TargetQueue": "Alpine.36.Amd64",
-            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Alpine3.6",
-            "Platform": "x64",
-            "Type": "build/product/"
-          }
-        },
-        {
-          "Name": "DotNet-CoreFx-Trusted-Linux",
-          "Parameters": {
-            "PB_DockerTag": "alpine-3.6-3148f11-20171119021156",
             "PB_BuildArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -stripSymbols -RuntimeOS=linux-musl -- /p:PortableBuild=false /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
             "PB_BuildTestsArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -RuntimeOS=linux-musl -- /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false",
             "PB_SyncArguments": "-p -BuildTests=false -RuntimeOS=linux-musl -- /p:ArchGroup=x64 /p:PortableBuild=false /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
