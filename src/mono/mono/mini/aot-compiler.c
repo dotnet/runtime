@@ -187,6 +187,7 @@ typedef struct MonoAotOptions {
 	// When set, we are emitting inflated methods only
 	char *dedup_include; 
 	gboolean gnu_asm;
+	gboolean try_llvm;
 	gboolean llvm;
 	gboolean llvm_only;
 	int nthreads;
@@ -7469,6 +7470,12 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->mtriple = g_strdup (arg + strlen ("mtriple="));
 		} else if (str_begins_with (arg, "llvm-path=")) {
 			opts->llvm_path = clean_path (g_strdup (arg + strlen ("llvm-path=")));
+		} else if (!strcmp (arg, "try-llvm")) {
+			// If we can load LLVM, use it
+			// Note: if you call this function from anywhere but mono_compile_assembly,
+			// this will only set the try_llvm attribute and not do the probing / set the
+			// attribute.
+			opts->try_llvm = TRUE;
 		} else if (!strcmp (arg, "llvm")) {
 			opts->llvm = TRUE;
 		} else if (str_begins_with (arg, "readonly-value=")) {
@@ -12568,6 +12575,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 		}
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_DEBUG);
 	}
+
+	if (acfg->aot_opts.try_llvm)
+		acfg->aot_opts.llvm = mini_llvm_init ();
 
 	if (mono_use_llvm || acfg->aot_opts.llvm) {
 		acfg->llvm = TRUE;
