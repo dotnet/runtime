@@ -51,21 +51,6 @@
             "PB_DockerTag": "alpine-3.6-3148f11-20171119021156",
             "PB_TargetArchitecture": "x64",
             "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -PortableBuild=false -strip-symbols -SkipTests=$(PB_SkipTests)",
-            "PB_AdditionalMSBuildArguments":"/p:OutputRid=alpine.3.6-x64 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
-            "PB_PortableBuild": "false"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Alpine3.6",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Linux-Arm-BT",
-          "Parameters": {
-            "PB_DockerTag": "alpine-3.6-3148f11-20171119021156",
-            "PB_TargetArchitecture": "x64",
-            "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -PortableBuild=false -strip-symbols -SkipTests=$(PB_SkipTests)",
             "PB_AdditionalMSBuildArguments":"/p:OutputRid=linux-musl-x64 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
             "PB_PortableBuild": "false"
           },
