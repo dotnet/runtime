@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //
 
+// This test case is ported from S.N.Vector counterpart 
+// https://github.com/dotnet/coreclr/blob/master/tests/src/JIT/SIMD/VectorReturn.cs
+
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
