@@ -14,8 +14,8 @@ namespace System.Security.Cryptography.Pkcs
     public sealed class CmsSigner
     {
         private static readonly Oid s_defaultAlgorithm = Oid.FromOidValue(Oids.Sha256, OidGroup.HashAlgorithm);
-
         public X509Certificate2 Certificate { get; set; }
+        public AsymmetricAlgorithm PrivateKey { get; set; }
         public X509Certificate2Collection Certificates { get; set; } = new X509Certificate2Collection();
         public Oid DigestAlgorithm { get; set; }
         public X509IncludeOption IncludeOption { get; set; }
@@ -49,7 +49,11 @@ namespace System.Security.Cryptography.Pkcs
         // CertCreateSelfSignedCertificate on a split Windows/netstandard implementation.
         public CmsSigner(CspParameters parameters) => throw new PlatformNotSupportedException();
 
-        public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2 certificate)
+        public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2 certificate) : this(signerIdentifierType, certificate, null)
+        {
+        }
+
+        public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2 certificate, AsymmetricAlgorithm privateKey)
         {
             switch (signerIdentifierType)
             {
@@ -77,6 +81,7 @@ namespace System.Security.Cryptography.Pkcs
 
             Certificate = certificate;
             DigestAlgorithm = new Oid(s_defaultAlgorithm);
+            PrivateKey = privateKey;
         }
 
         internal void CheckCertificateValue()
@@ -91,7 +96,7 @@ namespace System.Security.Cryptography.Pkcs
                 throw new PlatformNotSupportedException(SR.Cryptography_Cms_NoSignerCert);
             }
 
-            if (!Certificate.HasPrivateKey)
+            if (PrivateKey == null && !Certificate.HasPrivateKey)
             {
                 throw new CryptographicException(SR.Cryptography_Cms_Signing_RequiresPrivateKey);
             }
@@ -201,6 +206,7 @@ namespace System.Security.Cryptography.Pkcs
                 dataHash,
                 hashAlgorithmName,
                 Certificate,
+                PrivateKey,
                 silent,
                 out Oid signatureAlgorithm,
                 out ReadOnlyMemory<byte> signatureValue);

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Pkcs.Tests
 {
-    public static class SignedCmsTests
+    public static partial class SignedCmsTests
     {
         [Fact]
         public static void DefaultStateBehavior()
