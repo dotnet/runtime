@@ -1,4 +1,4 @@
 Compat issues with assembly System.Net.Http:
-TypesMustExist : Type 'System.Net.Internal.Cookie' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Internal.CookieException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Internal.Cookie' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Net.Internal.CookieException' does not exist in the reference but it does exist in the implementation.
 Total Issues: 2

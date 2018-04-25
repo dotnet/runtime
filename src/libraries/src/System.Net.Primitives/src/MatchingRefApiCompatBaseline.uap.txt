@@ -1,12 +1,12 @@
 Compat issues with assembly System.Net.Primitives:
-MembersMustExist : Member 'System.Boolean System.Net.Cookie.IsQuotedDomain' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Boolean System.Net.Cookie.IsQuotedVersion' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Cookie.Clone()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Cookie.InternalSetName(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Cookie.ToServerString()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Cookie.Variant.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.Cookie.Variant.set(System.Net.CookieVariant)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Net.CookieCollection.InternalAdd(System.Net.Cookie, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.CookieVariant' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PathList' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Boolean System.Net.Cookie.IsQuotedDomain' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Boolean System.Net.Cookie.IsQuotedVersion' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Net.Cookie.Clone()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Net.Cookie.InternalSetName(System.String)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Net.Cookie.ToServerString()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Net.Cookie.Variant.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Net.Cookie.Variant.set(System.Net.CookieVariant)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Net.CookieCollection.InternalAdd(System.Net.Cookie, System.Boolean)' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Net.CookieVariant' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Net.PathList' does not exist in the reference but it does exist in the implementation.
 Total Issues: 10
