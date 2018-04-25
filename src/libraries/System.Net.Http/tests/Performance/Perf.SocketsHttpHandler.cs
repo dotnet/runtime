@@ -27,7 +27,7 @@ namespace System.Net.Http.Tests
             from responseLength in new[] { 1, 100_000 }
             select new object[] { ssl, connectionPerRequest, chunkedResponse, responseLength };
 
-        [Benchmark(InnerIterationCount = InnerIterationCount)]
+        [Benchmark(InnerIterationCount = InnerIterationCount, Skip = "https://github.com/dotnet/corefx/issues/29308")]
         [MemberData(nameof(Get_MemberData))]
         public async Task Get(bool ssl, bool connectionPerRequest, bool chunkedResponse, int responseLength)
         {
@@ -37,7 +37,7 @@ namespace System.Net.Http.Tests
                 #region Server
                 listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                 listener.Listen(int.MaxValue);
-                string responseText = 
+                string responseText =
                     "HTTP/1.1 200 OK\r\n" + (connectionPerRequest ? "Connection: close\r\n" : "") + (chunkedResponse ?
                     $"Transfer-Encoding: chunked\r\n\r\n{responseLength.ToString("X")}\r\n{new string('a', responseLength)}\r\n0\r\n\r\n" :
                     $"Content-Length: {responseLength}\r\n\r\n{new string('a', responseLength)}");
