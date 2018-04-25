@@ -1,7 +1,7 @@
 Compat issues with assembly System.Xml.XmlSerializer:
 # Used by uap tooling for serializer generation
-MembersMustExist : Member 'System.String System.Xml.Serialization.XmlSerializer.DefaultNamespace' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.Mode.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.Mode.set(System.Xml.Serialization.SerializationMode)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.SetXmlSerializerContract(System.Xml.Serialization.XmlSerializerImplementation)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String System.Xml.Serialization.XmlSerializer.DefaultNamespace' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.Mode.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.Mode.set(System.Xml.Serialization.SerializationMode)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.SetXmlSerializerContract(System.Xml.Serialization.XmlSerializerImplementation)' does not exist in the reference but it does exist in the implementation.
 

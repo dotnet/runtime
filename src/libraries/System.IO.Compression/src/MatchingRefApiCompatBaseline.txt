@@ -1,2 +1,2 @@
 # Exposed publicly only in implementation for serialization compat
-TypesMustExist : Type 'System.IO.Compression.ZLibException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.IO.Compression.ZLibException' does not exist in the reference but it does exist in the implementation.
