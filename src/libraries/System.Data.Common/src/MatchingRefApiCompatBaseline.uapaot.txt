@@ -1,2 +1,2 @@
 #Exposed publicly in only in uapaot implementation to enable reflection on this type
-TypesMustExist : Type 'System.Data.DataCommonEventSource' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Data.DataCommonEventSource' does not exist in the reference but it does exist in the implementation.
