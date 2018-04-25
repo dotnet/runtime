@@ -20,14 +20,12 @@ initHostDistroRid()
         elif [ -e /etc/os-release ]; then
             source /etc/os-release
             if [[ $ID == "alpine" ]]; then
-                # remove the last version digit
-                VERSION_ID=${VERSION_ID%.*}
+                __HostDistroRid="linux-musl-$__HostArch"
             else
                 __PortableBuild=1
+                __HostDistroRid="$ID.$VERSION_ID-$__HostArch"
             fi
-
-            __HostDistroRid="$ID.$VERSION_ID-$__HostArch"
-        fi        
+        fi
     elif [ "$__HostOS" == "FreeBSD" ]; then
         __freebsd_version=`sysctl -n kern.osrelease | cut -f1 -d'.'`
         __HostDistroRid="freebsd.$__freebsd_version-$__HostArch"
