@@ -94,9 +94,7 @@ if [ ! -e "$__DOTNET_PATH" ]; then
                 if [ -e /etc/os-release ]; then
                     source /etc/os-release
                     if [[ $ID == "alpine" ]]; then
-                        # remove the last version digit
-                        VERSION_ID=${VERSION_ID%.*}
-                        __PKG_RID=alpine.$VERSION_ID
+                        __PKG_RID=linux-musl
                     fi
                 elif [ -e /etc/redhat-release ]; then
                     redhatRelease=$(</etc/redhat-release)
