@@ -9,6 +9,8 @@ namespace Mono.Linker.Tests.TestCases
 {
 	public static class TestDatabase
 	{
+		private static TestCase[] _cachedAllCases;
+		
 		public static IEnumerable<TestCaseData> XmlTests()
 		{
 			return NUnitCasesByPrefix("LinkXml.");
@@ -79,29 +81,6 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesByPrefix ("Symbols.");
 		}
 
-		public static IEnumerable<TestCaseData> OtherTests()
-		{
-			var allGroupedTestNames = new HashSet<string>(
-				XmlTests()
-					.Concat(BasicTests())
-					.Concat(XmlTests())
-					.Concat(VirtualMethodsTests())
-					.Concat(AttributeTests())
-					.Concat(GenericsTests())
-					.Concat(CoreLinkTests())
-					.Concat(StaticsTests())
-					.Concat(InteropTests())
-					.Concat(ReferencesTests ())
-					.Concat(ResourcesTests ())
-					.Concat(TypeForwardingTests ())
-					.Concat(TestFrameworkTests ())
-					.Concat(ReflectionTests ())
-					.Concat(SymbolsTests ())
-					.Select(c => ((TestCase)c.Arguments[0]).ReconstructedFullTypeName));
-
-			return AllCases().Where(c => !allGroupedTestNames.Contains(c.ReconstructedFullTypeName)).Select(c => CreateNUnitTestCase(c, c.DisplayName));
-		}
-
 		public static TestCaseCollector CreateCollector ()
 		{
 			string rootSourceDirectory;
@@ -112,10 +91,13 @@ namespace Mono.Linker.Tests.TestCases
 
 		static IEnumerable<TestCase> AllCases ()
 		{
-			return CreateCollector ()
-				.Collect ()
-				.OrderBy (c => c.DisplayName)
-				.ToArray ();
+			if (_cachedAllCases == null)
+				_cachedAllCases = CreateCollector ()
+					.Collect ()
+					.OrderBy (c => c.DisplayName)
+					.ToArray ();
+
+			return _cachedAllCases;
 		}
 
 		static IEnumerable<TestCaseData> NUnitCasesByPrefix(string testNamePrefix)
