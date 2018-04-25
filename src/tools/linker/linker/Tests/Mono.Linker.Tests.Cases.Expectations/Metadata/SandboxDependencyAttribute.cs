@@ -9,5 +9,11 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata {
 			if (string.IsNullOrEmpty (relativePathToFile))
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (relativePathToFile));
 		}
+		
+		public SandboxDependencyAttribute (Type typeOfSourceFileToInclude, string destinationFileName = null)
+		{
+			if (typeOfSourceFileToInclude == null)
+				throw new ArgumentException ("Value cannot be null or empty.", nameof (typeOfSourceFileToInclude));
+		}
 	}
 }

@@ -154,9 +154,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		SourceAndDestinationPair GetSourceAndRelativeDestinationValue (CustomAttribute attribute)
 		{
-			var relativeSource = (string) attribute.ConstructorArguments.First ().Value;
+			var fullSource = SourceFileForAttributeArgumentValue (attribute.ConstructorArguments.First ().Value); 
 			var destinationFileName = (string) attribute.ConstructorArguments [1].Value;
-			var fullSource = _testCase.SourceFile.Parent.Combine (relativeSource);
 			return new SourceAndDestinationPair
 			{
 				Source = fullSource,
@@ -170,7 +169,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return new SetupCompileInfo
 			{
 				OutputName = (string) ctorArguments [0].Value,
-				SourceFiles = ((CustomAttributeArgument []) ctorArguments [1].Value).Select (arg => MakeSourceTreeFilePathAbsolute (arg.Value.ToString ())).ToArray (),
+				SourceFiles = SourceFilesForAttributeArgument (ctorArguments [1]), 
 				References = ((CustomAttributeArgument []) ctorArguments [2].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Defines = ((CustomAttributeArgument []) ctorArguments [3].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Resources = ((CustomAttributeArgument []) ctorArguments [4].Value)?.Select (arg => MakeSourceTreeFilePathAbsolute (arg.Value.ToString ())).ToArray (),
@@ -183,6 +182,46 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		protected NPath MakeSourceTreeFilePathAbsolute (string value)
 		{
 			return _testCase.SourceFile.Parent.Combine (value);
+		}
+
+		protected NPath[] SourceFilesForAttributeArgument (CustomAttributeArgument attributeArgument)
+		{
+			return ((CustomAttributeArgument []) attributeArgument.Value)
+				.Select (attributeArg => SourceFileForAttributeArgumentValue (attributeArg.Value))
+				.Distinct ()
+				.ToArray ();
+		}
+
+		protected virtual NPath SourceFileForAttributeArgumentValue (object value)
+		{
+			var valueAsTypeRef = value as TypeReference;
+			if (valueAsTypeRef != null) {
+				// Use the parent type for locating the source file
+				var parentType = ParentMostType (valueAsTypeRef);
+				var pathRelativeToAssembly = $"{parentType.FullName.Substring (parentType.Module.Name.Length - 3).Replace ('.', '/')}.cs".ToNPath ();
+				var topMostDirectoryName = pathRelativeToAssembly.Elements.First ();
+				var topMostDirectory = _testCase.SourceFile.RecursiveParents.Reverse ().FirstOrDefault (d => !d.IsRoot && d.FileName == topMostDirectoryName);
+						
+				if (topMostDirectory == null)
+					throw new ArgumentException ($"Unable to locate the source file for type {valueAsTypeRef}.  Could not locate directory {topMostDirectoryName}.  Ensure the type name matches the file name.  And the namespace match the directory structure on disk");
+						
+				var fullPath = topMostDirectory.Parent.Combine (pathRelativeToAssembly);
+						
+				if (!fullPath.Exists ())
+					throw new ArgumentException ($"Unable to locate the source file for type {valueAsTypeRef}.  Expected {fullPath}.  Ensure the type name matches the file name.  And the namespace match the directory structure on disk");
+
+				return fullPath;
+			}
+
+			return MakeSourceTreeFilePathAbsolute (value.ToString ());
+		}
+
+		static TypeReference ParentMostType (TypeReference type)
+		{
+			if (!type.IsNested)
+				return type;
+
+			return ParentMostType (type.DeclaringType);
 		}
 	}
 }
