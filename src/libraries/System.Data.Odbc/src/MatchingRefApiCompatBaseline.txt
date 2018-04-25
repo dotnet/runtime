@@ -1,6 +1,6 @@
 # Exposed publicly only in implementation for serialization compat
-TypesMustExist : Type 'System.Data.Odbc.ODBC32' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Data.Odbc.ODBC32' does not exist in the reference but it does exist in the implementation.
 
 # Cannot be exposed in the ref yet as it is new API that doesn't exist in netfx
-MembersMustExist : Member 'System.Data.Odbc.OdbcParameter.Offset.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.Odbc.OdbcParameter.Offset.set(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Odbc.OdbcParameter.Offset.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Data.Odbc.OdbcParameter.Offset.set(System.Int32)' does not exist in the reference but it does exist in the implementation.

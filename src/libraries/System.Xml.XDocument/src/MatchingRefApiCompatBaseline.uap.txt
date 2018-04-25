@@ -1,2 +1,2 @@
 # Exposed publicly only in implementation for serialization compat
-MembersMustExist : Member 'System.Xml.Linq.XElement..ctor()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Linq.XElement..ctor()' does not exist in the reference but it does exist in the implementation.

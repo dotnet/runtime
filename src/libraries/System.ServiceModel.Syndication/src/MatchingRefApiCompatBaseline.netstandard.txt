@@ -1,19 +1,19 @@
 Compat issues with assembly System.ServiceModel.Syndication:
-MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.Documentation.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.Documentation.set(System.ServiceModel.Syndication.SyndicationLink)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.SkipDays.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.SkipHours.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.TextInput.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.TextInput.set(System.ServiceModel.Syndication.SyndicationTextInput)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.TimeToLive.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.TimeToLive.set(System.Nullable<System.TimeSpan>)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeedFormatter.DateTimeParser.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeedFormatter.DateTimeParser.set(System.ServiceModel.Syndication.TryParseDateTimeCallback)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeedFormatter.UriParser.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeedFormatter.UriParser.set(System.ServiceModel.Syndication.TryParseUriCallback)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Syndication.SyndicationTextInput' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Syndication.TryParseDateTimeCallback' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Syndication.TryParseUriCallback' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Syndication.XmlDateTimeData' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Syndication.XmlUriData' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.Documentation.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.Documentation.set(System.ServiceModel.Syndication.SyndicationLink)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.SkipDays.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.SkipHours.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.TextInput.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.TextInput.set(System.ServiceModel.Syndication.SyndicationTextInput)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.TimeToLive.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeed.TimeToLive.set(System.Nullable<System.TimeSpan>)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeedFormatter.DateTimeParser.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeedFormatter.DateTimeParser.set(System.ServiceModel.Syndication.TryParseDateTimeCallback)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeedFormatter.UriParser.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.ServiceModel.Syndication.SyndicationFeedFormatter.UriParser.set(System.ServiceModel.Syndication.TryParseUriCallback)' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.ServiceModel.Syndication.SyndicationTextInput' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.ServiceModel.Syndication.TryParseDateTimeCallback' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.ServiceModel.Syndication.TryParseUriCallback' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.ServiceModel.Syndication.XmlDateTimeData' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.ServiceModel.Syndication.XmlUriData' does not exist in the reference but it does exist in the implementation.
 Total Issues: 17

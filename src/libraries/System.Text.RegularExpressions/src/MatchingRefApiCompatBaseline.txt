@@ -1,2 +1,2 @@
 # API is only for Debug purposes
-MembersMustExist : Member 'System.Text.RegularExpressions.RegexOptions System.Text.RegularExpressions.RegexOptions.Debug' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Text.RegularExpressions.RegexOptions System.Text.RegularExpressions.RegexOptions.Debug' does not exist in the reference but it does exist in the implementation.
