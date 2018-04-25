@@ -76,6 +76,7 @@
     <BuildMoniker Condition="'$(IsOfficial)'=='true' And '$(ProductBuildId)'!=''">$(ProductBuildId)</BuildMoniker>
     <HelixArchLabel>$(ArchGroup)</HelixArchLabel>
     <HelixConfigLabel>$(ConfigurationGroup)</HelixConfigLabel>
+    <MaxRetryCount>1</MaxRetryCount>
   </PropertyGroup>
 
   <Target Name="CoreFXPreCloudBuild" >
