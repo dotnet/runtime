@@ -1,4 +1,4 @@
 Compat issues with assembly System.Net.Primitives:
-TypesMustExist : Type 'System.Net.CookieVariant' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PathList' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.CookieVariant' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Net.PathList' does not exist in the reference but it does exist in the implementation.
 Total Issues: 2

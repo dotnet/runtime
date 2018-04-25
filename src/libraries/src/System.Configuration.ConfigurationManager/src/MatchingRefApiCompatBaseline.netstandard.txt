@@ -1,5 +1,5 @@
 Compat issues with assembly System.Configuration.ConfigurationManager:
 # Cannot remove the serialization constructors because they are needed for serialization
-MembersMustExist : Member 'System.Configuration.SettingsAttributeDictionary..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Configuration.SettingsContext..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Configuration.SettingsAttributeDictionary..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Configuration.SettingsContext..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the reference but it does exist in the implementation.
 Total Issues: 2
