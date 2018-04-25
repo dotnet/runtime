@@ -47,6 +47,7 @@
     <Compile Include="Rfc3161\TimestampTokenInfoTests.cs" />
     <Compile Include="Rfc3161\TimestampTokenTestData.cs" />
     <Compile Include="Rfc3161\TimestampTokenTests.cs" />
+    <Compile Include="SignedCms\SignedCmsTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)'=='netcoreapp'">
     <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" />

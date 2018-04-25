@@ -21,6 +21,11 @@ namespace System.Security.Cryptography.Pkcs
 
         private abstract class RSACmsSignature : CmsSignature
         {
+            protected override bool VerifyKeyType(AsymmetricAlgorithm key)
+            {
+                return (key as RSA) != null;
+            }
+
             internal override bool VerifySignature(
 #if netcoreapp
                 ReadOnlySpan<byte> valueHash,
@@ -98,14 +103,17 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
+                AsymmetricAlgorithm key,
                 bool silent,
                 out Oid signatureAlgorithm,
                 out byte[] signatureValue)
             {
+                RSA certPublicKey = certificate.GetRSAPublicKey();
+
                 // If there's no private key, fall back to the public key for a "no private key" exception.
-                RSA privateKey =
+                RSA privateKey = key as RSA ??
                     PkcsPal.Instance.GetPrivateKeyForSigning<RSA>(certificate, silent) ??
-                    certificate.GetRSAPublicKey();
+                    certPublicKey;
 
                 if (privateKey == null)
                 {
@@ -129,6 +137,14 @@ namespace System.Security.Cryptography.Pkcs
                 if (signed && signature.Length == bytesWritten)
                 {
                     signatureValue = signature;
+
+                    if (key != null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, RSASignaturePadding.Pkcs1))
+                    {
+                        // key did not match certificate
+                        signatureValue = null;
+                        return false;
+                    }
+
                     return true;
                 }
 #endif
@@ -140,6 +156,13 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                     hashAlgorithmName,
                     RSASignaturePadding.Pkcs1);
+
+                if (key != null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, RSASignaturePadding.Pkcs1))
+                {
+                    // key did not match certificate
+                    signatureValue = null;
+                    return false;
+                }
 
                 return true;
             }
@@ -221,6 +244,7 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
+                AsymmetricAlgorithm key,
                 bool silent,
                 out Oid signatureAlgorithm,
                 out byte[] signatureValue)
