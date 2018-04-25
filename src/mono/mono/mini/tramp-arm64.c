@@ -746,9 +746,17 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 	offset += sizeof (CallContext);
 	framesize = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
 
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, ARMREG_SP, 0);
+
 	arm_subx_imm (code, ARMREG_SP, ARMREG_SP, framesize);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, framesize);
+
 	arm_stpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, 0);
+	mono_add_unwind_op_offset (unwind_ops, code, start, ARMREG_LR, -framesize + 8);
+	mono_add_unwind_op_offset (unwind_ops, code, start, ARMREG_FP, -framesize);
+
 	arm_movspx (code, ARMREG_FP, ARMREG_SP);
+	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, start, ARMREG_FP);
 
 	/* save all general purpose registers into the CallContext */
 	for (i = 0; i < PARAM_REGS + 1; i++)
