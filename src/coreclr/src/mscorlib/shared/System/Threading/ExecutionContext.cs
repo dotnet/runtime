@@ -64,8 +64,7 @@ namespace System.Threading
         {
             Debug.Assert(isFlowSuppressed != m_isFlowSuppressed);
 
-            if (m_localValues == null ||
-                m_localValues.GetType() == typeof(AsyncLocalValueMap.EmptyAsyncLocalValueMap))
+            if (m_localValues == null || AsyncLocalValueMap.IsEmpty(m_localValues))
             {
                 return isFlowSuppressed ?
                     DefaultFlowSuppressed :
@@ -322,19 +321,26 @@ namespace System.Threading
                 return;
             }
 
+            // Regarding 'treatNullValueAsNonexistent: !needChangeNotifications' below:
+            // - When change notifications are not necessary for this IAsyncLocal, there is no observable difference between
+            //   storing a null value and removing the IAsyncLocal from 'm_localValues'
+            // - When change notifications are necessary for this IAsyncLocal, the IAsyncLocal's absence in 'm_localValues'
+            //   indicates that this is the first value change for the IAsyncLocal and it needs to be registered for change
+            //   notifications. So in this case, a null value must be stored in 'm_localValues' to indicate that the IAsyncLocal
+            //   is already registered for change notifications.
             IAsyncLocal[] newChangeNotifications = null;
             IAsyncLocalValueMap newValues;
             bool isFlowSuppressed = false;
             if (current != null)
             {
                 isFlowSuppressed = current.m_isFlowSuppressed;
-                newValues = current.m_localValues.Set(local, newValue);
+                newValues = current.m_localValues.Set(local, newValue, treatNullValueAsNonexistent: !needChangeNotifications);
                 newChangeNotifications = current.m_localChangeNotifications;
             }
             else
             {
                 // First AsyncLocal
-                newValues = new AsyncLocalValueMap.OneElementAsyncLocalValueMap(local, newValue);
+                newValues = AsyncLocalValueMap.Create(local, newValue, treatNullValueAsNonexistent: !needChangeNotifications);
             }
 
             //
@@ -360,7 +366,7 @@ namespace System.Threading
             }
 
             Thread.CurrentThread.ExecutionContext = 
-                (!isFlowSuppressed && newValues.GetType() == typeof(AsyncLocalValueMap.EmptyAsyncLocalValueMap)) ?
+                (!isFlowSuppressed && AsyncLocalValueMap.IsEmpty(newValues)) ?
                 null : // No values, return to Default context
                 new ExecutionContext(newValues, newChangeNotifications, isFlowSuppressed);
 
