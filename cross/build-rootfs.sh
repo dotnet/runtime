@@ -155,6 +155,7 @@ if [[ -n $__LinuxCodeName ]]; then
     if [[ "$__BuildArch" == "arm" && "$__LinuxCodeName" == "trusty" ]]; then
         pushd $__RootfsDir
         patch -p1 < $__CrossDir/$__BuildArch/trusty.patch
+        patch -p1 < $__CrossDir/$__BuildArch/trusty-lttng-2.4.patch
         popd
     fi
 elif [ "$__Tizen" == "tizen" ]; then
