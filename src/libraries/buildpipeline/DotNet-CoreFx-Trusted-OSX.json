@@ -400,10 +400,6 @@
     },
     "PB_AssetRootUrl": {
       "value": ""
-    },
-    "AgentToolsPath": {
-      "value": "",
-      "allowOverride": true
     }
   },
   "demands": [

@@ -361,10 +361,6 @@
     }
   ],
   "variables": {
-    "AgentToolsPath": {
-      "value": "",
-      "allowOverride": true
-    },
     "CloudDropAccessToken": {
       "value": null,
       "isSecret": true
