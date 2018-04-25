@@ -626,13 +626,17 @@ libmono_ee_interp_la_SOURCES = $(interp_sources)
 libmono_ee_interp_la_CFLAGS = $(mono_CFLAGS)
 libmono_ee_interp_la_LDFLAGS = $(libmonoldflags)
 if BITCODE
+if DISABLE_INTERPRETER
 libmono_ee_interp_la_LIBADD = libmonosgen-2.0.la
+endif
 endif
 
 libmono_dbg_la_SOURCES = debugger-agent.c
 libmono_dbg_la_CFLAGS = $(mono_CFLAGS)
 if BITCODE
+if DISABLE_DEBUGGER_AGENT
 libmono_dbg_la_LIBADD = libmonosgen-2.0.la
+endif
 endif
 
 dbg_libs = libmono-dbg.la
