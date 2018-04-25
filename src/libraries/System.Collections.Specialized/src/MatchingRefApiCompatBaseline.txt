@@ -1,2 +1,2 @@
 # Type exposed publicly in implementation only for serialization purposes
-TypesMustExist : Type 'System.Collections.Specialized.ListDictionary.DictionaryNode' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Collections.Specialized.ListDictionary.DictionaryNode' does not exist in the reference but it does exist in the implementation.

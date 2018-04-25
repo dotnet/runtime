@@ -1,8 +1,8 @@
 Compat issues with assembly System.IO.FileSystem:
 # These are now virtual in the implementation, which should be ok.
-CannotMakeMemberAbstract : Member 'System.IO.FileSystemInfo.Exists' is abstract in the implementation but is not abstract in the contract.
-CannotMakeMemberAbstract : Member 'System.IO.FileSystemInfo.Name' is abstract in the implementation but is not abstract in the contract.
-CannotMakeMemberAbstract : Member 'System.IO.FileSystemInfo.Exists.get()' is abstract in the implementation but is not abstract in the contract.
-CannotMakeMemberAbstract : Member 'System.IO.FileSystemInfo.Name.get()' is abstract in the implementation but is not abstract in the contract.
+CannotMakeMemberAbstract : Member 'System.IO.FileSystemInfo.Exists' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMemberAbstract : Member 'System.IO.FileSystemInfo.Name' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMemberAbstract : Member 'System.IO.FileSystemInfo.Exists.get()' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMemberAbstract : Member 'System.IO.FileSystemInfo.Name.get()' is abstract in the reference but is not abstract in the implementation.
 # C# generates backing fields for fixed buffers as public.
-TypesMustExist : Type 'System.IO.Enumeration.FileSystemEntry.<_fileNameBuffer>e__FixedBuffer' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.IO.Enumeration.FileSystemEntry.<_fileNameBuffer>e__FixedBuffer' does not exist in the reference but it does exist in the implementation.
