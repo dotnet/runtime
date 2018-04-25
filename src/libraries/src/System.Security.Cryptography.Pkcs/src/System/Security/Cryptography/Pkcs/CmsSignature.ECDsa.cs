@@ -31,6 +31,11 @@ namespace System.Security.Cryptography.Pkcs
                 _expectedDigest = expectedDigest;
             }
 
+            protected override bool VerifyKeyType(AsymmetricAlgorithm key)
+            {
+                return (key as ECDsa) != null;
+            }
+
             internal override bool VerifySignature(
 #if netcoreapp
                 ReadOnlySpan<byte> valueHash,
@@ -97,12 +102,13 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
+                AsymmetricAlgorithm certKey,
                 bool silent,
                 out Oid signatureAlgorithm,
                 out byte[] signatureValue)
             {
                 // If there's no private key, fall back to the public key for a "no private key" exception.
-                ECDsa key =
+                ECDsa key = certKey as ECDsa ??
                     PkcsPal.Instance.GetPrivateKeyForSigning<ECDsa>(certificate, silent) ??
                     certificate.GetECDsaPublicKey();
 
@@ -140,7 +146,16 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     if (key.TrySignHash(dataHash, rented, out bytesWritten))
                     {
-                        signatureValue = DsaIeeeToDer(new ReadOnlySpan<byte>(rented, 0, bytesWritten));
+                        var signedHash = new ReadOnlySpan<byte>(rented, 0, bytesWritten);
+
+                        if (key != null && !certificate.GetECDsaPublicKey().VerifyHash(dataHash, signedHash))
+                        {
+                            // key did not match certificate
+                            signatureValue = null;
+                            return false;
+                        }
+
+                        signatureValue = DsaIeeeToDer(signedHash);
                         return true;
                     }
                 }

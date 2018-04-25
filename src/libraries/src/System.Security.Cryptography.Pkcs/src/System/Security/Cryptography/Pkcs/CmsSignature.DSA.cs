@@ -31,6 +31,11 @@ namespace System.Security.Cryptography.Pkcs
                 _expectedDigest = expectedDigest;
             }
 
+            protected override bool VerifyKeyType(AsymmetricAlgorithm key)
+            {
+                return (key as DSA) != null;
+            }
+
             internal override bool VerifySignature(
                 ReadOnlySpan<byte> valueHash,
                 ReadOnlyMemory<byte> signature,
@@ -82,12 +87,13 @@ namespace System.Security.Cryptography.Pkcs
                 ReadOnlySpan<byte> dataHash,
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
+                AsymmetricAlgorithm key,
                 bool silent,
                 out Oid signatureAlgorithm,
                 out byte[] signatureValue)
             {
                 // If there's no private key, fall back to the public key for a "no private key" exception.
-                DSA dsa =
+                DSA dsa = key as DSA ??
                     PkcsPal.Instance.GetPrivateKeyForSigning<DSA>(certificate, silent) ??
                     certificate.GetDSAPublicKey();
 
@@ -123,7 +129,16 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     if (dsa.TryCreateSignature(dataHash, rented, out bytesWritten))
                     {
-                        signatureValue = DsaIeeeToDer(new ReadOnlySpan<byte>(rented, 0, bytesWritten));
+                        var signature = new ReadOnlySpan<byte>(rented, 0, bytesWritten);
+
+                        if (key != null && !certificate.GetDSAPublicKey().VerifySignature(dataHash, signature))
+                        {
+                            // key did not match certificate
+                            signatureValue = null;
+                            return false;
+                        }
+
+                        signatureValue = DsaIeeeToDer(signature);
                         return true;
                     }
                 }

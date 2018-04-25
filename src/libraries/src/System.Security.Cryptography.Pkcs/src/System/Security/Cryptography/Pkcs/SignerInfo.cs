@@ -541,7 +541,7 @@ namespace System.Security.Cryptography.Pkcs
             bool verifySignatureOnly)
         {
             IncrementalHash hasher = PrepareDigest();
-            CmsSignature signatureProcessor = CmsSignature.Resolve(SignatureAlgorithm.Value);
+            CmsSignature signatureProcessor = CmsSignature.ResolveAndVerifyKeyType(SignatureAlgorithm.Value, key: null);
 
             if (signatureProcessor == null)
             {
