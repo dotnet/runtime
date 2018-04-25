@@ -175,11 +175,18 @@ namespace System.Net.Http
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
 
-        private ValueTask<(HttpConnection, HttpResponseMessage)> GetConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        private async ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)> 
+            GetConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            (HttpConnection connection, bool isNewConnection, HttpResponseMessage failureResponse) = await GetHttp11ConnectionAsync(request, cancellationToken);
+            return ((HttpConnectionBase)connection, isNewConnection, failureResponse);
+        }
+
+        private ValueTask<(HttpConnection connection, bool isNewConnection, HttpResponseMessage failureResponse)> GetHttp11ConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<(HttpConnection, HttpResponseMessage)>(Task.FromCanceled<(HttpConnection, HttpResponseMessage)>(cancellationToken));
+                return new ValueTask<(HttpConnection, bool, HttpResponseMessage)>(Task.FromCanceled<(HttpConnection, bool, HttpResponseMessage)>(cancellationToken));
             }
 
             TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
@@ -201,7 +208,7 @@ namespace System.Net.Http
                     {
                         // We found a valid connection.  Return it.
                         if (NetEventSource.IsEnabled) conn.Trace("Found usable connection in pool.");
-                        return new ValueTask<(HttpConnection, HttpResponseMessage)>((conn, null));
+                        return new ValueTask<(HttpConnection, bool, HttpResponseMessage)>((conn, false, null));
                     }
 
                     // We got a connection, but it was already closed by the server or the
@@ -252,7 +259,7 @@ namespace System.Net.Http
                             }
                         }, waiter);
                     }
-                    return new ValueTask<(HttpConnection, HttpResponseMessage)>(waiter.Task);
+                    return new ValueTask<(HttpConnection, bool, HttpResponseMessage)>(waiter.Task);
                 }
 
                 // Note that we don't check for _disposed.  We may end up disposing the
@@ -272,27 +279,22 @@ namespace System.Net.Http
             { 
                 // Loop on connection failures and retry if possible.
 
-                (HttpConnection connection, HttpResponseMessage response) = await GetConnectionAsync(request, cancellationToken).ConfigureAwait(false);
-                if (response != null)
+                (HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse) = await GetConnectionAsync(request, cancellationToken).ConfigureAwait(false);
+                if (failureResponse != null)
                 {
                     // Proxy tunnel failure; return proxy response
-                    return response;
+                    Debug.Assert(isNewConnection);
+                    Debug.Assert(connection == null);
+                    return failureResponse;
                 }
 
-                bool isNewConnection = connection.IsNewConnection;
-
-                connection.Acquire();
                 try
                 {
                     return await connection.SendAsync(request, doRequestAuth, cancellationToken).ConfigureAwait(false);
                 }
-                catch (HttpRequestException e) when (!isNewConnection && e.InnerException is IOException && connection.CanRetry)
+                catch (HttpRequestException e) when (!isNewConnection && e.AllowRetry)
                 {
                     // Eat exception and try again.
-                }
-                finally
-                {
-                    connection.Release();
                 }
             }
         }
@@ -477,7 +479,7 @@ namespace System.Net.Http
         }
 
         /// <summary>Waits for and returns the created connection, decrementing the associated connection count if it fails.</summary>
-        private async ValueTask<(HttpConnection, HttpResponseMessage)> WaitForCreatedConnectionAsync(ValueTask<(HttpConnection, HttpResponseMessage)> creationTask)
+        private async ValueTask<(HttpConnection connection, bool isNewConnection, HttpResponseMessage failureResponse)> WaitForCreatedConnectionAsync(ValueTask<(HttpConnection, HttpResponseMessage)> creationTask)
         {
             try
             {
@@ -486,7 +488,7 @@ namespace System.Net.Http
                 {
                     DecrementConnectionCount();
                 }
-                return (connection, response);
+                return (connection, true, response);
             }
             catch
             {
@@ -549,7 +551,8 @@ namespace System.Net.Http
                         // Transfer the connection to the waiter.  Since we already have a count
                         // that's inflated due to the connection being disassociated, we don't
                         // need to change the count here.
-                        waiter.SetResult(connectionTask.Result);
+                        (HttpConnection connection, HttpResponseMessage failureResponse) = connectionTask.Result;
+                        waiter.SetResult((connection, true, failureResponse));
                     }
                     else
                     {
@@ -560,10 +563,12 @@ namespace System.Net.Http
                             try
                             {
                                 // Get the resulting connection.
-                                (HttpConnection result, HttpResponseMessage response) = innerConnectionTask.GetAwaiter().GetResult();
+                                (HttpConnection connection, HttpResponseMessage failureResponse) = innerConnectionTask.GetAwaiter().GetResult();
 
-                                if (response != null)
+                                if (failureResponse != null)
                                 {
+                                    Debug.Assert(connection == null);
+
                                     // Proxy tunnel connect failed, so decrement the connection count.
                                     innerWaiter._pool.DecrementConnectionCount();
                                 }
@@ -571,7 +576,7 @@ namespace System.Net.Http
                                 // Store the resulting connection into the waiter. As in the synchronous case,
                                 // since we already have a count that's inflated due to the connection being
                                 // disassociated, we don't need to change the count here.
-                                innerWaiter.SetResult(innerConnectionTask.Result);
+                                innerWaiter.SetResult((connection, true, failureResponse));
                             }
                             catch (Exception e)
                             {
@@ -876,7 +881,7 @@ namespace System.Net.Http
         /// into the waiter as a result, and if no connection is available from the pool,
         /// this waiter's logic is used to create the connection.
         /// </summary>
-        private class ConnectionWaiter : TaskCompletionSource<(HttpConnection, HttpResponseMessage)>
+        private class ConnectionWaiter : TaskCompletionSource<(HttpConnection connection, bool isNewConnection, HttpResponseMessage failureResponse)>
         {
             /// <summary>The pool with which this waiter is associated.</summary>
             internal readonly HttpConnectionPool _pool;

@@ -3,12 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 
 namespace System.Net.Http
 {
     [SuppressMessage("Microsoft.Serialization", "CA2229")]
     public class HttpRequestException : Exception
     {
+        private bool _allowRetry;
+
         public HttpRequestException()
             : this(null, null)
         { }
@@ -25,5 +28,16 @@ namespace System.Net.Http
                 HResult = inner.HResult;
             }
         }
+
+        // This constructor is used internally to indicate that a request was not successfully sent due to an IOException,
+        // and the exception occurred early enough so that the request may be retried on another connection.
+        // occurred before the request
+        internal HttpRequestException(string message, IOException inner, bool allowRetry)
+            : this(message, inner)
+        {
+            _allowRetry = allowRetry;
+        }
+
+        internal bool AllowRetry => _allowRetry;
     }
 }
