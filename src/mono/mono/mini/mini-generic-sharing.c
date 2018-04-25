@@ -1627,6 +1627,59 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	return res;
 }
 
+/*
+ *   This wrapper enables EH to resume directly to the code calling it. It is
+ * needed so EH can resume directly into jitted code from interp, or into interp
+ * when it needs to jump over native frames.
+ */
+static MonoMethod*
+mini_create_interp_lmf_wrapper (gpointer target)
+{
+	MonoMethod* ret;
+	MonoMethodSignature *sig;
+	MonoMethodBuilder *mb;
+	WrapperInfo *info;
+	MonoType *int_type = mono_get_int_type ();
+
+	mb = mono_mb_new (mono_defaults.object_class, "interp_lmf", MONO_WRAPPER_UNKNOWN);
+
+	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+	sig->ret = mono_get_void_type ();;
+	sig->params [0] = int_type;
+	sig->params [1] = int_type;
+
+	/* This is the only thing that the wrapper needs to do */
+	mb->method->save_lmf = 1;
+
+#ifndef DISABLE_JIT
+	mono_mb_emit_byte (mb, CEE_LDARG_0);
+	mono_mb_emit_byte (mb, CEE_LDARG_1);
+
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_op (mb, CEE_MONO_ICALL, target);
+
+	mono_mb_emit_byte (mb, CEE_RET);
+#endif
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_INTERP_LMF);
+	ret = mono_mb_create (mb, sig, 4, info);
+	mono_mb_free (mb);
+
+	return ret;
+}
+
+MonoMethod*
+mini_get_interp_lmf_wrapper (void)
+{
+	static MonoMethod *wrapper = NULL;
+
+	if (wrapper)
+		return wrapper;
+
+	wrapper = mini_create_interp_lmf_wrapper (mono_interp_entry_from_trampoline);
+
+	return wrapper;
+}
+
 MonoMethodSignature*
 mini_get_gsharedvt_out_sig_wrapper_signature (gboolean has_this, gboolean has_ret, int param_count)
 {

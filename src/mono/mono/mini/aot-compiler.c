@@ -7047,6 +7047,10 @@ emit_trampolines (MonoAotCompile *acfg)
 		if (mono_aot_mode_is_interp (&acfg->aot_opts)) {
 			mono_arch_get_interp_to_native_trampoline (&info);
 			emit_trampoline (acfg, acfg->got_offset, info);
+#ifdef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
+			mono_arch_get_native_to_interp_trampoline (&info);
+			emit_trampoline (acfg, acfg->got_offset, info);
+#endif
 		}
 
 #endif /* #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES */

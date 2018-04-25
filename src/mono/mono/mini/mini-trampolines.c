@@ -141,6 +141,7 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 
 	return res;
 }
+
 #else
 gpointer
 mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
@@ -152,6 +153,25 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
        g_assert_not_reached ();
 }
 #endif
+
+gpointer
+mono_create_ftnptr_arg_trampoline (gpointer arg, gpointer addr)
+{
+	gpointer res;
+#ifdef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
+	if (mono_aot_only)
+		g_error ("FIXME");
+	else
+		res = mono_arch_get_ftnptr_arg_trampoline (arg, addr);
+#else
+	if (mono_aot_only)
+		res = mono_aot_get_static_rgctx_trampoline (arg, addr);
+	else
+		res = mono_arch_get_static_rgctx_trampoline (arg, addr);
+#endif
+
+	return res;
+}
 
 #if 0
 #define DEBUG_IMT(stmt) do { stmt; } while (0)

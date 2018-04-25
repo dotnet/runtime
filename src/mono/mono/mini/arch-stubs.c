@@ -68,6 +68,13 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	return NULL;
 }
 
+gpointer
+mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 void
 mono_arch_undo_ip_adjustment (MonoContext *context)
 {

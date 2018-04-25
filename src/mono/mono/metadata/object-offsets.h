@@ -285,6 +285,9 @@ DECL_OFFSET(CallContext, stack_size)
 DECL_OFFSET(CallContext, stack)
 #endif
 
+DECL_OFFSET(MonoFtnDesc, arg)
+DECL_OFFSET(MonoFtnDesc, addr)
+
 #endif //DISABLE_JIT_OFFSETS
 
 #endif //USED_CROSS_COMPILER_OFFSETS
