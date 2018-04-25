@@ -9,6 +9,7 @@
     <type fullname="System.Threading.Tasks.Task">
       <property name="ParentForDebugger" />
       <property name="StateFlagsForDebugger" />
+      <method name="GetDelegateContinuationsForDebugger" />
     </type>
     <type fullname="System.Threading.ThreadPool">
       <method name="GetQueuedWorkItemsForDebugger" />
@@ -18,6 +19,15 @@
     <type fullname="System.Threading.Tasks.TaskScheduler">
       <method name="GetScheduledTasksForDebugger" />
       <method name="GetTaskSchedulersForDebugger" /> 
+    </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncMethodBuilderCore">
+      <method name="TryGetStateMachineForDebugger" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncVoidMethodBuilder">
+      <property name="ObjectIdForDebugger" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.AsyncTaskMethodBuilder*">
+      <property name="ObjectIdForDebugger" />
     </type>
     <type fullname="System.Threading.Tasks.Task">
       <!-- Methods is used by VS Tasks Window. -->
