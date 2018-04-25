@@ -436,7 +436,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 
-		if (klass->is_array_special_interface) {
+		if (m_class_is_array_special_interface (klass)) {
 			NEW_BBLOCK (cfg, interface_fail_bb);
 			mini_emit_iface_cast (cfg, tmp_reg, klass, interface_fail_bb, is_null_bb);
 			// iface bitmap check failed

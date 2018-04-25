@@ -1010,10 +1010,10 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 		current = mono_domain_get ();
 
 		mono_domain_set (domain, FALSE);
-		ass = mono_assembly_open_predicate (name, FALSE, FALSE, NULL, NULL, NULL);
+		ass = mono_assembly_open_predicate (name, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL);
 		mono_domain_set (current, FALSE);
 	} else {
-		ass = mono_assembly_open_predicate (name, FALSE, FALSE, NULL, NULL, NULL);
+		ass = mono_assembly_open_predicate (name, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL);
 	}
 
 	return ass;
@@ -1967,7 +1967,8 @@ mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly)
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		ass = (MonoAssembly *)tmp->data;
-		if (refonly != ass->ref_only)
+		gboolean ass_ref_only = mono_asmctx_get_kind (&ass->context) == MONO_ASMCTX_REFONLY;
+		if (refonly != ass_ref_only)
 			continue;
 		if (ass->corlib_internal)
 			continue;

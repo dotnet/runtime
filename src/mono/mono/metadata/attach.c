@@ -276,7 +276,7 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 	gpointer pa [1];
 	MonoImageOpenStatus open_status;
 
-	agent_assembly = mono_assembly_open_predicate (agent, FALSE, FALSE, NULL, NULL, &open_status);
+	agent_assembly = mono_assembly_open_predicate (agent, MONO_ASMCTX_DEFAULT, NULL, NULL, &open_status);
 	if (!agent_assembly) {
 		fprintf (stderr, "Cannot open agent assembly '%s': %s.\n", agent, mono_image_strerror (open_status));
 		g_free (agent);

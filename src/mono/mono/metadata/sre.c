@@ -1343,7 +1343,10 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 			assembly->assembly.aname.revision = 0;
         }
 
-	assembly->assembly.ref_only = assemblybuilderaccess_can_refonlyload (assemblyb->access);
+	/* SRE assemblies are loaded into the individual loading context, ie,
+	 * they only fire AssemblyResolve events, they don't cause probing for
+	 * referenced assemblies to happen. */
+	assembly->assembly.context.kind = assemblybuilderaccess_can_refonlyload (assemblyb->access) ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_INDIVIDUAL;
 	assembly->run = assemblybuilderaccess_can_run (assemblyb->access);
 	assembly->save = assemblybuilderaccess_can_save (assemblyb->access);
 	assembly->domain = domain;

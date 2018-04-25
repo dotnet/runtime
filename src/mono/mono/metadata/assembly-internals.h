@@ -9,26 +9,33 @@
 #include <glib.h>
 
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/metadata-internals.h>
 
 MONO_API MonoImage*    mono_assembly_load_module_checked (MonoAssembly *assembly, uint32_t idx, MonoError *error);
 
-MonoAssembly * mono_assembly_open_a_lot (const char *filename, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context);
+MonoAssembly * mono_assembly_open_a_lot (const char *filename, MonoImageOpenStatus *status, MonoAssemblyContextKind asmctx);
+
+MonoAssembly* mono_assembly_load_full_nosearch (MonoAssemblyName *aname, 
+						const char       *basedir,
+						MonoAssemblyContextKind asmctx,
+						MonoImageOpenStatus *status);
+
 
 /* If predicate returns true assembly should be loaded, if false ignore it. */
 typedef gboolean (*MonoAssemblyCandidatePredicate)(MonoAssembly *, gpointer);
 
 MonoAssembly*          mono_assembly_open_predicate (const char *filename,
-						     gboolean refonly,
-						     gboolean load_from_context,
+						     MonoAssemblyContextKind asmctx,
 						     MonoAssemblyCandidatePredicate pred,
 						     gpointer user_data,
 						     MonoImageOpenStatus *status);
 
 MonoAssembly*          mono_assembly_load_from_predicate (MonoImage *image, const char *fname,
-							  gboolean refonly,
+							  MonoAssemblyContextKind asmctx,
 							  MonoAssemblyCandidatePredicate pred,
 							  gpointer user_data,
 							  MonoImageOpenStatus *status);
+
 
 /* MonoAssemblyCandidatePredicate that compares the assembly name (name, version,
  * culture, public key token) of the candidate with the wanted name, if the
@@ -37,5 +44,11 @@ MonoAssembly*          mono_assembly_load_from_predicate (MonoImage *image, cons
  */
 gboolean
 mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointer wanted_name);
+
+MonoAssembly*
+mono_assembly_binding_applies_to_image (MonoImage* image, MonoImageOpenStatus *status);
+
+MonoAssembly*
+mono_assembly_load_from_assemblies_path (gchar **assemblies_path, MonoAssemblyName *aname, MonoAssemblyContextKind asmctx);
 
 #endif /* __MONO_METADATA_ASSEMBLY_INTERNALS_H__ */

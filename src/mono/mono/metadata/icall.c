@@ -2000,7 +2000,7 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 	MonoClassField *cf = field->field;
 	MonoDomain *domain = mono_object_domain (field);
 
-	if (m_class_get_image (fklass)->assembly->ref_only) {
+	if (mono_asmctx_get_kind (&m_class_get_image (fklass)->assembly->context) == MONO_ASMCTX_REFONLY) {
 		mono_set_pending_exception (mono_get_exception_invalid_operation (
 					"It is illegal to get the value on a field on a type loaded using the ReflectionOnly methods."));
 		return NULL;
@@ -2035,7 +2035,7 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionFieldHandle field, MonoObjec
 	MonoClassField *cf = MONO_HANDLE_GETVAL (field, field);
 
 	MonoClass *field_klass = MONO_HANDLE_GETVAL (field, klass);
-	if (m_class_get_image (field_klass)->assembly->ref_only) {
+	if (mono_asmctx_get_kind (&m_class_get_image (field_klass)->assembly->context) == MONO_ASMCTX_REFONLY) {
 		mono_error_set_invalid_operation (error, "It is illegal to set the value on a field on a type loaded using the ReflectionOnly methods.");
 		return;
 	}
@@ -3369,7 +3369,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 	}
 
 	image = m_class_get_image (m->klass);
-	if (image->assembly->ref_only) {
+	if (mono_asmctx_get_kind (&image->assembly->context) == MONO_ASMCTX_REFONLY) {
 		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_get_exception_invalid_operation ("It is illegal to invoke a method on a type loaded using the ReflectionOnly api."));
 		return NULL;
 	}
@@ -4765,7 +4765,7 @@ ves_icall_System_Reflection_Assembly_get_ReflectionOnly (MonoReflectionAssemblyH
 {
 	error_init (error);
 	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
-	return assembly->ref_only;
+	return mono_asmctx_get_kind (&assembly->context) == MONO_ASMCTX_REFONLY;
 }
 
 ICALL_EXPORT MonoStringHandle

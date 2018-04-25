@@ -93,6 +93,26 @@ struct MonoTypeNameParse {
 	GList *nested;
 };
 
+
+typedef enum MonoAssemblyContextKind {
+	/* Default assembly context: Load(String) and assembly references */
+	MONO_ASMCTX_DEFAULT = 0,
+	/* Reflection-only only context: ReflectionOnlyLoad and ReeflectionOnlyLoadFrom */
+	MONO_ASMCTX_REFONLY = 1,
+	/* LoadFrom context: LoadFrom() and references */
+	MONO_ASMCTX_LOADFROM = 2,
+	/* Individual assembly context (.NET Framework docs call this "not in
+	 * any context"): LoadFile(String) and Load(byte[]) are here.
+	 */
+	MONO_ASMCTX_INDIVIDUAL = 3,
+
+	MONO_ASMCTX_LAST = 3
+} MonoAssemblyContextKind;
+
+typedef struct _MonoAssemblyContext {
+	MonoAssemblyContextKind kind;
+} MonoAssemblyContext;
+
 struct _MonoAssembly {
 	/* 
 	 * The number of appdomains which have this assembly loaded plus the number of 
@@ -111,7 +131,7 @@ struct _MonoAssembly {
 	guint8 in_gac;
 	guint8 dynamic;
 	guint8 corlib_internal;
-	gboolean ref_only;
+	MonoAssemblyContext context;
 	guint8 wrap_non_exception_throws;
 	guint8 wrap_non_exception_throws_inited;
 	guint8 jit_optimizer_disabled;
@@ -987,6 +1007,9 @@ mono_signature_get_managed_fmt_string (MonoMethodSignature *sig);
 
 gboolean
 mono_type_in_image (MonoType *type, MonoImage *image);
+
+MonoAssemblyContextKind
+mono_asmctx_get_kind (const MonoAssemblyContext *ctx);
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

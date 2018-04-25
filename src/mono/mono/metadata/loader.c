@@ -416,8 +416,10 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 	FIXME we should better report this error to the caller
 	 */
 	if (!m_class_get_methods (klass) || mono_class_has_failure (klass)) {
-		mono_error_set_type_load_class (error, klass, "Could not find method due to a type load error"); //FIXME get the error from the class 
-
+		ERROR_DECL (cause_error);
+		mono_error_set_for_class_failure (cause_error, klass);
+		mono_error_set_type_load_class (error, klass, "Could not find method '%s' due to a type load error: %s", name, mono_error_get_message (cause_error));
+		mono_error_cleanup (cause_error);
 		return NULL;
 	}
 	int mcount = mono_class_get_method_count (klass);

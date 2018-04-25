@@ -589,11 +589,6 @@ mono_try_assembly_resolve (MonoDomain *domain, const char *fname, MonoAssembly *
 MonoAssembly *
 mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *requesting, gboolean refonly);
 
-MonoAssembly* mono_assembly_load_full_nosearch (MonoAssemblyName *aname, 
-						const char       *basedir, 
-						MonoImageOpenStatus *status,
-						gboolean refonly);
-
 void mono_domain_set_options_from_config (MonoDomain *domain);
 
 int mono_framework_version (void);

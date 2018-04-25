@@ -56,6 +56,10 @@ ves_icall_System_AppDomain_GetAssemblies           (MonoAppDomainHandle ad,
 						    MonoError *error);
 
 MonoReflectionAssemblyHandle
+ves_icall_System_Reflection_Assembly_LoadFile_internal (MonoStringHandle fname,
+							MonoError *error);
+
+MonoReflectionAssemblyHandle
 ves_icall_System_Reflection_Assembly_LoadFrom      (MonoStringHandle fname,
 						    MonoBoolean refonly,
 						    MonoError *error);
