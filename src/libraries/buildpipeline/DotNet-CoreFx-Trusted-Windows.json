@@ -532,10 +532,6 @@
     "PB_UseEsrpSigning": {
       "value": "false",
       "allowOverride": true
-    },
-    "AgentToolsPath": {
-      "value": "",
-      "allowOverride": true
     }
   },
   "demands": [

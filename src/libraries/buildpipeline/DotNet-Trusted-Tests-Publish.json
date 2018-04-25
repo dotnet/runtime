@@ -248,10 +248,6 @@
     "MSBuildVerbosity": {
       "value": "diagnostic",
       "allowOverride": true
-    },
-    "AgentToolsPath": {
-      "value": "",
-      "allowOverride": true
     }
   },
   "demands": [
