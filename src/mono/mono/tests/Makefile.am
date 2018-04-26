@@ -2341,7 +2341,7 @@ assembly-load-dir1/LibStrongName.dll: assembly-load-dir1/LibStrongName.cs testin
 assembly-load-dir2/LibStrongName.dll: assembly-load-dir2/LibStrongName.cs testing_gac/testkey.snk
 	$(MCS) -target:library -out:$@ $<
 
-EXTRA_DIST += assembly-load-dir1/Lib.cs assmebly-load-dir2/Lib.cs \
+EXTRA_DIST += assembly-load-dir1/Lib.cs assembly-load-dir2/Lib.cs \
 	assembly-load-dir1/LibStrongName.cs assembly-load-dir2/LibStrongName.cs
 
 assembly-load-bytes.exe: assembly-load-dir1/Lib.dll assembly-load-dir2/Lib.dll
