@@ -65,7 +65,27 @@
 break: len:1
 call: dest:a clob:c len:17
 tailcall: len:255 clob:c
-tailcall_membase: src1:b len:255 clob:c # FIXME len?
+tailcall_membase: src1:b len:255 clob:c # FIXME len
+tailcall_reg: src1:b len:255 clob:c # FIXME len
+
+# tailcall_parameter models the size of moving one parameter,
+# so that the required size of a branch around a tailcall can
+# be accurately estimated; something like:
+# void f1(volatile long *a)
+# {
+# a[large] = a[another large]
+# }
+#
+# This is like amd64 but without the rex bytes.
+#
+# Frame size is artificially limited to 1GB in mono_arch_tailcall_supported.
+# This is presently redundant with tailcall len:255, as the limit of
+# near branches is [-128, +127], after which the limit is
+# [-2GB, +2GB-1]
+
+# FIXME A fixed size sequence to move parameters would moot this.
+tailcall_parameter: len:12
+
 br: len:5
 seq_point: len:26 clob:c
 il_seq_point: len:0

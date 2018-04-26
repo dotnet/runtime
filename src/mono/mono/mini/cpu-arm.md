@@ -99,7 +99,25 @@ lcall_membase: dest:l src1:b len:24 clob:c
 vcall: len:64 clob:c
 vcall_reg: src1:i len:64 clob:c
 vcall_membase: src1:b len:70 clob:c
-tailcall: len:160 clob:c
+
+tailcall: len:255 clob:c # FIXME len
+tailcall_membase: src1:b len:255 clob:c # FIXME len
+tailcall_reg: src1:b len:255 clob:c # FIXME len
+
+# tailcall_parameter models the size of moving one parameter,
+# so that the required size of a branch around a tailcall can
+# be accurately estimated; something like:
+# void f1(volatile long *a)
+# {
+# a[large] = a[another large]
+# }
+#
+# In current implementation with 4K limit this is typically
+# two full instructions, howevever raising the limit some
+# can lead two instructions and two thumb instructions.
+# FIXME A fixed size sequence to move parameters would moot this.
+tailcall_parameter: len:12
+
 iconst: dest:i len:16
 r4const: dest:f len:24
 r8const: dest:f len:20

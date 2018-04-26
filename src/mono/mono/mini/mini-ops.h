@@ -209,6 +209,7 @@ MINI_OP(OP_SHR_UN_IMM, "shr_un_imm", IREG, IREG, NONE)
 MINI_OP(OP_BR,         "br", NONE, NONE, NONE)
 /* Similar to old OP_JMP, but the passing of arguments is done similarly to calls */
 MINI_OP(OP_TAILCALL,   "tailcall", NONE, NONE, NONE)
+MINI_OP(OP_TAILCALL_PARAMETER, "tailcall_parameter", NONE, NONE, NONE) // no code, just size
 MINI_OP(OP_TAILCALL_REG, "tailcall_reg", NONE, IREG, NONE)
 MINI_OP(OP_TAILCALL_MEMBASE, "tailcall_membase", NONE, IREG, NONE)
 MINI_OP(OP_BREAK,      "break", NONE, NONE, NONE)

@@ -99,9 +99,23 @@ lcall_membase: dest:l src1:b len:32 clob:c
 vcall: len:32 clob:c
 vcall_reg: src1:i len:32 clob:c
 vcall_membase: src1:b len:32 clob:c
-tailcall: len:64 clob:c
-tailcall_membase: src1:b len:128 clob:c # FIXME len? Eventually depends on stack_usage.
+
+tailcall: len:255 clob:c # FIXME len
+tailcall_membase: src1:b len:255 clob:c # FIXME len
 tailcall_reg: src1:b len:255 clob:c # FIXME len
+
+# tailcall_parameter models the size of moving one parameter,
+# so that the required size of a branch around a tailcall can
+# be accurately estimated; something like:
+# void f1(volatile long *a)
+# {
+# a[large] = a[another large]
+# }
+#
+# This is two instructions typically, but can be 6 for frames larger than 32K.
+# FIXME A fixed size sequence to move parameters would moot this.
+tailcall_parameter: len:24
+
 iconst: dest:i len:16
 r4const: dest:f len:24
 r8const: dest:f len:20

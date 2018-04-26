@@ -3212,7 +3212,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 
-		if (offset > (cfg->code_size - max_len - 16)) {
+#define EXTRA_CODE_SPACE (16)
+
+		while (offset > (cfg->code_size - max_len - EXTRA_CODE_SPACE)) {
 			cfg->code_size *= 2;
 			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
 			code = cfg->native_code + offset;

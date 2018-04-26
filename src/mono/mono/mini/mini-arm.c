@@ -1816,7 +1816,10 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 	if (!res && !debug_tailcall)
 		goto exit;
 
-	res &= IS_SUPPORTED_TAILCALL (callee_info->stack_usage <= 16 * 4); // FIXME why?
+	// FIXME The limit here is that moving the parameters requires addressing the parameters
+	// with 12bit (4K) immediate offsets.
+	res &= IS_SUPPORTED_TAILCALL (callee_info->stack_usage < 4096);
+	res &= IS_SUPPORTED_TAILCALL (caller_info->stack_usage < 4096);
 
 exit:
 	g_free (caller_info);
@@ -4387,9 +4390,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	MONO_BB_FOR_EACH_INS (bb, ins) {
 		offset = code - cfg->native_code;
 
-		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
+		max_len = ins_get_size (ins->opcode);
 
-		if (offset > (cfg->code_size - max_len - 16)) {
+#define EXTRA_CODE_SPACE (16)
+
+		while (offset > (cfg->code_size - max_len - EXTRA_CODE_SPACE)) {
 			cfg->code_size *= 2;
 			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
 			code = cfg->native_code + offset;
@@ -5130,8 +5135,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 			break;
+
+		case OP_TAILCALL_PARAMETER:
+			// This opcode helps compute sizes, i.e.
+			// of the subsequent OP_TAILCALL, but contributes no code.
+			g_assert (ins->next);
+			break;
+
 		case OP_TAILCALL: {
 			MonoCallInst *call = (MonoCallInst*)ins;
+
+			max_len += call->stack_usage / sizeof (mgreg_t) * ins_get_size (OP_TAILCALL_PARAMETER);
+			while (G_UNLIKELY (offset + max_len > cfg->code_size)) {
+				cfg->code_size *= 2;
+				cfg->native_code = (unsigned char *)mono_realloc_native_code (cfg);
+				code = cfg->native_code + offset;
+				cfg->stat_code_reallocs++;
+			}
 
 			/*
 			 * The stack looks like the following:
@@ -5158,6 +5178,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				code = emit_big_add (code, ARMREG_IP, cfg->frame_reg, cfg->stack_usage + prev_sp_offset);
 
 				/* Copy arguments on the stack to our argument area */
+				// FIXME a fixed size memcpy is desirable here,
+				// at least for larger values of stack_usage.
 				for (i = 0; i < call->stack_usage; i += sizeof (mgreg_t)) {
 					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, i);
 					ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, i);
