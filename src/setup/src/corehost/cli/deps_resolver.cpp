@@ -465,9 +465,9 @@ bool deps_resolver_t::resolve_tpa_list(
             {
                 deps_resolved_asset_t* existing_entry = &existing->second;
 
-                // If deps entry is newer than existing, then see if it should be replaced
+                // If deps entry is same or newer than existing, then see if it should be replaced
                 if (entry.asset.assembly_version > existing_entry->asset.assembly_version ||
-                    (entry.asset.assembly_version == existing_entry->asset.assembly_version && entry.asset.file_version > existing_entry->asset.file_version))
+                    (entry.asset.assembly_version == existing_entry->asset.assembly_version && entry.asset.file_version >= existing_entry->asset.file_version))
                 {
                     if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path))
                     {
