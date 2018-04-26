@@ -4,14 +4,6 @@
 
 namespace System.ComponentModel.Composition
 {
-    public interface ITrans_MetadataView
-    {
-        string Foo { get; }
-
-        [System.ComponentModel.DefaultValue(null)]
-        string OptionalFoo { get; }
-    }
-
     public interface ITrans_MetadataViewWithDefaultedInt64
     {
         [DefaultValue(long.MaxValue)]
@@ -40,11 +32,6 @@ namespace System.ComponentModel.Composition
     {
         [DefaultValue("MyString")]
         string MyString { get; }
-    }
-
-    public interface ITrans_MetadataViewUnboxAsInt
-    {
-        int Value { get; }
     }
 
     public interface ITrans_HasInt64
