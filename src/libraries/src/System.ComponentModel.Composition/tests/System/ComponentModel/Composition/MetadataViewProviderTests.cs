@@ -8,6 +8,14 @@ using Xunit;
 
 namespace System.ComponentModel.Composition
 {
+    internal static class TransparentTestCase
+    {
+        public static int GetMetadataView_IMetadataViewWithDefaultedIntInTranparentType(ITrans_MetadataViewWithDefaultedInt view)
+        {
+            return view.MyInt;
+        }
+    }
+
     [MetadataViewImplementation(typeof(MetadataViewWithImplementation))]
     public interface IMetadataViewWithImplementation
     {
