@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace NStruct {
+namespace NStruct
+{
     using System;
     using System.Runtime.CompilerServices;
 
@@ -11,60 +12,60 @@ namespace NStruct {
 
         public class CreateObj
         {
-// disabling unused variable warning
+            // disabling unused variable warning
 #pragma warning disable 0414
             private STRMAP Strmap;
 #pragma warning restore 0414
-
             public CreateObj(int Rep)
             {
-                 for( int i=0; i< Rep; i++ )
-                 {
+                for (int i = 0; i < Rep; i++)
+                {
                     Strmap = new STRMAP();
-                 }
+                }
             }
-         
+
             [MethodImplAttribute(MethodImplOptions.NoInlining)]
-            public void DeleteStrmap()
+            public void DestoryStrmap()
             {
-                Strmap=null;
-            }
+                Strmap = null;
+            }                       
 
             public bool RunTest()
             {
+                DestoryStrmap();
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
 
-                Console.Out.WriteLine(FinalizeCount.icCreat + " NStruct Objects were deleted and "+ FinalizeCount.icFinal +" finalized.");
+                Console.Out.WriteLine(FinalizeCount.icCreat + " NStruct Objects were deleted and " + FinalizeCount.icFinal + " finalized.");
 
-                return (FinalizeCount.icCreat == FinalizeCount.icFinal );
+                return (FinalizeCount.icCreat == FinalizeCount.icFinal);
             }
 
         }
 
-        public static int Main(String [] Args)
+        public static int Main(String[] Args)
         {
             int iRep = 0;
 
             Console.Out.WriteLine("Test should return with ExitCode 100 ...");
 
-            if( Args.Length == 1)
+            if (Args.Length == 1)
             {
-                if (!Int32.TryParse( Args[0], out iRep ))
+                if (!Int32.TryParse(Args[0], out iRep))
                 {
-                    iRep =10000;
+                    iRep = 10000;
                 }
             }
             else
             {
-                iRep =10000;
+                iRep = 10000;
             }
-            Console.Out.WriteLine("iRep = "+iRep );
+            Console.Out.WriteLine("iRep = " + iRep);
 
             CreateObj temp = new CreateObj(iRep);
 
-            if(temp.RunTest())
+            if (temp.RunTest())
             {
                 Console.WriteLine("Test Passed");
                 return 100;
