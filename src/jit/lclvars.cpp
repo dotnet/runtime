@@ -6714,13 +6714,13 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
                 // after we set it to something.
                 if (lvaOutgoingArgSpaceSize.HasFinalValue())
                 {
-                    // A PhasedVar<T> can't be directly used as an arg to a variadic function 
+                    // A PhasedVar<T> can't be directly used as an arg to a variadic function
                     unsigned value = lvaOutgoingArgSpaceSize;
                     printf("(%2d) ", value);
                 }
                 else
                 {
-                    printf("(na) ");  // The value hasn't yet been determined
+                    printf("(na) "); // The value hasn't yet been determined
                 }
             }
             else
@@ -6743,9 +6743,8 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
 #if FEATURE_FIXED_OUT_ARGS
         // Since lvaOutgoingArgSpaceSize is a PhasedVar we can't read it for Dumping until
         // after we set it to something.
-        else if ((lclNum == lvaOutgoingArgSpaceVar) && 
-                lvaOutgoingArgSpaceSize.HasFinalValue() && 
-                (lvaOutgoingArgSpaceSize == 0))
+        else if ((lclNum == lvaOutgoingArgSpaceVar) && lvaOutgoingArgSpaceSize.HasFinalValue() &&
+                 (lvaOutgoingArgSpaceSize == 0))
         {
             // Similar to above; print this anyway.
             printf(";# ");
