@@ -981,7 +981,7 @@ ICALL(THREAD_15, "ResumeInternal", ves_icall_System_Threading_Thread_Resume)
 ICALL(THREAD_18, "SetName_internal(System.Threading.InternalThread,string)", ves_icall_System_Threading_Thread_SetName_internal)
 HANDLES(ICALL(THREAD_58, "SetPriorityNative", ves_icall_System_Threading_Thread_SetPriority))
 HANDLES(ICALL(THREAD_21, "SetState(System.Threading.InternalThread,System.Threading.ThreadState)", ves_icall_System_Threading_Thread_SetState))
-ICALL(THREAD_22, "SleepInternal", ves_icall_System_Threading_Thread_Sleep_internal)
+HANDLES(ICALL(THREAD_22, "SleepInternal", ves_icall_System_Threading_Thread_Sleep_internal))
 HANDLES(ICALL(THREAD_54, "SpinWait_nop", ves_icall_System_Threading_Thread_SpinWait_nop))
 HANDLES(ICALL(THREAD_23, "SuspendInternal", ves_icall_System_Threading_Thread_Suspend))
 // FIXME SystemMaxStackStize should be SystemMaxStackSize
