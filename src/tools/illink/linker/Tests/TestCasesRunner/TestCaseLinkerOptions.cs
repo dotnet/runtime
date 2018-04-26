@@ -10,6 +10,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		public string Il8n;
 		public bool IncludeBlacklistStep;
 		public string KeepTypeForwarderOnlyAssemblies;
+		public string KeepDebugMembers;
 		public string LinkSymbols;
 		public bool SkipUnresolved;
 		public bool StripResources;

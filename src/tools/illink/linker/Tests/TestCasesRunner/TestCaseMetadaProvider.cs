@@ -30,6 +30,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				Il8n = GetOptionAttributeValue (nameof (Il8nAttribute), "none"),
 				IncludeBlacklistStep = GetOptionAttributeValue (nameof (IncludeBlacklistStepAttribute), false),
 				KeepTypeForwarderOnlyAssemblies = GetOptionAttributeValue (nameof (KeepTypeForwarderOnlyAssembliesAttribute), string.Empty),
+				KeepDebugMembers = GetOptionAttributeValue (nameof (SetupLinkerKeepDebugMembersAttribute), string.Empty),
 				LinkSymbols = GetOptionAttributeValue (nameof (SetupLinkerLinkSymbolsAttribute), string.Empty),
 				CoreAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerCoreActionAttribute), null),
 				SkipUnresolved = GetOptionAttributeValue (nameof (SkipUnresolvedAttribute), false),

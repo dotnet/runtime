@@ -29,6 +29,12 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			Run (testCase);
 		}
+		
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.AttributeDebuggerTests))]
+		public void AttributesDebuggerTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
 
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.GenericsTests))]
 		public void GenericsTests (TestCase testCase)
