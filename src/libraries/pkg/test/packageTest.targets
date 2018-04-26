@@ -112,7 +112,7 @@
       <TestProject Include="$(MSBuildProjectFullPath)">
         <Semaphore>$(IntermediateOutputPath)\.testComplete</Semaphore>
       </TestProject>
-      <TestProject Include="$(MSBuildProjectFullPath)">
+      <TestProject Include="$(MSBuildProjectFullPath)" Condition="'%(_projectRuntime.Identity)' != ''">
         <Semaphore>$(IntermediateOutputPath)\%(_projectRuntime.Identity).testComplete</Semaphore>
         <AdditionalProperties>RuntimeIdentifier=%(_projectRuntime.Identity)</AdditionalProperties>
       </TestProject>
