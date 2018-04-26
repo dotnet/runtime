@@ -12,5 +12,10 @@
          https://github.com/dotnet/corefx/issues/29249 -->
     <IgnoredReference Include="System.Memory" />
     <IgnoredReference Include="System.Threading.Tasks.Extensions" />
+    <!-- Temporarily suppress until System.Collections.Hashtable move propagates into Microsoft.NETCore.App
+         https://github.com/dotnet/corefx/issues/29322 -->
+    <IgnoredReference Include="System.Runtime.Extensions" />
+    <IgnoredTypes Include="System.Collections.Hashtable" />
+    <IgnoredTypes Include="System.Collections.IHashCodeProvider" />
   </ItemGroup>
 </Project>
