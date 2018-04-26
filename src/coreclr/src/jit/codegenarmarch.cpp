@@ -820,7 +820,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 {
                     // Load from our varNumImp source
                     emit->emitIns_R_R_S_S(INS_ldp, emitTypeSize(type0), emitTypeSize(type1), loReg, hiReg, varNumInp,
-                                          0);
+                                          structOffset);
                 }
                 else
                 {
