@@ -47,9 +47,14 @@ public class Test {
         GC.Collect();
 
         if (Dummy.count == 10)
+        {
             Console.WriteLine("Test for Finalize() for array of objects passed!");
+            return 100;
+        }
         else 
+        {
             Console.WriteLine("Test for Finalize() for array of objects failed!");
-        return temp.ExitCode;				
+            return 0;
+        }
     }
 }
