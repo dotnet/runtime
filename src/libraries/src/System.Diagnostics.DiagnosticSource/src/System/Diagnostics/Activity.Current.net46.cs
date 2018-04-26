@@ -9,16 +9,27 @@ namespace System.Diagnostics
     public partial class Activity
     {
         /// <summary>
-        /// Returns the current operation (Activity) for the current thread.  This flows 
+        /// Gets or sets the current operation (Activity) for the current thread.  This flows 
         /// across async calls.
         /// </summary>
         public static Activity Current
         {
             get { return s_current.Value; }
-            private set { s_current.Value = value; }
+            set
+            {
+                if (ValidateSetCurrent(value))
+                {
+                    SetCurrent(value);
+                }
+            }
         }
 
 #region private
+        private static void SetCurrent(Activity activity)
+        {
+            s_current.Value = activity;
+        }
+
         private static readonly AsyncLocal<Activity> s_current = new AsyncLocal<Activity>();
 #endregion // private
     }

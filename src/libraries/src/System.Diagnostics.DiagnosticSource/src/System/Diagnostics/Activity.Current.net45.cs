@@ -11,7 +11,7 @@ namespace System.Diagnostics
     public partial class Activity
     {
         /// <summary>
-        /// Returns the current operation (Activity) for the current thread.  This flows 
+        /// Gets or sets the current operation (Activity) for the current thread.  This flows 
         /// across async calls.
         /// </summary>
         public static Activity Current
@@ -22,7 +22,7 @@ namespace System.Diagnostics
             get
             {
                 ObjectHandle activityHandle = (ObjectHandle)CallContext.LogicalGetData(FieldKey);
-                
+
                 // Unwrap the Activity if it was set in the same AppDomain (as FieldKey is AppDomain-specific). 
                 if (activityHandle != null)
                 {
@@ -30,29 +30,36 @@ namespace System.Diagnostics
                 }
                 return null;
             }
-            
+
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
             [System.Security.SecuritySafeCriticalAttribute]
 #endif
-            private set
+            set
             {
-                // Applications may implicitly or explicitly call other AppDomains
-                // that do not have DiagnosticSource DLL, therefore may not be able to resolve Activity type stored in the logical call context. 
-                // To avoid it, we wrap Activity with ObjectHandle.
-                CallContext.LogicalSetData(FieldKey, new ObjectHandle(value));
+                if (ValidateSetCurrent(value))
+                {
+                    SetCurrent(value);
+                }
             }
         }
 
 #region private
 
-        private partial class KeyValueListNode
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+        [System.Security.SecuritySafeCriticalAttribute]
+#endif
+        private static void SetCurrent(Activity activity)
         {
+            // Applications may implicitly or explicitly call other AppDomains
+            // that do not have DiagnosticSource DLL, therefore may not be able to resolve Activity type stored in the logical call context. 
+            // To avoid it, we wrap Activity with ObjectHandle.
+            CallContext.LogicalSetData(FieldKey, new ObjectHandle(activity));
         }
 
         // Slot name depends on the AppDomain Id in order to prevent AppDomains to use the same Activity
         // Cross AppDomain calls are considered as 'external' i.e. only Activity Id and Baggage should be propagated and 
         // new Activity should be started for the RPC calls (incoming and outgoing) 
         private static readonly string FieldKey = $"{typeof(Activity).FullName}_{AppDomain.CurrentDomain.Id}";
-#endregion
+#endregion //private
     }
 }
