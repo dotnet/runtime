@@ -1023,6 +1023,55 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1", "additionalDeps");
         }
 
+        [Fact]
+        public void SharedFxLookup_Wins_Over_Additional_Deps_On_RollForward_And_Version_Tie()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            // Set desired version = 7777.0.0
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
+
+            // Add versions in the exe folder
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
+            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", null, "7777.1.0");
+
+            // Copy NetCoreApp's copy of the assembly to the app location
+            string fxAssemblyPath = Path.Combine(_exeSharedFxBaseDir, "9999.0.0", "System.Collections.Immutable.dll");
+            string appAssembly = Path.Combine(fixture.TestProject.OutputDirectory, "System.Collections.Immutable.dll");
+            File.Copy(fxAssemblyPath, appAssembly);
+
+            // Modify the app's deps.json to add System.Collections.Immmutable
+            string appDepsJson = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.deps.json");
+            AddImmutableAssemblyToDepsJson(appDepsJson);
+
+            // Version: NetCoreApp 9999.0.0
+            //          UberFramework 7777.0.0
+            // Exe: NetCoreApp 9999.0.0
+            //      UberFramework 7777.1.0
+            // Expected: 9999.0.0
+            //           7777.1.0
+            // Expected: the framework's version of System.Collections.Immutable is used
+            string fxAssembly = Path.Combine(_exeSharedUberFxBaseDir, "7777.1.0", "System.Collections.Immutable.dll");
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining($"Replacing deps entry [{appAssembly}, AssemblyVersion:1.0.1.2, FileVersion:1.2.3.4] with [{fxAssembly}, AssemblyVersion:1.0.1.2, FileVersion:1.2.3.4]");
+
+            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
+            DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.1.0");
+        }
+
         // This method adds a list of new framework version folders in the specified
         // sharedFxBaseDir. The files are copied from the _buildSharedFxDir.
         // Remarks:
@@ -1323,6 +1372,55 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             string fileSource = Path.Combine(builtSharedFxDir, testAssembly + ".dll");
             string fileDest = Path.Combine(builtSharedUberFxDir, testAssembly + ".dll");
             File.Copy(fileSource, fileDest);
+        }
+
+        static private void AddImmutableAssemblyToDepsJson(string jsonFile)
+        {
+            JObject depsjson = JObject.Parse(File.ReadAllText(jsonFile));
+
+            string assemblyVersion = "1.0.1.2";
+            string fileVersion = "1.2.3.4";
+            string testPackage = "System.Collections.Immutable";
+            string testPackageVersion = "1.0.0";
+            string testPackageWithVersion = testPackage + "/" + testPackageVersion;
+            string testAssembly = testPackage + ".dll";
+
+            JProperty targetsProperty = (JProperty)depsjson["targets"].First;
+            JObject targetsValue = (JObject)targetsProperty.Value;
+
+            var assembly = new JProperty(testPackage, "1.0.0");
+            JObject packageDependencies = (JObject)targetsValue["SharedFxLookupPortableApp/1.0.0"]["dependencies"];
+            packageDependencies.Add(assembly);
+
+            var package = new JProperty(testPackageWithVersion,
+                new JObject(
+                    new JProperty("runtime",
+                        new JObject(
+                            new JProperty(testAssembly,
+                                new JObject(
+                                    new JProperty("assemblyVersion", assemblyVersion),
+                                    new JProperty("fileVersion", fileVersion)
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+
+            targetsValue.Add(package);
+
+            var library = new JProperty(testPackageWithVersion,
+                new JObject(
+                    new JProperty("type", "assemblyreference"),
+                    new JProperty("serviceable", false),
+                    new JProperty("sha512", "")
+                )
+            );
+
+            JObject libraries = (JObject)depsjson["libraries"];
+            libraries.Add(library);
+
+            File.WriteAllText(jsonFile, depsjson.ToString());
         }
     }
 }
