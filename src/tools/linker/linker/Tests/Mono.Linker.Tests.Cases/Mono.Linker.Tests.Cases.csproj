@@ -37,6 +37,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnAssemblyUsingTarget.cs" />
+    <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnAssemblyUsingTargetTypeNameInOtherAssembly.cs" />
+    <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnAssemblyUsingTargetOnUnusedType.cs" />
+    <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnType.cs" />
+    <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnTypeThatIsNotUsed.cs" />
+    <Compile Include="Attributes.Debugger\DebuggerTypeProxyAttributeOnAssemblyUsingTarget.cs" />
+    <Compile Include="Attributes.Debugger\DebuggerTypeProxyAttributeOnType.cs" />
+    <Compile Include="Attributes.Debugger\Dependencies\DebuggerDisplayAttributeOnAssemblyUsingTargetTypeNameInOtherAssembly_Lib.cs" />
+    <Compile Include="Attributes.Debugger\KeepDebugMembers\DebuggerDisplayAttributeOnAssemblyUsingTargetTypeNameInOtherAssembly.cs" />
+    <Compile Include="Attributes.Debugger\KeepDebugMembers\DebuggerTypeProxyAttributeOnAssemblyUsingTarget.cs" />
+    <Compile Include="Attributes.Debugger\KeepDebugMembers\DebuggerDisplayAttributeOnAssemblyUsingTarget.cs" />
+    <Compile Include="Attributes.Debugger\KeepDebugMembers\DebuggerDisplayAttributeOnAssemblyUsingTargetOnUnusedType.cs" />
+    <Compile Include="Attributes.Debugger\KeepDebugMembers\DebuggerTypeProxyAttributeOnType.cs" />
+    <Compile Include="Attributes.Debugger\KeepDebugMembers\DebuggerDisplayAttributeOnType.cs" />
+    <Compile Include="Attributes.Debugger\KeepDebugMembers\DebuggerDisplayAttributeOnTypeThatIsNotUsed.cs" />
     <Compile Include="Attributes\AssemblyAttributeIsRemovedIfOnlyTypesUsedInAssembly.cs" />
     <Compile Include="Attributes\AssemblyAttributeKeptInComplexCase.cs" />
     <Compile Include="Attributes\AttributeOnAssemblyIsKept.cs" />

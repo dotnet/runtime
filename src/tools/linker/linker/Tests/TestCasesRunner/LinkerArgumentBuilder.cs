@@ -58,6 +58,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Append ("-b");
 			Append (value);
 		}
+		
+		public virtual void AddKeepDebugMembers (string value)
+		{
+			Append ("-v");
+			Append (value);
+		}
 
 		public virtual void AddAssemblyAction (string action, string assembly)
 		{
@@ -123,6 +129,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			
 			if (!string.IsNullOrEmpty (options.LinkSymbols))
 				AddLinkSymbols (options.LinkSymbols);
+			
+			if (!string.IsNullOrEmpty (options.KeepDebugMembers))
+				AddKeepDebugMembers (options.KeepDebugMembers);
 
 			AddSkipUnresolved (options.SkipUnresolved);
 

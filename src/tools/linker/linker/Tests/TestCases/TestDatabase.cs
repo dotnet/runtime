@@ -30,6 +30,11 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			return NUnitCasesByPrefix("Attributes.");
 		}
+		
+		public static IEnumerable<TestCaseData> AttributeDebuggerTests ()
+		{
+			return NUnitCasesByPrefix ("Attributes.Debugger.");
+		}
 
 		public static IEnumerable<TestCaseData> GenericsTests()
 		{
