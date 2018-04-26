@@ -242,7 +242,7 @@ namespace System.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have dotnet/coreclr#16622")]
         [Fact]
         public void FailFast_ExceptionStackTrace_InnerException()
-        { 
+        {
             // Test if inner exception details are also logged
             var psi = new ProcessStartInfo();
             psi.RedirectStandardError = true;
@@ -431,7 +431,7 @@ namespace System.Tests
         [InlineData(Environment.SpecialFolder.StartMenu)]
         [InlineData(Environment.SpecialFolder.Startup)]
         [InlineData(Environment.SpecialFolder.System)]
-        [InlineData(Environment.SpecialFolder.Templates)]
+        //[InlineData(Environment.SpecialFolder.Templates)]
         [InlineData(Environment.SpecialFolder.DesktopDirectory)]
         [InlineData(Environment.SpecialFolder.Personal)]
         [InlineData(Environment.SpecialFolder.ProgramFiles)]
@@ -450,7 +450,7 @@ namespace System.Tests
         [InlineData(Environment.SpecialFolder.CommonTemplates)]
         [InlineData(Environment.SpecialFolder.CommonVideos)]
         [InlineData(Environment.SpecialFolder.Fonts)]
-        [InlineData(Environment.SpecialFolder.NetworkShortcuts)]
+        //[InlineData(Environment.SpecialFolder.NetworkShortcuts)]
         // [InlineData(Environment.SpecialFolder.PrinterShortcuts)]
         [InlineData(Environment.SpecialFolder.UserProfile)]
         [InlineData(Environment.SpecialFolder.CommonProgramFilesX86)]
