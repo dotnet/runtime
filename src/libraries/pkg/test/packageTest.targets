@@ -119,9 +119,16 @@
     </ItemGroup>
   </Target>
   
-  <!-- runs all tests scenarios for this project -->
+  
+  <PropertyGroup>
+    <TestDependsOn>_getTestProjects</TestDependsOn>
+    <!-- Runs ResolveReferences once up front in order to ensure we don't run it for the first time concurrently during testing.
+         This is needed to avoid sharing violations when RAR and ResolvePackageAssets write out state files. -->
+    <TestDependsOn Condition="'$(ShouldVerifyClosure)' == 'true' OR '$(ShouldVerifyTypes)' == 'true'">$(TestDependsOn);ResolveReferences</TestDependsOn>
+  </PropertyGroup>
+  <!-- Runs all tests scenarios for this project -->
   <Target Name="Test"
-          DependsOnTargets="_getTestProjects"
+          DependsOnTargets="$(TestDependsOn)"
           Inputs="@(TestProject);$(MSBuildAllProjects);$(ProjectAssetsFile)"
           Outputs="@(TestProject->'%(Semaphore)')">
     <MSBuild Projects="@(TestProject)" Targets="_test" BuildInParallel="true" />
