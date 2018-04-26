@@ -46,6 +46,7 @@ public class Test
 
         public bool RunTest()
         {
+            DestroyObj();
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
