@@ -4112,6 +4112,29 @@ mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig)
 	}
 	return FALSE;
 }
+
+MonoMethod*
+mini_method_to_shared (MonoMethod *method)
+{
+	if (!mono_method_is_generic_impl (method))
+		return NULL;
+
+	ERROR_DECL (error);
+
+	// This pattern is based on add_extra_method_with_depth.
+
+	if (mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE))
+		// gshared over reference type
+		method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
+	else if (mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE))
+		// gshared over valuetype (or primitive?)
+		method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
+	else
+		return NULL;
+	mono_error_assert_ok (error);
+	return method;
+}
+
 #else
 
 gboolean
@@ -4148,6 +4171,12 @@ gboolean
 mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig)
 {
 	return FALSE;
+}
+
+MonoMethod*
+mini_method_to_shared (MonoMethod *method)
+{
+	return NULL;
 }
 
 #endif /* !MONO_ARCH_GSHAREDVT_SUPPORTED */

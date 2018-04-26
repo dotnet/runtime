@@ -792,6 +792,8 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 		 */
 		if (domain_jit_info (domain)->jump_target_got_slot_hash) {
 			GSList *list, *tmp;
+			MonoMethod *shared_method = mini_method_to_shared (m);
+			m = shared_method ? shared_method : m;
 
 			mono_domain_lock (domain);
 			list = (GSList *)g_hash_table_lookup (domain_jit_info (domain)->jump_target_got_slot_hash, m);
