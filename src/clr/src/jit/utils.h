@@ -374,6 +374,17 @@ public:
 #endif // DEBUG
     }
 
+    // When dumping stuff we could try to read a PhasedVariable
+    // This method tells us whether we should read the PhasedVariable
+    bool HasFinalValue() const
+    {
+#ifdef DEBUG
+        return (const_cast<PhasedVar*>(this))->m_writePhase == false;
+#else
+        return true;
+#endif // DEBUG
+    }
+
     // Functions/operators to write the value. Must be in the write phase.
 
     PhasedVar& operator=(const T& value)
