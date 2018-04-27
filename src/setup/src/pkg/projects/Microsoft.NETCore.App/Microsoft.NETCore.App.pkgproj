@@ -19,26 +19,10 @@
     <IncludeAllRuntimePackagesInPlatformManifest Condition="'$(BuildFullPlatformManifest)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
   </PropertyGroup>
 
-  <Import Project="netcoreapp1.0.props" />
-  <Import Project="netcoreapp1.1.props" />
-
   <!-- Identity / Reference package content -->
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
     <!-- reference RID specific packages to generate lineup -->
     <ProjectReference Include="@(Project)" />
-
-    <!-- reference dependencies from previous versions -->
-    <Dependency Include="@(NETCoreApp10Dependency)">
-      <TargetFramework>.NETCoreApp1.0</TargetFramework>
-    </Dependency>
-    <Dependency Include="@(NETCoreApp11Dependency)">
-      <TargetFramework>.NETCoreApp1.1</TargetFramework>
-    </Dependency>
-
-    <!-- temporarily disable netcoreapp2.0 until https://github.com/dotnet/core-setup/issues/2437 is fixed -->
-    <Dependency Include="_._">
-      <TargetFramework>.NETCoreApp2.0</TargetFramework>
-    </Dependency>
 
     <!-- references the host packages -->
     <Dependency Include="Microsoft.NETCore.DotNetHostPolicy">
