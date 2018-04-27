@@ -82,9 +82,34 @@ namespace System.Net.Tests
             yield return new object[] { "Content-Type:application.json;charset=,", Encoding.Default };
             yield return new object[] { "Content-Type:application.json;charset=\"unicode", Encoding.Default };
             yield return new object[] { "Content-Type:application/json;charset=NoSuchEncoding", Encoding.Default };
-            yield return new object[] { "Content-Type:application/json;charset=unicode; boundary=something", Encoding.Default };
+
+            yield return new object[] { "Content-Type:application/json;charset=unicode   ; boundary=something", Encoding.Unicode };
+            yield return new object[] { "Content-Type:application/json;charset=unicode ; ; boundary=something", Encoding.Unicode };
+            yield return new object[] { "Content-Type:application/json;boundary=something; charset=unicode", Encoding.Unicode };
+            yield return new object[] { "Content-Type:application/json;boundary=something;charset=unicode   ", Encoding.Unicode };
+            yield return new object[] { "Content-Type:application/json;boundary=something;charset=unicode   ;", Encoding.Unicode };
+            yield return new object[] { "Content-Type:application/json;boundary=something; charset=unicode ;", Encoding.Unicode };
+
+            yield return new object[] { "Content-Type:application.json;charset=\"unicode\";", Encoding.Unicode };
+            yield return new object[] { "Content-Type:application.json; charset=\"unicode;\"", Encoding.Default };
+            yield return new object[] { "Content-Type:application/json;charset=\"unicode\" ; boundary=something", Encoding.Unicode };
+            yield return new object[] { "Content-Type:application/json; charset=\"unicode;\";boundary=something", Encoding.Default };
+            yield return new object[] { "Content-Type:application/json;charset=\" unicode \"; boundary=something", Encoding.Unicode };
+            yield return new object[] { "Content-Type:application/json; charset=\"unicode ;\"; boundary=something", Encoding.Default };
+            yield return new object[] { "Content-Type:application/json;charset=\" unicode ;\"; boundary=something", Encoding.Default };
 
             yield return new object[] { "Unknown-Header: Test", Encoding.Default };
+
+            if (!PlatformDetection.IsFullFramework)
+            {
+                // .NET Framework wrongly uses ' ' and ',' as delimiter for parsing Content-Type header.
+                // "charset=unicode;" will be parsed as "unicode;" for charSet parameter. Then the following GetEncoding(charSet)
+                // will fail with ArgumentException. In this case, Encoding.Default will be chosen for ContentEncoding,
+                // even if client explicitly specifies the Unicode encoding in the header.
+                yield return new object[] { "Content-Type:application/json;charset=unicode; boundary=something", Encoding.Unicode };
+                yield return new object[] { "Content-Type:application/json;boundary=something; charset=unicode;", Encoding.Unicode };
+                yield return new object[] { "Content-Type:application/json;boundary=something; charset=unicode;   ", Encoding.Unicode };
+            }
         }
 
         [Theory]
