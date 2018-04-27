@@ -118,7 +118,7 @@ namespace Microsoft.Win32.RegistryTests
         {
             // ExpandEnvironmentStrings is converting "C:\Program Files (Arm)" to "C:\Program Files (x86)".
             if (envVariableName == "ProgramFiles" && PlatformDetection.IsArmProcess)
-                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/28856)]
+                return; // see https://github.com/dotnet/corefx/issues/28856
 
             string value = "%" + envVariableName + "%";
             Registry.SetValue(TestRegistryKey.Name, valueName, value);
