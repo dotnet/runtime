@@ -38,8 +38,8 @@
             // The way we do this is to shift the managed target to the left by one bit and then set the
             // least significant bit to 1.  This works because MethodDesc* are always 8-byte aligned.
             //
-            lsl             x9, x9, #1
-            orr             x9, x9, #1
+            lsl             \HiddenArg, \HiddenArg, #1
+            orr             \HiddenArg, \HiddenArg, #1
         .endif
 
         EPILOG_BRANCH_REG   x9 
