@@ -25,6 +25,9 @@
     <Compile Include="System\Windows\Media\Animation\KeyTime.cs" />
     <Compile Include="System\Windows\Media\Animation\RepeatBehavior.cs" />
     <Compile Include="System\Windows\Media\Media3D\Matrix3D.cs" />
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs">
+      <Link>Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />
