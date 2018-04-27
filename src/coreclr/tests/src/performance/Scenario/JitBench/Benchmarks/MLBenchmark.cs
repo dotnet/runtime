@@ -5,12 +5,27 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Reflection;
 using Microsoft.Xunit.Performance.Api;
+using System.Runtime.InteropServices;
 
 namespace JitBench
 {
     class Word2VecBenchmark : MLBenchmark
     {
         public Word2VecBenchmark() : base("Word2Vec") { }
+
+        public override bool IsArchitectureSupported(Architecture arch)
+        {
+            //Word2Vec uses large amounts of virtual address space which it may or may not exhaust 
+            //when running on x86. In the case I investigated there was still a few 100MB free,
+            //but it was sufficiently fragmented that the largest block was less than 32MB which
+            //is what the GC wants for a new LOH segment. The GC behavior here is by-design.
+            //Tiered jitting increases the memory usage (more code) and may cause different
+            //fragmentation patterns - arguably either 'by design' or 'known issue that won't change
+            //unless customers tell us its a problem'. I'm OK telling people not to use tiered jitting 
+            //if their app already uses most of the address space on x86, and having an intermitently 
+            //failing test in a perf suite won't give us useful info hence x64 only for this one.
+            return arch == Architecture.X64;
+        }
 
         protected override string ExecutableName => "Word2VecScenario.dll";
 

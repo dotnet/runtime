@@ -129,6 +129,11 @@ namespace JitBench
             await PrepareDotNet(output);
             foreach (Benchmark benchmark in Benchmarks)
             {
+                if(!benchmark.IsArchitectureSupported(Architecture))
+                {
+                    output.WriteLine("Benchmark " + benchmark.Name + " does not support architecture " + Architecture + ". Skipping setup.");
+                    continue;
+                }
                 await benchmark.Setup(DotNetInstallation, OutputDir, UseExistingSetup, output);
             }
         }
@@ -163,6 +168,11 @@ namespace JitBench
             output.WriteLine("");
             foreach (Benchmark benchmark in Benchmarks)
             {
+                if (!benchmark.IsArchitectureSupported(Architecture))
+                {
+                    output.WriteLine("Benchmark " + benchmark.Name + " does not support architecture " + Architecture + ". Skipping run.");
+                    continue;
+                }
                 BenchmarkRunResults.AddRange(benchmark.Run(this, output));
             }
         }
