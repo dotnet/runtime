@@ -1,11 +1,15 @@
-Microsoft.Win32.Registry.Tests
-Microsoft.Win32.SystemEvents.Tests # https://github.com/dotnet/coreclr/issues/17582
+Microsoft.Win32.Registry.Tests       # https://github.com/dotnet/corefx/issues/28856
+Microsoft.Win32.SystemEvents.Tests   # https://github.com/dotnet/corefx/issues/29166
 System.Console.Tests
-System.Data.SqlClient.Tests
-System.Diagnostics.Process.Tests
-System.Drawing.Common.Tests
-System.Net.HttpListener.Tests      # https://github.com/dotnet/coreclr/issues/17584
-System.IO.FileSystem.Tests
-System.IO.Ports.Tests
-System.Management.Tests
-System.Runtime.Tests               # https://github.com/dotnet/coreclr/issues/17585
+System.Data.SqlClient.Tests          # https://github.com/dotnet/coreclr/issues/16001
+System.Diagnostics.Process.Tests     # https://github.com/dotnet/coreclr/issues/16001
+System.Diagnostics.PerformanceCounter.Tests # https://github.com/dotnet/coreclr/issues/17799
+System.Diagnostics.StackTrace.Tests  # https://github.com/dotnet/coreclr/issues/17557 -- JitStress=1; https://github.com/dotnet/coreclr/issues/17558 -- JitStress=2
+System.Drawing.Common.Tests          # https://github.com/dotnet/coreclr/issues/16001
+System.IO.FileSystem.Tests           # https://github.com/dotnet/coreclr/issues/16001
+System.IO.Ports.Tests                # https://github.com/dotnet/coreclr/issues/16001
+System.Management.Tests              # https://github.com/dotnet/coreclr/issues/16001
+System.Net.HttpListener.Tests        # https://github.com/dotnet/coreclr/issues/17584
+System.Runtime.Tests                 # https://github.com/dotnet/coreclr/issues/17585
+System.Security.Cryptography.X509Certificates.Tests # https://github.com/dotnet/coreclr/issues/17801
+System.Text.RegularExpressions.Tests # https://github.com/dotnet/coreclr/issues/17754 -- timeout -- JitMinOpts only
