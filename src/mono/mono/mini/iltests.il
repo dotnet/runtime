@@ -2606,7 +2606,6 @@ END:
 
 	.method public static default int32 test_0_wrap_non_exception_throws () cil managed
 	{
-	  .custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 	  .try {
 	  	    newobj instance void class [mscorlib]System.Object::'.ctor'()
 			throw

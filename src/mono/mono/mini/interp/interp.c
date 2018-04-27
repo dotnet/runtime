@@ -685,16 +685,21 @@ stackval_to_data_addr (MonoType *type_, stackval *val)
 static MONO_NEVER_INLINE void
 interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, gconstpointer ip, gboolean rethrow)
 {
+	ERROR_DECL (error);
 	MonoLMFExt ext;
 
 	interp_push_lmf (&ext, frame);
 	frame->ip = ip;
 	frame->ex = ex;
 
-	if (!rethrow) {
-		ex->stack_trace = NULL;
-		ex->trace_ips = NULL;
+	if (mono_object_isinst_checked ((MonoObject *) ex, mono_defaults.exception_class, error)) {
+		MonoException *mono_ex = (MonoException *) ex;
+		if (!rethrow) {
+			mono_ex->stack_trace = NULL;
+			mono_ex->trace_ips = NULL;
+		}
 	}
+	mono_error_assert_ok (error);
 
 	MonoContext ctx;
 	memset (&ctx, 0, sizeof (MonoContext));
