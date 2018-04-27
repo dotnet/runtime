@@ -114,6 +114,10 @@ namespace Microsoft.Win32.RegistryTests
         [MemberData(nameof(TestEnvironment))]
         public void SetValueWithEnvironmentVariable(string valueName, string envVariableName, string expectedVariableValue)
         {
+            // ExpandEnvironmentStrings is converting "C:\Program Files (Arm)" to "C:\Program Files (x86)".
+            if (envVariableName == "ProgramFiles" && PlatformDetection.IsArmProcess)
+                return; // see https://github.com/dotnet/corefx/issues/28856
+
             string value = "%" + envVariableName + "%";
             TestRegistryKey.SetValue(valueName, value);
 
