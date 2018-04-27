@@ -12,7 +12,7 @@ using System.IO;
 
 namespace CoreXml.Test.XLinq
 {
-    public partial class FunctionalTests : TestModule
+    public partial class XNodeBuilderFunctionalTests : TestModule
     {
         public partial class XNodeBuilderTests : XLinqTestCase
         {

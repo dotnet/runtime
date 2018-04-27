@@ -13,7 +13,7 @@ using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
-    public partial class FunctionalTests : TestModule
+    public partial class XNodeBuilderFunctionalTests : TestModule
     {
         // Type is CoreXml.Test.XLinq.FunctionalTests
         // Test Module
@@ -22,7 +22,7 @@ namespace CoreXml.Test.XLinq
         public static void RunTests()
         {
             TestInput.CommandLine = "";
-            FunctionalTests module = new FunctionalTests();
+            XNodeBuilderFunctionalTests module = new XNodeBuilderFunctionalTests();
             module.Init();
 
             {

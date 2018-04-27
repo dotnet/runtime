@@ -12,7 +12,7 @@ using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
-    public partial class FunctionalTests : TestModule
+    public partial class XNodeReaderFunctionalTests : TestModule
     {
         // Type is CoreXml.Test.XLinq.FunctionalTests
         // Test Module
@@ -21,7 +21,7 @@ namespace CoreXml.Test.XLinq
         public static void RunTests()
         {
             TestInput.CommandLine = "";
-            FunctionalTests module = new FunctionalTests();
+            XNodeReaderFunctionalTests module = new XNodeReaderFunctionalTests();
             module.Init();
 
             module.AddChild(new XNodeReaderTests() { Attribute = new TestCaseAttribute() { Name = "XNodeReader", Desc = "XLinq XNodeReader Tests" } });

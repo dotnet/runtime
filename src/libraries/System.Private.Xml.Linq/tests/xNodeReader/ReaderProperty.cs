@@ -8,7 +8,7 @@ using Microsoft.Test.ModuleCore;
 
 namespace CoreXml.Test.XLinq
 {
-    public partial class FunctionalTests : TestModule
+    public partial class XNodeReaderFunctionalTests : TestModule
     {
 
         public partial class XNodeReaderTests : XLinqTestCase
