@@ -60,7 +60,6 @@ public:
 
     BOOLARRAYREF rgiLastFrameFromForeignExceptionStackTrace;
 
-    OBJECTREF getSourceLineInfo;
     int iFrameCount;
 
 protected:
