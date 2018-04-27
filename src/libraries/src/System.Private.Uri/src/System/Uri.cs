@@ -7,6 +7,7 @@ using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System
@@ -558,31 +559,28 @@ namespace System
                         // Hence anything like x:sdsd is a relative path and be added to the baseUri Path
                         break;
                     }
-                    string scheme = relativeStr.Substring(0, i);
-                    fixed (char* sptr = scheme)
+
+                    UriParser syntax = null;
+                    if (CheckSchemeSyntax(relativeStr.AsSpan(0, i), ref syntax) == ParsingError.None)
                     {
-                        UriParser syntax = null;
-                        if (CheckSchemeSyntax(sptr, (ushort)scheme.Length, ref syntax) == ParsingError.None)
+                        if (baseUri.Syntax == syntax)
                         {
-                            if (baseUri.Syntax == syntax)
+                            //Remove the scheme for backward Uri parsers compatibility
+                            if (i + 1 < relativeStr.Length)
                             {
-                                //Remove the scheme for backward Uri parsers compatibility
-                                if (i + 1 < relativeStr.Length)
-                                {
-                                    relativeStr = relativeStr.Substring(i + 1);
-                                }
-                                else
-                                {
-                                    relativeStr = string.Empty;
-                                }
+                                relativeStr = relativeStr.Substring(i + 1);
                             }
                             else
                             {
-                                // This is the place where we switch the scheme.
-                                // Return relative part as the result Uri.
-                                result = relativeStr;
-                                return ParsingError.None;
+                                relativeStr = string.Empty;
                             }
+                        }
+                        else
+                        {
+                            // This is the place where we switch the scheme.
+                            // Return relative part as the result Uri.
+                            result = relativeStr;
+                            return ParsingError.None;
                         }
                     }
                     break;
@@ -3744,12 +3742,7 @@ namespace System
             }
 
             //Check the syntax, canonicalize  and avoid a GC call
-            char* schemePtr = stackalloc char[end - idx];
-            for (length = 0; idx < end; ++idx)
-            {
-                schemePtr[length++] = uriString[idx];
-            }
-            err = CheckSchemeSyntax(schemePtr, length, ref syntax);
+            err = CheckSchemeSyntax(new ReadOnlySpan<char>(uriString + idx, end - idx), ref syntax);
             if (err != ParsingError.None)
             {
                 return 0;
@@ -3915,64 +3908,45 @@ namespace System
         //
         // This will check whether a scheme string follows the rules
         //
-        private static unsafe ParsingError CheckSchemeSyntax(char* ptr, ushort length, ref UriParser syntax)
+        private static unsafe ParsingError CheckSchemeSyntax(ReadOnlySpan<char> span, ref UriParser syntax)
         {
-            //First character must be an alpha
+            char ToLowerCaseAscii(char c) => (uint)(c - 'A') <= 'Z' - 'A' ? (char)(c | 0x20) : c;
+
+            if (span.Length == 0)
             {
-                char c = *ptr;
-                if (c >= 'a' && c <= 'z')
-                {
-                    ;
-                }
-                else if (c >= 'A' && c <= 'Z')
-                {
-                    *ptr = (char)(c | 0x20);    //make it lowercase
-                }
-                else
-                {
-                    return ParsingError.BadScheme;
-                }
+                return ParsingError.BadScheme;
             }
 
-            for (ushort i = 1; i < length; ++i)
+            // The first character must be an alpha.  Validate that and store it as lower-case, as
+            // all of the fast-path checks need that value.
+            char firstLower = span[0];
+            if ((uint)(firstLower - 'A') <= 'Z' - 'A')
             {
-                char c = ptr[i];
-                if (c >= 'a' && c <= 'z')
-                {
-                    ;
-                }
-                else if (c >= 'A' && c <= 'Z')
-                {
-                    ptr[i] = (char)(c | 0x20);    //make it lowercase
-                }
-                else if (c >= '0' && c <= '9')
-                {
-                    ;
-                }
-                else if (c == '+' || c == '-' || c == '.')
-                {
-                    ;
-                }
-                else
-                {
-                    return ParsingError.BadScheme;
-                }
+                firstLower = (char)(firstLower | 0x20);
+            }
+            else if ((uint)(firstLower - 'a') > 'z' - 'a')
+            {
+                return ParsingError.BadScheme;
             }
 
             // Special-case common and known schemes to avoid allocations and dictionary lookups in these cases.
-            switch (length)
+            const int wsMask = 'w' << 8 | 's';
+            const int ftpMask = 'f' << 16 | 't' << 8 | 'p';
+            const int wssMask = 'w' << 16 | 's' << 8 | 's';
+            const int fileMask = 'f' << 24 | 'i' << 16 | 'l' << 8 | 'e';
+            const int httpMask = 'h' << 24 | 't' << 16 | 't' << 8 | 'p';
+            const int mailMask = 'm' << 24 | 'a' << 16 | 'i' << 8 | 'l';
+            switch (span.Length)
             {
                 case 2:
-                    if (ptr[0] == 'w' && ptr[1] == 's')
+                    if (wsMask == (firstLower << 8 | ToLowerCaseAscii(span[1])))
                     {
                         syntax = UriParser.WsUri;
                         return ParsingError.None;
                     }
                     break;
                 case 3:
-                    const int ftpMask = 'f' << 16 | 't' << 8 | 'p';
-                    const int wssMask = 'w' << 16 | 's' << 8 | 's';
-                    switch (ptr[0] << 16 | ptr[1] << 8 | ptr[2])
+                    switch (firstLower << 16 | ToLowerCaseAscii(span[1]) << 8 | ToLowerCaseAscii(span[2]))
                     {
                         case ftpMask:
                             syntax = UriParser.FtpUri;
@@ -3983,9 +3957,7 @@ namespace System
                     }
                     break;
                 case 4:
-                    const int httpMask = 'h' << 24 | 't' << 16 | 't' << 8 | 'p';
-                    const int fileMask = 'f' << 24 | 'i' << 16 | 'l' << 8 | 'e';
-                    switch (ptr[0] << 24 | ptr[1] << 16 | ptr[2] << 8 | ptr[3])
+                    switch (firstLower << 24 | ToLowerCaseAscii(span[1]) << 16 | ToLowerCaseAscii(span[2]) << 8 | ToLowerCaseAscii(span[3]))
                     {
                         case httpMask:
                             syntax = UriParser.HttpUri;
@@ -3996,14 +3968,16 @@ namespace System
                     }
                     break;
                 case 5:
-                    if (ptr[0] == 'h' && ptr[1] == 't' && ptr[2] == 't' && ptr[3] == 'p' && ptr[4] == 's')
+                    if (httpMask == (firstLower << 24 | ToLowerCaseAscii(span[1]) << 16 | ToLowerCaseAscii(span[2]) << 8 | ToLowerCaseAscii(span[3])) &&
+                        ToLowerCaseAscii(span[4]) == 's')
                     {
                         syntax = UriParser.HttpsUri;
                         return ParsingError.None;
                     }
                     break;
                 case 6:
-                    if (ptr[0] == 'm' && ptr[1] == 'a' && ptr[2] == 'i' && ptr[3] == 'l' && ptr[4] == 't' && ptr[5] == 'o')
+                    if (mailMask == (firstLower << 24 | ToLowerCaseAscii(span[1]) << 16 | ToLowerCaseAscii(span[2]) << 8 | ToLowerCaseAscii(span[3])) &&
+                        ToLowerCaseAscii(span[4]) == 't' && ToLowerCaseAscii(span[5]) == 'o')
                     {
                         syntax = UriParser.MailToUri;
                         return ParsingError.None;
@@ -4011,8 +3985,26 @@ namespace System
                     break;
             }
 
-            // Not special-cased scheme.  Look up the syntax based on the substring.
-            string str = new string(ptr, 0, length);
+            // The scheme is not known.  Validate all of the characters in the input.
+            for (int i = 1; i < span.Length; i++)
+            {
+                char c = span[i];
+                if ((uint)(c - 'a') > 'z' - 'a' &&
+                    (uint)(c - 'A') > 'Z' - 'A' &&
+                    (uint)(c - '0') > '9' - '0' &&
+                    c != '+' && c != '-' && c != '.')
+                {
+                    return ParsingError.BadScheme;
+                }
+            }
+
+            // Then look up the syntax in a string-based table.
+            string str = new string('\0', span.Length);
+            fixed (char* ptr = str)
+            {
+                int charsWritten = span.ToLowerInvariant(new Span<char>(ptr, str.Length));
+                Debug.Assert(charsWritten == str.Length);
+            }
             syntax = UriParser.FindOrFetchAsUnknownV1Syntax(str);
             return ParsingError.None;
         }
