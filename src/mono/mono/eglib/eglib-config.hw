@@ -35,8 +35,9 @@ typedef int pid_t;
 #define GINT_TO_POINTER(v)     ((gpointer)(intptr_t) (v))
 #define GUINT_TO_POINTER(v)    ((gpointer)(intptr_t) (v))
 
-#define STDOUT_FILENO (int)(intptr_t)stdout
-#define STDERR_FILENO (int)(intptr_t)stderr
+// https://msdn.microsoft.com/en-us/library/40bbyw78.aspx
+#define STDOUT_FILENO (1)
+#define STDERR_FILENO (2)
 
 /* FIXME: what should this be ?*/
 #define X_OK 4 /* This is really read */
