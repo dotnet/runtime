@@ -7193,8 +7193,8 @@ mono_ldstr_checked (MonoDomain *domain, MonoImage *image, guint32 idx, MonoError
 		MonoString *str = (MonoString *)mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL, error);
 		return str;
 	} else {
-		if (!mono_verifier_verify_string_signature (image, idx, NULL))
-			return NULL; /*FIXME we should probably be raising an exception here*/
+		if (!mono_verifier_verify_string_signature (image, idx, error))
+			return NULL;
 		MonoString *str = mono_ldstr_metadata_sig (domain, mono_metadata_user_string (image, idx), error);
 		return str;
 	}
@@ -7270,8 +7270,8 @@ mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
 
 	error_init (error);
 
-	if (!mono_verifier_verify_string_signature (image, idx, NULL))
-		return NULL; /*FIXME we should probably be raising an exception here*/
+	if (!mono_verifier_verify_string_signature (image, idx, error))
+		return NULL;
 	str = mono_metadata_user_string (image, idx);
 
 	len2 = mono_metadata_decode_blob_size (str, &str);

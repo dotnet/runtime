@@ -783,10 +783,8 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 
 	mono_class_init (method->klass);
 
-	if (!mono_verifier_verify_cattr_content (image, method, data, len, NULL)) {
-		set_custom_attr_fmt_error (error);
+	if (!mono_verifier_verify_cattr_content (image, method, data, len, error))
 		return NULL;
-	}
 
 	if (len == 0) {
 		attr = mono_object_new_checked (mono_domain_get (), method->klass, error);
@@ -983,10 +981,8 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 
 	error_init (error);
 
-	if (!mono_verifier_verify_cattr_content (image, method, data, len, NULL)) {
-		mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Binary format of the specified custom attribute was invalid.");
+	if (!mono_verifier_verify_cattr_content (image, method, data, len, error))
 		return;
-	}
 
 	mono_class_init (method->klass);
 	
@@ -1395,9 +1391,7 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 			}
 		}
 
-		if (!mono_verifier_verify_cattr_blob (image, cols [MONO_CUSTOM_ATTR_VALUE], NULL)) {
-			/*FIXME raising an exception here doesn't make any sense*/
-			g_warning ("Invalid custom attribute blob on image %s for index %x", image->name, idx);
+		if (!mono_verifier_verify_cattr_blob (image, cols [MONO_CUSTOM_ATTR_VALUE], error)) {
 			g_list_free (list);
 			g_free (ainfo);
 			return NULL;

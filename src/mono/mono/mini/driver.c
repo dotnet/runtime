@@ -1120,7 +1120,10 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 		}
 		cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, args->opts), mono_get_root_domain (), (JitFlags)JIT_FLAG_DISCARD_RESULTS, 0, -1);
 		if (cfg->exception_type != MONO_EXCEPTION_NONE) {
-			printf ("Compilation of %s failed with exception '%s':\n", mono_method_full_name (cfg->method, TRUE), cfg->exception_message);
+			const char *msg = cfg->exception_message;
+			if (cfg->exception_type == MONO_EXCEPTION_MONO_ERROR)
+				msg = mono_error_get_message (&cfg->error);
+			g_print ("Compilation of %s failed with exception '%s':\n", mono_method_full_name (cfg->method, TRUE), msg);
 			fail_count ++;
 		}
 		mono_destroy_compile (cfg);

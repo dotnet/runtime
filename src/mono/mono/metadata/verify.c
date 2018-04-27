@@ -31,6 +31,7 @@
 #include <mono/metadata/attrdefs.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/monobitset.h>
+#include <mono/utils/mono-error-internals.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -4539,17 +4540,16 @@ do_localloc (VerifyContext *ctx)
 static void
 do_ldstr (VerifyContext *ctx, guint32 token)
 {
-	GSList *error = NULL;
+	ERROR_DECL (error);
 	if (ctx->method->wrapper_type == MONO_WRAPPER_NONE && !image_is_dynamic (ctx->image)) {
 		if (mono_metadata_token_code (token) != MONO_TOKEN_STRING) {
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string token %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 			return;
 		}
 
-		if (!mono_verifier_verify_string_signature (ctx->image, mono_metadata_token_index (token), &error)) {
-			if (error)
-				ctx->list = g_slist_concat (ctx->list, error);
-			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string index %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		if (!mono_verifier_verify_string_signature (ctx->image, mono_metadata_token_index (token), error)) {
+			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string index %x at 0x%04x due to: %", token, ctx->ip_offset, mono_error_get_message (error)), MONO_EXCEPTION_BAD_IMAGE);
+			mono_error_cleanup (error);
 			return;
 		}
 	}
