@@ -29,10 +29,7 @@ namespace System.Diagnostics
         {
             foreach (MetadataReaderProvider provider in _metadataCache.Values)
             {
-                if (provider != null)
-                {
-                    provider.Dispose();
-                }
+                provider?.Dispose();
             }
 
             _metadataCache.Clear();
@@ -126,11 +123,7 @@ namespace System.Diagnostics
             MetadataReaderProvider provider;
             if (_metadataCache.TryGetValue(cacheKey, out provider))
             {
-                if (provider == null)
-                {
-                    return null;
-                }
-                return provider.GetMetadataReader();
+                return provider?.GetMetadataReader();
             }
 
             provider = (inMemoryPdbAddress != IntPtr.Zero) ?
