@@ -291,6 +291,10 @@ void Compiler::lvaInitTypeRef()
         lvaTable[dummy].lvType = TYP_INT;
     }
 
+    // Allocate the lvaOutgoingArgSpaceVar now because we can run into problems in the
+    // emitter when the varNum is greater that 32767 (see emitLclVarAddr::initLclVarAddr)
+    lvaAllocOutgoingArgSpaceVar();
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -1360,6 +1364,13 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum)
     {
         return (unsigned)ICorDebugInfo::TYPECTXT_ILNUM;
     }
+
+#if FEATURE_FIXED_OUT_ARGS
+    if (varNum == lvaOutgoingArgSpaceVar)
+    {
+        return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM; // Cannot be mapped
+    }
+#endif // FEATURE_FIXED_OUT_ARGS
 
     // Now mutate varNum to remove extra parameters from the count.
     if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum > (unsigned)info.compTypeCtxtArg)
@@ -2581,6 +2592,7 @@ unsigned Compiler::lvaLclSize(unsigned varNum)
 
         case TYP_LCLBLK:
 #if FEATURE_FIXED_OUT_ARGS
+            // Note that this operation performs a read of a PhasedVar
             noway_assert(varNum == lvaOutgoingArgSpaceVar);
             return lvaOutgoingArgSpaceSize;
 #else // FEATURE_FIXED_OUT_ARGS
@@ -2624,6 +2636,7 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 
         case TYP_LCLBLK:
 #if FEATURE_FIXED_OUT_ARGS
+            // Note that this operation performs a read of a PhasedVar
             noway_assert(lvaOutgoingArgSpaceSize >= 0);
             noway_assert(varNum == lvaOutgoingArgSpaceVar);
             return lvaOutgoingArgSpaceSize;
@@ -3974,8 +3987,6 @@ void Compiler::lvaMarkLocalVars()
             lvaTable[info.compLvFrameListRoot].lvRefCntWtd = 2 * BB_UNITY_WEIGHT;
         }
     }
-
-    lvaAllocOutgoingArgSpaceVar();
 
 #if !FEATURE_EH_FUNCLETS
 
@@ -6696,7 +6707,27 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         printf(" %7s ", varTypeName(type));
         if (genTypeSize(type) == 0)
         {
-            printf("(%2d) ", lvaLclSize(lclNum));
+#if FEATURE_FIXED_OUT_ARGS
+            if (lclNum == lvaOutgoingArgSpaceVar)
+            {
+                // Since lvaOutgoingArgSpaceSize is a PhasedVar we can't read it for Dumping until
+                // after we set it to something.
+                if (lvaOutgoingArgSpaceSize.HasFinalValue())
+                {
+                    // A PhasedVar<T> can't be directly used as an arg to a variadic function
+                    unsigned value = lvaOutgoingArgSpaceSize;
+                    printf("(%2d) ", value);
+                }
+                else
+                {
+                    printf("(na) "); // The value hasn't yet been determined
+                }
+            }
+            else
+#endif // FEATURE_FIXED_OUT_ARGS
+            {
+                printf("(%2d) ", lvaLclSize(lclNum));
+            }
         }
     }
     else
@@ -6709,15 +6740,17 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             // missing var numbers if these aren't printed.
             printf(";* ");
         }
-        else
 #if FEATURE_FIXED_OUT_ARGS
-            if ((lclNum == lvaOutgoingArgSpaceVar) && (lvaLclSize(lclNum) == 0))
+        // Since lvaOutgoingArgSpaceSize is a PhasedVar we can't read it for Dumping until
+        // after we set it to something.
+        else if ((lclNum == lvaOutgoingArgSpaceVar) && lvaOutgoingArgSpaceSize.HasFinalValue() &&
+                 (lvaOutgoingArgSpaceSize == 0))
         {
             // Similar to above; print this anyway.
             printf(";# ");
         }
+#endif // FEATURE_FIXED_OUT_ARGS
         else
-#endif
         {
             printf(";  ");
         }
