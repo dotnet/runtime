@@ -22,14 +22,13 @@ namespace System.Net.Http.Tests
 
         public static IEnumerable<object[]> Get_MemberData() =>
             from ssl in new[] { false, true }
-            from connectionPerRequest in new[] { false, true }
             from chunkedResponse in new[] { false, true }
             from responseLength in new[] { 1, 100_000 }
-            select new object[] { ssl, connectionPerRequest, chunkedResponse, responseLength };
+            select new object[] { ssl, chunkedResponse, responseLength };
 
-        [Benchmark(InnerIterationCount = InnerIterationCount, Skip = "https://github.com/dotnet/corefx/issues/29308")]
+        [Benchmark(InnerIterationCount = InnerIterationCount)]
         [MemberData(nameof(Get_MemberData))]
-        public async Task Get(bool ssl, bool connectionPerRequest, bool chunkedResponse, int responseLength)
+        public async Task Get(bool ssl, bool chunkedResponse, int responseLength)
         {
             using (var serverCert = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate())
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -38,7 +37,7 @@ namespace System.Net.Http.Tests
                 listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                 listener.Listen(int.MaxValue);
                 string responseText =
-                    "HTTP/1.1 200 OK\r\n" + (connectionPerRequest ? "Connection: close\r\n" : "") + (chunkedResponse ?
+                    "HTTP/1.1 200 OK\r\n" + (chunkedResponse ?
                     $"Transfer-Encoding: chunked\r\n\r\n{responseLength.ToString("X")}\r\n{new string('a', responseLength)}\r\n0\r\n\r\n" :
                     $"Content-Length: {responseLength}\r\n\r\n{new string('a', responseLength)}");
                 ReadOnlyMemory<byte> responseBytes = Encoding.UTF8.GetBytes(responseText);
@@ -67,10 +66,6 @@ namespace System.Net.Http.Tests
                                         {
                                             while (!string.IsNullOrEmpty(await reader.ReadLineAsync()));
                                             await stream.WriteAsync(responseBytes);
-                                            if (connectionPerRequest)
-                                            {
-                                                break;
-                                            }
                                         }
                                     }
                                 }
@@ -93,10 +88,6 @@ namespace System.Net.Http.Tests
                     }
 
                     var req = new HttpRequestMessage(HttpMethod.Get, uri);
-                    if (connectionPerRequest)
-                    {
-                        req.Headers.ConnectionClose = true;
-                    }
 
                     foreach (BenchmarkIteration iteration in Benchmark.Iterations)
                     {
