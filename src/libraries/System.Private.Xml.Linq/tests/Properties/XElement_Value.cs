@@ -14,7 +14,7 @@ using Microsoft.Test.ModuleCore;
 
 namespace CoreXml.Test.XLinq
 {
-    public partial class FunctionalTests : TestModule
+    public partial class PropertiesFunctionalTests : TestModule
     {
         public partial class PropertiesTests : XLinqTestCase
         {
