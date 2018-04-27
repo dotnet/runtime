@@ -42,6 +42,9 @@
     <Compile Include="ServiceNameCollectionTest.cs" />
     <Compile Include="NegotiateStreamKerberosTest.cs" />
     <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)\System\IO\DelegateStream.cs">
+      <Link>Common\System\IO\DelegateStream.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Capability.Security.cs">
       <Link>Common\System\Net\Capability.Security.cs</Link>
     </Compile>

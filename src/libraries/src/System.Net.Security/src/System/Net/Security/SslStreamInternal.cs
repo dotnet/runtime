@@ -265,9 +265,10 @@ namespace System.Net.Security
                     }
 
                     readBytes = await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize + payloadBytes).ConfigureAwait(false);
-                    if (readBytes < 0)
+                    Debug.Assert(readBytes >= 0);
+                    if (readBytes == 0)
                     {
-                        throw new IOException(SR.net_frame_read_size);
+                        throw new IOException(SR.net_io_eof);
                     }
 
                     // At this point, readBytes contains the size of the header plus body.
