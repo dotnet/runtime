@@ -260,25 +260,24 @@ namespace System.Diagnostics
 
         private void BuildStackFrame(int skipFrames, bool fNeedFileInfo)
         {
-            using (StackFrameHelper StackF = new StackFrameHelper(null))
+            StackFrameHelper StackF = new StackFrameHelper(null);
+
+            StackF.InitializeSourceInfo(0, fNeedFileInfo, null);
+
+            int iNumOfFrames = StackF.GetNumberOfFrames();
+
+            skipFrames += StackTrace.CalculateFramesToSkip(StackF, iNumOfFrames);
+
+            if ((iNumOfFrames - skipFrames) > 0)
             {
-                StackF.InitializeSourceInfo(0, fNeedFileInfo, null);
-
-                int iNumOfFrames = StackF.GetNumberOfFrames();
-
-                skipFrames += StackTrace.CalculateFramesToSkip(StackF, iNumOfFrames);
-
-                if ((iNumOfFrames - skipFrames) > 0)
+                method = StackF.GetMethodBase(skipFrames);
+                offset = StackF.GetOffset(skipFrames);
+                ILOffset = StackF.GetILOffset(skipFrames);
+                if (fNeedFileInfo)
                 {
-                    method = StackF.GetMethodBase(skipFrames);
-                    offset = StackF.GetOffset(skipFrames);
-                    ILOffset = StackF.GetILOffset(skipFrames);
-                    if (fNeedFileInfo)
-                    {
-                        strFileName = StackF.GetFilename(skipFrames);
-                        iLineNumber = StackF.GetLineNumber(skipFrames);
-                        iColumnNumber = StackF.GetColumnNumber(skipFrames);
-                    }
+                    strFileName = StackF.GetFilename(skipFrames);
+                    iLineNumber = StackF.GetLineNumber(skipFrames);
+                    iColumnNumber = StackF.GetColumnNumber(skipFrames);
                 }
             }
         }
