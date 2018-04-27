@@ -330,4 +330,8 @@ mono_threads_enter_gc_safe_region_unbalanced_internal (MonoStackData *stackdata)
 void
 mono_threads_exit_gc_safe_region_unbalanced_internal (gpointer cookie, MonoStackData *stackdata);
 
+// Set directory to store thread dumps captured by SIGQUIT
+void
+mono_set_thread_dump_dir(gchar* dir);
+
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */
