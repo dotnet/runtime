@@ -92,7 +92,7 @@ namespace System.Net
                 {
                     if (ContentType != null)
                     {
-                        string charSet = Helpers.GetAttributeFromHeader(ContentType, "charset");
+                        string charSet = Helpers.GetCharSetValueFromHeader(ContentType);
                         if (charSet != null)
                         {
                             try
@@ -290,20 +290,22 @@ namespace System.Net
             //
             // Get attribute off header value
             //
-            internal static string GetAttributeFromHeader(string headerValue, string attrName)
+            internal static string GetCharSetValueFromHeader(string headerValue)
             {
+                const string AttrName = "charset";
+
                 if (headerValue == null)
                     return null;
 
                 int l = headerValue.Length;
-                int k = attrName.Length;
+                int k = AttrName.Length;
 
                 // find properly separated attribute name
                 int i = 1; // start searching from 1
 
                 while (i < l)
                 {
-                    i = CultureInfo.InvariantCulture.CompareInfo.IndexOf(headerValue, attrName, i, CompareOptions.IgnoreCase);
+                    i = CultureInfo.InvariantCulture.CompareInfo.IndexOf(headerValue, AttrName, i, CompareOptions.IgnoreCase);
                     if (i < 0)
                         break;
                     if (i + k >= l)
@@ -351,7 +353,7 @@ namespace System.Net
                 {
                     for (j = i; j < l; j++)
                     {
-                        if (headerValue[j] == ' ' || headerValue[j] == ',')
+                        if (headerValue[j] == ';')
                             break;
                     }
 
