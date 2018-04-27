@@ -68,6 +68,12 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\WindowsRuntime\IRestrictedErrorInfo.cs">
+      <Link>Common\System\Runtime\InteropServices\WindowsRuntime\IRestrictedErrorInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs">
+      <Link>Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs</Link>
+    </Compile>
     <Compile Include="System\Windows\Point.cs" />
     <Compile Include="System\Windows\Rect.cs" />
     <Compile Include="System\Windows\Size.cs" />
