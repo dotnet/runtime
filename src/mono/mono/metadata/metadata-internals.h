@@ -768,6 +768,13 @@ mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo);
 gboolean
 mono_image_load_metadata (MonoImage *image, MonoCLIImageInfo *iinfo);
 
+const char*
+mono_metadata_string_heap_checked (MonoImage *meta, uint32_t table_index, MonoError *error);
+const char*
+mono_metadata_blob_heap_checked (MonoImage *meta, uint32_t table_index, MonoError *error);
+gboolean
+mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t, int idx, uint32_t *res, int res_size, MonoError *error);
+
 MonoType*
 mono_metadata_get_shared_type (MonoType *type);
 

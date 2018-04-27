@@ -1048,6 +1048,24 @@ mono_metadata_string_heap (MonoImage *meta, guint32 index)
 }
 
 /**
+ * mono_metadata_string_heap_checked:
+ * \param meta metadata context
+ * \param index index into the string heap.
+ * \param error set on error
+ * \returns an in-memory pointer to the \p index in the string heap.
+ * On failure returns NULL and sets \p error.
+ */
+const char *
+mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *error)
+{
+	if (G_UNLIKELY (!(index < meta->heap_strings.size))) {
+		mono_error_set_bad_image_by_name (error, meta->name ? meta->name : "unknown image", "string heap index %ud out bounds %u", index, meta->heap_strings.size);
+		return NULL;
+	}
+	return meta->heap_strings.data + index;
+}
+
+/**
  * mono_metadata_user_string:
  * \param meta metadata context
  * \param index index into the user string heap.
@@ -1072,6 +1090,24 @@ mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 {
 	g_assert (index < meta->heap_blob.size);
 	g_return_val_if_fail (index < meta->heap_blob.size, "");/*FIXME shouldn't we return NULL and check for index == 0?*/
+	return meta->heap_blob.data + index;
+}
+
+/**
+ * mono_metadata_blob_heap_checked:
+ * \param meta metadata context
+ * \param index index into the blob.
+ * \param error set on error
+ * \returns an in-memory pointer to the \p index in the Blob heap.  On failure sets \p error and returns NULL;
+ *
+ */
+const char *
+mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *error)
+{
+	if (G_UNLIKELY (!(index < meta->heap_blob.size))) {
+		mono_error_set_bad_image_by_name (error, meta->name ? meta->name : "unknown image", "blob heap index %u out of bounds %u", index, meta->heap_blob.size);
+		return NULL;
+	}
 	return meta->heap_blob.data + index;
 }
 
@@ -1137,6 +1173,59 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 		}
 		data += n;
 	}
+}
+
+/**
+ * mono_metadata_decode_row_checked:
+ * \param image the \c MonoImage the table belongs to
+ * \param t table to extract information from.
+ * \param idx index in the table.
+ * \param res array of \p res_size cols to store the results in
+ * \param error set on bounds error
+ *
+ *
+ * This decompresses the metadata element \p idx in the table \p t
+ * into the \c guint32 \p res array that has \p res_size elements.
+ *
+ * \returns TRUE if the read succeeded. Otherwise sets \p error and returns FALSE.
+ */
+gboolean
+mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t, int idx, guint32 *res, int res_size, MonoError *error)
+{
+	guint32 bitfield = t->size_bitfield;
+	int i, count = mono_metadata_table_count (bitfield);
+
+	const char *image_name = image && image->name ? image->name : "unknown image";
+
+	if (G_UNLIKELY (! (idx < t->rows && idx >= 0))) {
+		mono_error_set_bad_image_by_name (error, image_name, "row index %d out of bounds: %d rows", idx, t->rows);
+		return FALSE;
+	}
+	const char *data = t->base + idx * t->row_size;
+
+	if (G_UNLIKELY (res_size != count)) {
+		mono_error_set_bad_image_by_name (error, image_name, "res_size %d != count %d", res_size, count);
+		return FALSE;
+	}
+
+	for (i = 0; i < count; i++) {
+		int n = mono_metadata_table_size (bitfield, i);
+
+		switch (n) {
+		case 1:
+			res [i] = *data; break;
+		case 2:
+			res [i] = read16 (data); break;
+		case 4:
+			res [i] = read32 (data); break;
+		default:
+			mono_error_set_bad_image_by_name (error, image_name, "unexpected table [%d] size %d", i, n);
+			return FALSE;
+		}
+		data += n;
+	}
+
+	return TRUE;
 }
 
 /**

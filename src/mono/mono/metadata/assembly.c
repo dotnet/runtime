@@ -1152,6 +1152,24 @@ assemblyref_public_tok (MonoImage *image, guint32 key_index, guint32 flags)
 	return encode_public_tok ((guchar*)public_tok, len);
 }
 
+static gchar*
+assemblyref_public_tok_checked (MonoImage *image, guint32 key_index, guint32 flags, MonoError *error)
+{
+	const gchar *public_tok;
+	int len;
+
+	public_tok = mono_metadata_blob_heap_checked (image, key_index, error);
+	return_val_if_nok (error, NULL);
+	len = mono_metadata_decode_blob_size (public_tok, &public_tok);
+
+	if (flags & ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG) {
+		guchar token [8];
+		mono_digest_get_public_token (token, (guchar*)public_tok, len);
+		return encode_public_tok (token, 8);
+	}
+	return encode_public_tok ((guchar*)public_tok, len);
+}
+
 /**
  * mono_assembly_addref:
  * \param assembly the assembly to reference
@@ -1459,6 +1477,53 @@ load_reference_by_aname_individual_asmctx (MonoAssemblyName *aname, MonoAssembly
 	if (!reference)
 		reference = (MonoAssembly*)REFERENCE_MISSING;
 	return reference;
+}
+
+/**
+ * mono_assembly_get_assemblyref:
+ * \param image pointer to the \c MonoImage to extract the information from.
+ * \param index index to the assembly reference in the image.
+ * \param aname pointer to a \c MonoAssemblyName that will hold the returned value.
+ * \param error set on error
+ *
+ * Fills out the \p aname with the assembly name of the \p index assembly reference in \p image.
+ *
+ * \returns TRUE on success, otherwise sets \p error and returns FALSE
+ */
+gboolean
+mono_assembly_get_assemblyref_checked (MonoImage *image, int index, MonoAssemblyName *aname, MonoError *error)
+{
+	MonoTableInfo *t;
+	guint32 cols [MONO_ASSEMBLYREF_SIZE];
+	const char *hash;
+
+	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
+
+	if (!mono_metadata_decode_row_checked (image, t, index, cols, MONO_ASSEMBLYREF_SIZE, error))
+		return FALSE;
+
+	hash = mono_metadata_blob_heap_checked (image, cols [MONO_ASSEMBLYREF_HASH_VALUE], error);
+	return_val_if_nok (error, FALSE);
+	aname->hash_len = mono_metadata_decode_blob_size (hash, &hash);
+	aname->hash_value = hash;
+	aname->name = mono_metadata_string_heap_checked (image, cols [MONO_ASSEMBLYREF_NAME], error);
+	return_val_if_nok (error, FALSE);
+	aname->culture = mono_metadata_string_heap_checked (image, cols [MONO_ASSEMBLYREF_CULTURE], error);
+	return_val_if_nok (error, FALSE);
+	aname->flags = cols [MONO_ASSEMBLYREF_FLAGS];
+	aname->major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
+	aname->minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
+	aname->build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
+	aname->revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
+	if (cols [MONO_ASSEMBLYREF_PUBLIC_KEY]) {
+		gchar *token = assemblyref_public_tok_checked (image, cols [MONO_ASSEMBLYREF_PUBLIC_KEY], aname->flags, error);
+		return_val_if_nok (error, FALSE);
+		g_strlcpy ((char*)aname->public_key_token, token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		g_free (token);
+	} else {
+		memset (aname->public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+	}
+	return TRUE;
 }
 
 /**

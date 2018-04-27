@@ -4857,7 +4857,8 @@ create_referenced_assembly_name (MonoDomain *domain, MonoImage *image, MonoTable
 	error_init (error);
 	MonoAssemblyName *aname = g_new0 (MonoAssemblyName, 1);
 
-	mono_assembly_get_assemblyref (image, i, aname);
+	mono_assembly_get_assemblyref_checked (image, i, aname, error);
+	return_val_if_nok (error, NULL);
 	aname->hash_alg = ASSEMBLY_HASH_SHA1 /* SHA1 (default) */;
 	/* name and culture are pointers into the image tables, but we need
 	 * real malloc'd strings (so that we can g_free() them later from
