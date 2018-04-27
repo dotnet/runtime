@@ -2999,6 +2999,8 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 		}
 	}
 
+	set_code_cursor (cfg, code);
+
 	return code;
 }
 
@@ -3013,7 +3015,9 @@ emit_call (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpo
 #ifdef TARGET_WIN32
 	if (win64_adjust_stack)
 		amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 32);
-#endif	
+#endif
+
+	set_code_cursor (cfg, code);
 	
 	return code;
 }
@@ -3769,9 +3773,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins;
 	MonoCallInst *call;
-	guint offset;
 	guint8 *code = cfg->native_code + cfg->code_len;
-	int max_len;
 
 	/* Fix max_offset estimate for each successor bb */
 	if (cfg->opt & MONO_OPT_BRANCH) {
@@ -3798,26 +3800,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
 
-	offset = code - cfg->native_code;
+	set_code_cursor (cfg, code);
 
-	mono_debug_open_block (cfg, bb, offset);
+	mono_debug_open_block (cfg, bb, code - cfg->native_code);
 
     if (mono_break_at_bb_method && mono_method_desc_full_match (mono_break_at_bb_method, cfg->method) && bb->block_num == mono_break_at_bb_bb_num)
 		x86_breakpoint (code);
 
 	MONO_BB_FOR_EACH_INS (bb, ins) {
-		offset = code - cfg->native_code;
-
-		max_len = ins_get_size (ins->opcode);
-
-#define EXTRA_CODE_SPACE (16)
-
-		while (G_UNLIKELY ((offset + max_len + EXTRA_CODE_SPACE) > cfg->code_size)) {
-			cfg->code_size *= 2;
-			cfg->native_code = (unsigned char *)mono_realloc_native_code(cfg);
-			code = cfg->native_code + offset;
-			cfg->stat_code_reallocs++;
-		}
+		const guint offset = code - cfg->native_code;
+		set_code_cursor (cfg, code);
+		int max_len = ins_get_size (ins->opcode);
+		code = realloc_code (cfg, max_len);
 
 		if (cfg->debug_info)
 			mono_debug_record_line_number (cfg, ins, offset);
@@ -4183,7 +4177,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_seq_point (cfg, bb, ins, code - cfg->native_code);
 
 			if (cfg->compile_aot) {
-				guint32 offset = code - cfg->native_code;
+				const guint32 offset = code - cfg->native_code;
 				guint32 val;
 				MonoInst *info_var = (MonoInst *)cfg->arch.seq_point_info_var;
 				guint8 *label;
@@ -4663,12 +4657,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			max_len += AMD64_NREG * 4;
 			max_len += call->stack_usage / sizeof (mgreg_t) * ins_get_size (OP_TAILCALL_PARAMETER);
-			while (G_UNLIKELY (offset + max_len > cfg->code_size)) {
-				cfg->code_size *= 2;
-				cfg->native_code = (unsigned char *) mono_realloc_native_code(cfg);
-				code = cfg->native_code + offset;
-				cfg->stat_code_reallocs++;
-			}
+			code = realloc_code (cfg, max_len);
 
 			// FIXME hardcoding RAX here is not ideal.
 
@@ -6670,7 +6659,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 	}
 
-	cfg->code_len = code - cfg->native_code;
+	set_code_cursor (cfg, code);
 }
 
 #endif /* DISABLE_JIT */
@@ -6785,6 +6774,7 @@ emit_prolog_setup_sp_win64 (MonoCompile *cfg, guint8 *code, int alloc_size, int 
 	}
 
 	*cfa_offset_input = cfa_offset;
+	set_code_cursor (cfg, code);
 	return code;
 }
 #endif /* TARGET_WIN32 */
@@ -6888,6 +6878,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cfg->arch.stack_alloc_size = alloc_size;
 
+	set_code_cursor (cfg, code);
+
 	/* Allocate stack frame */
 #ifdef TARGET_WIN32
 	code = emit_prolog_setup_sp_win64 (cfg, code, alloc_size, &cfa_offset);
@@ -6914,17 +6906,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			}
 
 			remaining_size = remaining_size % 0x1000;
+			set_code_cursor (cfg, code);
 		}
 
 		guint32 required_code_size = ((remaining_size / 0x1000) + 1) * 11; /*11 is the max size of amd64_alu_reg_imm + amd64_test_membase_reg*/
-		guint32 offset = code - cfg->native_code;
-		if (G_UNLIKELY (required_code_size >= (cfg->code_size - offset))) {
-			while (required_code_size >= (cfg->code_size - offset))
-				cfg->code_size *= 2;
-			cfg->native_code = (unsigned char *)mono_realloc_native_code (cfg);
-			code = cfg->native_code + offset;
-			cfg->stat_code_reallocs++;
-		}
+		code = realloc_code (cfg, required_code_size);
 
 		while (remaining_size >= 0x1000) {
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 0x1000);
@@ -7046,7 +7032,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				max_length += LOOP_ALIGNMENT;
 
 			MONO_BB_FOR_EACH_INS (bb, ins) {
-				max_length += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
+				max_length += ins_get_size (ins->opcode);
 			}
 
 			/* Take prolog and epilog instrumentation into account */
@@ -7279,9 +7265,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
-	cfg->code_len = code - cfg->native_code;
-
-	g_assert (cfg->code_len < cfg->code_size);
+	set_code_cursor (cfg, code);
 
 	return code;
 }
@@ -7299,12 +7283,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	max_epilog_size = get_max_epilog_size (cfg);
 
-	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
-		cfg->code_size *= 2;
-		cfg->native_code = (unsigned char *)mono_realloc_native_code (cfg);
-		cfg->stat_code_reallocs++;
-	}
-	code = cfg->native_code + cfg->code_len;
+	code = realloc_code (cfg, max_epilog_size);
 
 	cfg->has_unwind_info_for_epilog = TRUE;
 
@@ -7394,9 +7373,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	/* Restore the unwind state to be the same as before the epilog */
 	mono_emit_unwind_op_restore_state (cfg, code);
 
-	cfg->code_len = code - cfg->native_code;
-
-	g_assert (cfg->code_len < cfg->code_size);
+	set_code_cursor (cfg, code);
 }
 
 void
@@ -7421,13 +7398,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			code_size += 8 + 7; /*sizeof (void*) + alignment */
 	}
 
-	while (cfg->code_len + code_size > (cfg->code_size - 16)) {
-		cfg->code_size *= 2;
-		cfg->native_code = (unsigned char *)mono_realloc_native_code (cfg);
-		cfg->stat_code_reallocs++;
-	}
-
-	code = cfg->native_code + cfg->code_len;
+	code = realloc_code (cfg, code_size);
 
 	/* add code to raise exceptions */
 	nthrows = 0;
@@ -7483,7 +7454,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			/* do nothing */
 			break;
 		}
-		g_assert(code < cfg->native_code + cfg->code_size);
+		set_code_cursor (cfg, code);
 	}
 
 	/* Handle relocations with RIP relative addressing */
@@ -7562,13 +7533,10 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				tmp->next = patch_info->next;
 			}
 		}
-		g_assert (code < cfg->native_code + cfg->code_size);
+		set_code_cursor (cfg, code);
 	}
 
-	cfg->code_len = code - cfg->native_code;
-
-	g_assert (cfg->code_len < cfg->code_size);
-
+	set_code_cursor (cfg, code);
 }
 
 #endif /* DISABLE_JIT */
@@ -7614,6 +7582,8 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 
 	if (enable_arguments)
 		amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, stack_area);
+
+	set_code_cursor (cfg, code);
 
 	return code;
 }
@@ -7719,6 +7689,8 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	default:
 		g_assert_not_reached ();
 	}
+
+	set_code_cursor (cfg, code);
 
 	return code;
 }

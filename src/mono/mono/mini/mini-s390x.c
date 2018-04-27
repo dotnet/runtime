@@ -2726,20 +2726,15 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 {
 	guchar 	   *code = p;
 	int   	   save_mode = SAVE_NONE,
-		   saveOffset,
-		   offset;
+		   saveOffset;
 	MonoMethod *method = cfg->method;
 	int rtype = mini_get_underlying_type (mono_method_signature (method)->ret)->type;
 
-	offset = code - cfg->native_code;
+	set_code_cursor (cfg, code);
 	/*-----------------------------------------*/
 	/* We need about 128 bytes of instructions */
 	/*-----------------------------------------*/
-	if (offset > (cfg->code_size - 128)) {
-		cfg->code_size *= 2;
-		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
-		code = cfg->native_code + offset;
-	}
+	code = realloc_code (cfg, 128);
 
 	saveOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE - cfg->arch.fpSize;
 	if (method->save_lmf)
@@ -3197,10 +3192,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins;
 	MonoCallInst *call;
-	guint offset;
 	guint8 *code = cfg->native_code + cfg->code_len;
-	guint last_offset = 0;
-	int max_len, src2;
+	int src2;
 
 	/* we don't align basic blocks of loops on s390 */
 
@@ -3208,17 +3201,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
 
 	MONO_BB_FOR_EACH_INS (bb, ins) {
-		offset = code - cfg->native_code;
-
-		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
-
-#define EXTRA_CODE_SPACE (16)
-
-		while (offset > (cfg->code_size - max_len - EXTRA_CODE_SPACE)) {
-			cfg->code_size *= 2;
-			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
-			code = cfg->native_code + offset;
-		}
+		const guint offset = code - cfg->native_code;
+		set_code_cursor (cfg, code);
+		int max_len = ins_get_size (ins->opcode);
+		code = realloc_code (cfg, max_len);
 
 		mono_debug_record_line_number (cfg, ins, offset);
 
@@ -4346,7 +4332,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_ARGLIST: {
-			int offset = cfg->sig_cookie + cfg->stack_usage;
+			const int offset = cfg->sig_cookie + cfg->stack_usage;
 
 			if (s390_is_imm16 (offset)) {
 				s390_lghi (code, s390_r0, offset);
@@ -6038,11 +6024,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
 		}
-	       
-		last_offset = offset;
 	}
 
-	cfg->code_len = code - cfg->native_code;
+	set_code_cursor (cfg, code);
 }
 
 /*========================= End of Function ========================*/
@@ -6255,7 +6239,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		bb->max_offset = max_offset;
 
 		MONO_BB_FOR_EACH_INS (bb, ins)
-			max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
+			max_offset += ins_get_size (ins->opcode);
 	}
 
 	/* load arguments allocated to register from the stack */
@@ -6548,8 +6532,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
-	cfg->code_len = code - cfg->native_code;
-	g_assert (cfg->code_len < cfg->code_size);
+	set_code_cursor (cfg, code);
 
 	return code;
 }
@@ -6579,13 +6562,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL)
 		max_epilog_size += 128;
 	
-	while ((cfg->code_len + max_epilog_size) > (cfg->code_size - 16)) {
-		cfg->code_size  *= 2;
-		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
-		cfg->stat_code_reallocs++;
-	}
-
-	code = cfg->native_code + cfg->code_len;
+	code = realloc_code (cfg, max_epilog_size);
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
 		code = mono_arch_instrument_epilog (cfg, leave_method, code, TRUE);
@@ -6610,9 +6587,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	s390_lmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 	s390_br  (code, s390_r14);
 
-	cfg->code_len = code - cfg->native_code;
-
-	g_assert (cfg->code_len < cfg->code_size);
+	set_code_cursor (cfg, code);
 
 }
 
@@ -6647,13 +6622,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 	code_size = exc_count * 48;
 
-	while ((cfg->code_len + code_size) > (cfg->code_size - 16)) {
-		cfg->code_size  *= 2;
-		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
-		cfg->stat_code_reallocs++; 
-	}
-
-	code = cfg->native_code + cfg->code_len;
+	code = realloc_code (cfg, code_size);
 
 	/*---------------------------------------------------------------------*/
 	/* Add code to raise exceptions 				       */
@@ -6714,11 +6683,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			break;
 		}
 	}
-
-	cfg->code_len = code - cfg->native_code;
-
-	g_assert (cfg->code_len < cfg->code_size);
-
+	set_code_cursor (cfg, code);
 }
 
 /*========================= End of Function ========================*/
