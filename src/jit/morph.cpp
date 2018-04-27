@@ -4099,7 +4099,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
 #if defined(UNIX_AMD64_ABI)
 
-#if defined(UNIX_AMD64_ABI)
                 // Here a struct can be passed in register following the classifications of its members and size.
                 // Now make sure there are actually enough registers to do so.
                 if (isStructArg)
@@ -4122,7 +4121,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                                ((intArgRegNum + structIntRegs) <= MAX_REG_ARG);
                 }
                 else
-#endif // defined(UNIX_AMD64_ABI)
                 {
                     if (passUsingFloatRegs)
                     {
@@ -4306,17 +4304,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     }
                     else
                     {
-                        if (hasFixedRetBuffReg() && (nextRegNum == theFixedRetBuffReg()))
-                        {
-                            // we are setting up the fixed return buffer register argument
-                            // so don't increment intArgRegNum
-                            assert(size == 1);
-                        }
-                        else
-                        {
-                            // Increment intArgRegNum by 'size' registers
-                            intArgRegNum += size;
-                        }
+                        // Increment intArgRegNum by 'size' registers
+                        intArgRegNum += size;
 
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
                         fltArgRegNum = min(fltArgRegNum + size, MAX_FLOAT_REG_ARG);
