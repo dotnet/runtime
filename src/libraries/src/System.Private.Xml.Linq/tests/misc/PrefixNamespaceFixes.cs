@@ -10,7 +10,7 @@ using Microsoft.Test.ModuleCore;
 
 namespace CoreXml.Test.XLinq
 {
-    public partial class FunctionalTests : TestModule
+    public partial class MiscFunctionalTests : TestModule
     {
         public partial class MiscTests : XLinqTestCase
         {

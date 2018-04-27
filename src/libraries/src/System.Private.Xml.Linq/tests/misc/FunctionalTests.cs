@@ -10,7 +10,7 @@ using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
-    public partial class FunctionalTests : TestModule
+    public partial class MiscFunctionalTests : TestModule
     {
         // Type is CoreXml.Test.XLinq.FunctionalTests
         // Test Module
@@ -19,7 +19,7 @@ namespace CoreXml.Test.XLinq
         public static void RunTests()
         {
             TestInput.CommandLine = "";
-            FunctionalTests module = new FunctionalTests();
+            MiscFunctionalTests module = new MiscFunctionalTests();
             module.Init();
 
             module.AddChild(new MiscTests() { Attribute = new TestCaseAttribute() { Name = "Misc", Desc = "XLinq Misc. Tests" } });
