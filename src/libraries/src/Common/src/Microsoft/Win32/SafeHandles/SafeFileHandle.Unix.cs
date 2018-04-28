@@ -10,15 +10,12 @@ namespace Microsoft.Win32.SafeHandles
 {
     sealed partial class SafeFileHandle : SafeHandle
     {
-        /// <summary>A handle value of -1.</summary>
-        private static readonly IntPtr s_invalidHandle = new IntPtr(-1);
-
         private SafeFileHandle() : this(ownsHandle: true)
         {
         }
 
         private SafeFileHandle(bool ownsHandle)
-            : base(s_invalidHandle, ownsHandle)
+            : base(new IntPtr(-1), ownsHandle)
         {
         }
 
