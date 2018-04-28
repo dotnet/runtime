@@ -94,7 +94,8 @@ ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThre
 void
 ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoError *error);
 
-gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms);
+gboolean
+ves_icall_System_Threading_Thread_Join_internal (MonoThreadObjectHandle thread_handle, int ms, MonoError *error);
 
 gint32
 ves_icall_System_Threading_Thread_GetDomainID (MonoError *error);
@@ -161,7 +162,8 @@ MonoObject* ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread
 void
 ves_icall_System_Threading_Thread_Suspend (MonoThreadObjectHandle this_obj, MonoError *error);
 
-void ves_icall_System_Threading_Thread_Resume (MonoThread *thread);
+void
+ves_icall_System_Threading_Thread_Resume (MonoThreadObjectHandle thread_handle, MonoError *error);
 void ves_icall_System_Threading_Thread_ClrState (MonoInternalThreadHandle thread, guint32 state, MonoError *error);
 void ves_icall_System_Threading_Thread_SetState (MonoInternalThreadHandle thread_handle, guint32 state, MonoError *error);
 guint32 ves_icall_System_Threading_Thread_GetState (MonoInternalThreadHandle thread_handle, MonoError *error);
@@ -203,7 +205,9 @@ void ves_icall_System_Threading_Volatile_WriteDouble (void *ptr, double);
 void ves_icall_System_Threading_Volatile_Write_T (void *ptr, MonoObject *value);
 
 void ves_icall_System_Threading_Thread_MemoryBarrier (void);
-void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this_obj);
+
+void
+ves_icall_System_Threading_Thread_Interrupt_internal (MonoThreadObjectHandle thread_handle, MonoError *error);
 
 void
 ves_icall_System_Threading_Thread_SpinWait_nop (MonoError *error);

@@ -59,6 +59,7 @@ mono_get_exception_execution_engine    (const char *msg);
 MONO_API MonoException *
 mono_get_exception_thread_abort        (void);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoException *
 mono_get_exception_thread_state        (const char *msg);
 

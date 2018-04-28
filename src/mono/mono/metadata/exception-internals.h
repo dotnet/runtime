@@ -68,7 +68,4 @@ mono_exception_new_thread_interrupted (MonoError *error);
 MonoExceptionHandle
 mono_exception_new_thread_abort (MonoError *error);
 
-MonoExceptionHandle
-mono_exception_new_thread_state (const char *msg, MonoError *error);
-
 #endif
