@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xunit.Performance.Api;
@@ -37,6 +38,14 @@ namespace JitBench
         public virtual Metric[] GetDefaultDisplayMetrics()
         {
             return new Metric[] { Metric.ElapsedTimeMilliseconds };
+        }
+
+        /// <summary>
+        /// Does this benchmark run properly on a given architecture?
+        /// </summary>
+        public virtual bool IsArchitectureSupported(Architecture arch)
+        {
+            return (arch == Architecture.X86 || arch == Architecture.X64);
         }
 
         BenchmarkRunResult[] MeasureIterations(TestRun run, ITestOutputHelper output)
