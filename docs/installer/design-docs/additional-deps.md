@@ -75,26 +75,7 @@ In order to prevent having to co-release for roll-forward cases, and deploy all 
 Where "found" means the version that is being used at run time including roll-forward. For example, if an app requests `2.1.0` of `Microsoft.NETCore.App` in its runtimeconfig.json, but we actually found and are using `2.2.1` (because there were no "compatible" versions installed from 2.1.0 to 2.2.0), then look for the deps folder `shared/Microsoft.NETCore.App/2.2.1` first.
 
 2) If the `found_framework_version` folder does not exist, find the next closest by going "backwards" in versioning
-3) The next closest version only includes a lower minor or major if enabled by "roll-forward-by-no-candidate-fx"
-
-The "roll-forward-by-no-candidate-fx" option has values (0=off, 1=minor, 2=minor\major) and is specified by:
-- `%DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX%` environment variable
--	`rollForwardOnNoCandidateFx` in runtimeconfig.json
--	`--roll-forward-on-no-candidate-fx` command line option
-
-where 1 (minor) is the default.
-
-Similar to `applyPatches`, the app may or may not want to tighten or loosen the range of supported frameworks. The default of `minor` seems like a good fit for additional-deps.
-
-<strike>
-4) Similar to roll-forward, a release version will only "roll-backwards" to release versions, unless no release versions are found. Then it will attempt to find a compatible pre-release version.
-</strike>
-
-**Update** This requirement (4) is considered an optional feature and is not currently planned for 2.1.
-
-<strike>
-Note: some "roll-backwards" semantics are different than roll-forward semantics. The "apply patches" functionality that exists in roll-forward doesn't make sense here since we are going "backwards" and the nearest (most compatible) version already has patches applied and we don't want to take older patches. In addition, roll-forward will not go from pre-release to release (since breaking changes on new features may occur during pre-release-to-release versions), but again that doesn't make sense here since we are going backwards to pre-existing (compatible) versions.
-</strike>
+3) Only go backwards to the closest `patch` version, not `major` or `minor`.
 
 ## 2.1 proposal (add an "any" tfm to store)
 For example,
@@ -106,6 +87,8 @@ The `any` tfm would be used if the specified tfm (e.g. netcoreapp2.0) is not fou
 _Possible risk: doesn't this make "uninstall" more difficult? Because multiple installs may write the same packages and try to remove packages that another installer created?_
 
 _Possible risk: we should not cross-gen these assemblies as cross-gen varies per release\TFM in incompatible ways._
+
+**Update** we are not going to implement this in 2.1. Every minor release of the framework requires an update by the lightup application.
 
 ## 2.1 proposal (change additional-deps processing order to avoid "downgrading")
 The current ordering for resolving deps files is:
@@ -121,8 +104,6 @@ The proposed ordering change for 2.1 is:
   3) The additional-deps file(s)
 
 In addition, the additional-deps will always look for assembly and file version information present in the deps files in order to support "upgrade" scenarios where the additional-deps brings a newer version of a given assembly. Note that these version checks only occur for managed assemblies, not native files nor resource assemblies.
-
-_Possible risk: Note: there is some risk that changing the ordering may break other "non-lightup" scenarios. However, by always comparing version numbers that should be mitigated (for managed assemblies anyway)._
 
 ## 2.1 proposal (add runtimeconfig knob to to disable `%DOTNET_ADDITIONAL_DEPS%`)
 <strike>
