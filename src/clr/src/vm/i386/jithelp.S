@@ -441,6 +441,9 @@ LEAF_END JIT_PollGC_Nop, _TEXT
 //
 .align 16
 LEAF_ENTRY JIT_LLsh, _TEXT
+    // Reduce shift amount mod 64
+    and     ecx, 63
+
     cmp     ecx, 32
     jae     LOCAL_LABEL(LLshMORE32)
 
@@ -476,6 +479,9 @@ LEAF_END JIT_LLsh, _TEXT
 //
 .align 16
 LEAF_ENTRY JIT_LRsh, _TEXT
+    // Reduce shift amount mod 64
+    and     ecx, 63
+
     cmp     ecx, 32
     jae     LOCAL_LABEL(LRshMORE32)
 
@@ -510,6 +516,9 @@ LEAF_END JIT_LRsh, _TEXT
 //
 .align 16
 LEAF_ENTRY JIT_LRsz, _TEXT
+    // Reduce shift amount mod 64
+    and     ecx, 63
+
     cmp     ecx, 32
     jae     LOCAL_LABEL(LRszMORE32)
 
