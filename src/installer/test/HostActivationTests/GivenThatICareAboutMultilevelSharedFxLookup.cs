@@ -9,6 +9,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 {
     public class GivenThatICareAboutMultilevelSharedFxLookup
     {
+        private const string SystemCollectionsImmutableFileVersion = "1.2.3.4";
+        private const string SystemCollectionsImmutableAssemblyVersion = "1.0.1.2";
+
         private RepoDirectoriesProvider RepoDirectories;
         private TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture;
 
@@ -41,7 +44,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
         private string _multilevelDir;
         private string _builtDotnet;
         private string _hostPolicyDllName;
-        
+
         public GivenThatICareAboutMultilevelSharedFxLookup()
         {
             // From the artifacts dir, it's possible to find where the sharedFrameworkPublish folder is. We need
@@ -52,7 +55,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             // The dotnetMultilevelSharedFxLookup dir will contain some folders and files that will be
             // necessary to perform the tests
             string baseMultilevelDir = Path.Combine(artifactsDir, "dotnetMultilevelSharedFxLookup");
-            _multilevelDir = CalculateMultilevelDirectory(baseMultilevelDir);
+            _multilevelDir = SharedFramework.CalculateUniqueTestDirectory(baseMultilevelDir);
 
             // The three tested locations will be the cwd, the user folder and the exe dir. Both cwd and exe dir
             // are easily overwritten, so they will be placed inside the multilevel folder. The actual user location will
@@ -83,7 +86,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             Directory.CreateDirectory(_cwdSharedUberFxBaseDir);
             Directory.CreateDirectory(_userSharedUberFxBaseDir);
             Directory.CreateDirectory(_globalSharedUberFxBaseDir);
-            CopyDirectory(_builtDotnet, _executableDir);
+            SharedFramework.CopyDirectory(_builtDotnet, _executableDir);
 
             //Copy dotnet to global directory
             File.Copy(Path.Combine(_builtDotnet, $"dotnet{Constants.ExeSuffix}"), Path.Combine(_globalDir, $"dotnet{Constants.ExeSuffix}"), true);
@@ -99,10 +102,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             string greatestVersionSharedFxPath = fixture.BuiltDotnet.GreatestVersionSharedFxPath;
             _sharedFxVersion = (new DirectoryInfo(greatestVersionSharedFxPath)).Name;
             _builtSharedFxDir = Path.Combine(_builtDotnet, "shared", "Microsoft.NETCore.App", _sharedFxVersion);
-
-            // The uber framework is a copy of the base framework, minus a few files
             _builtSharedUberFxDir = Path.Combine(_builtDotnet, "shared", "Microsoft.UberFramework", _sharedFxVersion);
-            CreateUberFrameworkArtifacts(_builtSharedFxDir, _builtSharedUberFxDir, "1.0.1.2", "1.2.3.4");
+            SharedFramework.CreateUberFrameworkArtifacts(_builtSharedFxDir, _builtSharedUberFxDir, SystemCollectionsImmutableAssemblyVersion, SystemCollectionsImmutableFileVersion);
 
             _hostPolicyDllName = Path.GetFileName(fixture.TestProject.HostPolicyDll);
 
@@ -129,10 +130,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Set desired version = 9999.0.0
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
 
             // Add version in the exe dir
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.0");
 
             // Version: 9999.0.0
             // User: empty
@@ -151,7 +152,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining(_exeSelectedMessage);
 
             // Add a dummy version in the user dir
-            AddAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.0.0");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _userSharedFxBaseDir, "9999.0.0");
 
             // Version: 9999.0.0
             // User: 9999.0.0 --> should not be picked
@@ -170,7 +171,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining(_exeSelectedMessage);
 
             // Add a dummy version in the cwd
-            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.0.0");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _cwdSharedFxBaseDir, "9999.0.0");
 
             // Version: 9999.0.0
             // CWD: 9999.0.0   --> should not be picked
@@ -200,8 +201,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
-            DeleteAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.0.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.0.0");
         }
 
         [Fact]
@@ -214,7 +215,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             var appDll = fixture.TestProject.AppDll;
 
             // Add some dummy versions
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0", "9999.0.2", "9999.0.0-dummy2", "9999.0.3", "9999.0.0-dummy3");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.0", "9999.0.2", "9999.0.0-dummy2", "9999.0.3", "9999.0.0-dummy3");
 
             // Version: 9999.0.0 (through --fx-version arg)
             // Exe: 9999.0.2, 9999.0.0-dummy2, 9999.0.0, 9999.0.3, 9999.0.0-dummy3
@@ -240,7 +241,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail:true)
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
@@ -264,7 +265,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0-dummy3");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0", "9999.0.2", "9999.0.0-dummy2", "9999.0.3", "9999.0.0-dummy3");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0", "9999.0.2", "9999.0.0-dummy2", "9999.0.3", "9999.0.0-dummy3");
         }
 
         [Fact]
@@ -278,10 +279,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Set desired version = 9999.0.0
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
 
             // Add some dummy versions in the exe
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "10000.1.1", "10000.1.3");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "10000.1.1", "10000.1.3");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' enabled with value 2 (major+minor) through env var
@@ -300,7 +301,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "10000.1.3"));
 
             // Add a dummy version in the exe dir 
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.1");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' enabled with value 2 (major+minor) through env var
@@ -332,7 +333,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 10000.1.3");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1", "10000.1.1", "10000.1.3");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1", "10000.1.1", "10000.1.3");
         }
 
         [Fact]
@@ -346,10 +347,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Set desired version = 9999.0.0
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
 
             // Add some dummy versions in the exe
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "10000.1.1");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "10000.1.1");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' default value of 1 (minor)
@@ -367,7 +368,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining("It was not possible to find any compatible framework version");
 
             // Add a dummy version in the exe dir 
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.1");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' default value of 1 (minor)
@@ -412,7 +413,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 10000.1.1");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1", "10000.1.1");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1", "10000.1.1");
         }
 
         [Fact]
@@ -426,10 +427,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Set desired version = 9999.0.0
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
 
             // Add preview version in the exe
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1-dummy1");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.1-dummy1");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' default value of 1 (minor)
@@ -447,7 +448,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1-dummy1"));
 
             // Add a production version with higher value
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.2.1");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.2.1");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' default value of 1 (minor)
@@ -465,7 +466,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.2.1"));
 
             // Add a preview version with same major.minor as production
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.2.1-dummy1");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.2.1-dummy1");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' default value of 1 (minor)
@@ -483,7 +484,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.2.1"));
 
             // Add a preview version with same major.minor as production but higher patch version
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.2.2-dummy1");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.2.2-dummy1");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' default value of 1 (minor)
@@ -516,7 +517,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.2.2-dummy1");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1-dummy1", "9999.2.1", "9999.2.1-dummy1", "9999.2.2-dummy1");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1-dummy1", "9999.2.1", "9999.2.1-dummy1", "9999.2.2-dummy1");
         }
 
         [Fact]
@@ -530,10 +531,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Set desired version = 9999.0.0-dummy1
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SetRuntimeConfigJson(runtimeConfig, "9999.0.0-dummy1");
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "9999.0.0-dummy1");
 
             // Add dummy versions in the exe
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0", "9999.0.1-dummy1");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.0", "9999.0.1-dummy1");
 
             // Version: 9999.0.0-dummy1
             // exe: 9999.0.0, 9999.0.1-dummy1
@@ -550,7 +551,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining("It was not possible to find any compatible framework version");
 
             // Add preview versions in the exe with name major.minor.patch
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0-dummy2", "9999.0.0-dummy3");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.0-dummy2", "9999.0.0-dummy3");
 
             // Version: 9999.0.0-dummy1
             // exe: 9999.0.0-dummy2, 9999.0.0-dummy3, 9999.0.0, 9999.0.1-dummy1
@@ -582,7 +583,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdOutContaining("9999.0.1-dummy1");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0-dummy2", "9999.0.0-dummy3", "9999.0.0", "9999.0.1-dummy1");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0-dummy2", "9999.0.0-dummy3", "9999.0.0", "9999.0.1-dummy1");
         }
 
         [Fact]
@@ -596,10 +597,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Set desired version = 9999.1.1
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SetRuntimeConfigJson(runtimeConfig, "9999.1.1");
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "9999.1.1");
 
             // Add some dummy versions in the exe
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9998.0.1", "9998.1.0", "9999.0.0", "9999.0.1", "9999.1.0");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9998.0.1", "9998.1.0", "9999.0.0", "9999.0.1", "9999.1.0");
 
             // Version: 9999.1.1
             // exe: 9998.0.1, 9998.1.0, 9999.0.0, 9999.0.1, 9999.1.0
@@ -609,7 +610,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(fExpectedToFail:true)
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
@@ -633,7 +634,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.1.0");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9998.0.1", "9998.1.0", "9999.0.0", "9999.0.1", "9999.1.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9998.0.1", "9998.1.0", "9999.0.0", "9999.0.1", "9999.1.0");
         }
 
         [Fact]
@@ -646,11 +647,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             var appDll = fixture.TestProject.AppDll;
 
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
 
             // Add versions in the exe folders
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
-            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.0");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.0");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.0");
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -672,8 +673,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"));
 
             // Add a newer version to verify roll-forward
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1");
-            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.1");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.1");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.1");
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -711,8 +712,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdOutContaining("Microsoft.UberFramework 7777.0.1");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0", "9999.0.1");
-            DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0", "7777.0.1");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0", "9999.0.1");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0", "7777.0.1");
         }
 
         [Fact]
@@ -725,11 +726,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             var appDll = fixture.TestProject.AppDll;
 
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
 
             // Add versions in the exe folders
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
-            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", "UberValue", "7777.0.0");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.0");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", "UberValue", "7777.0.0");
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -750,7 +751,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining("It was not possible to find any compatible framework version");
 
             // Enable rollForwardOnNoCandidateFx on app's config, which will be used as the default for Uber's config
-            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 1, testConfigPropertyValue : null, useUberFramework: true);
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 1, testConfigPropertyValue: null, useUberFramework: true);
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -776,7 +777,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining("Property TestProperty = UberValue");
 
             // Change the app's TestProperty value which should override the uber's config value
-            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 1, testConfigPropertyValue: "AppValue", useUberFramework: true);
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 1, testConfigPropertyValue: "AppValue", useUberFramework: true);
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -801,8 +802,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdErrContaining("Property TestProperty = AppValue");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
-            DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
 
         [Fact]
@@ -818,11 +819,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             var additionalfxs = new JArray();
             additionalfxs.Add(GetAdditionalFramework("Microsoft.NETCore.App", "9999.1.0", applyPatches: false, rollForwardOnNoCandidateFx: 0));
-            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true, additionalFrameworks : additionalfxs);
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true, additionalFrameworks: additionalfxs);
 
             // Add versions in the exe folders
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
-            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.5.5", "UberValue", "7777.0.0");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.0");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.5.5", "UberValue", "7777.0.0");
 
             // Version: NetCoreApp 9999.5.5 (in framework section)
             //          NetCoreApp 9999.1.0 (in app's additionalFrameworks section)
@@ -848,7 +849,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             additionalfxs.Clear();
             additionalfxs.Add(GetAdditionalFramework("Microsoft.NETCore.App", "9999.0.0", applyPatches: false, rollForwardOnNoCandidateFx: 1));
             additionalfxs.Add(GetAdditionalFramework("UberFx", "7777.0.0", applyPatches: false, rollForwardOnNoCandidateFx: 0));
-            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx:0, useUberFramework: true, additionalFrameworks: additionalfxs);
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", rollFwdOnNoCandidateFx: 0, useUberFramework: true, additionalFrameworks: additionalfxs);
 
             // Version: NetCoreApp 9999.5.5 (in framework section)
             //          NetCoreApp 9999.0.0 (in app's additionalFrameworks section)
@@ -892,8 +893,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdErrContaining("It was not possible to find any compatible framework version");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
-            DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
 
         /* This test will be added once the SDK write the assemblyVersion and fileVersion properties. Verified manually.
@@ -907,11 +908,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             var appDll = fixture.TestProject.AppDll;
 
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
 
             // Add versions in the exe folders
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
-            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.0");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.0");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.0");
 
             string uberFile = Path.Combine(_exeSharedUberFxBaseDir, "7777.0.0", "System.Collections.Immutable.dll");
             string netCoreAppFile = Path.Combine(_exeSharedFxBaseDir, "9999.1.0", "System.Collections.Immutable.dll");
@@ -932,13 +933,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining($"Replacing deps entry [{uberFile}, AssemblyVersion:1.0.1.2, FileVersion:1.2.3.4] with [{netCoreAppFile}");
+                .HaveStdErrContaining($"Replacing deps entry [{uberFile}, AssemblyVersion:1.0.1.2, FileVersion:{SystemCollectionsImmutableFileVersion}] with [{netCoreAppFile}");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
-            DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
         */
-
         [Fact]
         public void Multiple_SharedFxLookup_Uber_Wins_Over_NetCoreApp_On_PatchRollForward()
         {
@@ -949,11 +949,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             var appDll = fixture.TestProject.AppDll;
 
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
 
             // Add versions in the exe folders
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1");
-            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.0");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.1");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.0");
 
             // The System.Collections.Immutable.dll is located in the UberFramework and NetCoreApp
             // Version: NetCoreApp 9999.0.0
@@ -976,55 +976,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .NotHaveStdErrContaining(Path.Combine("9999.1.0", "System.Collections.Immutable.dll"));
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1");
-            DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
 
         [Fact]
-        public void Additional_Deps_Lightup_Folder_With_Roll_Forward_And_Bad_JsonFile()
-        {
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
-                .Copy();
-
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            // Add version in the exe folder
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1");
-
-            // Set desired version = 9999.0.0
-            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
-
-            // Create a deps.json file in the folder "additionalDeps\shared\Microsoft.NETCore.App\9999.0.0"
-            string additionalDepsRootPath = Path.Combine(_exeSharedFxBaseDir, "additionalDeps");
-            string additionalDepsPath = Path.Combine(additionalDepsRootPath, "shared", "Microsoft.NETCore.App", "9999.0.0", "myAddtionalDeps.deps.json");
-            FileInfo additionalDepsFile = new FileInfo(additionalDepsPath);
-            additionalDepsFile.Directory.Create();
-            File.WriteAllText(additionalDepsFile.FullName, "THIS IS A BAD JSON FILE");
-
-            // Version: NetCoreApp 9999.0.0
-            // Exe: NetCoreApp 9999.0.1
-            // Expected: 9999.0.1
-            // Expected: the "specified" location (9999.0.0) is used to find the lightup folder, not the "found" location (9999.0.1)
-            dotnet.Exec("exec", "--additional-deps", additionalDepsRootPath, appDll)
-                .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.1"))
-                .And
-                .HaveStdErrContaining($"Error initializing the dependency resolver: An error occurred while parsing: {additionalDepsPath}");
-
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1", "additionalDeps");
-        }
-
-        [Fact]
-        public void SharedFxLookup_Wins_Over_Additional_Deps_On_RollForward_And_Version_Tie()
+        public void SharedFx_Wins_Against_App_On_RollForward_And_Version_Tie()
         {
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
@@ -1034,20 +991,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Set desired version = 7777.0.0
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
 
             // Add versions in the exe folder
-            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
-            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", null, "7777.1.0");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.0");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", null, "7777.1.0");
 
             // Copy NetCoreApp's copy of the assembly to the app location
-            string fxAssemblyPath = Path.Combine(_exeSharedFxBaseDir, "9999.0.0", "System.Collections.Immutable.dll");
+            string netcoreAssembly = Path.Combine(_exeSharedFxBaseDir, "9999.0.0", "System.Collections.Immutable.dll");
             string appAssembly = Path.Combine(fixture.TestProject.OutputDirectory, "System.Collections.Immutable.dll");
-            File.Copy(fxAssemblyPath, appAssembly);
+            File.Copy(netcoreAssembly, appAssembly);
 
             // Modify the app's deps.json to add System.Collections.Immmutable
             string appDepsJson = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.deps.json");
-            AddImmutableAssemblyToDepsJson(appDepsJson);
+            JObject versionInfo = new JObject();
+            versionInfo.Add(new JProperty("assemblyVersion", SystemCollectionsImmutableAssemblyVersion));
+            versionInfo.Add(new JProperty("fileVersion", SystemCollectionsImmutableFileVersion));
+            SharedFramework.AddReferenceToDepsJson(appDepsJson, "SharedFxLookupPortableApp/1.0.0", "System.Collections.Immutable", "1.0.0", versionInfo);
 
             // Version: NetCoreApp 9999.0.0
             //          UberFramework 7777.0.0
@@ -1056,7 +1016,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             // Expected: 9999.0.0
             //           7777.1.0
             // Expected: the framework's version of System.Collections.Immutable is used
-            string fxAssembly = Path.Combine(_exeSharedUberFxBaseDir, "7777.1.0", "System.Collections.Immutable.dll");
+            string uberAssembly = Path.Combine(_exeSharedUberFxBaseDir, "7777.1.0", "System.Collections.Immutable.dll");
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
@@ -1066,193 +1026,66 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining($"Replacing deps entry [{appAssembly}, AssemblyVersion:1.0.1.2, FileVersion:1.2.3.4] with [{fxAssembly}, AssemblyVersion:1.0.1.2, FileVersion:1.2.3.4]");
+                .HaveStdErrContaining($"Replacing deps entry [{appAssembly}, AssemblyVersion:{SystemCollectionsImmutableAssemblyVersion}, FileVersion:{SystemCollectionsImmutableFileVersion}] with [{uberAssembly}, AssemblyVersion:{SystemCollectionsImmutableAssemblyVersion}, FileVersion:{SystemCollectionsImmutableFileVersion}]");
 
-            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
-            DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.1.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.1.0");
         }
 
-        // This method adds a list of new framework version folders in the specified
-        // sharedFxBaseDir. The files are copied from the _buildSharedFxDir.
-        // Remarks:
-        // - If the sharedFxBaseDir does not exist, then a DirectoryNotFoundException
-        //   is thrown.
-        // - If a specified version folder already exists, then it is deleted and replaced
-        //   with the contents of the _builtSharedFxDir.
-        private void AddAvailableSharedFxVersions(string sharedFxBaseDir, params string[] availableVersions)
+        [Fact]
+        public void SharedFx_Loses_Against_App_On_NoRollForward()
         {
-            DirectoryInfo sharedFxBaseDirInfo = new DirectoryInfo(sharedFxBaseDir);
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
 
-            if (!sharedFxBaseDirInfo.Exists)
-            {
-                throw new DirectoryNotFoundException();
-            }
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
 
-            foreach(string version in availableVersions)
-            {
-                string newSharedFxDir = Path.Combine(sharedFxBaseDir, version);
-                CopyDirectory(_builtSharedFxDir, newSharedFxDir);
-            }
-        }
+            // Set desired version = 7777.0.0
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SharedFramework.SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
 
-        // This method adds a list of new framework version folders in the specified
-        // sharedFxUberBaseDir. A runtimeconfig file is created that references
-        // Microsoft.NETCore.App version=sharedFxBaseVersion
-        private void AddAvailableSharedUberFxVersions(string sharedUberFxBaseDir, string sharedFxBaseVersion, string testConfigPropertyValue = null, params string[] availableUberVersions)
-        {
-            DirectoryInfo sharedFxUberBaseDirInfo = new DirectoryInfo(sharedUberFxBaseDir);
+            // Add versions in the exe folder
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.0.0");
+            SharedFramework.AddAvailableSharedUberFxVersions(_builtSharedUberFxDir, _exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.0");
 
-            if (!sharedFxUberBaseDirInfo.Exists)
-            {
-                sharedFxUberBaseDirInfo.Create();
-            }
+            // Copy NetCoreApp's copy of the assembly to the app location
+            string netcoreAssembly = Path.Combine(_exeSharedFxBaseDir, "9999.0.0", "System.Collections.Immutable.dll");
+            string appAssembly = Path.Combine(fixture.TestProject.OutputDirectory, "System.Collections.Immutable.dll");
+            File.Copy(netcoreAssembly, appAssembly);
 
-            foreach (string version in availableUberVersions)
-            {
-                string newSharedFxDir = Path.Combine(sharedUberFxBaseDir, version);
-                CopyDirectory(_builtSharedUberFxDir, newSharedFxDir);
+            // Modify the app's deps.json to add System.Collections.Immmutable
+            string appDepsJson = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.deps.json");
+            // Use lower numbers for the app; it should still be selected on non-roll-forward
+            JObject versionInfo = new JObject();
+            versionInfo.Add(new JProperty("assemblyVersion", "0.0.0.1"));
+            versionInfo.Add(new JProperty("fileVersion", "0.0.0.2"));
+            SharedFramework.AddReferenceToDepsJson(appDepsJson, "SharedFxLookupPortableApp/1.0.0", "System.Collections.Immutable", "1.0.0", versionInfo);
 
-                string runtimeBaseConfig = Path.Combine(newSharedFxDir, "Microsoft.UberFramework.runtimeconfig.json");
-                SetRuntimeConfigJson(runtimeBaseConfig, sharedFxBaseVersion, null, testConfigPropertyValue);
-            }
-        }
+            // Version: NetCoreApp 9999.0.0
+            //          UberFramework 7777.0.0
+            // Exe: NetCoreApp 9999.0.0
+            //      UberFramework 7777.0.0
+            // Expected: 9999.0.0
+            //           7777.0.0
+            // Expected: the framework's version of System.Collections.Immutable is used
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining($"Adding tpa entry: {appAssembly}, AssemblyVersion: {"0.0.0.1"}, FileVersion: {"0.0.0.2"}")
+                .And
+                .NotHaveStdErrContaining($"Adding tpa entry: {netcoreAssembly}, AssemblyVersion: {SystemCollectionsImmutableAssemblyVersion}, FileVersion :{SystemCollectionsImmutableFileVersion}")
+                .And
+                .NotHaveStdErrContaining($"Replacing deps entry");
 
-        // This method removes a list of framework version folders from the specified
-        // sharedFxBaseDir.
-        // Remarks:
-        // - If the sharedFxBaseDir does not exist, then a DirectoryNotFoundException
-        //   is thrown.
-        // - If a specified version folder does not exist, then a DirectoryNotFoundException
-        //   is thrown.
-        static private void DeleteAvailableSharedFxVersions(string sharedFxBaseDir, params string[] availableVersions)
-        {
-            DirectoryInfo sharedFxBaseDirInfo = new DirectoryInfo(sharedFxBaseDir);
-
-            if (!sharedFxBaseDirInfo.Exists)
-            {
-                throw new DirectoryNotFoundException();
-            }
-
-            foreach (string version in availableVersions)
-            {
-                string sharedFxDir = Path.Combine(sharedFxBaseDir, version);
-                if (!Directory.Exists(sharedFxDir))
-                {
-                    throw new DirectoryNotFoundException();
-                }
-                Directory.Delete(sharedFxDir, true);
-            }
-        }
-
-        // CopyDirectory recursively copies a directory
-        // Remarks:
-        // - If the dest dir does not exist, then it is created.
-        // - If the dest dir exists, then it is substituted with the new one
-        //   (original files and subfolders are deleted).
-        // - If the src dir does not exist, then a DirectoryNotFoundException
-        //   is thrown.
-        static private void CopyDirectory(string srcDir, string dstDir)
-        {
-            DirectoryInfo srcDirInfo = new DirectoryInfo(srcDir);
-
-            if (!srcDirInfo.Exists)
-            {
-                throw new DirectoryNotFoundException();
-            }
-
-            DirectoryInfo dstDirInfo = new DirectoryInfo(dstDir);
-
-            if (dstDirInfo.Exists)
-            {
-                dstDirInfo.Delete(true);
-            }
-
-            dstDirInfo.Create();
-
-            foreach (FileInfo fileInfo in srcDirInfo.GetFiles())
-            {
-                string newFile = Path.Combine(dstDir, fileInfo.Name);
-                fileInfo.CopyTo(newFile);
-            }
-
-            foreach (DirectoryInfo subdirInfo in srcDirInfo.GetDirectories())
-            {
-                string newDir = Path.Combine(dstDir, subdirInfo.Name);
-                CopyDirectory(subdirInfo.FullName, newDir);
-            }
-        }
-
-        // MultilevelDirectory is %TEST_ARTIFACTS%\dotnetMultilevelSharedFxLookup\id.
-        // We must locate the first non existing id.
-        static private string CalculateMultilevelDirectory(string baseMultilevelDir)
-        {
-            int count = 0;
-            string multilevelDir;
-
-            do
-            {
-                multilevelDir = Path.Combine(baseMultilevelDir, count.ToString());
-                count++;
-            } while (Directory.Exists(multilevelDir));
-
-            return multilevelDir;
-        }
-
-        // Generated json file:
-        /*
-         * {
-         *   "runtimeOptions": {
-         *     "framework": {
-         *       "name": "Microsoft.NETCore.App",
-         *       "version": {version}
-         *     },
-         *     "rollForwardOnNoCandidateFx": {rollFwdOnNoCandidateFx} <-- only if rollFwdOnNoCandidateFx is defined
-         *   }
-         * }
-        */
-        private void SetRuntimeConfigJson(string destFile, string version, int? rollFwdOnNoCandidateFx = null, string testConfigPropertyValue = null, bool? useUberFramework = false, JArray additionalFrameworks = null)
-        {
-            string name = useUberFramework.HasValue && useUberFramework.Value ? "Microsoft.UberFramework" : "Microsoft.NETCore.App";
-
-            JObject runtimeOptions = new JObject(
-                new JProperty("framework",
-                    new JObject(
-                        new JProperty("name", name),
-                        new JProperty("version", version)
-                    )
-                )
-            );
-
-            if (rollFwdOnNoCandidateFx.HasValue)
-            {
-                runtimeOptions.Add("rollForwardOnNoCandidateFx", rollFwdOnNoCandidateFx);
-            }
-
-            if (testConfigPropertyValue != null)
-            {
-                runtimeOptions.Add(
-                    new JProperty("configProperties",
-                        new JObject(
-                            new JProperty("TestProperty", testConfigPropertyValue)
-                        )
-                    )
-                );
-            }
-
-            if (additionalFrameworks != null)
-            {
-                runtimeOptions.Add("additionalFrameworks", additionalFrameworks);
-            }
-
-            FileInfo file = new FileInfo(destFile);
-            if (!file.Directory.Exists)
-            {
-                file.Directory.Create();
-            }
-
-            JObject json = new JObject();
-            json.Add("runtimeOptions", runtimeOptions);
-            File.WriteAllText(destFile, json.ToString());
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
+            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
 
         static private JObject GetAdditionalFramework(string fxName, string fxVersion, bool? applyPatches, int? rollForwardOnNoCandidateFx)
@@ -1277,150 +1110,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             return jobject;
         }
 
-        static private void CreateUberFrameworkArtifacts(string builtSharedFxDir, string builtSharedUberFxDir, string assemblyVersion = null, string fileVersion = null)
+        static private string CreateAStore(TestProjectFixture testProjectFixture)
         {
-            DirectoryInfo dir = new DirectoryInfo(builtSharedUberFxDir);
-            if (dir.Exists)
+            var storeoutputDirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "store");
+            if (!Directory.Exists(storeoutputDirectory))
             {
-                dir.Delete(true);
+                Directory.CreateDirectory(storeoutputDirectory);
             }
 
-            dir.Create();
+            testProjectFixture.StoreProject(outputDirectory: storeoutputDirectory);
 
-            string fxName = "UberFx";
-            string testPackage = "System.Collections.Immutable/1.0.0";
-            string testAssembly = "System.Collections.Immutable";
-
-            // Create the deps.json. Generated file:
-            /*
-                {
-                  "runtimeTarget": {
-                    "name": "UberFx"
-                  },
-                  "targets": {
-                    "UberFx": {
-                      "System.Collections.Immutable/1.0.0": {
-                        "runtime": {
-                          "System.Collections.Immutable.dll": {}
-                        }
-                      }
-                    }
-                  },
-                  "libraries": {
-                    "System.Collections.Immutable/1.0.0": {
-                      "type": "assemblyreference",
-                      "serviceable": false,
-                      "sha512": ""
-                    }
-                  }
-                }
-             */
-            JObject versionInfo = new JObject();
-            if (assemblyVersion != null)
-            {
-                versionInfo.Add(new JProperty("assemblyVersion", assemblyVersion));
-            }
-
-            if (fileVersion != null)
-            {
-                versionInfo.Add(new JProperty("fileVersion", fileVersion));
-            }
-
-            JObject depsjson = new JObject(
-                new JProperty("runtimeTarget",
-                    new JObject(
-                        new JProperty("name", fxName)
-                    )
-                ),
-                new JProperty("targets",
-                    new JObject(
-                      new JProperty(fxName,
-                          new JObject(
-                              new JProperty(testPackage,
-                                  new JObject(
-                                      new JProperty("runtime",
-                                          new JObject(
-                                              new JProperty(testAssembly + ".dll",
-                                                  versionInfo
-                                              )
-                                          )
-                                      )
-                                  )
-                              )
-                          )
-                      )
-                  )
-              ),
-                  new JProperty("libraries",
-                      new JObject(
-                          new JProperty(testPackage,
-                            new JObject(
-                                new JProperty("type", "assemblyreference"),
-                                new JProperty("serviceable", false),
-                                new JProperty("sha512", "")
-                            )
-                        )
-                    )
-                )
-            );
-
-            string depsFile = Path.Combine(builtSharedUberFxDir, "Microsoft.UberFramework.deps.json");
-
-            File.WriteAllText(depsFile, depsjson.ToString());
-
-            // Copy the test assembly
-            string fileSource = Path.Combine(builtSharedFxDir, testAssembly + ".dll");
-            string fileDest = Path.Combine(builtSharedUberFxDir, testAssembly + ".dll");
-            File.Copy(fileSource, fileDest);
-        }
-
-        static private void AddImmutableAssemblyToDepsJson(string jsonFile)
-        {
-            JObject depsjson = JObject.Parse(File.ReadAllText(jsonFile));
-
-            string assemblyVersion = "1.0.1.2";
-            string fileVersion = "1.2.3.4";
-            string testPackage = "System.Collections.Immutable";
-            string testPackageVersion = "1.0.0";
-            string testPackageWithVersion = testPackage + "/" + testPackageVersion;
-            string testAssembly = testPackage + ".dll";
-
-            JProperty targetsProperty = (JProperty)depsjson["targets"].First;
-            JObject targetsValue = (JObject)targetsProperty.Value;
-
-            var assembly = new JProperty(testPackage, "1.0.0");
-            JObject packageDependencies = (JObject)targetsValue["SharedFxLookupPortableApp/1.0.0"]["dependencies"];
-            packageDependencies.Add(assembly);
-
-            var package = new JProperty(testPackageWithVersion,
-                new JObject(
-                    new JProperty("runtime",
-                        new JObject(
-                            new JProperty(testAssembly,
-                                new JObject(
-                                    new JProperty("assemblyVersion", assemblyVersion),
-                                    new JProperty("fileVersion", fileVersion)
-                                )
-                            )
-                        )
-                    )
-                )
-            );
-
-            targetsValue.Add(package);
-
-            var library = new JProperty(testPackageWithVersion,
-                new JObject(
-                    new JProperty("type", "assemblyreference"),
-                    new JProperty("serviceable", false),
-                    new JProperty("sha512", "")
-                )
-            );
-
-            JObject libraries = (JObject)depsjson["libraries"];
-            libraries.Add(library);
-
-            File.WriteAllText(jsonFile, depsjson.ToString());
+            return storeoutputDirectory;
         }
     }
 }
