@@ -11,9 +11,6 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        /// <summary>A handle value of -1.</summary>
-        private static readonly IntPtr s_invalidHandle = new IntPtr(-1);
-
         private SafeFileHandle() : this(ownsHandle: true)
         {
         }
@@ -21,7 +18,7 @@ namespace Microsoft.Win32.SafeHandles
         private SafeFileHandle(bool ownsHandle)
             : base(ownsHandle)
         {
-            SetHandle(s_invalidHandle);
+            SetHandle(new IntPtr(-1));
         }
 
         public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : this(ownsHandle)
