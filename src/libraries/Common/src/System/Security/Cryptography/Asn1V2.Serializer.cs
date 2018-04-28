@@ -879,7 +879,7 @@ namespace System.Security.Cryptography.Asn1
 
                         try
                         {
-                            if (reader.TryCopyBitStringBytes(rented, out _, out int bytesWritten))
+                            if (reader.TryCopyBitStringBytes(expectedTag, rented, out _, out int bytesWritten))
                             {
                                 return new ReadOnlyMemory<byte>(rented.AsSpan(0, bytesWritten).ToArray());
                             }
@@ -910,7 +910,7 @@ namespace System.Security.Cryptography.Asn1
 
                         try
                         {
-                            if (reader.TryCopyOctetStringBytes(rented, out int bytesWritten))
+                            if (reader.TryCopyOctetStringBytes(expectedTag, rented, out int bytesWritten))
                             {
                                 return new ReadOnlyMemory<byte>(rented.AsSpan(0, bytesWritten).ToArray());
                             }

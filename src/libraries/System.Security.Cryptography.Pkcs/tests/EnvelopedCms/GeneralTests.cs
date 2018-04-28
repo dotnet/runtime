@@ -113,6 +113,46 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal<string>(expectedIssuers, actualIssuers);
         }
 
+
+        [Fact]
+        public static void DecodeAllIndefinite()
+        {
+            byte[] encrypted = Convert.FromBase64String(
+                @"
+MIAGCSqGSIb3DQEHA6CAMIACAQAxggFXMIIBUwIBADA7MDMxGTAXBgNVBAoMEERh
+dGEgSW50ZXJjaGFuZ2UxFjAUBgNVBAMMDVVubyBUZXN0IFJvb3QCBFqG6RQwDQYJ
+KoZIhvcNAQEBBQAEggEAUPilAHUe67HG5vDCO/JBmof44G/XnDLtiDrbxD4QekGq
+mdPqazZiLDKEewlBy2uFJr/JijeYx6qNKTXs/EShw/lYnKisaK5ue6JZ7ssMunM9
+HpkiDfM+iyN7PxnC1riZ/Kg2JExY8pf5R1Zuvu29JSLhM9ajWk9C1pBzQRJ4vkY2
+OvFKR2th0Vgw7mTmc2X6HUK4tosB3LGKDVNd6BVoMQMvfkseCqeZOe1KIiBFmhyk
+E+B2UZcD6Z6kLnCk4LNGyoyxW6Thv5s/lwP9p7trVVbPXbuep1l8uMCGj6vjTD66
+AamEIRmTFvEVHzyO2MGG9V0bM+8UpqPAVFNCXOm6mjCABgkqhkiG9w0BBwEwFAYI
+KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
+");
+            EnvelopedCms cms = new EnvelopedCms();
+            cms.Decode(encrypted);
+
+            RecipientInfoCollection recipientInfos = cms.RecipientInfos;
+
+            Assert.Equal(1, recipientInfos.Count);
+            Assert.Equal(
+                SubjectIdentifierType.IssuerAndSerialNumber,
+                recipientInfos[0].RecipientIdentifier.Type);
+
+            string expectedContentHex = "CEE8A7E4765371906D8C25123E57FA1D";
+
+            if (PlatformDetection.IsFullFramework)
+            {
+                // .NET Framework over-counts encrypted content.
+                expectedContentHex += "000000000000";
+            }
+
+            // Still encrypted.
+            Assert.Equal(
+                expectedContentHex,
+                cms.ContentInfo.Content.ByteArrayToHex());
+        }
+
         [Fact]
         public static void TestGetContentTypeEnveloped()
         {

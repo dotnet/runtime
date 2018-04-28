@@ -470,6 +470,34 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Throws<CryptographicException>(
                 () => AsnSerializer.Deserialize<OptionalValues>(inputData, AsnEncodingRules.BER));
         }
+
+        [Fact]
+        public static void ReadIndefiniteLengthCustomTaggedStrings()
+        {
+            byte[] inputData = (
+                // (constructed) SEQUENCE (indefinite)
+                "3080" +
+                  // (constructed) CONTEXT-SPECIFIC 0 (indefinite)
+                  "A080" +
+                    // OCTET STRING (3): 020100
+                    "0403020100" +
+                    // EoC ([0])
+                    "0000" +
+                  // (constructed) CONTEXT-SPECIFIC 1 (indefinite)
+                  "A180" +
+                    // BIT STRING (4) (0 unused bits): 010203
+                    "030400010203" +
+                    // EoC ([1])
+                    "0000" +
+                  // EoC (SEQUENCE)
+                  "0000").HexToByteArray();
+
+            CustomTaggedBinaryStrings parsed =
+                AsnSerializer.Deserialize<CustomTaggedBinaryStrings>(inputData, AsnEncodingRules.BER);
+
+            Assert.Equal("020100", parsed.OctetString.ByteArrayToHex());
+            Assert.Equal("010203", parsed.BitString.ByteArrayToHex());
+        }
     }
 
     // RFC 3280 / ITU-T X.509
@@ -840,5 +868,17 @@ namespace System.Security.Cryptography.Tests.Asn1
 
         [IA5String, OptionalValue]
         public string IA5String;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct CustomTaggedBinaryStrings
+    {
+        [OctetString]
+        [ExpectedTag(0)]
+        public ReadOnlyMemory<byte> OctetString;
+
+        [BitString]
+        [ExpectedTag(1)]
+        public ReadOnlyMemory<byte> BitString;
     }
 }
