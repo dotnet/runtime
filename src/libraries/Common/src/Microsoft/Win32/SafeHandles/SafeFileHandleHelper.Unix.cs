@@ -10,9 +10,6 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal static class SafeFileHandleHelper
     {
-        /// <summary>A handle value of -1.</summary>
-        private static readonly IntPtr s_invalidHandle = new IntPtr(-1);
-
         /// <summary>Opens the specified file with the requested flags and mode.</summary>
         /// <param name="path">The path to the file.</param>
         /// <param name="flags">The flags with which to open the file.</param>

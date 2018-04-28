@@ -14,11 +14,9 @@ namespace System
     {
         private const int DefaultConsoleBufferSize = 256; // default size of buffer used in stream readers/writers
 
-        private static IntPtr s_InvalidHandleValue = new IntPtr(-1);
+        private static IntPtr InvalidHandleValue => new IntPtr(-1);
 
-        private static bool s_isWindows7 = GetIsWindows7();
-
-        private static bool GetIsWindows7()
+        private static bool IsWindows7()
         {
             // Version lies for all apps from the OS kick in starting with Windows 8 (6.2). They can
             // also be added via appcompat (by the OS or the users) so this can only be used as a hint.
@@ -64,7 +62,7 @@ namespace System
             // stderr, & stdin could independently be set to INVALID_HANDLE_VALUE.
             // Additionally they might use 0 as an invalid handle.  We also need to
             // ensure that if the handle is meant to be writable it actually is.
-            if (handle == IntPtr.Zero || handle == s_InvalidHandleValue ||
+            if (handle == IntPtr.Zero || handle == InvalidHandleValue ||
                 (access != FileAccess.Read && !ConsoleHandleIsWritable(handle)))
             {
                 return Stream.Null;
@@ -424,7 +422,7 @@ namespace System
             get
             {
                 IntPtr handle = InputHandle;
-                if (handle == s_InvalidHandleValue)
+                if (handle == InvalidHandleValue)
                     throw new IOException(SR.IO_NoConsole);
 
                 int mode = 0;
@@ -436,7 +434,7 @@ namespace System
             set
             {
                 IntPtr handle = InputHandle;
-                if (handle == s_InvalidHandleValue)
+                if (handle == InvalidHandleValue)
                     throw new IOException(SR.IO_NoConsole);
 
                 int mode = 0;
@@ -646,7 +644,7 @@ namespace System
                                 throw Win32Marshal.GetExceptionForWin32Error(error, string.Empty);
                         }
                     }
-                    else if (result >= builder.Capacity - 1 || (s_isWindows7 && result >= builder.Capacity / sizeof(char) - 1))
+                    else if (result >= builder.Capacity - 1 || (IsWindows7() && result >= builder.Capacity / sizeof(char) - 1))
                     {
                         // Our buffer was full. As this API truncates we need to increase our size and reattempt.
                         // Note that Windows 7 copies count of bytes into the output buffer but returns count of chars
@@ -784,7 +782,7 @@ namespace System
             int conSize;
 
             IntPtr hConsole = OutputHandle;
-            if (hConsole == s_InvalidHandleValue)
+            if (hConsole == InvalidHandleValue)
                 throw new IOException(SR.IO_NoConsole);
 
             // get the number of character cells in the current buffer
@@ -1082,7 +1080,7 @@ namespace System
             succeeded = false;
 
             IntPtr outputHandle = OutputHandle;
-            if (outputHandle == s_InvalidHandleValue)
+            if (outputHandle == InvalidHandleValue)
             {
                 if (throwOnNoConsole)
                 {
@@ -1129,7 +1127,7 @@ namespace System
             internal WindowsConsoleStream(IntPtr handle, FileAccess access, bool useFileAPIs)
                 : base(access)
             {
-                Debug.Assert(handle != IntPtr.Zero && handle != s_InvalidHandleValue, "ConsoleStream expects a valid handle!");
+                Debug.Assert(handle != IntPtr.Zero && handle != InvalidHandleValue, "ConsoleStream expects a valid handle!");
                 _handle = handle;
                 _isPipe = Interop.Kernel32.GetFileType(handle) == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
                 _useFileAPIs = useFileAPIs;

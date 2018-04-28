@@ -18,7 +18,6 @@ namespace System.IO.MemoryMappedFiles
         /// out empty).
         /// </summary>
 
-        private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
         private static SafeMemoryMappedFileHandle CreateCore(
             FileStream fileStream, string mapName, HandleInheritability inheritability,
             MemoryMappedFileAccess access, MemoryMappedFileOptions options, long capacity)
@@ -29,7 +28,7 @@ namespace System.IO.MemoryMappedFiles
 
             SafeMemoryMappedFileHandle handle = fileHandle != null ?
                 Interop.CreateFileMapping(fileHandle, ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName) :
-                Interop.CreateFileMapping(INVALID_HANDLE_VALUE, ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName);
+                Interop.CreateFileMapping(new IntPtr(-1), ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName);
 
             int errorCode = Marshal.GetLastWin32Error();
             if (!handle.IsInvalid)
@@ -100,7 +99,7 @@ namespace System.IO.MemoryMappedFiles
             while (waitRetries > 0)
             {
                 // try to create
-                handle = Interop.CreateFileMapping(INVALID_HANDLE_VALUE, ref secAttrs,
+                handle = Interop.CreateFileMapping(new IntPtr(-1), ref secAttrs,
                     GetPageAccess(access) | (int)options, capacity, mapName);
 
                 if (!handle.IsInvalid)
