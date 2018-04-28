@@ -433,8 +433,6 @@ namespace System.Diagnostics
             }
         }
 
-        private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
-
         /// <summary>Starts the process using the supplied start info.</summary>
         /// <param name="startInfo">The start info with which to start the process.</param>
         private unsafe bool StartWithCreateProcess(ProcessStartInfo startInfo)
@@ -586,9 +584,9 @@ namespace System.Diagnostics
                         }
                     }
 
-                    if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != (IntPtr)INVALID_HANDLE_VALUE)
+                    if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != new IntPtr(-1))
                         procSH.InitialSetHandle(processInfo.hProcess);
-                    if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != (IntPtr)INVALID_HANDLE_VALUE)
+                    if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != new IntPtr(-1))
                         threadSH.InitialSetHandle(processInfo.hThread);
 
                     if (!retVal)
