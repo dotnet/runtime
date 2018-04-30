@@ -4,6 +4,29 @@
       "environment": {},
       "enabled": true,
       "continueOnError": true,
+      "displayName": "run begin.ps1",
+      "timeoutInMinutes": 0,
+      "alwaysRun": true,
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "targetType": "inline",
+        "filePath": "",
+        "arguments": "",
+        "script": "if (Test-Path \"$Env:AgentToolsPath\\begin.ps1\") {\n   \"$Env:AgentToolsPath\\begin.ps1 script found. Executing...\"\n    & $Env:AgentToolsPath\\begin.ps1\n} else {\n   \"$Env:AgentToolsPath\\begin.ps1 script does not exist. Moving on...\"\n}",
+        "errorActionPreference": "continue",
+        "failOnStderr": "false",
+        "ignoreLASTEXITCODE": "true",
+        "workingDirectory": ""
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
       "alwaysRun": false,
       "displayName": "Cleanup previous build if present",
       "timeoutInMinutes": 0,
@@ -271,36 +294,6 @@
     {
       "environment": {},
       "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Cleanup VSTS Agent",
-      "timeoutInMinutes": 0,
-      "condition": "always()",
-      "refName": "Task14",
-      "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "latest",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": "",
-        "platform": "$(PB_TargetArchitecture)",
-        "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Perform Cleanup Tasks",
@@ -358,6 +351,29 @@
         "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)",
         "Parallel": "false",
         "ParallelCount": "8"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "run end.ps1",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "targetType": "inline",
+        "filePath": "",
+        "arguments": "",
+        "script": "if (Test-Path \"$Env:AgentToolsPath\\end.ps1\") {\n   \"$Env:AgentToolsPath\\end.ps1 script found. Executing...\"\n    & $Env:AgentToolsPath\\end.ps1\n} else {\n   \"$Env:AgentToolsPath\\end.ps1 script does not exist. Moving on...\"\n}",
+        "errorActionPreference": "continue",
+        "failOnStderr": "false",
+        "ignoreLASTEXITCODE": "true",
+        "workingDirectory": ""
       }
     }
   ],
