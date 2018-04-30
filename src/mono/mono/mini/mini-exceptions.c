@@ -2938,6 +2938,16 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 		int status;
 		pid_t crashed_pid = getpid ();
 
+		gchar *output = NULL;
+		MonoContext mctx;
+		if (ctx) {
+			mono_sigctx_to_monoctx (ctx, &mctx);
+
+			// Do before forking
+			if (!mono_threads_summarize (&mctx, &output))
+				g_assert_not_reached ();
+		}
+
 		/*
 		 * glibc fork acquires some locks, so if the crash happened inside malloc/free,
 		 * it will deadlock. Call the syscall directly instead.
@@ -2966,17 +2976,14 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 #if defined(TARGET_OSX)
 		if (mono_merp_enabled ()) {
 			if (pid == 0) {
-				MonoContext mctx;
 				if (!ctx) {
 					mono_runtime_printf_err ("\nMust always pass non-null context when using merp.\n");
 					exit (1);
 				}
 
-				mono_sigctx_to_monoctx (ctx, &mctx);
-
 				intptr_t thread_pointer = (intptr_t) MONO_CONTEXT_GET_SP (&mctx);
 
-				mono_merp_invoke (crashed_pid, thread_pointer, signal);
+				mono_merp_invoke (crashed_pid, thread_pointer, signal, output);
 
 				exit (1);
 			}

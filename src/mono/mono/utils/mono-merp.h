@@ -45,7 +45,7 @@ gboolean mono_merp_enabled (void);
  * crash dump (leaving the caller to call exit), or terminates the runtime
  * when the registered telemetry application does not respond.
  */
-void mono_merp_invoke (pid_t crashed_pid, intptr_t thread_pointer, const char *signal);
+void mono_merp_invoke (pid_t crashed_pid, intptr_t thread_pointer, const char *signal, const char *dump_file);
 
 
 #endif // TARGET_OSX
