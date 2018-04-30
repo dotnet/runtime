@@ -342,6 +342,7 @@ public static class ConfigKnobsDoc
         "`System.GC.Concurrent` | Enable concurrent GC | boolean\n" +
         "`System.GC.Server` | Enable server GC | boolean\n" +
         "`System.GC.RetainVM` | Put segments that should be deleted on a standby list for future use instead of releasing them back to the OS | boolean\n" +
+        "`System.Runtime.TieredCompilation` | Enable tiered compilation | boolean\n" +
         "`System.Threading.ThreadPool.MinThreads` | Override MinThreads for the ThreadPool worker pool | numeric\n" +
         "`System.Threading.ThreadPool.MaxThreads` | Override MaxThreads for the ThreadPool worker pool | numeric\n\n\n";
 
