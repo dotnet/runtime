@@ -13,9 +13,29 @@ namespace System.Drawing.Tests
 
     public class ToolboxBitmapAttributeTests : RemoteExecutorTestBase
     {
+        private static Size DefaultSize = new Size(16, 16);
+        private void AssertDefaultSize(Image image)
+        {
+            try
+            {
+                Assert.Equal(DefaultSize, image.Size);
+            }
+            catch (Exception ex)
+            {
+                // On .NET Framework sometimes the size might be default or it might
+                // be disposed in which case Size property throws an ArgumentException
+                // so allow both cases see https://github.com/dotnet/corefx/issues/27361. 
+                if (PlatformDetection.IsFullFramework && ex is ArgumentException)
+                {
+                    return;
+                }
+                throw;
+            }
+        }
+
         public static IEnumerable<object[]> Ctor_FileName_TestData()
         {
-            yield return new object[] { null, new Size(16, 16) };
+            yield return new object[] { null, new Size(0, 0) };
             yield return new object[] { Helpers.GetTestBitmapPath("bitmap_173x183_indexed_8bit.bmp"), new Size(173, 183) };
             yield return new object[] { Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"), new Size(16, 16) };
             yield return new object[] { Helpers.GetTestBitmapPath("invalid.ico"), new Size(0, 0) };
@@ -32,7 +52,7 @@ namespace System.Drawing.Tests
             {
                 if (size == Size.Empty)
                 {
-                    Assert.Throws<ArgumentException>(null, () => image.Size);
+                    AssertDefaultSize(image);
                 }
                 else
                 {
@@ -54,7 +74,7 @@ namespace System.Drawing.Tests
             {
                 if (width == -1 && height == -1)
                 {
-                    AssertExtensions.Throws<ArgumentException>(null, () => image.Size);   
+                    AssertDefaultSize(image);
                 }
                 else
                 {
@@ -84,7 +104,7 @@ namespace System.Drawing.Tests
             {
                 if (width == -1 && height == -1)
                 {
-                    Assert.Throws<ArgumentException>(null, () => image.Size);
+                    AssertDefaultSize(image);
                 }
                 else
                 {

@@ -119,6 +119,13 @@ namespace System.Drawing
                 if (img == null)
                 {
                     img = s_defaultComponent.GetImage(type, large);
+
+                    // We don't want to hand out the static shared image 
+                    // because otherwise it might get disposed. 
+                    if (img != null)
+                    {
+                        img = (Image)img.Clone();
+                    }
                 }
 
                 if (large)

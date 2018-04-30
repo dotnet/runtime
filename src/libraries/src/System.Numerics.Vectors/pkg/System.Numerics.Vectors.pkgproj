@@ -15,12 +15,7 @@
     <ProjectReference Include="..\src\System.Numerics.Vectors.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <InboxOnTargetFramework Include="MonoAndroid10" />
-    <InboxOnTargetFramework Include="MonoTouch10" />
-    <InboxOnTargetFramework Include="xamarinios10" />
-    <InboxOnTargetFramework Include="xamarinmac20" />
-    <InboxOnTargetFramework Include="xamarintvos10" />
-    <InboxOnTargetFramework Include="xamarinwatchos10" />
+    <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
     <InboxOnTargetFramework Include="netcoreapp2.0" />
     <InboxOnTargetFramework Include="uap10.0.16299" />
   </ItemGroup>
