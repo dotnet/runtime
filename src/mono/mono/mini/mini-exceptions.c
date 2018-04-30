@@ -1233,6 +1233,43 @@ next:
 	}
 }
 
+#ifdef TARGET_OSX
+static gboolean
+mono_get_portable_ip (intptr_t in_ip, intptr_t *out_ip, char *out_name)
+{
+	// We're only able to get reliable info about pointers in this assembly
+	Dl_info info;
+	int success = dladdr ((void*) mono_get_portable_ip, &info);
+	intptr_t this_module = (gpointer) info.dli_fbase;
+	g_assert (success);
+
+	success = dladdr ((void*)in_ip, &info);
+	if (!success)
+		return FALSE;
+
+	if ((intptr_t) info.dli_fbase == this_module) {
+		// FIXME: Make generalize away from llvm tools?
+		// So lldb starts the pointer base at 0x100000000
+		// and expects to get pointers as (offset + constant)
+		//
+		// Quirk shared by:
+		// /usr/bin/symbols  -- symbols version:			@(#)PROGRAM:symbols  PROJECT:SamplingTools-63501
+		// *CoreSymbolicationDT.framework version:	63750*/
+		intptr_t offset = in_ip - this_module;
+		intptr_t magic_value = offset + 0x100000000;
+
+		*out_ip = magic_value;
+	}
+
+#ifndef MONO_PRIVATE_CRASHES
+	if (info.dli_saddr && out_name) {
+		strncpy (out_name, info.dli_sname, MONO_MAX_SUMMARY_NAME_LEN);
+	}
+#endif
+	return TRUE;
+}
+#endif
+
 MonoBoolean
 ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
 			  MonoReflectionMethod **method, 
