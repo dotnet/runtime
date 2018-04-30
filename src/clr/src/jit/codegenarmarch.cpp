@@ -1711,38 +1711,24 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         genJumpToThrowHlpBlk(genJumpKindForOper(GT_GE, CK_UNSIGNED), SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
     }
 
-    // Compute the address of the array element.
-    switch (node->gtElemSize)
+    // Can we use a ScaledAdd instruction?
+    //
+    if (isPow2(node->gtElemSize) && (node->gtElemSize <= 32768))
     {
-        case 1:
-            // dest = base + index
-            getEmitter()->emitIns_R_R_R(INS_add, emitActualTypeSize(node), node->gtRegNum, base->gtRegNum,
-                                        index->gtRegNum);
-            break;
+        DWORD scale;
+        BitScanForward(&scale, node->gtElemSize);
 
-        case 2:
-        case 4:
-        case 8:
-        case 16:
-        {
-            DWORD lsl;
-            BitScanForward(&lsl, node->gtElemSize);
+        // dest = base + index * scale
+        genScaledAdd(emitActualTypeSize(node), node->gtRegNum, base->gtRegNum, index->gtRegNum, scale);
+    }
+    else // we have to load the element size and use a MADD (multiply-add) instruction
+    {
+        // tmpReg = element size
+        CodeGen::genSetRegToIcon(tmpReg, (ssize_t)node->gtElemSize, TYP_INT);
 
-            // dest = base + index * scale
-            genScaledAdd(emitActualTypeSize(node), node->gtRegNum, base->gtRegNum, index->gtRegNum, lsl);
-            break;
-        }
-
-        default:
-        {
-            // tmp = scale
-            CodeGen::genSetRegToIcon(tmpReg, (ssize_t)node->gtElemSize, TYP_INT);
-
-            // dest = index * tmp + base
-            getEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->gtRegNum, index->gtRegNum, tmpReg,
-                                          base->gtRegNum);
-            break;
-        }
+        // dest = index * tmpReg + base
+        getEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->gtRegNum, index->gtRegNum, tmpReg,
+                                      base->gtRegNum);
     }
 
     // dest = dest + elemOffs
@@ -3500,11 +3486,20 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 void CodeGen::genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale)
 {
     emitter* emit = getEmitter();
+    if (scale == 0)
+    {
+        // target = base + index
+        getEmitter()->emitIns_R_R_R(INS_add, attr, targetReg, baseReg, indexReg);
+    }
+    else
+    {
+// target = base + index<<scale
 #if defined(_TARGET_ARM_)
-    emit->emitIns_R_R_R_I(INS_add, attr, targetReg, baseReg, indexReg, scale, INS_FLAGS_DONT_CARE, INS_OPTS_LSL);
+        emit->emitIns_R_R_R_I(INS_add, attr, targetReg, baseReg, indexReg, scale, INS_FLAGS_DONT_CARE, INS_OPTS_LSL);
 #elif defined(_TARGET_ARM64_)
-    emit->emitIns_R_R_R_I(INS_add, attr, targetReg, baseReg, indexReg, scale, INS_OPTS_LSL);
+        emit->emitIns_R_R_R_I(INS_add, attr, targetReg, baseReg, indexReg, scale, INS_OPTS_LSL);
 #endif
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3539,59 +3534,52 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         GenTree* memBase = lea->Base();
         GenTree* index   = lea->Index();
 
-        DWORD lsl;
+        DWORD scale;
 
         assert(isPow2(lea->gtScale));
-        BitScanForward(&lsl, lea->gtScale);
+        BitScanForward(&scale, lea->gtScale);
 
-        assert(lsl <= 4);
+        assert(scale <= 4);
 
         if (offset != 0)
         {
             regNumber tmpReg = lea->GetSingleTempReg();
 
-            if (emitter::emitIns_valid_imm_for_add(offset))
+            // When generating fully interruptible code we have to use the "large offset" sequence
+            // when calculating a EA_BYREF as we can't report a byref that points outside of the object
+            //
+            bool useLargeOffsetSeq = compiler->genInterruptible && (size == EA_BYREF);
+
+            if (!useLargeOffsetSeq && emitter::emitIns_valid_imm_for_add(offset))
             {
-                if (lsl > 0)
-                {
-                    // Generate code to set tmpReg = base + index*scale
-                    genScaledAdd(size, tmpReg, memBase->gtRegNum, index->gtRegNum, lsl);
-                }
-                else // no scale
-                {
-                    // Generate code to set tmpReg = base + index
-                    emit->emitIns_R_R_R(INS_add, size, tmpReg, memBase->gtRegNum, index->gtRegNum);
-                }
+                // Generate code to set tmpReg = base + index*scale
+                genScaledAdd(size, tmpReg, memBase->gtRegNum, index->gtRegNum, scale);
 
                 // Then compute target reg from [tmpReg + offset]
                 emit->emitIns_R_R_I(INS_add, size, lea->gtRegNum, tmpReg, offset);
             }
-            else // large offset
+            else // large offset sequence
             {
-                // First load/store tmpReg with the large offset constant
-                instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
-                // Then add the base register
-                //      rd = rd + base
-                emit->emitIns_R_R_R(INS_add, size, tmpReg, tmpReg, memBase->gtRegNum);
-
                 noway_assert(tmpReg != index->gtRegNum);
+                noway_assert(tmpReg != memBase->gtRegNum);
 
-                // Then compute target reg from [tmpReg + index*scale]
-                genScaledAdd(size, lea->gtRegNum, tmpReg, index->gtRegNum, lsl);
+                // First load/store tmpReg with the offset constant
+                //      rTmp = imm
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
+
+                // Then add the scaled index register
+                //      rTmp = rTmp + index*scale
+                genScaledAdd(EA_PTRSIZE, tmpReg, tmpReg, index->gtRegNum, scale);
+
+                // Then compute target reg from [base + tmpReg ]
+                //      rDst = base + rTmp
+                emit->emitIns_R_R_R(INS_add, size, lea->gtRegNum, memBase->gtRegNum, tmpReg);
             }
         }
         else
         {
-            if (lsl > 0)
-            {
-                // Then compute target reg from [base + index*scale]
-                genScaledAdd(size, lea->gtRegNum, memBase->gtRegNum, index->gtRegNum, lsl);
-            }
-            else
-            {
-                // Then compute target reg from [base + index]
-                emit->emitIns_R_R_R(INS_add, size, lea->gtRegNum, memBase->gtRegNum, index->gtRegNum);
-            }
+            // Then compute target reg from [base + index*scale]
+            genScaledAdd(size, lea->gtRegNum, memBase->gtRegNum, index->gtRegNum, scale);
         }
     }
     else if (lea->Base())
