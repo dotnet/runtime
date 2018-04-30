@@ -27,6 +27,6 @@ enum TcpState
     TcpState_DeleteTcb
 };
 
-int32_t SystemNative_MapTcpState(int32_t tcpState);
+DLLEXPORT int32_t SystemNative_MapTcpState(int32_t tcpState);
 
 END_EXTERN_C

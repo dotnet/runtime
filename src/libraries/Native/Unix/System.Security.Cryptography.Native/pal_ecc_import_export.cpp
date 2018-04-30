@@ -5,7 +5,7 @@
 #include "pal_ecc_import_export.h"
 #include "pal_utilities.h"
 
-ECCurveType MethodToCurveType(EC_METHOD* method)
+static ECCurveType MethodToCurveType(EC_METHOD* method)
 {
     if (method == EC_GFp_mont_method())
         return ECCurveType::PrimeMontgomery;
@@ -21,7 +21,7 @@ ECCurveType MethodToCurveType(EC_METHOD* method)
     return ECCurveType::Unspecified;
 }
 
-const EC_METHOD* CurveTypeToMethod(ECCurveType curveType)
+static const EC_METHOD* CurveTypeToMethod(ECCurveType curveType)
 {
     if (curveType == ECCurveType::PrimeShortWeierstrass)
         return EC_GFp_simple_method();

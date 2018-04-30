@@ -18,7 +18,7 @@
 #error System must have AF_PACKET or AF_LINK.
 #endif
 
-enum NetworkInterfaceType MapHardwareType(uint16_t nativeType)
+uint16_t MapHardwareType(uint16_t nativeType)
 {
 #if defined(AF_PACKET)
     switch (nativeType)

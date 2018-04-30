@@ -144,4 +144,26 @@ struct NativeIPInterfaceStatistics
     uint64_t InNoProto;
 };
 
+DLLEXPORT int32_t SystemNative_GetTcpGlobalStatistics(struct TcpGlobalStatistics* retStats);
+
+DLLEXPORT int32_t SystemNative_GetIPv4GlobalStatistics(struct IPv4GlobalStatistics* retStats);
+
+DLLEXPORT int32_t SystemNative_GetUdpGlobalStatistics(struct UdpGlobalStatistics* retStats);
+
+DLLEXPORT int32_t SystemNative_GetIcmpv4GlobalStatistics(struct Icmpv4GlobalStatistics* retStats);
+
+DLLEXPORT int32_t SystemNative_GetIcmpv6GlobalStatistics(struct Icmpv6GlobalStatistics* retStats);
+
+DLLEXPORT int32_t SystemNative_GetEstimatedTcpConnectionCount(void);
+
+DLLEXPORT int32_t SystemNative_GetActiveTcpConnectionInfos(struct NativeTcpConnectionInformation* infos, int32_t* infoCount);
+
+DLLEXPORT int32_t SystemNative_GetEstimatedUdpListenerCount(void);
+
+DLLEXPORT int32_t SystemNative_GetActiveUdpListeners(struct IPEndPointInfo* infos, int32_t* infoCount);
+
+DLLEXPORT int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, struct NativeIPInterfaceStatistics* retStats);
+
+DLLEXPORT int32_t SystemNative_GetNumRoutes(void);
+
 END_EXTERN_C

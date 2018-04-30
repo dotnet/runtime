@@ -19,7 +19,7 @@ static const int MaxVersionStringLength = 32;
 
 static void* libssl = nullptr;
 
-bool OpenLibrary()
+static bool OpenLibrary()
 {
     // If there is an override of the version specified using the CLR_OPENSSL_VERSION_OVERRIDE
     // env variable, try to load that first.
@@ -59,7 +59,7 @@ bool OpenLibrary()
 }
 
 __attribute__((constructor))
-void InitializeOpenSSLShim()
+static void InitializeOpenSSLShim()
 {
     if (!OpenLibrary())
     {
@@ -77,7 +77,7 @@ void InitializeOpenSSLShim()
 }
 
 __attribute__((destructor))
-void ShutdownOpenSSLShim()
+static void ShutdownOpenSSLShim()
 {
     if (libssl != nullptr)
     {

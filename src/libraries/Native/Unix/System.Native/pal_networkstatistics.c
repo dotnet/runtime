@@ -245,7 +245,7 @@ int32_t SystemNative_GetEstimatedTcpConnectionCount()
     return count;
 }
 
-size_t GetEstimatedTcpPcbSize()
+static size_t GetEstimatedTcpPcbSize()
 {
     void* oldp = NULL;
     void* newp = NULL;
@@ -345,7 +345,7 @@ int32_t SystemNative_GetEstimatedUdpListenerCount()
     return count;
 }
 
-size_t GetEstimatedUdpPcbSize()
+static size_t GetEstimatedUdpPcbSize()
 {
     void* oldp = NULL;
     void* newp = NULL;

@@ -35,6 +35,10 @@ pOSStatus: Receives the last OSStatus value.
 */
 extern "C" int32_t AppleCryptoNative_StoreEnumerateMachineRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
 
+extern "C" int32_t AppleCryptoNative_StoreEnumerateUserDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+
+extern "C" int32_t AppleCryptoNative_StoreEnumerateMachineDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+
 /*
 Enumerate the certificates which are disallowed by the user.
 

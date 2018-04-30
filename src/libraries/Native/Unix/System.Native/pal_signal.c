@@ -81,7 +81,7 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
 // Entrypoint for the thread that handles signals where our handling
 // isn't signal-safe.  Those signal handlers write the signal to a pipe,
 // which this loop reads and processes.
-void* SignalHandlerLoop(void* arg)
+static void* SignalHandlerLoop(void* arg)
 {
     // Passed in argument is a ptr to the file descriptor
     // for the read end of the pipe.
