@@ -9,6 +9,8 @@
 #include <time.h>
 #include <sys/time.h>
 
+#include "pal_datetime.h"
+
 static const int64_t TICKS_PER_SECOND = 10000000; /* 10^7 */
 #if HAVE_CLOCK_REALTIME
 static const int64_t NANOSECONDS_PER_TICK = 100;

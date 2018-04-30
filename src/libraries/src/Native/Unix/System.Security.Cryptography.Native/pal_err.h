@@ -21,6 +21,10 @@ was caused by an allocation failure.
 */
 extern "C" uint64_t CryptoNative_ErrGetErrorAlloc(int32_t* isAllocFailure);
 
+extern "C" uint64_t CryptoNative_ErrPeekError(void);
+
+extern "C" uint64_t CryptoNative_ErrPeekLastError(void);
+
 /*
 Shims the ERR_reason_error_string method.
 

@@ -4,6 +4,12 @@
 
 #pragma once
 
+#include "pal_compiler.h"
+
+BEGIN_EXTERN_C
+
 #include "pal_types.h"
 
-extern "C" int32_t SystemNative_GetNodeName(char* version, int* capacity);
+DLLEXPORT int32_t SystemNative_GetNodeName(char* version, int* capacity);
+
+END_EXTERN_C

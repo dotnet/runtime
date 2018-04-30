@@ -46,6 +46,22 @@ extern "C" Error SystemNative_CloseNetworkChangeListenerSocket(int32_t socket)
     return err == 0 || CheckInterrupted(err) ? Error_SUCCESS : static_cast<Error>(SystemNative_ConvertErrorPlatformToPal(errno));
 }
 
+static NetworkChangeKind ReadNewLinkMessage(nlmsghdr* hdr)
+{
+    assert(hdr != nullptr);
+    ifinfomsg* ifimsg;
+    ifimsg = reinterpret_cast<ifinfomsg*>(NLMSG_DATA(hdr));
+    if (ifimsg->ifi_family == AF_INET)
+    {
+        if ((ifimsg->ifi_flags & IFF_UP) != 0)
+        {
+            return NetworkChangeKind::LinkAdded;
+        }
+    }
+
+    return NetworkChangeKind::None;
+}
+
 extern "C" void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
 {
     char buffer[4096];
@@ -95,20 +111,4 @@ extern "C" void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetwo
                 break;
         }
     }
-}
-
-NetworkChangeKind ReadNewLinkMessage(nlmsghdr* hdr)
-{
-    assert(hdr != nullptr);
-    ifinfomsg* ifimsg;
-    ifimsg = reinterpret_cast<ifinfomsg*>(NLMSG_DATA(hdr));
-    if (ifimsg->ifi_family == AF_INET)
-    {
-        if ((ifimsg->ifi_flags & IFF_UP) != 0)
-        {
-            return NetworkChangeKind::LinkAdded;
-        }
-    }
-
-    return NetworkChangeKind::None;
 }

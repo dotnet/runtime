@@ -4,9 +4,15 @@
 
 #pragma once
 
+#include "pal_compiler.h"
+
+BEGIN_EXTERN_C
+
 #include "pal_types.h"
 #include "pal_errno.h"
 
 
-extern "C" int32_t SystemNative_Sysctl(int* name, unsigned int namelen, void* value, size_t* len);
+DLLEXPORT int32_t SystemNative_Sysctl(int* name, unsigned int namelen, void* value, size_t* len);
+
+END_EXTERN_C
 
