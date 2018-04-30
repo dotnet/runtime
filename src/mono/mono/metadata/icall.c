@@ -7929,7 +7929,7 @@ ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcessId (MonoError *error)
 }
 
 ICALL_EXPORT MonoBoolean
-ves_icall_Mono_TlsProviderFactory_IsBtlsSupported (void)
+ves_icall_Mono_TlsProviderFactory_IsBtlsSupported (MonoError *error)
 {
 #if HAVE_BTLS
 	return TRUE;
