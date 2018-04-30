@@ -896,5 +896,22 @@ namespace System.PrivateUri.Tests
             Uri u = new Uri(new Uri("http://example.com/", UriKind.Absolute), new Uri("C(B:G", UriKind.Relative));
             Assert.Equal("http://example.com/C(B:G", u.ToString());
         }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This test depends on a fix that has not yet made it to .NET Framework.")]
+        public static void Uri_ColonInLongRelativeUri_SchemeSuccessfullyParsed()
+        {
+            Uri absolutePart = new Uri("http://www.contoso.com");
+            string relativePart = "a/" + new String('a', 1024) + ":"; // 1024 is the maximum scheme length supported by System.Uri.
+            Uri u = new Uri(absolutePart, relativePart); // On .NET Framework this will throw System.UriFormatException: Invalid URI: The Uri scheme is too long.
+            Assert.Equal("http", u.Scheme);
+        }
+
+        [Fact]
+        public static void Uri_ExtremelyLongScheme_ThrowsUriFormatException()
+        {
+            string largeString = new String('a', 1_000_000) + ":"; // 2MB is large enough to cause a stack overflow if we stackalloc the scheme buffer.
+            Assert.Throws<UriFormatException>(() => new Uri(largeString));
+        }
     }
 }
