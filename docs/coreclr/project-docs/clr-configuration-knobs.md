@@ -9,6 +9,7 @@ Name | Description | Type
 `System.GC.Concurrent` | Enable concurrent GC | boolean
 `System.GC.Server` | Enable server GC | boolean
 `System.GC.RetainVM` | Put segments that should be deleted on a standby list for future use instead of releasing them back to the OS | boolean
+`System.Runtime.TieredCompilation` | Enable tiered compilation | boolean
 `System.Threading.ThreadPool.MinThreads` | Override MinThreads for the ThreadPool worker pool | numeric
 `System.Threading.ThreadPool.MaxThreads` | Override MaxThreads for the ThreadPool worker pool | numeric
 
@@ -16,7 +17,7 @@ Name | Description | Type
 
 ## Environment/Registry Configuration Knobs
 
-This table was machine-generated using `clr-configuration-knobs.csx` script from repository commit [578a872](https://github.com/dotnet/coreclr/commit/578a87268579d8639c0b17fd147a1511813edd80) on 2018-01-18. It might be out of date. To generate latest documentation run `{dotnet} csi clr-configuration-knobs.csx` from this file directory.
+This table was machine-generated using `clr-configuration-knobs.csx` script from repository commit [8611986](https://github.com/dotnet/coreclr/commit/861198647dc232ecaf05b4a8e2f10605e7a22537) on 4/30/2018. It might be out of date. To generate latest documentation run `{dotnet} csi clr-configuration-knobs.csx` from this file directory.
 
 When using these configurations from environment variables, the variables need to have the `COMPlus_` prefix in their names. e.g. To set DumpJittedMethods to 1, add the environment variable `COMPlus_DumpJittedMethods=1`.
 
@@ -27,39 +28,36 @@ See also [Setting configuration variables](../building/viewing-jit-dumps.md#sett
 2. [ARM Configuration Knobs](#arm-configuration-knobs)
 3. [Assembly Loader Configuration Knobs](#assembly-loader-configuration-knobs)
 4. [Conditional breakpoints Configuration Knobs](#conditional-breakpoints-configuration-knobs)
-5. [CSE Configuration Knobs](#cse-configuration-knobs)
-6. [Debugger Configuration Knobs](#debugger-configuration-knobs)
-7. [Diagnostics (internal general-purpose) Configuration Knobs](#diagnostics-internal-general-purpose-configuration-knobs)
-8. [Exception Handling Configuration Knobs](#exception-handling-configuration-knobs)
-9. [Garbage collector Configuration Knobs](#garbage-collector-configuration-knobs)
-10. [GDBJIT Configuration Knobs](#gdbjit-configuration-knobs)
-11. [IBC Configuration Knobs](#ibc-configuration-knobs)
-12. [Interop Configuration Knobs](#interop-configuration-knobs)
-13. [Interpreter Configuration Knobs](#interpreter-configuration-knobs)
-14. [JIT Configuration Knobs](#jit-configuration-knobs)
-15. [JIT Hardware Intrinsics Configuration Knobs](#jit-hardware-intrinsics-configuration-knobs)
-16. [Jit Pitching Configuration Knobs](#jit-pitching-configuration-knobs)
-17. [Loader Configuration Knobs](#loader-configuration-knobs)
-18. [Loader heap Configuration Knobs](#loader-heap-configuration-knobs)
-19. [Log Configuration Knobs](#log-configuration-knobs)
-20. [MetaData Configuration Knobs](#metadata-configuration-knobs)
-21. [Native Binder Configuration Knobs](#native-binder-configuration-knobs)
-22. [NGEN Configuration Knobs](#ngen-configuration-knobs)
-23. [Performance Configuration Knobs](#performance-configuration-knobs)
-24. [Performance Tracing Configuration Knobs](#performance-tracing-configuration-knobs)
-25. [Profiling API / ETW Configuration Knobs](#profiling-api--etw-configuration-knobs)
-26. [Shim Configuration Knobs](#shim-configuration-knobs)
-27. [Spinning heuristics Configuration Knobs](#spinning-heuristics-configuration-knobs)
-28. [Stress Configuration Knobs](#stress-configuration-knobs)
-29. [Thread (miscellaneous) Configuration Knobs](#thread-miscellaneous-configuration-knobs)
-30. [Thread Suspend Configuration Knobs](#thread-suspend-configuration-knobs)
-31. [Threadpool Configuration Knobs](#threadpool-configuration-knobs)
-32. [Tiered Compilation Configuration Knobs](#tiered-compilation-configuration-knobs)
-33. [TypeLoader Configuration Knobs](#typeloader-configuration-knobs)
-34. [Uncategorized Configuration Knobs](#uncategorized-configuration-knobs)
-35. [Virtual call stubs Configuration Knobs](#virtual-call-stubs-configuration-knobs)
-36. [Watson Configuration Knobs](#watson-configuration-knobs)
-37. [Zap Configuration Knobs](#zap-configuration-knobs)
+5. [Debugger Configuration Knobs](#debugger-configuration-knobs)
+6. [Diagnostics (internal general-purpose) Configuration Knobs](#diagnostics-internal-general-purpose-configuration-knobs)
+7. [Exception Handling Configuration Knobs](#exception-handling-configuration-knobs)
+8. [Garbage collector Configuration Knobs](#garbage-collector-configuration-knobs)
+9. [GDBJIT Configuration Knobs](#gdbjit-configuration-knobs)
+10. [IBC Configuration Knobs](#ibc-configuration-knobs)
+11. [Interop Configuration Knobs](#interop-configuration-knobs)
+12. [Interpreter Configuration Knobs](#interpreter-configuration-knobs)
+13. [JIT Configuration Knobs](#jit-configuration-knobs)
+14. [JIT Hardware Intrinsics Configuration Knobs](#jit-hardware-intrinsics-configuration-knobs)
+15. [Jit Pitching Configuration Knobs](#jit-pitching-configuration-knobs)
+16. [Loader Configuration Knobs](#loader-configuration-knobs)
+17. [Loader heap Configuration Knobs](#loader-heap-configuration-knobs)
+18. [Log Configuration Knobs](#log-configuration-knobs)
+19. [MetaData Configuration Knobs](#metadata-configuration-knobs)
+20. [Native Binder Configuration Knobs](#native-binder-configuration-knobs)
+21. [NGEN Configuration Knobs](#ngen-configuration-knobs)
+22. [Performance Configuration Knobs](#performance-configuration-knobs)
+23. [Profiling API / ETW Configuration Knobs](#profiling-api--etw-configuration-knobs)
+24. [Spinning heuristics Configuration Knobs](#spinning-heuristics-configuration-knobs)
+25. [Stress Configuration Knobs](#stress-configuration-knobs)
+26. [Thread (miscellaneous) Configuration Knobs](#thread-miscellaneous-configuration-knobs)
+27. [Thread Suspend Configuration Knobs](#thread-suspend-configuration-knobs)
+28. [Threadpool Configuration Knobs](#threadpool-configuration-knobs)
+29. [Tiered Compilation Configuration Knobs](#tiered-compilation-configuration-knobs)
+30. [TypeLoader Configuration Knobs](#typeloader-configuration-knobs)
+31. [Uncategorized Configuration Knobs](#uncategorized-configuration-knobs)
+32. [Virtual call stubs Configuration Knobs](#virtual-call-stubs-configuration-knobs)
+33. [Watson Configuration Knobs](#watson-configuration-knobs)
+34. [Zap Configuration Knobs](#zap-configuration-knobs)
 
 #### AppDomain Configuration Knobs
 
@@ -74,16 +72,8 @@ Name | Description | Type | Class | Default Value | Flags
 `ADTakeSnapShot` | Superseded by test hooks | `DWORD` | `INTERNAL` | `0` | 
 `ADULazyMemoryRelease` | On by default. Turned off in cases when people try to catch memory leaks, in which case AD unload should be immediately followed by GC) | `DWORD` | `EXTERNAL` | `1` | 
 `ADURetryCount` | Controls timeout of AD unload. Used for workarounds when machine is too slow, there are network issues etc. | `DWORD` | `EXTERNAL` |  | 
-`AppContextSwitchOverrides` | Allows default switch values defined in AppContext to be overwritten by values in the Config | `STRING` | `INTERNAL` |  | IgnoreEnv \| IgnoreHKLM \| IgnoreHKCU \| IgnoreWindowsQuirkDB \| ConfigFile_ApplicationFirst
-`APPDOMAIN_MANAGER_ASM` | Legacy method to specify the assembly containing the AppDomainManager to use for the default domain | `STRING` | `EXTERNAL` |  | DontPrependCOMPlus_ \| IgnoreHKLM \| IgnoreHKCU
-`APPDOMAIN_MANAGER_TYPE` | LegacyMethod to specify the type containing the AppDomainManager to use for the default domain | `STRING` | `EXTERNAL` |  | DontPrependCOMPlus_  \| IgnoreHKLM \| IgnoreHKCU
-`AppDomainAgilityChecked` | Used to detect AD boundary violations (AD leaks) | `DWORD` | `INTERNAL` |  | 
-`appDomainManagerAssembly` | Config file switch to specify the assembly for the default AppDomainManager. | `STRING` | `EXTERNAL` |  | IgnoreEnv \| IgnoreHKLM \| IgnoreHKCU
-`appDomainManagerType` | Config file switch to specify the type for the default AppDomainManager. | `STRING` | `EXTERNAL` |  | IgnoreEnv \| IgnoreHKLM \| IgnoreHKCU
-`AppDomainNoUnload` | Not used | `DWORD` | `INTERNAL` | `0` | 
 `EnableFullDebug` | Heavy-weight checking for AD boundary violations (AD leaks) | `DWORD` | `INTERNAL` |  | 
 `FinalizeOnShutdown` | When enabled, on shutdown, blocks all user threads and calls finalizers for all finalizable objects, including live objects | `DWORD` | `EXTERNAL` | `DEFAULT_FinalizeOnShutdown` | 
-`TargetFrameworkMoniker` | Allows the test team to specify what TargetFrameworkMoniker to use. | `STRING` | `INTERNAL` |  | IgnoreHKLM \| IgnoreHKCU \| IgnoreConfigFiles \| IgnoreWindowsQuirkDB
 
 #### ARM Configuration Knobs
 
@@ -129,20 +119,11 @@ Name | Description | Type | Class | Default Value | Flags
 `BreakOnUEF` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 `BreakOnUncaughtException` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 
-#### CSE Configuration Knobs
-
-Name | Description | Type | Class | Default Value | Flags 
------|-------------|------|-------|---------------|-------
-`CseBinarySearch` | Sets internal jit constants for CSE | `STRING` | `INTERNAL` |  | REGUTIL_default
-`CseMax` | Sets internal jit constants for CSE | `STRING` | `INTERNAL` |  | REGUTIL_default
-`CseOn` | Internal Jit control of CSE | `STRING` | `UNSUPPORTED` |  | REGUTIL_default
-`CseStats` | Collects CSE statistics | `STRING` | `INTERNAL` |  | REGUTIL_default
-`D::FCE` | Allows an assert when crawling the managed stack for an exception handler | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
-
 #### Debugger Configuration Knobs
 
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
+`D::FCE` | Allows an assert when crawling the managed stack for an exception handler | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 `DbgAssertOnDebuggeeDebugBreak` | If non-zero causes the managed-only debugger to assert on unhandled breakpoints in the debuggee | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 `DbgBreakIfLocksUnavailable` | Allows an assert when the debugger can't take a lock  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 `DbgBreakOnErr` | Allows an assert when we get a failing hresult | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
@@ -253,6 +234,7 @@ Name | Description | Type | Class | Default Value | Flags
 `gcForceCompact` | When set to true, always do compacting GC | `DWORD` | `UNSUPPORTED` |  | 
 `GCgen0size` | Specifies the smallest gen0 size | `DWORD` | `UNSUPPORTED` |  | 
 `GCHeapCount` |  | `DWORD` | `UNSUPPORTED` | `0` | 
+`GCLatencyLevel` | Specifies the GC latency level that you want to optimize for | `DWORD` | `EXTERNAL` | `1` | 
 `GCLatencyMode` | Specifies the GC latency mode - batch, interactive or low latency (note that the same thing can be specified via API which is the supported way) | `DWORD` | `INTERNAL` |  | 
 `GCLogEnabled` | Specifies if you want to turn on logging in GC | `DWORD` | `UNSUPPORTED` | `0` | 
 `GCLogFile` | Specifies the name of the GC log file | `STRING` | `UNSUPPORTED` |  | 
@@ -275,7 +257,6 @@ Name | Description | Type | Class | Default Value | Flags
 `GCStressStep` | Specifies how often StressHeap will actually do a GC in GCStressMix mode | `DWORD` | `INTERNAL` | `1` | 
 `gcTrimCommitOnLowMemory` | When set we trim the committed space more aggressively for the ephemeral seg. This is used for running many instances of server processes where they want to keep as little memory committed as possible | `DWORD` | `EXTERNAL` |  | 
 `HeapVerify` | When set verifies the integrity of the managed heap on entry and exit of each GC | `DWORD` | `UNSUPPORTED` |  | 
-`NewGCCalc` |  | `STRING` | `EXTERNAL` |  | REGUTIL_default
 `SetupGcCoverage` | This doesn't appear to be a config flag | `STRING` | `EXTERNAL` |  | REGUTIL_default
 `SkipGcCoverage` | Specify a list of assembly names to skip with GC Coverage | `STRING` | `INTERNAL` |  | 
 `StatsUpdatePeriod` | Specifies the interval, in seconds, at which to update the statistics | `DWORD` | `UNSUPPORTED` | `60` | 
@@ -295,8 +276,6 @@ Name | Description | Type | Class | Default Value | Flags
 `ConvertIbcData` | Converts between v1 and v2 IBC data | `DWORD` | `UNSUPPORTED` | `1` | REGUTIL_default
 `DisableHotCold` | Master hot/cold splitting switch in Jit64 | `DWORD` | `UNSUPPORTED` |  | 
 `DisableIBC` | Disables the use of IBC data | `DWORD` | `UNSUPPORTED` | `0` | REGUTIL_default
-`IBCPrint` |  | `STRING` | `INTERNAL` |  | REGUTIL_default
-`IBCPrint3` |  | `STRING` | `INTERNAL` |  | REGUTIL_default
 `UseIBCFile` |  | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
 
 #### Interop Configuration Knobs
@@ -304,7 +283,11 @@ Name | Description | Type | Class | Default Value | Flags
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
 `AllowDComReflection` | Allows out of process DCOM clients to marshal blocked reflection types. | `DWORD` | `EXTERNAL` | `0` | 
+`EnableEventPipe` | Enable/disable event pipe.  Non-zero values enable tracing. | `DWORD` | `INTERNAL` | `0` | 
 `EnableRCWCleanupOnSTAShutdown` | Performs RCW cleanup when STA shutdown is detected using IInitializeSpy in classic processes. | `DWORD` | `INTERNAL` | `0` | 
+`EventPipeConfig` | Configuration for EventPipe. | `STRING` | `INTERNAL` |  | 
+`EventPipeOutputFile` | The full path including file name for the trace file that will be written when COMPlus_EnableEventPipe&=1 | `STRING` | `INTERNAL` |  | 
+`EventPipeRundown` | Enable/disable eventpipe rundown. | `DWORD` | `INTERNAL` | `1` | 
 `ExposeExceptionsInCOM` |  | `DWORD` | `INTERNAL` |  | 
 `GenerateStubForHost` | Forces the host hook stub to be built for all unmanaged calls, even when not running hosted. | `DWORD` | `INTERNAL` | `0` | 
 `InteropLogArguments` | Log all pinned arguments passed to an interop call | `DWORD` | `EXTERNAL` | `0` | 
@@ -360,8 +343,7 @@ Name | Description | Type | Class | Default Value | Flags
 `FeatureSIMD` | Enable SIMD intrinsics recognition in System.Numerics.dll and/or System.Numerics.Vectors.dll | `DWORD` | `EXTERNAL` | `EXTERNAL_FeatureSIMD_Default` | REGUTIL_default
 `InjectFault` |  | `DWORD` | `Should` | `0` | 
 `InterpreterFallback` | Fallback to the interpreter when the JIT compiler fails | `DWORD` |  | `0` | 
-`Jit64Range` |  | `STRING` | `INTERNAL` |  | REGUTIL_default
-`JitAggressiveInlining` | Aggressive inlining of all methods | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
+`JitAggressiveInlining` | Aggressive inlining of all methods | `DWORD` |  | `0` | 
 `JitAlignLoops` | Aligns loop targets to 8 byte boundaries | `DWORD` | `UNSUPPORTED` |  | 
 `JitAssertOnMaxRAPasses` |  | `DWORD` |  | `0` | 
 `JitBreak` | Stops in the importer when compiling a specified method | `SSV` |  |  | 
@@ -377,7 +359,7 @@ Name | Description | Type | Class | Default Value | Flags
 `JitDebugBreak` |  | `SSV` |  |  | 
 `JitDebuggable` |  | `DWORD` | `INTERNAL` |  | 
 `JitDebugLogLoopCloning` | In debug builds log places where loop cloning optimizations are performed on the fast path. | `DWORD` |  | `0` | 
-`JitDefaultFill` | In debug builds, initialize the memory allocated by the nra with this byte. | `DWORD` |  | `0xff` | 
+`JitDefaultFill` | In debug builds, initialize the memory allocated by the nra with this byte. | `DWORD` |  | `0xdd` | 
 `JitDiffableDasm` | Make the disassembly diff-able | `DWORD` | `DiffableDasm` | `0` | 
 `JitDirectAlloc` |  | `DWORD` |  | `0` | 
 `JitDisasm` | Dumps disassembly for specified method | `SSV` |  |  | 
@@ -400,7 +382,6 @@ Name | Description | Type | Class | Default Value | Flags
 `JitDumpIR` | Dumps trees (in linear IR form) for specified method | `SSV` |  |  | 
 `JitDumpIRFormat` | Comma separated format control for JitDumpIR, values = {types \| locals \| ssa \| valnums \| kinds \| flags \| nodes \| nolists \| nostmts \| noleafs \| trees \| dataflow} | `STRING` |  |  | 
 `JitDumpIRPhase` | Phase control for JitDumpIR, values = {* \| phasename} | `STRING` |  |  | 
-`JitDumpLevel` |  | `DWORD` | `INTERNAL` | `1` | REGUTIL_default
 `JitDumpTerseLsra` | Produce terse dump output for LSRA | `DWORD` |  | `1` | 
 `JitDumpToDebugger` | Output JitDump output to the debugger | `DWORD` |  | `0` | 
 `JitDumpVerboseSsa` | Produce especially verbose dump output for SSA | `DWORD` |  | `0` | 
@@ -437,7 +418,7 @@ Name | Description | Type | Class | Default Value | Flags
 `JitHelperLogging` |  | `DWORD` | `INTERNAL` | `0` | 
 `JitImportBreak` |  | `SSV` |  |  | 
 `JitInclude` |  | `SSV` |  |  | 
-`JitInlineAdditionalMultiplier` |  | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
+`JitInlineAdditionalMultiplier` |  | `DWORD` |  | `0` | 
 `JITInlineDepth` |  | `DWORD` | `JitInlineDepth` | `DEFAULT_MAX_INLINE_DEPTH` | 
 `JitInlineDumpData` |  | `DWORD` |  | `0` | 
 `JitInlineDumpXml` | 1 = full xml (+ failures in DEBUG) 2 = only methods with inlines (+ failures in DEBUG) 3 = only methods with inlines, no failures | `DWORD` |  | `0` | 
@@ -450,12 +431,11 @@ Name | Description | Type | Class | Default Value | Flags
 `JitInlinePolicySize` |  | `DWORD` |  | `0` | 
 `JitInlinePrintStats` |  | `DWORD` |  | `0` | 
 `JitInlineReplayFile` |  | `STRING` |  |  | 
-`JitInlineSIMDMultiplier` |  | `DWORD` | `INTERNAL` | `3` | REGUTIL_default
+`JitInlineSIMDMultiplier` |  | `DWORD` |  | `3` | 
 `JITInlineSize` |  | `DWORD` | `JitInlineSize` | `DEFAULT_MAX_INLINE_SIZE` | 
 `JitLargeBranches` | Force using the largest conditional branch format | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 `JitLateDisasm` |  | `SSV` |  |  | 
 `JITLateDisasmTo` |  | `STRING` | `JitLateDisasmTo` |  | 
-`JitLexicalCSE` | Enables Lexical CSE for the specified methods | `STRING` | `INTERNAL` |  | REGUTIL_default
 `JitLockWrite` | Force all volatile writes to be 'locked' | `DWORD` | `INTERNAL` | `0` | 
 `JitLongAddress` | Force using the large pseudo instruction form for long address | `DWORD` |  | `0` | 
 `JitLoopHoistStats` | Display JIT loop hoisting statistics | `DWORD` | `DisplayLoopHoistStats` | `0` | 
@@ -485,7 +465,7 @@ Name | Description | Type | Class | Default Value | Flags
 `JitNoProcedureSplitting` | Disallow procedure splitting for specified methods | `SSV` |  |  | 
 `JitNoProcedureSplittingEH` | Disallow procedure splitting for specified methods if they contain exception handling | `SSV` |  |  | 
 `JitNoRegLoc` |  | `DWORD` |  | `0` | 
-`JitNoRngChks` | If 1, don't generate range checks | `DWORD` | `PRIVATE_JitNoRangeChks` | `0` | REGUTIL_default
+`JitNoRngChks` | If 1, don't generate range checks | `DWORD` | `JitNoRangeChks` | `0` | 
 `JitNoStructPromotion` | Disables struct promotion in Jit32 | `DWORD` |  | `0` | 
 `JitNoUnroll` |  | `DWORD` |  | `0` | 
 `JitOptimizeType` |  | `DWORD` | `EXTERNAL` |  | 
@@ -523,7 +503,6 @@ Name | Description | Type | Class | Default Value | Flags
 `JitTimeLogCsv` | If set, gather JIT throughput data and write to a CSV file. This mode must be used in internal retail builds. | `STRING` | `INTERNAL` |  | 
 `JitTimeLogFile` | If set, gather JIT throughput data and write to this file. | `STRING` | `INTERNAL` |  | 
 `JitUnwindDump` | Dump the unwind codes for the method | `SSV` |  |  | 
-`JitValNumCSE` | Enables ValNum CSE for the specified methods | `STRING` | `INTERNAL` |  | REGUTIL_default
 `JitVerificationDisable` |  | `DWORD` | `INTERNAL` |  | 
 `JitVNMapSelBudget` | Max # of MapSelect's considered for a particular top-level invocation. | `DWORD` | `INTERNAL` | `100` | 
 `JitVNMapSelLimit` | If non-zero, assert if # of VNF_MapSelect applications considered reaches this | `DWORD` |  | `0` | 
@@ -642,10 +621,6 @@ Name | Description | Type | Class | Default Value | Flags
 
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
-`NgenBind_OptimizeNonGac` | Skip loading IL image outside of GAC when NI can be loaded | `DWORD` | `EXTERNAL` | `0` | 
-`NgenBind_UseTimestamp` | Use timestamp to validate a native image | `DWORD` | `INTERNAL` | `0` | 
-`NgenBind_UseTimestampExcludeList` |  | `STRING` | `INTERNAL` |  | 
-`NgenBind_UseTimestampList` |  | `STRING` | `INTERNAL` |  | 
 `NgenBind_ZapForbid` | Assert if an assembly succeeds in binding to a native image | `DWORD` | `INTERNAL` | `0` | 
 `NgenBind_ZapForbidExcludeList` |  | `STRING` | `INTERNAL` |  | 
 `NgenBind_ZapForbidList` |  | `STRING` | `INTERNAL` |  | 
@@ -655,21 +630,11 @@ Name | Description | Type | Class | Default Value | Flags
 
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
-`CheckNGenImageTimeStamp` | Used to skip ngen timestamp check when switching compilers around. | `DWORD` | `EXTERNAL` | `1` | REGUTIL_default
 `CrossGenAssumeInputSigned` | CrossGen should assume that its input assemblies will be signed before deployment | `DWORD` | `INTERNAL` | `1` | 
 `EnableHardbinding` | Enables the use of hardbinding | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 `HardPrejitEnabled` |  | `DWORD` | `EXTERNAL` |  | 
 `NGen_JitName` |  | `STRING` | `EXTERNAL` |  | REGUTIL_default
-`NGEN_USE_PRIVATE_STORE` |  | `DWORD` | `EXTERNAL` | `-1` | REGUTIL_default
 `NgenAllowMscorlibSoftbind` | Disable forced hard-binding to mscorlib | `DWORD` | `INTERNAL` | `0` | 
-`NgenAllowOutput` | If set to 1, the NGEN worker will bind to the parent console, thus allowing stdout output to work | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
-`NGENBreakOnInjectPerAssemblyFailure` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
-`NGENBreakOnInjectTransientFailure` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
-`NGENBreakOnWorker` |  | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
-`NGenClean` |  | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
-`NGenCompileWorkerHang` | If set to 1, NGen compile worker process hangs forever | `DWORD` | `UNSUPPORTED` | `0` | REGUTIL_default
-`NGenDeferAllCompiles` |  | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
-`NGenDependencyWorkerHang` | If set to 1, NGen dependency walk worker process hangs forever | `DWORD` | `UNSUPPORTED` | `0` | REGUTIL_default
 `NgenDisasm` | Same as JitDisasm, but for ngen | `SSV` |  |  | 
 `NgenDump` | Same as JitDump, but for ngen | `SSV` |  |  | 
 `NgenDumpFg` | Ngen Xml Flowgraph support | `STRING` |  |  | 
@@ -685,27 +650,13 @@ Name | Description | Type | Class | Default Value | Flags
 `NgenForceFailureMask` | Bitmask used to control which locations will check and raise the failure (defaults to bits: -1) | `DWORD` | `INTERNAL` | `-1` | REGUTIL_default
 `NGenFramed` | Same as JitFramed, but for ngen | `DWORD` | `UNSUPPORTED` | `-1` | REGUTIL_default
 `NgenGCDump` |  | `SSV` |  |  | 
-`NgenHashDump` | Same as JitHashDump, but for ngen | `DWORD` | `INTERNAL` | `(DWORD)-1` | REGUTIL_default
-`NgenHashDumpIR` | Same as JitHashDumpIR, but for ngen | `DWORD` | `INTERNAL` | `(DWORD)-1` | REGUTIL_default
-`NGENInjectFailuresServiceOnly` |  | `DWORD` | `INTERNAL` | `1` | REGUTIL_default
-`NGENInjectPerAssemblyFailure` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
-`NGENInjectTransientFailure` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
-`NGenLocalWorker` |  | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
-`NGenLogVerbosity` | Default ngen log verbosity level | `DWORD` | `EXTERNAL` | `2` | REGUTIL_default
-`NGenMaxLogSize` | The maximum size ngen.log and ngen_service.log files can grow to. | `DWORD` | `UNSUPPORTED` | `0` | REGUTIL_default
 `NGenOnlyOneMethod` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 `NgenOrder` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
-`NGenRegistryAccessCount` |  | `DWORD` | `EXTERNAL` | `-1` | REGUTIL_default
 `NGenSimulateDiskFull` | If set to 1, ngen will throw a Disk full exception in ZapWriter.cpp:Save() | `DWORD` | `INTERNAL` | `0` | 
-`NGenStressDelete` |  | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
-`NGenUninstallKeep` | Semicolon-delimited list of assemblies to keep during 'ngen uninstall *' | `STRING` | `INTERNAL` |  | 
 `NgenUnwindDump` | Dump the unwind codes for the method | `SSV` |  |  | 
-`NGENUseService` |  | `DWORD` | `EXTERNAL` | `1` | REGUTIL_default
-`NGenWorkerCount` |  | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
 `NoASLRForNgen` | Turn off IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE bit in generated ngen images. Makes nidump output repeatable from run to run. | `DWORD` | `INTERNAL` | `0` | 
 `PartialNGen` | Generate partial NGen images | `DWORD` | `INTERNAL` | `-1` | 
 `partialNGenStress` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
-`WorkerRetryNgenFailures` | If set to 1, The Ngen worker will retry once when ngen fails | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 `ZapDoNothing` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 
 #### Performance Configuration Knobs
@@ -713,12 +664,6 @@ Name | Description | Type | Class | Default Value | Flags
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
 `performanceScenario` | Activates a set of workload-specific default values for performance settings | `STRING` | `EXTERNAL` |  | 
-
-#### Performance Tracing Configuration Knobs
-
-Name | Description | Type | Class | Default Value | Flags 
------|-------------|------|-------|---------------|-------
-`PerformanceTracing` | Enable/disable performance tracing.  Non-zero values enable tracing. | `DWORD` | `INTERNAL` | `0` | 
 
 #### Profiling API / ETW Configuration Knobs
 
@@ -749,30 +694,10 @@ Name | Description | Type | Class | Default Value | Flags
 `ProfAPI_ValidateNGENInstrumentation` | This flag enables additional validations when using the IMetaDataEmit APIs for NGEN'ed images to ensure only supported edits are made. | `DWORD` | `UNSUPPORTED` | `0` | 
 `ProfAPIFault` | Test-only bitmask to inject various types of faults in the profapi code | `DWORD` | `INTERNAL` | `0` | 
 `ProfAPIMaxWaitForTriggerMs` | Timeout in ms for profilee to wait for each blocking operation performed by trigger app. | `DWORD` | `EXTERNAL` | `5*60*1000` | 
+`StartupDelayMS` |  | `STRING` | `EXTERNAL` |  | 
 `TestOnlyAllowedEventMask` | Test-only bitmask to allow profiler tests to override CLR enforcement of COR_PRF_ALLOWABLE_AFTER_ATTACH and COR_PRF_MONITOR_IMMUTABLE | `DWORD` | `INTERNAL` | `0` | 
 `TestOnlyEnableObjectAllocatedHook` | Test-only flag that forces CLR to initialize on startup as if ObjectAllocated callback were requested, to enable post-attach ObjectAllocated functionality. | `DWORD` | `INTERNAL` | `0` | 
 `TestOnlyEnableSlowELTHooks` | Test-only flag that forces CLR to initialize on startup as if slow-ELT were requested, to enable post-attach ELT functionality. | `DWORD` | `INTERNAL` | `0` | 
-
-#### Shim Configuration Knobs
-
-Name | Description | Type | Class | Default Value | Flags 
------|-------------|------|-------|---------------|-------
-`AlwaysInsertCallout` | Always insert security access/transparency/APTCA callouts | `DWORD` | `INTERNAL` | `0` | 
-`ApplicationMigrationRuntimeActivationConfigPath` | Provides a path in which to look for configuration files to be used for runtime activation, for application migration scenarios, before looking next to the EXE itself. | `DWORD` | `EXTERNAL` |  | 
-`EnableCoreClrHost` | Enables hosting coreclr from desktop mscoreei.dll to run windows store apps | `DWORD` | `INTERNAL` |  | 
-`EnableIEHosting` | Allow activation of IE hosting | `DWORD` | `UNSUPPORTED` |  | 
-`ErrorDialog` | Allow showing UI on error | `DWORD` | `UNSUPPORTED` |  | 
-`FailOnInProcSxS` | Fails the process when a second runtime is loaded in-process | `DWORD` | `UNSUPPORTED` |  | 
-`Fod` | Test the Feature On Demand installation | `DWORD` | `UNSUPPORTED` |  | 
-`FodArgs` | Command line arguments to pass to the FOD process | `STRING` | `UNSUPPORTED` |  | 
-`FodConservativeMode` | Whether to be conservative wrt Fod launch. | `DWORD` | `UNSUPPORTED` |  | 
-`FodLaunchAsync` | Whether to launch FOD asynchronously. | `DWORD` | `UNSUPPORTED` |  | 
-`FodPath` | Name of executable for Feature On Demand mockup | `STRING` | `UNSUPPORTED` |  | 
-`NoGuiFromShim` | Turn off GUI in shim | `DWORD` | `UNSUPPORTED` |  | 
-`OnlyUseLatestCLR` | Big red switch for loading CLR | `DWORD` | `UNSUPPORTED` |  | 
-`StartupDelayMS` |  | `STRING` | `EXTERNAL` |  | 
-`TestOnlyEnsureImmersive` | Test-only flag used to indicate that it is expected that a process should be running as immersive. | `DWORD` | `INTERNAL` |  | 
-`UseLegacyV2RuntimeActivationPolicyDefaultValue` | Modifies the default value | `DWORD` | `UNSUPPORTED` |  | 
 
 #### Spinning heuristics Configuration Knobs
 
@@ -845,7 +770,12 @@ Name | Description | Type | Class | Default Value | Flags
 
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
-`EXPERIMENTAL_TieredCompilation` | Enables tiered compilation | `DWORD` | `UNSUPPORTED` | `0` | 
+`EXPERIMENTAL_TieredCompilation` | Deprecated - Use COMPLUS_TieredCompilation | `DWORD` | `UNSUPPORTED` | `0` | 
+`TieredCompilation` | Enables tiered compilation | `DWORD` | `EXTERNAL` | `0` | 
+`TieredCompilation_Test_CallCounting` | Enabled by default (only activates when TieredCompilation is also enabled). If disabled immediately backpatches prestub, and likely prevents any tier1 promotion | `DWORD` | `UNSUPPORTED` | `1` | 
+`TieredCompilation_Test_OptimizeTier0` | Use optimized codegen (normally used by tier1) in tier0 | `DWORD` | `UNSUPPORTED` | `0` | 
+`TieredCompilation_Tier1CallCountingDelayMs` | Delay in milliseconds since process startup or the last tier 0 JIT before call counting begins for tier 1 promotion. | `DWORD` | `UNSUPPORTED` | `100` | 
+`TieredCompilation_Tier1CallCountThreshold` | Number of times a method must be called after which it is promoted to tier 1. | `DWORD` | `UNSUPPORTED` | `30` | 
 
 #### TypeLoader Configuration Knobs
 
@@ -857,33 +787,19 @@ Name | Description | Type | Class | Default Value | Flags
 
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
-`3gbEatMem` | Testhook: Size of memory (in 64K chunks) to be reserved before CLR starts | `DWORD` | `UNSUPPORTED` | `0` | REGUTIL_default
 `ActivatePatchSkip` | Allows an assert when ActivatePatchSkip is called | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
-`AlwaysCallInstantiatingStub` | Forces the Jit to use the instantiating stub for generics | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
-`alwaysFlowImpersonationPolicy` | Windows identities should always flow across async points | `DWORD` | `EXTERNAL` | `FALSE` | 
 `AlwaysUseMetadataInterfaceMapLayout` | Used for debugging generic interface map layout. | `DWORD` | `INTERNAL` |  | 
 `AssertOnUnneededThis` | While the ConfigDWORD is unnecessary, the contained ASSERT should be kept. This may result in some work tracking down violating MethodDescCallSites. | `DWORD` | `INTERNAL` | `0` | 
 `AssertStacktrace` |  | `DWORD` | `INTERNAL` | `1` | REGUTIL_default
-`BuildFlavor` | Choice of build flavor (wks or svr) of CLR | `STRING` | `UNSUPPORTED` |  | 
 `clearNativeImageStress` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
-`CLRLoadLogDir` | Enable logging of CLR selection | `STRING` | `INTERNAL` |  | 
-`CONFIG` | Used to specify an XML config file for EEConfig | `STRING` | `EXTERNAL` |  | REGUTIL_default
-`CopyPropMax` | Sets internal jit constants for CopyProp | `STRING` | `INTERNAL` |  | REGUTIL_default
 `CPUFamily` |  | `DWORD` | `INTERNAL` |  | 
 `CPUFeatures` |  | `DWORD` | `INTERNAL` |  | 
-`DeadCodeMax` | Sets internal jit constants for Dead Code elimination | `STRING` | `INTERNAL` |  | REGUTIL_default
-`DefaultVersion` | Version of CLR to load. | `STRING` | `INTERNAL` |  | 
-`developerInstallation` | Flag to enable DEVPATH binding feature | `STRING` | `EXTERNAL` |  | 
-`disableCommitThreadStack` | This should only be internal but I believe ASP.Net uses this | `DWORD` | `EXTERNAL` |  | 
 `DisableConfigCache` | Used to disable the \"probabilistic\" config cache, which walks through the appropriate config registry keys on init and probabilistically keeps track of which exist. | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
 `DisableStackwalkCache` |  | `DWORD` | `EXTERNAL` |  | 
 `DoubleArrayToLargeObjectHeap` | Controls double[] placement | `DWORD` | `UNSUPPORTED` |  | 
 `DumpConfiguration` | Dumps runtime properties of xml configuration files to the log. | `DWORD` | `INTERNAL` | `0` | 
 `DumpOnClassLoad` | Dumps information about loaded class to log. | `STRING` | `INTERNAL` |  | 
-`EnableInternetHREFexes` | Part of security work related to locking down Internet No-touch deployment. It's not clear what happens to NTD in v4, but if it's till there the setting is needed | `DWORD` | `EXTERNAL` | `0` | (LookupOptions (REGUTIL_default \| IgnoreEnv \| IgnoreHKCU
-`enforceFIPSPolicy` | Causes crypto algorithms which have not been FIPS certified to throw an exception if they are used on a machine that requires FIPS enforcement | `DWORD` | `EXTERNAL` |  | 
 `ExpandAllOnLoad` |  | `DWORD` | `INTERNAL` |  | 
-`FORCE_ASSEMREF_DUPCHECK` | Has comment: Allow Avalon to use the SecurityCriticalAttribute but WHY? (?) | `DWORD` | `UNSUPPORTED` | `0` | REGUTIL_default
 `ForcedRuntime` | Verify version of CLR loaded | `STRING` | `INTERNAL` |  | 
 `ForceRelocs` |  | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 `GenerateLongJumpDispatchStubRatio` | Useful for testing VSD on AMD64 | `DWORD` | `INTERNAL` |  | 
@@ -911,12 +827,9 @@ Name | Description | Type | Class | Default Value | Flags
 `PerfAllocsSizeThreshold` | Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler. | `DWORD` | `INTERNAL` | `0x3FFFFFFF` | 
 `PerfNumAllocsThreshold` | Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler. | `DWORD` | `INTERNAL` | `0x3FFFFFFF` | 
 `PerfTypesToLog` | Log facility LF_GCALLOC logs object allocations. This flag controls which ones also log stacktraces. Predates ClrProfiler. | `STRING` | `INTERNAL` |  | 
-`PEVerify` |  | `DWORD` | `EXTERNAL` | `0` | REGUTIL_default
 `Prepopulate1` |  | `DWORD` | `EXTERNAL` | `1` | 
 `PrestubGC` |  | `STRING` | `INTERNAL` |  | 
 `PrestubHalt` |  | `STRING` | `INTERNAL` |  | 
-`RepositoryDir` |  | `STRING` | `EXTERNAL` |  | REGUTIL_default
-`RepositoryFlags` |  | `DWORD` | `EXTERNAL` |  | 
 `RestrictedGCStressExe` |  | `STRING` | `EXTERNAL` |  | 
 `ReturnSourceTypeForTesting` | Allows returning the (internal only) source type of an IL to Native mapping for debugging purposes | `DWORD` | `INTERNAL` | `0` | REGUTIL_default
 `RSStressLog` | Allows turning on logging for RS startup | `DWORD` | `UNSUPPORTED` | `0` | REGUTIL_default

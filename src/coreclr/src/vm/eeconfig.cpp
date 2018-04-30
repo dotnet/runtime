@@ -1240,7 +1240,7 @@ HRESULT EEConfig::sync()
     dwSleepOnExit = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_SleepOnExit);
 
 #if defined(FEATURE_TIERED_COMPILATION)
-    fTieredCompilation = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_TieredCompilation) != 0 ||
+    fTieredCompilation = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredCompilation"), CLRConfig::EXTERNAL_TieredCompilation) ||
         //this older name is deprecated, but still accepted for a time. Preserving it is a very small overhead not to needlessly break things.
         CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_LEGACY_TieredCompilation) != 0;
 
