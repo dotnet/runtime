@@ -1,3 +1,5 @@
+include $(top_srcdir)/mk/common.mk
+
 EXTRA_DIST = UTF-8.txt UTF-16BE.txt UTF-16LE.txt UTF-32BE.txt UTF-32LE.txt
 
 SOURCES = \

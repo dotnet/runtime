@@ -1,3 +1,5 @@
+include $(top_srcdir)/mk/common.mk
+
 AM_CPPFLAGS = \
 	-DSUPPRESSION_DIR=\""$(datadir)/mono-$(API_VER)/mono/profiler"\" \
 	-I$(top_srcdir) \

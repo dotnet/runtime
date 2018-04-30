@@ -1,3 +1,5 @@
+include $(top_srcdir)/mk/common.mk
+
 if SUPPORT_SGEN
 sgen_dirs = sgen
 endif

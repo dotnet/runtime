@@ -1,3 +1,4 @@
+include $(top_srcdir)/mk/common.mk
 
 ### buildtree stuff
 

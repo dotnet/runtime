@@ -1,3 +1,5 @@
+include $(top_srcdir)/mk/common.mk
+
 noinst_LTLIBRARIES = libeglib.la
 
 AM_CFLAGS = $(WERROR_CFLAGS)

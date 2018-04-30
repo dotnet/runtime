@@ -1,3 +1,5 @@
+include $(top_srcdir)/mk/common.mk
+
 count=100000
 mtest=for_loop
 monodir=$(top_builddir)

@@ -1,3 +1,5 @@
+include $(top_srcdir)/mk/common.mk
+
 if HOST_WIN32
 win32_sources = \
 	console-win32.c \

@@ -1,3 +1,5 @@
+include $(top_srcdir)/mk/common.mk
+
 CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 
 TOOLS_RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/build $(top_builddir)/runtime/mono-wrapper

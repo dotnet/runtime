@@ -1,3 +1,5 @@
+include $(top_srcdir)/mk/common.mk
+
 #
 # Conditional submodule for jemalloc
 #

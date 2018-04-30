@@ -1,3 +1,5 @@
+include $(top_srcdir)/mk/common.mk
+
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) $(SHARED_CFLAGS)
 
 if SUPPORT_SGEN

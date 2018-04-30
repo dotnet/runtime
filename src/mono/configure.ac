@@ -4965,6 +4965,7 @@ acceptance-tests/Makefile
 llvm/Makefile
 scripts/mono-find-provides
 scripts/mono-find-requires
+mk/Makefile
 mono/Makefile
 mono/btls/Makefile
 mono/utils/Makefile

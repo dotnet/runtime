@@ -1,3 +1,5 @@
+include $(top_srcdir)/mk/common.mk
+
 SUBDIRS = gc-descriptors . testing_gac
 
 check-local:
