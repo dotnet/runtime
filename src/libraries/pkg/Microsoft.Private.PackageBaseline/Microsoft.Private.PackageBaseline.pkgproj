@@ -1,14 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  
   <PropertyGroup>
-    <PackageVersion>2.2.0</PackageVersion>
     <HarvestStablePackage>false</HarvestStablePackage>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <PackageIndexFileName>packageIndex.json</PackageIndexFileName>
   </PropertyGroup>
-  
   <ItemGroup>
     <File Include="Microsoft.Private.PackageBaseline.props">
       <TargetPath>build</TargetPath>
@@ -17,16 +14,14 @@
       <TargetPath>build</TargetPath>
     </File>
   </ItemGroup>
-  
   <!-- Stamp the packageIndex with pre-release version for this build -->
   <Target Name="StampPackageIndex" BeforeTargets="GenerateNuSpec">
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <Copy SourceFiles="$(PackageIndexFileName)" DestinationFolder="$(IntermediateOutputPath)" OverwriteReadOnlyFiles="true" />
-    
+
     <UpdatePackageIndex PackageIndexFile="$(IntermediateOutputPath)$(PackageIndexFileName)"
                         PreRelease="$(VersionSuffix)" />
   </Target>
-  
   <Target Name="UpdateFromLocalBuild">
     <ItemGroup>
       <AllPackages Include="$(PackageOutputPath)\*.nupkg" Exclude="$(PackageOutputPath)\*Microsoft.Private.*.nupkg" />
@@ -48,6 +43,5 @@
                         Packages="@(AllPackages)"
                         InboxFrameworkLayoutFolders="@(FrameworkLayout)" />
   </Target>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

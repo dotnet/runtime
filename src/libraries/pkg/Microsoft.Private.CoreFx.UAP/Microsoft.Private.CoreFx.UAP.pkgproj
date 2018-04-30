@@ -1,23 +1,18 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
   <PropertyGroup>
-    <PackageVersion>4.6.0</PackageVersion>
+    <PackageVersion>4.7.0</PackageVersion>
     <TargetFrameworkName>uap</TargetFrameworkName>
     <TargetFrameworkVersion>$(UAPvNextVersion)</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
-
     <RefBinDir>$(UAPPackageRefPath)</RefBinDir>
     <LibBinDir>$(UAPPackageRuntimePath)</LibBinDir>
     <LibBinDir Condition="$(PackageTargetRuntime.EndsWith('-aot'))">$(UAPAOTPackageRuntimePath)</LibBinDir>
-
     <IsFrameworkPackage>true</IsFrameworkPackage>
-
     <!-- Private packages need symbols -->
     <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
   </PropertyGroup>
-
   <ItemGroup>
     <IgnoredReference Include="System.Private.CoreLib" />
     <IgnoredReference Include="Windows" />
@@ -40,9 +35,7 @@
     <ExcludeFromClosure Include="System.ServiceProcess" />
     <ExcludeFromClosure Include="System.Transactions" />
     <ExcludeFromClosure Include="WindowsBase" />
-
     <ExcludeFromDuplicateTypes Include="System.Private.Reflection.Metadata.Ecma335" />
-
     <!-- Permit the following implementation-only assemblies -->
     <ValidatePackageSuppression Condition="'$(PackageTargetRuntime)' != ''" Include="PermitInbox">
       <Value>
@@ -68,11 +61,10 @@
     </ValidatePackageSuppression>
     <!-- Permit missing Inbox since this used to be a shim and it is now OOB -->
     <ValidatePackageSuppression Include="PermitMissingInbox">
-        <Value>
+      <Value>
             System.ComponentModel.Composition;
         </Value>
     </ValidatePackageSuppression>
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
