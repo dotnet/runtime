@@ -2,24 +2,38 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Tests
 {
     public partial class VersionTests
     {
+        public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
+        {
+            foreach (object[] inputs in Parse_Valid_TestData())
+            {
+                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1] };
+            }
+
+            yield return new object[] { "1.2.3", 0, 3, new Version(1, 2) };
+            yield return new object[] { "1.2.3", 2, 3, new Version(2, 3) };
+            yield return new object[] { "2  .3.    4.  \t\r\n15  ", 0, 11, new Version(2, 3, 4) };
+            yield return new object[] { "+1.+2.+3.+4", 3, 5, new Version(2, 3) };
+        }
+
         [Theory]
-        [MemberData(nameof(Parse_Valid_TestData))]
-        public static void Parse_Span_ValidInput_ReturnsExpected(string input, Version expected)
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Span_ValidInput_ReturnsExpected(string input, int offset, int count, Version expected)
         {
             if (input == null)
             {
                 return;
             }
 
-            Assert.Equal(expected, Version.Parse(input.AsSpan()));
+            Assert.Equal(expected, Version.Parse(input.AsSpan(offset, count)));
 
-            Assert.True(Version.TryParse(input.AsSpan(), out Version version));
+            Assert.True(Version.TryParse(input.AsSpan(offset, count), out Version version));
             Assert.Equal(expected, version);
         }
 

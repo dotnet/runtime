@@ -2,19 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Tests
 {
     public partial class BooleanTests
     {
-        [Theory]
-        [MemberData(nameof(Parse_Valid_TestData))]
-        public static void Parse_Span_Valid(string value, bool expected)
+        public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
         {
-            Assert.Equal(expected, bool.Parse(value.AsSpan()));
+            foreach (object[] inputs in Parse_Valid_TestData())
+            {
+                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1] };
+            }
 
-            Assert.True(bool.TryParse(value.AsSpan(), out bool result));
+            yield return new object[] { " \0 \0  TrueFalse   \0 ", 6, 4, true };
+            yield return new object[] { " \0 \0  TrueFalse   \0 ", 10, 5, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Span_Valid(string value, int offset, int count, bool expected)
+        {
+            Assert.Equal(expected, bool.Parse(value.AsSpan(offset, count)));
+
+            Assert.True(bool.TryParse(value.AsSpan(offset, count), out bool result));
             Assert.Equal(expected, result);
         }
 

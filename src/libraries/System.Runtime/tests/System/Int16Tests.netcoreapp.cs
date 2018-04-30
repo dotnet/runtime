@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -9,13 +10,30 @@ namespace System.Tests
 {
     public partial class Int16Tests
     {
-        [Theory]
-        [MemberData(nameof(Parse_Valid_TestData))]
-        public static void Parse_Span_Valid(string value, NumberStyles style, IFormatProvider provider, short expected)
+        public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
         {
-            Assert.Equal(expected, short.Parse(value.AsSpan(), style, provider));
+            foreach (object[] inputs in Parse_Valid_TestData())
+            {
+                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
+            }
 
-            Assert.True(short.TryParse(value.AsSpan(), style, provider, out short result));
+            yield return new object[] { "-32767", 1, 5, NumberStyles.Integer, null, (short)32767 };
+            yield return new object[] { "-32768", 0, 5, NumberStyles.Integer, null, (short)-3276 };
+            yield return new object[] { "abc", 0, 2, NumberStyles.HexNumber, null, (short)0xab };
+            yield return new object[] { "abc", 1, 2, NumberStyles.HexNumber, null, (short)0xbc };
+            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, null, (short)123 };
+            yield return new object[] { "123", 0, 1, NumberStyles.Integer, new NumberFormatInfo(), (short)1 };
+            yield return new object[] { "$1,000", 1, 5, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (short)1000 };
+            yield return new object[] { "$1,000", 0, 2, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (short)1 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, short expected)
+        {
+            Assert.Equal(expected, short.Parse(value.AsSpan(offset, count), style, provider));
+
+            Assert.True(short.TryParse(value.AsSpan(offset, count), style, provider, out short result));
             Assert.Equal(expected, result);
         }
 
