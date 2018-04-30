@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Runtime.InteropServices;
 using Microsoft.DotNet.PlatformAbstractions.Native;
 
 namespace Microsoft.DotNet.PlatformAbstractions
@@ -23,7 +24,7 @@ namespace Microsoft.DotNet.PlatformAbstractions
 #if NET45
             return Environment.Is64BitProcess ? "x64" : "x86";
 #else
-            return IntPtr.Size == 8 ? "x64" : "x86";
+            return RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
 #endif
         }
 
@@ -36,11 +37,7 @@ namespace Microsoft.DotNet.PlatformAbstractions
 
         private static string GetRIDArch()
         {
-            if (!string.IsNullOrEmpty(RuntimeArchitecture))
-            {
-                return $"-{RuntimeArchitecture.ToLowerInvariant()}";
-            }
-            return string.Empty;
+            return $"-{RuntimeArchitecture}";
         }
 
         private static string GetRIDVersion()
