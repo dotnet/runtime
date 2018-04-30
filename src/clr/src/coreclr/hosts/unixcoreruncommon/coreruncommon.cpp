@@ -33,7 +33,7 @@
 // Name of the environment variable controlling server GC.
 // If set to 1, server GC is enabled on startup. If 0, server GC is
 // disabled. Server GC is off by default.
-static const char* serverGcVar = "CORECLR_SERVER_GC";
+static const char* serverGcVar = "COMPlus_gcServer";
 
 // Name of environment variable to control "System.Globalization.Invariant"
 // Set to 1 for Globalization Invariant mode to be true. Default is false.
