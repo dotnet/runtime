@@ -52,6 +52,8 @@ monoutils_sources = \
 	mono-log-darwin.c \
 	mono-merp.c	\
 	mono-merp.h	\
+	mono-state.h	\
+	mono-state.c	\
 	mono-internal-hash.c	\
 	mono-internal-hash.h	\
 	mono-io-portability.c 	\

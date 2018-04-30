@@ -55,6 +55,7 @@
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-os-wait.h>
 #include <mono/metadata/exception-internals.h>
+#include <mono/utils/mono-state.h>
 
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
@@ -5885,3 +5886,130 @@ void
 mono_set_thread_dump_dir (gchar* dir) {
 	thread_dump_dir = dir;
 }
+
+#ifdef TARGET_OSX
+
+static size_t num_threads_summarized = 0;
+
+// mono_thread_internal_current doesn't always work in signal
+// handler contexts. This does.
+static MonoInternalThread *
+find_missing_thread (MonoNativeThreadId id)
+{
+	MonoInternalThread *thread_array [128];
+	int nthreads = collect_threads (thread_array, 128);
+
+	for (int i=0; i < nthreads; i++) {
+		MonoNativeThreadId tid = thread_get_tid (thread_array [i]);
+		if (tid == id)
+			return thread_array [i];
+	}
+	return NULL;
+}
+
+static gboolean
+mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx)
+{
+	MonoDomain *domain;
+
+	MonoNativeThreadId current = mono_native_thread_id_get();
+	MonoInternalThread *thread = find_missing_thread (current);
+
+	// Not one of ours
+	if (!thread)
+		return FALSE;
+
+	memset (out, 0, sizeof (MonoThreadSummary));
+	domain = thread->obj.vtable->domain;
+	out->native_thread_id = (intptr_t) thread_get_tid (thread);
+	out->managed_thread_ptr = (intptr_t) get_current_thread_ptr_for_domain (domain, thread);
+	out->info_addr = (intptr_t) thread->thread_info;
+	if (thread->name) {
+		char *name = g_utf16_to_utf8 (thread->name, thread->name_len, NULL, NULL, NULL);
+		out->name = name;
+	}
+	mono_get_eh_callbacks ()->mono_summarize_stack (domain, out, ctx);
+
+	// FIXME: handle failure gracefully
+	// Enable when doing unmanaged
+	/*g_assert (out->num_frames > 0);*/
+	/*if (out->num_frames == 0)*/
+		/*return FALSE;*/
+
+	return TRUE;
+}
+
+static gint32 summary_started;
+
+gboolean
+mono_threads_summarize (MonoContext *ctx, gchar **out)
+{
+	gboolean already_started = ves_icall_System_Threading_Interlocked_CompareExchange_Int(&summary_started, 0x1, 0x0) != 0x0;
+	if (!already_started) {
+		// Setup state
+		mono_summarize_native_state_begin ();
+
+		MonoNativeThreadId current = mono_native_thread_id_get();
+
+		if (!current)
+			g_error ("Can't get native thread ID");
+
+		// FIXME: The sgen thread never shows up here
+		MonoInternalThread *thread_array [128];
+		int nthreads = collect_threads (thread_array, 128);
+
+		sigset_t sigset, old_sigset;
+		sigemptyset(&sigset);
+		sigaddset(&sigset, SIGTERM);
+
+
+		for (int i=0; i < nthreads; i++) {
+			MonoNativeThreadId tid = thread_get_tid (thread_array [i]);
+			if (current == tid)
+				continue;
+
+			// Request every other thread dumps themselves before us
+			MonoThreadInfo *info = (MonoThreadInfo*) thread_array [i]->thread_info;
+
+			mono_memory_barrier ();
+			size_t old_num_summarized = num_threads_summarized;
+
+			sigprocmask (SIG_UNBLOCK, &sigset, &old_sigset);
+			mono_threads_pthread_kill (info, SIGTERM);
+
+			while (old_num_summarized == num_threads_summarized) {
+				sleep (1);
+				mono_memory_barrier ();
+				/*mono_threads_pthread_kill (info, SIGTERM);*/
+
+				// Pause this handler so other handlers can run
+				/*int signum;*/
+				fprintf (stderr, "Waiting to collect stacktrace\n");
+				/*sigsuspend (&sigset);*/
+				/*mono_threads_pthread_kill (info, SIGTERM);*/
+				/*sigprocmask (SIG_UNBLOCK, &old_sigset, NULL);*/
+				/*g_assert (success == 0);*/
+			}
+		}
+	}
+
+	// Dump ourselves
+	MonoThreadSummary this_thread;
+	if (mono_threads_summarize_one (&this_thread, ctx))
+		mono_summarize_native_state_add_thread (&this_thread, ctx);
+
+	mono_memory_barrier ();
+	num_threads_summarized++;
+	mono_memory_barrier ();
+
+	if (!already_started) {
+		*out = mono_summarize_native_state_end ();
+		return TRUE;
+	}
+
+	while (1)
+		sleep (10);
+}
+#endif
+
+

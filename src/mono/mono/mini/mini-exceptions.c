@@ -69,6 +69,7 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-error.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-state.h>
 
 #include "mini.h"
 #include "trace.h"
@@ -90,6 +91,10 @@
 
 #ifndef MONO_ARCH_CONTEXT_DEF
 #define MONO_ARCH_CONTEXT_DEF
+#endif
+
+#ifdef TARGET_OSX
+#include <dlfcn.h>
 #endif
 
 /*
@@ -120,6 +125,8 @@ static void mono_runtime_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext
 static gboolean mono_current_thread_has_handle_block_guard (void);
 static gboolean mono_install_handler_block_guard (MonoThreadUnwindState *ctx);
 static void mono_uninstall_current_handler_block_guard (void);
+
+static void mono_summarize_stack (MonoDomain *domain, MonoThreadSummary *out, MonoContext *crash_ctx);
 
 static gboolean
 first_managed (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer addr)
@@ -224,6 +231,8 @@ mono_exceptions_init (void)
 
 	cbs.mono_walk_stack_with_ctx = mono_runtime_walk_stack_with_ctx;
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
+
+	cbs.mono_summarize_stack = mono_summarize_stack;
 
 	if (mono_llvm_only) {
 		cbs.mono_raise_exception = mono_llvm_raise_exception;
@@ -1240,7 +1249,7 @@ mono_get_portable_ip (intptr_t in_ip, intptr_t *out_ip, char *out_name)
 	// We're only able to get reliable info about pointers in this assembly
 	Dl_info info;
 	int success = dladdr ((void*) mono_get_portable_ip, &info);
-	intptr_t this_module = (gpointer) info.dli_fbase;
+	intptr_t this_module = (intptr_t) info.dli_fbase;
 	g_assert (success);
 
 	success = dladdr ((void*)in_ip, &info);
@@ -1262,13 +1271,116 @@ mono_get_portable_ip (intptr_t in_ip, intptr_t *out_ip, char *out_name)
 	}
 
 #ifndef MONO_PRIVATE_CRASHES
-	if (info.dli_saddr && out_name) {
-		strncpy (out_name, info.dli_sname, MONO_MAX_SUMMARY_NAME_LEN);
-	}
+	if (info.dli_saddr && out_name)
+		copy_summary_string_safe (out_name, info.dli_sname);
 #endif
 	return TRUE;
 }
 #endif
+
+typedef struct {
+	MonoFrameSummary *frames;
+	int num_frames;
+	int max_frames;
+} MonoSummarizeUserData;
+
+static void
+copy_summary_string_safe (char *in, char *out)
+{
+	for (int i=0; i < MONO_MAX_SUMMARY_NAME_LEN; i++) {
+		in [i] = out [i];
+		if (out [i] == '\0')
+			return;
+	}
+
+	// Overflowed
+	in [MONO_MAX_SUMMARY_NAME_LEN] = '\0';
+	return;
+}
+
+static gboolean
+summarize_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
+{
+	MonoMethod *method = NULL;
+	MonoSummarizeUserData *ud = (MonoSummarizeUserData *) data;
+	g_assert (ud->num_frames + 1 < ud->max_frames);
+	MonoFrameSummary *dest = &ud->frames [ud->num_frames];
+	ud->num_frames++;
+
+	mono_get_portable_ip ((intptr_t) MONO_CONTEXT_GET_IP (ctx), &dest->unmanaged_data.ip, NULL);
+	dest->unmanaged_data.is_trampoline = frame->ji && frame->ji->is_trampoline;
+
+	if (frame->ji && frame->type != FRAME_TYPE_TRAMPOLINE)
+		method = jinfo_get_method (frame->ji);
+
+	dest->is_managed = (method != NULL);
+	if (method && method->wrapper_type != MONO_WRAPPER_NONE) {
+		dest->is_managed = FALSE;
+		dest->unmanaged_data.has_name = TRUE;
+		copy_summary_string_safe (dest->str_descr, mono_method_full_name (method, TRUE));
+	}
+
+	MonoDebugSourceLocation *location = NULL;
+
+	if (dest->is_managed) {
+		dest->managed_data.native_offset = frame->native_offset;
+		copy_summary_string_safe (dest->str_descr, mono_class_get_image(method->klass)->assembly_name);
+		dest->managed_data.token = method->token;
+		location = mono_debug_lookup_source_location (method, frame->native_offset, mono_domain_get ());
+	} else {
+		dest->managed_data.token = -1;
+	}
+
+	if (location) {
+		dest->managed_data.il_offset = location->il_offset;
+
+		mono_debug_free_source_location (location);
+	}
+
+	return FALSE;
+}
+
+static void 
+mono_summarize_stack (MonoDomain *domain, MonoThreadSummary *out, MonoContext *crash_ctx)
+{
+	intptr_t frame_ips [MONO_MAX_SUMMARY_FRAMES];
+
+	MonoSummarizeUserData data;
+	data.max_frames = MONO_MAX_SUMMARY_FRAMES;
+	data.num_frames = 0;
+	data.frames = out->managed_frames;
+
+	// FIXME: collect stack pointer for both and sort frames by SP
+	// so people can see relative ordering of both managed and unmanaged frames.
+
+	// 
+	// Summarize managed stack
+	// 
+	mono_walk_stack_with_ctx (summarize_frame, crash_ctx, MONO_UNWIND_LOOKUP_IL_OFFSET, &data);
+	out->num_managed_frames = data.num_frames;
+
+
+	// 
+	// Summarize unmanaged stack
+	// 
+
+#ifdef HAVE_BACKTRACE_SYMBOLS
+	out->num_unmanaged_frames = backtrace ((void **)frame_ips, MONO_MAX_SUMMARY_FRAMES);
+
+	for (int i =0; i < out->num_unmanaged_frames; ++i) {
+		intptr_t ip = frame_ips [i];
+
+		int success = mono_get_portable_ip (ip, &out->unmanaged_frames [i].unmanaged_data.ip, (char *) &out->unmanaged_frames [i].str_descr);
+		if (!success)
+			continue;
+
+		if (out->unmanaged_frames [i].str_descr [0] != '\0')
+			out->unmanaged_frames [i].unmanaged_data.has_name = TRUE;
+	}
+#endif
+
+	return;
+}
 
 MonoBoolean
 ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 

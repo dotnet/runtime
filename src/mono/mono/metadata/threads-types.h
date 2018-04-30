@@ -338,4 +338,43 @@ mono_threads_exit_gc_safe_region_unbalanced_internal (gpointer cookie, MonoStack
 void
 mono_set_thread_dump_dir(gchar* dir);
 
+#ifdef TARGET_OSX
+#define MONO_MAX_SUMMARY_NAME_LEN 140
+#define MONO_MAX_SUMMARY_THREADS 32
+#define MONO_MAX_SUMMARY_FRAMES 40
+
+typedef struct {
+	gboolean is_managed;
+	char str_descr [MONO_MAX_SUMMARY_NAME_LEN];
+	struct {
+		int token;
+		int il_offset;
+		int native_offset;
+	} managed_data;
+	struct {
+		intptr_t ip;
+		gboolean is_trampoline;
+		gboolean has_name;
+	} unmanaged_data;
+} MonoFrameSummary;
+
+typedef struct {
+	gboolean is_managed;
+
+	const char *name;
+	intptr_t managed_thread_ptr;
+	intptr_t info_addr;
+	intptr_t native_thread_id;
+
+	int num_managed_frames;
+	MonoFrameSummary managed_frames [MONO_MAX_SUMMARY_FRAMES];
+
+	int num_unmanaged_frames;
+	MonoFrameSummary unmanaged_frames [MONO_MAX_SUMMARY_FRAMES];
+} MonoThreadSummary;
+
+gboolean
+mono_threads_summarize (MonoContext *ctx, gchar **out);
+#endif
+
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */
