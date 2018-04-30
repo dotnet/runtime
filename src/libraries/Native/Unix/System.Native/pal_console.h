@@ -50,7 +50,7 @@ struct WinSize
  *
  * Returns 0 on success; otherwise, returns errorNo.
  */
-int32_t SystemNative_GetWindowSize(struct WinSize* windowsSize);
+DLLEXPORT int32_t SystemNative_GetWindowSize(struct WinSize* windowsSize);
 
 /**
  * Gets whether the specified file descriptor is for a terminal.
@@ -58,14 +58,14 @@ int32_t SystemNative_GetWindowSize(struct WinSize* windowsSize);
  * Returns 1 if the file descriptor is referring to a terminal;
  * otherwise returns 0 and sets errno.
  */
-int32_t SystemNative_IsATty(intptr_t fd);
+DLLEXPORT int32_t SystemNative_IsATty(intptr_t fd);
 
 /**
  * Initializes the console for use by System.Console.
  *
  * Returns 1 on success; otherwise returns 0 and sets errno.
  */
-int32_t SystemNative_InitializeConsole(void);
+DLLEXPORT int32_t SystemNative_InitializeConsole(void);
 
 /**
  * Stores the string that can be written to stdout to transition
@@ -73,7 +73,7 @@ int32_t SystemNative_InitializeConsole(void);
  *
  * Returns 1 on success; otherwise returns 0 and sets errno.
  */
-void SystemNative_SetKeypadXmit(const char* terminfoString);
+DLLEXPORT void SystemNative_SetKeypadXmit(const char* terminfoString);
 
 /**
  * Gets the special control character codes for the requested control characters.
@@ -83,35 +83,35 @@ void SystemNative_SetKeypadXmit(const char* terminfoString);
  * or 0 if a particular name is unsupported or disabled. posixDisableValue is the special sentinel used in the output
  * controlCharacterValues array to indicate no value is available.
  */
-void SystemNative_GetControlCharacters(
+DLLEXPORT void SystemNative_GetControlCharacters(
     int32_t* controlCharacterNames, uint8_t* controlCharacterValues, int32_t controlCharacterLength,
     uint8_t* posixDisableValue);
 
 /**
  * Returns 1 if any input is waiting on stdin; otherwise, 0.
  */
-int32_t SystemNative_StdinReady(void);
+DLLEXPORT int32_t SystemNative_StdinReady(void);
 
 /**
  * Initializes the terminal in preparation for a read operation.
  */
-void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout);
+DLLEXPORT void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout);
 
 /**
  * Restores the terminal's attributes to what they were before InitializeConsoleBeforeRead was called.
  */
-void SystemNative_UninitializeConsoleAfterRead(void);
+DLLEXPORT void SystemNative_UninitializeConsoleAfterRead(void);
 
 /**
  * Reads the number of bytes specified into the provided buffer from stdin.
  * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
  */
-int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize);
+DLLEXPORT int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize);
 
 /**
  * Gets the terminal's break mode.
  */
-int32_t SystemNative_GetSignalForBreak(void);
+DLLEXPORT int32_t SystemNative_GetSignalForBreak(void);
 
 /**
  * Configures the terminal's break mode.
@@ -120,7 +120,7 @@ int32_t SystemNative_GetSignalForBreak(void);
  *
  * Returns 1 on success, 0 on failure, in which case errno is set.
  */
-int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak);
+DLLEXPORT int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak);
 
 enum CtrlCode
 {

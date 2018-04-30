@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include "pal_compiler.h"
+
+BEGIN_EXTERN_C
+
 #include "pal_types.h"
 #include <sys/types.h>
 
@@ -29,7 +33,7 @@ struct Passwd
 * number for any other failure.
 *
 */
-extern "C" int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen);
+DLLEXPORT int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen);
 
 /**
 * Gets a password structure for the given user name.
@@ -38,7 +42,7 @@ extern "C" int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, 
 * Returns 0 for success, -1 if no entry found, positive error
 * number for any other failure.
 */
-extern "C" int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen);
+DLLEXPORT int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen);
 
 /**
 * Gets and returns the effective user's identity.
@@ -46,7 +50,7 @@ extern "C" int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* b
 *
 * Always succeeds.
 */
-extern "C" uint32_t SystemNative_GetEUid();
+DLLEXPORT uint32_t SystemNative_GetEUid();
 
 /**
 * Gets and returns the effective group's identity.
@@ -54,7 +58,7 @@ extern "C" uint32_t SystemNative_GetEUid();
 *
 * Always succeeds.
 */
-extern "C" uint32_t SystemNative_GetEGid();
+DLLEXPORT uint32_t SystemNative_GetEGid();
 
 /**
 * Sets the effective user ID of the calling process
@@ -62,5 +66,6 @@ extern "C" uint32_t SystemNative_GetEGid();
 *
 * Returns 0 for success. On error, -1 is returned and errno is set.
 */
-extern "C" int32_t SystemNative_SetEUid(uid_t euid);
+DLLEXPORT int32_t SystemNative_SetEUid(uid_t euid);
 
+END_EXTERN_C

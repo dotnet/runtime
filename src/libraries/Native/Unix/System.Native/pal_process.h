@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include "pal_compiler.h"
+
+BEGIN_EXTERN_C
+
 #include "pal_types.h"
 #include <stdio.h>
 #include <string.h>
@@ -18,8 +22,8 @@
  * As would have been the case with fork/execve, a return value of 0 is success and -1
  * is failure; if failure, error information is provided in errno.
  */
-extern "C" int32_t
-SystemNative_ForkAndExecProcess(const char* filename,   // filename argument to execve
+DLLEXPORT int32_t SystemNative_ForkAndExecProcess(
+                   const char* filename,   // filename argument to execve
                    char* const argv[],     // argv argument to execve
                    char* const envp[],     // envp argument to execve
                    const char* cwd,        // path passed to chdir in child process
@@ -37,12 +41,12 @@ SystemNative_ForkAndExecProcess(const char* filename,   // filename argument to 
 /**
  * Shim for the popen function.
  */
-extern "C" FILE* SystemNative_POpen(const char* command, const char* type);
+DLLEXPORT FILE* SystemNative_POpen(const char* command, const char* type);
 
 /**
  * Shim for the pclose function.
  */
-extern "C" int32_t SystemNative_PClose(FILE* stream);
+DLLEXPORT int32_t SystemNative_PClose(FILE* stream);
 
 /************
  * The values below in the header are fixed and correct for managed callers to use forever.
@@ -170,40 +174,40 @@ struct CpuSetBits
  * Get the current limit for the specified resource of the current process.
  * Returns 0 on success; returns -1 on failure and errno is set to the error reason.
  */
-extern "C" int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits);
+DLLEXPORT int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits);
 
 /**
  * Set the soft and hard limits for the specified resource.
  * Only a super-user can increase hard limits for the current process.
  * Returns 0 on success; returns -1 on failure and errno is set to the error reason.
  */
-extern "C" int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limits);
+DLLEXPORT int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limits);
 
 /**
  * Kill the specified process (or process group) identified by the supplied pid; the
  * process or process group will be killed by the specified signal.
  * Returns 0 on success; on failure, -1 is returned and errno is set
  */
-extern "C" int32_t SystemNative_Kill(int32_t pid, int32_t signal);
+DLLEXPORT int32_t SystemNative_Kill(int32_t pid, int32_t signal);
 
 /**
  * Returns the Process ID of the current executing process.
  * This call should never fail
  */
-extern "C" int32_t SystemNative_GetPid();
+DLLEXPORT int32_t SystemNative_GetPid();
 
 /**
  * Returns the sessions ID of the specified process; if 0 is passed in, returns the
  * session ID of the current process.
  * Returns a session ID on success; otherwise, returns -1 and sets errno.
  */
-extern "C" int32_t SystemNative_GetSid(int32_t pid);
+DLLEXPORT int32_t SystemNative_GetSid(int32_t pid);
 
 /**
  * Write a message to the system logger, which in turn writes the message to the system console, log files, etc.
  * See man 3 syslog for more info
  */
-extern "C" void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1);
+DLLEXPORT void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1);
 
 /**
  * Waits for terminated child processes.
@@ -212,7 +216,7 @@ extern "C" void SystemNative_SysLog(SysLogPriority priority, const char* message
  * 2) if no children are waiting, 0 is returned
  * 3) on error, -1 is returned
  */
-extern "C" int32_t SystemNative_WaitIdExitedNoHang(int32_t pid, int32_t* exitCode, int32_t keepWaitable);
+DLLEXPORT int32_t SystemNative_WaitIdExitedNoHang(int32_t pid, int32_t* exitCode, int32_t keepWaitable);
 
 /**
  * Gets the configurable limit or variable for system path or file descriptor options.
@@ -220,7 +224,7 @@ extern "C" int32_t SystemNative_WaitIdExitedNoHang(int32_t pid, int32_t* exitCod
  * Returns the requested variable value on success; if the variable does not have a limit, -1 is returned and errno
  * is not set; otherwise, -1 is returned and errno is set.
  */
-extern "C" int64_t SystemNative_PathConf(const char* path, PathConfName name);
+DLLEXPORT int64_t SystemNative_PathConf(const char* path, PathConfName name);
 
 /**
  * Gets the priority (nice value) of a certain execution group.
@@ -229,19 +233,19 @@ extern "C" int64_t SystemNative_PathConf(const char* path, PathConfName name);
  * valid nice value, meaning we can't use that value to determine valid output or not. Errno is set on failure so
  * we need to reset errno before a call and check the value if we get -1.
  */
-extern "C" int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who);
+DLLEXPORT int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who);
 
 /**
  * Sets the priority (nice value) of a certain execution group.
  *
  * Returns 0 on success; otherwise, -1 and errno is set.
  */
-extern "C" int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice);
+DLLEXPORT int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice);
 
 /**
  * Gets the current working directory of the currently executing process.
  */
-extern "C" char* SystemNative_GetCwd(char* buffer, int32_t bufferSize);
+DLLEXPORT char* SystemNative_GetCwd(char* buffer, int32_t bufferSize);
 
 #if HAVE_SCHED_SETAFFINITY
 /**
@@ -249,7 +253,7 @@ extern "C" char* SystemNative_GetCwd(char* buffer, int32_t bufferSize);
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set
  */
-extern "C" int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
+DLLEXPORT int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
 #endif
 
 #if HAVE_SCHED_GETAFFINITY
@@ -258,7 +262,9 @@ extern "C" int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set.
  */
-extern "C" int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
+DLLEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
 #endif
 
-extern "C" char** SystemNative_GetEnviron();
+DLLEXPORT char** SystemNative_GetEnviron();
+
+END_EXTERN_C

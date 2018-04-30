@@ -20,3 +20,5 @@
 #else
 #define c_static_assert(e) typedef char __c_static_assert__[(e)?1:-1]
 #endif
+
+#define DLLEXPORT __attribute__ ((__visibility__ ("default")))

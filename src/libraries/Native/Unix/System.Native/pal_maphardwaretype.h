@@ -43,6 +43,6 @@ enum NetworkInterfaceType
     NetworkInterfaceType_Wwanpp2 = 244,                  // IF_TYPE_WWANPP2 Mobile Broadband devices based on CDMA technology
 };
 
-enum NetworkInterfaceType MapHardwareType(uint16_t nativeType);
+uint16_t MapHardwareType(uint16_t nativeType);
 
 END_EXTERN_C
