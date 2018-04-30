@@ -245,8 +245,15 @@ namespace Mono.Linker {
 				if (symbolReader == null)
 					return;
 
+				try {
+					assembly.MainModule.ReadSymbols (symbolReader);
+				} catch {
+					symbolReader.Dispose ();
+					return;
+				}
+
+				// Add symbol reader to annotations only if we have successfully read it
 				_annotations.AddSymbolReader (assembly, symbolReader);
-				assembly.MainModule.ReadSymbols (symbolReader);
 			} catch { }
 		}
 
