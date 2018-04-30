@@ -3732,16 +3732,8 @@ namespace System
                 return 0;
             }
 
-            // Here could be a possibly valid, and not well-known scheme
-            // Finds the scheme delimiter
-            // we don;t work with the schemes names > c_MaxUriSchemeName (should be ~1k)
-            if ((end - idx) > c_MaxUriSchemeName)
-            {
-                err = ParsingError.SchemeLimit;
-                return 0;
-            }
-
-            //Check the syntax, canonicalize  and avoid a GC call
+            // This is a potentially valid scheme, but we have not identified it yet.
+            // Check for illegal characters, canonicalize, and check the length.
             err = CheckSchemeSyntax(new ReadOnlySpan<char>(uriString + idx, end - idx), ref syntax);
             if (err != ParsingError.None)
             {
@@ -3996,6 +3988,11 @@ namespace System
                 {
                     return ParsingError.BadScheme;
                 }
+            }
+
+            if (span.Length > c_MaxUriSchemeName)
+            {
+                return ParsingError.SchemeLimit;
             }
 
             // Then look up the syntax in a string-based table.
