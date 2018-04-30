@@ -1236,7 +1236,7 @@ if ((disableEventLogging == 0)); then
     export COMPlus_EnableEventLog=1
 fi
 
-export CORECLR_SERVER_GC="$serverGC"
+export COMPlus_gcServer="$serverGC"
 
 if [ -z "$testRootDir" ]; then
     echo "--testRootDir is required."
