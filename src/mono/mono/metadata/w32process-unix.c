@@ -538,6 +538,9 @@ static const gunichar2 *utf16_space = utf16_space_bytes;
 static const gunichar2 utf16_quote_bytes [2] = { 0x22, 0 };
 static const gunichar2 *utf16_quote = utf16_quote_bytes;
 
+static MonoBoolean
+mono_get_exit_code_process (gpointer handle, gint32 *exitcode);
+
 /* Check if a pid is valid - i.e. if a process exists with this pid. */
 static gboolean
 process_is_alive (pid_t pid)
@@ -2208,7 +2211,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 			gint32 exitcode;
 			MonoW32HandleWaitRet waitret;
 			waitret = process_wait (process_info->process_handle, MONO_INFINITE_WAIT, NULL);
-			ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (process_info->process_handle, &exitcode);
+			mono_get_exit_code_process (process_info->process_handle, &exitcode);
 			if (exitcode != 0)
 				ret = FALSE;
 		}
@@ -2356,13 +2359,19 @@ mono_w32process_set_cli_launcher (gchar *path)
 }
 
 gpointer
-ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcess (void)
+ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcess (MonoError *error)
 {
 	return current_process;
 }
 
 MonoBoolean
-ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (gpointer handle, gint32 *exitcode)
+ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (gpointer handle, gint32 *exitcode, MonoError *error)
+{
+	return mono_get_exit_code_process (handle, exitcode);
+}
+
+static MonoBoolean
+mono_get_exit_code_process (gpointer handle, gint32 *exitcode)
 {
 	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
@@ -2405,13 +2414,13 @@ ves_icall_Microsoft_Win32_NativeMethods_GetExitCodeProcess (gpointer handle, gin
 }
 
 MonoBoolean
-ves_icall_Microsoft_Win32_NativeMethods_CloseProcess (gpointer handle)
+ves_icall_Microsoft_Win32_NativeMethods_CloseProcess (gpointer handle, MonoError *error)
 {
 	return mono_w32handle_close (handle);
 }
 
 MonoBoolean
-ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess (gpointer handle, gint32 exitcode)
+ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess (gpointer handle, gint32 exitcode, MonoError *error)
 {
 #ifdef HAVE_KILL
 	MonoW32Handle *handle_data;
@@ -2454,7 +2463,7 @@ ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess (gpointer handle, gint3
 }
 
 MonoBoolean
-ves_icall_Microsoft_Win32_NativeMethods_GetProcessWorkingSetSize (gpointer handle, gsize *min, gsize *max)
+ves_icall_Microsoft_Win32_NativeMethods_GetProcessWorkingSetSize (gpointer handle, gsize *min, gsize *max, MonoError *error)
 {
 	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
@@ -2490,7 +2499,7 @@ ves_icall_Microsoft_Win32_NativeMethods_GetProcessWorkingSetSize (gpointer handl
 }
 
 MonoBoolean
-ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize (gpointer handle, gsize min, gsize max)
+ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize (gpointer handle, gsize min, gsize max, MonoError *error)
 {
 	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
@@ -2523,7 +2532,7 @@ ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize (gpointer handl
 }
 
 gint32
-ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle)
+ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle, MonoError *error)
 {
 #ifdef HAVE_GETPRIORITY
 	MonoW32Handle *handle_data;
@@ -2589,7 +2598,7 @@ ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle)
 }
 
 MonoBoolean
-ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint32 priorityClass)
+ves_icall_Microsoft_Win32_NativeMethods_SetPriorityClass (gpointer handle, gint32 priorityClass, MonoError *error)
 {
 #ifdef HAVE_SETPRIORITY
 	MonoW32Handle *handle_data;
@@ -2668,7 +2677,7 @@ ticks_to_processtime (guint64 ticks, ProcessTime *processtime)
 }
 
 MonoBoolean
-ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64 *creation_time, gint64 *exit_time, gint64 *kernel_time, gint64 *user_time)
+ves_icall_Microsoft_Win32_NativeMethods_GetProcessTimes (gpointer handle, gint64 *creation_time, gint64 *exit_time, gint64 *kernel_time, gint64 *user_time, MonoError *error)
 {
 	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
