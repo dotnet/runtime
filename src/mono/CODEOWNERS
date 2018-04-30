@@ -102,7 +102,7 @@
 /msvc/*profiler* @alexrp
 /msvc/scripts @akoeplinger @kg
 
-/packaging/ @alexischr @akoeplinger @luhenry
+/packaging/ @alexischr @akoeplinger @luhenry @directhex
 /packaging/MacSDK/msbuild.py @radical @akoeplinger
 
 /runtime @akoeplinger @marek-safar @luhenry
