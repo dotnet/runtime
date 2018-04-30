@@ -816,6 +816,7 @@ TESTS_IL_SRC=			\
 	dim-valuetypes.il \
 	tailcall-generic-cast-conservestack-il.il \
 	tailcall-generic-cast-nocrash-il.il \
+	tailcall-member-function-in-valuetype.il \
 	ldfldvt.il \
 	newobj-abstract.il
 
@@ -876,6 +877,7 @@ TESTS_GSHARED_SRC = \
 	generic-type-builder.2.cs
 
 PLATFORM_DISABLED_TESTS=\
+	tailcall-member-function-in-valuetype.exe \
 	tailcall-rgctxb.exe
 
 if HOST_WIN32
