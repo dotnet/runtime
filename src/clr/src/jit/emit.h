@@ -1741,18 +1741,18 @@ private:
 /*      The logic that creates and keeps track of instruction groups    */
 /************************************************************************/
 
-#ifdef _TARGET_ARM_
+#ifdef _TARGET_ARMARCH_
 // The only place where this limited instruction group size is a problem is
 // in the prolog, where we only support a single instruction group. We should really fix that.
-// ARM can require a bigger prolog instruction group. One scenario is where a
-// function uses all the incoming integer and single-precision floating-point arguments,
+// ARM32 and ARM64 both can require a bigger prolog instruction group. One scenario is where
+// a function uses all the incoming integer and single-precision floating-point arguments,
 // and must store them all to the frame on entry. If the frame is very large, we generate
 // ugly code like "movw r10, 0x488; add r10, sp; vstr s0, [r10]" for each store, which
 // eats up our insGroup buffer.
 #define SC_IG_BUFFER_SIZE (100 * sizeof(instrDesc) + 14 * TINY_IDSC_SIZE)
-#else // !_TARGET_ARM_
+#else // !_TARGET_ARMARCH_
 #define SC_IG_BUFFER_SIZE (50 * sizeof(instrDesc) + 14 * TINY_IDSC_SIZE)
-#endif // !_TARGET_ARM_
+#endif // !_TARGET_ARMARCH_
 
     size_t emitIGbuffSize;
 
