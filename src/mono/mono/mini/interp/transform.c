@@ -3145,9 +3145,22 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			if (td->sp [-1].type == STACK_TYPE_VT) {
 				int size = mono_class_value_size (klass, NULL);
 				size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
+				int field_vt_size = 0;
+				if (mt == MINT_TYPE_VT) {
+					/*
+					 * Pop the loaded field from the vtstack (it will still be present
+					 * at the same vtstack address) and we will load it in place of the
+					 * containing valuetype with the second MINT_VTRESULT.
+					 */
+					field_vt_size = mono_class_value_size (field_klass, NULL);
+					field_vt_size = ALIGN_TO (field_vt_size, MINT_VT_ALIGNMENT);
+					ADD_CODE (td, MINT_VTRESULT);
+					ADD_CODE (td, 0);
+					WRITE32 (td, &field_vt_size);
+				}
 				td->vt_sp -= size;
 				ADD_CODE (td, MINT_VTRESULT);
-				ADD_CODE (td, 0);
+				ADD_CODE (td, field_vt_size);
 				WRITE32 (td, &size);
 			}
 			td->ip += 5;
