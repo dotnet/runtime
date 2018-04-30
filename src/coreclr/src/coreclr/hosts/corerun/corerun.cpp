@@ -19,11 +19,11 @@
 
 // Environment variable for setting whether or not to use Server GC.
 // Off by default.
-static const wchar_t *serverGcVar = W("CORECLR_SERVER_GC");
+static const wchar_t *serverGcVar = W("COMPlus_gcServer");
 
 // Environment variable for setting whether or not to use Concurrent GC.
 // On by default.
-static const wchar_t *concurrentGcVar = W("CORECLR_CONCURRENT_GC");
+static const wchar_t *concurrentGcVar = W("COMPlus_gcConcurrent");
 
 // The name of the CoreCLR native runtime DLL.
 static const wchar_t *coreCLRDll = W("CoreCLR.dll");
