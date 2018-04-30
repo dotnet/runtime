@@ -3816,6 +3816,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_R4:
 			ppc_frsp (code, ins->dreg, ins->sreg1);
 			break;
+
+		case OP_TAILCALL_PARAMETER:
+			// This opcode helps compute sizes, i.e.
+			// of the subsequent OP_TAILCALL, but contributes no code.
+			g_assert (ins->next);
+			break;
+
 		case OP_TAILCALL: {
 			int i, pos;
 			MonoCallInst *call = (MonoCallInst*)ins;

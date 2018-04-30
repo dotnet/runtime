@@ -52,6 +52,10 @@ break: len:32
 seq_point: len:24
 il_seq_point: len:0
 tailcall: len:120 clob:c
+
+# PowerPC outputs a nice fixed size memcpy loop for larger stack_usage, so 0.
+tailcall_parameter: len:0
+
 call: dest:a clob:c len:16
 br: len:4
 throw: src1:i len:20
