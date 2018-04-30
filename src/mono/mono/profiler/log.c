@@ -3420,7 +3420,9 @@ writer_thread (void *arg)
 	MonoProfilerThread *thread = profiler_thread_begin ("Profiler Writer", FALSE);
 
 	while (mono_atomic_load_i32 (&log_profiler.run_writer_thread)) {
+		MONO_ENTER_GC_SAFE;
 		mono_os_sem_wait (&log_profiler.writer_queue_sem, MONO_SEM_FLAGS_NONE);
+		MONO_EXIT_GC_SAFE;
 		handle_writer_queue_entry ();
 
 		profiler_thread_check_detach (thread);
@@ -3533,11 +3535,15 @@ dumper_thread (void *arg)
 	MonoProfilerThread *thread = profiler_thread_begin ("Profiler Dumper", TRUE);
 
 	while (mono_atomic_load_i32 (&log_profiler.run_dumper_thread)) {
+		gboolean timedout = FALSE;
+		MONO_ENTER_GC_SAFE;
 		/*
 		 * Flush samples every second so it doesn't seem like the profiler is
 		 * not working if the program is mostly idle.
 		 */
-		if (mono_os_sem_timedwait (&log_profiler.dumper_queue_sem, 1000, MONO_SEM_FLAGS_NONE) == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT)
+		timedout = mono_os_sem_timedwait (&log_profiler.dumper_queue_sem, 1000, MONO_SEM_FLAGS_NONE) == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT;
+		MONO_EXIT_GC_SAFE;
+		if (timedout)
 			send_log_unsafe (FALSE);
 
 		handle_dumper_queue_entry ();

@@ -77,7 +77,6 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 
 	/* We're in the middle of a self-suspend, resume and register */
 	if (!mono_threads_transition_finish_async_suspend (info)) {
-		mono_threads_add_to_pending_operation_set (info);
 		do {
 			ret = thread_resume (info->native_handle);
 		} while (ret == KERN_ABORTED);
