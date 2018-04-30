@@ -29,10 +29,10 @@
     <Copy SourceFiles="$(SharedFrameworkPublishDir)dotnet$(ExeSuffix)"
           DestinationFolder="$(SharedHostPublishRoot)" />
 
-    <Copy SourceFiles="$(ProjectDir)resources/ThirdPartyNotices.txt"
+    <Copy SourceFiles="$(ProjectDir)THIRD-PARTY-NOTICES.TXT"
           DestinationFiles="$(SharedHostPublishRoot)ThirdPartyNotices.txt" />
 
-    <Copy SourceFiles="$(ProjectDir)resources/LICENSE-MIT.txt"
+    <Copy SourceFiles="$(ProjectDir)LICENSE.TXT"
           DestinationFiles="$(SharedHostPublishRoot)LICENSE.txt"
           Condition="'$(TargetsUnix)' == 'true'"/>
 
