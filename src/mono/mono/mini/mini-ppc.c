@@ -4897,7 +4897,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		bb->max_offset = max_offset;
 
 		MONO_BB_FOR_EACH_INS (bb, ins)
-			max_offset += ins_get_size (cfg, ins);
+			max_offset += ins_get_size (ins->opcode);
 	}
 
 	/* load arguments allocated to register from the stack */
