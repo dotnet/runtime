@@ -5759,7 +5759,7 @@ ves_icall_Mono_Runtime_EnableMicrosoftTelemetry (char *appBundleID, char *appSig
 #ifdef TARGET_OSX
 	mono_merp_enable (appBundleID, appSignature, appVersion, merpGUIPath);
 
-	mono_get_runtime_callbacks ()->runtime_telemetry_callback ();
+	mono_get_runtime_callbacks ()->install_state_summarizer ();
 #else
 	// Icall has platform check in managed too.
 	g_assert_not_reached ();

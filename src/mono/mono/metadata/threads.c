@@ -5887,7 +5887,7 @@ mono_set_thread_dump_dir (gchar* dir) {
 	thread_dump_dir = dir;
 }
 
-#ifdef TARGET_OSX
+#ifndef HOST_WIN32
 
 static size_t num_threads_summarized = 0;
 
@@ -5919,7 +5919,7 @@ mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx)
 	if (!thread)
 		return FALSE;
 
-	memset (out, 0, sizeof (MonoThreadSummary));
+	memset (out, 0, sizeof (*out));
 	domain = thread->obj.vtable->domain;
 	out->native_thread_id = (intptr_t) thread_get_tid (thread);
 	out->managed_thread_ptr = (intptr_t) get_current_thread_ptr_for_domain (domain, thread);
@@ -5944,8 +5944,10 @@ static gint32 summary_started;
 gboolean
 mono_threads_summarize (MonoContext *ctx, gchar **out)
 {
-	gboolean already_started = ves_icall_System_Threading_Interlocked_CompareExchange_Int(&summary_started, 0x1, 0x0) != 0x0;
-	if (!already_started) {
+	MonoBoolean not_started = FALSE;
+	ves_icall_System_Threading_Interlocked_CompareExchange_Int_Success (&summary_started, 0x1 /* set */, 0x0 /* compare */, &not_started);
+
+	if (not_started) {
 		// Setup state
 		mono_summarize_native_state_begin ();
 
@@ -5984,7 +5986,7 @@ mono_threads_summarize (MonoContext *ctx, gchar **out)
 
 				// Pause this handler so other handlers can run
 				/*int signum;*/
-				fprintf (stderr, "Waiting to collect stacktrace\n");
+				MOSTLY_ASYNC_SAFE_PRINTF("Waiting for signalled thread to collect stacktrace\n");
 				/*sigsuspend (&sigset);*/
 				/*mono_threads_pthread_kill (info, SIGTERM);*/
 				/*sigprocmask (SIG_UNBLOCK, &old_sigset, NULL);*/
@@ -6002,7 +6004,8 @@ mono_threads_summarize (MonoContext *ctx, gchar **out)
 	num_threads_summarized++;
 	mono_memory_barrier ();
 
-	if (!already_started) {
+	if (not_started) {
+		// We are the dumper
 		*out = mono_summarize_native_state_end ();
 		return TRUE;
 	}

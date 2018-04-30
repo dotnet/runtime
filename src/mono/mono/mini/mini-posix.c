@@ -76,6 +76,10 @@
 #include <mono/utils/mono-merp.h>
 #endif
 
+#ifndef HOST_WIN32
+#include <mono/utils/mono-threads-debug.h>
+#endif
+
 #if defined(HOST_WATCHOS)
 
 void
@@ -209,7 +213,7 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 	}
 }
 
-#ifdef TARGET_OSX
+#ifndef HOST_WIN32
 MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 {
 	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
@@ -226,7 +230,7 @@ MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 		g_assert_not_reached ();
 
 	// Only the dumping-supervisor thread exits mono_thread_summarize
-	fprintf (stderr, "Unhandled exception dump: \n######\n%s\n######\n", output);
+	MOSTLY_ASYNC_SAFE_PRINTF("Unhandled exception dump: \n######\n%s\n######\n", output);
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 	exit (1);
@@ -384,7 +388,7 @@ remove_signal_handler (int signo)
 	}
 }
 
-#ifdef TARGET_OSX
+#ifndef HOST_WIN32
 void
 mini_register_sigterm_handler (void)
 {
