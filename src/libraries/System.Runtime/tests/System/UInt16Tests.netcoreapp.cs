@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -9,13 +10,29 @@ namespace System.Tests
 {
     public partial class UInt16Tests
     {
-        [Theory]
-        [MemberData(nameof(Parse_Valid_TestData))]
-        public static void Parse_Span_Valid(string value, NumberStyles style, IFormatProvider provider, ushort expected)
+        public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
         {
-            Assert.Equal(expected, ushort.Parse(value.AsSpan(), style, provider));
+            foreach (object[] inputs in Parse_Valid_TestData())
+            {
+                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
+            }
 
-            Assert.True(ushort.TryParse(value.AsSpan(), style, provider, out ushort result));
+            yield return new object[] { "123", 0, 2, NumberStyles.Integer, null, (ushort)12 };
+            yield return new object[] { "123", 1, 2, NumberStyles.Integer, null, (ushort)23 };
+            yield return new object[] { "+123", 0, 2, NumberStyles.Integer, null, (ushort)1 };
+            yield return new object[] { "+123", 1, 3, NumberStyles.Integer, null, (ushort)123 };
+            yield return new object[] { "AJK", 0, 1, NumberStyles.HexNumber, new NumberFormatInfo(), (ushort)0XA };
+            yield return new object[] { "$1,000", 0, 2, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (ushort)1 };
+            yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (ushort)10 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, ushort expected)
+        {
+            Assert.Equal(expected, ushort.Parse(value.AsSpan(offset, count), style, provider));
+
+            Assert.True(ushort.TryParse(value.AsSpan(offset, count), style, provider, out ushort result));
             Assert.Equal(expected, result);
         }
 

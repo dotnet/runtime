@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
@@ -9,13 +10,28 @@ namespace System.Tests
 {
     public partial class SByteTests
     {
-        [Theory]
-        [MemberData(nameof(Parse_Valid_TestData))]
-        public static void Parse_Span_Valid(string value, NumberStyles style, IFormatProvider provider, sbyte expected)
+        public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
         {
-            Assert.Equal(expected, sbyte.Parse(value.AsSpan(), style, provider));
+            foreach (object[] inputs in Parse_Valid_TestData())
+            {
+                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
+            }
 
-            Assert.True(sbyte.TryParse(value.AsSpan(), style, provider, out sbyte result));
+            yield return new object[] { "-123", 0, 2, NumberStyles.Integer, null, (sbyte)-1 };
+            yield return new object[] { "-123", 1, 3, NumberStyles.Integer, null, (sbyte)123 };
+            yield return new object[] { "12", 0, 1, NumberStyles.HexNumber, null, (sbyte)0x1 };
+            yield return new object[] { "12", 1, 1, NumberStyles.HexNumber, null, (sbyte)0x2 };
+            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, null, (sbyte)123 };
+            yield return new object[] { "$100", 1, 1, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (sbyte)1 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, sbyte expected)
+        {
+            Assert.Equal(expected, sbyte.Parse(value.AsSpan(offset, count), style, provider));
+
+            Assert.True(sbyte.TryParse(value.AsSpan(offset, count), style, provider, out sbyte result));
             Assert.Equal(expected, result);
         }
 

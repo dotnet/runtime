@@ -87,9 +87,24 @@ namespace System.Tests
             Assert.Equal(expected, double.IsSubnormal(d));
         }
 
+        public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
+        {
+            foreach (object[] inputs in Parse_Valid_TestData())
+            {
+                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
+            }
+
+            const NumberStyles DefaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;
+            yield return new object[] { "-123", 0, 3, DefaultStyle, null, (double)-12 };
+            yield return new object[] { "-123", 1, 3, DefaultStyle, null, (double)123 };
+            yield return new object[] { "1E23", 0, 3, DefaultStyle, null, 1E2 };
+            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, 123 };
+            yield return new object[] { "-Infinity", 1, 8, NumberStyles.Any, NumberFormatInfo.InvariantInfo, double.PositiveInfinity };
+        }
+
         [Theory]
-        [MemberData(nameof(Parse_Valid_TestData))]
-        public static void Parse_Span_Valid(string value, NumberStyles style, IFormatProvider provider, double expected)
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, double expected)
         {
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
             double result;
@@ -98,18 +113,18 @@ namespace System.Tests
                 // Use Parse(string) or Parse(string, IFormatProvider)
                 if (isDefaultProvider)
                 {
-                    Assert.True(double.TryParse(value.AsSpan(), out result));
+                    Assert.True(double.TryParse(value.AsSpan(offset, count), out result));
                     Assert.Equal(expected, result);
 
-                    Assert.Equal(expected, double.Parse(value.AsSpan()));
+                    Assert.Equal(expected, double.Parse(value.AsSpan(offset, count)));
                 }
 
-                Assert.Equal(expected, double.Parse(value.AsSpan(), provider: provider));
+                Assert.Equal(expected, double.Parse(value.AsSpan(offset, count), provider: provider));
             }
 
-            Assert.Equal(expected, double.Parse(value.AsSpan(), style, provider));
+            Assert.Equal(expected, double.Parse(value.AsSpan(offset, count), style, provider));
 
-            Assert.True(double.TryParse(value.AsSpan(), style, provider, out result));
+            Assert.True(double.TryParse(value.AsSpan(offset, count), style, provider, out result));
             Assert.Equal(expected, result);
         }
 

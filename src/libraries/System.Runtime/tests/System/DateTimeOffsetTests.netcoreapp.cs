@@ -25,6 +25,24 @@ namespace System.Tests
             Assert.Equal(expectedString, actual.ToString());
         }
 
+        [Theory]
+        [InlineData("r")]
+        [InlineData("o")]
+        public static void ToString_Slice_ParseSpan_RoundtripsSuccessfully(string roundtripFormat)
+        {
+            string expectedString = DateTimeOffset.UtcNow.ToString(roundtripFormat);
+            ReadOnlySpan<char> expectedSpan = ("abcd" + expectedString + "1234").AsSpan("abcd".Length, expectedString.Length);
+
+            Assert.Equal(expectedString, DateTimeOffset.Parse(expectedSpan).ToString(roundtripFormat));
+            Assert.Equal(expectedString, DateTimeOffset.Parse(expectedSpan, null).ToString(roundtripFormat));
+            Assert.Equal(expectedString, DateTimeOffset.Parse(expectedSpan, null, DateTimeStyles.None).ToString(roundtripFormat));
+
+            Assert.True(DateTimeOffset.TryParse(expectedSpan, out DateTimeOffset actual));
+            Assert.Equal(expectedString, actual.ToString(roundtripFormat));
+            Assert.True(DateTimeOffset.TryParse(expectedSpan, null, DateTimeStyles.None, out actual));
+            Assert.Equal(expectedString, actual.ToString(roundtripFormat));
+        }
+
         [Fact]
         public static void ToString_ParseExactSpan_RoundtripsSuccessfully()
         {
