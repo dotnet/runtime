@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.props" />
   <PropertyGroup>
-    <PackageVersion>1.2.0</PackageVersion>
-    <AssemblyVersion>1.0.33.0</AssemblyVersion>
+    <PackageVersion>1.3.0</PackageVersion>
+    <AssemblyVersion>1.0.34.0</AssemblyVersion>
   </PropertyGroup>
 </Project>

@@ -33,7 +33,7 @@
     <SkipBaseLineCheck>true</SkipBaseLineCheck>
 
     <!-- by default all packages will use the same version which revs with respect to product version -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">4.5.0</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">4.6.0</PackageVersion>
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
     <SkipGenerationCheck>true</SkipGenerationCheck>
   </PropertyGroup>
