@@ -73,8 +73,24 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool DsaSign(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte refSignature, out int outSignatureLength);
 
-        internal static bool DsaVerify(SafeDsaHandle dsa, ReadOnlySpan<byte> hash, int hashLength, ReadOnlySpan<byte> signature, int signatureLength) =>
-            DsaVerify(dsa, ref MemoryMarshal.GetReference(hash), hashLength, ref MemoryMarshal.GetReference(signature), signatureLength);
+        internal static bool DsaVerify(SafeDsaHandle dsa, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+        {
+            bool ret = DsaVerify(
+                dsa,
+                ref MemoryMarshal.GetReference(hash),
+                hash.Length,
+                ref MemoryMarshal.GetReference(signature),
+                signature.Length);
+
+            if (!ret)
+            {
+                // OpenSSL DSA signature processing requires a DER encode and decode, so
+                // the error queue may have been contaminated.
+                ErrClearError();
+            }
+
+            return ret;
+        }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaVerify")]
         [return: MarshalAs(UnmanagedType.Bool)]

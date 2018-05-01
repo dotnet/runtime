@@ -16,7 +16,18 @@ internal static partial class Interop
         private delegate int NegativeSizeReadMethod<in THandle>(THandle handle, byte[] buf, int cBuf);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioTell")]
-        internal static extern int BioTell(SafeBioHandle bio);
+        internal static extern int CryptoNative_BioTell(SafeBioHandle bio);
+
+        internal static int BioTell(SafeBioHandle bio)
+        {
+            int ret = CryptoNative_BioTell(bio);
+            if (ret < 0)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return ret;
+        }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioSeek")]
         internal static extern int BioSeek(SafeBioHandle bio, int pos);

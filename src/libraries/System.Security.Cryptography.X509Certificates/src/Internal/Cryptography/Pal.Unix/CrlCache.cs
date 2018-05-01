@@ -52,6 +52,7 @@ namespace Internal.Cryptography.Pal
             {
                 if (bio.IsInvalid)
                 {
+                    Interop.Crypto.ErrClearError();
                     return false;
                 }
 
@@ -61,6 +62,7 @@ namespace Internal.Cryptography.Pal
                 {
                     if (crl.IsInvalid)
                     {
+                        Interop.Crypto.ErrClearError();
                         return false;
                     }
 
@@ -144,9 +146,10 @@ namespace Internal.Cryptography.Pal
 
                         using (SafeBioHandle bio = Interop.Crypto.BioNewFile(crlFile, "wb"))
                         {
-                            if (!bio.IsInvalid)
+                            if (bio.IsInvalid || Interop.Crypto.PemWriteBioX509Crl(bio, crl) == 0)
                             {
-                                Interop.Crypto.PemWriteBioX509Crl(bio, crl);
+                                // No bio, or write failed
+                                Interop.Crypto.ErrClearError();
                             }
                         }
                     }
@@ -167,6 +170,11 @@ namespace Internal.Cryptography.Pal
             // X509_issuer_name_hash returns "unsigned long", which is marshalled as ulong.
             // But it only sets 32 bits worth of data, so force it down to uint just... in case.
             ulong persistentHashLong = Interop.Crypto.X509IssuerNameHash(pal.SafeHandle);
+            if (persistentHashLong == 0)
+            {
+                Interop.Crypto.ErrClearError();
+            }
+
             uint persistentHash = unchecked((uint)persistentHashLong);
 
             // OpenSSL's hashed filename algorithm is the 8-character hex version of the 32-bit value

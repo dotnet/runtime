@@ -126,7 +126,7 @@ extern "C" int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
 /*
 Sets all the parameters on the RSA instance.
 */
-extern "C" void CryptoNative_SetRsaParameters(RSA* rsa,
+extern "C" int32_t CryptoNative_SetRsaParameters(RSA* rsa,
                                               uint8_t* n,
                                               int32_t nLength,
                                               uint8_t* e,

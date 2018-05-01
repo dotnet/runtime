@@ -54,9 +54,15 @@ namespace Internal.Cryptography.Pal
 
             using (SafeBioHandle bio = Interop.Crypto.CreateMemoryBio())
             {
+                Interop.Crypto.CheckValidOpenSslHandle(bio);
+                
                 Interop.Crypto.BioWrite(bio, data, data.Length);
 
                 handle = Interop.Crypto.PemReadBioX509Crl(bio);
+
+                // DecodeX509Crl failed, so we need to clear its error.
+                // If PemReadBioX509Crl failed, clear that too.
+                Interop.Crypto.ErrClearError();
 
                 if (!handle.IsInvalid)
                 {

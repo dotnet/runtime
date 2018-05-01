@@ -26,6 +26,7 @@ internal static partial class Interop
 
             if (asn1String.IsInvalid)
             {
+                Interop.Crypto.ErrClearError();
                 return null;
             }
 
@@ -54,6 +55,8 @@ internal static partial class Interop
 
             using (SafeBioHandle bio = CreateMemoryBio())
             {
+                CheckValidOpenSslHandle(bio);
+                
                 int len = asn1StringPrintEx(bio, asn1String, Asn1StringPrintFlags.ASN1_STRFLGS_UTF8_CONVERT);
 
                 if (len < 0)
