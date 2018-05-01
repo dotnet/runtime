@@ -1,4 +1,3 @@
-System.Collections.Tests             # https://github.com/dotnet/coreclr/issues/17754 -- timeout
 System.Console.Tests
 System.Data.SqlClient.Tests          # https://github.com/dotnet/coreclr/issues/16001
 System.Diagnostics.Process.Tests     # https://github.com/dotnet/coreclr/issues/16001
@@ -12,8 +11,5 @@ System.Net.Http.Functional.Tests     # https://github.com/dotnet/coreclr/issues/
 System.Net.NameResolution.Pal.Tests  # https://github.com/dotnet/coreclr/issues/17740
 System.Net.NetworkInformation.Functional.Tests # https://github.com/dotnet/coreclr/issues/17753 -- segmentation fault
 System.Net.Sockets.Tests             # https://github.com/dotnet/coreclr/issues/17753 -- segmentation fault
-System.Runtime.Tests                 # https://github.com/dotnet/coreclr/issues/17755 -- JitStress only
-System.Text.Encodings.Web.Tests      # https://github.com/dotnet/coreclr/issues/17754 -- timeout -- JitMinOpts only
 System.Text.RegularExpressions.Tests # https://github.com/dotnet/coreclr/issues/17754 -- timeout -- JitMinOpts only
 System.Transactions.Local.Tests      # https://github.com/dotnet/coreclr/issues/17754 -- timeout
-System.Xml.RW.XmlConvert.Tests       # https://github.com/dotnet/coreclr/issues/17754 -- timeout
