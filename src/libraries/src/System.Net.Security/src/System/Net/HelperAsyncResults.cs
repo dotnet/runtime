@@ -52,30 +52,6 @@ namespace System.Net
             UserAsyncResult = userAsyncResult;
         }
 
-        public void Reset(LazyAsyncResult userAsyncResult)
-        {
-            if (userAsyncResult == null)
-            {
-                NetEventSource.Fail(this, "userAsyncResult == null");
-            }
-            if (userAsyncResult.InternalPeekCompleted)
-            {
-                NetEventSource.Fail(this, "userAsyncResult is already completed.");
-            }
-            UserAsyncResult = userAsyncResult;
-
-            _callback = null;
-            _completionStatus = 0;
-            Result = 0;
-            AsyncState = null;
-            Buffer = null;
-            Offset = 0;
-            Count = 0;
-#if DEBUG
-            _DebugAsyncChain = 0;
-#endif
-        }
-
         public void SetNextRequest(byte[] buffer, int offset, int count, AsyncProtocolCallback callback)
         {
             if (_completionStatus != StatusNotStarted)

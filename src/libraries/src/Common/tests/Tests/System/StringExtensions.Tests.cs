@@ -27,24 +27,16 @@ namespace Tests.System
         [InlineData(" hello\t\n ", 9, 0, "")]
         public void SubstringTrim_VariousInputsOutputs(string source, int startIndex, int length, string expectedResult)
         {
-            Action<string> validate = result =>
-            {
-                Assert.Equal(expectedResult, result);
-                if (result.Length == 0)
-                {
-                    Assert.Same(string.Empty, result);
-                }
-                else if (result.Length == source.Length)
-                {
-                    Assert.Same(source, result);
-                }
-            };
+            string result = source.SubstringTrim(startIndex, length);
 
-            validate(source.SubstringTrim(startIndex, length));
-
-            if (length == source.Length - startIndex)
+            Assert.Equal(expectedResult, result);
+            if (result.Length == 0)
             {
-                validate(source.SubstringTrim(startIndex));
+                Assert.Same(string.Empty, result);
+            }
+            else if (result.Length == source.Length)
+            {
+                Assert.Same(source, result);
             }
         }
     }

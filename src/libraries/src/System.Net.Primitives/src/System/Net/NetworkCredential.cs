@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Text;
-using System.Threading;
-using Microsoft.Win32;
 
 namespace System.Net
 {
@@ -132,11 +128,6 @@ namespace System.Net
         {
             get { return _domain; }
             set { _domain = value ?? string.Empty; }
-        }
-
-        internal string InternalGetDomainUserName()
-        {
-            return _domain != "" ? _domain + "\\" + _userName : _userName;
         }
 
         /// <devdoc>

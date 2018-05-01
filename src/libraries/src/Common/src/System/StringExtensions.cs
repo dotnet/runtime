@@ -8,11 +8,6 @@ namespace System
 {
     internal static class StringExtensions
     {
-        internal static string SubstringTrim(this string value, int startIndex)
-        {
-            return SubstringTrim(value, startIndex, value.Length - startIndex);
-        }
-
         internal static string SubstringTrim(this string value, int startIndex, int length)
         {
             Debug.Assert(value != null, "string must be non-null");

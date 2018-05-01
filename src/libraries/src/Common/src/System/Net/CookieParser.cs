@@ -128,14 +128,6 @@ namespace System.Net
             }
         }
 
-        // GetCookieString
-        //
-        // Gets the full string of the cookie
-        internal string GetCookieString()
-        {
-            return _tokenStream.SubstringTrim(_cookieStartIndex, _cookieLength);
-        }
-
         // Extract
         //
         // Extracts the current token
@@ -522,27 +514,6 @@ namespace System.Net
         internal CookieParser(string cookieString)
         {
             _tokenizer = new CookieTokenizer(cookieString);
-        }
-
-        // GetString
-        //
-        // Gets the next cookie string
-        internal string GetString()
-        {
-            bool first = true;
-
-            if (_tokenizer.Eof)
-            {
-                return null;
-            }
-
-            do
-            {
-                _tokenizer.Next(first, true);
-                first = false;
-            } while (!_tokenizer.Eof && !_tokenizer.EndOfCookie);
-
-            return _tokenizer.GetCookieString();
         }
 
 #if SYSTEM_NET_PRIMITIVES_DLL

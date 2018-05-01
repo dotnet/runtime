@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using System.Text;
 
 namespace System.Net.Mime
@@ -17,29 +16,6 @@ namespace System.Net.Mime
 
         //default buffer size for encoder
         private const int InitialBufferSize = 1024;
-
-        //get a raw encoder, not for use with header encoding
-        internal IEncodableStream GetEncoder(TransferEncoding encoding, Stream stream)
-        {
-            //raw encoder
-            if (encoding == TransferEncoding.Base64)
-            {
-                return new Base64Stream(stream, new Base64WriteStateInfo());
-            }
-
-            //return a QuotedPrintable stream because this is not being used for header encoding
-            if (encoding == TransferEncoding.QuotedPrintable)
-            {
-                return new QuotedPrintableStream(stream, true);
-            }
-
-            if (encoding == TransferEncoding.SevenBit || encoding == TransferEncoding.EightBit)
-            {
-                return new EightBitStream(stream);
-            }
-
-            throw new NotSupportedException();
-        }
 
         //use for encoding headers
         internal IEncodableStream GetEncoderForHeader(Encoding encoding, bool useBase64Encoding, int headerTextLength)

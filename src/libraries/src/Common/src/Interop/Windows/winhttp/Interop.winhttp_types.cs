@@ -267,16 +267,6 @@ internal partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public struct WINHTTP_CONNECTION_INFO
-        {
-            public uint Size;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
-            public byte[] LocalAddress; // SOCKADDR_STORAGE
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
-            public byte[] RemoteAddress; // SOCKADDR_STORAGE
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct WINHTTP_ASYNC_RESULT
         {
             public IntPtr dwResult;
@@ -289,26 +279,12 @@ internal partial class Interop
         public const uint API_WRITE_DATA = 4;
         public const uint API_SEND_REQUEST = 5;
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public struct WINHTTP_WEB_SOCKET_ASYNC_RESULT
-        {
-            public WINHTTP_ASYNC_RESULT AsyncResult;
-            public WINHTTP_WEB_SOCKET_OPERATION Operation;
-        }
-
         public enum WINHTTP_WEB_SOCKET_OPERATION
         {
             WINHTTP_WEB_SOCKET_SEND_OPERATION = 0,
             WINHTTP_WEB_SOCKET_RECEIVE_OPERATION = 1,
             WINHTTP_WEB_SOCKET_CLOSE_OPERATION = 2,
             WINHTTP_WEB_SOCKET_SHUTDOWN_OPERATION = 3
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public struct WINHTTP_WEB_SOCKET_STATUS
-        {
-            public uint dwBytesTransferred;
-            public WINHTTP_WEB_SOCKET_BUFFER_TYPE eBufferType;
         }
     }
 }

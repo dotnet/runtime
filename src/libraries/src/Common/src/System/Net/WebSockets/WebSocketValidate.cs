@@ -117,11 +117,6 @@ namespace System.Net.WebSockets
             }
         }
 
-        internal static void ThrowPlatformNotSupportedException()
-        {
-            throw new PlatformNotSupportedException(SR.net_WebSockets_UnsupportedPlatform);
-        }
-
         internal static void ValidateArraySegment(ArraySegment<byte> arraySegment, string parameterName)
         {
             Debug.Assert(!string.IsNullOrEmpty(parameterName), "'parameterName' MUST NOT be NULL or string.Empty");

@@ -298,8 +298,6 @@ namespace System.Net
             return cur - offset;
         }
 
-        public Stream GetStream() => this;
-
         public string GetEncodedString() => Encoding.ASCII.GetString(WriteState.Buffer, 0, WriteState.Length);
 
         public override int EndRead(IAsyncResult asyncResult)
