@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //
 
+// This test case is ported from S.N.Vector counterpart 
+// https://github.com/dotnet/coreclr/blob/master/tests/src/JIT/SIMD/VectorReturn.cs
+
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -206,156 +209,27 @@ internal partial class IntelHardwareIntrinsicTest
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static Vector128<T> Vector128One<T>() where T : struct
     {
-        if (typeof(T) == typeof(float))
-        {
-            return Sse.StaticCast<float, T>(Sse.SetAllVector128(1.0f));
-        }
-        else if (typeof(T) == typeof(double))
-        {
-            return Sse.StaticCast<double, T>(Sse2.SetAllVector128((double)1));
-        }
-        else if (typeof(T) == typeof(byte))
-        {
-            return Sse.StaticCast<byte, T>(Sse2.SetAllVector128((byte)1));
-        }
-        else if (typeof(T) == typeof(sbyte))
-        {
-            return Sse.StaticCast<sbyte, T>(Sse2.SetAllVector128((sbyte)1));
-        }
-        else if (typeof(T) == typeof(short))
-        {
-            return Sse.StaticCast<short, T>(Sse2.SetAllVector128((short)1));
-        }
-        else if (typeof(T) == typeof(ushort))
-        {
-            return Sse.StaticCast<ushort, T>(Sse2.SetAllVector128((ushort)1));
-        }
-        else if (typeof(T) == typeof(int))
-        {
-            return Sse.StaticCast<int, T>(Sse2.SetAllVector128((int)1));
-        }
-        else if (typeof(T) == typeof(uint))
-        {
-            return Sse.StaticCast<uint, T>(Sse2.SetAllVector128((uint)1));
-        }
-        else if (typeof(T) == typeof(long))
-        {
-            return Sse.StaticCast<long, T>(Sse2.SetAllVector128((long)1));
-        }
-        else if (typeof(T) == typeof(ulong))
-        {
-            return Sse.StaticCast<ulong, T>(Sse2.SetAllVector128((ulong)1));
-        }
-        else
-        {
-            throw new NotSupportedException();
-        }
+        return SetAllVector128(GetValueFromInt<T>(1));
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static Vector256<T> Vector256One<T>() where T : struct
     {
-        return Avx.SetAllVector256((T)Convert.ChangeType(1, typeof(T)));
+        return Avx.SetAllVector256(GetValueFromInt<T>(1));
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static Vector128<T> Vector128PlusOne<T>(Vector128<T> v1) where T : struct
     {
         Vector128<T> v2 = Vector128One<T>();
-        if (typeof(T) == typeof(float))
-        {
-            return Sse.StaticCast<float, T>(Sse.Add(Sse.StaticCast<T, float>(v1), Sse.StaticCast<T, float>(v2)));
-        }
-        else if (typeof(T) == typeof(double))
-        {
-            return Sse.StaticCast<double, T>(Sse2.Add(Sse.StaticCast<T, double>(v1), Sse.StaticCast<T, double>(v2)));
-        }
-        else if (typeof(T) == typeof(byte))
-        {
-            return Sse.StaticCast<byte, T>(Sse2.Add(Sse.StaticCast<T, byte>(v1), Sse.StaticCast<T, byte>(v2)));
-        }
-        else if (typeof(T) == typeof(sbyte))
-        {
-            return Sse.StaticCast<sbyte, T>(Sse2.Add(Sse.StaticCast<T, sbyte>(v1), Sse.StaticCast<T, sbyte>(v2)));
-        }
-        else if (typeof(T) == typeof(short))
-        {
-            return Sse.StaticCast<short, T>(Sse2.Add(Sse.StaticCast<T, short>(v1), Sse.StaticCast<T, short>(v2)));
-        }
-        else if (typeof(T) == typeof(ushort))
-        {
-            return Sse.StaticCast<ushort, T>(Sse2.Add(Sse.StaticCast<T, ushort>(v1), Sse.StaticCast<T, ushort>(v2)));
-        }
-        else if (typeof(T) == typeof(int))
-        {
-            return Sse.StaticCast<int, T>(Sse2.Add(Sse.StaticCast<T, int>(v1), Sse.StaticCast<T, int>(v2)));
-        }
-        else if (typeof(T) == typeof(uint))
-        {
-            return Sse.StaticCast<uint, T>(Sse2.Add(Sse.StaticCast<T, uint>(v1), Sse.StaticCast<T, uint>(v2)));
-        }
-        else if (typeof(T) == typeof(long))
-        {
-            return Sse.StaticCast<long, T>(Sse2.Add(Sse.StaticCast<T, long>(v1), Sse.StaticCast<T, long>(v2)));
-        }
-        else if (typeof(T) == typeof(ulong))
-        {
-            return Sse.StaticCast<ulong, T>(Sse2.Add(Sse.StaticCast<T, ulong>(v1), Sse.StaticCast<T, ulong>(v2)));
-        }
-        else
-        {
-            throw new NotSupportedException();
-        }
+        return Vector128Add<T>(v1, v2);
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static Vector256<T> Vector256PlusOne<T>(Vector256<T> v1) where T : struct
     {
         Vector256<T> v2 = Vector256One<T>();
-        if (typeof(T) == typeof(float))
-        {
-            return Avx.StaticCast<float, T>(Avx.Add(Avx.StaticCast<T, float>(v1), Avx.StaticCast<T, float>(v2)));
-        }
-        else if (typeof(T) == typeof(double))
-        {
-            return Avx.StaticCast<double, T>(Avx.Add(Avx.StaticCast<T, double>(v1), Avx.StaticCast<T, double>(v2)));
-        }
-        else if (typeof(T) == typeof(byte))
-        {
-            return Avx.StaticCast<byte, T>(Avx2.Add(Avx.StaticCast<T, byte>(v1), Avx.StaticCast<T, byte>(v2)));
-        }
-        else if (typeof(T) == typeof(sbyte))
-        {
-            return Avx.StaticCast<sbyte, T>(Avx2.Add(Avx.StaticCast<T, sbyte>(v1), Avx.StaticCast<T, sbyte>(v2)));
-        }
-        else if (typeof(T) == typeof(short))
-        {
-            return Avx.StaticCast<short, T>(Avx2.Add(Avx.StaticCast<T, short>(v1), Avx.StaticCast<T, short>(v2)));
-        }
-        else if (typeof(T) == typeof(ushort))
-        {
-            return Avx.StaticCast<ushort, T>(Avx2.Add(Avx.StaticCast<T, ushort>(v1), Avx.StaticCast<T, ushort>(v2)));
-        }
-        else if (typeof(T) == typeof(int))
-        {
-            return Avx.StaticCast<int, T>(Avx2.Add(Avx.StaticCast<T, int>(v1), Avx.StaticCast<T, int>(v2)));
-        }
-        else if (typeof(T) == typeof(uint))
-        {
-            return Avx.StaticCast<uint, T>(Avx2.Add(Avx.StaticCast<T, uint>(v1), Avx.StaticCast<T, uint>(v2)));
-        }
-        else if (typeof(T) == typeof(long))
-        {
-            return Avx.StaticCast<long, T>(Avx2.Add(Avx.StaticCast<T, long>(v1), Avx.StaticCast<T, long>(v2)));
-        }
-        else if (typeof(T) == typeof(ulong))
-        {
-            return Avx.StaticCast<ulong, T>(Avx2.Add(Avx.StaticCast<T, ulong>(v1), Avx.StaticCast<T, ulong>(v2)));
-        }
-        else
-        {
-            throw new NotSupportedException();
-        }
+        return Vector256Add<T>(v1, v2);
     }
 
     public static unsafe int Vector128ReturnTest()
