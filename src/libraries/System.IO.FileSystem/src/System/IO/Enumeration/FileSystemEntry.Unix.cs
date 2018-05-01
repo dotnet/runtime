@@ -9,7 +9,7 @@ namespace System.IO.Enumeration
     /// <summary>
     /// Lower level view of FileSystemInfo used for processing and filtering find results.
     /// </summary>
-    public unsafe ref struct FileSystemEntry
+    public unsafe ref partial struct FileSystemEntry
     {
         private const int FileNameBufferSize = 256;
         internal Interop.Sys.DirectoryEntry _directoryEntry;
@@ -136,12 +136,6 @@ namespace System.IO.Enumeration
             string fullPath = ToFullPath();
             return FileSystemInfo.Create(fullPath, new string(FileName), ref _status);
         }
-
-        /// <summary>
-        /// Returns the full path for find results, based on the initially provided path.
-        /// </summary>
-        public string ToSpecifiedFullPath() =>
-            Path.Join(OriginalRootDirectory, Directory.Slice(RootDirectory.Length), FileName);
 
         /// <summary>
         /// Returns the full path of the find result.

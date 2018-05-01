@@ -30,6 +30,8 @@ namespace System.IO.Tests
 
     public class DirectoryInfo_GetFiles_str_so : Directory_GetFiles_str_str_so
     {
+        public override bool IsDirectoryInfo => true;
+
         public override string[] GetEntries(string path)
         {
             return ((new DirectoryInfo(path).GetFiles("*", SearchOption.TopDirectoryOnly).Select(x => x.FullName)).ToArray());
