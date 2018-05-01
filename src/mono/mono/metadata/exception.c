@@ -384,7 +384,7 @@ mono_exception_from_token_two_strings_checked (MonoImage *image, guint32 token,
  * \returns a new instance of the \c System.DivideByZeroException
  */
 MonoException *
-mono_get_exception_divide_by_zero ()
+mono_get_exception_divide_by_zero (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "DivideByZeroException");
@@ -437,7 +437,7 @@ mono_exception_new_thread_interrupted (MonoError *error)
  * \returns a new instance of the \c System.Threading.ThreadInterruptedException
  */
 MonoException *
-mono_get_exception_thread_interrupted ()
+mono_get_exception_thread_interrupted (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System.Threading",
 					 "ThreadInterruptedException");
@@ -448,7 +448,7 @@ mono_get_exception_thread_interrupted ()
  * \returns a new instance of the \c System.ArithmeticException
  */
 MonoException *
-mono_get_exception_arithmetic ()
+mono_get_exception_arithmetic (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "ArithmeticException");
@@ -459,7 +459,7 @@ mono_get_exception_arithmetic ()
  * \returns a new instance of the \c System.OverflowException
  */
 MonoException *
-mono_get_exception_overflow ()
+mono_get_exception_overflow (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "OverflowException");
@@ -470,7 +470,7 @@ mono_get_exception_overflow ()
  * \returns a new instance of the \c System.NullReferenceException
  */
 MonoException *
-mono_get_exception_null_reference ()
+mono_get_exception_null_reference (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "NullReferenceException");
@@ -536,7 +536,7 @@ mono_get_exception_index_out_of_range ()
  * \returns a new instance of the \c System.ArrayTypeMismatchException
  */
 MonoException *
-mono_get_exception_array_type_mismatch ()
+mono_get_exception_array_type_mismatch (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System",
 					 "ArrayTypeMismatchException");
@@ -1430,4 +1430,11 @@ mono_error_set_simple_file_not_found (MonoError *error, const char *file_name, g
 		mono_error_set_file_not_found (error, file_name, "Cannot resolve dependency to assembly because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.");
 	else
 		mono_error_set_file_not_found (error, file_name, "Could not load file or assembly '%s' or one of its dependencies.", file_name);
+}
+
+void
+mono_error_set_argument_out_of_range (MonoError *error, const char *name)
+{
+	//FIXMEcoop
+	mono_error_set_exception_instance (error, mono_get_exception_argument_out_of_range (name));
 }

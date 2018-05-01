@@ -4628,7 +4628,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Int
 	error_init (error);
 
 	if (mono_class_is_open_constructed_type (m_class_get_byval_arg (method->klass))) {
-		mono_error_set_invalid_operation (error, "Could not execute the method because the containing type is not fully instantiated.");
+		mono_error_set_invalid_operation (error, "%s", "Could not execute the method because the containing type is not fully instantiated.");
 		return mono_error_convert_to_exception (error);
 	}
 

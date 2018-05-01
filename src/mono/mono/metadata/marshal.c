@@ -779,7 +779,9 @@ mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclas
 
 		as = g_utf16_to_utf8 (mono_array_addr (arr, gunichar2, 0), mono_array_length (arr), NULL, NULL, &gerror);
 		if (gerror) {
-			mono_set_pending_exception (mono_get_exception_argument ("string", gerror->message));
+			ERROR_DECL (error);
+			mono_error_set_argument (error, "string", "%s", gerror->message);
+			mono_error_set_pending_exception (error);
 			g_error_free (gerror);
 			return;
 		}
@@ -949,7 +951,8 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 	if (gerror) {
 		g_error_free (gerror);
 		mono_marshal_free (str_utf16);
-		mono_set_pending_exception (mono_get_exception_execution_engine ("Failed to convert StringBuilder from utf16 to utf8"));
+		mono_error_set_execution_engine (error, "Failed to convert StringBuilder from utf16 to utf8");
+		mono_error_set_pending_exception (error);
 		return NULL;
 	} else {
 		guint len = mono_string_builder_capacity (sb) + 1;
@@ -1241,7 +1244,8 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 	g_assert (delegate);
 	mcast_delegate = (MonoMulticastDelegate *) delegate;
 	if (mcast_delegate->delegates != NULL) {
-		mono_set_pending_exception (mono_get_exception_argument (NULL, "The delegate must have only one target"));
+		mono_error_set_argument (error, NULL, "The delegate must have only one target");
+		mono_error_set_pending_exception (error);
 		return NULL;
 	}
 
@@ -1979,13 +1983,15 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 
 	ares = (MonoAsyncResult *)mono_array_get (msg->args, gpointer, sig->param_count - 1);
 	if (ares == NULL) {
-		mono_set_pending_exception (mono_exception_from_name_msg (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingException", "The async result object is null or of an unexpected type."));
+		mono_error_set_remoting (error, "The async result object is null or of an unexpected type.");
+		mono_error_set_pending_exception (error);
 		return NULL;
 	}
 
 	if (ares->async_delegate != (MonoObject*)delegate) {
-		mono_set_pending_exception (mono_get_exception_invalid_operation (
-			"The IAsyncResult object provided does not match this delegate."));
+		mono_error_set_invalid_operation (error,
+			"%s", "The IAsyncResult object provided does not match this delegate.");
+		mono_error_set_pending_exception (error);
 		return NULL;
 	}
 
@@ -4879,6 +4885,7 @@ void
 ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
 								    gpointer dest, gint32 length)
 {
+	ERROR_DECL (error);
 	int element_size;
 	void *source_addr;
 
@@ -4886,19 +4893,23 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *s
 	MONO_CHECK_ARG_NULL (dest,);
 
 	if (m_class_get_rank (mono_object_class (&src->obj)) != 1) {
-		mono_set_pending_exception (mono_get_exception_argument ("array", "array is multi-dimensional"));
+		mono_error_set_argument (error, "array", "array is multi-dimensional");
+		mono_error_set_pending_exception (error);
 		return;
 	}
 	if (start_index < 0) {
-		mono_set_pending_exception (mono_get_exception_argument ("startIndex", "Must be >= 0"));
+		mono_error_set_argument (error, "startIndex", "Must be >= 0");
+		mono_error_set_pending_exception (error);
 		return;
 	}
 	if (length < 0) {
-		mono_set_pending_exception (mono_get_exception_argument ("length", "Must be >= 0"));
+		mono_error_set_argument (error, "length", "Must be >= 0");
+		mono_error_set_pending_exception (error);
 		return;
 	}
 	if (start_index + length > mono_array_length (src)) {
-		mono_set_pending_exception (mono_get_exception_argument ("length", "start_index + length > array length"));
+		mono_error_set_argument (error, "length", "start_index + length > array length");
+		mono_error_set_pending_exception (error);
 		return;
 	}
 
@@ -4916,24 +4927,30 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer s
 {
 	int element_size;
 	void *dest_addr;
+	ERROR_DECL (error);
 
 	MONO_CHECK_ARG_NULL (src,);
 	MONO_CHECK_ARG_NULL (dest,);
 
 	if (m_class_get_rank (mono_object_class (&dest->obj)) != 1) {
-		mono_set_pending_exception (mono_get_exception_argument ("array", "array is multi-dimensional"));
+		mono_error_set_argument (error, "array", "array is multi-dimensional");
+		mono_error_set_pending_exception (error);
 		return;
 	}
 	if (start_index < 0) {
-		mono_set_pending_exception (mono_get_exception_argument ("startIndex", "Must be >= 0"));
+		mono_error_set_argument (error, "startIndex", "Must be >= 0");
+		mono_error_set_pending_exception (error);
 		return;
 	}
 	if (length < 0) {
-		mono_set_pending_exception (mono_get_exception_argument ("length", "Must be >= 0"));
+		mono_error_set_argument (error, "length", "Must be >= 0");
+		mono_error_set_pending_exception (error);
 		return;
 	}
 	if (start_index + length > mono_array_length (dest)) {
-		mono_set_pending_exception (mono_get_exception_argument ("length", "start_index + length > array length"));
+		ERROR_DECL (error);
+		mono_error_set_argument (error, "length", "start_index + length > array length");
+		mono_error_set_pending_exception (error);
 		return;
 	}
 	element_size = mono_array_element_size (dest->obj.vtable->klass);
@@ -5102,14 +5119,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, M
 	t = mono_type_get_underlying_type (mono_class_get_type (dst->vtable->klass));
 
 	if (t->type == MONO_TYPE_VALUETYPE) {
-		MonoException *exc;
-		gchar *tmp;
-
-		tmp = g_strdup_printf ("Destination is a boxed value type.");
-		exc = mono_get_exception_argument ("dst", tmp);
-		g_free (tmp);  
-
-		mono_set_pending_exception (exc);
+		mono_error_set_argument (error, "dst", "Destination is a boxed value type.");
+		mono_error_set_pending_exception (error);
 		return;
 	}
 
@@ -5132,7 +5143,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer s
 
 	klass = mono_class_from_mono_type (type->type);
 	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
+		mono_error_set_for_class_failure (error, klass);
+		mono_error_set_pending_exception (error);
 		return NULL;
 	}
 
@@ -5293,7 +5305,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 
 	klass = mono_class_from_mono_type (type->type);
 	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
+		ERROR_DECL (error);
+		mono_error_set_for_class_failure (error, klass);
+		mono_error_set_pending_exception (error);
 		return;
 	}
 
@@ -5320,10 +5334,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gpointer size)
 
 	res = mono_marshal_alloc_hglobal (s);
 
-	if (!res) {
+	if (!res)
 		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
-		return NULL;
-	}
 
 	return res;
 }
@@ -5349,10 +5361,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, g
 
 	res = mono_marshal_realloc_hglobal (ptr, s);
 
-	if (!res) {
+	if (!res)
 		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
-		return NULL;
-	}
 
 	return res;
 }
@@ -5377,10 +5387,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size)
 {
 	void *res = mono_marshal_alloc_co_task_mem (size);
 
-	if (!res) {
+	if (!res)
 		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
-		return NULL;
-	}
+
 	return res;
 }
 
@@ -5389,10 +5398,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize (gulong size
 {
 	void *res = mono_marshal_alloc_co_task_mem (size);
 
-	if (!res) {
+	if (!res)
 		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
-		return NULL;
-	}
+
 	return res;
 }
 
@@ -5400,7 +5408,6 @@ void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr)
 {
 	mono_marshal_free_co_task_mem (ptr);
-	return;
 }
 
 #ifndef HOST_WIN32
@@ -5926,7 +5933,8 @@ mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_
 	default:
 		break;
 	}
-	mono_set_pending_exception (mono_get_exception_argument ("", "No PInvoke conversion exists for value passed to Object-typed parameter."));
+	mono_error_set_argument (error, "", "No PInvoke conversion exists for value passed to Object-typed parameter.");
+	mono_error_set_pending_exception (error);
 	return NULL;
 }
 

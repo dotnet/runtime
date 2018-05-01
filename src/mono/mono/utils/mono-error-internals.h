@@ -199,6 +199,51 @@ mono_error_set_member_access (MonoError *error, const char *msg_format, ...) MON
 void
 mono_error_set_invalid_cast (MonoError *oerror);
 
+static inline void
+mono_error_set_remoting (MonoError *error, const char *message)
+{
+	mono_error_set_generic_error (error, "System.Runtime.Remoting", "RemotingException", "%s", message);
+}
+
+static inline void
+mono_error_set_divide_by_zero (MonoError *error)
+{
+	mono_error_set_generic_error (error, "System", "DivideByZeroException", "");
+}
+
+static inline void
+mono_error_set_index_out_of_range (MonoError *error)
+{
+	mono_error_set_generic_error (error, "System", "IndexOutOfRangeException", "");
+}
+
+static inline void
+mono_error_set_overflow (MonoError *error)
+{
+	mono_error_set_generic_error (error, "System", "OverflowException", "");
+}
+
+static inline void
+mono_error_set_synchronization_lock (MonoError *error, const char *message)
+{
+	mono_error_set_generic_error (error, "System.Threading", "SynchronizationLockException", "%s", message);
+}
+
+static inline void
+mono_error_set_thread_interrupted (MonoError *error)
+{
+	mono_error_set_generic_error (error, "System.Threading", "ThreadInterruptedException", "");
+}
+
+static inline void
+mono_error_set_null_reference (MonoError *error)
+{
+	mono_error_set_generic_error (error, "System", "NullReferenceException", "");
+}
+
+void
+mono_error_set_argument_out_of_range (MonoError *error, const char *name);
+
 MonoException*
 mono_error_prepare_exception (MonoError *error, MonoError *error_out);
 

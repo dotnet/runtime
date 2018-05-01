@@ -1764,7 +1764,7 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 	} else if (this_obj->flags & MONO_THREAD_FLAG_NAME_SET) {
 		UNLOCK_THREAD (this_obj);
 		
-		mono_error_set_invalid_operation (error, "Thread.Name can only be set once.");
+		mono_error_set_invalid_operation (error, "%s", "Thread.Name can only be set once.");
 		return;
 	}
 	if (this_obj->name) {
@@ -2454,8 +2454,11 @@ mono_thread_current_check_pending_interrupt (void)
 	
 	UNLOCK_THREAD (thread);
 
-	if (throw_)
-		mono_set_pending_exception (mono_get_exception_thread_interrupted ());
+	if (throw_) {
+		ERROR_DECL (error);
+		mono_error_set_thread_interrupted (error);
+		mono_error_set_pending_exception (error);
+	}
 	return throw_;
 }
 

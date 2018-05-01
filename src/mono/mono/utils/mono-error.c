@@ -19,7 +19,7 @@
 #include <mono/metadata/object-internals.h>
 
 #define set_error_messagev() do { \
-	if (!(error->full_message = g_strdup_vprintf (msg_format, args))) \
+	if (msg_format && !(error->full_message = g_strdup_vprintf (msg_format, args))) \
 			error->flags |= MONO_ERROR_INCOMPLETE; \
 } while (0)
 

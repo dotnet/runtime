@@ -159,7 +159,9 @@ mono_tasklets_cleanup (void)
 static
 void continuations_not_supported (void)
 {
-	mono_set_pending_exception (mono_get_exception_not_implemented ("Tasklets are not implemented on this platform."));
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "Tasklets are not implemented on this platform.");
+	mono_error_set_pending_exception (error);
 }
 
 static void*
