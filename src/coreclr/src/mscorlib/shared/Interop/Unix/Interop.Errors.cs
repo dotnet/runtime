@@ -75,11 +75,13 @@ internal static partial class Interop
         ENOTCONN         = 0x10038,           // The socket is not connected.
         ENOTDIR          = 0x10039,           // Not a directory or a symbolic link to a directory.
         ENOTEMPTY        = 0x1003A,           // Directory not empty.
+        ENOTRECOVERABLE  = 0x1003B,           // State not recoverable.
         ENOTSOCK         = 0x1003C,           // Not a socket.
         ENOTSUP          = 0x1003D,           // Not supported (same value as EOPNOTSUP).
         ENOTTY           = 0x1003E,           // Inappropriate I/O control operation.
         ENXIO            = 0x1003F,           // No such device or address.
         EOVERFLOW        = 0x10040,           // Value too large to be stored in data type.
+        EOWNERDEAD       = 0x10041,           // Previous owner died.
         EPERM            = 0x10042,           // Operation not permitted.
         EPIPE            = 0x10043,           // Broken pipe.
         EPROTO           = 0x10044,           // Protocol error.
