@@ -330,6 +330,8 @@ typedef struct {
 	gint32 ref_count;
 } MonoComInteropProxy;
 
+TYPED_HANDLE_DECL (MonoComInteropProxy);
+
 typedef struct {
 	MonoObject	 object;
 	MonoRealProxy	*rp;	

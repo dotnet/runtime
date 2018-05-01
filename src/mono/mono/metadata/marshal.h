@@ -773,10 +773,10 @@ gpointer
 ves_icall_System_ComObject_GetInterfaceInternal (MonoComObject* obj, MonoReflectionType* type, MonoBoolean throw_exception);
 
 void
-ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxy* proxy);
+ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxyHandle proxy, MonoError *error);
 
-MonoComInteropProxy*
-ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk);
+MonoComInteropProxyHandle
+ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoError *error);
 
 MONO_API void
 mono_win32_compat_CopyMemory (gpointer dest, gconstpointer source, gsize length);

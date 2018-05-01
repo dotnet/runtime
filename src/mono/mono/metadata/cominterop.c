@@ -1816,7 +1816,7 @@ cominterop_rcw_finalizer (gpointer key, gpointer value, gpointer user_data)
 	gchandle = GPOINTER_TO_UINT (value);
 	if (gchandle) {
 		MonoComInteropProxy* proxy = (MonoComInteropProxy*)mono_gchandle_get_target (gchandle);
-		
+
 		if (proxy) {
 			if (proxy->com_object->itf_hash) {
 				g_hash_table_foreach_remove (proxy->com_object->itf_hash, cominterop_rcw_interface_finalizer, NULL);
@@ -1873,17 +1873,16 @@ ves_icall_System_ComObject_GetInterfaceInternal (MonoComObject* obj, MonoReflect
 }
 
 void
-ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxy* proxy)
+ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxyHandle proxy, MonoError *error)
 {
 #ifndef DISABLE_COM
-	guint32 gchandle = 0;
 	if (!rcw_hash) {
 		mono_cominterop_lock ();
 		rcw_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		mono_cominterop_unlock ();
 	}
 
-	gchandle = mono_gchandle_new_weakref ((MonoObject*)proxy, FALSE);
+	guint32 const gchandle = mono_gchandle_new_weakref_from_handle (MONO_HANDLE_CAST (MonoObject, proxy));
 
 	mono_cominterop_lock ();
 	g_hash_table_insert (rcw_hash, pUnk, GUINT_TO_POINTER (gchandle));
@@ -1893,24 +1892,24 @@ ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropPr
 #endif
 }
 
-MonoComInteropProxy*
-ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk)
+MonoComInteropProxyHandle
+ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoError *error)
 {
 #ifndef DISABLE_COM
-	MonoComInteropProxy* proxy = NULL;
 	guint32 gchandle = 0;
 
 	mono_cominterop_lock ();
 	if (rcw_hash)
 		gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (rcw_hash, pUnk));
 	mono_cominterop_unlock ();
-	if (gchandle) {
-		proxy = (MonoComInteropProxy*)mono_gchandle_get_target (gchandle);
-		/* proxy is null means we need to free up old RCW */
-		if (!proxy) {
-			mono_gchandle_free (gchandle);
-			g_hash_table_remove (rcw_hash, pUnk);
-		}
+	if (!gchandle)
+		return MONO_HANDLE_NEW (MonoComInteropProxy, NULL);
+
+	MonoComInteropProxyHandle const proxy = MONO_HANDLE_CAST (MonoComInteropProxy, mono_gchandle_get_target_handle (gchandle));
+	/* proxy is null means we need to free up old RCW */
+	if (MONO_HANDLE_IS_NULL (proxy)) {
+		mono_gchandle_free (gchandle);
+		g_hash_table_remove (rcw_hash, pUnk);
 	}
 	return proxy;
 #else
