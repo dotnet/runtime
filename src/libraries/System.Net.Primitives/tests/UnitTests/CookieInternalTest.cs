@@ -43,18 +43,6 @@ namespace NetPrimitivesUnitTests
         }
 
         [Theory]
-        [InlineData("cookie_name=cookie_value")]
-        [InlineData("cookie_name=cookie_value;")]
-        [InlineData("cookie_name1=cookie_value1;cookie_name2=cookie_value2")]
-        [InlineData("cookie_name1=cookie_value1;cookie_name2=cookie_value2;")]
-        public void CookieParserGetString_SetCookieHeaderValue_Success(string cookieString)
-        {
-            var parser = new CookieParser(cookieString);
-            string actual = parser.GetString();
-            Assert.Equal(cookieString, actual);
-        }
-
-        [Theory]
         [InlineData("cookie_name=cookie_value", new[] { "cookie_name", "cookie_value" })]
         [InlineData("cookie_name=cookie_value;", new[] { "cookie_name", "cookie_value" })]
         [InlineData("cookie_name1=cookie_value1;cookie_name2=cookie_value2", new[] { "cookie_name1", "cookie_value1", "cookie_name2", "cookie_value2" })]

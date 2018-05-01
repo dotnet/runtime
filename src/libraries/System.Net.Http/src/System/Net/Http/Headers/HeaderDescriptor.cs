@@ -39,8 +39,6 @@ namespace System.Net.Http.Headers
                 _knownHeader == other._knownHeader;
         public override int GetHashCode() => _knownHeader?.GetHashCode() ?? StringComparer.OrdinalIgnoreCase.GetHashCode(_headerName);
         public override bool Equals(object obj) => throw new InvalidOperationException();   // Ensure this is never called, to avoid boxing
-        public static bool operator ==(HeaderDescriptor left, HeaderDescriptor right) => left.Equals(right);
-        public static bool operator !=(HeaderDescriptor left, HeaderDescriptor right) => !left.Equals(right);
 
         // Returns false for invalid header name.
         public static bool TryGet(string headerName, out HeaderDescriptor descriptor)

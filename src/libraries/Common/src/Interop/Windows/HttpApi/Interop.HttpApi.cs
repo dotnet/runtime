@@ -137,22 +137,6 @@ internal static partial class Interop
             internal HTTP_RESPONSE_INFO* pResponseInfo;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct HTTP_REQUEST_INFO
-        {
-            internal HTTP_REQUEST_INFO_TYPE InfoType;
-            internal uint InfoLength;
-            internal void* pInfo;
-        }
-
-        internal enum HTTP_REQUEST_INFO_TYPE
-        {
-            HttpRequestInfoTypeAuth,
-            HttpRequestInfoTypeChannelBind,
-            HttpRequestInfoTypeSslProtocol,
-            HttpRequestInfoTypeSslTokenBinding
-        }
-
         internal enum HTTP_VERB : int
         {
             HttpVerbUnparsed = 0,
@@ -302,14 +286,6 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct HTTP_REQUEST_V2
-        {
-            internal HTTP_REQUEST RequestV1;
-            internal ushort RequestInfoCount;
-            internal HTTP_REQUEST_INFO* pRequestInfo;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct HTTP_COOKED_URL
         {
             internal ushort FullUrlLength;
@@ -347,16 +323,6 @@ internal static partial class Interop
             HttpServerProtectionLevelProperty,
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct HTTP_REQUEST_TOKEN_BINDING_INFO
-        {
-            public byte* TokenBinding;
-            public uint TokenBindingSize;
-            public byte* TlsUnique;
-            public uint TlsUniqueSize;
-            public IntPtr KeyType;
-        }
-
         internal enum TOKENBINDING_HASH_ALGORITHM : byte
         {
             TOKENBINDING_HASH_ALGORITHM_SHA256 = 4,
@@ -377,31 +343,6 @@ internal static partial class Interop
         internal enum TOKENBINDING_EXTENSION_FORMAT
         {
             TOKENBINDING_EXTENSION_FORMAT_UNDEFINED = 0,
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct TOKENBINDING_IDENTIFIER
-        {
-            public TOKENBINDING_TYPE bindingType;
-            public TOKENBINDING_HASH_ALGORITHM hashAlgorithm;
-            public TOKENBINDING_SIGNATURE_ALGORITHM signatureAlgorithm;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct TOKENBINDING_RESULT_DATA
-        {
-            public uint identifierSize;
-            public TOKENBINDING_IDENTIFIER* identifierData;
-            public TOKENBINDING_EXTENSION_FORMAT extensionFormat;
-            public uint extensionSize;
-            public IntPtr extensionData;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct TOKENBINDING_RESULT_LIST
-        {
-            public uint resultCount;
-            public TOKENBINDING_RESULT_DATA* resultData;
         }
 
         [Flags]
@@ -727,11 +668,6 @@ internal static partial class Interop
             {
                 int index;
                 return s_hashtable.TryGetValue(headerName, out index) ? index : -1;
-            }
-
-            internal static string ToString(int position)
-            {
-                return s_strings[position];
             }
         }
 

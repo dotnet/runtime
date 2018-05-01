@@ -76,21 +76,7 @@ internal partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool WinHttpQueryDataAvailable(
             SafeWinHttpHandle requestHandle,
-            out uint bytesAvailable);
-
-        [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool WinHttpQueryDataAvailable(
-            SafeWinHttpHandle requestHandle,
             IntPtr parameterIgnoredAndShouldBeNullForAsync);
-
-        [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool WinHttpReadData(
-            SafeWinHttpHandle requestHandle,
-            IntPtr buffer,
-            uint bufferSize,
-            out uint bytesRead);
 
         [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -158,14 +144,6 @@ internal partial class Interop
             SafeWinHttpHandle requestHandle,
             IntPtr buffer,
             uint bufferSize,
-            out uint bytesWritten);
-
-        [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool WinHttpWriteData(
-            SafeWinHttpHandle requestHandle,
-            IntPtr buffer,
-            uint bufferSize,
             IntPtr parameterIgnoredAndShouldBeNullForAsync);
 
         [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
@@ -175,14 +153,6 @@ internal partial class Interop
             uint option,
             ref uint optionData,
             uint optionLength = sizeof(uint));
-
-        [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool WinHttpSetOption(
-            SafeWinHttpHandle handle,
-            uint option,
-            string optionData,
-            uint optionLength);
 
         [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

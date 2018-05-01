@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
-
 using System;
-using System.Net;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -144,15 +142,7 @@ internal static partial class Interop
             uint ipAddress, [In] SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
 
         [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal extern static uint IcmpSendEcho2(SafeCloseIcmpHandle icmpHandle, IntPtr Event, IntPtr apcRoutine, IntPtr apcContext,
-            uint ipAddress, [In] SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
-
-        [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal extern static uint Icmp6SendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
-            byte[] sourceSocketAddress, byte[] destSocketAddress, [In] SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
-
-        [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal extern static uint Icmp6SendEcho2(SafeCloseIcmpHandle icmpHandle, IntPtr Event, IntPtr apcRoutine, IntPtr apcContext,
             byte[] sourceSocketAddress, byte[] destSocketAddress, [In] SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
     }
 }

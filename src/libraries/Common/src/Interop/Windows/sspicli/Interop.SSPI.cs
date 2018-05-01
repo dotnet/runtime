@@ -243,18 +243,6 @@ internal static partial class Interop
             }
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal struct SEC_WINNT_AUTH_IDENTITY_W
-        {
-            internal string User;
-            internal int UserLength;
-            internal string Domain;
-            internal int DomainLength;
-            internal string Password;
-            internal int PasswordLength;
-            internal int Flags;
-        }
-
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, SetLastError = true)]
         internal static extern int EncryptMessage(
               ref CredHandle contextHandle,
@@ -320,19 +308,6 @@ internal static partial class Interop
         internal static extern int EnumerateSecurityPackagesW(
             [Out] out int pkgnum,
             [Out] out SafeFreeContextBuffer_SECURITY handle);
-
-        [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern unsafe int AcquireCredentialsHandleW(
-                  [In] string principal,
-                  [In] string moduleName,
-                  [In] int usage,
-                  [In] void* logonID,
-                  [In] ref SEC_WINNT_AUTH_IDENTITY_W authdata,
-                  [In] void* keyCallback,
-                  [In] void* keyArgument,
-                  ref CredHandle handlePtr,
-                  [Out] out long timeStamp
-                  );
 
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern unsafe int AcquireCredentialsHandleW(

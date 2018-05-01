@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
@@ -64,34 +64,6 @@ namespace System.Net
             _asyncCallback = myCallBack;
             _result = DBNull.Value;
             if (NetEventSource.IsEnabled) NetEventSource.Info(this);
-        }
-
-        // Allows creating a pre-completed result with less interlockeds.  Beware!  Constructor calls the callback.
-        // If a derived class ever uses this and overloads Cleanup, this may need to change.
-        internal LazyAsyncResult(object myObject, object myState, AsyncCallback myCallBack, object result)
-        {
-            if (result == DBNull.Value)
-            {
-                NetEventSource.Fail(this, "Result can't be set to DBNull - it's a special internal value.");
-            }
-
-            _asyncObject = myObject;
-            _asyncState = myState;
-            _asyncCallback = myCallBack;
-            _result = result;
-            _intCompleted = 1;
-
-            if (_asyncCallback != null)
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Invoking callback");
-                _asyncCallback(this);
-            }
-            else
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "No callback to invoke");
-            }
-
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "(pre-completed)");
         }
 
         // Interface method to return the original async object.

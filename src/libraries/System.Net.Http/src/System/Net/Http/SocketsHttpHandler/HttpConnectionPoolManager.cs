@@ -393,9 +393,6 @@ namespace System.Net.Http
                 Port == other.Port &&
                 ProxyUri == other.ProxyUri &&
                 SslHostName == other.SslHostName;
-
-            public static bool operator ==(HttpConnectionKey key1, HttpConnectionKey key2) => key1.Equals(key2);
-            public static bool operator !=(HttpConnectionKey key1, HttpConnectionKey key2) => !key1.Equals(key2);
         }
     }
 }

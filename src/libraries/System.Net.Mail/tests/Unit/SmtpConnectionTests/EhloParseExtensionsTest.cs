@@ -113,7 +113,6 @@ namespace System.Net.Mail.Tests
 
             Assert.True(_smtpConnection.DSNEnabled);
             Assert.True(_smtpConnection.ServerSupportsEai);
-            Assert.True(_smtpConnection.ServerSupportsStartTls);
             Assert.False(_smtpConnection.AuthSupported(s_loginModule));
             Assert.False(_smtpConnection.AuthSupported(s_ntlmModule));
             Assert.False(_smtpConnection.AuthSupported(s_gssapiModule));
