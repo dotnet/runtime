@@ -77,27 +77,6 @@
       <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- TODO: Remove these lines when a new uapaot build is ingested into corefx. -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <Compile Include="$(CommonPath)\CoreLib\System\Collections\Hashtable.cs">
-      <Link>Common\System\Collections\Hashtable.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Collections\IHashCodeProvider.cs">
-      <Link>Common\System\Collections\IHashCodeProvider.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Collections\CompatibleComparer.cs">
-      <Link>Common\System\Collections\CompatibleComparer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Collections\HashHelpers.cs">
-      <Link>Common\System\Collections\HashHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Collections\HashHelpers.SerializationInfoTable.cs">
-      <Link>Common\System\Collections\HashHelpers.SerializationInfoTable.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Collections\KeyValuePairs.cs">
-      <Link>Common\System\Collections\KeyValuePairs.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot' or '$(TargetGroup)' == 'uap'">
     <Compile Include="System\Environment.WinRT.cs" />
   </ItemGroup>
