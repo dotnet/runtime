@@ -527,7 +527,7 @@ namespace System.Diagnostics
 
                 // Try to get the state of the child process
                 int exitCode;
-                int waitResult = Interop.Sys.WaitIdExitedNoHang(_processId, out exitCode, keepWaitable: false);
+                int waitResult = Interop.Sys.WaitPidExitedNoHang(_processId, out exitCode);
 
                 if (waitResult == _processId)
                 {
@@ -563,8 +563,7 @@ namespace System.Diagnostics
                 do
                 {
                     // Find a process that terminated without reaping it yet.
-                    int exitCode;
-                    pid = Interop.Sys.WaitIdExitedNoHang(-1, out exitCode, keepWaitable: true);
+                    pid = Interop.Sys.WaitIdAnyExitedNoHangNoWait();
                     if (pid > 0)
                     {
                         if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState pws))
@@ -638,7 +637,7 @@ namespace System.Diagnostics
                     do
                     {
                         int exitCode;
-                        pid = Interop.Sys.WaitIdExitedNoHang(-1, out exitCode, keepWaitable: false);
+                        pid = Interop.Sys.WaitPidExitedNoHang(-1, out exitCode);
                     } while (pid > 0);
                 }
             }
