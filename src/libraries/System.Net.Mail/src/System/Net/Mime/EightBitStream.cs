@@ -152,8 +152,6 @@ namespace System.Net.Mime
             }
         }
 
-        public Stream GetStream() => this;
-
         public int DecodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }
 
         public int EncodeBytes(byte[] buffer, int offset, int count) { throw new NotImplementedException(); }

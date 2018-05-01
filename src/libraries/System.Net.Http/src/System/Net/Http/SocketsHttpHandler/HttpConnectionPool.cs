@@ -495,15 +495,6 @@ namespace System.Net.Http
             }
         }
 
-        /// <summary>
-        /// Increments the count of connections associated with the pool.  This is invoked
-        /// any time a new connection is created for the pool.
-        /// </summary>
-        public void IncrementConnectionCount()
-        {
-            lock (SyncObj) IncrementConnectionCountNoLock();
-        }
-
         private void IncrementConnectionCountNoLock()
         {
             Debug.Assert(Monitor.IsEntered(SyncObj), $"Expected to be holding {nameof(SyncObj)}");

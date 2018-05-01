@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -1223,19 +1222,6 @@ namespace System.Net.Http
                 handle,
                 option,
                 ref optionData))
-            {
-                WinHttpException.ThrowExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpSetOption));
-            }
-        }
-
-        private void SetWinHttpOption(SafeWinHttpHandle handle, uint option, string optionData)
-        {
-            Debug.Assert(handle != null);
-            if (!Interop.WinHttp.WinHttpSetOption(
-                handle,
-                option,
-                optionData,
-                (uint)optionData.Length))
             {
                 WinHttpException.ThrowExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpSetOption));
             }

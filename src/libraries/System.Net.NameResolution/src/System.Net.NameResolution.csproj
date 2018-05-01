@@ -6,7 +6,7 @@
     <ProjectGuid>{1714448C-211E-48C1-8B7E-4EE667D336A1}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
-  </PropertyGroup>   
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Debug|AnyCPU'" />
@@ -54,8 +54,8 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\NameResolutionPal.Windows.cs" />
-    <Compile Include="System\Net\NameResolutionPal.Win32.cs" Condition="'$(TargetGroup)' != 'uap'"/>
-    <Compile Include="System\Net\NameResolutionPal.Uap.cs" Condition="'$(TargetGroup)' == 'uap'"/>
+    <Compile Include="System\Net\NameResolutionPal.Win32.cs" Condition="'$(TargetGroup)' != 'uap'" />
+    <Compile Include="System\Net\NameResolutionPal.Uap.cs" Condition="'$(TargetGroup)' == 'uap'" />
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
       <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
     </Compile>
@@ -66,9 +66,6 @@
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)\System\Net\Internals\IPAddressExtensions.cs">
       <Link>Common\System\Net\Internals\IPAddressExtensions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Internals\SocketExceptionFactory.cs">
-      <Link>Common\System\Net\Internals\SocketExceptionFactory.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Internals\SocketExceptionFactory.Windows.cs">
       <Link>Common\System\Net\Internals\SocketExceptionFactory.Windows.cs</Link>
@@ -94,7 +91,7 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.closesocket.cs">
       <Link>Interop\Windows\Winsock\Interop.closesocket.cs</Link>
-    </Compile>    
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.gethostname.cs">
       <Link>Interop\Windows\Winsock\Interop.gethostname.cs</Link>
     </Compile>

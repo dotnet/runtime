@@ -16,7 +16,9 @@ namespace System.Net.Mail
     {
         private bool _serverSupportsEai;
         private bool _dsnEnabled;
+#pragma warning disable CS0414      // Field is not used in test project
         private bool _serverSupportsStartTls;
+#pragma warning restore CS0414
         private bool _sawNegotiate;
         private SupportedAuth _supportedAuth = SupportedAuth.None;
         private readonly ISmtpAuthenticationModule[] _authenticationModules;
@@ -39,8 +41,6 @@ namespace System.Net.Mail
         internal bool DSNEnabled => _dsnEnabled;
 
         internal bool ServerSupportsEai => _serverSupportsEai;
-
-        internal bool ServerSupportsStartTls => _serverSupportsStartTls;
 
         internal void ParseExtensions(string[] extensions)
         {

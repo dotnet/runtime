@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -59,11 +58,6 @@ namespace System.Net
             return secModule.SecurityPackages;
         }
 
-        internal static SecurityPackageInfoClass GetVerifyPackageInfo(SSPIInterface secModule, string packageName)
-        {
-            return GetVerifyPackageInfo(secModule, packageName, false);
-        }
-
         internal static SecurityPackageInfoClass GetVerifyPackageInfo(SSPIInterface secModule, string packageName, bool throwIfMissing)
         {
             SecurityPackageInfoClass[] supportedSecurityPackages = EnumerateSecurityPackages(secModule);
@@ -105,29 +99,6 @@ namespace System.Net
                 throw new Win32Exception(errorCode);
             }
             return outCredential;
-        }
-
-        public static SafeFreeCredentials AcquireCredentialsHandle(SSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, ref Interop.SspiCli.SEC_WINNT_AUTH_IDENTITY_W authdata)
-        {
-            if (NetEventSource.IsEnabled)
-            {
-                NetEventSource.Enter(null, package);
-                NetEventSource.Log.AcquireCredentialsHandle(package, intent, authdata);
-            }
-
-            SafeFreeCredentials credentialsHandle = null;
-            int errorCode = secModule.AcquireCredentialsHandle(package,
-                                                               intent,
-                                                               ref authdata,
-                                                               out credentialsHandle);
-
-            if (errorCode != 0)
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_log_operation_failed_with_error, nameof(AcquireCredentialsHandle), $"0x{errorCode:X}"));
-
-                throw new Win32Exception(errorCode);
-            }
-            return credentialsHandle;
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SSPIInterface secModule, string package, Interop.SspiCli.CredentialUse intent, ref SafeSspiAuthDataHandle authdata)
@@ -189,17 +160,6 @@ namespace System.Net
             int errorCode = secModule.InitializeSecurityContext(credential, ref context, targetName, inFlags, datarep, inputBuffers, outputBuffer, ref outFlags);
 
             if (NetEventSource.IsEnabled) NetEventSource.Log.SecurityContextInputBuffers(nameof(InitializeSecurityContext), inputBuffers?.Length ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
-
-            return errorCode;
-        }
-
-        internal static int AcceptSecurityContext(SSPIInterface secModule, ref SafeFreeCredentials credential, ref SafeDeleteContext context, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, ref Interop.SspiCli.ContextFlags outFlags)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Log.AcceptSecurityContext(credential, context, inFlags);
-
-            int errorCode = secModule.AcceptSecurityContext(ref credential, ref context, inputBuffer, inFlags, datarep, outputBuffer, ref outFlags);
-
-            if (NetEventSource.IsEnabled) NetEventSource.Log.SecurityContextInputBuffer(nameof(AcceptSecurityContext), inputBuffer?.size ?? 0, outputBuffer.size, (Interop.SECURITY_STATUS)errorCode);
 
             return errorCode;
         }
