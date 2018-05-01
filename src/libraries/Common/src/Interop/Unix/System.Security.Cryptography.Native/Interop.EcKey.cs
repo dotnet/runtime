@@ -12,7 +12,17 @@ internal static partial class Interop
     internal static partial class Crypto
     {
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByOid")]
-        internal static extern SafeEcKeyHandle EcKeyCreateByOid(string oid);
+        private static extern SafeEcKeyHandle CryptoNative_EcKeyCreateByOid(string oid);
+        internal static SafeEcKeyHandle EcKeyCreateByOid(string oid)
+        {
+            SafeEcKeyHandle handle = CryptoNative_EcKeyCreateByOid(oid);
+            if (handle == null || handle.IsInvalid)
+            {
+                ErrClearError();
+            }
+
+            return handle;
+        }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyDestroy")]
         internal static extern void EcKeyDestroy(IntPtr a);

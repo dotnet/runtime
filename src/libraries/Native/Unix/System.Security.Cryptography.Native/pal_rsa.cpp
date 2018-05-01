@@ -215,7 +215,7 @@ extern "C" int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
     return 1;
 }
 
-static void SetRsaParameter(BIGNUM** rsaFieldAddress, uint8_t* buffer, int32_t bufferLength)
+static int32_t SetRsaParameter(BIGNUM** rsaFieldAddress, uint8_t* buffer, int32_t bufferLength)
 {
     assert(rsaFieldAddress != nullptr);
     if (rsaFieldAddress)
@@ -223,16 +223,21 @@ static void SetRsaParameter(BIGNUM** rsaFieldAddress, uint8_t* buffer, int32_t b
         if (!buffer || !bufferLength)
         {
             *rsaFieldAddress = nullptr;
+            return 1;
         }
         else
         {
             BIGNUM* bigNum = BN_bin2bn(buffer, bufferLength, nullptr);
             *rsaFieldAddress = bigNum;
+
+            return bigNum != nullptr;
         }
     }
+
+    return 0;
 }
 
-extern "C" void CryptoNative_SetRsaParameters(RSA* rsa,
+extern "C" int32_t CryptoNative_SetRsaParameters(RSA* rsa,
                                               uint8_t* n,
                                               int32_t nLength,
                                               uint8_t* e,
@@ -253,15 +258,16 @@ extern "C" void CryptoNative_SetRsaParameters(RSA* rsa,
     if (!rsa)
     {
         assert(false);
-        return;
+        return 0;
     }
 
-    SetRsaParameter(&rsa->n, n, nLength);
-    SetRsaParameter(&rsa->e, e, eLength);
-    SetRsaParameter(&rsa->d, d, dLength);
-    SetRsaParameter(&rsa->p, p, pLength);
-    SetRsaParameter(&rsa->dmp1, dmp1, dmp1Length);
-    SetRsaParameter(&rsa->q, q, qLength);
-    SetRsaParameter(&rsa->dmq1, dmq1, dmq1Length);
-    SetRsaParameter(&rsa->iqmp, iqmp, iqmpLength);
+    return 
+        SetRsaParameter(&rsa->n, n, nLength) &&
+        SetRsaParameter(&rsa->e, e, eLength) &&
+        SetRsaParameter(&rsa->d, d, dLength) &&
+        SetRsaParameter(&rsa->p, p, pLength) &&
+        SetRsaParameter(&rsa->dmp1, dmp1, dmp1Length) &&
+        SetRsaParameter(&rsa->q, q, qLength) &&
+        SetRsaParameter(&rsa->dmq1, dmq1, dmq1Length) &&
+        SetRsaParameter(&rsa->iqmp, iqmp, iqmpLength);
 }

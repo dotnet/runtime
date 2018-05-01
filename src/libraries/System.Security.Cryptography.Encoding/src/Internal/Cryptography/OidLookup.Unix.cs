@@ -32,6 +32,9 @@ namespace Internal.Cryptography
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 default:
                     Debug.Assert(result == 0, "LookupFriendlyNameByOid returned unexpected result " + result);
+
+                    // The lookup may have left errors in this case, clean up for precaution.
+                    Interop.Crypto.ErrClearError();
                     return null;
             }
         }

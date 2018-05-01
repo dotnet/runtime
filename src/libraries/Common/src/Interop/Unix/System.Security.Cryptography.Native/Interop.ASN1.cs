@@ -20,7 +20,17 @@ internal static partial class Interop
         private static extern unsafe int ObjObj2Txt(byte* buf, int buf_len, IntPtr a);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetObjectDefinitionByName", CharSet = CharSet.Ansi)]
-        internal static extern IntPtr GetObjectDefinitionByName(string friendlyName);
+        private static extern IntPtr CryptoNative_GetObjectDefinitionByName(string friendlyName);
+        internal static IntPtr GetObjectDefinitionByName(string friendlyName)
+        {
+            IntPtr ret = CryptoNative_GetObjectDefinitionByName(friendlyName);
+            if (ret == IntPtr.Zero)
+            {
+                ErrClearError();
+            }
+
+            return ret;
+        }
 
         // Returns shared pointers, should not be tracked as a SafeHandle.
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ObjNid2Obj")]

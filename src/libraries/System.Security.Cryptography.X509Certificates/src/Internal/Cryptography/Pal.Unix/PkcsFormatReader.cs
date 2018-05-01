@@ -30,7 +30,10 @@ namespace Internal.Cryptography.Pal
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bio);
 
-                Interop.Crypto.BioWrite(bio, rawData, rawData.Length);
+                if (Interop.Crypto.BioWrite(bio, rawData, rawData.Length) != rawData.Length)
+                {
+                    Interop.Crypto.ErrClearError();
+                }
 
                 using (SafePkcs7Handle pkcs7 = Interop.Crypto.PemReadBioPkcs7(bio))
                 {
@@ -179,7 +182,10 @@ namespace Internal.Cryptography.Pal
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bio);
 
-                Interop.Crypto.BioWrite(bio, rawData, rawData.Length);
+                if (Interop.Crypto.BioWrite(bio, rawData, rawData.Length) != rawData.Length)
+                {
+                    Interop.Crypto.ErrClearError();
+                }
 
                 return TryReadPkcs7Pem(bio, single, out certPal, out certPals);
             }

@@ -28,8 +28,18 @@ internal static partial class Interop
             byte[] data = new byte[size];
 
             int size2 = encode(handle, data);
-            Debug.Assert(size == size2);
+            if (size2 < 1)
+            {
+                Debug.Fail(
+                    $"{nameof(OpenSslEncode)}: {nameof(getSize)} succeeded ({size}) and {nameof(encode)} failed ({size2})");
 
+                // If it ever happens, ensure the error queue gets cleared.
+                // And since it didn't write the data, reporting an exception is good too.
+                throw CreateOpenSslCryptographicException();
+            }
+
+            Debug.Assert(size == size2);
+            
             return data;
         }
     }

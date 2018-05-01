@@ -102,7 +102,10 @@ extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols proto
 #endif
 
     SSL_CTX_set_options(ctx, protocolOptions);
-    TrySetECDHNamedCurve(ctx);
+    if (TrySetECDHNamedCurve(ctx) == 0)
+    {
+        ERR_clear_error();
+    }
 }
 
 extern "C" SSL* CryptoNative_SslCreate(SSL_CTX* ctx)

@@ -282,7 +282,7 @@ namespace System.Security.Cryptography
 
                 byte[] openSslFormat = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
 
-                return Interop.Crypto.DsaVerify(key, hash, hash.Length, openSslFormat, openSslFormat.Length);
+                return Interop.Crypto.DsaVerify(key, hash, openSslFormat);
             }
 
             private void SetKey(SafeDsaHandle newKey)

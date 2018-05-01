@@ -49,7 +49,8 @@ internal static partial class Interop
         private static extern IntPtr SslGetVersion(SafeSslHandle ssl);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetTlsExtHostName")]
-        internal static extern int SslSetTlsExtHostName(SafeSslHandle ssl, string host);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool SslSetTlsExtHostName(SafeSslHandle ssl, string host);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGet0AlpnSelected")]
         internal static extern void SslGetAlpnSelected(SafeSslHandle ssl, out IntPtr protocol, out int len);
@@ -128,6 +129,7 @@ internal static partial class Interop
         internal static extern int SslGetFinished(SafeSslHandle ssl, IntPtr buf, int count);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionReused")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool SslSessionReused(SafeSslHandle ssl);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslAddExtraChainCert")]
@@ -161,6 +163,7 @@ internal static partial class Interop
                 Crypto.CheckValidOpenSslHandle(dupCertHandle);
                 if (!SslAddExtraChainCert(sslContext, dupCertHandle))
                 {
+                    Crypto.ErrClearError();
                     dupCertHandle.Dispose(); // we still own the safe handle; clean it up
                     return false;
                 }

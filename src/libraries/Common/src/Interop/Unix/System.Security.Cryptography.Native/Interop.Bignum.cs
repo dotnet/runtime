@@ -29,7 +29,14 @@ internal static partial class Interop
                 return IntPtr.Zero;
             }
 
-            return BigNumFromBinary(bigEndianValue, bigEndianValue.Length);
+            IntPtr ret = BigNumFromBinary(bigEndianValue, bigEndianValue.Length);
+
+            if (ret == IntPtr.Zero)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return ret;
         }
 
         internal static SafeBignumHandle CreateBignum(byte[] bigEndianValue)

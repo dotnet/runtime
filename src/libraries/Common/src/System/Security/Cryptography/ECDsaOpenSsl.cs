@@ -149,7 +149,7 @@ namespace System.Security.Cryptography
                 byte[] openSslFormat = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
 
                 SafeEcKeyHandle key = _key.Value;
-                int verifyResult = Interop.Crypto.EcDsaVerify(hash, hash.Length, openSslFormat, openSslFormat.Length, key);
+                int verifyResult = Interop.Crypto.EcDsaVerify(hash, openSslFormat, key);
                 return verifyResult == 1;
             }
 
