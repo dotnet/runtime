@@ -408,7 +408,7 @@ mono_threads_enter_gc_unsafe_region_unbalanced_with_info (MonoThreadInfo *info, 
 
 	copy_stack_data (info, stackdata);
 
-	switch (mono_threads_transition_abort_blocking (info)) {
+	switch (mono_threads_transition_abort_blocking (info, function_name)) {
 	case AbortBlockingIgnore:
 		info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].valid = FALSE;
 		return NULL;

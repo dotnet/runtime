@@ -538,14 +538,14 @@ retry_state_change:
 			mono_fatal_with_history ("%s suspend_count = %d, but should be == 0", func, suspend_count);
 		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count), raw_state) != raw_state)
 			goto retry_state_change;
-		trace_state_change_with_func ("DONE_BLOCKING", info, raw_state, STATE_RUNNING, 0, func);
+		trace_state_change_sigsafe ("DONE_BLOCKING", info, raw_state, STATE_RUNNING, 0, func);
 		return DoneBlockingOk;
 	case STATE_BLOCKING_SUSPEND_REQUESTED:
 		if (!(suspend_count > 0))
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
 		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_SELF_SUSPENDED, suspend_count), raw_state) != raw_state)
 			goto retry_state_change;
-		trace_state_change ("DONE_BLOCKING", info, raw_state, STATE_BLOCKING_SELF_SUSPENDED, 0);
+		trace_state_change_with_func ("DONE_BLOCKING", info, raw_state, STATE_BLOCKING_SELF_SUSPENDED, 0, func);
 		return DoneBlockingWait;
 /*
 STATE_RUNNING: //Blocking was aborted and not properly restored
@@ -572,7 +572,7 @@ It returns one of:
 -Wait: Blocking state successfully aborted, there's a pending suspend to be processed though, wait for resume.
 */
 MonoAbortBlockingResult
-mono_threads_transition_abort_blocking (THREAD_INFO_TYPE* info)
+mono_threads_transition_abort_blocking (THREAD_INFO_TYPE* info, const char *func)
 {
 	int raw_state, cur_state, suspend_count;
 
@@ -580,11 +580,11 @@ retry_state_change:
 	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, info);
 	switch (cur_state) {
 	case STATE_RUNNING: //thread already in runnable state
-		trace_state_change ("ABORT_BLOCKING", info, raw_state, cur_state, 0);
+		trace_state_change_with_func ("ABORT_BLOCKING", info, raw_state, cur_state, 0, func);
 		return AbortBlockingIgnore;
 
 	case STATE_ASYNC_SUSPEND_REQUESTED: //thread is runnable and have a pending suspend
-		trace_state_change ("ABORT_BLOCKING", info, raw_state, cur_state, 0);
+		trace_state_change_with_func ("ABORT_BLOCKING", info, raw_state, cur_state, 0, func);
 		return AbortBlockingIgnoreAndPoll;
 
 	case STATE_BLOCKING:
@@ -592,14 +592,14 @@ retry_state_change:
 			mono_fatal_with_history ("suspend_count = %d,  but should be == 0", suspend_count);
 		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count), raw_state) != raw_state)
 			goto retry_state_change;
-		trace_state_change ("ABORT_BLOCKING", info, raw_state, STATE_RUNNING, 0);
+		trace_state_change_sigsafe ("ABORT_BLOCKING", info, raw_state, STATE_RUNNING, 0, func);
 		return AbortBlockingOk;
 	case STATE_BLOCKING_SUSPEND_REQUESTED:
 		if (!(suspend_count > 0))
 			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
 		if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_BLOCKING_SELF_SUSPENDED, suspend_count), raw_state) != raw_state)
 			goto retry_state_change;
-		trace_state_change ("ABORT_BLOCKING", info, raw_state, STATE_BLOCKING_SELF_SUSPENDED, 0);
+		trace_state_change_with_func ("ABORT_BLOCKING", info, raw_state, STATE_BLOCKING_SELF_SUSPENDED, 0, func);
 		return AbortBlockingWait;
 /*
 STATE_ASYNC_SUSPENDED:
