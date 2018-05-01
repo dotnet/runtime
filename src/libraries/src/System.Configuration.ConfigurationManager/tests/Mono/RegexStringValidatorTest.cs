@@ -67,7 +67,7 @@ namespace MonoTests.System.Configuration
         [Fact]
         public void IllegalRegex()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new RegexStringValidator("[0-9+"));
+            Assert.ThrowsAny<ArgumentException>(() => new RegexStringValidator("[0-9+"));
         }
     }
 }

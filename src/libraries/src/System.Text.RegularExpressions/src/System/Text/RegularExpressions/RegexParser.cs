@@ -315,7 +315,7 @@ namespace System.Text.RegularExpressions
 
                     case ')':
                         if (EmptyStack())
-                            throw MakeException(SR.TooManyParens);
+                            throw MakeException(RegexParseError.TooManyParentheses, SR.TooManyParens);
 
                         AddGroup();
                         PopGroup();
@@ -349,14 +349,17 @@ namespace System.Text.RegularExpressions
                     case '+':
                     case '?':
                         if (Unit() == null)
-                            throw MakeException(wasPrevQuantifier ?
-                                                SR.Format(SR.NestedQuantify, ch.ToString()) :
-                                                SR.QuantifyAfterNothing);
+                        {
+                            if (wasPrevQuantifier)
+                                throw MakeException(RegexParseError.NestedQuantify, SR.Format(SR.NestedQuantify, ch));
+                            else
+                                throw MakeException(RegexParseError.QuantifyAfterNothing, SR.QuantifyAfterNothing);
+                        }
                         MoveLeft();
                         break;
 
                     default:
-                        throw MakeException(SR.InternalError_ScanRegex);
+                        throw new InvalidOperationException(SR.InternalError_ScanRegex);
                 }
 
                 ScanBlank();
@@ -420,7 +423,7 @@ namespace System.Text.RegularExpressions
                             break;
 
                         default:
-                            throw MakeException(SR.InternalError_ScanRegex);
+                            throw new InvalidOperationException(SR.InternalError_ScanRegex);
                     }
 
                     ScanBlank();
@@ -434,7 +437,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     if (min > max)
-                        throw MakeException(SR.IllegalRange);
+                        throw MakeException(RegexParseError.IllegalRange, SR.IllegalRange);
 
                     AddConcatenate(lazy, min, max);
                 }
@@ -447,7 +450,7 @@ namespace System.Text.RegularExpressions
             ;
 
             if (!EmptyStack())
-                throw MakeException(SR.NotEnoughParens);
+                throw MakeException(RegexParseError.NotEnoughParentheses, SR.NotEnoughParens);
 
             AddGroup();
 
@@ -535,8 +538,8 @@ namespace System.Text.RegularExpressions
                             if (!scanOnly)
                             {
                                 if (inRange)
-                                    throw MakeException(SR.Format(SR.BadClassInCharRange, ch.ToString()));
-                                cc.AddDigit(UseOptionE(), ch == 'D', _pattern);
+                                    throw MakeException(RegexParseError.BadClassInCharRange, SR.Format(SR.BadClassInCharRange, ch));
+                                cc.AddDigit(UseOptionE(), ch == 'D', _pattern, _currentPos);
                             }
                             continue;
 
@@ -545,7 +548,7 @@ namespace System.Text.RegularExpressions
                             if (!scanOnly)
                             {
                                 if (inRange)
-                                    throw MakeException(SR.Format(SR.BadClassInCharRange, ch.ToString()));
+                                    throw MakeException(RegexParseError.BadClassInCharRange, SR.Format(SR.BadClassInCharRange, ch));
                                 cc.AddSpace(UseOptionE(), ch == 'S');
                             }
                             continue;
@@ -555,7 +558,7 @@ namespace System.Text.RegularExpressions
                             if (!scanOnly)
                             {
                                 if (inRange)
-                                    throw MakeException(SR.Format(SR.BadClassInCharRange, ch.ToString()));
+                                    throw MakeException(RegexParseError.BadClassInCharRange, SR.Format(SR.BadClassInCharRange, ch));
 
                                 cc.AddWord(UseOptionE(), ch == 'W');
                             }
@@ -566,8 +569,8 @@ namespace System.Text.RegularExpressions
                             if (!scanOnly)
                             {
                                 if (inRange)
-                                    throw MakeException(SR.Format(SR.BadClassInCharRange, ch.ToString()));
-                                cc.AddCategoryFromName(ParseProperty(), (ch != 'p'), caseInsensitive, _pattern);
+                                    throw MakeException(RegexParseError.BadClassInCharRange, SR.Format(SR.BadClassInCharRange, ch));
+                                cc.AddCategoryFromName(ParseProperty(), (ch != 'p'), caseInsensitive, _pattern, _currentPos);
                             }
                             else
                                 ParseProperty();
@@ -618,13 +621,13 @@ namespace System.Text.RegularExpressions
                             cc.AddSubtraction(ScanCharClass(caseInsensitive, scanOnly));
 
                             if (CharsRight() > 0 && RightChar() != ']')
-                                throw MakeException(SR.SubtractionMustBeLast);
+                                throw MakeException(RegexParseError.SubtractionMustBeLast, SR.SubtractionMustBeLast);
                         }
                         else
                         {
                             // a regular range, like a-z
                             if (chPrev > ch)
-                                throw MakeException(SR.ReversedCharRange);
+                                throw MakeException(RegexParseError.ReversedCharRange, SR.ReversedCharRange);
                             cc.AddRange(chPrev, ch);
                         }
                     }
@@ -646,7 +649,7 @@ namespace System.Text.RegularExpressions
                         cc.AddSubtraction(ScanCharClass(caseInsensitive, scanOnly));
 
                         if (CharsRight() > 0 && RightChar() != ']')
-                            throw MakeException(SR.SubtractionMustBeLast);
+                            throw MakeException(RegexParseError.SubtractionMustBeLast, SR.SubtractionMustBeLast);
                     }
                     else
                     {
@@ -662,7 +665,7 @@ namespace System.Text.RegularExpressions
             }
 
             if (!closed)
-                throw MakeException(SR.UnterminatedBracket);
+                throw MakeException(RegexParseError.UnterminatedBracket, SR.UnterminatedBracket);
 
             if (!scanOnly && caseInsensitive)
                 cc.AddLowercase(_culture);
@@ -774,9 +777,9 @@ namespace System.Text.RegularExpressions
 
                                     // check if we have bogus characters after the number
                                     if (CharsRight() > 0 && !(RightChar() == close || RightChar() == '-'))
-                                        throw MakeException(SR.InvalidGroupName);
+                                        throw MakeException(RegexParseError.InvalidGroupName, SR.InvalidGroupName);
                                     if (capnum == 0)
-                                        throw MakeException(SR.CapnumNotZero);
+                                        throw MakeException(RegexParseError.CapnumNotZero, SR.CapnumNotZero);
                                 }
                                 else if (RegexCharClass.IsWordChar(ch))
                                 {
@@ -787,7 +790,7 @@ namespace System.Text.RegularExpressions
 
                                     // check if we have bogus character after the name
                                     if (CharsRight() > 0 && !(RightChar() == close || RightChar() == '-'))
-                                        throw MakeException(SR.InvalidGroupName);
+                                        throw MakeException(RegexParseError.InvalidGroupName, SR.InvalidGroupName);
                                 }
                                 else if (ch == '-')
                                 {
@@ -796,7 +799,7 @@ namespace System.Text.RegularExpressions
                                 else
                                 {
                                     // bad group name - starts with something other than a word character and isn't a number
-                                    throw MakeException(SR.InvalidGroupName);
+                                    throw MakeException(RegexParseError.InvalidGroupName, SR.InvalidGroupName);
                                 }
 
                                 // grab part after - if any
@@ -811,11 +814,11 @@ namespace System.Text.RegularExpressions
                                         uncapnum = ScanDecimal();
 
                                         if (!IsCaptureSlot(uncapnum))
-                                            throw MakeException(SR.Format(SR.UndefinedBackref, uncapnum));
+                                            throw MakeException(RegexParseError.UndefinedBackref, SR.Format(SR.UndefinedBackref, uncapnum));
 
                                         // check if we have bogus characters after the number
                                         if (CharsRight() > 0 && RightChar() != close)
-                                            throw MakeException(SR.InvalidGroupName);
+                                            throw MakeException(RegexParseError.InvalidGroupName, SR.InvalidGroupName);
                                     }
                                     else if (RegexCharClass.IsWordChar(ch))
                                     {
@@ -824,16 +827,16 @@ namespace System.Text.RegularExpressions
                                         if (IsCaptureName(uncapname))
                                             uncapnum = CaptureSlotFromName(uncapname);
                                         else
-                                            throw MakeException(SR.Format(SR.UndefinedNameRef, uncapname));
+                                            throw MakeException(RegexParseError.UndefinedNameRef, SR.Format(SR.UndefinedNameRef, uncapname));
 
                                         // check if we have bogus character after the name
                                         if (CharsRight() > 0 && RightChar() != close)
-                                            throw MakeException(SR.InvalidGroupName);
+                                            throw MakeException(RegexParseError.InvalidGroupName, SR.InvalidGroupName);
                                     }
                                     else
                                     {
                                         // bad group name - starts with something other than a word character and isn't a number
-                                        throw MakeException(SR.InvalidGroupName);
+                                        throw MakeException(RegexParseError.InvalidGroupName, SR.InvalidGroupName);
                                     }
                                 }
 
@@ -864,10 +867,10 @@ namespace System.Text.RegularExpressions
                                     if (IsCaptureSlot(capnum))
                                         return new RegexNode(RegexNode.Testref, _options, capnum);
                                     else
-                                        throw MakeException(SR.Format(SR.UndefinedReference, capnum.ToString(CultureInfo.CurrentCulture)));
+                                        throw MakeException(RegexParseError.UndefinedReference, SR.Format(SR.UndefinedReference, capnum.ToString(CultureInfo.CurrentCulture)));
                                 }
                                 else
-                                    throw MakeException(SR.Format(SR.MalformedReference, capnum.ToString(CultureInfo.CurrentCulture)));
+                                    throw MakeException(RegexParseError.MalformedReference, SR.Format(SR.MalformedReference, capnum.ToString(CultureInfo.CurrentCulture)));
                             }
                             else if (RegexCharClass.IsWordChar(ch))
                             {
@@ -888,15 +891,15 @@ namespace System.Text.RegularExpressions
                             char rightchar2 = RightChar(2);
                             // disallow comments in the condition
                             if (rightchar2 == '#')
-                                throw MakeException(SR.AlternationCantHaveComment);
+                                throw MakeException(RegexParseError.AlternationCantHaveComment, SR.AlternationCantHaveComment);
 
                             // disallow named capture group (?<..>..) in the condition
                             if (rightchar2 == '\'')
-                                throw MakeException(SR.AlternationCantCapture);
+                                throw MakeException(RegexParseError.AlternationCantCapture, SR.AlternationCantCapture);
                             else
                             {
                                 if (charsRight >= 4 && (rightchar2 == '<' && RightChar(3) != '!' && RightChar(3) != '='))
-                                    throw MakeException(SR.AlternationCantCapture);
+                                    throw MakeException(RegexParseError.AlternationCantCapture, SR.AlternationCantCapture);
                             }
                         }
 
@@ -928,7 +931,7 @@ namespace System.Text.RegularExpressions
             ;
             // break Recognize comes here
 
-            throw MakeException(SR.UnrecognizedGrouping);
+            throw MakeException(RegexParseError.UnrecognizedGrouping, SR.UnrecognizedGrouping);
         }
 
         /*
@@ -957,7 +960,7 @@ namespace System.Text.RegularExpressions
                         while (CharsRight() > 0 && RightChar() != ')')
                             MoveRight();
                         if (CharsRight() == 0)
-                            throw MakeException(SR.UnterminatedComment);
+                            throw MakeException(RegexParseError.UnterminatedComment, SR.UnterminatedComment);
                         MoveRight();
                     }
                     else
@@ -975,7 +978,7 @@ namespace System.Text.RegularExpressions
                     while (CharsRight() > 0 && RightChar() != ')')
                         MoveRight();
                     if (CharsRight() == 0)
-                        throw MakeException(SR.UnterminatedComment);
+                        throw MakeException(RegexParseError.UnterminatedComment, SR.UnterminatedComment);
                     MoveRight();
                 }
             }
@@ -991,7 +994,7 @@ namespace System.Text.RegularExpressions
             RegexCharClass cc;
 
             if (CharsRight() == 0)
-                throw MakeException(SR.IllegalEndEscape);
+                throw MakeException(RegexParseError.IllegalEndEscape, SR.IllegalEndEscape);
 
             switch (ch = RightChar())
             {
@@ -1060,7 +1063,7 @@ namespace System.Text.RegularExpressions
                     if (scanOnly)
                         return null;
                     cc = new RegexCharClass();
-                    cc.AddCategoryFromName(ParseProperty(), (ch != 'p'), UseOptionI(), _pattern);
+                    cc.AddCategoryFromName(ParseProperty(), (ch != 'p'), UseOptionI(), _pattern, _currentPos);
                     if (UseOptionI())
                         cc.AddLowercase(_culture);
 
@@ -1077,7 +1080,7 @@ namespace System.Text.RegularExpressions
         private RegexNode ScanBasicBackslash(bool scanOnly)
         {
             if (CharsRight() == 0)
-                throw MakeException(SR.IllegalEndEscape);
+                throw MakeException(RegexParseError.IllegalEndEscape, SR.IllegalEndEscape);
 
             char ch;
             bool angled = false;
@@ -1104,7 +1107,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 if (!angled || CharsRight() <= 0)
-                    throw MakeException(SR.MalformedNameRef);
+                    throw MakeException(RegexParseError.MalformedNameRef, SR.MalformedNameRef);
 
                 ch = RightChar();
             }
@@ -1133,7 +1136,7 @@ namespace System.Text.RegularExpressions
                     if (IsCaptureSlot(capnum))
                         return new RegexNode(RegexNode.Ref, _options, capnum);
                     else
-                        throw MakeException(SR.Format(SR.UndefinedBackref, capnum.ToString(CultureInfo.CurrentCulture)));
+                        throw MakeException(RegexParseError.UndefinedBackref, SR.Format(SR.UndefinedBackref, capnum.ToString(CultureInfo.CurrentCulture)));
                 }
             }
 
@@ -1166,7 +1169,7 @@ namespace System.Text.RegularExpressions
                     if (IsCaptureSlot(capnum))
                         return new RegexNode(RegexNode.Ref, _options, capnum);
                     else if (capnum <= 9)
-                        throw MakeException(SR.Format(SR.UndefinedBackref, capnum.ToString(CultureInfo.CurrentCulture)));
+                        throw MakeException(RegexParseError.UndefinedBackref, SR.Format(SR.UndefinedBackref, capnum.ToString(CultureInfo.CurrentCulture)));
                 }
             }
 
@@ -1184,7 +1187,7 @@ namespace System.Text.RegularExpressions
                     if (IsCaptureName(capname))
                         return new RegexNode(RegexNode.Ref, _options, CaptureSlotFromName(capname));
                     else
-                        throw MakeException(SR.Format(SR.UndefinedNameRef, capname));
+                        throw MakeException(RegexParseError.UndefinedNameRef, SR.Format(SR.UndefinedNameRef, capname));
                 }
             }
 
@@ -1244,7 +1247,7 @@ namespace System.Text.RegularExpressions
                     {
                         int digit = (int)(ch - '0');
                         if (newcapnum > (MaxValueDiv10) || (newcapnum == (MaxValueDiv10) && digit > (MaxValueMod10)))
-                            throw MakeException(SR.CaptureGroupOutOfRange);
+                            throw MakeException(RegexParseError.CaptureGroupOutOfRange, SR.CaptureGroupOutOfRange);
 
                         newcapnum = newcapnum * 10 + digit;
 
@@ -1388,7 +1391,7 @@ namespace System.Text.RegularExpressions
                 MoveRight();
 
                 if (i > (MaxValueDiv10) || (i == (MaxValueDiv10) && d > (MaxValueMod10)))
-                    throw MakeException(SR.CaptureGroupOutOfRange);
+                    throw MakeException(RegexParseError.CaptureGroupOutOfRange, SR.CaptureGroupOutOfRange);
 
                 i *= 10;
                 i += d;
@@ -1417,7 +1420,7 @@ namespace System.Text.RegularExpressions
             }
 
             if (c > 0)
-                throw MakeException(SR.TooFewHex);
+                throw MakeException(RegexParseError.TooFewHex, SR.TooFewHex);
 
             return (char)i;
         }
@@ -1449,7 +1452,7 @@ namespace System.Text.RegularExpressions
             char ch;
 
             if (CharsRight() <= 0)
-                throw MakeException(SR.MissingControl);
+                throw MakeException(RegexParseError.MissingControl, SR.MissingControl);
 
             ch = RightCharMoveRight();
 
@@ -1461,7 +1464,7 @@ namespace System.Text.RegularExpressions
             if (unchecked(ch = (char)(ch - '@')) < ' ')
                 return ch;
 
-            throw MakeException(SR.UnrecognizedControl);
+            throw MakeException(RegexParseError.UnrecognizedControl, SR.UnrecognizedControl);
         }
 
         /*
@@ -1551,7 +1554,7 @@ namespace System.Text.RegularExpressions
                     return ScanControl();
                 default:
                     if (!UseOptionE() && RegexCharClass.IsWordChar(ch))
-                        throw MakeException(SR.Format(SR.UnrecognizedEscape, ch.ToString()));
+                        throw MakeException(RegexParseError.UnrecognizedEscape, SR.Format(SR.UnrecognizedEscape, ch));
                     return ch;
             }
         }
@@ -1563,12 +1566,12 @@ namespace System.Text.RegularExpressions
         {
             if (CharsRight() < 3)
             {
-                throw MakeException(SR.IncompleteSlashP);
+                throw MakeException(RegexParseError.IncompleteSlashP, SR.IncompleteSlashP);
             }
             char ch = RightCharMoveRight();
             if (ch != '{')
             {
-                throw MakeException(SR.MalformedSlashP);
+                throw MakeException(RegexParseError.MalformedSlashP, SR.MalformedSlashP);
             }
 
             int startpos = Textpos();
@@ -1584,7 +1587,7 @@ namespace System.Text.RegularExpressions
             string capname = _pattern.Substring(startpos, Textpos() - startpos);
 
             if (CharsRight() == 0 || RightCharMoveRight() != '}')
-                throw MakeException(SR.IncompleteSlashP);
+                throw MakeException(RegexParseError.IncompleteSlashP, SR.IncompleteSlashP);
 
             return capname;
         }
@@ -2113,7 +2116,7 @@ namespace System.Text.RegularExpressions
             if (_group.Type() == RegexNode.Testgroup && _group.ChildCount() == 0)
             {
                 if (_unit == null)
-                    throw MakeException(SR.IllegalCondition);
+                    throw MakeException(RegexParseError.IllegalCondition, SR.IllegalCondition);
 
                 _group.AddChild(_unit);
                 _unit = null;
@@ -2241,7 +2244,7 @@ namespace System.Text.RegularExpressions
                 _group.AddChild(_concatenation.ReverseLeft());
 
                 if (_group.Type() == RegexNode.Testref && _group.ChildCount() > 2 || _group.ChildCount() > 3)
-                    throw MakeException(SR.TooManyAlternates);
+                    throw MakeException(RegexParseError.TooManyAlternates, SR.TooManyAlternates);
             }
             else
             {
@@ -2286,11 +2289,11 @@ namespace System.Text.RegularExpressions
         }
 
         /*
-         * Fills in an ArgumentException
+         * Fills in a RegexParseException
          */
-        private ArgumentException MakeException(string message)
+        private RegexParseException MakeException(RegexParseError error, string message)
         {
-            return new ArgumentException(SR.Format(SR.MakeException, _pattern, message));
+            return new RegexParseException(error, _currentPos, SR.Format(SR.MakeException, _pattern, _currentPos, message));
         }
 
         /*

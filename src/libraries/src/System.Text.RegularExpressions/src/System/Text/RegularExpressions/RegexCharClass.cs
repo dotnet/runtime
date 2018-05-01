@@ -526,7 +526,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        public void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern)
+        public void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern, int currentPos)
         {
             if (s_definedCategories.TryGetValue(categoryName, out string category) && !categoryName.Equals(s_internalRegexIgnoreCase))
             {
@@ -543,7 +543,7 @@ namespace System.Text.RegularExpressions
                 _categories.Append(category);
             }
             else
-                AddSet(SetFromProperty(categoryName, invert, pattern));
+                AddSet(SetFromProperty(categoryName, invert, pattern, currentPos));
         }
 
         private void AddCategory(string category)
@@ -669,7 +669,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        public void AddDigit(bool ecma, bool negate, string pattern)
+        public void AddDigit(bool ecma, bool negate, string pattern, int currentPos)
         {
             if (ecma)
             {
@@ -679,7 +679,7 @@ namespace System.Text.RegularExpressions
                     AddSet(ECMADigitSet);
             }
             else
-                AddCategoryFromName("Nd", negate, false, pattern);
+                AddCategoryFromName("Nd", negate, false, pattern, currentPos);
         }
 
         public static string ConvertOldStringsToClass(string set, string category)
@@ -1113,7 +1113,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private static string SetFromProperty(string capname, bool invert, string pattern)
+        private static string SetFromProperty(string capname, bool invert, string pattern, int currentPos)
         {
             int min = 0;
             int max = s_propTable.Length;
@@ -1143,7 +1143,9 @@ namespace System.Text.RegularExpressions
                     }
                 }
             }
-            throw new ArgumentException(SR.Format(SR.MakeException, pattern, SR.Format(SR.UnknownProperty, capname)));
+
+            throw new RegexParseException(RegexParseError.UnknownUnicodeProperty, currentPos,
+                SR.Format(SR.MakeException, pattern, currentPos, SR.Format(SR.UnknownProperty, capname)));
         }
 
 #if DEBUG
