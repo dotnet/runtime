@@ -133,6 +133,22 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void RegexExceptionSerializable()
+        {
+            try
+            {
+                new Regex("*"); // parsing "*" - Quantifier {x,y} following nothing.
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.Equal(ex.GetType().Name, "RegexParseException");
+                ArgumentException clone = BinaryFormatterHelpers.Clone(ex);
+                Assert.IsType<ArgumentException>(clone);
+            }
+        }
+
+        [Fact]
         public void ArraySegmentDefaultCtor()
         {
             // This is workaround for Xunit bug which tries to pretty print test case name and enumerate this object.

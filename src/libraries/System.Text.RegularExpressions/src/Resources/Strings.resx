@@ -125,13 +125,13 @@
     <value>Malformed \\p{X} character escape.</value>
   </data>
   <data name="MakeException" xml:space="preserve">
-    <value>parsing '{0}' - {1}</value>
+    <value>Invalid pattern '{0}' at offset {1}. {2}</value>
   </data>
   <data name="MissingControl" xml:space="preserve">
     <value>Missing control character.</value>
   </data>
   <data name="NestedQuantify" xml:space="preserve">
-    <value>Nested quantifier {0}.</value>
+    <value>Nested quantifier '{0}'.</value>
   </data>
   <data name="NoResultOnFailed" xml:space="preserve">
     <value>Result cannot be called on a failed Match.</value>
@@ -176,7 +176,7 @@
     <value>Reference to undefined group number {0}.</value>
   </data>
   <data name="UndefinedNameRef" xml:space="preserve">
-    <value>Reference to undefined group name {0}.</value>
+    <value>Reference to undefined group name '{0}'.</value>
   </data>
   <data name="UndefinedReference" xml:space="preserve">
     <value>(?({0}) ) reference to undefined group.</value>
