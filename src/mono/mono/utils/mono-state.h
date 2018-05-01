@@ -11,6 +11,8 @@
 #ifndef __MONO_UTILS_NATIVE_STATE__
 #define __MONO_UTILS_NATIVE_STATE__
 
+#ifndef HOST_WIN32
+
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-context.h>
 #include <mono/metadata/threads-types.h>
@@ -29,5 +31,6 @@ void
 mono_summarize_native_state_add_thread (MonoThreadSummary *thread, MonoContext *ctx);
 
 MONO_END_DECLS
+#endif // HOST_WIN32
 
 #endif // MONO_UTILS_NATIVE_STATE

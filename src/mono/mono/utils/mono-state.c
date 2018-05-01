@@ -14,6 +14,8 @@
 #include <mono/utils/mono-state.h>
 #include <mono/metadata/object-internals.h>
 
+#ifndef HOST_WIN32
+
 extern GCStats mono_gc_stats;
 
 // For AOT mode
@@ -474,3 +476,4 @@ mono_summarize_native_state_add_thread (MonoThreadSummary *thread, MonoContext *
 	mono_native_state_add_thread (&writer, thread, ctx);
 }
 
+#endif // HOST_WIN32
