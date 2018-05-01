@@ -58,8 +58,8 @@ namespace System
     //
     public abstract partial class UriParser
     {
-        private static readonly LowLevelDictionary<string, UriParser> s_table;
-        private static LowLevelDictionary<string, UriParser> s_tempTable;
+        private static readonly Dictionary<string, UriParser> s_table;
+        private static Dictionary<string, UriParser> s_tempTable;
 
         private UriSyntaxFlags _flags;
 
@@ -122,8 +122,8 @@ namespace System
 
         static UriParser()
         {
-            s_table = new LowLevelDictionary<string, UriParser>(c_InitialTableSize);
-            s_tempTable = new LowLevelDictionary<string, UriParser>(c_InitialTableSize);
+            s_table = new Dictionary<string, UriParser>(c_InitialTableSize);
+            s_tempTable = new Dictionary<string, UriParser>(c_InitialTableSize);
 
             //Now we will call for the instance constructors that will interrupt this static one.
 
@@ -301,7 +301,7 @@ namespace System
             {
                 if (s_tempTable.Count >= c_MaxCapacity)
                 {
-                    s_tempTable = new LowLevelDictionary<string, UriParser>(c_InitialTableSize);
+                    s_tempTable = new Dictionary<string, UriParser>(c_InitialTableSize);
                 }
                 syntax = new BuiltInUriParser(lwrCaseScheme, NoDefaultPort, UnknownV1SyntaxFlags);
                 s_tempTable[lwrCaseScheme] = syntax;

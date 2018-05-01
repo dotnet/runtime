@@ -19,9 +19,6 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
-      <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FxCopBaseline.cs" />
