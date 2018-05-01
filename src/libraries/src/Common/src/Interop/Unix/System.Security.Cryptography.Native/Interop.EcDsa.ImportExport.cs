@@ -34,7 +34,12 @@ internal static partial class Interop
             if (rc == -1)
             {
                 if (key != null)
+                {
                     key.Dispose();
+                }
+
+                Interop.Crypto.ErrClearError();
+                
                 throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, oid));
             }
             return key;
@@ -91,6 +96,10 @@ internal static partial class Interop
                     key.Dispose();
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
+
+            // EcKeyCreateByExplicitParameters may have polluted the error queue, but key was good in the end.
+            // Clean up the error queue.
+            Interop.Crypto.ErrClearError();
 
             return key;
         }

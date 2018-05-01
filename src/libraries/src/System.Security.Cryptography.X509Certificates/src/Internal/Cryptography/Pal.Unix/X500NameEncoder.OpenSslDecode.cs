@@ -23,6 +23,7 @@ namespace Internal.Cryptography.Pal
             {
                 if (x509Name.IsInvalid)
                 {
+                    Interop.Crypto.ErrClearError();
                     return "";
                 }
 

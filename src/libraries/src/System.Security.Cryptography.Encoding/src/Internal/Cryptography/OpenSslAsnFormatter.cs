@@ -23,44 +23,63 @@ namespace Internal.Cryptography
             // or to return null and let rawData get hex-encoded.  CryptographicException should not
             // be raised.
 
-            using (SafeAsn1ObjectHandle asnOid = Interop.Crypto.ObjTxt2Obj(oid.Value))
-            using (SafeAsn1OctetStringHandle octetString = Interop.Crypto.Asn1OctetStringNew())
+            bool clearErrors = true;
+            try
             {
-                if (asnOid.IsInvalid || octetString.IsInvalid)
+                using (SafeAsn1ObjectHandle asnOid = Interop.Crypto.ObjTxt2Obj(oid.Value))
+                using (SafeAsn1OctetStringHandle octetString = Interop.Crypto.Asn1OctetStringNew())
                 {
-                    return null;
-                }
-
-                if (!Interop.Crypto.Asn1OctetStringSet(octetString, rawData, rawData.Length))
-                {
-                    return null;
-                }
-
-                using (SafeBioHandle bio = Interop.Crypto.CreateMemoryBio())
-                using (SafeX509ExtensionHandle x509Ext = Interop.Crypto.X509ExtensionCreateByObj(asnOid, false, octetString))
-                {
-                    if (bio.IsInvalid || x509Ext.IsInvalid)
+                    if (asnOid.IsInvalid || octetString.IsInvalid)
                     {
                         return null;
                     }
 
-                    if (!Interop.Crypto.X509V3ExtPrint(bio, x509Ext))
+                    if (!Interop.Crypto.Asn1OctetStringSet(octetString, rawData, rawData.Length))
                     {
                         return null;
                     }
 
-                    int printLen = Interop.Crypto.GetMemoryBioSize(bio);
-
-                    // Account for the null terminator that it'll want to write.
-                    var buf = new byte[printLen + 1];
-                    int read = Interop.Crypto.BioGets(bio, buf, buf.Length);
-
-                    if (read < 0)
+                    using (SafeBioHandle bio = Interop.Crypto.CreateMemoryBio())
+                    using (SafeX509ExtensionHandle x509Ext = Interop.Crypto.X509ExtensionCreateByObj(asnOid, false, octetString))
                     {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
+                        if (bio.IsInvalid || x509Ext.IsInvalid)
+                        {
+                            return null;
+                        }
 
-                    return Encoding.UTF8.GetString(buf, 0, read);
+                        if (!Interop.Crypto.X509V3ExtPrint(bio, x509Ext))
+                        {
+                            return null;
+                        }
+
+                        // X509V3ExtPrint might contaminate the error queue on success, always clear now.
+                        Interop.Crypto.ErrClearError();
+
+                        // Errors past here are handled by throws, don't need to double-lock
+                        // the success path.
+                        clearErrors = false;
+
+                        int printLen = Interop.Crypto.GetMemoryBioSize(bio);
+
+                        // Account for the null terminator that it'll want to write.
+                        var buf = new byte[printLen + 1];
+                        int read = Interop.Crypto.BioGets(bio, buf, buf.Length);
+
+                        if (read < 0)
+                        {
+                            throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        }
+
+                        return Encoding.UTF8.GetString(buf, 0, read);
+                    }
+                }
+            }
+            finally
+            {
+                // All of the return null paths might have errors that we are ignoring.
+                if (clearErrors)
+                {
+                    Interop.Crypto.ErrClearError();
                 }
             }
         }

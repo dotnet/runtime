@@ -118,7 +118,10 @@ namespace Internal.Cryptography.Pal
             // 
             // Use BioSeek directly for the last seek attempt, because any failure here should instead
             // report the already created (but not yet thrown) exception.
-            Interop.Crypto.BioSeek(bio, bioPosition);
+            if (Interop.Crypto.BioSeek(bio, bioPosition) < 0)
+            {
+                Interop.Crypto.ErrClearError();
+            }
 
             Debug.Assert(openSslException != null);
             throw openSslException;
@@ -172,7 +175,11 @@ namespace Internal.Cryptography.Pal
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bio);
 
-                Interop.Crypto.BioWrite(bio, rawData, rawData.Length);
+                if (Interop.Crypto.BioWrite(bio, rawData, rawData.Length) != rawData.Length)
+                {
+                    Interop.Crypto.ErrClearError();
+                }
+
                 return TryReadX509Pem(bio, out certPal);
             }
         }

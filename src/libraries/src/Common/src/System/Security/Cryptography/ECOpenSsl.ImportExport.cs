@@ -42,6 +42,10 @@ namespace System.Security.Cryptography
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
+            // The Import* methods above may have polluted the error queue even if in the end they succeeded.
+            // Clean up the error queue.
+            Interop.Crypto.ErrClearError();
+
             FreeKey();
             _key = new Lazy<SafeEcKeyHandle>(key);
             return KeySize;
