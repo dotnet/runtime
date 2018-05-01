@@ -293,7 +293,7 @@ coreclr_code_coverage()
 
 RunTestSequential=0
 ((serverGC = 0))
-TimeoutTime=15m
+TimeoutTime=20m
 
 while [[ $# > 0 ]]
 do
