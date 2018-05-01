@@ -210,13 +210,23 @@ DLLEXPORT int32_t SystemNative_GetSid(int32_t pid);
 DLLEXPORT void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1);
 
 /**
- * Waits for terminated child processes.
+ * Returns the pid of a terminated child without reaping it.
  *
  * 1) returns the process id of a terminated child process
- * 2) if no children are waiting, 0 is returned
+ * 2) if no children are terminated, 0 is returned
  * 3) on error, -1 is returned
  */
-DLLEXPORT int32_t SystemNative_WaitIdExitedNoHang(int32_t pid, int32_t* exitCode, int32_t keepWaitable);
+DLLEXPORT extern "C" int32_t SystemNative_WaitIdAnyExitedNoHangNoWait();
+
+/**
+ * Reaps a terminated child.
+ *
+ * 1) when a child is reaped, its process id is returned
+ * 2) if pid is not a child or there are no unwaited-for children, -1 is returned (errno=ECHILD)
+ * 3) if the child has not yet terminated, 0 is returned
+ * 4) on error, -1 is returned.
+ */
+DLLEXPORT extern "C" int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode);
 
 /**
  * Gets the configurable limit or variable for system path or file descriptor options.
