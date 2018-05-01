@@ -18,7 +18,7 @@
 #include "mini-llvm-cpp.h"
 #include "llvm-jit.h"
 
-#if !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION > 100
+#if defined(MONO_ARCH_LLVM_JIT_SUPPORTED) && !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION > 100
 
 /*
  * LLVM 3.9 uses the OrcJIT APIs
@@ -335,7 +335,7 @@ LLVMGetPointerToGlobal(LLVMExecutionEngineRef EE, LLVMValueRef Global)
 	return NULL;
 }
 
-#elif !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION < 100
+#elif defined(MONO_ARCH_LLVM_JIT_SUPPORTED) && !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION < 100
 
 #include <stdint.h>
 
@@ -874,7 +874,7 @@ mono_llvm_set_unhandled_exception_handler (void)
 MonoEERef
 mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, DlSymCb *dlsym_cb, LLVMExecutionEngineRef *ee)
 {
-	g_assert_not_reached ();
+	g_error ("LLVM JIT not supported on this platform.");
 	return NULL;
 }
 

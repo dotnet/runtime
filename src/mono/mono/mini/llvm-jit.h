@@ -18,6 +18,13 @@
 
 #include <unwind.h>
 
+/* These can't go into mini-<ARCH>.h since thats not included into llvm-jit.cpp */
+#if defined(TARGET_AMD64) && defined(TARGET_OSX)
+#define MONO_ARCH_LLVM_JIT_SUPPORTED 1
+#elif defined(TARGET_X86) && defined(TARGET_OSX)
+#define MONO_ARCH_LLVM_JIT_SUPPORTED 1
+#endif
+
 G_BEGIN_DECLS
 
 typedef unsigned char * (AllocCodeMemoryCb) (LLVMValueRef function, int size);
