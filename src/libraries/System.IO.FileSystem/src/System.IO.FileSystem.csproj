@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -19,6 +19,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="System\IO\Enumeration\FileSystemEntry.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerable.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerableFactory.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.cs" />
@@ -54,7 +55,7 @@
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Windows.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\DisableMediaInsertionPrompt.cs">
       <Link>Common\System\IO\DisableMediaInsertionPrompt.cs</Link>
-    </Compile>       
+    </Compile>
     <Compile Include="System\IO\FileSystemInfo.Windows.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEntry.Windows.cs" />
     <Compile Include="System\IO\FileSystem.Windows.cs" />
