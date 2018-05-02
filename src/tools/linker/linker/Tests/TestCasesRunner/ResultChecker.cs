@@ -263,35 +263,60 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 				// We will find the matching type from the original assembly first that way we can confirm
 				// that the name defined in the attribute corresponds to a member that actually existed
-				var originalFieldMember = originalType.Fields.FirstOrDefault (m => m.Name == memberName);
-				if (originalFieldMember != null) {
-					var linkedField = linkedType.Fields.FirstOrDefault (m => m.Name == memberName);
-					if (linkedField == null)
-						Assert.Fail ($"Field `{memberName}` on Type `{originalType}` should have been kept");
 
+				if (TryVerifyKeptMemberInAssemblyAsField (memberName, originalType, linkedType))
 					continue;
-				}
 
-				var originalPropertyMember = originalType.Properties.FirstOrDefault (m => m.Name == memberName);
-				if (originalPropertyMember != null) {
-					var linkedProperty = linkedType.Properties.FirstOrDefault (m => m.Name == memberName);
-					if (linkedProperty == null)
-						Assert.Fail ($"Property `{memberName}` on Type `{originalType}` should have been kept");
-
+				if (TryVerifyKeptMemberInAssemblyAsProperty (memberName, originalType, linkedType))
 					continue;
-				}
 
-				var originalMethodMember = originalType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
-				if (originalMethodMember != null) {
-					var linkedMethod = linkedType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
-					if (linkedMethod == null)
-						Assert.Fail ($"Method `{memberName}` on Type `{originalType}` should have been kept");
-
+				if (TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType))
 					continue;
-				}
 
 				Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
 			}
+		}
+
+		protected virtual bool TryVerifyKeptMemberInAssemblyAsField (string memberName, TypeDefinition originalType, TypeDefinition linkedType)
+		{
+			var originalFieldMember = originalType.Fields.FirstOrDefault (m => m.Name == memberName);
+			if (originalFieldMember != null) {
+				var linkedField = linkedType.Fields.FirstOrDefault (m => m.Name == memberName);
+				if (linkedField == null)
+					Assert.Fail ($"Field `{memberName}` on Type `{originalType}` should have been kept");
+
+				return true;
+			}
+
+			return false;
+		}
+
+		protected virtual bool TryVerifyKeptMemberInAssemblyAsProperty (string memberName, TypeDefinition originalType, TypeDefinition linkedType)
+		{
+			var originalPropertyMember = originalType.Properties.FirstOrDefault (m => m.Name == memberName);
+			if (originalPropertyMember != null) {
+				var linkedProperty = linkedType.Properties.FirstOrDefault (m => m.Name == memberName);
+				if (linkedProperty == null)
+					Assert.Fail ($"Property `{memberName}` on Type `{originalType}` should have been kept");
+
+				return true;
+			}
+
+			return false;
+		}
+
+		protected virtual bool TryVerifyKeptMemberInAssemblyAsMethod (string memberName, TypeDefinition originalType, TypeDefinition linkedType)
+		{
+			var originalMethodMember = originalType.Methods.FirstOrDefault (m => m.GetSignature() == memberName);
+			if (originalMethodMember != null) {
+				var linkedMethod = linkedType.Methods.FirstOrDefault (m => m.GetSignature() == memberName);
+				if (linkedMethod == null)
+					Assert.Fail ($"Method `{memberName}` on Type `{originalType}` should have been kept");
+
+				return true;
+			}
+
+			return false;
 		}
 
 		void VerifyKeptResourceInAssembly (CustomAttribute inAssemblyAttribute)
