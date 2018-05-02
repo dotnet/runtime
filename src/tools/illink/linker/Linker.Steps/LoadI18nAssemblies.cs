@@ -27,7 +27,7 @@
 //
 
 using System;
-
+using System.Linq;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps {
@@ -46,7 +46,7 @@ namespace Mono.Linker.Steps {
 		protected override bool ConditionToProcess ()
 		{
 			return _assemblies != I18nAssemblies.None &&
-				Type.GetType ("System.MonoType") != null;
+				Context.GetAssemblies ().FirstOrDefault (a => a.Name.Name == "mscorlib")?.MainModule.GetType ("System.MonoType") != null;
 		}
 
 		protected override void Process()
