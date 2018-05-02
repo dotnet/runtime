@@ -498,7 +498,6 @@ namespace System.Threading.Tasks
 
         /// <summary>
         /// An internal constructor used by the factory methods on task and its descendent(s).
-        /// This variant does not capture the ExecutionContext; it is up to the caller to do that.
         /// </summary>
         /// <param name="action">An action to execute.</param>
         /// <param name="state">Optional state to pass to the action.</param>
