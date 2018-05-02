@@ -73,7 +73,7 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		void SweepAssembly (AssemblyDefinition assembly)
+		protected virtual void SweepAssembly (AssemblyDefinition assembly)
 		{
 			switch (Annotations.GetAction (assembly)) {
 			case AssemblyAction.Link:
