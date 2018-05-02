@@ -474,10 +474,10 @@ FCFuncStart(gAppDomainFuncs)
 FCFuncEnd()
 
 
-FCFuncStart(gUtf8String)
-    FCFuncElement("EqualsCaseSensitive", Utf8String::EqualsCaseSensitive)
-    QCFuncElement("EqualsCaseInsensitive", Utf8String::EqualsCaseInsensitive)
-    QCFuncElement("HashCaseInsensitive", Utf8String::HashCaseInsensitive)
+FCFuncStart(gMdUtf8String)
+    FCFuncElement("EqualsCaseSensitive", MdUtf8String::EqualsCaseSensitive)
+    QCFuncElement("EqualsCaseInsensitive", MdUtf8String::EqualsCaseInsensitive)
+    QCFuncElement("HashCaseInsensitive", MdUtf8String::HashCaseInsensitive)
 FCFuncEnd()
 
 FCFuncStart(gTypeNameBuilder)
@@ -1316,6 +1316,7 @@ FCClassElement("MathF", "System", gMathFFuncs)
 #ifdef MDA_SUPPORTED 
 FCClassElement("Mda", "System", gMda)
 #endif
+FCClassElement("MdUtf8String", "System", gMdUtf8String)
 FCClassElement("MemoryFailPoint", "System.Runtime", gMemoryFailPointFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MissingMemberException", "System",  gMissingMemberExceptionFuncs)
@@ -1383,7 +1384,6 @@ FCClassElement("TypedReference", "System", gTypedReferenceFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("UriMarshaler", "System.StubHelpers", gUriMarshalerFuncs)
 #endif
-FCClassElement("Utf8String", "System", gUtf8String)
 FCClassElement("ValueClassMarshaler", "System.StubHelpers", gValueClassMarshalerFuncs)
 FCClassElement("ValueType", "System", gValueTypeFuncs)
 #ifdef FEATURE_COMINTEROP
