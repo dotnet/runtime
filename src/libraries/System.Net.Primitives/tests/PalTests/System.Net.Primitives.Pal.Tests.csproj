@@ -142,8 +142,8 @@
     <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs">
       <Link>ProductionCode\Common\Interop\Interop.CheckedAccess.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
-      <Link>ProductionCode\Common\Interop\Unix\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\Interop.Errors.cs">
+      <Link>ProductionCode\Common\CoreLib\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>ProductionCode\Common\Interop\Unix\Interop.Libraries.cs</Link>
