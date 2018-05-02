@@ -104,7 +104,7 @@ public:
     INT32 m_localIndex;
 };
 
-class Utf8String {
+class MdUtf8String {
 public:
     static FCDECL3(FC_BOOL_RET, EqualsCaseSensitive, LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes);
 

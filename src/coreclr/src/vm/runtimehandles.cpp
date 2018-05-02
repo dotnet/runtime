@@ -32,7 +32,7 @@
 #include "invokeutil.h"
 
 
-FCIMPL3(FC_BOOL_RET, Utf8String::EqualsCaseSensitive, LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
+FCIMPL3(FC_BOOL_RET, MdUtf8String::EqualsCaseSensitive, LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -50,7 +50,7 @@ FCIMPL3(FC_BOOL_RET, Utf8String::EqualsCaseSensitive, LPCUTF8 szLhs, LPCUTF8 szR
 }
 FCIMPLEND
 
-BOOL QCALLTYPE Utf8String::EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
+BOOL QCALLTYPE MdUtf8String::EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
 {
     QCALL_CONTRACT;
 
@@ -77,7 +77,7 @@ BOOL QCALLTYPE Utf8String::EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, I
     return fStringsEqual;
 }
 
-ULONG QCALLTYPE Utf8String::HashCaseInsensitive(LPCUTF8 sz, INT32 stringNumBytes)
+ULONG QCALLTYPE MdUtf8String::HashCaseInsensitive(LPCUTF8 sz, INT32 stringNumBytes)
 {
     QCALL_CONTRACT;
 
