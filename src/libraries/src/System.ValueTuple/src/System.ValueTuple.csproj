@@ -27,7 +27,9 @@
     <RootNamespace>System</RootNamespace>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="System\Runtime\CompilerServices\TupleElementNamesAttribute.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\TupleElementNamesAttribute.cs">
+      <Link>System\Runtime\CompilerServices\TupleElementNamesAttribute.cs</Link>      
+    </Compile>
     <Compile Include="System\ValueTuple\TupleExtensions.cs" />
     <Compile Include="System\ValueTuple\ValueTuple.cs" />
     <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
