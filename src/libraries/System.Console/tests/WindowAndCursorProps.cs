@@ -132,7 +132,8 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // In appcontainer, the stream cannot be opened: there is no Console
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "In appcontainer, the stream cannot be opened: there is no Console")]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "// NETFX does not have the fix https://github.com/dotnet/corefx/pull/28905")]
     public static void Title_Get_Windows()
     {
         Assert.NotNull(Console.Title);
@@ -140,7 +141,8 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // In appcontainer, the stream cannot be opened: there is no Console
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "In appcontainer, the stream cannot be opened: there is no Console")]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "// NETFX does not have the fix https://github.com/dotnet/corefx/pull/28905")]
     public static void Title_Get_Windows_NoNulls()
     {
         string title = Console.Title;
