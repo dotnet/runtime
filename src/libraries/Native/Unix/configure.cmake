@@ -140,6 +140,10 @@ check_function_exists(
     sched_setaffinity
     HAVE_SCHED_SETAFFINITY)
 
+check_function_exists(
+    arc4random
+    HAVE_ARC4RANDOM)
+
 check_symbol_exists(
     TIOCGWINSZ
     "sys/ioctl.h"
