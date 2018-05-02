@@ -124,7 +124,7 @@ namespace System.Reflection
             get
             {
                 if (m_name == null)
-                    m_name = new Utf8String(m_utf8name).ToString();
+                    m_name = new MdUtf8String(m_utf8name).ToString();
 
                 return m_name;
             }

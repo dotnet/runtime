@@ -188,13 +188,13 @@ namespace System
 
             private struct Filter
             {
-                private Utf8String m_name;
+                private MdUtf8String m_name;
                 private MemberListType m_listType;
                 private uint m_nameHash;
 
                 public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
-                    m_name = new Utf8String((void*)pUtf8Name, cUtf8Name);
+                    m_name = new MdUtf8String((void*)pUtf8Name, cUtf8Name);
                     m_listType = listType;
                     m_nameHash = 0;
 
@@ -204,7 +204,7 @@ namespace System
                     }
                 }
 
-                public bool Match(Utf8String name)
+                public bool Match(MdUtf8String name)
                 {
                     bool retVal = true;
 
@@ -943,7 +943,7 @@ namespace System
 
                             if (filter.RequiresStringComparison())
                             {
-                                Utf8String name;
+                                MdUtf8String name;
                                 name = scope.GetName(tkField);
 
                                 if (!filter.Match(name))
@@ -1179,7 +1179,7 @@ namespace System
 
                         if (filter.RequiresStringComparison())
                         {
-                            Utf8String name;
+                            MdUtf8String name;
                             name = scope.GetName(tkEvent);
 
                             if (!filter.Match(name))
@@ -1296,7 +1296,7 @@ namespace System
                                 continue;
                             }
 
-                            Utf8String name;
+                            MdUtf8String name;
                             name = declaringType.GetRuntimeModule().MetadataImport.GetName(tkProperty);
 
                             if (!filter.Match(name))
@@ -4917,7 +4917,7 @@ namespace System
     }
 
     #region Library
-    internal unsafe struct Utf8String
+    internal unsafe struct MdUtf8String
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe bool EqualsCaseSensitive(void* szLhs, void* szRhs, int cSz);
@@ -4949,7 +4949,7 @@ namespace System
         private void* m_pStringHeap;        // This is the raw UTF8 string.
         private int m_StringHeapByteLength;
 
-        internal Utf8String(void* pStringHeap)
+        internal MdUtf8String(void* pStringHeap)
         {
             m_pStringHeap = pStringHeap;
             if (pStringHeap != null)
@@ -4962,13 +4962,13 @@ namespace System
             }
         }
 
-        internal unsafe Utf8String(void* pUtf8String, int cUtf8String)
+        internal unsafe MdUtf8String(void* pUtf8String, int cUtf8String)
         {
             m_pStringHeap = pUtf8String;
             m_StringHeapByteLength = cUtf8String;
         }
 
-        internal unsafe bool Equals(Utf8String s)
+        internal unsafe bool Equals(MdUtf8String s)
         {
             if (m_pStringHeap == null)
             {
@@ -4976,12 +4976,12 @@ namespace System
             }
             if ((s.m_StringHeapByteLength == m_StringHeapByteLength) && (m_StringHeapByteLength != 0))
             {
-                return Utf8String.EqualsCaseSensitive(s.m_pStringHeap, m_pStringHeap, m_StringHeapByteLength);
+                return MdUtf8String.EqualsCaseSensitive(s.m_pStringHeap, m_pStringHeap, m_StringHeapByteLength);
             }
             return false;
         }
 
-        internal unsafe bool EqualsCaseInsensitive(Utf8String s)
+        internal unsafe bool EqualsCaseInsensitive(MdUtf8String s)
         {
             if (m_pStringHeap == null)
             {
@@ -4989,14 +4989,14 @@ namespace System
             }
             if ((s.m_StringHeapByteLength == m_StringHeapByteLength) && (m_StringHeapByteLength != 0))
             {
-                return Utf8String.EqualsCaseInsensitive(s.m_pStringHeap, m_pStringHeap, m_StringHeapByteLength);
+                return MdUtf8String.EqualsCaseInsensitive(s.m_pStringHeap, m_pStringHeap, m_StringHeapByteLength);
             }
             return false;
         }
 
         internal unsafe uint HashCaseInsensitive()
         {
-            return Utf8String.HashCaseInsensitive(m_pStringHeap, m_StringHeapByteLength);
+            return MdUtf8String.HashCaseInsensitive(m_pStringHeap, m_StringHeapByteLength);
         }
 
         public override string ToString()
