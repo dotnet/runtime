@@ -25,7 +25,9 @@
     <Compile Include="System\Buffers\ArrayPoolEventSource.cs" />
     <Compile Include="System\Buffers\DefaultArrayPool.cs" />
     <Compile Include="System\Buffers\DefaultArrayPoolBucket.cs" />
-    <Compile Include="System\Buffers\Utilities.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Utilities.cs">
+      <Link>System\Buffers\Utilities.cs</Link>
+    </Compile>       
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
