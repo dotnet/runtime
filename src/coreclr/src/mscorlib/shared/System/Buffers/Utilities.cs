@@ -12,7 +12,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int SelectBucketIndex(int bufferSize)
         {
-            Debug.Assert(bufferSize > 0);
+            Debug.Assert(bufferSize >= 0);
 
             uint bitsRemaining = ((uint)bufferSize - 1) >> 4;
 
