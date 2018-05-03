@@ -72,6 +72,11 @@ namespace System.Net.Http
             get => _curlHandler != null ? _curlHandler.CookieContainer : _socketsHttpHandler.CookieContainer;
             set
             {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
                 if (_curlHandler != null)
                 {
                     _curlHandler.CookieContainer = value;

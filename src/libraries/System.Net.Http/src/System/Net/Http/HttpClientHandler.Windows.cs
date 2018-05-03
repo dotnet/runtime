@@ -96,6 +96,11 @@ namespace System.Net.Http
             get => _winHttpHandler != null ? _winHttpHandler.CookieContainer : _socketsHttpHandler.CookieContainer;
             set
             {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
                 if (_winHttpHandler != null)
                 {
                     _winHttpHandler.CookieContainer = value;
