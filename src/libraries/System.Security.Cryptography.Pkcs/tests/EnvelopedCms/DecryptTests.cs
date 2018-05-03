@@ -464,6 +464,51 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             VerifySimpleDecrypt(encryptedMessage, certLoader, expectedContentInfo);
         }
 
+        [Fact]
+        public static void DecryptUsingCertificateWithSameSubjectKeyIdentifierButDifferentKeyPair()
+        {
+            using (X509Certificate2 recipientCert = Certificates.RSAKeyTransfer4_ExplicitSki.GetCertificate())
+            using (X509Certificate2 otherRecipientWithSameSki = Certificates.RSAKeyTransfer5_ExplicitSkiOfRSAKeyTransfer4.TryGetCertificateWithPrivateKey())
+            using (X509Certificate2 realRecipientCert = Certificates.RSAKeyTransfer4_ExplicitSki.TryGetCertificateWithPrivateKey())
+            {
+                Assert.Equal(recipientCert, realRecipientCert);
+                Assert.NotEqual(recipientCert, otherRecipientWithSameSki);
+                Assert.Equal(GetSubjectKeyIdentifier(recipientCert), GetSubjectKeyIdentifier(otherRecipientWithSameSki));
+
+                byte[] plainText = new byte[] { 1, 3, 7, 9 };
+
+                ContentInfo content = new ContentInfo(plainText);
+                EnvelopedCms ecms = new EnvelopedCms(content);
+
+                CmsRecipient recipient = new CmsRecipient(SubjectIdentifierType.SubjectKeyIdentifier, recipientCert);
+                ecms.Encrypt(recipient);
+                byte[] encoded = ecms.Encode();
+
+                ecms = new EnvelopedCms();
+                ecms.Decode(encoded);
+
+                Assert.ThrowsAny<CryptographicException>(() => ecms.Decrypt(new X509Certificate2Collection(otherRecipientWithSameSki)));
+                ecms.Decrypt(new X509Certificate2Collection(realRecipientCert));
+
+                Assert.Equal(plainText, ecms.ContentInfo.Content);
+            }
+        }
+
+        private static string GetSubjectKeyIdentifier(X509Certificate2 cert)
+        {
+            foreach (var ext in cert.Extensions)
+            {
+                X509SubjectKeyIdentifierExtension skiExt = ext as X509SubjectKeyIdentifierExtension;
+                if (skiExt != null)
+                {
+                    return skiExt.SubjectKeyIdentifier;
+                }
+            }
+
+            Assert.False(true, "Subject Key Identifier not found");
+            return null;
+        }
+
         private static void TestSimpleDecrypt_RoundTrip(CertLoader certLoader, ContentInfo contentInfo, string algorithmOidValue, SubjectIdentifierType type)
         {
             // Deep-copy the contentInfo since the real ContentInfo doesn't do this. This defends against a bad implementation changing
