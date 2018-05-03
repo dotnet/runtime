@@ -49,7 +49,7 @@ namespace System.Threading.Tasks
         [Benchmark(InnerIterationCount = 10_000_000), MeasureGCAllocations]
         public async Task Await_FromCompletedValueTaskSource()
         {
-            ValueTask<int> vt = new ValueTask<int>(ManualResetValueTaskSource.Completed<int>(42), 0);
+            ValueTask<int> vt = new ValueTask<int>(ManualResetValueTaskSourceFactory.Completed<int>(42), 0);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 long iters = Benchmark.InnerIterationCount;
@@ -132,7 +132,7 @@ namespace System.Threading.Tasks
         [Benchmark(InnerIterationCount = 10_000_000), MeasureGCAllocations]
         public async Task CreateAndAwait_FromCompletedValueTaskSource()
         {
-            IValueTaskSource<int> vts = ManualResetValueTaskSource.Completed(42);
+            IValueTaskSource<int> vts = ManualResetValueTaskSourceFactory.Completed(42);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 long iters = Benchmark.InnerIterationCount;
@@ -149,7 +149,7 @@ namespace System.Threading.Tasks
         [Benchmark(InnerIterationCount = 10_000_000), MeasureGCAllocations]
         public async Task CreateAndAwait_FromCompletedValueTaskSource_ConfigureAwait()
         {
-            IValueTaskSource<int> vts = ManualResetValueTaskSource.Completed(42);
+            IValueTaskSource<int> vts = ManualResetValueTaskSourceFactory.Completed(42);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 long iters = Benchmark.InnerIterationCount;
@@ -235,7 +235,7 @@ namespace System.Threading.Tasks
         [Benchmark(InnerIterationCount = 10_000_000), MeasureGCAllocations]
         public void Copy_PassAsArgumentAndReturn_FromValueTaskSource()
         {
-            ValueTask<int> vt = new ValueTask<int>(ManualResetValueTaskSource.Completed(42), 0);
+            ValueTask<int> vt = new ValueTask<int>(ManualResetValueTaskSourceFactory.Completed(42), 0);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 long iters = Benchmark.InnerIterationCount;
