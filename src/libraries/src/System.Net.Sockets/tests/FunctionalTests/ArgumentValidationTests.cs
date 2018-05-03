@@ -989,10 +989,23 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginConnect_EndPoint_AddressFamily_Throws_NotSupported()
         {
-            Assert.Throws<NotSupportedException>(() => GetSocket(AddressFamily.InterNetwork).BeginConnect(
-                new DnsEndPoint("localhost", 1, AddressFamily.InterNetworkV6), TheAsyncCallback, null));
-            Assert.Throws<NotSupportedException>(() => { GetSocket(AddressFamily.InterNetwork).ConnectAsync(
-                new DnsEndPoint("localhost", 1, AddressFamily.InterNetworkV6)); });
+            // Unlike other tests that reuse a static Socket instance, this test avoids doing so
+            // to work around a behavior of .NET 4.7.2. See https://github.com/dotnet/corefx/issues/29481
+            // for more details.
+
+            using (var s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<NotSupportedException>(() => s.BeginConnect(
+                    new DnsEndPoint("localhost", 1, AddressFamily.InterNetworkV6),
+                    TheAsyncCallback, null));
+            }
+
+            using (var s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<NotSupportedException>(() => { s.ConnectAsync(
+                    new DnsEndPoint("localhost", 1, AddressFamily.InterNetworkV6));
+                });
+            }
         }
 
         [Fact]
