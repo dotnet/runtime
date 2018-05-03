@@ -2,26 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Security;
-using System.Net.Sockets;
-using System.Net.Test.Common;
-using System.Reflection;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    public sealed class PlatformHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
+    {
+        protected override bool UseSocketsHttpHandler => false;
+    }
+
     public sealed class PlatformHandler_HttpProtocolTests : HttpProtocolTests
     {
         protected override bool UseSocketsHttpHandler => false;
