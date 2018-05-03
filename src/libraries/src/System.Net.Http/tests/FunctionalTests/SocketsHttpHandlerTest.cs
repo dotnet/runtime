@@ -19,6 +19,11 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
+    {
+        protected override bool UseSocketsHttpHandler => true;
+    }
+
     public sealed class SocketsHttpHandler_HttpProtocolTests : HttpProtocolTests
     {
         protected override bool UseSocketsHttpHandler => true;
@@ -178,10 +183,10 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [Theory]
-        [InlineData(1024 * 1024 * 2, 9_500, 1024 * 1024 * 3, ContentMode.ContentLength)]
-        [InlineData(1024 * 1024 * 2, 9_500, 1024 * 1024 * 3, ContentMode.SingleChunk)]
-        [InlineData(1024 * 1024 * 2, 9_500, 1024 * 1024 * 13, ContentMode.BytePerChunk)]
-        public async Task GetAsyncWithMaxConnections_DisposeBeforeReadingToEnd_DrainsRequestsUnderMaxDrainSizeAndReusesConnection(int totalSize, int readSize, int maxDrainSize, ContentMode mode)
+        [InlineData(1024 * 1024 * 2, 9_500, 1024 * 1024 * 3, LoopbackServer.ContentMode.ContentLength)]
+        [InlineData(1024 * 1024 * 2, 9_500, 1024 * 1024 * 3, LoopbackServer.ContentMode.SingleChunk)]
+        [InlineData(1024 * 1024 * 2, 9_500, 1024 * 1024 * 13, LoopbackServer.ContentMode.BytePerChunk)]
+        public async Task GetAsyncWithMaxConnections_DisposeBeforeReadingToEnd_DrainsRequestsUnderMaxDrainSizeAndReusesConnection(int totalSize, int readSize, int maxDrainSize, LoopbackServer.ContentMode mode)
         {
             await LoopbackServer.CreateClientAndServerAsync(
                 async url =>
@@ -213,7 +218,7 @@ namespace System.Net.Http.Functional.Tests
                 async server =>
                 {
                     string content = new string('a', totalSize);
-                    string response = GetResponseForContentMode(content, mode);
+                    string response = LoopbackServer.GetContentModeResponse(mode, content);
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         server.ListenSocket.Close(); // Shut down the listen socket so attempts at additional connections would fail on the client
@@ -225,10 +230,10 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [Theory]
-        [InlineData(100_000, 0,  ContentMode.ContentLength)]
-        [InlineData(100_000, 0, ContentMode.SingleChunk)]
-        [InlineData(100_000, 0, ContentMode.BytePerChunk)]
-        public async Task GetAsyncWithMaxConnections_DisposeLargerThanMaxDrainSize_KillsConnection(int totalSize, int maxDrainSize, ContentMode mode)
+        [InlineData(100_000, 0, LoopbackServer.ContentMode.ContentLength)]
+        [InlineData(100_000, 0, LoopbackServer.ContentMode.SingleChunk)]
+        [InlineData(100_000, 0, LoopbackServer.ContentMode.BytePerChunk)]
+        public async Task GetAsyncWithMaxConnections_DisposeLargerThanMaxDrainSize_KillsConnection(int totalSize, int maxDrainSize, LoopbackServer.ContentMode mode)
         {
             await LoopbackServer.CreateClientAndServerAsync(
                 async url =>
@@ -260,21 +265,21 @@ namespace System.Net.Http.Functional.Tests
                         await connection.ReadRequestHeaderAsync();
                         try
                         {
-                            await connection.Writer.WriteAsync(GetResponseForContentMode(content, mode, connectionClose: false));
+                            await connection.Writer.WriteAsync(LoopbackServer.GetContentModeResponse(mode, content, connectionClose: false));
                         }
                         catch (Exception) { }     // Eat errors from client disconnect.
 
-                        await server.AcceptConnectionSendCustomResponseAndCloseAsync(GetResponseForContentMode(content, mode, connectionClose: true));
+                        await server.AcceptConnectionSendCustomResponseAndCloseAsync(LoopbackServer.GetContentModeResponse(mode, content, connectionClose: true));
                     });
                 });
         }
 
         [OuterLoop]
         [Theory]
-        [InlineData(ContentMode.ContentLength)]
-        [InlineData(ContentMode.SingleChunk)]
-        [InlineData(ContentMode.BytePerChunk)]
-        public async Task GetAsyncWithMaxConnections_DrainTakesLongerThanTimeout_KillsConnection(ContentMode mode)
+        [InlineData(LoopbackServer.ContentMode.ContentLength)]
+        [InlineData(LoopbackServer.ContentMode.SingleChunk)]
+        [InlineData(LoopbackServer.ContentMode.BytePerChunk)]
+        public async Task GetAsyncWithMaxConnections_DrainTakesLongerThanTimeout_KillsConnection(LoopbackServer.ContentMode mode)
         {
             const int ContentLength = 10_000;
 
@@ -307,7 +312,7 @@ namespace System.Net.Http.Functional.Tests
                     string content = new string('a', ContentLength);
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        string response = GetResponseForContentMode(content, mode, connectionClose: false);
+                        string response = LoopbackServer.GetContentModeResponse(mode, content, connectionClose: false);
                         await connection.ReadRequestHeaderAsync();
                         try
                         {
@@ -316,7 +321,7 @@ namespace System.Net.Http.Functional.Tests
                         }
                         catch (Exception) { }     // Eat errors from client disconnect.
 
-                        response = GetResponseForContentMode(content, mode, connectionClose: true);
+                        response = LoopbackServer.GetContentModeResponse(mode, content, connectionClose: true);
                         await server.AcceptConnectionSendCustomResponseAndCloseAsync(response);
                     });
                 });
