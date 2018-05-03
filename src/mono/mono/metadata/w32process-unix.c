@@ -2164,7 +2164,9 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		 * if that fails, try to use gnome-open, then kfmclient
 		 */
 		handler = g_find_program_in_path ("xdg-open");
-		if (handler == NULL){
+		if (handler != NULL)
+			handler_needswait = TRUE;
+		else {
 			handler = g_find_program_in_path ("gnome-open");
 			if (handler == NULL){
 				handler = g_find_program_in_path ("kfmclient");
