@@ -5,7 +5,7 @@ System.Diagnostics.StackTrace.Tests  # https://github.com/dotnet/coreclr/issues/
 System.Drawing.Common.Tests          # https://github.com/dotnet/coreclr/issues/16001
 System.IO.FileSystem.Tests           # https://github.com/dotnet/coreclr/issues/16001
 System.IO.Ports.Tests                # https://github.com/dotnet/coreclr/issues/16001
-System.Linq.Expressions.Tests        # https://github.com/dotnet/coreclr/issues/17738
+System.Linq.Expressions.Tests        # https://github.com/dotnet/corefx/issues/29421 -- timeout
 System.Management.Tests              # https://github.com/dotnet/coreclr/issues/16001
 System.Net.Http.Functional.Tests     # https://github.com/dotnet/coreclr/issues/17739
 System.Net.NameResolution.Pal.Tests  # https://github.com/dotnet/coreclr/issues/17740
