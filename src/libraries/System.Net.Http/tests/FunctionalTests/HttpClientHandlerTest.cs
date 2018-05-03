@@ -122,6 +122,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public void CookieContainer_SetNull_ThrowsArgumentNullException()
+        {
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            {
+                Assert.Throws<ArgumentNullException>(() => handler.CookieContainer = null);
+            }
+        }
+
+        [Fact]
         public void Ctor_ExpectedDefaultPropertyValues_CommonPlatform()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
