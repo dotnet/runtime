@@ -41,27 +41,5 @@ namespace System.Net.Http.Functional.Tests
                 });
             });
         }
-
-        [OuterLoop("Accessing remote server")]
-        [Fact]
-        public async Task Brotli_External_DecompressesResponse_Success()
-        {
-            const string BrotliUrl = "http://httpbin.org/brotli";
-
-            var message = new HttpRequestMessage(HttpMethod.Get, BrotliUrl);
-            message.Headers.TryAddWithoutValidation("SomeAwesomeHeader", "AndItsAwesomeValue");
-
-            using (HttpClient client = CreateHttpClient())
-            using (HttpResponseMessage response = await client.SendAsync(message))
-            {
-                Assert.Contains("br", response.Content.Headers.ContentEncoding);
-                using (var decodedStream = new BrotliStream(await response.Content.ReadAsStreamAsync(), CompressionMode.Decompress))
-                using (var reader = new StreamReader(decodedStream))
-                {
-                    string respText = await reader.ReadToEndAsync();
-                    Assert.Contains("AndItsAwesomeValue", respText);
-                }
-            }
-        }
     }
 }
