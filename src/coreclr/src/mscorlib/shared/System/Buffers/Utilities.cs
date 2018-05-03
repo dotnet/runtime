@@ -14,6 +14,9 @@ namespace System.Buffers
         {
             Debug.Assert(bufferSize >= 0);
 
+            // bufferSize of 0 will underflow here, causing a huge
+            // index which the caller will discard because it is not
+            // within the bounds of the bucket array.
             uint bitsRemaining = ((uint)bufferSize - 1) >> 4;
 
             int poolIndex = 0;
