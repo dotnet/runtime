@@ -1903,6 +1903,110 @@ public unsafe class Tests {
 			return 1;
 		else
 			return 0;
+    }
+
+	[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+	public delegate int ThisCallDelegate1 (int a);
+
+	[DllImport ("libtest", EntryPoint = "_mono_test_managed_thiscall1", CallingConvention=CallingConvention.StdCall)]
+	public static extern int mono_test_managed_thiscall (ThisCallDelegate1 fn, int a);
+
+	[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+	public delegate int ThisCallDelegate2 (int a, int b);
+
+	[DllImport ("libtest", EntryPoint = "_mono_test_managed_thiscall2", CallingConvention=CallingConvention.StdCall)]
+	public static extern int mono_test_managed_thiscall (ThisCallDelegate2 fn, int a, int b);
+
+	[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+	public delegate int ThisCallDelegate3 (int a, int b, int c);
+
+	[DllImport ("libtest", EntryPoint = "_mono_test_managed_thiscall3", CallingConvention=CallingConvention.StdCall)]
+	public static extern int mono_test_managed_thiscall (ThisCallDelegate3 fn, int a, int b, int c);
+
+	[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+	public delegate int ThisCallDelegateS1 (TinyStruct a);
+
+	[DllImport ("libtest", EntryPoint = "_mono_test_managed_thiscall1", CallingConvention=CallingConvention.StdCall)]
+	public static extern int mono_test_managed_thiscall (ThisCallDelegateS1 fn, int a);
+
+	[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+	public delegate int ThisCallDelegateS2 (TinyStruct a, int b);
+
+	[DllImport ("libtest", EntryPoint = "_mono_test_managed_thiscall2", CallingConvention=CallingConvention.StdCall)]
+	public static extern int mono_test_managed_thiscall (ThisCallDelegateS2 fn, int a, int b);
+
+	[UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+	public delegate int ThisCallDelegateS3 (TinyStruct a, int b, int c);
+
+	[DllImport ("libtest", EntryPoint = "_mono_test_managed_thiscall3", CallingConvention=CallingConvention.StdCall)]
+	public static extern int mono_test_managed_thiscall (ThisCallDelegateS3 fn, int a, int b, int c);
+
+	public static int thiscall_test_fn1 (int a)
+	{
+		if (a != 517457506)
+			return 0;
+		return 263895844;
+	}
+
+	public static int thiscall_test_fn1 (TinyStruct a)
+	{
+		return thiscall_test_fn1 (a.i);
+	}
+
+	public static int thiscall_test_fn2 (int a, int b)
+	{
+		if (a != 562348159)
+			return 0;
+		if (b != -1982007353)
+			return 1;
+		return -1877791296;
+	}
+
+	public static int thiscall_test_fn2 (TinyStruct a, int b)
+	{
+		return thiscall_test_fn2 (a.i, b);
+	}
+
+	public static int thiscall_test_fn3 (int a, int b, int c)
+	{
+		if (a != -316986071)
+			return 0;
+		if (b != 1233912683)
+			return 1;
+		if (c != 1244266772)
+			return 2;
+		return 1545254036;
+	}
+
+	public static int thiscall_test_fn3 (TinyStruct a, int b, int c)
+	{
+		return thiscall_test_fn3 (a.i, b, c);
+	}
+
+	public static int test_0_managed_thiscall ()
+	{
+		if (mono_test_has_thiscall () == 0)
+			return 0;
+
+		if (mono_test_managed_thiscall (new ThisCallDelegate1 (thiscall_test_fn1), 517457506) != 263895844)
+			return 1;
+
+		if (mono_test_managed_thiscall (new ThisCallDelegate2 (thiscall_test_fn2), 562348159, -1982007353) != -1877791296)
+			return 2;
+
+		if (mono_test_managed_thiscall (new ThisCallDelegate3 (thiscall_test_fn3), -316986071, 1233912683, 1244266772) != 1545254036)
+			return 3;
+
+		if (mono_test_managed_thiscall (new ThisCallDelegateS1 (thiscall_test_fn1), 517457506) != 263895844)
+			return 4;
+
+		if (mono_test_managed_thiscall (new ThisCallDelegateS2 (thiscall_test_fn2), 562348159, -1982007353) != -1877791296)
+			return 5;
+
+		if (mono_test_managed_thiscall (new ThisCallDelegateS3 (thiscall_test_fn3), -316986071, 1233912683, 1244266772) != 1545254036)
+			return 6;
+
+		return 0;
 	}
 
     [StructLayout(LayoutKind.Explicit, Size = 12)]

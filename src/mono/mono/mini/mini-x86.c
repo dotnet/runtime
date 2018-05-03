@@ -565,6 +565,11 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	return get_call_info_internal (cinfo, sig);
 }
 
+static gboolean storage_in_ireg (ArgStorage storage)
+{
+	return (storage == ArgInIReg || storage == ArgValuetypeInReg);
+}
+
 /*
  * mono_arch_get_argument_info:
  * @csig:  a method signature
@@ -587,6 +592,8 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	guint32 align;
 	int offset = 8;
 	CallInfo *cinfo;
+	int prev_stackarg;
+	int num_regs;
 
 	/* Avoid g_malloc as it is not signal safe */
 	len = sizeof (CallInfo) + (sizeof (ArgInfo) * (csig->param_count + 1));
@@ -602,7 +609,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		offset += 4;
 	}
 
-	if (csig->hasthis) {
+	if (csig->hasthis && !storage_in_ireg (cinfo->args [0].storage)) {
 		args_size += sizeof (gpointer);
 		offset += 4;
 	}
@@ -614,21 +621,29 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	}
 
 	arg_info [0].size = args_size;
+	prev_stackarg = 0;
 
 	for (k = 0; k < param_count; k++) {
 		size = mini_type_stack_size_full (csig->params [k], &align, csig->pinvoke);
 
-		/* ignore alignment for now */
-		align = 1;
+		if (storage_in_ireg (cinfo->args [csig->hasthis + k].storage)) {
+			/* not in stack, we'll give it an offset at the end */
+			arg_info [k + 1].pad = 0;
+			arg_info [k + 1].size = size;
+		} else {
+			/* ignore alignment for now */
+			align = 1;
 
-		args_size += pad = (align - (args_size & (align - 1))) & (align - 1);	
-		arg_info [k].pad = pad;
-		args_size += size;
-		arg_info [k + 1].pad = 0;
-		arg_info [k + 1].size = size;
-		offset += pad;
-		arg_info [k + 1].offset = offset;
-		offset += size;
+			args_size += pad = (align - (args_size & (align - 1))) & (align - 1);	
+			arg_info [prev_stackarg].pad = pad;
+			args_size += size;
+			arg_info [k + 1].pad = 0;
+			arg_info [k + 1].size = size;
+			offset += pad;
+			arg_info [k + 1].offset = offset;
+			offset += size;
+			prev_stackarg = k + 1;
+		}
 
 		if (k == 0 && cinfo->vtype_retaddr && cinfo->vret_arg_index == 1 && !csig->hasthis) {
 			/* Emitted after the first arg */
@@ -643,6 +658,16 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		align = 4;
 	args_size += pad = (align - (args_size & (align - 1))) & (align - 1);
 	arg_info [k].pad = pad;
+
+	/* Add offsets for any reg parameters */
+	num_regs = 0;
+	if (csig->hasthis && storage_in_ireg (cinfo->args [0].storage))
+		arg_info [0].offset = args_size + 4 * num_regs++;
+	for (k=0; k < param_count; k++) {
+		if (storage_in_ireg (cinfo->args[csig->hasthis + k].storage)) {
+			arg_info [k + 1].offset = args_size + 4 * num_regs++;
+		}
+	}
 
 	return args_size;
 }
@@ -1058,6 +1083,18 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		break;
 	}
 
+	/* Allocate a local for any register arguments that need them. */
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = &cinfo->args [i];
+		inst = cfg->args [i];
+		if (inst->opcode != OP_REGVAR && storage_in_ireg (ainfo->storage)) {
+			offset += 4;
+			cfg->args[i]->opcode = OP_REGOFFSET;
+			cfg->args[i]->inst_basereg = X86_EBP;
+			cfg->args[i]->inst_offset = - offset;
+		}
+	}
+
 	/* Allocate locals */
 	offsets = mono_allocate_stack_slots (cfg, TRUE, &locals_stack_size, &locals_stack_align);
 	if (locals_stack_size > MONO_ARCH_MAX_FRAME_SIZE) {
@@ -1149,9 +1186,13 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		ArgInfo *ainfo = &cinfo->args [i];
 		inst = cfg->args [i];
 		if (inst->opcode != OP_REGVAR) {
-			inst->opcode = OP_REGOFFSET;
-			inst->inst_basereg = X86_EBP;
-			inst->inst_offset = ainfo->offset + ARGS_OFFSET;
+			if (storage_in_ireg (ainfo->storage)) {
+				/* We already allocated locals for register arguments. */
+			} else {
+				inst->opcode = OP_REGOFFSET;
+				inst->inst_basereg = X86_EBP;
+				inst->inst_offset = ainfo->offset + ARGS_OFFSET;
+			}
 		}
 	}
 
@@ -1664,12 +1705,52 @@ void*
 mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
 	guchar *code = p;
+	MonoMethodSignature *sig = mono_method_signature (cfg->method);
+	int argument_copy_size = 0;
+	const guint32* param_regs;
+	int stack_size;
+
+	param_regs = callconv_param_regs (sig);
+	if (param_regs != NULL)	{
+		/* Need to copy the stack arguments and then store the registers. */
+		MonoJitArgumentInfo* arg_info;
+		int i;
+
+		arg_info = (MonoJitArgumentInfo *)alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
+
+		stack_size = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
+
+		argument_copy_size = stack_size;
+		for (i=0; param_regs[i] != X86_NREG; i++)
+			argument_copy_size += 4;
+
+		argument_copy_size = ALIGN_TO (argument_copy_size, MONO_ARCH_FRAME_ALIGNMENT);
+
+		x86_alu_reg_imm (code, X86_SUB, X86_ESP, argument_copy_size);
+
+		/* memcpy(esp, ebp, stack_size) */
+		for (i=0; i < stack_size; i+=4) {
+			x86_mov_reg_membase (code, X86_EAX, X86_EBP, i, 4);
+			x86_mov_membase_reg (code, X86_ESP, i, X86_EAX, 4);
+		}
+
+		for (i=0; param_regs[i] != X86_NREG; i++) {
+			x86_mov_membase_reg (code, X86_ESP, stack_size + i*4, param_regs[i], 4);
+		}
+	}
+
+	if (argument_copy_size) {
+		x86_mov_reg_reg (code, X86_EAX, X86_ESP, 4);
+	}
 
 	g_assert (MONO_ARCH_FRAME_ALIGNMENT >= 8);
 	x86_alu_reg_imm (code, X86_SUB, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT - 8);
 
-	/* if some args are passed in registers, we need to save them here */
-	x86_push_reg (code, X86_EBP);
+	if (argument_copy_size) {
+		x86_push_reg (code, X86_EAX);
+	} else {
+		x86_push_reg (code, X86_EBP);
+	}
 
 	if (cfg->compile_aot) {
 		x86_push_imm (code, cfg->method);
@@ -1681,7 +1762,14 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_ABS, func);
 		x86_call_code (code, 0);
 	}
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT);
+	if (param_regs != NULL) {
+		int i;
+
+		for (i=0; param_regs[i] != X86_NREG; i++) {
+			x86_mov_reg_membase (code, param_regs[i], X86_ESP, MONO_ARCH_FRAME_ALIGNMENT + stack_size + i*4, 4);
+		}
+	}
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT + argument_copy_size);
 
 	return code;
 }
@@ -5258,10 +5346,18 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		inst = cfg->args [pos];
 		ainfo = &cinfo->args [pos];
 		if (inst->opcode == OP_REGVAR) {
-			g_assert (need_stack_frame);
-			x86_mov_reg_membase (code, inst->dreg, X86_EBP, ainfo->offset + ARGS_OFFSET, 4);
+			if (storage_in_ireg (ainfo->storage)) {
+				x86_mov_reg_reg (code, inst->dreg, ainfo->reg, 4);
+			} else {
+				g_assert (need_stack_frame);
+				x86_mov_reg_membase (code, inst->dreg, X86_EBP, ainfo->offset + ARGS_OFFSET, 4);
+			}
 			if (cfg->verbose_level > 2)
 				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
+		} else {
+			if (storage_in_ireg (ainfo->storage)) {
+				x86_mov_membase_reg (code, inst->inst_basereg, inst->inst_offset, ainfo->reg, 4);
+			}
 		}
 		pos++;
 	}

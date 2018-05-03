@@ -5657,6 +5657,24 @@ _mono_test_native_thiscall3 (int arg, int arg2, int arg3)
 	return arg + (arg2^1) + (arg3^2);
 }
 
+LIBTEST_API int STDCALL
+_mono_test_managed_thiscall1 (int (*fn)(int), int arg)
+{
+	return fn(arg);
+}
+
+LIBTEST_API int STDCALL
+_mono_test_managed_thiscall2 (int (*fn)(int,int), int arg, int arg2)
+{
+	return fn(arg, arg2);
+}
+
+LIBTEST_API int STDCALL
+_mono_test_managed_thiscall3 (int (*fn)(int,int,int), int arg, int arg2, int arg3)
+{
+	return fn(arg, arg2, arg3);
+}
+
 #elif defined(__GNUC__)
 
 LIBTEST_API int STDCALL
@@ -5694,6 +5712,27 @@ def_asm_fn(mono_test_native_thiscall3)
 "\txorl $2,%ecx\n"
 "\taddl %ecx,%eax\n"
 "\tret $8\n"
+
+def_asm_fn(mono_test_managed_thiscall1)
+"\tpopl %eax\n"
+"\tpopl %edx\n"
+"\tpopl %ecx\n"
+"\tpushl %eax\n"
+"\tjmp *%edx\n"
+
+def_asm_fn(mono_test_managed_thiscall2)
+"\tpopl %eax\n"
+"\tpopl %edx\n"
+"\tpopl %ecx\n"
+"\tpushl %eax\n"
+"\tjmp *%edx\n"
+
+def_asm_fn(mono_test_managed_thiscall3)
+"\tpopl %eax\n"
+"\tpopl %edx\n"
+"\tpopl %ecx\n"
+"\tpushl %eax\n"
+"\tjmp *%edx\n"
 
 );
 
