@@ -35,6 +35,7 @@
   .field public int64 _long
   .field public unsigned int64 _ulong
   .field public float32 _float
+  .field public unsigned int32 _pad
   .field public float64 _double
 } // end of class Internal
 
@@ -42,6 +43,7 @@
        extends [mscorlib]System.ValueType
 {
   .field public unsigned int8 _byte
+  .field public unsigned int32 _pad
   .field public valuetype Internal intern
   .field public int8 _sbyte
   .field public int16 _short
