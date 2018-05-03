@@ -715,7 +715,6 @@ public class BuiltinTests {
 	}
 
 	/* fails on arm64 */
-#if FALSE
 	static int test_0_nfloat_cmp_left_nan ()
 	{
 		var x = (nfloat)float.NaN;
@@ -729,9 +728,9 @@ public class BuiltinTests {
 		if (x > y)
 			return 4;
 		if (x <= y)
-			return 1;
+			return 5;
 		if (x >= y)
-			return 1;
+			return 6;
 		return 0;
 	}
 
@@ -749,12 +748,11 @@ public class BuiltinTests {
 		if (x > y)
 			return 4;
 		if (x <= y)
-			return 1;
+			return 5;
 		if (x >= y)
-			return 1;
+			return 6;
 		return 0;
 	}
-#endif
 
 	// static int test_0_nfloat_call_boxed_equals ()
 	// {

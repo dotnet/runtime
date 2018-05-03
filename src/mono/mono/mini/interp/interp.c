@@ -4820,7 +4820,7 @@ array_constructed:
 			RELOP(l, !=);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CNE_R8)
-			RELOP_FP(f, !=, 0);
+			RELOP_FP(f, !=, 1);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CGT_I4)
 			RELOP(i, >);
