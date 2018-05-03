@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.InteropServices;
 
 internal struct VT
 {
@@ -20,13 +21,21 @@ internal unsafe class test
     private static unsafe bool CheckDoubleAlignment1(VT* p)
     {
         Console.WriteLine("Address {0}", (IntPtr)p);
-        if ((int)(long)p % sizeof(double) != 0)
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
         {
-            Console.WriteLine("not double aligned");
-            return false;
+            if ((int)(long)p % sizeof(double) != 0)
+            {
+                Console.WriteLine("not double aligned");
+                return false;
+            }
+            else
+            {
+                return true;
+            }
         }
         else
         {
+            // Current JIT implementation doesn't use double alignment stack optimization for Linux/x86
             return true;
         }
     }
