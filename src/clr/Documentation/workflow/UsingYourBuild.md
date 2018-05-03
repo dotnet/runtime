@@ -140,7 +140,7 @@ The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp2.1\win-x64\publish\Sy
 
 ## Using DotNetCli to run your .NET Core Application
 
-If you don't like the idea of copying files manually you can follow [this instructions](UsingDotNetCli.md) to use dotnet cli to do this for you.
+If you don't like the idea of copying files manually you can follow [these instructions](UsingDotNetCli.md) to use dotnet cli to do this for you.
 However the steps described here are the simplest and most commonly used by CoreCLR developers for ad-hoc testing.
 
 ## Using CoreRun to run your .NET Core Application

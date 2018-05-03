@@ -121,7 +121,7 @@ C:\coreclr\helloWorld\helloWorld.csproj : warning NU1603: helloWorld depends on 
 
 ### 6. Run the app
 
-After you publish you will find you all the binaries needed to run your application under `bin\Debug\netcoreapp2.1\win-x64\publish\`.
+After you publish you will find all the binaries needed to run your application under `bin\Debug\netcoreapp2.1\win-x64\publish\`.
 To run the application simply run the EXE that is in this publish directory (it is the name of the app, or specified in the project file).
 
 ```
@@ -148,7 +148,7 @@ the further steps needed to consume the runtime nuget package.
 #### 1. Update BuildNumberMinor Environment Variable
 
 One possible problem with this technique is that Nuget assumes that distinct builds have distinct version numbers.
-Thus if you modify the source and create a new NuGet package you must it a new version number and use that in your
+Thus if you modify the source and create a new NuGet package you must give it a new version number and use that in your
 application's project. Otherwise the dotnet.exe tool will assume that the existing version is fine and you
 won't get the updated bits. This is what the Minor Build number is all about. By default it is 0, but you can
 give it a value by setting the BuildNumberMinor environment variable.
