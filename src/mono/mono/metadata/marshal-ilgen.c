@@ -1371,7 +1371,6 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 			continue;
 		}
 
-		/*FIXME 'this doesn't handle generic enums. Shouldn't we?*/
 		type = sig->params [i]->type;
 handle_enum:
 		switch (type) {
@@ -1406,7 +1405,9 @@ handle_enum:
 				break;
 			}
 
-			/* fall through */
+			t = m_class_get_byval_arg (t->data.generic_class->container_class);
+			type = t->type;
+			goto handle_enum;
 		case MONO_TYPE_VALUETYPE:
 			if (type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (t->data.klass)) {
 				type = mono_class_enum_basetype (t->data.klass)->type;
