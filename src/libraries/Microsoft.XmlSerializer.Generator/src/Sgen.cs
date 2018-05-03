@@ -296,6 +296,19 @@ namespace Microsoft.XmlSerializer.Generator
 
                 bool gac = assembly.GlobalAssemblyCache;
                 outputDirectory = outputDirectory == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
+
+                if (!Directory.Exists(outputDirectory))
+                {
+                    //We need double quote the path to escpate the space in the path. 
+                    //However when a path ending with backslash, if followed by double quote, it becomes an escapte sequence 
+                    //e.g. "obj\Debug\netcoreapp2.0\", it will be converted as obj\Debug\netcoreapp2.0", which is not valid and not exist
+                    //We need remove the ending quote for this situation
+                    if (!outputDirectory.EndsWith("\"") || !Directory.Exists(outputDirectory.Remove(outputDirectory.Length - 1)))
+                    {
+                        throw new ArgumentException(SR.Format(SR.ErrDirectoryNotExists, outputDirectory));
+                    }
+                }
+
                 string serializerName = GetXmlSerializerAssemblyName(serializableTypes[0], null);
                 string codePath = Path.Combine(outputDirectory, serializerName + ".cs");
 
@@ -308,11 +321,6 @@ namespace Microsoft.XmlSerializer.Generator
                 if (Directory.Exists(codePath))
                 {
                     throw new InvalidOperationException(SR.Format(SR.ErrDirectoryExists, codePath));
-                }
-
-                if (!Directory.Exists(outputDirectory))
-                {
-                    throw new ArgumentException(SR.Format(SR.ErrDirectoryNotExists, codePath, outputDirectory));
                 }
 
                 bool success = false;
