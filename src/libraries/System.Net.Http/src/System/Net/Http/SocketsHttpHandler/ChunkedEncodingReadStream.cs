@@ -104,7 +104,7 @@ namespace System.Net.Http
                         }
 
                         // We're only here if we need more data to make forward progress.
-                        await _connection.FillAsync();
+                        await _connection.FillAsync().ConfigureAwait(false);
 
                         // Now that we have more, see if we can get any response data, and if
                         // we can we're done.
