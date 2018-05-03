@@ -201,7 +201,7 @@ namespace System.Runtime.InteropServices
         {
             if (byteLen < 0)
             {
-                throw new ArgumentException(null, nameof(byteLen));
+                throw new ArgumentOutOfRangeException(nameof(byteLen), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             else if (IntPtr.Zero == ptr)
             {
@@ -1333,18 +1333,13 @@ namespace System.Runtime.InteropServices
 
         public static unsafe IntPtr StringToCoTaskMemUTF8(String s)
         {
-            const int MAX_UTF8_CHAR_SIZE = 3;
             if (s == null)
             {
                 return IntPtr.Zero;
             }
             else
             {
-                int nb = (s.Length + 1) * MAX_UTF8_CHAR_SIZE;
-
-                // Overflow checking
-                if (nb < s.Length)
-                    throw new ArgumentOutOfRangeException(nameof(s));
+                int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
 
                 IntPtr pMem = Win32Native.CoTaskMemAlloc(new UIntPtr((uint)nb + 1));
 
@@ -1354,9 +1349,12 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    byte* pbMem = (byte*)pMem;
-                    int nbWritten = s.GetBytesFromEncoding(pbMem, nb, Encoding.UTF8);
-                    pbMem[nbWritten] = 0;
+                    fixed (char* firstChar = s)
+                    {
+                        byte* pbMem = (byte*)pMem;
+                        int nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
+                        pbMem[nbWritten] = 0;
+                    }
                     return pMem;
                 }
             }
