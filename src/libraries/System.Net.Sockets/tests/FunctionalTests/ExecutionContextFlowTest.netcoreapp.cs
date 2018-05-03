@@ -31,8 +31,11 @@ namespace System.Net.Sockets.Tests
                         int executionContextChanges = 0;
                         var asyncLocal = new AsyncLocal<int>(_ =>
                         {
-                            executionContextChanges++;
-                            stackLog.AppendLine($"#{executionContextChanges}: {Environment.StackTrace}");
+                            lock (stackLog)
+                            {
+                                executionContextChanges++;
+                                stackLog.AppendLine($"#{executionContextChanges}: {Environment.StackTrace}");
+                            }
                         });
                         Assert.Equal(0, executionContextChanges);
 
