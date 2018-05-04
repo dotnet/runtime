@@ -33,26 +33,16 @@
       <DisabledProjects Include="Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
     </ItemGroup>
 
-    <!-- Unix builds do not support subgroups -->
-    <ItemGroup Condition="$(__BuildOS) != 'Windows_NT'" >
-      <Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-      <Project Include="*\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-    </ItemGroup>
-
     <!-- Test build is divided in slices which can be created within Test Group
          Priority 0 tests are build using Test Group 1 with 2 subgroups or slices -->
 
-    <ItemGroup Condition="$(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '1' And $(TestBuildSlice) == '1'">
+    <ItemGroup Condition="$(__TestGroupToBuild) == '1' And $(TestBuildSlice) == '1'">
       <Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
     </ItemGroup>
 
-    <ItemGroup Condition="$(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '1' And $(TestBuildSlice) == '2'">
+    <ItemGroup Condition="$(__TestGroupToBuild) == '1' And $(TestBuildSlice) == '2'">
       <Project Include="*\**\*.ilproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
@@ -61,7 +51,7 @@
     <!-- Test build is divided in slices which can be created within Test Group
          Priority 1 or higher tests are build using Test Group 2 with 16 subgroups or slices -->    
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '1')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '1')">
       <Project Include="baseservices\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
@@ -76,7 +66,7 @@
       </Project>      
     </ItemGroup>
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '2')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '2')">
       <Project Include="CoreMangLib\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
@@ -85,7 +75,7 @@
       </Project>
     </ItemGroup>
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '3')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '3')">
       <Project Include="E*\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
@@ -112,7 +102,7 @@
       </Project>
     </ItemGroup>
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '4')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '4')">
       <Project Include="JIT\B*\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
@@ -124,7 +114,7 @@
       </Project>      
     </ItemGroup>
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '5')">    
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '5')">
       <Project Include="JIT\B*\**\*.ilproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
@@ -136,7 +126,7 @@
       </Project>
     </ItemGroup>    
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '6')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '6')">
       <Project Include="JIT\Generics\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
@@ -151,7 +141,7 @@
       </Project>
     </ItemGroup>
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '7')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '7')">
       <Project Include="JIT\IL_Conformance\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
@@ -160,7 +150,7 @@
       </Project>
     </ItemGroup>
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '8')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '8')">
       <Project Include="JIT\jit64\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
@@ -169,19 +159,19 @@
       </Project>
     </ItemGroup>
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '9')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '9')">
       <Project Include="JIT\Methodical\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
     </ItemGroup>
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '10')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '10')">
       <Project Include="JIT\Methodical\**\*.ilproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
     </ItemGroup>    
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '11')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '11')">
       <Project Include="JIT\opt\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
@@ -202,31 +192,31 @@
       </Project>
     </ItemGroup>
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '12')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '12')">
       <Project Include="JIT\R*\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
     </ItemGroup>
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '13')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '13')">
       <Project Include="JIT\R*\**\*.ilproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
     </ItemGroup>    
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '14')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '14')">
       <Project Include="Loader\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
     </ItemGroup>
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '15')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '15')">
       <Project Include="Loader\**\*.ilproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
     </ItemGroup>    
 
-    <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '16')">
+    <ItemGroup Condition="($(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '16')">
       <Project Include="m*\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
