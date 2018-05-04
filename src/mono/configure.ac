@@ -4652,6 +4652,7 @@ if test "x$enable_btls" = "xyes"; then
 		;;
 	aarch64)
 		btls_arch=aarch64
+		btls_cflags="-march=armv8-a+crypto"
 		;;
 	s390x)
 		btls_arch=s390x
