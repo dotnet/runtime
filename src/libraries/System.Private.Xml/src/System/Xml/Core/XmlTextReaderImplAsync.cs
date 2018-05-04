@@ -745,8 +745,7 @@ namespace System.Xml
                 while (readCount < count && !endOfValue)
                 {
                     int orChars = 0;
-
-                    var tuple_0 = await ParseTextAsync(orChars);
+                    var tuple_0 = await ParseTextAsync(orChars).ConfigureAwait(false);
                     startPos = tuple_0.Item1;
                     endPos = tuple_0.Item2;
                     orChars = tuple_0.Item3;
@@ -3094,7 +3093,7 @@ namespace System.Xml
                 ValueTuple<int, int, int, bool> tuple_9;
                 do
                 {
-                    tuple_9 = await ParseTextAsync(orChars);
+                    tuple_9 = await ParseTextAsync(orChars).ConfigureAwait(false);
                     startPos = tuple_9.Item1;
                     endPos = tuple_9.Item2;
                     orChars = tuple_9.Item3;
@@ -3144,7 +3143,7 @@ namespace System.Xml
                             _stringBuilder.Append(_ps.chars, startPos, endPos - startPos);
                         }
 
-                        tuple_11 = await ParseTextAsync(orChars);
+                        tuple_11 = await ParseTextAsync(orChars).ConfigureAwait(false);
                         startPos = tuple_11.Item1;
                         endPos = tuple_11.Item2;
                         orChars = tuple_11.Item3;
@@ -3190,7 +3189,7 @@ namespace System.Xml
                     }
                     do
                     {
-                        var tuple_12 = await ParseTextAsync(orChars);
+                        var tuple_12 = await ParseTextAsync(orChars).ConfigureAwait(false);
                         startPos = tuple_12.Item1;
                         endPos = tuple_12.Item2;
                         orChars = tuple_12.Item3;
@@ -3214,7 +3213,7 @@ namespace System.Xml
                             ValueTuple<int, int, int, bool> tuple_13;
                             do
                             {
-                                tuple_13 = await ParseTextAsync(orChars);
+                                tuple_13 = await ParseTextAsync(orChars).ConfigureAwait(false);
                                 startPos = tuple_13.Item1;
                                 endPos = tuple_13.Item2;
                                 orChars = tuple_13.Item3;
@@ -3677,7 +3676,7 @@ namespace System.Xml
             int endPos;
             int orChars = 0;
 
-            var tuple_15 = await ParseTextAsync(orChars);
+            var tuple_15 = await ParseTextAsync(orChars).ConfigureAwait(false);
             startPos = tuple_15.Item1;
             endPos = tuple_15.Item2;
             orChars = tuple_15.Item3;
@@ -3686,7 +3685,7 @@ namespace System.Xml
             {
                 _stringBuilder.Append(_ps.chars, startPos, endPos - startPos);
 
-                tuple_15 = await ParseTextAsync(orChars);
+                tuple_15 = await ParseTextAsync(orChars).ConfigureAwait(false);
                 startPos = tuple_15.Item1;
                 endPos = tuple_15.Item2;
                 orChars = tuple_15.Item3;
@@ -3758,7 +3757,7 @@ namespace System.Xml
             ValueTuple<int, int, int, bool> tuple_16;
             do
             {
-                tuple_16 = await ParseTextAsync(orChars);
+                tuple_16 = await ParseTextAsync(orChars).ConfigureAwait(false);
                 startPos = tuple_16.Item1;
                 endPos = tuple_16.Item2;
                 orChars = tuple_16.Item3;
@@ -5587,7 +5586,7 @@ namespace System.Xml
                         // store current line info and parse more text
                         _incReadLineInfo.Set(_ps.LineNo, _ps.LinePos);
 
-                        var tuple_36 = await ParseTextAsync(orChars);
+                        var tuple_36 = await ParseTextAsync(orChars).ConfigureAwait(false);
                         startPos = tuple_36.Item1;
                         endPos = tuple_36.Item2;
                         orChars = tuple_36.Item3;

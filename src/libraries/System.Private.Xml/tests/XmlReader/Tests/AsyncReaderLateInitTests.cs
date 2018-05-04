@@ -4,6 +4,9 @@
 
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tests;
 using Xunit;
 
 namespace System.Xml.Tests
@@ -88,6 +91,55 @@ namespace System.Xml.Tests
         public static void InitializationWithUriOnNonAsyncReaderTrows()
         {
             Assert.Throws<System.Net.WebException>(() => XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = false }));
+        }
+
+        [Fact]
+        public static void SynchronizationContextCurrent_NotUsedForAsyncOperations()
+        {
+            Task.Run(() =>
+            {
+                var sc = new TrackingSynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(sc);
+
+                using (XmlReader reader = XmlReader.Create(new DribbleReadXmlAsyncStream(_dummyXml), new XmlReaderSettings { Async = true,  }))
+                {
+                    while (reader.ReadAsync().GetAwaiter().GetResult());
+                }
+
+                Assert.True(sc.CallStacks.Count == 0, "Sync Ctx used: " + string.Join(Environment.NewLine + Environment.NewLine, sc.CallStacks));
+            }).GetAwaiter().GetResult();
+        }
+
+        private sealed class DribbleReadXmlAsyncStream : Stream
+        {
+            private readonly byte[] _bytes;
+            private int _pos;
+
+            public DribbleReadXmlAsyncStream(string xml) => _bytes = Encoding.UTF8.GetBytes(xml);
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+                Task.Run(() => // to dribble out a byte at a time
+                {
+                    if (count <= 0 || _pos >= _bytes.Length)
+                    {
+                        return 0;
+                    }
+
+                    buffer[offset] = _bytes[_pos++];
+                    return 1;
+                });
+
+            public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer, offset, count).GetAwaiter().GetResult();
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override void Flush() { }
+            public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
     }
 }

@@ -327,7 +327,7 @@ namespace System.Net.WebSockets
                     _webSocketReceiveResultTcs.Task,
                     _closeWebSocketReceiveResultTcs.Task).ConfigureAwait(false);
 
-                WebSocketReceiveResult result = await completedTask;
+                WebSocketReceiveResult result = completedTask.GetAwaiter().GetResult();
 
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
