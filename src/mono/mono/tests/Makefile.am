@@ -1468,6 +1468,7 @@ tailcall/coreclr/JIT/opt/Tailcall/TailcallVerifyWithPrefix.exe: \
 		tailcall/coreclr/JIT/opt/Tailcall/TailcallVerifyVerifiableLibraryWithPrefix.il
 
 %.exe: %.il
+	$(MKDIR_P) $(dir $@)
 	$(ILASM) -out:$@ $^
 
 if !FULL_AOT_TESTS
@@ -1487,6 +1488,7 @@ endif
 endif
 
 %.exe: %.cs $(TEST_DRIVER_DEPEND)
+	$(MKDIR_P) $(dir $@)
 	$(MCS) -r:$(CLASS)/System.dll -r:$(CLASS)/System.Xml.dll -r:$(CLASS)/System.Core.dll -r:TestDriver.dll $(TEST_DRIVER_HARD_KILL_FEATURE) -out:$@ $<
 
 # N.B. test-runner.exe references the TOOLS_RUNTIME versions of the framework assemblies
@@ -1494,8 +1496,10 @@ test-runner.exe: test-runner.cs $(TEST_DRIVER_DEPEND)
 	$(MCS) -r:System.dll -r:System.Xml.dll -r:System.Core.dll -r:TestDriver.dll $(TEST_DRIVER_HARD_KILL_FEATURE) -out:$@ $<
 
 %.dll: %.cs
+	$(MKDIR_P) $(dir $@)
 	$(MCS) -r:$(CLASS)/System.dll -target:library -out:$@ $<
 %.dll: %.il
+	$(MKDIR_P) $(dir $@)
 	$(ILASM) /dll /output:$@ $<
 
 reference-loader.exe: reference-loader.cs TestingReferenceAssembly.dll TestingReferenceReferenceAssembly.dll $(TEST_DRIVER_DEPEND)
@@ -2341,15 +2345,19 @@ appdomain-marshalbyref-assemblyload.exe: appdomain-marshalbyref-assemblyload.cs 
 	$(MCS) -out:$@ $< -r:MidAssembly.dll -r:LeafAssembly.dll
 
 assembly-load-dir1/Lib.dll: assembly-load-dir1/Lib.cs
+	$(MKDIR_P) $(dir $@)
 	$(MCS) -target:library -out:$@ $<
 assembly-load-dir2/Lib.dll: assembly-load-dir2/Lib.cs
+	$(MKDIR_P) $(dir $@)
 	$(MCS) -target:library -out:$@ $<
 
 assembly-load-dir1/LibStrongName.dll: assembly-load-dir1/LibStrongName.cs testing_gac/testkey.snk
-	$(MCS) -target:library -out:$@ $<
+	$(MKDIR_P) $(dir $@)
+	$(MCS) -target:library -out:$@ $< -keyfile:$(dir $<)../testing_gac/testkey.snk
 
 assembly-load-dir2/LibStrongName.dll: assembly-load-dir2/LibStrongName.cs testing_gac/testkey.snk
-	$(MCS) -target:library -out:$@ $<
+	$(MKDIR_P) $(dir $@)
+	$(MCS) -target:library -out:$@ $< -keyfile:$(dir $<)../testing_gac/testkey.snk
 
 EXTRA_DIST += assembly-load-dir1/Lib.cs assembly-load-dir2/Lib.cs \
 	assembly-load-dir1/LibStrongName.cs assembly-load-dir2/LibStrongName.cs
