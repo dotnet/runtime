@@ -1063,14 +1063,13 @@ void *JIT_TrialAlloc::GenAllocString(Flags flags)
     // jae noLock - seems tempting to jump to noAlloc, but we haven't taken the lock yet
     sl.X86EmitCondJump(noLock, X86CondCode::kJAE);
 
-    // mov edx, [ecx]MethodTable.m_BaseSize
-    sl.X86EmitIndexRegLoad(kEDX, kECX, offsetof(MethodTable,m_BaseSize));
-
     // Calculate the final size to allocate.
     // We need to calculate baseSize + cnt*2, then round that up by adding 3 and anding ~3.
 
-    // lea eax, [edx+eax*2+5]
-    sl.X86EmitOp(0x8d, kEAX, kEDX, (DATA_ALIGNMENT-1), kEAX, 2);
+    // lea eax, [basesize+(alignment-1)+eax*2]
+    sl.Emit16(0x048d);
+    sl.Emit8(0x45);
+    sl.Emit32(StringObject::GetBaseSize() + (DATA_ALIGNMENT-1));
 
     // and eax, ~3
     sl.Emit16(0xe083);
