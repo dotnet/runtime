@@ -9737,8 +9737,8 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             // Strings are not "normal" objects, so we need to mess with their method table a bit
             // so that the GC can figure out how big each string is...
-            DWORD baseSize = ObjSizeOf(StringObject) + sizeof(WCHAR);
-            pMT->SetBaseSize(baseSize); // NULL character included
+            DWORD baseSize = StringObject::GetBaseSize();
+            pMT->SetBaseSize(baseSize);
 
             GetHalfBakedClass()->SetBaseSizePadding(baseSize - bmtFP->NumInstanceFieldBytes);
 

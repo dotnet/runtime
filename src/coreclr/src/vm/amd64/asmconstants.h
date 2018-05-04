@@ -545,6 +545,9 @@ ASMCONSTANTS_C_ASSERT(ASM_LARGE_OBJECT_SIZE == LARGE_OBJECT_SIZE);
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ArrayBase__m_NumComponents
                     == offsetof(ArrayBase, m_NumComponents));
 
+#define                     STRING_BASE_SIZE 0x16
+ASMCONSTANTS_RUNTIME_ASSERT(STRING_BASE_SIZE == StringObject::GetBaseSize());
+
 #define               OFFSETOF__StringObject__m_StringLength 0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__StringObject__m_StringLength
                     == offsetof(StringObject, m_StringLength));

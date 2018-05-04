@@ -1475,7 +1475,7 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, __ou
             if (count > needed)
                 count = needed;
 
-            TADDR pszStr = TO_TADDR(obj)+offsetof(StringObject, m_Characters);
+            TADDR pszStr = TO_TADDR(obj)+offsetof(StringObject, m_FirstChar);
             hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(wchar_t), &needed);
         
             if (SUCCEEDED(hr))
