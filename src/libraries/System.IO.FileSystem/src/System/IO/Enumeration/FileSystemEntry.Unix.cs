@@ -44,10 +44,14 @@ namespace System.IO.Enumeration
                 // We know it's a directory.
                 isDirectory = true;
             }
-            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK)
-                && Interop.Sys.Stat(entry.FullPath, out Interop.Sys.FileStatus targetStatus) >= 0)
+            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK
+                || directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
+                && (Interop.Sys.Stat(entry.FullPath, out Interop.Sys.FileStatus targetStatus) >= 0
+                    || Interop.Sys.LStat(entry.FullPath, out targetStatus) >= 0))
             {
-                // It's a symlink: stat to it to see if we can resolve it to a directory.
+                // Symlink or unknown: Stat to it to see if we can resolve it to a directory. If Stat fails,
+                // it could be because the symlink is broken, we don't have permissions, etc., in which
+                // case fall back to using LStat to evaluate based on the symlink itself.
                 isDirectory = (targetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
             }
 
