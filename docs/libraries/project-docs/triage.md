@@ -33,7 +33,7 @@ We owe our customers -- and this includes our open source community -- that we d
 Our current approach to triage looks as follows (the higher the number the more likely we're going to close it):
 
 1. Is it helping with [porting .NET Framework code to .NET Core](porting.md)?
-2. Is it aligned with the [roadmap of .NET Core vNext](roadmap.md)?
+2. Is it aligned with the roadmap of .NET Core vNext?
 3. Is it a separate type that we can deliver as a standalone library for both, .NET Framework and .NET Core?
 4. Is it going to require modifying the .NET Framework?
 
