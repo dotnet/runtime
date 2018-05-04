@@ -715,6 +715,11 @@ TESTS_CS_SRC += bug-60862.cs
 endif
 endif
 
+#maybe this test works on linux, not sure
+if HOST_DARWIN
+TESTS_CS_SRC += bug-8417.cs
+endif
+
 TESTS_IL_SRC=			\
 	tailcall/2.il	     \
 	tailcall/3.il	     \
