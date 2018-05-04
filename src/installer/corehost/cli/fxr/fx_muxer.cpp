@@ -692,9 +692,11 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool parse_only_produc
         if (fx_ver_t::parse(version, &ver, parse_only_production))
         {
             if (global_cli_version.empty() ||
-                // Pick the greatest version that differs only in the 'minor-patch' if a global cli version is specified.
+                // If a global cli version is specified:
+                //   pick the greatest version that differs only in the 'minor-patch'
+                //   and is semantically greater than or equal to the global cli version specified.
                 (ver.get_major() == specified.get_major() && ver.get_minor() == specified.get_minor() &&
-                (ver.get_patch() / 100) == (specified.get_patch() / 100)))
+                (ver.get_patch() / 100) == (specified.get_patch() / 100) && ver >= specified))
             {
                 max_ver = std::max(ver, max_ver);
             }
