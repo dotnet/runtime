@@ -134,12 +134,10 @@ LEAF_ENTRY AllocateStringFastMP_InlineGetThread, _TEXT
         cmp     ecx, (ASM_LARGE_OBJECT_SIZE - 256)/2
         jae     OversizedString
 
-        mov     edx, [r9 + OFFSET__MethodTable__m_BaseSize]
-
         ; Calculate the final size to allocate.
         ; We need to calculate baseSize + cnt*2, then round that up by adding 7 and anding ~7.
 
-        lea     edx, [edx + ecx*2 + 7]
+        lea     edx, [STRING_BASE_SIZE + ecx*2 + 7]
         and     edx, -8
 
         INLINE_GETTHREAD r11

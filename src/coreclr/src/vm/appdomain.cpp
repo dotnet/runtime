@@ -2759,8 +2759,6 @@ void SystemDomain::LoadBaseSystemClasses()
 
     // Load String
     g_pStringClass = MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_STRING);
-    _ASSERTE(g_pStringClass->GetBaseSize() == ObjSizeOf(StringObject)+sizeof(WCHAR));
-    _ASSERTE(g_pStringClass->GetComponentSize() == 2);
 
     // Used by Buffer::BlockCopy
     g_pByteArrayMT = ClassLoader::LoadArrayTypeThrowing(
