@@ -2448,6 +2448,12 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         //Label_nextDelegate:
         pCode->EmitLabel(nextDelegate);
 
+#ifdef DEBUGGING_SUPPORTED
+        pCode->EmitLoadThis();
+        pCode->EmitLDLOC(dwLoopCounterNum);
+        pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
+#endif // DEBUGGING_SUPPORTED
+
         // compare LoopCounter with InvocationCount. If equal then branch to Label_endOfMethod
         pCode->EmitLDLOC(dwLoopCounterNum);
         pCode->EmitLDLOC(dwInvocationCountNum);
@@ -2476,12 +2482,6 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
         pCode->EmitLDC(1);
         pCode->EmitADD();
         pCode->EmitSTLOC(dwLoopCounterNum);
-
-#ifdef DEBUGGING_SUPPORTED
-        pCode->EmitLoadThis();
-        pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
-#endif // DEBUGGING_SUPPORTED
 
         // branch to next delegate
         pCode->EmitBR(nextDelegate);
