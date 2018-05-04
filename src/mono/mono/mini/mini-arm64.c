@@ -2489,7 +2489,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	MonoMethodSignature *tmp_sig;
 	int sig_reg;
 
-	if (call->tailcall)
+	if (MONO_IS_TAILCALL_OPCODE (call))
 		NOT_IMPLEMENTED;
 
 	g_assert (cinfo->sig_cookie.storage == ArgOnStack);
@@ -2527,6 +2527,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	switch (cinfo->ret.storage) {
 	case ArgVtypeInIRegs:
 	case ArgHFA:
+		if (MONO_IS_TAILCALL_OPCODE (call))
+			break;
 		/*
 		 * The vtype is returned in registers, save the return area address in a local, and save the vtype into
 		 * the location pointed to by it after call in emit_move_return_value ().
@@ -2541,6 +2543,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		break;
 	case ArgVtypeByRef:
 		/* Pass the vtype return address in R8 */
+		g_assert (!MONO_IS_TAILCALL_OPCODE (call) || call->vret_var == cfg->vret_addr);
 		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
 		vtarg->sreg1 = call->vret_var->dreg;
 		vtarg->dreg = mono_alloc_preg (cfg);
@@ -2757,32 +2760,6 @@ is_supported_tailcall_helper (gboolean value, const char *svalue)
 
 #define IS_SUPPORTED_TAILCALL(x) (is_supported_tailcall_helper((x), #x))
 
-static gboolean
-tailcall_return_storage_supported (ArgStorage storage)
-{
-	switch (storage) {
-	case ArgInIReg:
-	case ArgInFReg:
-	case ArgInFRegR4:
-	case ArgNone:
-		return TRUE;
-
-	case ArgHFA:
-	case ArgOnStack:
-	case ArgOnStackR8:
-	case ArgOnStackR4:
-	case ArgVtypeByRef:
-	case ArgVtypeByRefOnStack:
-	case ArgVtypeInIRegs: // FIXME: Pass caller's caller's return area to callee.
-	case ArgVtypeOnStack:
-		return FALSE;
-
-	default:
-		g_assert_not_reached ();
-		return FALSE;
-	}
-}
-
 gboolean
 mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
@@ -2797,12 +2774,19 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 	CallInfo *callee_info = get_call_info (NULL, callee_sig);
 
 	gboolean res = IS_SUPPORTED_TAILCALL (callee_info->stack_usage <= caller_info->stack_usage)
-		  && IS_SUPPORTED_TAILCALL (caller_info->ret.storage == callee_info->ret.storage)
-		  && IS_SUPPORTED_TAILCALL (tailcall_return_storage_supported (caller_info->ret.storage));
+		  && IS_SUPPORTED_TAILCALL (caller_info->ret.storage == callee_info->ret.storage);
 
 	// FIXME Limit stack_usage to 1G. emit_ldrx / strx has 32bit limits.
 	res &= IS_SUPPORTED_TAILCALL (callee_info->stack_usage < (1 << 30));
 	res &= IS_SUPPORTED_TAILCALL (caller_info->stack_usage < (1 << 30));
+
+	// valuetype parameters are the address of a local
+	const ArgInfo *ainfo;
+	ainfo = callee_info->args + callee_sig->hasthis;
+	for (int i = 0; res && i < callee_sig->param_count; ++i) {
+		res = IS_SUPPORTED_TAILCALL (ainfo [i].storage != ArgVtypeByRef)
+			&& IS_SUPPORTED_TAILCALL (ainfo [i].storage != ArgVtypeByRefOnStack);
+	}
 
 	g_free (caller_info);
 	g_free (callee_info);

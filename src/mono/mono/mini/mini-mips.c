@@ -1639,7 +1639,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	MonoMethodSignature *tmp_sig;
 	MonoInst *sig_arg;
 
-	if (call->tailcall)
+	if (MONO_IS_TAILCALL_OPCODE (call))
 		NOT_IMPLEMENTED;
 
 	/* FIXME: Add support for signature tokens to AOT */

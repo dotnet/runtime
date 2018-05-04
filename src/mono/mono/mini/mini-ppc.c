@@ -1341,32 +1341,36 @@ get_call_info (MonoMethodSignature *sig)
 	return cinfo;
 }
 
+static const gboolean debug_tailcall = FALSE;
+
+static gboolean
+is_supported_tailcall_helper (gboolean value, const char *svalue)
+{
+	if (!value && debug_tailcall)
+		g_print ("%s %s\n", __func__, svalue);
+	return value;
+}
+
+#define IS_SUPPORTED_TAILCALL(x) (is_supported_tailcall_helper((x), #x))
+
 gboolean
 mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
-	CallInfo *c1, *c2;
-	gboolean res;
-	int i;
+	CallInfo *caller_info = get_call_info (caller_sig);
+	CallInfo *callee_info = get_call_info (callee_sig);
 
-	c1 = get_call_info (caller_sig);
-	c2 = get_call_info (callee_sig);
-	res = c1->stack_usage >= c2->stack_usage;
-	if (callee_sig->ret && MONO_TYPE_ISSTRUCT (callee_sig->ret))
-		/* An address on the callee's stack is passed as the first argument */
-		res = FALSE;
-	for (i = 0; i < c2->nargs; ++i) {
-		if (c2->args [i].regtype == RegTypeStructByAddr)
+	gboolean res = IS_SUPPORTED_TAILCALL (callee_info->stack_usage <= caller_info->stack_usage)
+		&& IS_SUPPORTED_TAILCALL (callee_info->ret.storage == caller_info->ret.storage);
+
+	// FIXME ABIs vary as to if this local is in the parameter area or not,
+	// so this check might not be needed.
+	for (int i = 0; res && i < callee_info->nargs; ++i) {
+		res = IS_SUPPORTED_TAILCALL (callee_info->args [i].regtype != RegTypeStructByAddr);
 			/* An address on the callee's stack is passed as the argument */
-			res = FALSE;
 	}
 
-	/*
-	if (!mono_debug_count ())
-		res = FALSE;
-	*/
-
-	g_free (c1);
-	g_free (c2);
+	g_free (caller_info);
+	g_free (callee_info);
 
 	return res;
 }

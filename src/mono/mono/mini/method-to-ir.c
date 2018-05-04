@@ -2279,7 +2279,10 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	MonoType *sig_ret;
 	MonoCallInst *call;
 
-	if (tailcall && cfg->llvm_only) { // FIXME?
+	if (tailcall && cfg->llvm_only) {
+		// FIXME tailcall should not be changed this late.
+		// FIXME It really should not be changed due to llvm_only.
+		// Accuracy is presently available MONO_IS_TAILCALL_OPCODE (call).
 		tailcall = FALSE;
 		tailcall_print ("losing tailcall in %s due to llvm_only\n", cfg->method->name);
 		test_tailcall (cfg, FALSE);
@@ -2559,6 +2562,9 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		call->method = method;
 	call->inst.flags |= MONO_INST_HAS_METHOD;
 	call->inst.inst_left = this_ins;
+
+	// FIXME This has already been read in amd64 parameter construction.
+	// Fixing it generates incorrect code. CEE_JMP needs attention.
 	call->tailcall = tailcall;
 
 	if (virtual_) {
@@ -8433,6 +8439,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				emit_tailcall_parameters (cfg, fsig);
 				MONO_INST_NEW_CALL (cfg, call, OP_TAILCALL);
 				call->method = cmethod;
+				// FIXME Other initialization of the tailcall field occurs after
+				// it is used. So this is the only "real" use and needs more attention.
 				call->tailcall = TRUE;
 				call->signature = fsig;
 				call->args = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * n);

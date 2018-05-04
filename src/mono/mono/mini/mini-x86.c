@@ -694,7 +694,6 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 		/* OP_TAILCALL doesn't work with AOT */
 		return FALSE;
 
-	MonoType *callee_ret;
 	CallInfo *caller_info = get_call_info (NULL, caller_sig);
 	CallInfo *callee_info = get_call_info (NULL, callee_sig);
 
@@ -706,10 +705,6 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 				&& IS_SUPPORTED_TAILCALL (caller_info->ret.storage == callee_info->ret.storage);
 	if (!res && !debug_tailcall)
 		goto exit;
-
-	// FIXME: Pass caller's caller's return area to callee.
-	callee_ret = mini_get_underlying_type (callee_sig->ret);
-	res &= IS_SUPPORTED_TAILCALL (!(callee_ret && MONO_TYPE_ISSTRUCT (callee_ret) && callee_info->ret.storage != ArgValuetypeInReg));
 
 	// Limit stack_usage to 1G.
 	res &= IS_SUPPORTED_TAILCALL (callee_info->stack_usage < (1 << 30));

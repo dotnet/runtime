@@ -819,14 +819,12 @@ callvirt instance !0 class Fsharp/TailCallLoopGenericClass`1<int32>::get_Result(
 ldc.i4.3
 call void Fsharp::RunTest<int32>(string, !!0, !!0)
 
-/* FIXME This fails on x86 and ARM64. It passes on AMD64.
 ldstr "TailCallLoopGenericClass<DateTime>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 newobj instance void class Fsharp/TailCallLoopGenericClass`1<valuetype [mscorlib]System.DateTime>::.ctor(!0)
 callvirt instance !0 class Fsharp/TailCallLoopGenericClass`1<valuetype [mscorlib]System.DateTime>::get_Result()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 call void Fsharp::RunTest<valuetype [mscorlib]System.DateTime>(string, !!0, !!0)
-*/
 
 ldstr "TailCallLoopGenericClass<string>"
 ldstr "abc"
