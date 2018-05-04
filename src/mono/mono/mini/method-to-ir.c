@@ -473,7 +473,7 @@ gsharedvt_failure (MonoCompile *cfg, int opcode, const char *file, int line)
 		(tblock) = cfg->cil_offset_to_bb [(ip) - cfg->cil_start]; \
 		if (!(tblock)) {	\
 			if ((ip) >= end || (ip) < header->code) UNVERIFIED; \
-            NEW_BBLOCK (cfg, (tblock)); \
+			NEW_BBLOCK (cfg, (tblock)); \
 			(tblock)->cil_code = (ip);	\
 			ADD_BBLOCK (cfg, (tblock));	\
 		} \
@@ -685,7 +685,7 @@ mono_find_block_region (MonoCompile *cfg, int offset)
 		if ((clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) && (offset >= clause->data.filter_offset) &&
 		    (offset < (clause->handler_offset)))
 			return ((i + 1) << 8) | MONO_REGION_FILTER | clause->flags;
-			   
+
 		if (MONO_OFFSET_IN_HANDLER (clause, offset)) {
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
 				return ((i + 1) << 8) | MONO_REGION_FINALLY | clause->flags;
@@ -7316,12 +7316,12 @@ exit:
 }
 
 /*
- * is_adressable_valuetype_load
+ * is_addressable_valuetype_load
  *
  *    Returns true if a previous load can be done without doing an extra copy, given the new instruction ip and the type of the object being loaded ldtype
  */
 static gboolean
-is_adressable_valuetype_load (MonoCompile* cfg, guint8* ip, MonoType* ldtype)
+is_addressable_valuetype_load (MonoCompile* cfg, guint8* ip, MonoType* ldtype)
 {
 	/* Avoid loading a struct just to load one of its fields */
 	gboolean is_load_instruction = (*ip == CEE_LDFLD);
@@ -7757,7 +7757,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_SEQ_POINT (cfg, ins, clause->handler_offset, TRUE);
 					MONO_ADD_INS (tblock, ins);
 				}
-				
+
 				if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 					GET_BBLOCK (cfg, tblock, ip + clause->data.filter_offset);
 					tblock->flags |= BB_EXCEPTION_HANDLER;
@@ -8110,7 +8110,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK_OVF (1);
 			n = (*ip)-CEE_LDARG_0;
 			CHECK_ARG (n);
-			if (ip + 1 < end && is_adressable_valuetype_load (cfg, ip + 1, cfg->arg_types[n])) {
+			if (ip + 1 < end && is_addressable_valuetype_load (cfg, ip + 1, cfg->arg_types[n])) {
 				EMIT_NEW_ARGLOADA (cfg, ins, n);
 			} else {
 				EMIT_NEW_ARGLOAD (cfg, ins, n);
@@ -8125,7 +8125,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK_OVF (1);
 			n = (*ip)-CEE_LDLOC_0;
 			CHECK_LOCAL (n);
-			if (ip + 1 < end && is_adressable_valuetype_load (cfg, ip + 1, header->locals[n])) {
+			if (ip + 1 < end && is_addressable_valuetype_load (cfg, ip + 1, header->locals[n])) {
 				EMIT_NEW_LOCLOADA (cfg, ins, n);
 			} else {
 				EMIT_NEW_LOCLOAD (cfg, ins, n);
@@ -8154,7 +8154,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK_OVF (1);
 			n = ip [1];
 			CHECK_ARG (n);
-			if (ip + 2 < end && is_adressable_valuetype_load (cfg, ip + 2, cfg->arg_types[n])) {
+			if (ip + 2 < end && is_addressable_valuetype_load (cfg, ip + 2, cfg->arg_types[n])) {
 				EMIT_NEW_ARGLOADA (cfg, ins, n);
 			} else {
 				EMIT_NEW_ARGLOAD (cfg, ins, n);
@@ -8189,7 +8189,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK_OVF (1);
 			n = ip [1];
 			CHECK_LOCAL (n);
-			if (ip + 2 < end && is_adressable_valuetype_load (cfg, ip + 2, header->locals[n])) {
+			if (ip + 2 < end && is_addressable_valuetype_load (cfg, ip + 2, header->locals[n])) {
 				EMIT_NEW_LOCLOADA (cfg, ins, n);
 			} else {
 				EMIT_NEW_LOCLOAD (cfg, ins, n);
@@ -9383,7 +9383,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					tailcall_print ("missed tailcall direct_icall %s -> %s\n", method->name, cmethod->name);
 				goto call_end;
 			}
-	      				
+
 			/* Array methods */
 			if (array_rank) {
 				MonoInst *addr;
@@ -9396,10 +9396,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 						iargs [0] = sp [0];
 						iargs [1] = val;
-						
+
 						mono_emit_jit_icall (cfg, mono_helper_stelem_ref_check, iargs);
 					}
-					
+
 					addr = mini_emit_ldelema_ins (cfg, cmethod, sp, ip, TRUE);
 					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, fsig->params [fsig->param_count - 1], addr->dreg, 0, val->dreg);
 					if (cfg->gen_write_barriers && val->type == STACK_OBJ && !MONO_INS_IS_PCONST_NULL (val))
@@ -9414,7 +9414,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (!m_class_is_valuetype (m_class_get_element_class (cmethod->klass)) && !readonly)
 						mini_emit_check_array_type (cfg, sp [0], cmethod->klass);
 					CHECK_TYPELOAD (cmethod->klass);
-					
+
 					readonly = FALSE;
 					addr = mini_emit_ldelema_ins (cfg, cmethod, sp, ip, FALSE);
 					ins = addr;
@@ -10221,7 +10221,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ins->type = STACK_OBJ;
 						ins->inst_p0 = mono_ldstr_checked (cfg->domain, image, mono_metadata_token_index (n), &cfg->error);
 						CHECK_CFG_ERROR;
-						
+
 						if (!ins->inst_p0)
 							OUT_OF_MEMORY_FAILURE;
 
@@ -10255,7 +10255,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				TYPE_LOAD_ERROR (cmethod->klass);
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
-					
+
 			if (!dont_verify && !cfg->skip_visibility) {
 				MonoMethod *cil_method = cmethod;
 				MonoMethod *target_method = cil_method;
@@ -10264,7 +10264,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					target_method = mini_get_method_allow_open (method, token, NULL, &(mono_method_get_generic_container (method_definition)->context), &cfg->error);
 					CHECK_CFG_ERROR;
 				}
-				
+
 				if (!mono_method_can_access_method (method_definition, target_method) &&
 					!mono_method_can_access_method (method, cil_method))
 					emit_method_access_failure (cfg, method, cil_method);
@@ -10793,7 +10793,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 											   iargs, ip, cfg->real_offset, TRUE);
 						CHECK_CFG_EXCEPTION;
 						g_assert (costs > 0);
-						      
+
 						cfg->real_offset += 5;
 
 						inline_costs += costs;
@@ -10869,7 +10869,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 										   iargs, ip, cfg->real_offset, TRUE);
 					CHECK_CFG_EXCEPTION;
 					g_assert (costs > 0);
-						      
+
 					cfg->real_offset += 5;
 
 					*sp++ = iargs [0];
@@ -10892,7 +10892,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (klass), OP_LOCAL, sp [0]->dreg);
 					else
 						g_assert (var->klass == klass);
-					
+
 					EMIT_NEW_VARLOADA (cfg, ins, var, m_class_get_byval_arg (var->klass));
 					sp [0] = ins;
 				}
@@ -12173,7 +12173,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				g_assert (mono_method_signature (method)->pinvoke); 
 				CHECK_STACK (1);
 				--sp;
-				
+
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);    
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
@@ -12186,10 +12186,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					EMIT_NEW_RETLOADA (cfg, ins);
 				}
 				mini_emit_memory_copy (cfg, ins, sp [0], klass, TRUE, 0);
-				
+
 				if (sp != stack_start)
 					UNVERIFIED;
-				
+
 				mini_profiler_emit_leave (cfg, sp [0]);
 
 				MONO_INST_NEW (cfg, ins, OP_BR);
@@ -12694,7 +12694,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				argconst = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD);
 				ins = mono_emit_jit_icall (cfg, mono_ldftn, &argconst);
 				*sp++ = ins;
-				
+
 				ip += 6;
 				inline_costs += 10 * num_calls++;
 				break;
@@ -12777,7 +12777,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (4);
 				n = read16 (ip + 2);
 				CHECK_ARG (n);
-				if (is_adressable_valuetype_load (cfg, ip + 4, cfg->arg_types[n])) {
+				if (is_addressable_valuetype_load (cfg, ip + 4, cfg->arg_types[n])) {
 					EMIT_NEW_ARGLOADA (cfg, ins, n);
 				} else {
 					EMIT_NEW_ARGLOAD (cfg, ins, n);
@@ -12812,7 +12812,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (4);
 				n = read16 (ip + 2);
 				CHECK_LOCAL (n);
-				if (is_adressable_valuetype_load (cfg, ip + 4, header->locals[n])) {
+				if (is_addressable_valuetype_load (cfg, ip + 4, header->locals[n])) {
 					EMIT_NEW_LOCLOADA (cfg, ins, n);
 				} else {
 					EMIT_NEW_LOCLOAD (cfg, ins, n);
@@ -12832,7 +12832,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					inline_costs += 1;
 					break;
 				}			
-				
+
 				EMIT_NEW_LOCLOADA (cfg, ins, n);
 				*sp++ = ins;
 				ip += 4;
@@ -14389,7 +14389,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					}
 
 					g_assert (var->opcode == OP_REGOFFSET);
-						
+
 					load_opcode = mono_type_to_load_membase (cfg, var->inst_vtype);
 
 					g_assert (load_opcode != OP_LOADV_MEMBASE);
