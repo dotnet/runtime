@@ -2568,6 +2568,44 @@ COM_METHOD CordbProcess::CreateBreakpoint(CORDB_ADDRESS address, ICorDebugValueB
 
             if (result == TRUE)
             {
+#ifdef DBG_TARGET_X86
+                if (m_dataBreakpoints.GetCount() == 0)
+                {
+                    context.Dr0 = (uint32_t)address;
+                    PDR7 pdr7 = (PDR7)&(context.Dr7);
+                    pdr7->Len0 = 2;
+                    pdr7->Rwe0 = 0x01;
+                    pdr7->L0 = 0x01;
+                }
+                else if (m_dataBreakpoints.GetCount() == 1)
+                {
+                    context.Dr1 = (uint32_t)address;
+                    PDR7 pdr7 = (PDR7)&(context.Dr7);
+                    pdr7->Len1 = 2;
+                    pdr7->Rwe1 = 0x01;
+                    pdr7->L1 = 0x01;
+                }
+                else if (m_dataBreakpoints.GetCount() == 2)
+                {
+                    context.Dr2 = (uint32_t)address;
+                    PDR7 pdr7 = (PDR7)&(context.Dr7);
+                    pdr7->Len2 = 2;
+                    pdr7->Rwe2 = 0x01;
+                    pdr7->L2 = 0x01;
+                }
+                else if (m_dataBreakpoints.GetCount() == 3)
+                {
+                    context.Dr3 = (uint32_t)address;
+                    PDR7 pdr7 = (PDR7)&(context.Dr7);
+                    pdr7->Len3 = 2;
+                    pdr7->Rwe3 = 0x01;
+                    pdr7->L3 = 0x01;
+                }
+                else
+                {
+                    return E_FAIL;
+                }
+#endif
 #ifdef DBG_TARGET_AMD64
                 if (m_dataBreakpoints.GetCount() == 0)
                 {
