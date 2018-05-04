@@ -6,25 +6,4 @@
     <!-- use the most recent MS.NETCore.App we have from upstack -->
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppPackageVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
-  <ItemGroup>
-    <!-- Temporarily suppress checking closure of Memory and Threading.Tasks.Extensions
-         These wil fail until we get an updated Microsoft.NETCore.App.
-         https://github.com/dotnet/corefx/issues/29249 -->
-    <IgnoredReference Include="System.Memory" />
-    <IgnoredReference Include="System.Threading.Tasks.Extensions" />
-
-    <!-- Temporarily suppress until System.Collections.Hashtable move propagates into Microsoft.NETCore.App
-         https://github.com/dotnet/corefx/issues/29322 -->
-    <IgnoredReference Include="System.Runtime.Extensions" />
-    <IgnoredTypes Include="System.Collections.Hashtable" />
-    <IgnoredTypes Include="System.Collections.IHashCodeProvider" />
-
-    <!-- Temporarily suppress checking closure of these assemblies as
-         they will fail to run on Microsoft.NETCore.App until they are
-         ingested into core-setup.
-         https://github.com/dotnet/corefx/issues/29382
-     -->
-    <IgnoredReference Include="System.Diagnostics.DiagnosticSource" />
-    <IgnoredReference Include="System.Collections.Immutable" />
-  </ItemGroup>
 </Project>
