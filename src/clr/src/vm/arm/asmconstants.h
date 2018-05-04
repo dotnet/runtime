@@ -95,18 +95,6 @@ ASMCONSTANTS_C_ASSERT(MethodTableWriteableData__m_dwFlags == offsetof(MethodTabl
 #define MethodTableWriteableData__enum_flag_Unrestored 0x04
 ASMCONSTANTS_C_ASSERT(MethodTableWriteableData__enum_flag_Unrestored == MethodTableWriteableData::enum_flag_Unrestored);
 
-#define StringObject__m_StringLength    0x04
-ASMCONSTANTS_C_ASSERT(StringObject__m_StringLength == offsetof(StringObject, m_StringLength));
-
-#define SIZEOF__BaseStringObject       0xe
-ASMCONSTANTS_C_ASSERT(SIZEOF__BaseStringObject == (ObjSizeOf(StringObject) + sizeof(WCHAR)));
-
-#define SIZEOF__ArrayOfObjectRef       0xc
-ASMCONSTANTS_C_ASSERT(SIZEOF__ArrayOfObjectRef == ObjSizeOf(ArrayBase));
-
-#define SIZEOF__ArrayOfValueType       0xc
-ASMCONSTANTS_C_ASSERT(SIZEOF__ArrayOfValueType == ObjSizeOf(ArrayBase));
-
 #define ArrayBase__m_NumComponents     0x4
 ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));
 
@@ -116,32 +104,7 @@ ASMCONSTANTS_C_ASSERT(ArrayTypeDesc__m_Arg == offsetof(ArrayTypeDesc, m_Arg));
 #define PtrArray__m_Array              0x8
 ASMCONSTANTS_C_ASSERT(PtrArray__m_Array == offsetof(PtrArray, m_Array));
 
-#define SYSTEM_INFO__dwNumberOfProcessors 0x14
-ASMCONSTANTS_C_ASSERT(SYSTEM_INFO__dwNumberOfProcessors == offsetof(SYSTEM_INFO, dwNumberOfProcessors));
-
 #define TypeHandle_CanCast 0x1 // TypeHandle::CanCast
-
-// Maximum number of characters to be allocated for a string in AllocateStringFast*. Chosen so that we'll
-// never have to check for overflow and will never try to allocate a string on regular heap that should have
-// gone on the large object heap. Additionally the constant has been chosen such that it can be encoded in a
-// single Thumb2 CMP instruction.
-#define MAX_FAST_ALLOCATE_STRING_SIZE   42240
-ASMCONSTANTS_C_ASSERT(MAX_FAST_ALLOCATE_STRING_SIZE < ((LARGE_OBJECT_SIZE - SIZEOF__BaseStringObject) / 2));
-
-
-// Array of objectRef of this Maximum number of elements can be allocated in JIT_NewArr1OBJ_MP*. Chosen so that we'll
-// never have to check for overflow and will never try to allocate the array on regular heap that should have
-// gone on the large object heap. Additionally the constant has been chosen such that it can be encoded in a
-// single Thumb2 CMP instruction.
-#define MAX_FAST_ALLOCATE_ARRAY_OBJECTREF_SIZE   21120
-ASMCONSTANTS_C_ASSERT(MAX_FAST_ALLOCATE_ARRAY_OBJECTREF_SIZE < ((LARGE_OBJECT_SIZE - SIZEOF__ArrayOfObjectRef) / sizeof(void*)));
-
-// Array of valueClass of this Maximum number of characters can be allocated JIT_NewArr1VC_MP*. Chosen so that we'll
-// never have to check for overflow and will never try to allocate the array on regular heap that should have
-// gone on the large object heap. Additionally the constant has been chosen such that it can be encoded in a
-// single Thumb2 CMP instruction.
-#define MAX_FAST_ALLOCATE_ARRAY_VC_SIZE   65280
-ASMCONSTANTS_C_ASSERT(MAX_FAST_ALLOCATE_ARRAY_VC_SIZE < ((4294967296 - 1 - SIZEOF__ArrayOfValueType) / 65536));
 
 #define SIZEOF__GSCookie              0x4
 ASMCONSTANTS_C_ASSERT(SIZEOF__GSCookie == sizeof(GSCookie));
@@ -202,14 +165,6 @@ ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedTo
 #define ComCallMethodDesc_Offset_FromR12 0x8
 
 #endif // FEATURE_COMINTEROP
-
-#ifndef CROSSGEN_COMPILE
-#define               Thread__m_alloc_context__alloc_limit   0x44
-ASMCONSTANTS_C_ASSERT(Thread__m_alloc_context__alloc_limit == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
-
-#define               Thread__m_alloc_context__alloc_ptr   0x40
-ASMCONSTANTS_C_ASSERT(Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
-#endif // CROSSGEN_COMPILE
 
 #define               Thread__m_fPreemptiveGCDisabled   0x08
 #ifndef CROSSGEN_COMPILE

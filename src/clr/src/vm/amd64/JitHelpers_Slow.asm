@@ -276,12 +276,10 @@ LEAF_ENTRY AllocateStringFastUP, _TEXT
         cmp     ecx, (ASM_LARGE_OBJECT_SIZE - 256)/2
         jae     FramedAllocateString
 
-        mov     r8d, [r11 + OFFSET__MethodTable__m_BaseSize]
-
         ; Calculate the final size to allocate.
         ; We need to calculate baseSize + cnt*2, then round that up by adding 7 and anding ~7.
 
-        lea     r8d, [r8d + ecx*2 + 7]
+        lea     r8d, [STRING_BASE_SIZE + ecx*2 + 7]
         and     r8d, -8
 
         inc     [g_global_alloc_lock]
