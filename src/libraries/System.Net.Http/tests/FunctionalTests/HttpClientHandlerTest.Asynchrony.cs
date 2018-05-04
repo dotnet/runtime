@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tests;
 using Xunit;
 
 namespace System.Net.Http.Functional.Tests
@@ -64,42 +65,6 @@ namespace System.Net.Http.Functional.Tests
                     });
                 }, new LoopbackServer.Options { StreamWrapper = s => new DribbleStream(s) });
             });
-        }
-
-        private sealed class TrackingSynchronizationContext : SynchronizationContext
-        {
-            public readonly List<string> CallStacks = new List<string>();
-
-            public override void OperationStarted() => CallStacks.Add(Environment.StackTrace);
-            public override void OperationCompleted() => CallStacks.Add(Environment.StackTrace);
-
-            public override void Post(SendOrPostCallback d, object state)
-            {
-                CallStacks.Add(Environment.StackTrace);
-                ThreadPool.QueueUserWorkItem(delegate
-                {
-                    SetSynchronizationContext(this);
-                    d(state);
-                });
-            }
-
-            public override void Send(SendOrPostCallback d, object state)
-            {
-                CallStacks.Add(Environment.StackTrace);
-                ThreadPool.QueueUserWorkItem(delegate
-                {
-                    SynchronizationContext orig = SynchronizationContext.Current;
-                    try
-                    {
-                        SetSynchronizationContext(this);
-                        d(state);
-                    }
-                    finally
-                    {
-                        SetSynchronizationContext(orig);
-                    }
-                });
-            }
         }
     }
 }
