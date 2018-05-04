@@ -4239,6 +4239,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMPositionBuilderAtEnd (builder, cbb);
 			ctx->bblocks [bb->block_num].end_bblock = cbb;
 			nins = 0;
+
+			emit_dbg_loc (ctx, builder, ins->cil_code);
 		}
 
 		if (has_terminator)
