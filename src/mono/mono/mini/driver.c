@@ -146,6 +146,8 @@ opt_names [] = {
 
 #define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT)
 
+static char *mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend);
+
 static guint32
 parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 {
@@ -2160,6 +2162,16 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--help-handlers") == 0) {
 			mono_runtime_install_custom_handlers_usage ();
 			return 0;
+		} else if (strncmp (argv [i], "--response=", 11) == 0){
+			gchar *text;
+			gsize len;
+			
+			if (!g_file_get_contents (&argv[i][11], &text, &len, NULL)){
+				fprintf (stderr, "The specified response file can not be read\n");
+				exit (1);
+			}
+			mono_parse_options (text, &argc, &argv, FALSE);
+			g_free (text);
 		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mini_parse_debug_option (argv [i] + 2)) {
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
@@ -2715,6 +2727,12 @@ mono_set_crash_chaining (gboolean chain_crashes)
 char *
 mono_parse_options_from (const char *options, int *ref_argc, char **ref_argv [])
 {
+	return mono_parse_options (options, ref_argc, ref_argv, TRUE);
+}
+
+static char *
+mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend)
+{
 	int argc = *ref_argc;
 	char **argv = *ref_argv;
 	GPtrArray *array = g_ptr_array_new ();
@@ -2729,7 +2747,7 @@ mono_parse_options_from (const char *options, int *ref_argc, char **ref_argv [])
 	
 	for (p = options; *p; p++){
 		switch (*p){
-		case ' ': case '\t':
+		case ' ': case '\t': case '\n':
 			if (!in_quotes) {
 				if (buffer->len != 0){
 					g_ptr_array_add (array, g_strdup (buffer->str));
@@ -2775,13 +2793,20 @@ mono_parse_options_from (const char *options, int *ref_argc, char **ref_argv [])
 		int j;
 
 		new_argv [0] = argv [0];
-		
-		/* First the environment variable settings, to allow the command line options to override */
-		for (i = 0; i < array->len; i++)
-			new_argv [i+1] = (char *)g_ptr_array_index (array, i);
-		i++;
+
+		i = 1;
+		if (prepend){
+			/* First the environment variable settings, to allow the command line options to override */
+			for (i = 0; i < array->len; i++)
+				new_argv [i+1] = (char *)g_ptr_array_index (array, i);
+			i++;
+		}
 		for (j = 1; j < argc; j++)
 			new_argv [i++] = argv [j];
+		if (!prepend){
+			for (j = 0; j < array->len; j++)
+				new_argv [i++] = (char *)g_ptr_array_index (array, j);
+		}
 		new_argv [i] = NULL;
 
 		*ref_argc = new_argc;
