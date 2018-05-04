@@ -37,7 +37,8 @@
 
     <MSBuild Targets="GetPackageIdentityIfStable"
              BuildInParallel="$(BuildInParallel)"
-             Projects="@(PkgProjects)">
+             Projects="@(PkgProjects)"
+             RemoveProperties="Configuration">
       <Output TaskParameter="TargetOutputs"
               ItemName="_StablePackages" />
     </MSBuild>
