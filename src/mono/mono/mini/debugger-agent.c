@@ -2214,8 +2214,7 @@ debugger_agent_free_domain_info (MonoDomain *domain)
 
 	if (info) {
 		for (i = 0; i < ID_NUM; ++i)
-			if (info->val_to_id [i])
-				g_hash_table_destroy (info->val_to_id [i]);
+			g_hash_table_destroy (info->val_to_id [i]);
 		g_hash_table_destroy (info->loaded_classes);
 
 		g_hash_table_iter_init (&iter, info->source_files);
@@ -5709,8 +5708,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 				if (sp->il_offset == asyncMethod->yield_offsets [i]) {
 					ss_req->async_id = get_this_async_id (frames [0]);
 					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, method, asyncMethod->resume_offsets [i]);
-					if (ss_req_bp_cache)
-						g_hash_table_destroy (ss_req_bp_cache);
+					g_hash_table_destroy (ss_req_bp_cache);
 					mono_debug_free_method_async_debug_info (asyncMethod);
 					return;
 				}
@@ -5726,8 +5724,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 					ss_req->async_id = get_this_async_id (frames [0]);
 					ss_req->async_stepout_method = get_notify_debugger_of_wait_completion_method ();
 					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, ss_req->async_stepout_method, 0);
-					if (ss_req_bp_cache)
-						g_hash_table_destroy (ss_req_bp_cache);
+					g_hash_table_destroy (ss_req_bp_cache);
 					mono_debug_free_method_async_debug_info (asyncMethod);
 					return;
 				}
@@ -5848,8 +5845,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 		ss_req->global = FALSE;
 	}
 
-	if (ss_req_bp_cache)
-		g_hash_table_destroy (ss_req_bp_cache);
+	g_hash_table_destroy (ss_req_bp_cache);
 }
 
 /*

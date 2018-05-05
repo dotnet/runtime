@@ -923,8 +923,7 @@ describe_variable (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 			g_free (type_name);
 		}
 	}
-	if (header)
-		mono_metadata_free_mh (header);
+	mono_metadata_free_mh (header);
 
 	return TRUE;
 }

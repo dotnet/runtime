@@ -164,10 +164,8 @@ save_old_signal_handler (int signo, struct sigaction *old_action)
 static void
 free_saved_signal_handlers (void)
 {
-	if (mono_saved_signal_handlers) {
-		g_hash_table_destroy (mono_saved_signal_handlers);
-		mono_saved_signal_handlers = NULL;
-	}
+	g_hash_table_destroy (mono_saved_signal_handlers);
+	mono_saved_signal_handlers = NULL;
 }
 
 /*

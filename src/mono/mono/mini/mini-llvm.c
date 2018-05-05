@@ -8536,8 +8536,7 @@ mono_llvm_free_domain_info (MonoDomain *domain)
 	if (!module)
 		return;
 
-	if (module->llvm_types)
-		g_hash_table_destroy (module->llvm_types);
+	g_hash_table_destroy (module->llvm_types);
 
 	mono_llvm_dispose_ee (module->mono_ee);
 
@@ -8559,8 +8558,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	MonoLLVMModule *module = &aot_module;
 
 	/* Delete previous module */
-	if (module->plt_entries)
-		g_hash_table_destroy (module->plt_entries);
+	g_hash_table_destroy (module->plt_entries);
 	if (module->lmodule)
 		LLVMDisposeModule (module->lmodule);
 

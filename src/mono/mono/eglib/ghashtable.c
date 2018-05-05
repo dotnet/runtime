@@ -545,8 +545,9 @@ void
 g_hash_table_destroy (GHashTable *hash)
 {
 	int i;
-	
-	g_return_if_fail (hash != NULL);
+
+	if (!hash)
+		return;
 
 	for (i = 0; i < hash->table_size; i++){
 		Slot *s, *next;

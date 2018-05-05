@@ -1407,11 +1407,8 @@ mono_trampolines_init (void)
 void
 mono_trampolines_cleanup (void)
 {
-	if (rgctx_lazy_fetch_trampoline_hash)
-		g_hash_table_destroy (rgctx_lazy_fetch_trampoline_hash);
-	if (rgctx_lazy_fetch_trampoline_hash_addr)
-		g_hash_table_destroy (rgctx_lazy_fetch_trampoline_hash_addr);
-
+	g_hash_table_destroy (rgctx_lazy_fetch_trampoline_hash);
+	g_hash_table_destroy (rgctx_lazy_fetch_trampoline_hash_addr);
 	mono_os_mutex_destroy (&trampolines_mutex);
 }
 

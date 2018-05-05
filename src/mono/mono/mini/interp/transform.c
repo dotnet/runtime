@@ -1207,8 +1207,7 @@ no_intrinsic:
 				has_vt_arg |= !mini_type_is_reference (csignature->params [i]);
 
 			gboolean empty_callee = mheader && *mheader->code == CEE_RET;
-			if (mheader)
-				mono_metadata_free_mh (mheader);
+			mono_metadata_free_mh (mheader);
 
 			if (empty_callee && called_inited && !has_vt_arg) {
 				if (td->verbose_level)

@@ -1922,21 +1922,13 @@ mono_destroy_compile (MonoCompile *cfg)
 {
 	mono_empty_compile (cfg);
 
-	if (cfg->header)
-		mono_metadata_free_mh (cfg->header);
+	mono_metadata_free_mh (cfg->header);
 
-	if (cfg->spvars)
-		g_hash_table_destroy (cfg->spvars);
-	if (cfg->exvars)
-		g_hash_table_destroy (cfg->exvars);
-
+	g_hash_table_destroy (cfg->spvars);
+	g_hash_table_destroy (cfg->exvars);
 	g_list_free (cfg->ldstr_list);
-
-	if (cfg->token_info_hash)
-		g_hash_table_destroy (cfg->token_info_hash);
-
-	if (cfg->abs_patches)
-		g_hash_table_destroy (cfg->abs_patches);
+	g_hash_table_destroy (cfg->token_info_hash);
+	g_hash_table_destroy (cfg->abs_patches);
 
 	mono_debug_free_method (cfg);
 

@@ -4326,7 +4326,7 @@ mono_metadata_free_mh (MonoMethodHeader *mh)
 	 * or a SRE-generated method, so the lifetime in that case is
 	 * dictated by the method's own lifetime
 	 */
-	if (mh->is_transient) {
+	if (mh && mh->is_transient) {
 		for (i = 0; i < mh->num_locals; ++i)
 			mono_metadata_free_type (mh->locals [i]);
 		g_free (mh);
