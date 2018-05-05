@@ -690,10 +690,6 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 	g_assert (caller_sig);
 	g_assert (callee_sig);
 
-	if (cfg->compile_aot && !cfg->full_aot)
-		/* OP_TAILCALL doesn't work with AOT */
-		return FALSE;
-
 	CallInfo *caller_info = get_call_info (NULL, caller_sig);
 	CallInfo *callee_info = get_call_info (NULL, callee_sig);
 
