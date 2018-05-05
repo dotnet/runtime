@@ -1627,6 +1627,7 @@ namespace Mono.Linker.Steps {
 			MarkSomethingUsedViaReflection ("GetProperty", MarkPropertyUsedViaReflection, body.Instructions);
 			MarkSomethingUsedViaReflection ("GetField", MarkFieldUsedViaReflection, body.Instructions);
 			MarkSomethingUsedViaReflection ("GetEvent", MarkEventUsedViaReflection, body.Instructions);
+			MarkTypeUsedViaReflection (body.Instructions);
 		}
 
 		protected virtual void MarkInstruction (Instruction instruction)
@@ -1675,22 +1676,30 @@ namespace Mono.Linker.Steps {
 			MarkType (iface.InterfaceType);
 		}
 
+		bool CheckReflectionMethod (Instruction instruction, string reflectionMethod)
+		{
+			if (instruction.OpCode != OpCodes.Call && instruction.OpCode != OpCodes.Callvirt)
+				return false;
+
+			var methodBeingCalled = instruction.Operand as MethodReference;
+			if (methodBeingCalled == null || methodBeingCalled.DeclaringType.Name != "Type" || methodBeingCalled.DeclaringType.Namespace != "System")
+				return false;
+
+			if (methodBeingCalled.Name != reflectionMethod)
+				return false;
+
+			return true;
+		}
 
 		void MarkSomethingUsedViaReflection (string reflectionMethod, Action<Collection<Instruction>, string, TypeDefinition, BindingFlags> markMethod, Collection<Instruction> instructions)
 		{
 			for (var i = 0; i < instructions.Count; i++) {
 				var instruction = instructions [i];
-				if (instruction.OpCode != OpCodes.Call && instruction.OpCode != OpCodes.Callvirt)
+
+				if (!CheckReflectionMethod (instruction, reflectionMethod))
 					continue;
 
-				var methodBeingCalled = instruction.Operand as MethodReference;
-				if (methodBeingCalled == null || methodBeingCalled.DeclaringType.Name != "Type" || methodBeingCalled.DeclaringType.Namespace != "System")
-					continue;
-
-				if (methodBeingCalled.Name != reflectionMethod)
-					continue;
-
-				_context.Tracer.Push ($"Reflection-{methodBeingCalled}");
+				_context.Tracer.Push ($"Reflection-{instruction.Operand as MethodReference}");
 				var nameOfThingUsedViaReflection = OperandOfNearestInstructionBefore<string> (i, OpCodes.Ldstr, instructions);
 				var bindingFlags = (BindingFlags) OperandOfNearestInstructionBefore<sbyte> (i, OpCodes.Ldc_I4_S, instructions);
 
@@ -1701,6 +1710,55 @@ namespace Mono.Linker.Steps {
 					var typeDefinition = declaringTypeOfThingInvokedViaReflection?.Resolve ();
 					if (typeDefinition != null)
 						markMethod (instructions, nameOfThingUsedViaReflection, typeDefinition, bindingFlags);
+				}
+				_context.Tracer.Pop ();
+			}
+		}
+
+		void MarkTypeUsedViaReflection (Collection<Instruction> instructions)
+		{
+			for (var i = 0; i < instructions.Count; i++) {
+				var instruction = instructions [i];
+
+				if (!CheckReflectionMethod (instruction, "GetType"))
+					continue;
+
+				_context.Tracer.Push ($"Reflection-{instruction.Operand as MethodReference}");
+				var typeAssemblyQualifiedName = OperandOfNearestInstructionBefore<string> (i, OpCodes.Ldstr, instructions);
+
+				//We're not going to support preserving generic types yet
+				if (typeAssemblyQualifiedName == null || typeAssemblyQualifiedName.IndexOf ('`') >= 0)
+					continue;
+
+				//Filter the assembly qualified name down to the basic type by removing pointer, reference, and array markers on the type
+				//We must also convert nested types from + to / to match cecil's formatting
+				typeAssemblyQualifiedName = typeAssemblyQualifiedName
+					.Replace ('+', '/')
+					.Replace ("*", string.Empty)
+					.Replace ("&", string.Empty);
+
+				while (typeAssemblyQualifiedName.Contains ('[')) {
+					var openidx = typeAssemblyQualifiedName.IndexOf ('[');
+					var closeidx = typeAssemblyQualifiedName.IndexOf (']');
+					typeAssemblyQualifiedName = typeAssemblyQualifiedName.Remove (openidx, closeidx + 1 - openidx);
+				}
+
+				var tokens = typeAssemblyQualifiedName.Split (',');
+				var typeName = tokens [0].Trim ();
+				string assemblyName = null;
+				if (tokens.Length > 1)
+					assemblyName = tokens [1].Trim ();
+
+				foreach (var assemblyDefinition in _context.GetAssemblies ()) {
+					if (assemblyName != null && assemblyDefinition.Name.Name != assemblyName)
+						continue;
+
+					var type = assemblyDefinition.MainModule.GetType (typeName);
+					if (type != null)
+					{
+						MarkType(type);
+						break;
+					}
 				}
 				_context.Tracer.Pop ();
 			}
