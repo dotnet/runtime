@@ -58,6 +58,7 @@ namespace Mono.Linker
 
 			if (string.IsNullOrEmpty (Path.GetDirectoryName (DependenciesFileName)) && !string.IsNullOrEmpty (context.OutputDirectory)) {
 				DependenciesFileName = Path.Combine (context.OutputDirectory, DependenciesFileName);
+				Directory.CreateDirectory (context.OutputDirectory);
 			}
 
 			var depsFile = File.OpenWrite (DependenciesFileName);
