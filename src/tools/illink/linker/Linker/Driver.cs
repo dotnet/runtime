@@ -246,7 +246,13 @@ namespace Mono.Linker {
 					p.AddStepAfter (typeof (SweepStep), new AddBypassNGenStep ());
 				}
 
-				p.Process (context);
+				try {
+					p.Process (context);
+				}
+				finally {
+					if (dumpDependencies)
+						context.Tracer.Finish ();
+				}
 			}
 		}
 
