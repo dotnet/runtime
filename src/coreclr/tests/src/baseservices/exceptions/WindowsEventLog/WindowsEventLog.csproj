@@ -12,6 +12,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
 
     <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
+    <DefineConstants Condition="$(OSGroup) == 'Windows_NT'">WINDOWS</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
