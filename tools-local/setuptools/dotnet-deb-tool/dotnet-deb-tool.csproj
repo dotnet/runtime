@@ -13,12 +13,12 @@
     <Compile Include="..\..\..\src\test\TestUtils\ArgumentEscaper.cs" />
 
     <Content Include="tool\**">
-      <PackagePath>lib/$(TargetFramework)/tool/%(RecursiveDir)%(FileName)%(Extension)</PackagePath>
+      <PackagePath>lib/$(TargetFramework)/tool</PackagePath>
       <Pack>true</Pack>
     </Content>
     <Content Include="prefercliruntime">
       <Pack>true</Pack>
-      <PackagePath>\prefercliruntime</PackagePath>
+      <PackagePath></PackagePath>
     </Content>
 </ItemGroup>
 
