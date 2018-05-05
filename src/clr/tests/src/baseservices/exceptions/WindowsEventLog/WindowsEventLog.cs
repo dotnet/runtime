@@ -3,16 +3,24 @@ using System.Linq;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 class Program
 {
+
     private static void UnhandledException(string msg)
     {
+#if (WINDOWS)
+        DisableErrorDialog();
+#endif
         A(msg);
     }
 
     private static void FailFast(string msg)
     {
+#if (WINDOWS)
+        DisableErrorDialog();
+#endif
         try
         {
             A(msg);
@@ -97,6 +105,17 @@ class Program
         }
         return false;
     }
+
+#if (WINDOWS)
+    [DllImport("kernel32.dll")]
+    private static extern int SetErrorMode(uint uMode);
+
+    private static void DisableErrorDialog()
+    {
+        uint SEM_NOGPFAULTERRORBOX = 0x0002;
+        SetErrorMode(SEM_NOGPFAULTERRORBOX);
+    }
+#endif
 
     private static bool RunUnhandledExceptionTest()
     {
