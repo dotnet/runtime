@@ -419,7 +419,7 @@ namespace System.Globalization
             }
         }
 
-        private unsafe string ToLowerAsciiInvariant(string s)
+        private static unsafe string ToLowerAsciiInvariant(string s)
         {
             if (s.Length == 0)
             {
@@ -465,7 +465,7 @@ namespace System.Globalization
             }
         }
 
-        internal void ToLowerAsciiInvariant(ReadOnlySpan<char> source, Span<char> destination)
+        internal static void ToLowerAsciiInvariant(ReadOnlySpan<char> source, Span<char> destination)
         {
             Debug.Assert(destination.Length >= source.Length);
 
@@ -475,7 +475,7 @@ namespace System.Globalization
             }
         }
 
-        private unsafe string ToUpperAsciiInvariant(string s)
+        private static unsafe string ToUpperAsciiInvariant(string s)
         {
             if (s.Length == 0)
             {
@@ -521,7 +521,7 @@ namespace System.Globalization
             }
         }
 
-        internal void ToUpperAsciiInvariant(ReadOnlySpan<char> source, Span<char> destination)
+        internal static void ToUpperAsciiInvariant(ReadOnlySpan<char> source, Span<char> destination)
         {
             Debug.Assert(destination.Length >= source.Length);
 
