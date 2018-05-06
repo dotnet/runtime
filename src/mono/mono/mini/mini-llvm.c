@@ -273,6 +273,7 @@ static GHashTable *intrins_name_to_id;
 static void init_jit_module (MonoDomain *domain);
 
 static void emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil_code);
+static void emit_default_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder);
 static LLVMValueRef emit_dbg_subprogram (EmitContext *ctx, MonoCompile *cfg, LLVMValueRef method, const char *name);
 static void emit_dbg_info (MonoLLVMModule *module, const char *filename, const char *cu_name);
 static void emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *exc_type, LLVMValueRef cmp);
@@ -1589,6 +1590,8 @@ create_builder (EmitContext *ctx)
 	LLVMBuilderRef builder = LLVMCreateBuilder ();
 
 	ctx->builders = g_slist_prepend_mempool (ctx->cfg->mempool, ctx->builders, builder);
+
+	emit_default_dbg_loc (ctx, builder);
 
 	return builder;
 }
@@ -9274,6 +9277,20 @@ emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil
 			mono_debug_free_source_location (loc);
 		}
 	}
+}
+
+static void
+emit_default_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder)
+{
+#if LLVM_API_VERSION > 100
+	if (ctx->minfo) {
+		LLVMValueRef loc_md;
+		loc_md = mono_llvm_di_create_location (ctx->module->di_builder, ctx->dbg_md, 0, 0);
+		mono_llvm_di_set_location (builder, loc_md);
+	}
+#else
+	/* Older llvm versions don't require this */
+#endif
 }
 
 void
