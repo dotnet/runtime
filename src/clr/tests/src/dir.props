@@ -95,8 +95,8 @@
     <RestoreOutputPath>$(MSBuildProjectDirectory)\obj</RestoreOutputPath>
 
     <!-- Specify the target framework of the common test dependency project.json. -->
-    <NuGetTargetMoniker>.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>netcoreapp2.1</NuGetTargetMonikerShort>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v2.2</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>netcoreapp2.2</NuGetTargetMonikerShort>
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
 
