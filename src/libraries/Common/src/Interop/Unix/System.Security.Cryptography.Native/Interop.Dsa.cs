@@ -82,12 +82,7 @@ internal static partial class Interop
                 ref MemoryMarshal.GetReference(signature),
                 signature.Length);
 
-            if (!ret)
-            {
-                // OpenSSL DSA signature processing requires a DER encode and decode, so
-                // the error queue may have been contaminated.
-                ErrClearError();
-            }
+            // Error queue already cleaned on the native function.
 
             return ret;
         }

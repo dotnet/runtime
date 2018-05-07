@@ -99,7 +99,8 @@ extern "C" int32_t CryptoNative_DsaVerify(
     {
         if (success == -1)
         {
-            // Clear the queue, as we don't check the error information
+            // Clear the queue, as we don't check the error information.
+            // Managed caller expects the error queue to be cleared in case of error.
             ERR_clear_error();
         }
         return 0;

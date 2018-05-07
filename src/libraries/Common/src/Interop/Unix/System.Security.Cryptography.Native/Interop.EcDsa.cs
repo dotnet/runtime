@@ -26,10 +26,8 @@ internal static partial class Interop
                 sigbuf.Length,
                 ecKey);
 
-            if (ret == 0)
+            if (ret < 0)
             {
-                // OpenSSL ECDSA signature processing requires a DER encode and decode, so
-                // the error queue may have been contaminated.
                 ErrClearError();
             }
 
