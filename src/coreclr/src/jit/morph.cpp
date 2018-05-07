@@ -907,7 +907,20 @@ void fgArgTabEntry::Dump()
     printf(" %d.%s", node->gtTreeID, GenTree::OpName(node->gtOper));
     if (regNum != REG_STK)
     {
-        printf(", %s, regs=%u", getRegName(regNum), numRegs);
+        printf(", %u reg%s:", numRegs, numRegs == 1 ? "" : "s");
+        printf(" %s", getRegName(regNum));
+#if defined(UNIX_AMD64_ABI)
+        if (numRegs > 1)
+        {
+            printf(" %s", getRegName(otherRegNum));
+        }
+#else  // !UNIX_AMD64_ABI
+        // Note that for all other targets, we rely on the fact that arg regs are sequential.
+        for (unsigned i = 1; i < numRegs; i++)
+        {
+            printf(" %s", getRegName((regNumber)(regNum + i)));
+        }
+#endif // !UNIX_AMD64_ABI
     }
     if (numSlots > 0)
     {
@@ -4944,6 +4957,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 #ifdef _TARGET_ARM_
     if ((fgEntryPtr->isSplit && fgEntryPtr->numSlots + fgEntryPtr->numRegs > 4) ||
         (!fgEntryPtr->isSplit && fgEntryPtr->regNum == REG_STK))
+#else
+    if (fgEntryPtr->regNum == REG_STK)
+#endif
     {
         GenTreeLclVarCommon* lcl = nullptr;
 
@@ -4962,21 +4978,29 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             // We need to construct a `GT_OBJ` node for the argmuent,
             // so we need to get the address of the lclVar.
             lcl = arg->AsLclVarCommon();
-
-            arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
-
-            // Create an Obj of the temp to use it as a call argument.
-            arg = gtNewObjNode(lvaGetStruct(lcl->gtLclNum), arg);
         }
         if (lcl != nullptr)
         {
-            // Its fields will need to accessed by address.
-            lvaSetVarDoNotEnregister(lcl->gtLclNum DEBUG_ARG(DNER_IsStructArg));
+            unsigned lclNum = lcl->gtLclNum;
+            if (lvaGetPromotionType(lclNum) == PROMOTION_TYPE_INDEPENDENT)
+            {
+                arg = fgMorphLclArgToFieldlist(lcl);
+            }
+            else
+            {
+                if (!arg->OperIs(GT_OBJ))
+                {
+                    // Create an Obj of the temp to use it as a call argument.
+                    arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
+                    arg = gtNewObjNode(lvaGetStruct(lcl->gtLclNum), arg);
+                }
+                // Its fields will need to accessed by address.
+                lvaSetVarDoNotEnregister(lcl->gtLclNum DEBUG_ARG(DNER_IsStructArg));
+            }
         }
 
         return arg;
     }
-#endif
 
 #if FEATURE_MULTIREG_ARGS
     // Examine 'arg' and setup argValue objClass and structSize
@@ -5270,21 +5294,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 
                 if (!varIsFloat)
                 {
-                    unsigned          offset    = 0;
-                    GenTreeFieldList* listEntry = nullptr;
-                    // We can use the struct promoted field as arguments
-                    for (unsigned inx = 0; inx < elemCount; inx++)
-                    {
-                        GenTree* lclVar = gtNewLclvNode(varNums[inx], varType[inx], varNums[inx]);
-                        // Create a new tree for 'arg'
-                        //    replace the existing LDOBJ(ADDR(LCLVAR))
-                        listEntry = new (this, GT_FIELD_LIST) GenTreeFieldList(lclVar, offset, varType[inx], listEntry);
-                        if (newArg == nullptr)
-                        {
-                            newArg = listEntry;
-                        }
-                        offset += TARGET_POINTER_SIZE;
-                    }
+                    newArg = fgMorphLclArgToFieldlist(varNode);
                 }
             }
         }
@@ -5472,6 +5482,43 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
 #endif // FEATURE_MULTIREG_ARGS
 
     return arg;
+}
+
+//------------------------------------------------------------------------
+// fgMorphLclArgToFieldlist: Morph a GT_LCL_VAR node to a GT_FIELD_LIST of its promoted fields
+//
+// Arguments:
+//    lcl  - The GT_LCL_VAR node we will transform
+//
+// Return value:
+//    The new GT_FIELD_LIST that we have created.
+//
+GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
+{
+    LclVarDsc* varDsc = &(lvaTable[lcl->gtLclNum]);
+    assert(varDsc->lvPromoted == true);
+
+    unsigned          lclNum      = lcl->gtLclNum;
+    unsigned          offset      = 0;
+    unsigned          fieldCount  = varDsc->lvFieldCnt;
+    GenTreeFieldList* listEntry   = nullptr;
+    GenTreeFieldList* newArg      = nullptr;
+    unsigned          fieldLclNum = varDsc->lvFieldLclStart;
+
+    // We can use the struct promoted field as arguments
+    for (unsigned i = 0; i < fieldCount; i++)
+    {
+        LclVarDsc* fieldVarDsc = &lvaTable[fieldLclNum];
+        GenTree*   lclVar      = gtNewLclvNode(fieldLclNum, fieldVarDsc->lvType);
+        listEntry = new (this, GT_FIELD_LIST) GenTreeFieldList(lclVar, offset, fieldVarDsc->lvType, listEntry);
+        if (newArg == nullptr)
+        {
+            newArg = listEntry;
+        }
+        offset += TARGET_POINTER_SIZE;
+        fieldLclNum++;
+    }
+    return newArg;
 }
 
 // Make a copy of a struct variable if necessary, to pass to a callee.
