@@ -13,12 +13,7 @@ http://www.mono-project.com/docs/advanced/runtime/docs/generic-sharing/
 3. Generic methods need to be passed a pointer to the MRGCTX in the MONO_ARCH_RGCTX_REG register
 
 Test case 2b.
-This passes on desktop but not Mono.
-
-It fails because Mono will not tailcall when "this" is a valuetype,
-in case it is in current frame. A range check could handle this.
-
-Another test tailcall-rgctxb-static should be provided.
+It uses static to avoid another problem.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -39,7 +34,7 @@ unsafe struct A<T>
     }
 
     [MethodImpl (NoInlining)]
-    public int f1 (int counter, long initial_stack, long current_stack)
+    static public int f1 (int counter, long initial_stack, long current_stack)
     {
 	int local;
 	object a = new T[101];
@@ -49,7 +44,7 @@ unsafe struct A<T>
     }
 
     [MethodImpl (NoInlining)]
-    public int f2 (int counter, long initial_stack, long current_stack)
+    static public int f2 (int counter, long initial_stack, long current_stack)
     {
 	int local;
 	object a = new T[101];
@@ -65,7 +60,7 @@ unsafe class B
     public static void Main()
     {
 	int stack;
-	Environment.Exit(new A<int>().f1 (100, (long)&stack, 0));
+	Environment.Exit(A<int>().f1 (100, (long)&stack, 0));
     }
 }
 */
@@ -82,70 +77,66 @@ extends [mscorlib]System.ValueType
 {
 .method static int32 check (int64 stack1, int64 stack2) noinlining
 {
-	ldarg.0
-	ldarg.1
-	beq.s IL_0006
+	ldarg 0
+	ldarg 1
+	beq IL_0006
 
-	ldc.i4.1
+	ldc.i4 1
 	ret
 
 IL_0006:
-	ldc.i4.0
+	ldc.i4 0
 	ret
 }
 
-.method instance int32 f1 (int32 counter, int64 initial_stack, int64 current_stack) noinlining
+.method static int32 f1 (int32 counter, int64 initial_stack, int64 current_stack) noinlining
 {
-	.locals init (int32 V_0)
+	.locals (int32 V_0)
 
-	ldarg.1
-	ldc.i4.0
-	ble.s IL_001b
+	ldarg 0
+	ldc.i4 0
+	ble IL_001b
 
-	ldarg.0
-	ldarg.1
-	ldc.i4.1
+	ldarg 0
+	ldc.i4 1
 	sub
-	ldarg.2
-	ldloca.s V_0
-	conv.u
+	ldarg 1
+	ldloca V_0
 	conv.u8
-	tail. call instance int32 valuetype A`1<!T>::f2 (int32, int64, int64)
+	tail.
+	call int32 valuetype A`1<!T>::f2 (int32, int64, int64)
 	ret
 
 IL_001b:
-	ldloca.s V_0
-	conv.u
+	ldloca V_0
 	conv.u8
-	ldarg.3
-	tail. call int32 valuetype A`1<!T>::check (int64, int64)
+	ldarg 2
+	call int32 valuetype A`1<!T>::check (int64, int64)
 	ret
 }
 
-.method instance int32 f2 (int32 counter, int64 initial_stack, int64 current_stack) noinlining
+.method static int32 f2 (int32 counter, int64 initial_stack, int64 current_stack) noinlining
 {
-	.locals init (int32 V_0)
-	ldarg.1
-	ldc.i4.0
-	ble.s IL_001b
+	.locals (int32 V_0)
+	ldarg 0
+	ldc.i4 0
+	ble IL_001b
 
-	ldarg.0
-	ldarg.1
-	ldc.i4.1
+	ldarg 0
+	ldc.i4 1
 	sub
-	ldarg.2
-	ldloca.s V_0
-	conv.u
+	ldarg 1
+	ldloca V_0
 	conv.u8
-	tail. call instance int32 valuetype A`1<!T>::f1 (int32, int64, int64)
+	tail.
+	call int32 valuetype A`1<!T>::f1 (int32, int64, int64)
 	ret
 
 IL_001b:
-	ldloca.s V_0
-	conv.u
+	ldloca V_0
 	conv.u8
-	ldarg.3
-	tail. call int32 valuetype A`1<!T>::check (int64, int64)
+	ldarg 2
+	call int32 valuetype A`1<!T>::check (int64, int64)
 	ret
 }
 }
@@ -156,26 +147,13 @@ IL_001b:
 .method static int32 Main() noinlining
 {
 	.entrypoint
-	.locals init (int32 V_0, valuetype A`1<int32> V_1)
-	ldloca.s V_1
-	initobj valuetype A`1<int32>
-	ldloc.1
-	stloc.1
-	ldloca.s V_1
-	ldc.i4.s 100
-	ldloca.s V_0
-	conv.u
-	conv.u8
-	ldc.i4.0
-	conv.i8
-	tail. call instance int32 valuetype A`1<int32>::f1 (int32, int64, int64)
-	ret
-}
+	.locals (int32 V_0)
 
-.method instance void .ctor()
-{
-	ldarg.0
-	tail. call instance void [mscorlib]System.Object::.ctor ()
+	ldc.i4 100
+	ldloca V_0
+	conv.u8
+	ldc.i8 0
+	call int32 valuetype A`1<int32>::f1 (int32, int64, int64)
 	ret
 }
 }

@@ -12,13 +12,7 @@ http://www.mono-project.com/docs/advanced/runtime/docs/generic-sharing/
    of value types need to be passed a pointer to the caller’s class’s VTable in the MONO_ARCH_RGCTX_REG register.
 3. Generic methods need to be passed a pointer to the MRGCTX in the MONO_ARCH_RGCTX_REG register
 
-Test case 2b.
-This passes on desktop but not Mono.
-
-It fails because Mono will not tailcall when "this" is a valuetype,
-in case it is in current frame. A range check could handle this.
-
-Another test tailcall-rgctxb-static should be provided.
+Test case 2b, with a small type.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -28,9 +22,9 @@ unsafe struct A<T>
 {
     void f3 ()
     {
-        a = b = c = d = e = f = g = h = 1;
+        a = 1;
     }
-    public int a, b, c, d, e, f, g, h;
+    public int a;
 
     [MethodImpl (NoInlining)]
     static int check (long stack1, long stack2)
@@ -39,22 +33,22 @@ unsafe struct A<T>
     }
 
     [MethodImpl (NoInlining)]
-    public int f1 (int counter, long initial_stack, long current_stack)
+    public int Method1 (int counter, long initial_stack, long current_stack)
     {
 	int local;
 	object a = new T[101];
 	if (counter > 0)
-	    return f2 (counter - 1, initial_stack, (long)&local);
+	    return Method2 (counter - 1, initial_stack, (long)&local);
 	return check ((long)&local, current_stack);
     }
 
     [MethodImpl (NoInlining)]
-    public int f2 (int counter, long initial_stack, long current_stack)
+    public int Method2 (int counter, long initial_stack, long current_stack)
     {
 	int local;
 	object a = new T[101];
 	if (counter > 0)
-	    return f1 (counter - 1, initial_stack, (long)&local);
+	    return Method1 (counter - 1, initial_stack, (long)&local);
 	return check ((long)&local, current_stack);
     }
 }
@@ -65,7 +59,7 @@ unsafe class B
     public static void Main()
     {
 	int stack;
-	Environment.Exit(new A<int>().f1 (100, (long)&stack, 0));
+	Environment.Exit(new A<int>().Method1 (100, (long)&stack, 0));
     }
 }
 */
@@ -77,6 +71,7 @@ unsafe class B
 .class A`1<T>
 
 // Remove this change the test a lot and make it pass.
+// It is ok in this case because the ValueType is small.
 extends [mscorlib]System.ValueType
 
 {
@@ -94,7 +89,7 @@ IL_0006:
 	ret
 }
 
-.method instance int32 f1 (int32 counter, int64 initial_stack, int64 current_stack) noinlining
+.method instance int32 Method1 (int32 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 	.locals init (int32 V_0)
 
@@ -110,7 +105,7 @@ IL_0006:
 	ldloca.s V_0
 	conv.u
 	conv.u8
-	tail. call instance int32 valuetype A`1<!T>::f2 (int32, int64, int64)
+	tail. call instance int32 valuetype A`1<!T>::Method2 (int32, int64, int64)
 	ret
 
 IL_001b:
@@ -122,7 +117,7 @@ IL_001b:
 	ret
 }
 
-.method instance int32 f2 (int32 counter, int64 initial_stack, int64 current_stack) noinlining
+.method instance int32 Method2 (int32 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 	.locals init (int32 V_0)
 	ldarg.1
@@ -137,7 +132,7 @@ IL_001b:
 	ldloca.s V_0
 	conv.u
 	conv.u8
-	tail. call instance int32 valuetype A`1<!T>::f1 (int32, int64, int64)
+	tail. call instance int32 valuetype A`1<!T>::Method1 (int32, int64, int64)
 	ret
 
 IL_001b:
@@ -168,7 +163,7 @@ IL_001b:
 	conv.u8
 	ldc.i4.0
 	conv.i8
-	tail. call instance int32 valuetype A`1<int32>::f1 (int32, int64, int64)
+	tail. call instance int32 valuetype A`1<int32>::Method1 (int32, int64, int64)
 	ret
 }
 

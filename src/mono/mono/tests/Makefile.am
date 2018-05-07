@@ -33,6 +33,7 @@ TAILCALL_DISABLED_TESTS_COMPILE += \
 	tailcall/coreclr/JIT/opt/ETW/TailCallCases.exe
 
 # FIXME Some of these sound like negative tests -- "badtailcall". Verify and automate.
+# FIXME investigate and explain every test failure.
 TAILCALL_DISABLED_TESTS_RUN = \
 	tailcall/coreclr/JIT/Directed/IL/PInvokeTail/PInvokeTail.exe \
 	tailcall/coreclr/JIT/Directed/IL/PInvokeTail/tailwinapi.exe \
@@ -46,7 +47,6 @@ TAILCALL_DISABLED_TESTS_RUN = \
 	tailcall/coreclr/JIT/IL_Conformance/Old/Base/tailcall.exe \
 	tailcall/coreclr/JIT/Methodical/Invoke/fptr/recurse_tail_call.exe \
 	tailcall/coreclr/JIT/Methodical/Invoke/fptr/recurse_tail_calli.exe \
-	tailcall/coreclr/JIT/Methodical/nonvirtualcall/tailcall.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/compat_enum.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/compat_obj.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/compat_r4_r8_inl.exe \
@@ -70,6 +70,22 @@ TAILCALL_DISABLED_TESTS_RUN = \
 	tailcall/coreclr/JIT/opt/Tailcall/TailcallVerifyWithPrefix.exe \
 	$(TAILCALL_DISABLED_TESTS_COMPILE)
 
+# FIXME investigate and explain every test failure.
+TAILCALL_DISABLED_TESTS_RUN += \
+	tailcall/coreclr/JIT/Methodical/Boxing/misc/tailjump.exe \
+	tailcall/coreclr/JIT/Methodical/tailcall/deep_gc.exe \
+	tailcall/coreclr/JIT/Methodical/tailcall/deep_inst.exe \
+	tailcall/coreclr/JIT/Methodical/tailcall/deep_value.exe \
+	tailcall/coreclr/JIT/Methodical/tailcall/deep_virt.exe \
+	tailcall/coreclr/JIT/Methodical/tailcall/gcval.exe \
+	tailcall/coreclr/JIT/Methodical/tailcall/gcval_sideeffect.exe \
+	tailcall/coreclr/JIT/Methodical/tailcall/test_3b.exe \
+	tailcall/coreclr/JIT/Methodical/tailcall_v4/delegateParamCallTarget.exe
+
+if X86
+TAILCALL_DISABLED_TESTS_RUN += tailcall/coreclr/JIT/Methodical/nonvirtualcall/tailcall.exe
+endif
+
 if FULL_AOT_TESTS
 
 # FullAOT Assertion at method-to-ir.c:9203, condition `*ip == CEE_RET' not met
@@ -85,7 +101,6 @@ TAILCALL_DISABLED_TESTS_RUN += \
 	tailcall/coreclr/JIT/Directed/zeroinit/tail.exe \
 	tailcall/coreclr/JIT/Methodical/Invoke/fptr/recurse_tail_call.exe \
 	tailcall/coreclr/JIT/Methodical/Invoke/fptr/recurse_tail_calli.exe \
-	tailcall/coreclr/JIT/Methodical/nonvirtualcall/tailcall.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/Desktop/thread-race.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/compat_enum.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/compat_obj.exe \
@@ -101,46 +116,6 @@ TAILCALL_DISABLED_TESTS_RUN += \
 	tailcall/coreclr/JIT/Methodical/tailcall_v4/delegateTail.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall_v4/tailcall_AV.exe \
 	tailcall/coreclr/JIT/Regression/VS-ia64-JIT/V1.2-M02/b102844/tailcallcalli.exe
-
-# Tests fail no assert, print that they pass, but exit with non-zero.
-# These are effectively passing, but need change to indicate so.
-# Leaving us with no FullAOT tests.
-TAILCALL_DISABLED_TESTS_RUN += \
-	tailcall/coreclr/JIT/CodeGenBringUpTests/RecursiveTailCall.exe \
-	tailcall/coreclr/JIT/Directed/IL/Tailcall/JitTailcall1.exe \
-	tailcall/coreclr/JIT/Methodical/Boxing/boxunbox/tailcall.exe \
-	tailcall/coreclr/JIT/Methodical/Boxing/misc/tailjump.exe \
-	tailcall/coreclr/JIT/Methodical/Invoke/SEH/catchfault_tail.exe \
-	tailcall/coreclr/JIT/Methodical/Invoke/SEH/catchfinally_tail.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_i2_bool.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_i4_i1.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_i4_u.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_i_u2.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r4_r8.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r8_r4.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/deep_gc.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/deep_inst.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/deep_value.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/deep_value.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/deep_virt.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval_sideeffect.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/recurse_ep.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/recurse_ep_void.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2a.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2b.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2c.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_3b.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_void.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall_v4/delegateParamCallTarget.exe \
-	tailcall/coreclr/JIT/opt/FastTailCall/FastTailCallCandidates.exe \
-	tailcall/coreclr/JIT/opt/FastTailCall/FastTailCallInlining.exe \
-	tailcall/coreclr/JIT/opt/FastTailCall/FastTailCallInlining.exe \
-	tailcall/coreclr/JIT/opt/FastTailCall/GitHubIssue12479.exe \
-	tailcall/coreclr/JIT/opt/FastTailCall/StackFixup.exe \
-	tailcall/coreclr/JIT/opt/FastTailCall/StructPassingSimple.exe \
-	tailcall/coreclr/JIT/opt/Loops/SearchLoopTail.exe
 
 # This test is also slow, though its sleep can be dialed down.
 #TAILCALL_DISABLED_TESTS_RUN += tailcall/coreclr/JIT/Methodical/tailcall_v4/hijacking.exe
@@ -744,6 +719,7 @@ TESTS_IL_SRC=			\
 	tailcall-virt.il 	\
 	tailcall-rgctxa.il 	\
 	tailcall-rgctxb.il 	\
+	tailcall-rgctxb-static.il \
 	tailcall-mrgctx.il 	\
 	tailcall-interface-conservestack.il \
 	tailcall-interface-justrun.il \
@@ -887,6 +863,7 @@ TESTS_GSHARED_SRC = \
 	generic-type-builder.2.cs
 
 PLATFORM_DISABLED_TESTS=\
+	$(TAILCALL_DISABLED_TESTS_RUN) \
 	tailcall-member-function-in-valuetype.exe \
 	tailcall-rgctxb.exe
 
@@ -898,21 +875,6 @@ if AMD64
 # #651684
 PLATFORM_DISABLED_TESTS += finally_guard.exe
 
-if HOST_LINUX
-
-PLATFORM_DISABLED_TESTS += \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r4_r8.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r8_r4.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval_sideeffect.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/recurse_ep_void.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2a.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2b.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2c.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_void.exe
-
-endif
-
 if HOST_WIN32
 PLATFORM_DISABLED_TESTS += w32message.exe
 endif
@@ -920,16 +882,6 @@ endif
 endif
 
 if X86
-
-PLATFORM_DISABLED_TESTS += \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval_sideeffect.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/recurse_ep_void.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2b.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2a.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2c.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_3b.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_void.exe
 
 if HOST_WIN32
 PLATFORM_DISABLED_TESTS += async-exc-compilation.exe finally_guard.exe finally_block_ending_in_dead_bb.exe \
@@ -943,6 +895,7 @@ PLATFORM_DISABLED_TESTS += tailcall/2.exe
 PLATFORM_DISABLED_TESTS += tailcall/3.exe
 PLATFORM_DISABLED_TESTS += tailcall/4.exe
 PLATFORM_DISABLED_TESTS += tailcall/8273.exe
+PLATFORM_DISABLED_TESTS += tailcall-rgctxb-static.exe
 
 endif
 
@@ -982,11 +935,6 @@ PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack.exe
 PLATFORM_DISABLED_TESTS += ivtail1.exe
 PLATFORM_DISABLED_TESTS += appdomain-threadpool-unload.exe
 PLATFORM_DISABLED_TESTS += bug-60848.exe
-
-PLATFORM_DISABLED_TESTS += \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval_sideeffect.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_3b.exe
 endif
 
 if ARM
@@ -1002,31 +950,10 @@ PLATFORM_DISABLED_TESTS += tailcall/8273.exe
 PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail.exe
 PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack.exe
 PLATFORM_DISABLED_TESTS += ivtail1.exe
-PLATFORM_DISABLED_TESTS += \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval_sideeffect.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/recurse_ep_void.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2a.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2b.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2c.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_void.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval_sideeffect.exe
 endif
 
 if ARM64
 PLATFORM_DISABLED_TESTS += weak-fields.exe
-PLATFORM_DISABLED_TESTS += \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r4_r8.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r8_r4.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval_sideeffect.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval_sideeffect.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/recurse_ep_void.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2a.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2b.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_2c.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_void.exe
 endif
 
 if MIPS
@@ -1068,6 +995,8 @@ PLATFORM_DISABLED_TESTS += ivtail1.exe
 endif
 
 PROFILE_DISABLED_TESTS= \
+	$(TAILCALL_DISABLED_TESTS_RUN) \
+	tailcall-member-function-in-valuetype.exe \
 	tailcall-rgctxb.exe
 
 if FULL_AOT_TESTS
@@ -1296,7 +1225,32 @@ LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS))
 # appdomain-marshalbyref-assemblyload.exe: https://bugzilla.xamarin.com/show_bug.cgi?id=49308
 # threads-init.exe: runs out of system threads
 # dim-constrainedcall.exe: fails on dontnet as well (https://github.com/dotnet/coreclr/issues/15353)
-# tailcall-rgctxb.exe seems like it would but it does not, needs debugging
+
+#
+# tailcall-rgctxb.exe
+# tailcall-member-function-in-valuetype.exe
+#	Any time we have a byref/out parameter, be it
+#	an integer, or valuetype-this, we pessimistically
+#	will never tailcall.
+#
+#	These two cases have valuetype-this.
+#	tailcall-rgctxb.exe strives for additional coverage
+#	related to generic context, but both tests suffer from
+#	the same problem.
+#
+#	I suggest we insert range checks.
+#	If all parameters are outside the frame,
+#	do a tailcall. If any are not, regular call.
+#
+#	It'll be a little bigger and have a slowdown,
+#	and a speedup (stack locality speeds things up),
+#	and enable code that does not work otherwise.
+#
+#	Again, tailcall is not just an optimization.
+#	It lets code process large data within small stack.
+#	If it was just an optimization, desktop CLR would not
+#	go so far out of their way to implement it.
+
 KNOWN_FAILING_TESTS = \
 	delegate-async-exception.exe	\
 	bug-348522.2.exe	\
@@ -1315,6 +1269,7 @@ KNOWN_FAILING_TESTS = \
 	tail1.exe \
 	taili1.exe \
 	vtail1.exe \
+	tailcall-member-function-in-valuetype.exe \
 	tailcall-rgctxb.exe
 
 DISABLED_TESTS = \
@@ -1345,6 +1300,7 @@ INTERP_DISABLED_TESTS = $(DISABLED_TESTS) \
 	tailcall-mrgctx.exe \
 	tailcall-rgctxa.exe \
 	tailcall-rgctxb.exe \
+	tailcall-rgctxb-static.exe \
 	tailcall-virt.exe \
 	tailcall-return-valuetype.exe \
 	tailcall/fsharp-deeptail.exe \
@@ -1352,6 +1308,7 @@ INTERP_DISABLED_TESTS = $(DISABLED_TESTS) \
 	tailcall/3.exe \
 	tailcall/4.exe \
 	tailcall/8273.exe \
+	$(TAILCALL_DISABLED_TESTS_RUN) \
 	bug-60843.exe
 
 # bug-48015.exe: be careful when re-enabling, it happens that it returns with exit code 0, but doesn't actually execute the test.
@@ -1777,8 +1734,7 @@ TEST_TAILCALL_CS_SRC=\
 	tailcall/coreclr/JIT/opt/FastTailCall/FastTailCallInlining.cs \
 	tailcall/coreclr/JIT/opt/FastTailCall/GitHubIssue12479.cs \
 	tailcall/coreclr/JIT/opt/FastTailCall/StackFixup.cs \
-	tailcall/coreclr/JIT/opt/FastTailCall/StructPassingSimple.cs \
-	tailcall/coreclr/JIT/opt/Loops/SearchLoopTail.cs
+	tailcall/coreclr/JIT/opt/FastTailCall/StructPassingSimple.cs
 
 # At these locations we have .cs and .il.
 # The .il is clearly derived from the .cs, such as by running
