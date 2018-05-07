@@ -131,12 +131,6 @@ Ensures that libssl is correctly initialized and ready to use.
 extern "C" void CryptoNative_EnsureLibSslInitialized();
 
 /*
-Calling this function causes the calls to CryptoNative_SslWrite and CryptoNative_SslRead to always
-call ERR_clear_error() before calling SSL_write/SSL_read.
-*/
-extern "C" void CryptoNative_ForceErrorQueueCleanupBeforeWriteRead();
-
-/*
 Shims the SSLv23_method method.
 
 Returns the requested SSL_METHOD.
