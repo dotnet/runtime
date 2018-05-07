@@ -33,11 +33,7 @@ internal static partial class Interop
             int rc = EcKeyCreateByKeyParameters(out key, oid, qx, qxLength, qy, qyLength, d, dLength);
             if (rc == -1)
             {
-                if (key != null)
-                {
-                    key.Dispose();
-                }
-
+                key?.Dispose();
                 Interop.Crypto.ErrClearError();
                 
                 throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, oid));
