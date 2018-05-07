@@ -34,3 +34,5 @@ corebuild/global.json
 corebuild/**/bin
 corebuild/**/obj
 corebuild/testbin
+
+monobuild/TestResults.xml
