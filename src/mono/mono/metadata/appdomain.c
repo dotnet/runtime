@@ -962,7 +962,7 @@ ves_icall_System_AppDomain_getRootDomain (MonoError *error)
 }
 
 MonoBoolean
-ves_icall_System_CLRConfig_CheckThrowUnobservedTaskExceptions ()
+ves_icall_System_CLRConfig_CheckThrowUnobservedTaskExceptions (MonoError *error)
 {
 	MonoDomain *domain = mono_domain_get ();
 
