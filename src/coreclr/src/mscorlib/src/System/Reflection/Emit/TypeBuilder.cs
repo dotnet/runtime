@@ -398,12 +398,9 @@ namespace System.Reflection.Emit
             }
             else
             {
-                if (destType.IsValueType)
-                {
-                    // nullable types can hold null value.
-                    if (!(destType.IsGenericType && destType.GetGenericTypeDefinition() == typeof(Nullable<>)))
-                        throw new ArgumentException(SR.Argument_ConstantNull);
-                }
+                // A null default value in metadata is permissible even for non-nullable value types.
+                // (See ECMA-335 II.15.4.1.4 "The .param directive" and II.22.9 "Constant" for details.)
+                // This is how the Roslyn compilers generally encode `default(TValueType)` default values.
 
                 SetConstantValue(module.GetNativeHandle(), tk, (int)CorElementType.Class, null);
             }
