@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Reflection;
 using Xunit;
 
@@ -24,7 +25,11 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             string lcr = PlatformDetection.LibcRelease;
             string lcv = PlatformDetection.LibcVersion;
 
-            Console.WriteLine($@"{dvs} OS={osd} OSVer={osv} OSArch={osa} Arch={pra} Framework={frd} LibcRelease={lcr} LibcVersion={lcv}");
+            Console.WriteLine($@"### CONFIGURATION: {dvs} OS={osd} OSVer={osv} OSArch={osa} Arch={pra} Framework={frd} LibcRelease={lcr} LibcVersion={lcv}");
+
+            Console.WriteLine($"### BINARIES: {Path.GetDirectoryName(typeof(object).Assembly.Location)} (drive {new DriveInfo(Path.GetDirectoryName(typeof(object).Assembly.Location)).DriveFormat})");
+            Console.WriteLine($"### TEMP PATH: {Path.GetTempPath()} (drive {new DriveInfo(Path.GetTempPath()).DriveFormat})");
+            Console.WriteLine($"### CURRENT DIRECTORY: {Environment.CurrentDirectory}");
         }
 
         [Fact]
