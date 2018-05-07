@@ -123,15 +123,10 @@ namespace System.Diagnostics
 
         private static bool IsRemoteMachineCore(string machineName)
         {
-            string baseName;
-
-            if (machineName.StartsWith("\\", StringComparison.Ordinal))
-                baseName = machineName.Substring(2);
-            else
-                baseName = machineName;
-            if (baseName.Equals(".")) return false;
-
-            return !string.Equals(Interop.Kernel32.GetComputerName(), baseName, StringComparison.OrdinalIgnoreCase);
+            ReadOnlySpan<char> baseName = machineName.AsSpan(machineName.StartsWith("\\", StringComparison.Ordinal) ? 2 : 0);
+            return
+                !baseName.Equals(".", StringComparison.Ordinal) &&
+                !baseName.Equals(Interop.Kernel32.GetComputerName(), StringComparison.OrdinalIgnoreCase);
         }
 
         // -----------------------------
@@ -823,9 +818,9 @@ namespace System.Diagnostics
                 // if a period was found, then see if the extension is
                 // .EXE, if so drop it, if not, then use end of string
                 // (i.e. include extension in name)
-                String extension = name.Substring(period);
+                ReadOnlySpan<char> extension = name.AsSpan(period);
 
-                if (String.Equals(".exe", extension, StringComparison.OrdinalIgnoreCase))
+                if (extension.Equals(".exe", StringComparison.OrdinalIgnoreCase))
                     period--;                 // point to character before period
                 else
                     period = name.Length - 1; // set to end of string
