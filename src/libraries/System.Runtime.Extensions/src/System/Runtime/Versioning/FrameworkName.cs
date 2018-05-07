@@ -181,8 +181,8 @@ namespace System.Runtime.Versioning
                 }
 
                 // Get the key and value, trimming any whitespace
-                string key = component.Substring(0, separatorIndex).Trim();
-                string value = component.Substring(separatorIndex + 1).Trim();
+                ReadOnlySpan<char> key = component.AsSpan(0, separatorIndex).Trim();
+                ReadOnlySpan<char> value = component.AsSpan(separatorIndex + 1).Trim();
 
                 //
                 // 2) Parse the required "Version" key value
@@ -194,7 +194,7 @@ namespace System.Runtime.Versioning
                     // Allow the version to include a 'v' or 'V' prefix...
                     if (value.Length > 0 && (value[0] == VersionValuePrefix || value[0] == 'V'))
                     {
-                        value = value.Substring(1);
+                        value = value.Slice(1);
                     }
                     try
                     {
@@ -210,9 +210,9 @@ namespace System.Runtime.Versioning
                 //
                 else if (key.Equals(ProfileKey, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!string.IsNullOrEmpty(value))
+                    if (value.Length > 0)
                     {
-                        _profile = value;
+                        _profile = value.ToString();
                     }
                 }
                 else
