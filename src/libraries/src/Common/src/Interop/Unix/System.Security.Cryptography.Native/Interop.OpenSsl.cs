@@ -376,12 +376,6 @@ internal static partial class Interop
                 throw CreateSslException(SR.net_ssl_get_channel_binding_token_failed);
             }
 
-            if (!sessionReused)
-            {
-                // The operation may have left errors on the queue
-                Crypto.ErrClearError();
-            }
-
             bindingHandle.SetCertHashLength(certHashLength);
         }
 
