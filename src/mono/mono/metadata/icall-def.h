@@ -92,8 +92,8 @@ ICALL_TYPE(TLS_PROVIDER_FACTORY, "Mono.Net.Security.MonoTlsProviderFactory", TLS
 HANDLES(ICALL(TLS_PROVIDER_FACTORY_1, "IsBtlsSupported", ves_icall_Mono_TlsProviderFactory_IsBtlsSupported))
 
 ICALL_TYPE(RUNTIME, "Mono.Runtime", RUNTIME_1)
-ICALL(RUNTIME_1, "DisableMicrosoftTelemetry", ves_icall_Mono_Runtime_DisableMicrosoftTelemetry)
-ICALL(RUNTIME_2, "EnableMicrosoftTelemetry_internal", ves_icall_Mono_Runtime_EnableMicrosoftTelemetry)
+HANDLES(ICALL(RUNTIME_1, "DisableMicrosoftTelemetry", ves_icall_Mono_Runtime_DisableMicrosoftTelemetry))
+HANDLES(ICALL(RUNTIME_2, "EnableMicrosoftTelemetry_internal", ves_icall_Mono_Runtime_EnableMicrosoftTelemetry))
 HANDLES(ICALL(RUNTIME_3, "GetDisplayName", ves_icall_Mono_Runtime_GetDisplayName))
 HANDLES(ICALL(RUNTIME_12, "GetNativeStackTrace", ves_icall_Mono_Runtime_GetNativeStackTrace))
 
