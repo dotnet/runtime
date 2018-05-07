@@ -153,15 +153,21 @@ Thus the event names only need to be unique within a component.
 * DO NOT - name the listener after the Listener (thus something like System.Net.HttpDiagnosticListener
   is bad).
 
+
+
 #### Event Names
 
 * DO - keep the names reasonably short (< 16 characters). Keep in mind that event names
   are already qualified by the Listener so the name only needs to be unique within a listener.
   Short names make `IsEnabled()` faster.
 
-* DO - use the 'Start' and 'Stop' suffixes for events that define an interval of time. For example
-  naming one event 'RequestStart' and the another 'RequestStop' is good because tools can use the
-  convention to determine that the time interval betweeen them is interesting.
+* DO - use activities (see [Activity Users Guide](ActivityUserGuide.md)) for events that are
+marking the begining and end of a interval of time.   The key value of Activities is that they
+indicate that they represent a DURATION, and they also track what 'causeed' them (and thus
+logging systems can stitch together a 'causality graph'.    
+
+* DO - If for some reason you can't use Activies, and your events mark the start and stop of 
+an interval of time, use the 'Start' and 'Stop' suffixes on the events.  
 
 ### Payloads
 
