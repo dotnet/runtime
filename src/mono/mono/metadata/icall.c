@@ -1591,7 +1591,7 @@ ves_icall_Mono_RuntimeClassHandle_GetTypeFromClass (MonoClass *klass)
 }
 
 ICALL_EXPORT void
-ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree (GPtrArray *ptr_array)
+ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree (GPtrArray *ptr_array, MonoError *error)
 {
 	g_ptr_array_free (ptr_array, TRUE);
 }
