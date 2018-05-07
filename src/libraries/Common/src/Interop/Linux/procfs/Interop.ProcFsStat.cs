@@ -137,11 +137,9 @@ internal static partial class Interop
                         int pos = s.IndexOf('-', start, end - start);
                         if (pos > 0)
                         {
-                            string startingString = s.Substring(start, pos);
-                            if (long.TryParse(startingString, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out startingAddress))
+                            if (long.TryParse(s.AsSpan(start, pos), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out startingAddress))
                             {
-                                string endingString = s.Substring(pos + 1, end - (pos + 1));
-                                long.TryParse(endingString, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out endingAddress);
+                                long.TryParse(s.AsSpan(pos + 1, end - (pos + 1)), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out endingAddress);
                             }
                         }
                         return new KeyValuePair<long, long>(startingAddress, endingAddress);
