@@ -474,7 +474,7 @@ namespace System.Net.Http
                         return;
                     }
 
-                    RTCertificate rtClientCert = await CertificateHelper.ConvertDotNetClientCertToWinRtClientCertAsync(clientCert);
+                    RTCertificate rtClientCert = await CertificateHelper.ConvertDotNetClientCertToWinRtClientCertAsync(clientCert).ConfigureAwait(false);
                     if (rtClientCert == null)
                     {
                         throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
@@ -497,7 +497,7 @@ namespace System.Net.Http
                 // Unlike in the .Manual case above, the conversion to WinRT Certificate should always work;
                 // so we just use an Assert. All the possible client certs were enumerated from that store and
                 // filtered down to a single client cert.
-                RTCertificate rtClientCert = await CertificateHelper.ConvertDotNetClientCertToWinRtClientCertAsync(clientCert);
+                RTCertificate rtClientCert = await CertificateHelper.ConvertDotNetClientCertToWinRtClientCertAsync(clientCert).ConfigureAwait(false);
                 Debug.Assert(rtClientCert != null);
                 _rtFilter.ClientCertificate = rtClientCert;
             }
