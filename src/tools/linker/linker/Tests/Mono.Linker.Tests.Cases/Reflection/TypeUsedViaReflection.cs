@@ -7,7 +7,10 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 	public class TypeUsedViaReflection {
 		public static void Main ()
 		{
+			TestNull ();
+			TestEmptyString ();
 			TestFullString ();
+			TestGenericString ();
 			TestFullStringConst();
 			TestTypeAsmName ();
 			TestType ();
@@ -21,12 +24,36 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
+		public static void TestNull ()
+		{
+			string reflectionTypeKeptString = null;
+			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+		}
+
+		[Kept]
+		public static void TestEmptyString ()
+		{
+			string reflectionTypeKeptString = "";
+			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+		}
+
+		[Kept]
 		public class Full { }
 
 		[Kept]
 		public static void TestFullString ()
 		{
 			var reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Full, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+		}
+
+		[Kept]
+		public class Generic<T> { }
+
+		[Kept]
+		public static void TestGenericString ()
+		{
+			var reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Generic`1, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
 		}
 

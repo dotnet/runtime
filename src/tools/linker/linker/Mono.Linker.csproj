@@ -93,6 +93,7 @@
     <Compile Include="Linker\Pipeline.cs" />
     <Compile Include="Linker\TypePreserve.cs" />
     <Compile Include="Linker\TypeReferenceExtensions.cs" />
+    <Compile Include="Linker\TypeNameParser.cs" />
     <Compile Include="Linker\XApiReader.cs" />
     <Compile Include="Linker.Steps\TypeMapStep.cs" />
     <Compile Include="Linker\ILogger.cs" />

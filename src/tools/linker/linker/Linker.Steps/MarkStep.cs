@@ -793,7 +793,7 @@ namespace Mono.Linker.Steps {
 				_assemblyLevelAttributes.Enqueue (new AttributeProviderPair (attribute, assembly));
 		}
 
-		static TypeDefinition GetDebuggerAttributeTargetType (CustomAttribute ca, AssemblyDefinition asm)
+		TypeDefinition GetDebuggerAttributeTargetType (CustomAttribute ca, AssemblyDefinition asm)
 		{
 			TypeReference targetTypeReference = null;
 			foreach (var property in ca.Properties) {
@@ -803,7 +803,12 @@ namespace Mono.Linker.Steps {
 				}
 
 				if (property.Name == "TargetTypeName") {
-					targetTypeReference = asm.MainModule.GetType ((string) property.Argument.Value);
+					if (TypeNameParser.TryParseTypeAssemblyQualifiedName ((string) property.Argument.Value, out string typeName, out string assemblyName)) {
+						if (string.IsNullOrEmpty (assemblyName))
+							targetTypeReference = asm.MainModule.GetType (typeName);
+						else
+							targetTypeReference = _context.GetAssemblies ().FirstOrDefault (a => a.Name.Name == assemblyName)?.MainModule.GetType (typeName);
+					}
 					break;
 				}
 			}
@@ -1727,28 +1732,8 @@ namespace Mono.Linker.Steps {
 				_context.Tracer.Push ($"Reflection-{instruction.Operand as MethodReference}");
 				var typeAssemblyQualifiedName = OperandOfNearestInstructionBefore<string> (i, OpCodes.Ldstr, instructions);
 
-				//We're not going to support preserving generic types yet
-				if (typeAssemblyQualifiedName == null || typeAssemblyQualifiedName.IndexOf ('`') >= 0)
+				if (!TypeNameParser.TryParseTypeAssemblyQualifiedName (typeAssemblyQualifiedName, out string typeName, out string assemblyName))
 					continue;
-
-				//Filter the assembly qualified name down to the basic type by removing pointer, reference, and array markers on the type
-				//We must also convert nested types from + to / to match cecil's formatting
-				typeAssemblyQualifiedName = typeAssemblyQualifiedName
-					.Replace ('+', '/')
-					.Replace ("*", string.Empty)
-					.Replace ("&", string.Empty);
-
-				while (typeAssemblyQualifiedName.Contains ('[')) {
-					var openidx = typeAssemblyQualifiedName.IndexOf ('[');
-					var closeidx = typeAssemblyQualifiedName.IndexOf (']');
-					typeAssemblyQualifiedName = typeAssemblyQualifiedName.Remove (openidx, closeidx + 1 - openidx);
-				}
-
-				var tokens = typeAssemblyQualifiedName.Split (',');
-				var typeName = tokens [0].Trim ();
-				string assemblyName = null;
-				if (tokens.Length > 1)
-					assemblyName = tokens [1].Trim ();
 
 				foreach (var assemblyDefinition in _context.GetAssemblies ()) {
 					if (assemblyName != null && assemblyDefinition.Name.Name != assemblyName)
