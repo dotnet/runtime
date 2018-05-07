@@ -569,18 +569,17 @@ stackval_to_data (MonoType *type_, stackval *val, char *data, gboolean pinvoke)
 	}
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8: {
-		gint64 *p = (gint64*)data;
-		*p = val->data.l;
+		memmove (data, &val->data.l, sizeof (gint64));
 		return;
 	}
 	case MONO_TYPE_R4: {
-		float *p = (float*)data;
-		*p = val->data.f;
+		float tmp = (float)val->data.f;
+		/* memmove handles unaligned case */
+		memmove (data, &tmp, sizeof (float));
 		return;
 	}
 	case MONO_TYPE_R8: {
-		double *p = (double*)data;
-		*p = val->data.f;
+		memmove (data, &val->data.f, sizeof (double));
 		return;
 	}
 	case MONO_TYPE_STRING:
@@ -4047,7 +4046,7 @@ array_constructed:
 			if (MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (c)))
 				mono_gc_wbarrier_generic_store (sp [-2].data.p, sp [-1].data.p);
 			else
-				stackval_from_data (m_class_get_byval_arg (c), sp [-2].data.p, (char *) &sp [-1].data.p, FALSE);
+				stackval_to_data (m_class_get_byval_arg (c), &sp [-1], sp [-2].data.p, FALSE);
 			sp -= 2;
 			MINT_IN_BREAK;
 		}
