@@ -4452,15 +4452,8 @@ namespace System.Net.Sockets
                 catch (Exception exception) when (!ExceptionCheck.IsFatal(exception)) { }
             }
 
-            // Make sure we're the first call to Dispose and no SetAsyncEventSelect is in progress.
-            int last;
-            SpinWait sw = new SpinWait();
-            while ((last = Interlocked.CompareExchange(ref _intCleanedUp, 1, 0)) == 2)
-            {
-                sw.SpinOnce();
-            }
-
-            if (last == 1)
+            // Make sure we're the first call to Dispose
+            if (Interlocked.CompareExchange(ref _intCleanedUp, 1, 0) == 1)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
                 return;
