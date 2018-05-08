@@ -4490,6 +4490,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
+    if (emitConsDsc.align16)
+    {
+        allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN);
+    }
+
 #ifdef _TARGET_ARM64_
     // For arm64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
     // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
@@ -5178,7 +5183,7 @@ UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
  *  block.
  */
 
-UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, bool dblAlign, bool codeLtab)
+UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, bool align)
 {
     unsigned     secOffs;
     dataSection* secDesc;
@@ -5193,20 +5198,30 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, bool dblAlign, bool 
 
     secOffs = emitConsDsc.dsdOffs;
 
-    /* Are we require to align this request on an eight byte boundry? */
-    if (dblAlign && (secOffs % sizeof(double) != 0))
+    if (align)
     {
-        /* Need to skip 4 bytes to honor dblAlign */
-        /* Must allocate a dummy 4 byte integer */
-        int zero = 0;
-        emitDataGenBeg(4, false, false);
-        emitDataGenData(0, &zero, 4);
-        emitDataGenEnd();
+        // Data can have any size but since alignment is deduced from the size there's no
+        // way to have a larger data size (e.g. 128) and request 4/8/16 byte alignment.
+        // 32 bytes (and more) alignment requires VM support (see ICorJitInfo::allocMem).
+        assert(size <= 16);
 
-        /* Get the new secOffs */
-        secOffs = emitConsDsc.dsdOffs;
-        /* Now it should be a multiple of 8 */
-        assert(secOffs % sizeof(double) == 0);
+        if (size == 16)
+        {
+            emitConsDsc.align16 = true;
+        }
+
+        while ((secOffs % size) != 0)
+        {
+            /* Need to skip 4 bytes to honor alignment */
+            /* Must allocate a dummy 4 byte integer */
+            int zero = 0;
+            emitDataGenBeg(4, false);
+            emitDataGenData(0, &zero, 4);
+            emitDataGenEnd();
+
+            /* Get the new secOffs */
+            secOffs = emitConsDsc.dsdOffs;
+        }
     }
 
     /* Advance the current offset */
@@ -5357,7 +5372,7 @@ UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, boo
         dblAlign = false;
     }
 
-    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, dblAlign, false);
+    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, dblAlign);
     emitDataGenData(0, cnsAddr, cnsSize);
     emitDataGenEnd();
 
@@ -5368,16 +5383,34 @@ UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, boo
 // emitAnyConst: Create a data section constant of arbitrary size.
 //
 // Arguments:
-//    cnsAddr  - pointer to the data to be placed in the data section
-//    cnsSize  - size of the data
-//    dblAlign - whether to align the data section to an 8 byte boundary
+//    cnsAddr   - pointer to the data to be placed in the data section
+//    cnsSize   - size of the data
+//    alignment - indicates how to align the constant
 //
 // Return Value:
 //    A field handle representing the data offset to access the constant.
 //
-CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, unsigned cnsSize, bool dblAlign)
+CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, unsigned cnsSize, emitDataAlignment alignment)
 {
-    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, dblAlign);
+    bool align;
+
+    switch (alignment)
+    {
+        case emitDataAlignment::None:
+            align = false;
+            break;
+        case emitDataAlignment::Preferred:
+            align = (emitComp->compCodeOpt() != Compiler::SMALL_CODE);
+            break;
+        case emitDataAlignment::Required:
+        default:
+            align = true;
+            break;
+    }
+
+    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, align);
+    emitDataGenData(0, cnsAddr, cnsSize);
+    emitDataGenEnd();
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
