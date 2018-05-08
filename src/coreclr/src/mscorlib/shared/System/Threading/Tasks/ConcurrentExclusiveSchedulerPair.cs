@@ -28,8 +28,8 @@ namespace System.Threading.Tasks
     [DebuggerTypeProxy(typeof(ConcurrentExclusiveSchedulerPair.DebugView))]
     public class ConcurrentExclusiveSchedulerPair
     {
-        /// <summary>A dictionary mapping thread ID to a processing mode to denote what kinds of tasks are currently being processed on this thread.</summary>
-        private readonly ThreadLocal<ProcessingMode> m_threadProcessingMode = new ThreadLocal<ProcessingMode>(() => ProcessingMode.NotCurrentlyProcessing);
+        /// <summary>A processing mode to denote what kinds of tasks are currently being processed on this thread.</summary>
+        private readonly ThreadLocal<ProcessingMode> m_threadProcessingMode = new ThreadLocal<ProcessingMode>();
         /// <summary>The scheduler used to queue and execute "concurrent" tasks that may run concurrently with other concurrent tasks.</summary>
         private readonly ConcurrentExclusiveTaskScheduler m_concurrentTaskScheduler;
         /// <summary>The scheduler used to queue and execute "exclusive" tasks that must run exclusively while no other tasks for this pair are running.</summary>
@@ -369,7 +369,8 @@ namespace System.Threading.Tasks
             finally
             {
                 // We're no longer processing exclusive tasks on the current thread
-                Debug.Assert(m_threadProcessingMode.Value == ProcessingMode.ProcessingExclusiveTask, "Somehow we ended up escaping exclusive mode.");
+                Debug.Assert(m_threadProcessingMode.Value == ProcessingMode.ProcessingExclusiveTask,
+                    "Somehow we ended up escaping exclusive mode.");
                 m_threadProcessingMode.Value = ProcessingMode.NotCurrentlyProcessing;
 
                 lock (ValueLock)
@@ -397,7 +398,7 @@ namespace System.Threading.Tasks
             try
             {
                 // Note that we're processing concurrent tasks on the current thread
-                Debug.Assert(m_threadProcessingMode.Value == ProcessingMode.NotCurrentlyProcessing, 
+                Debug.Assert(m_threadProcessingMode.Value == ProcessingMode.NotCurrentlyProcessing,
                     "This thread should not yet be involved in this pair's processing.");
                 m_threadProcessingMode.Value = ProcessingMode.ProcessingConcurrentTasks;
 
@@ -427,7 +428,8 @@ namespace System.Threading.Tasks
             finally
             {
                 // We're no longer processing concurrent tasks on the current thread
-                Debug.Assert(m_threadProcessingMode.Value == ProcessingMode.ProcessingConcurrentTasks, "Somehow we ended up escaping concurrent mode.");
+                Debug.Assert(m_threadProcessingMode.Value == ProcessingMode.ProcessingConcurrentTasks,
+                    "Somehow we ended up escaping concurrent mode.");
                 m_threadProcessingMode.Value = ProcessingMode.NotCurrentlyProcessing;
 
                 lock (ValueLock)
@@ -514,7 +516,7 @@ namespace System.Threading.Tasks
                 lock (m_pair.ValueLock)
                 {
                     // If the scheduler has already had completion requested, no new work is allowed to be scheduled
-                    if (m_pair.CompletionRequested) throw new InvalidOperationException(GetType().Name);
+                    if (m_pair.CompletionRequested) throw new InvalidOperationException(GetType().ToString());
 
                     // Queue the task, and then let the pair know that more work is now available to be scheduled
                     m_tasks.Enqueue(task);
@@ -709,7 +711,7 @@ namespace System.Threading.Tasks
         /// <param name="syncObj">The monitor to check.</param>
         /// <param name="held">Whether we want to assert that it's currently held or not held.</param>
         [Conditional("DEBUG")]
-        internal static void ContractAssertMonitorStatus(object syncObj, bool held)
+        private static void ContractAssertMonitorStatus(object syncObj, bool held)
         {
             Debug.Assert(syncObj != null, "The monitor object to check must be provided.");
             Debug.Assert(Monitor.IsEntered(syncObj) == held, "The locking scheme was not correctly followed.");
