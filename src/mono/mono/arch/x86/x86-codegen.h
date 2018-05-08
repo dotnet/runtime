@@ -1024,16 +1024,29 @@ typedef union {
 		x86_memindex_emit ((inst), (reg), (basereg), (disp), (indexreg), (shift));	\
 	} while (0)
 
-#define x86_mov_reg_reg(inst,dreg,reg,size)	\
+// unused
+#define x86_mov_reg_reg_size(inst, dreg, reg, size)	\
 	do {	\
 		x86_codegen_pre(&(inst), 3); \
-		switch ((size)) {	\
-		case 1: *(inst)++ = (unsigned char)0x8a; break;	\
-		case 2: x86_prefix((inst), X86_OPERAND_PREFIX); /* fall through */	\
-		case 4: *(inst)++ = (unsigned char)0x8b; break;	\
-		default: assert (0);	\
-		}	\
-		x86_reg_emit ((inst), (dreg), (reg));	\
+		if ((dreg) != (reg) || (size) != 4) { \
+			switch ((size)) {	\
+			case 1: *(inst)++ = (unsigned char)0x8a; break;	\
+			case 2: x86_prefix((inst), X86_OPERAND_PREFIX); /* fall through */	\
+			case 4: *(inst)++ = (unsigned char)0x8b; break;	\
+			default: assert (0);	\
+			}	\
+			x86_reg_emit ((inst), (dreg), (reg));	\
+		} \
+	} while (0)
+
+// move a full 4 byte register
+#define x86_mov_reg_reg(inst, dreg, reg) \
+	do {	\
+		x86_codegen_pre(&(inst), 2); \
+		if ((dreg) != (reg)) { \
+			*(inst)++ = (unsigned char)0x8b; \
+			x86_reg_emit ((inst), (dreg), (reg));	\
+		} \
 	} while (0)
 
 #define x86_mov_reg_mem(inst,reg,mem,size)	\

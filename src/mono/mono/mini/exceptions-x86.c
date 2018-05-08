@@ -92,7 +92,7 @@ mono_win32_get_handle_stackoverflow (void)
 	x86_mov_reg_membase (code, X86_EBX, X86_ESP, 4, 4);
 
 	/* move current stack into edi for later restore */
-	x86_mov_reg_reg (code, X86_EDI, X86_ESP, 4);
+	x86_mov_reg_reg (code, X86_EDI, X86_ESP);
 
 	/* use the new freed stack from sigcontext */
 	/* XXX replace usage of struct sigcontext with MonoContext so we can use MONO_STRUCT_OFFSET */
@@ -110,7 +110,7 @@ mono_win32_get_handle_stackoverflow (void)
 	x86_call_code (code, mono_arch_handle_exception);
 
 	/* restore the SEH handler stack */
-	x86_mov_reg_reg (code, X86_ESP, X86_EDI, 4);
+	x86_mov_reg_reg (code, X86_ESP, X86_EDI);
 
 	/* return */
 	x86_ret (code);
@@ -387,7 +387,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	start = code = mono_global_codeman_reserve (kMaxCodeSize);
 
 	x86_push_reg (code, X86_EBP);
-	x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
+	x86_mov_reg_reg (code, X86_EBP, X86_ESP);
 	x86_push_reg (code, X86_EBX);
 	x86_push_reg (code, X86_EDI);
 	x86_push_reg (code, X86_ESI);
@@ -407,7 +407,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  MONO_STRUCT_OFFSET (MonoContext, edi), 4);
 
 	/* align stack and save ESP */
-	x86_mov_reg_reg (code, X86_EDX, X86_ESP, 4);
+	x86_mov_reg_reg (code, X86_EDX, X86_ESP);
 	x86_alu_reg_imm (code, X86_AND, X86_ESP, -MONO_ARCH_FRAME_ALIGNMENT);
 	g_assert (MONO_ARCH_FRAME_ALIGNMENT >= 8);
 	x86_alu_reg_imm (code, X86_SUB, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT - 8);

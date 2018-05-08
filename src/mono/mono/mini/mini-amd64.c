@@ -3958,7 +3958,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ZEXT_I4:
 			/* Clean out the upper word */
-			amd64_mov_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_SEXT_I4:
 			amd64_movsxd_reg_reg (code, ins->dreg, ins->sreg1);

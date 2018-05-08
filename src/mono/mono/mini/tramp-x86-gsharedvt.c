@@ -116,7 +116,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	cfa_offset += sizeof (gpointer);
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 	mono_add_unwind_op_offset (unwind_ops, code, buf, X86_EBP, - cfa_offset);
-	x86_mov_reg_reg (code, X86_EBP, X86_ESP, sizeof (gpointer));
+	x86_mov_reg_reg (code, X86_EBP, X86_ESP);
 	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, X86_EBP);
 	/* Alloc stack frame/align stack */
 	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
@@ -134,7 +134,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 #if 0
 	/* Stack alignment check */
-	x86_mov_reg_reg (code, X86_ECX, X86_ESP, 4);
+	x86_mov_reg_reg (code, X86_ECX, X86_ESP);
 	x86_alu_reg_imm (code, X86_AND, X86_ECX, MONO_ARCH_FRAME_ALIGNMENT - 1);
 	x86_alu_reg_imm (code, X86_CMP, X86_ECX, 0);
 	x86_branch_disp (code, X86_CC_EQ, 3, FALSE);
@@ -142,10 +142,10 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 #endif
 
 	/* ecx = caller argument area */
-	x86_mov_reg_reg (code, X86_ECX, X86_EBP, 4);
+	x86_mov_reg_reg (code, X86_ECX, X86_EBP);
 	x86_alu_reg_imm (code, X86_ADD, X86_ECX, 8);
 	/* eax = callee argument area */
-	x86_mov_reg_reg (code, X86_EAX, X86_ESP, 4);
+	x86_mov_reg_reg (code, X86_EAX, X86_ESP);
 
 	/* Call start_gsharedvt_call */
 	/* Arg 4 */
@@ -318,14 +318,14 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	br [4] = code;
 	x86_branch8 (code, X86_CC_E, 0, TRUE);
 	/* IREG case */
-	x86_mov_reg_reg (code, X86_ECX, X86_EAX, sizeof (gpointer));
+	x86_mov_reg_reg (code, X86_ECX, X86_EAX);
 	x86_pop_reg (code, X86_EAX);
 	x86_mov_membase_reg (code, X86_ECX, 0, X86_EAX, sizeof (gpointer));
 	x86_leave (code);
 	x86_ret_imm (code, 4);
 	/* IREGS case */
 	x86_patch (br [4], code);
-	x86_mov_reg_reg (code, X86_ECX, X86_EAX, sizeof (gpointer));
+	x86_mov_reg_reg (code, X86_ECX, X86_EAX);
 	x86_pop_reg (code, X86_EAX);
 	x86_mov_membase_reg (code, X86_ECX, sizeof (gpointer), X86_EDX, sizeof (gpointer));
 	x86_mov_membase_reg (code, X86_ECX, 0, X86_EAX, sizeof (gpointer));

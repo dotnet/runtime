@@ -181,7 +181,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 	mono_add_unwind_op_offset (unwind_ops, code, buf, X86_EBP, -cfa_offset);
 
-	x86_mov_reg_reg (code, X86_EBP, X86_ESP, sizeof (mgreg_t));
+	x86_mov_reg_reg (code, X86_EBP, X86_ESP);
 	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, X86_EBP);
 
 	/* There are three words on the stack, adding + 4 aligns the stack to 16, which is needed on osx */
@@ -199,7 +199,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		} else if (i == X86_ESP) {
 			/* Save original esp */
 			/* EAX is already saved */
-			x86_mov_reg_reg (code, X86_EAX, X86_EBP, sizeof (mgreg_t));
+			x86_mov_reg_reg (code, X86_EAX, X86_EBP);
 			/* Saved ebp + trampoline arg + return addr */
 			x86_alu_reg_imm (code, X86_ADD, X86_EAX, 3 * sizeof (mgreg_t));
 			reg = X86_EAX;
@@ -275,7 +275,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 #ifdef __APPLE__
 	/* check the stack is aligned after the ret ip is pushed */
 	/*
-	x86_mov_reg_reg (code, X86_EDX, X86_ESP, 4);
+	x86_mov_reg_reg (code, X86_EDX, X86_ESP);
 	x86_alu_reg_imm (code, X86_AND, X86_EDX, 15);
 	x86_alu_reg_imm (code, X86_CMP, X86_EDX, 0);
 	x86_branch_disp (code, X86_CC_Z, 3, FALSE);
@@ -652,7 +652,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 	mono_add_unwind_op_offset (unwind_ops, code, buf, X86_EBP, - cfa_offset);
 
-	x86_mov_reg_reg (code, X86_EBP, X86_ESP, sizeof(mgreg_t));
+	x86_mov_reg_reg (code, X86_EBP, X86_ESP);
 	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, X86_EBP);
 	/* The + 8 makes the stack aligned */
 	x86_alu_reg_imm (code, X86_SUB, X86_ESP, framesize + 8);
@@ -664,7 +664,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, edx), X86_EDX, sizeof (mgreg_t));
 	x86_mov_reg_membase (code, X86_EAX, X86_EBP, 0, sizeof (mgreg_t));
 	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, ebp), X86_EAX, sizeof (mgreg_t));
-	x86_mov_reg_reg (code, X86_EAX, X86_EBP, sizeof (mgreg_t));
+	x86_mov_reg_reg (code, X86_EAX, X86_EBP);
 	x86_alu_reg_imm (code, X86_ADD, X86_EAX, cfa_offset);
 	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, esp), X86_ESP, sizeof (mgreg_t));
 	x86_mov_membase_reg (code, X86_ESP, ctx_offset + G_STRUCT_OFFSET (MonoContext, esi), X86_ESI, sizeof (mgreg_t));
