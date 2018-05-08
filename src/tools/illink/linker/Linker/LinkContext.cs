@@ -296,7 +296,7 @@ namespace Mono.Linker {
 			_annotations.SetAction (assembly, action);
 		}
 
-		static bool IsCore (AssemblyNameReference name)
+		public static bool IsCore (AssemblyNameReference name)
 		{
 			switch (name.Name) {
 			case "mscorlib":
