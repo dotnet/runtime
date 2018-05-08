@@ -2043,6 +2043,9 @@ public:
     dataSection* emitDataSecCur;
 
     void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
+#ifdef DEBUG
+    void emitDispDataSec(dataSecDsc* section);
+#endif
 
     /************************************************************************/
     /*              Handles to the current class and method.                */
