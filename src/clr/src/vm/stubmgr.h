@@ -934,6 +934,8 @@ public:
         return pContext->Rax;
 #elif defined(_TARGET_ARM_)
         return pContext->R12;
+#elif defined(_TARGET_ARM64_)
+        return pContext->X12;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetTailCallTarget");
         return NULL;
@@ -1000,7 +1002,7 @@ public:
 #endif
 #elif defined(_TARGET_ARM_)
         return pContext->R1;
-#elif defined(_TARGET_ARM_)
+#elif defined(_TARGET_ARM64_)
         return pContext->X1;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetSecondArg");
