@@ -84,7 +84,7 @@ void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
 /*                   Emit initialized data sections                     */
 /************************************************************************/
 
-UNATIVE_OFFSET emitDataGenBeg(UNATIVE_OFFSET size, bool dblAlign, bool codeLtab);
+UNATIVE_OFFSET emitDataGenBeg(UNATIVE_OFFSET size, bool align);
 
 UNATIVE_OFFSET emitBBTableDataGenBeg(unsigned numEntries, bool relativeAddr);
 
