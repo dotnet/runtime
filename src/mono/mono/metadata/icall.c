@@ -7398,13 +7398,13 @@ ves_icall_get_resources_ptr (MonoReflectionAssemblyHandle assembly, gpointer *re
 }
 
 ICALL_EXPORT MonoBoolean
-ves_icall_System_Diagnostics_Debugger_IsAttached_internal (void)
+ves_icall_System_Diagnostics_Debugger_IsAttached_internal (MonoError *error)
 {
 	return mono_is_debugger_attached ();
 }
 
 ICALL_EXPORT MonoBoolean
-ves_icall_System_Diagnostics_Debugger_IsLogging (void)
+ves_icall_System_Diagnostics_Debugger_IsLogging (MonoError *error)
 {
 	if (mono_get_runtime_callbacks ()->debug_log_is_enabled)
 		return mono_get_runtime_callbacks ()->debug_log_is_enabled ();
@@ -7413,7 +7413,7 @@ ves_icall_System_Diagnostics_Debugger_IsLogging (void)
 }
 
 ICALL_EXPORT void
-ves_icall_System_Diagnostics_Debugger_Log (int level, MonoString *category, MonoString *message)
+ves_icall_System_Diagnostics_Debugger_Log (int level, MonoStringHandle category, MonoStringHandle message, MonoError *error)
 {
 	if (mono_get_runtime_callbacks ()->debug_log)
 		mono_get_runtime_callbacks ()->debug_log (level, category, message);

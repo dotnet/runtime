@@ -6056,7 +6056,7 @@ ss_req_release (SingleStepReq *req)
  * Called from metadata by the icall for System.Diagnostics.Debugger:Log ().
  */
 static void
-debugger_agent_debug_log (int level, MonoString *category, MonoString *message)
+debugger_agent_debug_log (int level, MonoStringHandle category, MonoStringHandle message)
 {
 	ERROR_DECL (error);
 	int suspend_policy;
@@ -6072,13 +6072,13 @@ debugger_agent_debug_log (int level, MonoString *category, MonoString *message)
 
 	ei.level = level;
 	ei.category = NULL;
-	if (category) {
-		ei.category = mono_string_to_utf8_checked (category, error);
+	if (!MONO_HANDLE_IS_NULL (category)) {
+		ei.category = mono_string_handle_to_utf8 (category, error);
 		mono_error_cleanup (error);
 	}
 	ei.message = NULL;
-	if (message) {
-		ei.message = mono_string_to_utf8_checked (message, error);
+	if (!MONO_HANDLE_IS_NULL (message)) {
+		ei.message = mono_string_handle_to_utf8 (message, error);
 		mono_error_cleanup  (error);
 	}
 
