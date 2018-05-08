@@ -68,6 +68,9 @@ namespace System.Reflection
                         defaultValue = buffer;
                         break;
 
+                    case CorElementType.Class:
+                        return null;
+
                     default:
                         throw new FormatException(SR.Arg_BadLiteralFormat);
                         #endregion
