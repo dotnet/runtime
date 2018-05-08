@@ -4981,8 +4981,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
         }
         if (lcl != nullptr)
         {
-            unsigned lclNum = lcl->gtLclNum;
-            if (lvaGetPromotionType(lclNum) == PROMOTION_TYPE_INDEPENDENT)
+            if (lvaGetPromotionType(lcl->gtLclNum) == PROMOTION_TYPE_INDEPENDENT)
             {
                 arg = fgMorphLclArgToFieldlist(lcl);
             }
@@ -4994,7 +4993,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                     arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
                     arg = gtNewObjNode(lvaGetStruct(lcl->gtLclNum), arg);
                 }
-                // Its fields will need to accessed by address.
+                // Its fields will need to be accessed by address.
                 lvaSetVarDoNotEnregister(lcl->gtLclNum DEBUG_ARG(DNER_IsStructArg));
             }
         }
@@ -5498,7 +5497,6 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
     LclVarDsc* varDsc = &(lvaTable[lcl->gtLclNum]);
     assert(varDsc->lvPromoted == true);
 
-    unsigned          lclNum      = lcl->gtLclNum;
     unsigned          offset      = 0;
     unsigned          fieldCount  = varDsc->lvFieldCnt;
     GenTreeFieldList* listEntry   = nullptr;
