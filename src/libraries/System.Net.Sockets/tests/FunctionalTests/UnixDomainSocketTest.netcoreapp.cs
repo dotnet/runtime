@@ -417,8 +417,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDoesntSupportUnixDomainSockets))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(nameof(IsSubWindows10))]
         public void Socket_CreateUnixDomainSocket_Throws_OnWindows()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => new UnixDomainSocketEndPoint(null));
@@ -439,33 +438,30 @@ namespace System.Net.Sockets.Tests
             return result;
         }
 
-
-        private static bool PlatformSupportsUnixDomainSockets => s_platformSupportsUnixDomainSockets.Value;
-
-        private static bool PlatformDoesntSupportUnixDomainSockets => !s_platformSupportsUnixDomainSockets.Value;
-
-        private static readonly Lazy<bool> s_platformSupportsUnixDomainSockets = new Lazy<bool>(() =>
+        private static bool PlatformSupportsUnixDomainSockets
         {
-            // All Unixes should support UDS. Some Windows will.
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            get
             {
-                IntPtr s = socket((int)AddressFamily.Unix, (int)SocketType.Stream, (int)ProtocolType.Unspecified);
-                if (s == (IntPtr)(-1))
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    return false;
+                    // UDS support added in April 2018 Update
+                    if (!PlatformDetection.IsWindows10Version1803OrGreater)
+                    {
+                        return false;
+                    }
+
+                    // TODO: Windows 10 April 2018 Update doesn't support UDS in 32-bit processes on 64-bit OSes,
+                    // allowing the socket call to succeed but then failing in bind. Remove this check once it's supported.
+                    if (!Environment.Is64BitProcess && Environment.Is64BitOperatingSystem)
+                    {
+                        return false;
+                    }
                 }
 
-                closesocket(s);
+                return true;
             }
+        }
 
-            return true;
-        });
-
-        [DllImport("ws2_32.dll")]
-        internal static extern IntPtr socket(int af, int type, int protocol);
-
-        [DllImport("ws2_32.dll")]
-        internal static extern int closesocket(IntPtr socketHandle);
+        private static bool IsSubWindows10 => PlatformDetection.IsWindows && PlatformDetection.WindowsVersion < 10;
     }
 }
