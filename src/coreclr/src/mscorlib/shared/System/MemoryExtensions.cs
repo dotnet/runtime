@@ -771,17 +771,21 @@ namespace System
         /// </summary>
         public static void Reverse<T>(this Span<T> span)
         {
-            ref T p = ref MemoryMarshal.GetReference(span);
-            int i = 0;
-            int j = span.Length - 1;
-            while (i < j)
+            if (span.Length <= 1)
             {
-                T temp = Unsafe.Add(ref p, i);
-                Unsafe.Add(ref p, i) = Unsafe.Add(ref p, j);
-                Unsafe.Add(ref p, j) = temp;
-                i++;
-                j--;
+                return;
             }
+
+            ref T first = ref MemoryMarshal.GetReference(span);
+            ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, span.Length), -1);
+            do
+            {
+                T temp = first;
+                first = last;
+                last = temp;
+                first = ref Unsafe.Add(ref first, 1);
+                last = ref Unsafe.Add(ref last, -1);
+            } while (Unsafe.IsAddressLessThan(ref first, ref last));
         }
 
         /// <summary>
