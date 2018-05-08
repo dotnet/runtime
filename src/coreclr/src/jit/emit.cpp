@@ -5437,6 +5437,11 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         printf("\nEmitting data sections: %u total bytes\n", sec->dsdOffs);
     }
 
+    if (emitComp->opts.disAsm)
+    {
+        emitDispDataSec(sec);
+    }
+
     unsigned secNum = 0;
 #endif
 
@@ -5533,6 +5538,123 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         dst += dscSize;
     }
 }
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// emitDispDataSec: Dump a data section to stdout.
+//
+// Arguments:
+//    section - the data section description
+//
+// Notes:
+//    The output format attempts to mirror typical assembler syntax.
+//    Data section entries lack type information so float/double entries
+//    are displayed as if they are integers/longs.
+//
+void emitter::emitDispDataSec(dataSecDsc* section)
+{
+    printf("\n");
+
+    unsigned offset = 0;
+
+    for (dataSection* data = section->dsdList; data != nullptr; data = data->dsNext)
+    {
+        const char* labelFormat = "%-7s";
+        char        label[64];
+        sprintf_s(label, _countof(label), "RWD%02u", offset);
+        printf(labelFormat, label);
+        offset += data->dsSize;
+
+        if ((data->dsType == dataSection::blockRelative32) || (data->dsType == dataSection::blockAbsoluteAddr))
+        {
+            insGroup* igFirst    = static_cast<insGroup*>(emitCodeGetCookie(emitComp->fgFirstBB));
+            bool      isRelative = (data->dsType == dataSection::blockRelative32);
+            size_t    blockCount = data->dsSize / (isRelative ? 4 : TARGET_POINTER_SIZE);
+
+            for (unsigned i = 0; i < blockCount; i++)
+            {
+                if (i > 0)
+                {
+                    printf(labelFormat, "");
+                }
+
+                BasicBlock* block = reinterpret_cast<BasicBlock**>(data->dsCont)[i];
+                insGroup*   ig    = static_cast<insGroup*>(emitCodeGetCookie(block));
+
+                const char* blockLabelFormat = "G_M%03u_IG%02u";
+                char        blockLabel[64];
+                char        firstLabel[64];
+                sprintf_s(blockLabel, _countof(blockLabel), blockLabelFormat, Compiler::s_compMethodsCount, ig->igNum);
+                sprintf_s(firstLabel, _countof(firstLabel), blockLabelFormat, Compiler::s_compMethodsCount,
+                          igFirst->igNum);
+
+                if (isRelative)
+                {
+                    if (emitComp->opts.disDiffable)
+                    {
+                        printf("dd\t%s - %s\n", blockLabel, firstLabel);
+                    }
+                    else
+                    {
+                        printf("dd\t%08Xh", ig->igOffs - igFirst->igOffs);
+                    }
+                }
+                else if (TARGET_POINTER_SIZE == 4)
+                {
+                    if (emitComp->opts.disDiffable)
+                    {
+                        printf("dd\t%s\n", blockLabel);
+                    }
+                    else
+                    {
+                        printf("dd\t%08Xh", reinterpret_cast<uint32_t>(emitOffsetToPtr(ig->igOffs)));
+                    }
+                }
+                else
+                {
+                    if (emitComp->opts.disDiffable)
+                    {
+                        printf("dq\t%s\n", blockLabel);
+                    }
+                    else
+                    {
+                        printf("dq\t%016llXh", reinterpret_cast<uint64_t>(emitOffsetToPtr(ig->igOffs)));
+                    }
+                }
+
+                if (!emitComp->opts.disDiffable)
+                {
+                    printf(" ; case %s\n", blockLabel);
+                }
+            }
+        }
+        else
+        {
+            assert(data->dsType == dataSection::data);
+            switch (data->dsSize)
+            {
+                case 2:
+                    printf("dw\t%04Xh\n", *reinterpret_cast<uint16_t*>(&data->dsCont));
+                    break;
+                case 4:
+                    printf("dd\t%08Xh\n", *reinterpret_cast<uint32_t*>(&data->dsCont));
+                    break;
+                case 8:
+                    printf("dq\t%016llXh\n", *reinterpret_cast<uint64_t*>(&data->dsCont));
+                    break;
+                default:
+                    printf("db\t");
+                    for (UNATIVE_OFFSET i = 0; i < data->dsSize; i++)
+                    {
+                        printf("%s0%02Xh", i > 0 ? ", " : "", data->dsCont[i]);
+                    }
+                    printf("\n");
+            }
+        }
+    }
+}
+#endif
 
 /*****************************************************************************/
 /*****************************************************************************
