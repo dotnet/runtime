@@ -216,6 +216,15 @@ private:
     unsigned  codePos; // the code position within the IG (see emitCurOffset())
 };
 
+#ifndef LEGACY_BACKEND
+enum class emitDataAlignment
+{
+    None,
+    Preferred,
+    Required
+};
+#endif
+
 /************************************************************************/
 /*          The following describes an instruction group                */
 /************************************************************************/
@@ -1580,7 +1589,7 @@ private:
     void emitSetMediumJump(instrDescJmp* id);
     UNATIVE_OFFSET emitSizeOfJump(instrDescJmp* jmp);
     UNATIVE_OFFSET emitInstCodeSz(instrDesc* id);
-    CORINFO_FIELD_HANDLE emitAnyConst(const void* cnsAddr, unsigned cnsSize, bool dblAlign);
+    CORINFO_FIELD_HANDLE emitAnyConst(const void* cnsAddr, unsigned cnsSize, emitDataAlignment alignment);
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
@@ -2036,6 +2045,7 @@ public:
         dataSection*   dsdList;
         dataSection*   dsdLast;
         UNATIVE_OFFSET dsdOffs;
+        bool           align16;
     };
 
     dataSecDsc emitConsDsc;
