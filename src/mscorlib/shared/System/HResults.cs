@@ -25,6 +25,7 @@ namespace System
 {
     internal static partial class HResults
     {
+        internal const int S_OK = unchecked((int)0x00000000);
         internal const int COR_E_ABANDONEDMUTEX = unchecked((int)0x8013152D);
         internal const int COR_E_AMBIGUOUSMATCH = unchecked((int)0x8000211D);
         internal const int COR_E_APPDOMAINUNLOADED = unchecked((int)0x80131014);
@@ -122,5 +123,6 @@ namespace System
         internal const int ERROR_MRM_MAP_NOT_FOUND = unchecked((int)0x80073B1F);
         internal const int RO_E_CLOSED = unchecked((int)0x80000013);
         internal const int TYPE_E_TYPEMISMATCH = unchecked((int)0x80028CA0);
+        internal const int CO_E_NOTINITIALIZED = unchecked((int)0x800401F0);
     }
 }
