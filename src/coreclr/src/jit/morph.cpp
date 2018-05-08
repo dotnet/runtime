@@ -7873,8 +7873,6 @@ void Compiler::fgMorphTailCall(GenTreeCall* call, void* pfnCopyArgs)
     }
     else if (call->IsVirtualVtable())
     {
-        // TODO-ARM-NYI: for x64 handle CORINFO_TAILCALL_THIS_IN_SECRET_REGISTER
-
         noway_assert(thisPtr != NULL);
 
         GenTree* add  = gtNewOperNode(GT_ADD, TYP_I_IMPL, thisPtr, gtNewIconNode(VPTR_OFFS, TYP_I_IMPL));
