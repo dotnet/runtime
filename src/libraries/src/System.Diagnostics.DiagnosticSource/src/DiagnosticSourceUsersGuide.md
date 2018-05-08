@@ -153,21 +153,43 @@ Thus the event names only need to be unique within a component.
 * DO NOT - name the listener after the Listener (thus something like System.Net.HttpDiagnosticListener
   is bad).
 
+
+
 #### Event Names
 
 * DO - keep the names reasonably short (< 16 characters). Keep in mind that event names
   are already qualified by the Listener so the name only needs to be unique within a listener.
   Short names make `IsEnabled()` faster.
 
-* DO - use the 'Start' and 'Stop' suffixes for events that define an interval of time. For example
-  naming one event 'RequestStart' and the another 'RequestStop' is good because tools can use the
-  convention to determine that the time interval betweeen them is interesting.
+* DO - use activities (see [Activity Users Guide](ActivityUserGuide.md)) for events that are
+  marking the begining and end of an interval of time.   The key value of Activities is that they
+  indicate that they represent a DURATION, and they also track what 'caused' them (and thus
+  logging systems can stitch together a 'causality graph').    
+
+* DO - If for some reason you can't use Activities, and your events mark the start and stop of 
+  an interval of time, use the 'Start' and 'Stop' suffixes on the events.  
 
 ### Payloads
 
 * DO use the anonymous type syntax 'new { property1 = value1 ...}' as the default way to pass
   a payload *even if there is only one data element*. This makes adding more data later easy
   and compatible.
+
+* CONSIDER creating an explicit type for the payload.   The main value for doing this is that the
+  receiver can cast the received object to that type and immediately fetch fields (with anonymous types
+  reflection must be used to fetch fields).   This is both easier to program and more efficient.   
+  Thus in scenarios where there is likely high-volume filtering to be done by the logging listener, having 
+  this type available to do the cast is valuable.   Note that this type needs to be made public (since 
+  the listener needs to see it), and should be under the namespace System.Diagnostics.DiagnosticSource.PayloadTypes.   
+  Note that if there is doubt about the value DO NOT create an explicit type, as you CAN convert from 
+  an anonymous type to a explicit type compatibly in the future, but once you expose the payload type
+  you must keep it forever.   The payload type should simply have C#  'TYPE NAME {get; set; }' properties 
+  (you can't use fields). You may add new properties as needed in the future.   
+
+* CONSIDER in high volume cases (e.g. > 1K/sec) consider reusing the payload object instead of
+  creating a new one each time the event is fired.   This only works well if you already have locking 
+  or exclusive objects where you can remember the payload for the 'next' event to send easily and 
+  correctly (you are only saving an object allocation, which is not large).
 
 * CONSIDER - if you have an event that is so frequent that the performance of the logging is
   an important consideration,  **and** you have only one data item **and** it is unlikely that
