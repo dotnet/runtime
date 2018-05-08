@@ -178,6 +178,13 @@ namespace System.Reflection.Emit
         {
             m_typeBuilder.ThrowIfCreated();
 
+            if (defaultValue == null && m_fieldType.IsValueType)
+            {
+                // nullable types can hold null value.
+                if (!(m_fieldType.IsGenericType && m_fieldType.GetGenericTypeDefinition() == typeof(Nullable<>)))
+                    throw new ArgumentException(SR.Argument_ConstantNull);
+            }
+
             TypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), GetToken().Token, m_fieldType, defaultValue);
         }
 
