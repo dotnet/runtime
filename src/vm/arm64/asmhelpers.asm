@@ -1278,7 +1278,7 @@ Fail
         
 #ifdef FEATURE_PREJIT
 ;; ------------------------------------------------------------------
-;; void StubDispatchFixupStub(args in regs x0-x7 & stack and possibly retbuff arg in x8, x11:IndirectionCellAndFlags, x12:DispatchToken)
+;; void StubDispatchFixupStub(args in regs x0-x7 & stack and possibly retbuff arg in x8, x11:IndirectionCellAndFlags)
 ;;
 ;; The stub dispatch thunk which transfers control to StubDispatchFixupWorker.
         NESTED_ENTRY StubDispatchFixupStub
@@ -1290,11 +1290,11 @@ Fail
         mov x2, #0 ; sectionIndex
         mov x3, #0 ; pModule
         bl StubDispatchFixupWorker
-        mov x9, x0
+        mov x12, x0
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         PATCH_LABEL StubDispatchFixupPatchLabel
-        EPILOG_BRANCH_REG  x9
+        EPILOG_BRANCH_REG  x12
 
         NESTED_END
 #endif
