@@ -18,6 +18,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
+using Thread = Internal.Runtime.Augments.RuntimeThread;
+
 namespace System.Threading.Tasks
 {
     /// <summary>
