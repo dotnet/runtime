@@ -1528,6 +1528,9 @@ namespace System
             if (array.Rank != 1)
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
 
+            if (length <= 1)
+                return;
+
             bool r = TrySZReverse(array, index, length);
             if (r)
                 return;
@@ -1561,7 +1564,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Reverse(array, 0, array.Length);
         }
-
+        
         public static void Reverse<T>(T[] array, int index, int length)
         {
             if (array == null)
@@ -1573,17 +1576,19 @@ namespace System
             if (array.Length - index < length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-            ref T p = ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData());
-            int i = index;
-            int j = index + length - 1;
-            while (i < j)
+            if (length <= 1)
+                return;
+
+            ref T first = ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), index);
+            ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, length), -1);
+            do
             {
-                T temp = Unsafe.Add(ref p, i);
-                Unsafe.Add(ref p, i) = Unsafe.Add(ref p, j);
-                Unsafe.Add(ref p, j) = temp;
-                i++;
-                j--;
-            }
+                T temp = first;
+                first = last;
+                last = temp;
+                first = ref Unsafe.Add(ref first, 1);
+                last = ref Unsafe.Add(ref last, -1);
+            } while (Unsafe.IsAddressLessThan(ref first, ref last));
         }
 
         // Sorts the elements of an array. The sort compares the elements to each
