@@ -282,7 +282,7 @@ namespace System.Net
             return hostname.ToString();
         }
 
-        public static string GetHostName()
+        public static unsafe string GetHostName()
         {
             //
             // note that we could cache the result ourselves since you
@@ -291,20 +291,12 @@ namespace System.Net
             // react to that change.
             //
 
-            StringBuilder sb = new StringBuilder(HostNameBufferLength);
-            SocketError errorCode =
-                Interop.Winsock.gethostname(
-                    sb,
-                    HostNameBufferLength);
-
-            //
-            // if the call failed throw a SocketException()
-            //
-            if (errorCode != SocketError.Success)
+            byte* buffer = stackalloc byte[HostNameBufferLength];
+            if (Interop.Winsock.gethostname(buffer, HostNameBufferLength) != SocketError.Success)
             {
                 throw new SocketException();
             }
-            return sb.ToString();
+            return new string((sbyte*)buffer);
         }
 
         public static void EnsureSocketsAreInitialized()
