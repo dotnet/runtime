@@ -631,7 +631,7 @@ typedef struct {
 	gpointer (*create_delegate_trampoline) (MonoDomain *domain, MonoClass *klass);
 	gpointer (*interp_get_remoting_invoke) (gpointer imethod, MonoError *error);
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
-#ifndef HOST_WIN32
+#ifdef TARGET_OSX
 	void     (*install_state_summarizer) (void);
 #endif
 } MonoRuntimeCallbacks;
@@ -651,7 +651,7 @@ typedef struct {
 	gboolean (*mono_above_abort_threshold) (void);
 	void (*mono_clear_abort_threshold) (void);
 	void (*mono_reraise_exception) (MonoException *ex);
-#ifndef HOST_WIN32
+#ifdef TARGET_OSX
 	void (*mono_summarize_stack) (MonoDomain *domain, MonoThreadSummary *out, MonoContext *crash_ctx);
 #endif
 } MonoRuntimeExceptionHandlingCallbacks;

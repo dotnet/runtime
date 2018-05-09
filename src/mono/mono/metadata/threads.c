@@ -5887,7 +5887,7 @@ mono_set_thread_dump_dir (gchar* dir) {
 	thread_dump_dir = dir;
 }
 
-#ifndef HOST_WIN32
+#ifdef TARGET_OSX
 
 static size_t num_threads_summarized = 0;
 

@@ -126,7 +126,7 @@ static gboolean mono_current_thread_has_handle_block_guard (void);
 static gboolean mono_install_handler_block_guard (MonoThreadUnwindState *ctx);
 static void mono_uninstall_current_handler_block_guard (void);
 
-#ifndef HOST_WIN32
+#ifdef TARGET_OSX
 static void mono_summarize_stack (MonoDomain *domain, MonoThreadSummary *out, MonoContext *crash_ctx);
 #endif
 
@@ -234,7 +234,7 @@ mono_exceptions_init (void)
 	cbs.mono_walk_stack_with_ctx = mono_runtime_walk_stack_with_ctx;
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
 
-#ifndef HOST_WIN32
+#ifdef TARGET_OSX
 	cbs.mono_summarize_stack = mono_summarize_stack;
 #endif
 
@@ -1246,7 +1246,7 @@ next:
 	}
 }
 
-#ifndef HOST_WIN32
+#ifdef TARGET_OSX
 typedef struct {
 	MonoFrameSummary *frames;
 	int num_frames;
@@ -2990,11 +2990,12 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 			if (!dump_for_merp) {
 #ifdef DISABLE_STRUCTURED_CRASH
 				leave = TRUE;
-#else
+#elif defined(TARGET_OSX)
 				mini_register_sigterm_handler ();
 #endif
 			}
 
+#ifdef TARGET_OSX
 			if (!leave) {
 				mono_sigctx_to_monoctx (ctx, &mctx);
 				// Do before forking
@@ -3006,6 +3007,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 			// So we dump to disk
 			if (!leave && !dump_for_merp)
 				mono_crash_dump (output);
+#endif
 		}
 
 		/*

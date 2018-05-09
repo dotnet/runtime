@@ -213,7 +213,7 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 	}
 }
 
-#ifndef HOST_WIN32
+#ifdef TARGET_OSX
 MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 {
 	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
@@ -388,7 +388,7 @@ remove_signal_handler (int signo)
 	}
 }
 
-#ifndef HOST_WIN32
+#ifdef TARGET_OSX
 void
 mini_register_sigterm_handler (void)
 {

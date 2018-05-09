@@ -338,7 +338,7 @@ mono_threads_exit_gc_safe_region_unbalanced_internal (gpointer cookie, MonoStack
 void
 mono_set_thread_dump_dir(gchar* dir);
 
-#ifndef HOST_WIN32
+#ifdef TARGET_OSX
 #define MONO_MAX_SUMMARY_NAME_LEN 140
 #define MONO_MAX_SUMMARY_THREADS 32
 #define MONO_MAX_SUMMARY_FRAMES 40

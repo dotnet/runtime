@@ -14,7 +14,7 @@
 #include <mono/utils/mono-state.h>
 #include <mono/metadata/object-internals.h>
 
-#ifndef HOST_WIN32
+#ifdef TARGET_OSX
 
 extern GCStats mono_gc_stats;
 

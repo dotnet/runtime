@@ -528,7 +528,7 @@ gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 #define DISABLE_SDB 1
 #endif
 
-#ifndef HOST_WIN32
+#ifdef TARGET_OSX
 void mini_register_sigterm_handler (void);
 #endif
 
