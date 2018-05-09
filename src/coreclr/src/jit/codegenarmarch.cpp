@@ -592,24 +592,24 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
     bool isStruct = (targetType == TYP_STRUCT) || (source->OperGet() == GT_FIELD_LIST);
 
-    if (varTypeIsSIMD(targetType))
-    {
-        assert(!source->isContained());
-
-        regNumber srcReg = genConsumeReg(source);
-
-        emitAttr storeAttr = emitTypeSize(targetType);
-
-        assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
-        emit->emitIns_S_R(INS_str, storeAttr, srcReg, varNumOut, argOffsetOut);
-
-        argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
-        assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
-        return;
-    }
-
     if (!isStruct) // a normal non-Struct argument
     {
+        if (varTypeIsSIMD(targetType))
+        {
+            assert(!source->isContained());
+
+            regNumber srcReg = genConsumeReg(source);
+
+            emitAttr storeAttr = emitTypeSize(targetType);
+
+            assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
+            emit->emitIns_S_R(INS_str, storeAttr, srcReg, varNumOut, argOffsetOut);
+
+            argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
+            assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+            return;
+        }
+
         instruction storeIns  = ins_Store(targetType);
         emitAttr    storeAttr = emitTypeSize(targetType);
 
