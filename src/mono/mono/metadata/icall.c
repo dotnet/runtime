@@ -1597,18 +1597,15 @@ ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree (GPtrArray *ptr_array, MonoE
 }
 
 ICALL_EXPORT void
-ves_icall_Mono_SafeStringMarshal_GFree (void *c_str)
+ves_icall_Mono_SafeStringMarshal_GFree (void *c_str, MonoError *error)
 {
 	g_free (c_str);
 }
 
 ICALL_EXPORT char*
-ves_icall_Mono_SafeStringMarshal_StringToUtf8 (MonoString *s)
+ves_icall_Mono_SafeStringMarshal_StringToUtf8 (MonoStringHandle s, MonoError *error)
 {
-	ERROR_DECL (error);
-	char *res = mono_string_to_utf8_checked (s, error);
-	mono_error_set_pending_exception (error);
-	return res;
+	return mono_string_handle_to_utf8 (s, error);
 }
 
 /* System.TypeCode */
