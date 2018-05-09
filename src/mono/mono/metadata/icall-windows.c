@@ -208,9 +208,9 @@ mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds)
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 void
-mono_icall_write_windows_debug_string (MonoString *message)
+mono_icall_write_windows_debug_string (const gunichar2 *message)
 {
-	OutputDebugString (mono_string_chars (message));
+	OutputDebugString (message);
 }
 
 #endif /* HOST_WIN32 */

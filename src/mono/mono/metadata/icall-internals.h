@@ -48,7 +48,7 @@ MonoBoolean
 mono_icall_broadcast_setting_change (MonoError *error);
 
 void
-mono_icall_write_windows_debug_string (MonoString *message);
+mono_icall_write_windows_debug_string (const gunichar2 *message);
 
 gint32
 mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds);
