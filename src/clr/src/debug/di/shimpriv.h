@@ -61,7 +61,8 @@ typedef SHash<DuplicateCreationEventsHashTableTraits> DuplicateCreationEventsHas
 class ShimProxyCallback : 
     public ICorDebugManagedCallback,
     public ICorDebugManagedCallback2, 
-    public ICorDebugManagedCallback3
+    public ICorDebugManagedCallback3,
+    public ICorDebugManagedCallback4
 {
     ShimProcess * m_pShim; // weak reference
     LONG m_cRef; 
@@ -210,6 +211,12 @@ public:
     // Implementation of ICorDebugManagedCallback3::CustomNotification
     COM_METHOD CustomNotification(ICorDebugThread * pThread, ICorDebugAppDomain * pAppDomain);
 
+    ///
+    /// Implementation of ICorDebugManagedCallback4
+    ///
+
+    // Implementation of ICorDebugManagedCallback4::SomeWork
+    COM_METHOD SomeWork(ICorDebugThread * pThread, ICorDebugAppDomain * pAppDomain);
 };
 
 
@@ -233,17 +240,19 @@ public:
     class DispatchArgs
     {
     public:
-        DispatchArgs(ICorDebugManagedCallback * pCallback1, ICorDebugManagedCallback2 * pCallback2, ICorDebugManagedCallback3 * pCallback3);
+        DispatchArgs(ICorDebugManagedCallback * pCallback1, ICorDebugManagedCallback2 * pCallback2, ICorDebugManagedCallback3 * pCallback3, ICorDebugManagedCallback4 * pCallback4);
 
         ICorDebugManagedCallback * GetCallback1();
         ICorDebugManagedCallback2 * GetCallback2();
         ICorDebugManagedCallback3 * GetCallback3();
+        ICorDebugManagedCallback4 * GetCallback4();
 
 
     protected:
         ICorDebugManagedCallback * m_pCallback1;
         ICorDebugManagedCallback2 * m_pCallback2;
         ICorDebugManagedCallback3 * m_pCallback3;
+        ICorDebugManagedCallback4 * m_pCallback4;
     };
 
     // Returns: value of callback from end-user

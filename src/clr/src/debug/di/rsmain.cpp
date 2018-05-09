@@ -852,6 +852,84 @@ namespace
         pAppDomain->Continue(false);
         return S_OK;
     }
+
+    //
+    // DefaultManagedCallback4
+    //
+    // In the event that the debugger is of an older version than the Right Side & Left Side, the Right Side may issue
+    // new callbacks that the debugger is not expecting. In this case, we need to provide a default behavior for those
+    // new callbacks, if for nothing else than to force the debugger to Continue().
+    //
+    class DefaultManagedCallback4 : public ICorDebugManagedCallback4
+    {
+    public:
+        DefaultManagedCallback4(ICorDebug* pDebug);
+        virtual ~DefaultManagedCallback4() { }
+        virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** pInterface);
+        virtual ULONG STDMETHODCALLTYPE AddRef();
+        virtual ULONG STDMETHODCALLTYPE Release();
+        COM_METHOD SomeWork(ICorDebugThread * pThread, ICorDebugAppDomain * pAppDomain);
+    private:
+        // not implemented
+        DefaultManagedCallback4(const DefaultManagedCallback4&);
+        DefaultManagedCallback4& operator=(const DefaultManagedCallback4&);
+
+        ICorDebug* m_pDebug;
+        LONG m_refCount;
+    };
+
+    DefaultManagedCallback4::DefaultManagedCallback4(ICorDebug* pDebug) : m_pDebug(pDebug), m_refCount(0)
+    {
+    }
+
+    HRESULT
+        DefaultManagedCallback4::QueryInterface(REFIID iid, void** pInterface)
+    {
+        if (IID_ICorDebugManagedCallback4 == iid)
+        {
+            *pInterface = static_cast<ICorDebugManagedCallback4*>(this);
+        }
+        else if (IID_IUnknown == iid)
+        {
+            *pInterface = static_cast<IUnknown*>(this);
+        }
+        else
+        {
+            *pInterface = NULL;
+            return E_NOINTERFACE;
+        }
+
+        this->AddRef();
+        return S_OK;
+    }
+
+    ULONG
+        DefaultManagedCallback4::AddRef()
+    {
+        return InterlockedIncrement(&m_refCount);
+    }
+
+    ULONG
+        DefaultManagedCallback4::Release()
+    {
+        ULONG ulRef = InterlockedDecrement(&m_refCount);
+        if (0 == ulRef)
+        {
+            delete this;
+        }
+
+        return ulRef;
+    }
+
+    HRESULT
+        DefaultManagedCallback4::SomeWork(ICorDebugThread * pThread, ICorDebugAppDomain * pAppDomain)
+    {
+        //
+        // Just ignore and continue the process.
+        //
+        pAppDomain->Continue(false);
+        return S_OK;
+    }
 }
 
 /* ------------------------------------------------------------------------- *
@@ -1055,6 +1133,7 @@ HRESULT Cordb::Terminate()
     m_managedCallback.Clear();
     m_managedCallback2.Clear();
     m_managedCallback3.Clear();
+    m_managedCallback4.Clear();
     m_unmanagedCallback.Clear();
 
     // The Shell may still have outstanding references, so we don't want to shutdown logging yet.
@@ -1209,7 +1288,7 @@ void Cordb::AddProcess(CordbProcess* process)
     // can have another debuggee.
     STRESS_LOG1(LF_CORDB, LL_INFO10, "Cordb::AddProcess %08x...\n", process);
 
-    if ((m_managedCallback == NULL) || (m_managedCallback2 == NULL) || (m_managedCallback3 == NULL))
+    if ((m_managedCallback == NULL) || (m_managedCallback2 == NULL) || (m_managedCallback3 == NULL) || (m_managedCallback4 == NULL))
     {
         ThrowHR(E_FAIL);
     }
@@ -1352,6 +1431,7 @@ HRESULT Cordb::SetManagedHandler(ICorDebugManagedCallback *pCallback)
     m_managedCallback.Clear();
     m_managedCallback2.Clear();
     m_managedCallback3.Clear();
+    m_managedCallback4.Clear();
 
     // For SxS, V2.0 debuggers must implement ManagedCallback2 to handle v2.0 debug events.
     // For Single-CLR, A v1.0 debugger may actually geta V2.0 debuggee.
@@ -1376,7 +1456,6 @@ HRESULT Cordb::SetManagedHandler(ICorDebugManagedCallback *pCallback)
         }
     }
 
-
     pCallback->QueryInterface(IID_ICorDebugManagedCallback3, (void **)&m_managedCallback3);
     if (m_managedCallback3 == NULL)
     {
@@ -1384,6 +1463,17 @@ HRESULT Cordb::SetManagedHandler(ICorDebugManagedCallback *pCallback)
     }
 
     if (m_managedCallback3 == NULL)
+    {
+        return E_OUTOFMEMORY;
+    }
+
+    pCallback->QueryInterface(IID_ICorDebugManagedCallback4, (void **)&m_managedCallback4);
+    if (m_managedCallback4 == NULL)
+    {
+        m_managedCallback4.Assign(new (nothrow) DefaultManagedCallback4(this));
+    }
+
+    if (m_managedCallback4 == NULL)
     {
         return E_OUTOFMEMORY;
     }
@@ -1567,7 +1657,7 @@ HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
     #endif // FEATURE_INTEROP_DEBUGGING
 
         // Must have a managed-callback by now.
-        if ((m_managedCallback == NULL) || (m_managedCallback2 == NULL) || (m_managedCallback3 == NULL))
+        if ((m_managedCallback == NULL) || (m_managedCallback2 == NULL) || (m_managedCallback3 == NULL) || (m_managedCallback4 == NULL))
         {
             ThrowHR(E_FAIL);
         }
@@ -1702,7 +1792,7 @@ HRESULT Cordb::DebugActiveProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
         }
 
         // Must have a managed-callback by now.
-        if ((m_managedCallback == NULL) || (m_managedCallback2 == NULL) || (m_managedCallback3 == NULL))
+        if ((m_managedCallback == NULL) || (m_managedCallback2 == NULL) || (m_managedCallback3 == NULL) || (m_managedCallback4 == NULL))
         {
             ThrowHR(E_FAIL);
         }

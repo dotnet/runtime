@@ -58,6 +58,10 @@ HRESULT ShimProxyCallback::QueryInterface(REFIID riid, void **ppInterface)
     {
         *ppInterface = static_cast<ICorDebugManagedCallback3*>(this);
     }
+    else if (riid == IID_ICorDebugManagedCallback4)
+    {
+        *ppInterface = static_cast<ICorDebugManagedCallback4*>(this);
+    }
     else if (riid == IID_IUnknown)
     {
         *ppInterface = static_cast<IUnknown*>(static_cast<ICorDebugManagedCallback*>(this));
@@ -1312,5 +1316,40 @@ HRESULT ShimProxyCallback::CustomNotification(ICorDebugThread * pThread, ICorDeb
     m_pShim->GetManagedEventQueue()->QueueEvent(new CustomNotificationEvent(pThread, pAppDomain));
     return S_OK;
 }
+
+// Implementation of ICorDebugManagedCallback4::SomeWork
+// Arguments:
+//      input:
+//          pThread    - thread on which the notification occurred
+//          pAppDomain - appDomain in which the notification occurred
+// Return value: S_OK
+HRESULT ShimProxyCallback::SomeWork(ICorDebugThread * pThread, ICorDebugAppDomain * pAppDomain)
+{
+    m_pShim->PreDispatchEvent();
+    class SomeWorkEvent : public ManagedEvent
+    {
+        // callbacks parameters. These are strong references
+        RSExtSmartPtr<ICorDebugAppDomain > m_pAppDomain;
+        RSExtSmartPtr<ICorDebugThread > m_pThread;
+
+    public:
+        // Ctor
+        SomeWorkEvent(ICorDebugThread * pThread, ICorDebugAppDomain * pAppDomain) :
+            ManagedEvent(pThread)
+        {
+            this->m_pAppDomain.Assign(pAppDomain);
+            this->m_pThread.Assign(pThread);
+        }
+
+        HRESULT Dispatch(DispatchArgs args)
+        {
+            return args.GetCallback4()->SomeWork(m_pThread, m_pAppDomain);
+        }
+    }; // end class SomeWorkEvent
+
+    m_pShim->GetManagedEventQueue()->QueueEvent(new SomeWorkEvent(pThread, pAppDomain));
+    return S_OK;
+}
+
 
 
