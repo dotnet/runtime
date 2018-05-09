@@ -4,7 +4,7 @@
   <!-- List the projects that need to be built -->
   <ItemGroup>
     <Project Condition="$(SkipSOS) != 'true'" Include="ToolBox\SOS\NETCore\SOS.NETCore.csproj" />
-    <Project Include="mscorlib\System.Private.CoreLib.csproj" />
+    <Project Include="System.Private.CoreLib\System.Private.CoreLib.csproj" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
