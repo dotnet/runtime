@@ -204,22 +204,7 @@ namespace System.StubHelpers
                 return;
 
             int nbBytes = StubHelpers.strlen((sbyte*)pNative);
-            int numChar = Encoding.UTF8.GetCharCount((byte*)pNative, nbBytes);
-
-            // +1 GetCharCount return 0 if the pNative points to a 
-            // an empty buffer.We still need to allocate an empty 
-            // buffer with a '\0' to distingiush it from null.
-            // Note that pinning on (char *pinned = new char[0])
-            // return null and  Encoding.UTF8.GetChars do not like 
-            // null argument.
-            char[] cCharBuffer = new char[numChar + 1];
-            cCharBuffer[numChar] = '\0';
-            fixed (char* pBuffer = &cCharBuffer[0])
-            {
-                numChar = Encoding.UTF8.GetChars((byte*)pNative, nbBytes, pBuffer, numChar);
-                // replace string builder internal buffer
-                sb.ReplaceBufferInternal(pBuffer, numChar);
-            }
+            sb.ReplaceBufferUtf8Internal(new Span<byte>((byte*)pNative, nbBytes));
         }
     }
 
