@@ -780,6 +780,49 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
         simdNode->gtType = TYP_SIMD16;
     }
 
+    if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
+    {
+        assert(simdNode->gtSIMDBaseType == TYP_FLOAT);
+
+        int   argCount      = 0;
+        int   constArgCount = 0;
+        float constArgValues[4]{0, 0, 0, 0};
+
+        for (GenTreeArgList* list = simdNode->gtGetOp1()->AsArgList(); list != nullptr; list = list->Rest())
+        {
+            GenTree* arg = list->Current();
+
+            assert(arg->TypeGet() == simdNode->gtSIMDBaseType);
+            assert(argCount < _countof(constArgValues));
+
+            if (arg->IsCnsFltOrDbl())
+            {
+                constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->gtDconVal);
+                constArgCount++;
+            }
+
+            argCount++;
+        }
+
+        if (constArgCount == argCount)
+        {
+            for (GenTreeArgList* list = simdNode->gtGetOp1()->AsArgList(); list != nullptr; list = list->Rest())
+            {
+                BlockRange().Remove(list->Current());
+            }
+
+            CORINFO_FIELD_HANDLE hnd =
+                comp->getEmitter()->emitAnyConst(constArgValues, sizeof(constArgValues), emitDataAlignment::Required);
+            GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
+            BlockRange().InsertBefore(simdNode, clsVarAddr);
+            simdNode->ChangeOper(GT_IND);
+            simdNode->gtOp1 = clsVarAddr;
+            ContainCheckIndir(simdNode->AsIndir());
+
+            return;
+        }
+    }
+
 #ifdef _TARGET_XARCH_
     if ((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGetItem) && (simdNode->gtGetOp1()->OperGet() == GT_IND))
     {
