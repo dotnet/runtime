@@ -14,9 +14,7 @@
     <PackageReference Include="NuGet.ProjectModel">
       <Version>$(NugetProjectModelPackageVersion)</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.DependencyModel">
-      <Version>1.1.1</Version>
-    </PackageReference>
+    <ProjectReference Include="..\..\src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj"/>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'net46'">
     <Reference Include="$(BuildToolsTaskCoreDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
