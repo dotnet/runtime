@@ -94700,11 +94700,34 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
-[hfa_params.cmd_12211]
-RelativePath=JIT\Methodical\Invoke\hfa_params\hfa_params\hfa_params.cmd
-WorkingDir=JIT\Methodical\Invoke\hfa_params\hfa_params
+[hfa_params_cs_d.cmd_12211]
+RelativePath=JIT\Methodical\Invoke\hfa_params\hfa_params_cs_d\hfa_params_cs_d.cmd
+WorkingDir=JIT\Methodical\Invoke\hfa_params\hfa_params_cs_d
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
+[hfa_params_cs_do.cmd_12212]
+RelativePath=JIT\Methodical\Invoke\hfa_params\hfa_params_cs_do\hfa_params_cs_do.cmd
+WorkingDir=JIT\Methodical\Invoke\hfa_params\hfa_params_cs_do
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
+
+[hfa_params_cs_r.cmd_12213]
+RelativePath=JIT\Methodical\Invoke\hfa_params\hfa_params_cs_r\hfa_params_cs_r.cmd
+WorkingDir=JIT\Methodical\Invoke\hfa_params\hfa_params_cs_r
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
+
+[hfa_params_cs_ro.cmd_12214]
+RelativePath=JIT\Methodical\Invoke\hfa_params\hfa_params_cs_ro\hfa_params_cs_ro.cmd
+WorkingDir=JIT\Methodical\Invoke\hfa_params\hfa_params_cs_ro
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
