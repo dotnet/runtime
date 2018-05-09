@@ -231,6 +231,9 @@ namespace System.Data.SqlClient
             destination._sourceVersion = _sourceVersion;
             destination._sourceColumnNullMapping = _sourceColumnNullMapping;
             destination._isNullable = _isNullable;
+            destination._parameterName = _parameterName;
+            destination._isNull = _isNull;
+            
         }
     }
 }
