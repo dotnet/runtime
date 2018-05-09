@@ -2,15 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.CodeAnalysis;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace System.Security.Cryptography.Xml
 {
     internal static class CryptoHelpers
     {
-        [SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 needed for compat.")]
-        [SuppressMessage("Microsoft.Security", "CA5351", Justification = "HMACMD5 needed for compat.")]
-        public static object CreateFromName(string name)
+        private static readonly char[] _invalidChars = new char[] { ',', '`', '[', '*', '&' };
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 needed for compat.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "HMACMD5 needed for compat.")]
+        public static object CreateFromKnownName(string name)
         {
             switch (name)
             {
@@ -73,7 +79,23 @@ namespace System.Security.Cryptography.Xml
                     return TripleDES.Create();
             }
 
-            return CryptoConfig.CreateFromName(name);
+            return null;
+        }
+
+        public static T CreateFromName<T>(string name) where T : class
+        {
+            if (name == null || name.IndexOfAny(_invalidChars) >= 0)
+            {
+                return null;
+            }
+            try
+            {
+                return (CreateFromKnownName(name) ?? CryptoConfig.CreateFromName(name)) as T;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
     }
 }

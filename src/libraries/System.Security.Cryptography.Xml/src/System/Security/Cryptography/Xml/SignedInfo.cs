@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.Xml
             {
                 if (_canonicalizationMethodTransform == null)
                 {
-                    _canonicalizationMethodTransform = CryptoHelpers.CreateFromName(CanonicalizationMethod) as Transform;
+                    _canonicalizationMethodTransform = CryptoHelpers.CreateFromName<Transform>(CanonicalizationMethod);
                     if (_canonicalizationMethodTransform == null)
                         throw new CryptographicException(string.Format(CultureInfo.CurrentCulture, SR.Cryptography_Xml_CreateTransformFailed, CanonicalizationMethod));
                     _canonicalizationMethodTransform.SignedXml = SignedXml;
@@ -213,24 +213,35 @@ namespace System.Security.Cryptography.Xml
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
+            int expectedChildNodes = 0;
 
             // Id attribute -- optional
             _id = Utils.GetAttribute(signedInfoElement, "Id", SignedXml.XmlDsigNamespaceUrl);
+            if (!Utils.VerifyAttributes(signedInfoElement, "Id"))
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "SignedInfo");
 
             // CanonicalizationMethod -- must be present
-            XmlElement canonicalizationMethodElement = signedInfoElement.SelectSingleNode("ds:CanonicalizationMethod", nsm) as XmlElement;
-            if (canonicalizationMethodElement == null)
+            XmlNodeList canonicalizationMethodNodes = signedInfoElement.SelectNodes("ds:CanonicalizationMethod", nsm);
+            if (canonicalizationMethodNodes == null || canonicalizationMethodNodes.Count == 0 || canonicalizationMethodNodes.Count > 1)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "SignedInfo/CanonicalizationMethod");
+            XmlElement canonicalizationMethodElement = canonicalizationMethodNodes.Item(0) as XmlElement;
+            expectedChildNodes += canonicalizationMethodNodes.Count;
             _canonicalizationMethod = Utils.GetAttribute(canonicalizationMethodElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
+            if (_canonicalizationMethod == null || !Utils.VerifyAttributes(canonicalizationMethodElement, "Algorithm"))
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "SignedInfo/CanonicalizationMethod");
             _canonicalizationMethodTransform = null;
             if (canonicalizationMethodElement.ChildNodes.Count > 0)
                 CanonicalizationMethodObject.LoadInnerXml(canonicalizationMethodElement.ChildNodes);
 
             // SignatureMethod -- must be present
-            XmlElement signatureMethodElement = signedInfoElement.SelectSingleNode("ds:SignatureMethod", nsm) as XmlElement;
-            if (signatureMethodElement == null)
+            XmlNodeList signatureMethodNodes = signedInfoElement.SelectNodes("ds:SignatureMethod", nsm);
+            if (signatureMethodNodes == null || signatureMethodNodes.Count == 0 || signatureMethodNodes.Count > 1)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "SignedInfo/SignatureMethod");
+            XmlElement signatureMethodElement = signatureMethodNodes.Item(0) as XmlElement;
+            expectedChildNodes += signatureMethodNodes.Count;
             _signatureMethod = Utils.GetAttribute(signatureMethodElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
+            if (_signatureMethod == null || !Utils.VerifyAttributes(signatureMethodElement, "Algorithm"))
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "SignedInfo/SignatureMethod");
 
             // Now get the output length if we are using a MAC algorithm
             XmlElement signatureLengthElement = signatureMethodElement.SelectSingleNode("ds:HMACOutputLength", nsm) as XmlElement;
@@ -240,15 +251,26 @@ namespace System.Security.Cryptography.Xml
             // flush out any reference that was there
             _references.Clear();
 
+            // Reference - 0 or more
             XmlNodeList referenceNodes = signedInfoElement.SelectNodes("ds:Reference", nsm);
             if (referenceNodes != null)
             {
+                if (referenceNodes.Count > Utils.MaxReferencesPerSignedInfo)
+                {
+                    throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "SignedInfo/Reference");
+                }
                 foreach (XmlNode node in referenceNodes)
                 {
                     XmlElement referenceElement = node as XmlElement;
                     Reference reference = new Reference();
                     AddReference(reference);
                     reference.LoadXml(referenceElement);
+                }
+                expectedChildNodes += referenceNodes.Count;
+                // Verify that there aren't any extra nodes that aren't allowed
+                if (signedInfoElement.SelectNodes("*").Count != expectedChildNodes)
+                {
+                    throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "SignedInfo");
                 }
             }
 

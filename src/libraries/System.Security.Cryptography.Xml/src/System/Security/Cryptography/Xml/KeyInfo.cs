@@ -71,6 +71,8 @@ namespace System.Security.Cryptography.Xml
 
             XmlElement keyInfoElement = value;
             _id = Utils.GetAttribute(keyInfoElement, "Id", SignedXml.XmlDsigNamespaceUrl);
+            if (!Utils.VerifyAttributes(keyInfoElement, "Id"))
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "KeyInfo");
 
             XmlNode child = keyInfoElement.FirstChild;
             while (child != null)
@@ -83,6 +85,10 @@ namespace System.Security.Cryptography.Xml
                     // Special-case handling for KeyValue -- we have to go one level deeper
                     if (kicString == "http://www.w3.org/2000/09/xmldsig# KeyValue")
                     {
+                        if (!Utils.VerifyAttributes(elem, (string[])null))
+                        {
+                            throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "KeyInfo/KeyValue");
+                        }
                         XmlNodeList nodeList2 = elem.ChildNodes;
                         foreach (XmlNode node2 in nodeList2)
                         {
@@ -94,7 +100,8 @@ namespace System.Security.Cryptography.Xml
                             }
                         }
                     }
-                    KeyInfoClause keyInfoClause = (KeyInfoClause)CryptoHelpers.CreateFromName(kicString);
+
+                    KeyInfoClause keyInfoClause = CryptoHelpers.CreateFromName<KeyInfoClause>(kicString);
                     // if we don't know what kind of KeyInfoClause we're looking at, use a generic KeyInfoNode:
                     if (keyInfoClause == null)
                         keyInfoClause = new KeyInfoNode();
