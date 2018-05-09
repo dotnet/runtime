@@ -1350,6 +1350,18 @@ interface ICorDebugManagedCallback3 : IUnknown
     HRESULT CustomNotification([in] ICorDebugThread * pThread, [in] ICorDebugAppDomain * pAppDomain);
 }
 
+[
+    object,
+    local,
+    uuid(322911AE-16A5-49BA-84A3-ED69678138A3),
+    pointer_default(unique)
+]
+
+interface ICorDebugManagedCallback4 : IUnknown
+{
+    HRESULT SomeWork([in] ICorDebugThread * pThread, [in] ICorDebugAppDomain * pAppDomain);
+}
+
 
 #pragma warning(disable:28718)	/* disable warning 28718 for interface ICorDebugManagedCallback2 */
 
