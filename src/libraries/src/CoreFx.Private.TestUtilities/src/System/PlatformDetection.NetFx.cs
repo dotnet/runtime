@@ -37,6 +37,8 @@ namespace System
                 if (ndpKey != null)
                 {
                     int value = (int)(ndpKey.GetValue("Release") ?? 0);
+                    if (value >= 461808)
+                        return new Version(4, 7, 2);
                     if (value >= 461308)
                         return new Version(4, 7, 1);
                     if (value >= 460798)
