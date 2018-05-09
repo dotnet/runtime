@@ -219,25 +219,52 @@ namespace System.Security.Cryptography.Xml
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);
             _uri = Utils.GetAttribute(value, "URI", SignedXml.XmlDsigNamespaceUrl);
             _type = Utils.GetAttribute(value, "Type", SignedXml.XmlDsigNamespaceUrl);
+            if (!Utils.VerifyAttributes(value, new string[] { "Id", "URI", "Type" }))
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference");
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
 
             // Transforms
+            bool hasTransforms = false;
             TransformChain = new TransformChain();
-            XmlElement transformsElement = value.SelectSingleNode("ds:Transforms", nsm) as XmlElement;
-            if (transformsElement != null)
+            XmlNodeList transformsNodes = value.SelectNodes("ds:Transforms", nsm);
+            if (transformsNodes != null && transformsNodes.Count != 0)
             {
+                if (transformsNodes.Count > 1)
+                {
+                    throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/Transforms");
+                }
+                hasTransforms = true;
+                XmlElement transformsElement = transformsNodes[0] as XmlElement;
+                if (!Utils.VerifyAttributes(transformsElement, (string[])null))
+                {
+                    throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/Transforms");
+                }
                 XmlNodeList transformNodes = transformsElement.SelectNodes("ds:Transform", nsm);
                 if (transformNodes != null)
                 {
+                    if (transformNodes.Count != transformsElement.SelectNodes("*").Count)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/Transforms");
+                    }
+                    if (transformNodes.Count > Utils.MaxTransformsPerReference)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/Transforms");
+                    }
                     foreach (XmlNode transformNode in transformNodes)
                     {
                         XmlElement transformElement = transformNode as XmlElement;
                         string algorithm = Utils.GetAttribute(transformElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
-                        Transform transform = CryptoHelpers.CreateFromName(algorithm) as Transform;
-                        if (transform == null)
+                        if (algorithm == null || !Utils.VerifyAttributes(transformElement, "Algorithm"))
+                        {
                             throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
+                        }
+                        Transform transform = CryptoHelpers.CreateFromName<Transform>(algorithm);
+                        if (transform == null)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
+                        }
                         AddTransform(transform);
                         // let the transform read the children of the transformElement for data
                         transform.LoadInnerXml(transformElement.ChildNodes);
@@ -267,16 +294,27 @@ namespace System.Security.Cryptography.Xml
             }
 
             // DigestMethod
-            XmlElement digestMethodElement = value.SelectSingleNode("ds:DigestMethod", nsm) as XmlElement;
-            if (digestMethodElement == null)
+            XmlNodeList digestMethodNodes = value.SelectNodes("ds:DigestMethod", nsm);
+            if (digestMethodNodes == null || digestMethodNodes.Count == 0 || digestMethodNodes.Count > 1)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/DigestMethod");
+            XmlElement digestMethodElement = digestMethodNodes[0] as XmlElement;
             _digestMethod = Utils.GetAttribute(digestMethodElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
+            if (_digestMethod == null || !Utils.VerifyAttributes(digestMethodElement, "Algorithm"))
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/DigestMethod");
+
 
             // DigestValue
-            XmlElement digestValueElement = value.SelectSingleNode("ds:DigestValue", nsm) as XmlElement;
-            if (digestValueElement == null)
+            XmlNodeList digestValueNodes = value.SelectNodes("ds:DigestValue", nsm);
+            if (digestValueNodes == null || digestValueNodes.Count == 0 || digestValueNodes.Count > 1)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/DigestValue");
+            XmlElement digestValueElement = digestValueNodes[0] as XmlElement;
             _digestValue = Convert.FromBase64String(Utils.DiscardWhiteSpaces(digestValueElement.InnerText));
+            if (!Utils.VerifyAttributes(digestValueElement, (string[])null))
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference/DigestValue");
+            // Verify that there aren't any extra nodes that aren't allowed
+            int expectedChildNodeCount = hasTransforms ? 3 : 2;
+            if (value.SelectNodes("*").Count != expectedChildNodeCount)
+                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference");
 
             // cache the Xml
             _cachedXml = value;
@@ -304,7 +342,7 @@ namespace System.Security.Cryptography.Xml
         {
             // refList is a list of elements that might be targets of references
             // Now's the time to create our hashing algorithm
-            _hashAlgorithm = CryptoHelpers.CreateFromName(_digestMethod) as HashAlgorithm;
+            _hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(_digestMethod);
             if (_hashAlgorithm == null)
                 throw new CryptographicException(SR.Cryptography_Xml_CreateHashAlgorithmFailed);
 

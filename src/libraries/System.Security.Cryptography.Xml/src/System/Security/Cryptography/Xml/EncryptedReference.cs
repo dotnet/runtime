@@ -112,7 +112,11 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentNullException(nameof(value));
 
             ReferenceType = value.LocalName;
-            Uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
+            
+            string uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
+            if (uri == null)
+                throw new ArgumentNullException(SR.Cryptography_Xml_UriRequired);
+            Uri = uri;
 
             // Transforms
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
