@@ -4559,8 +4559,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             // so if possible it was set above.
             tryToSwap = false;
         }
-        else if ((oper == GT_INTRINSIC) &&
-                 Compiler::IsIntrinsicImplementedByUserCall(tree->AsIntrinsic()->gtIntrinsicId))
+        else if ((oper == GT_INTRINSIC) && IsIntrinsicImplementedByUserCall(tree->AsIntrinsic()->gtIntrinsicId))
         {
             // We do not swap operand execution order for intrinsics that are implemented by user calls
             // because of trickiness around ensuring the execution order does not change during rationalization.
@@ -5988,8 +5987,8 @@ GenTree* GenTree::gtGetParent(GenTree*** parentChildPtrPtr) const
 }
 
 //------------------------------------------------------------------------------
-// OperMayThrow : Check whether the operation requires GTF_ASG flag regardless
-//                of the children's flags.
+// OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless
+//                       of the children's flags.
 //
 
 bool GenTree::OperRequiresAsgFlag()
@@ -6010,6 +6009,42 @@ bool GenTree::OperRequiresAsgFlag()
     }
 #endif // FEATURE_HW_INTRINSICS
     return false;
+}
+
+//------------------------------------------------------------------------------
+// OperRequiresCallFlag : Check whether the operation requires GTF_CALL flag regardless
+//                        of the children's flags.
+//
+
+bool GenTree::OperRequiresCallFlag(Compiler* comp)
+{
+    switch (gtOper)
+    {
+        case GT_CALL:
+            return true;
+
+        case GT_INTRINSIC:
+            return comp->IsIntrinsicImplementedByUserCall(this->AsIntrinsic()->gtIntrinsicId);
+
+#if FEATURE_FIXED_OUT_ARGS && !defined(_TARGET_64BIT_)
+        case GT_LSH:
+        case GT_RSH:
+        case GT_RSZ:
+
+            // Variable shifts of a long end up being helper calls, so mark the tree as such in morph.
+            // This is potentially too conservative, since they'll get treated as having side effects.
+            // It is important to mark them as calls so if they are part of an argument list,
+            // they will get sorted and processed properly (for example, it is important to handle
+            // all nested calls before putting struct arguments in the argument registers). We
+            // could mark the trees just before argument processing, but it would require a full
+            // tree walk of the argument tree, so we just do it when morphing, instead, even though we'll
+            // mark non-argument trees (that will still get converted to calls, anyway).
+            return (this->TypeGet() == TYP_LONG) && (gtGetOp2()->OperGet() != GT_CNS_INT);
+#endif // FEATURE_FIXED_OUT_ARGS && !_TARGET_64BIT_
+
+        default:
+            return false;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -8542,8 +8577,8 @@ void Compiler::gtUpdateStmtSideEffects(GenTree* stmt)
 //    tree            - Tree to update the side effects on
 //
 // Notes:
-//    This method currently only updates GTF_EXCEPT and GTF_ASG flags. The other side effect
-//    flags may remain unnecessarily (conservatively) set.
+//    This method currently only updates GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.
+//    The other side effect flags may remain unnecessarily (conservatively) set.
 //    The caller of this method is expected to update the flags based on the children's flags.
 
 void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
@@ -8568,6 +8603,15 @@ void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
     else
     {
         tree->gtFlags &= ~GTF_ASG;
+    }
+
+    if (tree->OperRequiresCallFlag(this))
+    {
+        tree->gtFlags |= GTF_CALL;
+    }
+    else
+    {
+        tree->gtFlags &= ~GTF_CALL;
     }
 }
 
