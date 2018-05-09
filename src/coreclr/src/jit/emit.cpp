@@ -1035,12 +1035,6 @@ void emitter::emitBegFN(bool hasFramePtr
     emitCntStackDepth = sizeof(int);
 #endif
 
-    /* No data sections have been created */
-
-    emitDataSecCur = nullptr;
-
-    memset(&emitConsDsc, 0, sizeof(emitConsDsc));
-
 #ifdef PSEUDORANDOM_NOP_INSERTION
     // for random NOP insertion
 
