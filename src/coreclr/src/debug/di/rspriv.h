@@ -2332,6 +2332,7 @@ public:
     RSExtSmartPtr<ICorDebugManagedCallback>    m_managedCallback;
     RSExtSmartPtr<ICorDebugManagedCallback2>   m_managedCallback2;
     RSExtSmartPtr<ICorDebugManagedCallback3>   m_managedCallback3;
+    RSExtSmartPtr<ICorDebugManagedCallback4>   m_managedCallback4;
     RSExtSmartPtr<ICorDebugUnmanagedCallback>  m_unmanagedCallback;
 
     CordbRCEventThread*         m_rcEventThread;
@@ -3337,7 +3338,8 @@ public:
         RSLockHolder *              pLockHolder,
         ICorDebugManagedCallback *  pCallback1, 
         ICorDebugManagedCallback2 * pCallback2,
-        ICorDebugManagedCallback3 * pCallback3);
+        ICorDebugManagedCallback3 * pCallback3,
+        ICorDebugManagedCallback4 * pCallback4);
 
     void MarkAllThreadsDirty();
 

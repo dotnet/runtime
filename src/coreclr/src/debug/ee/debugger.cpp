@@ -5988,6 +5988,43 @@ bool Debugger::ThreadsAtUnsafePlaces(void)
     return (m_threadsAtUnsafePlaces != 0);
 }
 
+void Debugger::SomeWork()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    // DebuggerLockHolder lockHolder(this);
+    Thread* pThread = GetThread();
+
+    SENDIPCEVENT_BEGIN(this, pThread)
+
+    if (CORDBUnrecoverableError(this))
+        return;
+
+    // Send an event to the Right Side
+    DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
+    InitIPCEvent(ipce,
+        DB_IPCE_SOME_WORK,
+        pThread,
+        pThread->GetDomain());
+
+    m_pRCThread->SendIPCEvent();
+
+    DebuggerIPCEvent* ipce2 = m_pRCThread->GetIPCEventSendBuffer();
+    InitIPCEvent(ipce2,
+        DB_IPCE_SYNC_COMPLETE,
+        pThread,
+        pThread->GetDomain());
+
+    m_pRCThread->SendIPCEvent();
+
+    SENDIPCEVENT_END;
+}
+
 void Debugger::SendDataBreakpoint(Thread *thread, CONTEXT *context,
     DebuggerDataBreakpoint *breakpoint)
 {

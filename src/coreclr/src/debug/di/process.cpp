@@ -4725,6 +4725,7 @@ void CordbProcess::DispatchRCEvent()
     _ASSERTE(m_cordb->m_managedCallback != NULL);
     _ASSERTE(m_cordb->m_managedCallback2 != NULL);
     _ASSERTE(m_cordb->m_managedCallback3 != NULL);
+    _ASSERTE(m_cordb->m_managedCallback4 != NULL);
 
 
     // Bump up the stop count. Either we'll dispatch a managed event,
@@ -4795,7 +4796,7 @@ void CordbProcess::DispatchRCEvent()
                     m_pDBGLastIPCEventType = pEvent->GetDebugCookie();
 #endif
 
-                    ManagedEvent::DispatchArgs args(m_cordb->m_managedCallback, m_cordb->m_managedCallback2, m_cordb->m_managedCallback3);        
+                    ManagedEvent::DispatchArgs args(m_cordb->m_managedCallback, m_cordb->m_managedCallback2, m_cordb->m_managedCallback3, m_cordb->m_managedCallback4);        
 
                     {
                         // Release lock around the dispatch of the event
@@ -4910,7 +4911,8 @@ void CordbProcess::RawDispatchEvent(
     RSLockHolder *              pLockHolder,
     ICorDebugManagedCallback *  pCallback1, 
     ICorDebugManagedCallback2 * pCallback2,
-    ICorDebugManagedCallback3 * pCallback3)
+    ICorDebugManagedCallback3 * pCallback3,
+    ICorDebugManagedCallback4 * pCallback4)
 {
     CONTRACTL
     {
@@ -5014,6 +5016,15 @@ void CordbProcess::RawDispatchEvent(
             }
         }
         break;
+
+    case DB_IPCE_SOME_WORK:
+        {
+            {
+                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
+                pCallback4->SomeWork(pThread, pAppDomain);
+            }
+            break;
+        }
 
     case DB_IPCE_DATA_BREAKPOINT:
         {
@@ -10470,9 +10481,12 @@ void CordbProcess::HandleRCEvent(
     RSExtSmartPtr<ICorDebugManagedCallback3> pCallback3;
     pCallback->QueryInterface(IID_ICorDebugManagedCallback3, reinterpret_cast<void **> (&pCallback3));   
 
+    RSExtSmartPtr<ICorDebugManagedCallback4> pCallback4;
+    pCallback->QueryInterface(IID_ICorDebugManagedCallback4, reinterpret_cast<void **> (&pCallback4));
+
     // Dispatch directly. May not necessarily dispatch an event.
     // Toggles the lock to dispatch callbacks.
-    RawDispatchEvent(pManagedEvent, pLockHolder, pCallback, pCallback2, pCallback3);    
+    RawDispatchEvent(pManagedEvent, pLockHolder, pCallback, pCallback2, pCallback3, pCallback4);    
 }
 
 //
