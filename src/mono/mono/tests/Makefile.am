@@ -1225,7 +1225,6 @@ LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS))
 # appdomain-marshalbyref-assemblyload.exe: https://bugzilla.xamarin.com/show_bug.cgi?id=49308
 # threads-init.exe: runs out of system threads
 # dim-constrainedcall.exe: fails on dontnet as well (https://github.com/dotnet/coreclr/issues/15353)
-
 #
 # tailcall-rgctxb.exe
 # tailcall-member-function-in-valuetype.exe
@@ -1250,7 +1249,10 @@ LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS))
 #	It lets code process large data within small stack.
 #	If it was just an optimization, desktop CLR would not
 #	go so far out of their way to implement it.
-
+#
+# Some of the tailcall tests pass native pointers to locals.
+#   Mono does not yet allow that.
+#   tailcall "i" is either calli, or integer instead of pointer, and the latter sidesteps the matter.
 KNOWN_FAILING_TESTS = \
 	delegate-async-exception.exe	\
 	bug-348522.2.exe	\
