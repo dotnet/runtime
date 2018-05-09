@@ -20,6 +20,9 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 
     _ASSERTE(reason == SUSPEND_FOR_GC || reason == SUSPEND_FOR_GC_PREP);
 
+    // TODO, between the time when the debug event is sent and the EE is suspended, there is a small window that the data breakpoint could have already hit
+    g_pDebugInterface->SomeWork();
+
     ThreadSuspend::SuspendEE((ThreadSuspend::SUSPEND_REASON)reason);
 }
 
@@ -727,7 +730,7 @@ void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
         END_PIN_PROFILER();
     }
 
-#endif // GC_PROFILING
+#endif // GC_PROFILING    
 }
 
 void GCToEEInterface::DiagUpdateGenerationBounds()

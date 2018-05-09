@@ -408,6 +408,9 @@ public:
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) = 0;
     virtual void EnumMemoryRegionsIfFuncEvalFrame(CLRDataEnumMemoryFlags flags, Frame * pFrame) = 0;
 #endif
+#ifndef DACCESS_COMPILE
+    virtual void SomeWork() = 0;
+#endif
 };
 
 #ifndef DACCESS_COMPILE

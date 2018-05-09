@@ -2951,6 +2951,9 @@ private:
 public:
     DWORD m_defines;
     DWORD m_mdDataStructureVersion;
+#ifndef DACCESS_COMPILE
+    virtual void SomeWork();
+#endif
 };
 
 
