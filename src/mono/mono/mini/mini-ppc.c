@@ -1360,7 +1360,7 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 	CallInfo *callee_info = get_call_info (callee_sig);
 
 	gboolean res = IS_SUPPORTED_TAILCALL (callee_info->stack_usage <= caller_info->stack_usage)
-		&& IS_SUPPORTED_TAILCALL (callee_info->ret.storage == caller_info->ret.storage);
+		&& IS_SUPPORTED_TAILCALL (memcmp (&callee_info->ret, &caller_info->ret, sizeof (caller_info->ret)) == 0);
 
 	// FIXME ABIs vary as to if this local is in the parameter area or not,
 	// so this check might not be needed.

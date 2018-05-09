@@ -7568,9 +7568,8 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 	CallInfo *callee_info = get_call_info (NULL, callee_sig);
 
 	gboolean res = IS_SUPPORTED_TAILCALL (callee_info->stack_usage <= caller_info->stack_usage)
-		&& IS_SUPPORTED_TAILCALL (callee_info->ret.storage == caller_info->ret.storage)
 		&& IS_SUPPORTED_TAILCALL (callee_info->struct_ret == caller_info->struct_ret)
-		&& IS_SUPPORTED_TAILCALL (callee_info->ret.size == caller_info->ret.size);
+		&& IS_SUPPORTED_TAILCALL (memcmp (&callee_info->ret, &caller_info->ret, sizeof (caller_info->ret)) == 0);
 
 	// valuetypes passed semantic-byvalue ABI-byref are often to a local.
 	// FIXME ABIs vary as to if this local is in the parameter area or not,
