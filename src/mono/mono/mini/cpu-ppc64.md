@@ -46,6 +46,7 @@
 # See the code in mini-x86.c for more details on how the specifiers are used.
 #
 tailcall: len:124 clob:c
+tailcall_parameter: len:0 # PowerPC outputs a nice fixed size memcpy loop for larger stack_usage, so 0.
 memory_barrier: len:4
 nop: len:4
 relaxed_nop: len:4
