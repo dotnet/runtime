@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
-
 namespace System.Text
 {
     public partial class StringBuilder
@@ -29,10 +27,29 @@ namespace System.Text
             if (newLength > m_MaxCapacity)
                 throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_Capacity);
 
-            // Leave space for a NUL character at the end, the previous implementation did this
-            m_ChunkChars = new char[GetReplaceBufferCapacity(newLength + 1)];
+            if (newLength > m_ChunkChars.Length)
+            {
+                m_ChunkChars = new char[GetReplaceBufferCapacity(newLength)];
+            }
+
             new Span<char>(newBuffer, newLength).CopyTo(m_ChunkChars);
             m_ChunkLength = newLength;
+            m_ChunkPrevious = null;
+            m_ChunkOffset = 0;
+        }
+
+        internal void ReplaceBufferUtf8Internal(Span<byte> source)
+        {
+            if (source.Length > m_MaxCapacity)
+                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_Capacity);
+
+            int numChars = Encoding.UTF8.GetCharCount(source);
+            if (numChars > m_ChunkChars.Length)
+            {
+                m_ChunkChars = new char[GetReplaceBufferCapacity(numChars)];
+            }
+
+            m_ChunkLength = Encoding.UTF8.GetChars(source, m_ChunkChars);
             m_ChunkPrevious = null;
             m_ChunkOffset = 0;
         }
@@ -42,15 +59,15 @@ namespace System.Text
             if (newLength > m_MaxCapacity)
                 throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_Capacity);
 
-            // Leave space for a NUL character at the end, the previous implementation did this
-            m_ChunkChars = new char[GetReplaceBufferCapacity(newLength + 1)];
+            if (newLength > m_ChunkChars.Length)
+            {
+                m_ChunkChars = new char[GetReplaceBufferCapacity(newLength)];
+            }
 
             int convertedChars;
 
             fixed (char* pChunkChars = m_ChunkChars)
             {
-                Diagnostics.Debug.Assert(newLength < m_ChunkChars.Length);
-
                 // The incoming string buffer is supposed to have been populated by the 
                 // P/Invoke-called native function but there's no way to know if that really
                 // happened, the native function might populate the buffer only in certain
