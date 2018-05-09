@@ -58,12 +58,23 @@ namespace System.Security.Cryptography.Xml
                 foreach (XmlNode n in nodeList)
                 {
                     XmlElement e = n as XmlElement;
-                    if (e != null && e.LocalName.Equals("InclusiveNamespaces") &&
-                        e.NamespaceURI.Equals(SignedXml.XmlDsigExcC14NTransformUrl) &&
-                        Utils.HasAttribute(e, "PrefixList", SignedXml.XmlDsigNamespaceUrl))
+                    if (e != null)
                     {
-                        InclusiveNamespacesPrefixList = Utils.GetAttribute(e, "PrefixList", SignedXml.XmlDsigNamespaceUrl);
-                        return;
+                        if (e.LocalName.Equals("InclusiveNamespaces")
+                        && e.NamespaceURI.Equals(SignedXml.XmlDsigExcC14NTransformUrl) &&
+                        Utils.HasAttribute(e, "PrefixList", SignedXml.XmlDsigNamespaceUrl))
+                        {
+                            if (!Utils.VerifyAttributes(e, "PrefixList"))
+                            {
+                                throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
+                            }
+                            this.InclusiveNamespacesPrefixList = Utils.GetAttribute(e, "PrefixList", SignedXml.XmlDsigNamespaceUrl);
+                            return;
+                        }
+                        else
+                        {
+                            throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
+                        }
                     }
                 }
             }

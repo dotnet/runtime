@@ -98,14 +98,25 @@ namespace System.Security.Cryptography.Xml
             foreach (XmlNode node in nodeList)
             {
                 XmlElement elem = node as XmlElement;
-                if (elem != null && elem.LocalName == "Except" && elem.NamespaceURI == XmlDecryptionTransformNamespaceUrl)
+                if (elem != null)
                 {
-                    // the Uri is required
-                    string uri = Utils.GetAttribute(elem, "URI", XmlDecryptionTransformNamespaceUrl);
-                    if (uri == null || uri.Length == 0 || uri[0] != '#')
-                        throw new CryptographicException(SR.Cryptography_Xml_UriRequired);
-                    string idref = Utils.ExtractIdFromLocalUri(uri);
-                    ExceptUris.Add(idref);
+                    if (elem.LocalName == "Except" && elem.NamespaceURI == XmlDecryptionTransformNamespaceUrl)
+                    {
+                        // the Uri is required
+                        string uri = Utils.GetAttribute(elem, "URI", XmlDecryptionTransformNamespaceUrl);
+                        if (uri == null || uri.Length == 0 || uri[0] != '#')
+                            throw new CryptographicException(SR.Cryptography_Xml_UriRequired);
+                        if (!Utils.VerifyAttributes(elem, "URI"))
+                        {
+                            throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
+                        }
+                        string idref = Utils.ExtractIdFromLocalUri(uri);
+                        ExceptUris.Add(idref);
+                    }
+                    else
+                    {
+                        throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
+                    }
                 }
             }
         }
