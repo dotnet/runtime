@@ -21,7 +21,7 @@
     <NativePackagePath>$(MSBuildThisFileDirectory)src/Native/pkg</NativePackagePath>
 
     <XmlDocPackage>Microsoft.Private.Intellisense</XmlDocPackage>
-    <XmlDocPackageVersion>2.0.0-preview3-26209-0</XmlDocPackageVersion>
+    <XmlDocPackageVersion>2.1.0-rc1-26508-0</XmlDocPackageVersion>
     <XmlDocFileRoot>$(PackagesDir)$(XmlDocPackage.ToLowerInvariant())/$(XmlDocPackageVersion)/xmldocs/netcoreapp</XmlDocFileRoot>
     <XmlDocDir>$(BinDir)docs</XmlDocDir>
 
