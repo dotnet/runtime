@@ -1826,6 +1826,8 @@ public:
 
     bool OperRequiresAsgFlag();
 
+    bool OperRequiresCallFlag(Compiler* comp);
+
     bool OperMayThrow(Compiler* comp);
 
     unsigned GetScaleIndexMul();

@@ -21164,6 +21164,11 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         chkFlags |= GTF_EXCEPT;
     }
 
+    if (tree->OperRequiresCallFlag(this))
+    {
+        chkFlags |= GTF_CALL;
+    }
+
     /* Is this a leaf node? */
 
     if (kind & GTK_LEAF)
@@ -21348,8 +21353,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                 call = tree->AsCall();
 
-                chkFlags |= GTF_CALL;
-
                 if (call->gtCallObjp)
                 {
                     fgDebugCheckFlags(call->gtCallObjp);
@@ -21531,8 +21534,8 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsign
     }
     else if (treeFlags & ~chkFlags)
     {
-        // TODO: We are currently only checking extra GTF_EXCEPT and GTF_ASG flags.
-        if ((treeFlags & ~chkFlags & ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF & ~GTF_CALL) != 0)
+        // TODO: We are currently only checking extra GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.
+        if ((treeFlags & ~chkFlags & ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF) != 0)
         {
             // Print the tree so we can see it in the log.
             printf("Extra flags on parent tree [%X]: ", tree);
