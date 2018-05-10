@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: ShimCallback.cpp
-// 
+//
 
 //
 // The V3 ICD debugging APIs have a lower abstraction level than V2.
@@ -13,7 +13,7 @@
 #include "stdafx.h"
 
 #include "safewrap.h"
-#include "check.h" 
+#include "check.h"
 
 #include <limits.h>
 #include "shimpriv.h"
@@ -78,22 +78,22 @@ HRESULT ShimProxyCallback::QueryInterface(REFIID riid, void **ppInterface)
 
 //
 // Map from an old frame to a new one.
-// 
+//
 // Arguments:
 //   pThread - thread that frame is on
 //   pOldFrame - old frame before the continue, may have gotten neutered.
-//   
+//
 // Returns:
 //   a new, non-neutered frame that matches the old frame.
-//   
+//
 // Notes:
 //   Called by event handlers below (which are considered Outside the RS).
 //   No adjust of reference, Thread already has reference.
-//   @dbgtodo shim-stackwalks: this is used for exception callbacks, which may change for V3. 
+//   @dbgtodo shim-stackwalks: this is used for exception callbacks, which may change for V3.
 ICorDebugFrame * UpdateFrame(ICorDebugThread * pThread, ICorDebugFrame * pOldFrame)
 {
-    PUBLIC_API_ENTRY_FOR_SHIM(NULL); 
-    
+    PUBLIC_API_ENTRY_FOR_SHIM(NULL);
+
     RSExtSmartPtr<ICorDebugFrame> pNewFrame;
 
     EX_TRY
@@ -102,16 +102,16 @@ ICorDebugFrame * UpdateFrame(ICorDebugThread * pThread, ICorDebugFrame * pOldFra
         if (pFrame != NULL)
         {
             FramePointer fp = pFrame->GetFramePointer();
-            
+
             CordbThread * pThread2 = static_cast<CordbThread *> (pThread);
             pThread2->FindFrame(&pNewFrame, fp);
-            
-            // 
+
+            //
         }
     }
     EX_CATCH
     {
-        // Do not throw out of this function.  Doing so means that the debugger never gets a chance to 
+        // Do not throw out of this function.  Doing so means that the debugger never gets a chance to
         // continue the debuggee process.  This will lead to a hang.  Instead, try to make a best effort to
         // continue with a NULL ICDFrame.  VS is able to handle this gracefully.
         pNewFrame.Assign(NULL);
@@ -140,7 +140,7 @@ HRESULT ShimProxyCallback::Breakpoint(ICorDebugAppDomain * pAppDomain, ICorDebug
 
     public:
         // Ctor
-        BreakpointEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugBreakpoint * pBreakpoint) : 
+        BreakpointEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugBreakpoint * pBreakpoint) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -173,7 +173,7 @@ HRESULT ShimProxyCallback::StepComplete(ICorDebugAppDomain * pAppDomain, ICorDeb
 
     public:
         // Ctor
-        StepCompleteEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugStepper * pStepper, CorDebugStepReason reason) : 
+        StepCompleteEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugStepper * pStepper, CorDebugStepReason reason) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -205,7 +205,7 @@ HRESULT ShimProxyCallback::Break(ICorDebugAppDomain * pAppDomain, ICorDebugThrea
 
     public:
         // Ctor
-        BreakEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread) : 
+        BreakEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -236,7 +236,7 @@ HRESULT ShimProxyCallback::Exception(ICorDebugAppDomain * pAppDomain, ICorDebugT
 
     public:
         // Ctor
-        ExceptionEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, BOOL fUnhandled) : 
+        ExceptionEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, BOOL fUnhandled) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -268,7 +268,7 @@ HRESULT ShimProxyCallback::EvalComplete(ICorDebugAppDomain * pAppDomain, ICorDeb
 
     public:
         // Ctor
-        EvalCompleteEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugEval * pEval) : 
+        EvalCompleteEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugEval * pEval) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -300,7 +300,7 @@ HRESULT ShimProxyCallback::EvalException(ICorDebugAppDomain * pAppDomain, ICorDe
 
     public:
         // Ctor
-        EvalExceptionEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugEval * pEval) : 
+        EvalExceptionEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugEval * pEval) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -320,10 +320,10 @@ HRESULT ShimProxyCallback::EvalException(ICorDebugAppDomain * pAppDomain, ICorDe
 
 
 // Implementation of ICorDebugManagedCallback::CreateProcess
-// This will only be called for a Real create-process event. 
+// This will only be called for a Real create-process event.
 HRESULT ShimProxyCallback::CreateProcess(ICorDebugProcess * pProcess)
 {
-    m_pShim->PreDispatchEvent(true); 
+    m_pShim->PreDispatchEvent(true);
     QueueCreateProcess(pProcess);
     return S_OK;
 }
@@ -337,7 +337,7 @@ void ShimProxyCallback::QueueCreateProcess(ICorDebugProcess * pProcess)
 
     public:
         // Ctor
-        CreateProcessEvent(ICorDebugProcess * pProcess, ShimProcess * pShim) : 
+        CreateProcessEvent(ICorDebugProcess * pProcess, ShimProcess * pShim) :
              ManagedEvent(),
              m_pShim(pShim)
         {
@@ -351,9 +351,9 @@ void ShimProxyCallback::QueueCreateProcess(ICorDebugProcess * pProcess)
             return args.GetCallback1()->CreateProcess(m_pProcess);
         }
 
-        // we need access to the shim in Dispatch so we can set the InCreateProcess flag to keep track of 
+        // we need access to the shim in Dispatch so we can set the InCreateProcess flag to keep track of
         // when we are actually in the callback. We need this information to be able to emulate
-        // the hresult logic in v2.0. 
+        // the hresult logic in v2.0.
         ShimProcess * m_pShim;
     }; // end class CreateProcessEvent
 
@@ -375,7 +375,7 @@ HRESULT ShimProxyCallback::ExitProcess(ICorDebugProcess * pProcess)
 
     public:
         // Ctor
-        ExitProcessEvent(ICorDebugProcess * pProcess) : 
+        ExitProcessEvent(ICorDebugProcess * pProcess) :
              ManagedEvent()
         {
             this->m_pProcess.Assign(pProcess);
@@ -405,7 +405,7 @@ HRESULT ShimProxyCallback::CreateThread(ICorDebugAppDomain * pAppDomain, ICorDeb
 
     public:
         // Ctor
-        CreateThreadEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread) : 
+        CreateThreadEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -438,7 +438,7 @@ HRESULT ShimProxyCallback::ExitThread(ICorDebugAppDomain * pAppDomain, ICorDebug
 
     public:
         // Ctor
-        ExitThreadEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread) : 
+        ExitThreadEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -461,13 +461,13 @@ HRESULT ShimProxyCallback::ExitThread(ICorDebugAppDomain * pAppDomain, ICorDebug
 //
 // Arguments:
 //   pAppDomain - appdomain for the LoadModule debug event
-//   pModule - module being loaded. 
+//   pModule - module being loaded.
 //
 // Notes:
 //   See code:ShimProcess::QueueFakeAttachEvents
 //   This is the fake version of code:ShimProxyCallback::LoadModule.
-//   It sends an IPC event to go in process to collect information that we can't yet get via 
-//   DAC from out-of-proc. 
+//   It sends an IPC event to go in process to collect information that we can't yet get via
+//   DAC from out-of-proc.
 void ShimProxyCallback::FakeLoadModule(ICorDebugAppDomain *pAppDomain, ICorDebugModule *pModule)
 {
     class FakeLoadModuleEvent  : public ManagedEvent
@@ -478,7 +478,7 @@ void ShimProxyCallback::FakeLoadModule(ICorDebugAppDomain *pAppDomain, ICorDebug
 
     public:
         // Ctor
-        FakeLoadModuleEvent(ICorDebugAppDomain * pAppDomain, ICorDebugModule * pModule, ShimProcess * pShim) : 
+        FakeLoadModuleEvent(ICorDebugAppDomain * pAppDomain, ICorDebugModule * pModule, ShimProcess * pShim) :
              ManagedEvent(),
              m_pShim(pShim)
         {
@@ -487,15 +487,15 @@ void ShimProxyCallback::FakeLoadModule(ICorDebugAppDomain *pAppDomain, ICorDebug
         }
 
         HRESULT Dispatch(DispatchArgs args)
-        {            
+        {
             // signal that we are in the callback--this will be cleared in code:CordbProcess::ContinueInternal
-            m_pShim->SetInLoadModule(true);           
+            m_pShim->SetInLoadModule(true);
             return args.GetCallback1()->LoadModule(m_pAppDomain, m_pModule);
         }
 
-        // we need access to the shim in Dispatch so we can set the InLoadModule flag to keep track 
+        // we need access to the shim in Dispatch so we can set the InLoadModule flag to keep track
         // when we are actually in the callback. We need this information to be able to emulate
-        // the hresult logic in v2.0. 
+        // the hresult logic in v2.0.
         ShimProcess * m_pShim;
     }; // end class LoadModuleEvent
 
@@ -515,7 +515,7 @@ HRESULT ShimProxyCallback::LoadModule(ICorDebugAppDomain * pAppDomain, ICorDebug
 
     public:
         // Ctor
-        LoadModuleEvent(ICorDebugAppDomain * pAppDomain, ICorDebugModule * pModule) : 
+        LoadModuleEvent(ICorDebugAppDomain * pAppDomain, ICorDebugModule * pModule) :
              ManagedEvent()
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -523,7 +523,7 @@ HRESULT ShimProxyCallback::LoadModule(ICorDebugAppDomain * pAppDomain, ICorDebug
         }
 
         HRESULT Dispatch(DispatchArgs args)
-        {            
+        {
             return args.GetCallback1()->LoadModule(m_pAppDomain, m_pModule);
         }
     }; // end class LoadModuleEvent
@@ -548,7 +548,7 @@ HRESULT ShimProxyCallback::UnloadModule(ICorDebugAppDomain * pAppDomain, ICorDeb
 
     public:
         // Ctor
-        UnloadModuleEvent(ICorDebugAppDomain * pAppDomain, ICorDebugModule * pModule) : 
+        UnloadModuleEvent(ICorDebugAppDomain * pAppDomain, ICorDebugModule * pModule) :
              ManagedEvent()
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -579,7 +579,7 @@ HRESULT ShimProxyCallback::LoadClass(ICorDebugAppDomain * pAppDomain, ICorDebugC
 
     public:
         // Ctor
-        LoadClassEvent(ICorDebugAppDomain * pAppDomain, ICorDebugClass * pClass) : 
+        LoadClassEvent(ICorDebugAppDomain * pAppDomain, ICorDebugClass * pClass) :
              ManagedEvent()
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -609,7 +609,7 @@ HRESULT ShimProxyCallback::UnloadClass(ICorDebugAppDomain * pAppDomain, ICorDebu
 
     public:
         // Ctor
-        UnloadClassEvent(ICorDebugAppDomain * pAppDomain, ICorDebugClass * pClass) : 
+        UnloadClassEvent(ICorDebugAppDomain * pAppDomain, ICorDebugClass * pClass) :
              ManagedEvent()
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -640,7 +640,7 @@ HRESULT ShimProxyCallback::DebuggerError(ICorDebugProcess * pProcess, HRESULT er
 
     public:
         // Ctor
-        DebuggerErrorEvent(ICorDebugProcess * pProcess, HRESULT errorHR, DWORD errorCode) : 
+        DebuggerErrorEvent(ICorDebugProcess * pProcess, HRESULT errorHR, DWORD errorCode) :
              ManagedEvent()
         {
             this->m_pProcess.Assign(pProcess);
@@ -674,7 +674,7 @@ HRESULT ShimProxyCallback::LogMessage(ICorDebugAppDomain * pAppDomain, ICorDebug
 
     public:
         // Ctor
-        LogMessageEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, LONG lLevel, LPCWSTR pLogSwitchName, LPCWSTR pMessage) : 
+        LogMessageEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, LONG lLevel, LPCWSTR pLogSwitchName, LPCWSTR pMessage) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -711,7 +711,7 @@ HRESULT ShimProxyCallback::LogSwitch(ICorDebugAppDomain * pAppDomain, ICorDebugT
 
     public:
         // Ctor
-        LogSwitchEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, LONG lLevel, ULONG ulReason, LPCWSTR pLogSwitchName, LPCWSTR pParentName) : 
+        LogSwitchEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, LONG lLevel, ULONG ulReason, LPCWSTR pLogSwitchName, LPCWSTR pParentName) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -745,7 +745,7 @@ HRESULT ShimProxyCallback::CreateAppDomain(ICorDebugProcess * pProcess, ICorDebu
 
     public:
         // Ctor
-        CreateAppDomainEvent(ICorDebugProcess * pProcess, ICorDebugAppDomain * pAppDomain) : 
+        CreateAppDomainEvent(ICorDebugProcess * pProcess, ICorDebugAppDomain * pAppDomain) :
              ManagedEvent()
         {
             this->m_pProcess.Assign(pProcess);
@@ -778,7 +778,7 @@ HRESULT ShimProxyCallback::ExitAppDomain(ICorDebugProcess * pProcess, ICorDebugA
 
     public:
         // Ctor
-        ExitAppDomainEvent(ICorDebugProcess * pProcess, ICorDebugAppDomain * pAppDomain) : 
+        ExitAppDomainEvent(ICorDebugProcess * pProcess, ICorDebugAppDomain * pAppDomain) :
              ManagedEvent()
         {
             this->m_pProcess.Assign(pProcess);
@@ -809,7 +809,7 @@ HRESULT ShimProxyCallback::LoadAssembly(ICorDebugAppDomain * pAppDomain, ICorDeb
 
     public:
         // Ctor
-        LoadAssemblyEvent(ICorDebugAppDomain * pAppDomain, ICorDebugAssembly * pAssembly) : 
+        LoadAssemblyEvent(ICorDebugAppDomain * pAppDomain, ICorDebugAssembly * pAssembly) :
              ManagedEvent()
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -842,7 +842,7 @@ HRESULT ShimProxyCallback::UnloadAssembly(ICorDebugAppDomain * pAppDomain, ICorD
 
     public:
         // Ctor
-        UnloadAssemblyEvent(ICorDebugAppDomain * pAppDomain, ICorDebugAssembly * pAssembly) : 
+        UnloadAssemblyEvent(ICorDebugAppDomain * pAppDomain, ICorDebugAssembly * pAssembly) :
              ManagedEvent()
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -872,7 +872,7 @@ HRESULT ShimProxyCallback::ControlCTrap(ICorDebugProcess * pProcess)
 
     public:
         // Ctor
-        ControlCTrapEvent(ICorDebugProcess * pProcess) : 
+        ControlCTrapEvent(ICorDebugProcess * pProcess) :
              ManagedEvent()
         {
             this->m_pProcess.Assign(pProcess);
@@ -901,7 +901,7 @@ HRESULT ShimProxyCallback::NameChange(ICorDebugAppDomain * pAppDomain, ICorDebug
 
     public:
         // Ctor
-        NameChangeEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread) : 
+        NameChangeEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -932,7 +932,7 @@ HRESULT ShimProxyCallback::UpdateModuleSymbols(ICorDebugAppDomain * pAppDomain, 
 
     public:
         // Ctor
-        UpdateModuleSymbolsEvent(ICorDebugAppDomain * pAppDomain, ICorDebugModule * pModule, IStream * pSymbolStream) : 
+        UpdateModuleSymbolsEvent(ICorDebugAppDomain * pAppDomain, ICorDebugModule * pModule, IStream * pSymbolStream) :
              ManagedEvent()
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -965,7 +965,7 @@ HRESULT ShimProxyCallback::EditAndContinueRemap(ICorDebugAppDomain * pAppDomain,
 
     public:
         // Ctor
-        EditAndContinueRemapEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugFunction * pFunction, BOOL fAccurate) : 
+        EditAndContinueRemapEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugFunction * pFunction, BOOL fAccurate) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -999,7 +999,7 @@ HRESULT ShimProxyCallback::BreakpointSetError(ICorDebugAppDomain * pAppDomain, I
 
     public:
         // Ctor
-        BreakpointSetErrorEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugBreakpoint * pBreakpoint, DWORD dwError) : 
+        BreakpointSetErrorEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugBreakpoint * pBreakpoint, DWORD dwError) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -1034,7 +1034,7 @@ HRESULT ShimProxyCallback::FunctionRemapOpportunity(ICorDebugAppDomain * pAppDom
 
     public:
         // Ctor
-        FunctionRemapOpportunityEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugFunction * pOldFunction, ICorDebugFunction * pNewFunction, ULONG32 oldILOffset) : 
+        FunctionRemapOpportunityEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugFunction * pOldFunction, ICorDebugFunction * pNewFunction, ULONG32 oldILOffset) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -1068,7 +1068,7 @@ HRESULT ShimProxyCallback::CreateConnection(ICorDebugProcess * pProcess, CONNID 
 
     public:
         // Ctor
-        CreateConnectionEvent(ICorDebugProcess * pProcess, CONNID dwConnectionId, LPCWSTR pConnectionName) : 
+        CreateConnectionEvent(ICorDebugProcess * pProcess, CONNID dwConnectionId, LPCWSTR pConnectionName) :
              ManagedEvent()
         {
             this->m_pProcess.Assign(pProcess);
@@ -1099,7 +1099,7 @@ HRESULT ShimProxyCallback::ChangeConnection(ICorDebugProcess * pProcess, CONNID 
 
     public:
         // Ctor
-        ChangeConnectionEvent(ICorDebugProcess * pProcess, CONNID dwConnectionId) : 
+        ChangeConnectionEvent(ICorDebugProcess * pProcess, CONNID dwConnectionId) :
              ManagedEvent()
         {
             this->m_pProcess.Assign(pProcess);
@@ -1129,7 +1129,7 @@ HRESULT ShimProxyCallback::DestroyConnection(ICorDebugProcess * pProcess, CONNID
 
     public:
         // Ctor
-        DestroyConnectionEvent(ICorDebugProcess * pProcess, CONNID dwConnectionId) : 
+        DestroyConnectionEvent(ICorDebugProcess * pProcess, CONNID dwConnectionId) :
              ManagedEvent()
         {
             this->m_pProcess.Assign(pProcess);
@@ -1164,7 +1164,7 @@ HRESULT ShimProxyCallback::Exception(ICorDebugAppDomain * pAppDomain, ICorDebugT
 
     public:
         // Ctor
-        ExceptionEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugFrame * pFrame, ULONG32 nOffset, CorDebugExceptionCallbackType dwEventType, DWORD dwFlags) : 
+        ExceptionEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugFrame * pFrame, ULONG32 nOffset, CorDebugExceptionCallbackType dwEventType, DWORD dwFlags) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -1200,7 +1200,7 @@ HRESULT ShimProxyCallback::ExceptionUnwind(ICorDebugAppDomain * pAppDomain, ICor
 
     public:
         // Ctor
-        ExceptionUnwindEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, CorDebugExceptionUnwindCallbackType dwEventType, DWORD dwFlags) : 
+        ExceptionUnwindEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, CorDebugExceptionUnwindCallbackType dwEventType, DWORD dwFlags) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -1233,7 +1233,7 @@ HRESULT ShimProxyCallback::FunctionRemapComplete(ICorDebugAppDomain * pAppDomain
 
     public:
         // Ctor
-        FunctionRemapCompleteEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugFunction * pFunction) : 
+        FunctionRemapCompleteEvent(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, ICorDebugFunction * pFunction) :
              ManagedEvent(pThread)
         {
             this->m_pAppDomain.Assign(pAppDomain);
@@ -1265,7 +1265,7 @@ HRESULT ShimProxyCallback::MDANotification(ICorDebugController * pController, IC
 
     public:
         // Ctor
-        MDANotificationEvent(ICorDebugController * pController, ICorDebugThread * pThread, ICorDebugMDA * pMDA) : 
+        MDANotificationEvent(ICorDebugController * pController, ICorDebugThread * pThread, ICorDebugMDA * pMDA) :
              ManagedEvent(pThread)
         {
             this->m_pController.Assign(pController);
@@ -1300,7 +1300,7 @@ HRESULT ShimProxyCallback::CustomNotification(ICorDebugThread * pThread, ICorDeb
 
     public:
         // Ctor
-        CustomNotificationEvent(ICorDebugThread * pThread, ICorDebugAppDomain * pAppDomain) : 
+        CustomNotificationEvent(ICorDebugThread * pThread, ICorDebugAppDomain * pAppDomain) :
           ManagedEvent(pThread)
           {
               this->m_pAppDomain.Assign(pAppDomain);
@@ -1317,39 +1317,68 @@ HRESULT ShimProxyCallback::CustomNotification(ICorDebugThread * pThread, ICorDeb
     return S_OK;
 }
 
-// Implementation of ICorDebugManagedCallback4::SomeWork
+// Implementation of ICorDebugManagedCallback4::BeforeGarbageCollection
 // Arguments:
 //      input:
-//          pThread    - thread on which the notification occurred
-//          pAppDomain - appDomain in which the notification occurred
+//          pController - controller in which the notification occurred
 // Return value: S_OK
-HRESULT ShimProxyCallback::SomeWork(ICorDebugThread * pThread, ICorDebugAppDomain * pAppDomain)
+HRESULT ShimProxyCallback::BeforeGarbageCollection(ICorDebugController* pController)
 {
     m_pShim->PreDispatchEvent();
-    class SomeWorkEvent : public ManagedEvent
+    class BeforeGarbageCollectionEvent : public ManagedEvent
     {
         // callbacks parameters. These are strong references
-        RSExtSmartPtr<ICorDebugAppDomain > m_pAppDomain;
-        RSExtSmartPtr<ICorDebugThread > m_pThread;
+        RSExtSmartPtr<ICorDebugController > m_pController;
 
     public:
         // Ctor
-        SomeWorkEvent(ICorDebugThread * pThread, ICorDebugAppDomain * pAppDomain) :
-            ManagedEvent(pThread)
+        BeforeGarbageCollectionEvent(ICorDebugController* pController) :
+            ManagedEvent()
         {
-            this->m_pAppDomain.Assign(pAppDomain);
-            this->m_pThread.Assign(pThread);
+            this->m_pController.Assign(pController);
         }
 
         HRESULT Dispatch(DispatchArgs args)
         {
-            return args.GetCallback4()->SomeWork(m_pThread, m_pAppDomain);
+            return args.GetCallback4()->BeforeGarbageCollection(m_pController);
         }
-    }; // end class SomeWorkEvent
+    }; // end class BeforeGarbageCollectionEvent
 
-    m_pShim->GetManagedEventQueue()->QueueEvent(new SomeWorkEvent(pThread, pAppDomain));
+    m_pShim->GetManagedEventQueue()->QueueEvent(new BeforeGarbageCollectionEvent(pController));
     return S_OK;
 }
+
+// Implementation of ICorDebugManagedCallback4::AfterGarbageCollection
+// Arguments:
+//      input:
+//          pController - controller in which the notification occurred
+// Return value: S_OK
+HRESULT ShimProxyCallback::AfterGarbageCollection(ICorDebugController* pController)
+{
+    m_pShim->PreDispatchEvent();
+    class AfterGarbageCollectionEvent : public ManagedEvent
+    {
+        // callbacks parameters. These are strong references
+        RSExtSmartPtr<ICorDebugController > m_pController;
+
+    public:
+        // Ctor
+        AfterGarbageCollectionEvent(ICorDebugController* pController) :
+            ManagedEvent()
+        {
+            this->m_pController.Assign(pController);
+        }
+
+        HRESULT Dispatch(DispatchArgs args)
+        {
+            return args.GetCallback4()->AfterGarbageCollection(m_pController);
+        }
+    }; // end class AfterGarbageCollectionEvent
+
+    m_pShim->GetManagedEventQueue()->QueueEvent(new AfterGarbageCollectionEvent(pController));
+    return S_OK;
+}
+
 
 
 

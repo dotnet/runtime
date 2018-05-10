@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 /*
- * GCENV.EE.CPP 
+ * GCENV.EE.CPP
  *
  * GCToEEInterface implementation
  *
@@ -21,7 +21,7 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     _ASSERTE(reason == SUSPEND_FOR_GC || reason == SUSPEND_FOR_GC_PREP);
 
     // TODO, between the time when the debug event is sent and the EE is suspended, there is a small window that the data breakpoint could have already hit
-    g_pDebugInterface->SomeWork();
+    g_pDebugInterface->BeforeGarbageCollection();
 
     ThreadSuspend::SuspendEE((ThreadSuspend::SUSPEND_REASON)reason);
 }
@@ -31,6 +31,9 @@ void GCToEEInterface::RestartEE(bool bFinishedGC)
     WRAPPER_NO_CONTRACT;
 
     ThreadSuspend::RestartEE(bFinishedGC, TRUE);
+
+    // TODO, between the time when the debug event is sent and the EE is suspended, there is a small window that the data breakpoint could have already hit
+    g_pDebugInterface->AfterGarbageCollection();
 }
 
 VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
@@ -46,8 +49,8 @@ VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr
 }
 
 
-//EE can perform post stack scanning action, while the 
-// user threads are still suspended 
+//EE can perform post stack scanning action, while the
+// user threads are still suspended
 VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
                                    ScanContext* sc)
 {
@@ -74,7 +77,7 @@ VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
 /*
  * Scan all stack roots
  */
- 
+
 static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 {
     GCCONTEXT   gcctx;
@@ -92,19 +95,19 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     _ASSERTE(dbgOnly_IsSpecialEEThread() ||
                 GetThread() == NULL ||
                 // this is for background GC threads which always call this when EE is suspended.
-                IsGCSpecialThread() || 
+                IsGCSpecialThread() ||
                 (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
 
     pThread->SetHasPromotedBytes();
 
     Frame* pTopFrame = pThread->GetFrame();
     Object ** topStack = (Object **)pTopFrame;
-    if ((pTopFrame != ((Frame*)-1)) 
+    if ((pTopFrame != ((Frame*)-1))
         && (pTopFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())) {
         // It is an InlinedCallFrame. Get SP from it.
         InlinedCallFrame* pInlinedFrame = (InlinedCallFrame*)pTopFrame;
         topStack = (Object **)pInlinedFrame->GetCallSiteSP();
-    } 
+    }
 
     sc->stack_limit = (uintptr_t)topStack;
 
@@ -144,11 +147,11 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     }
     else
 #endif
-    {    
+    {
         unsigned flagsStackWalk = ALLOW_ASYNC_STACK_WALK | ALLOW_INVALID_OBJECTS;
-#if defined(WIN64EXCEPTIONS)            
+#if defined(WIN64EXCEPTIONS)
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
-#endif // defined(WIN64EXCEPTIONS)                        
+#endif // defined(WIN64EXCEPTIONS)
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
     }
 }
@@ -213,11 +216,11 @@ void GCToEEInterface::GcStartWork (int condemned, int max_gen)
     // Jupiter will
     // 1. Report reference from RCW to CCW based on native reference in Jupiter
     // 2. Identify the subset of CCWs that needs to be rooted
-    // 
+    //
     // We'll build the references from RCW to CCW using
     // 1. Preallocated arrays
     // 2. Dependent handles
-    // 
+    //
     RCWWalker::OnGCStarted(condemned);
 #endif // FEATURE_COMINTEROP
 
@@ -239,7 +242,7 @@ void GCToEEInterface::GcDone(int condemned)
 #ifdef FEATURE_COMINTEROP
     //
     // Tell Jupiter GC has finished
-    // 
+    //
     RCWWalker::OnGCFinished(condemned);
 #endif // FEATURE_COMINTEROP
 }
@@ -311,13 +314,13 @@ uint32_t GCToEEInterface::GetActiveSyncBlockCount()
     }
     CONTRACTL_END;
 
-    return SyncBlockCache::GetSyncBlockCache()->GetActiveCount();   
+    return SyncBlockCache::GetSyncBlockCache()->GetActiveCount();
 }
 
 gc_alloc_context * GCToEEInterface::GetAllocContext()
 {
     WRAPPER_NO_CONTRACT;
-    
+
     Thread* pThread = ::GetThread();
     assert(pThread != nullptr);
     return pThread->GetAllocContext();
@@ -494,7 +497,7 @@ void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
 
 // Returns TRUE if GC profiling is enabled and the profiler
 // should scan dependent handles, FALSE otherwise.
-BOOL ProfilerShouldTrackConditionalWeakTableElements() 
+BOOL ProfilerShouldTrackConditionalWeakTableElements()
 {
 #if defined(GC_PROFILING)
     return CORProfilerTrackConditionalWeakTableElements();
@@ -516,7 +519,7 @@ void ProfilerEndConditionalWeakTableElementReferences(void* heapId)
 
 // If GC profiling is enabled, informs the profiler that we are done
 // tracing root references.
-void ProfilerEndRootReferences2(void* heapId) 
+void ProfilerEndRootReferences2(void* heapId)
 {
 #if defined (GC_PROFILING)
     g_profControlBlock.pProfInterface->EndRootReferences2(heapId);
@@ -556,7 +559,7 @@ void ScanHandleForProfilerAndETW(Object** pRef, Object* pSec, uint32_t flags, Sc
                 (uint8_t *)*pRef,
                 kEtwGCRootKindHandle,
                 (EtwGCRootFlags)flags,
-                pRef, 
+                pRef,
                 &pSC->pHeapId);
             END_PIN_PROFILER();
         }
@@ -586,7 +589,7 @@ void ScanHandleForProfilerAndETW(Object** pRef, Object* pSec, uint32_t flags, Sc
             0,              // dwGCFlags,
             flags);     // ETW handle flags
     }
-#endif // defined(FEATURE_EVENT_TRACE) 
+#endif // defined(FEATURE_EVENT_TRACE)
 }
 
 // This is called only if we've determined that either:
@@ -677,7 +680,7 @@ void GCProfileWalkHeap()
 #ifdef FEATURE_EVENT_TRACE
     if (ETW::GCLog::ShouldWalkStaticsAndCOMForEtw())
         ETW::GCLog::WalkStaticsAndCOMForETW();
-    
+
     BOOL fShouldWalkHeapRootsForEtw = ETW::GCLog::ShouldWalkHeapRootsForEtw();
     BOOL fShouldWalkHeapObjectsForEtw = ETW::GCLog::ShouldWalkHeapObjectsForEtw();
 #else // !FEATURE_EVENT_TRACE
@@ -730,7 +733,7 @@ void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
         END_PIN_PROFILER();
     }
 
-#endif // GC_PROFILING    
+#endif // GC_PROFILING
 }
 
 void GCToEEInterface::DiagUpdateGenerationBounds()
@@ -768,9 +771,9 @@ void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
 // Note on last parameter: when calling this for bgc, only ETW
 // should be sending these events so that existing profapi profilers
 // don't get confused.
-void WalkMovedReferences(uint8_t* begin, uint8_t* end, 
+void WalkMovedReferences(uint8_t* begin, uint8_t* end,
                          ptrdiff_t reloc,
-                         void* context, 
+                         void* context,
                          bool fCompacting,
                          bool fBGC)
 {
@@ -855,7 +858,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         // We need to make sure that other threads executing checked write barriers
         // will see the g_card_table update before g_lowest/highest_address updates.
         // Otherwise, the checked write barrier may AV accessing the old card table
-        // with address that it does not cover. 
+        // with address that it does not cover.
         //
         // Even x86's total store ordering is insufficient here because threads reading
         // g_card_table do so via the instruction cache, whereas g_lowest/highest_address
@@ -931,7 +934,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(g_card_bundle_table == nullptr);
         g_card_bundle_table = args->card_bundle_table;
 #endif
-        
+
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
         stompWBCompleteActions |= ::StompWriteBarrierResize(true, false);
@@ -968,13 +971,13 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     default:
         assert(!"unknown WriteBarrierOp enum");
     }
-    if (stompWBCompleteActions & SWB_ICACHE_FLUSH) 
+    if (stompWBCompleteActions & SWB_ICACHE_FLUSH)
     {
         ::FlushWriteBarrierInstructionCache();
     }
-    if (stompWBCompleteActions & SWB_EE_RESTART) 
+    if (stompWBCompleteActions & SWB_EE_RESTART)
     {
-        assert(!args->is_runtime_suspended && 
+        assert(!args->is_runtime_suspended &&
             "if runtime was suspended in patching routines then it was in running state at begining");
         ThreadSuspend::RestartEE(FALSE, TRUE);
     }
@@ -1137,7 +1140,7 @@ bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
         return false;
     }
 
-    if (WideCharToMultiByte(CP_ACP, 0, out, -1 /* out is null-terminated */, 
+    if (WideCharToMultiByte(CP_ACP, 0, out, -1 /* out is null-terminated */,
           configResult.GetValue(), MaxConfigKeyLength, nullptr, nullptr) == 0)
     {
         // this should only happen if the config subsystem gives us a string that's not valid
