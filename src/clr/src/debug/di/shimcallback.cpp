@@ -1322,29 +1322,29 @@ HRESULT ShimProxyCallback::CustomNotification(ICorDebugThread * pThread, ICorDeb
 //      input:
 //          pController - controller in which the notification occurred
 // Return value: S_OK
-HRESULT ShimProxyCallback::BeforeGarbageCollection(ICorDebugController* pController)
+HRESULT ShimProxyCallback::BeforeGarbageCollection(ICorDebugProcess* pProcess)
 {
     m_pShim->PreDispatchEvent();
     class BeforeGarbageCollectionEvent : public ManagedEvent
     {
         // callbacks parameters. These are strong references
-        RSExtSmartPtr<ICorDebugController > m_pController;
+        RSExtSmartPtr<ICorDebugProcess> m_pProcess;
 
     public:
         // Ctor
-        BeforeGarbageCollectionEvent(ICorDebugController* pController) :
+        BeforeGarbageCollectionEvent(ICorDebugProcess* pProcess) :
             ManagedEvent()
         {
-            this->m_pController.Assign(pController);
+            this->m_pProcess.Assign(pProcess);
         }
 
         HRESULT Dispatch(DispatchArgs args)
         {
-            return args.GetCallback4()->BeforeGarbageCollection(m_pController);
+            return args.GetCallback4()->BeforeGarbageCollection(m_pProcess);
         }
     }; // end class BeforeGarbageCollectionEvent
 
-    m_pShim->GetManagedEventQueue()->QueueEvent(new BeforeGarbageCollectionEvent(pController));
+    m_pShim->GetManagedEventQueue()->QueueEvent(new BeforeGarbageCollectionEvent(pProcess));
     return S_OK;
 }
 
@@ -1353,29 +1353,29 @@ HRESULT ShimProxyCallback::BeforeGarbageCollection(ICorDebugController* pControl
 //      input:
 //          pController - controller in which the notification occurred
 // Return value: S_OK
-HRESULT ShimProxyCallback::AfterGarbageCollection(ICorDebugController* pController)
+HRESULT ShimProxyCallback::AfterGarbageCollection(ICorDebugProcess* pProcess)
 {
     m_pShim->PreDispatchEvent();
     class AfterGarbageCollectionEvent : public ManagedEvent
     {
         // callbacks parameters. These are strong references
-        RSExtSmartPtr<ICorDebugController > m_pController;
+        RSExtSmartPtr<ICorDebugProcess > m_pProcess;
 
     public:
         // Ctor
-        AfterGarbageCollectionEvent(ICorDebugController* pController) :
+        AfterGarbageCollectionEvent(ICorDebugProcess* pProcess) :
             ManagedEvent()
         {
-            this->m_pController.Assign(pController);
+            this->m_pProcess.Assign(pProcess);
         }
 
         HRESULT Dispatch(DispatchArgs args)
         {
-            return args.GetCallback4()->AfterGarbageCollection(m_pController);
+            return args.GetCallback4()->AfterGarbageCollection(m_pProcess);
         }
     }; // end class AfterGarbageCollectionEvent
 
-    m_pShim->GetManagedEventQueue()->QueueEvent(new AfterGarbageCollectionEvent(pController));
+    m_pShim->GetManagedEventQueue()->QueueEvent(new AfterGarbageCollectionEvent(pProcess));
     return S_OK;
 }
 
