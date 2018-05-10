@@ -225,19 +225,19 @@ typedef struct CorDebugGuidToTypeMapping
 
 /*
  * Callback interface for providing access to a particular target process. The
- * debugging services will call functions on this interface to access memory 
- * and other data in the target process.  The debugger client must implement 
+ * debugging services will call functions on this interface to access memory
+ * and other data in the target process.  The debugger client must implement
  * this interface as appropriate for the particular target (for example, a live
  * process or a memory dump).  The DataTarget will only be invoked from within
- * the implementation of other ICorDebug APIs (i.e. the debugger client has 
- * control over which thread it is invoked on, and when) 
+ * the implementation of other ICorDebug APIs (i.e. the debugger client has
+ * control over which thread it is invoked on, and when)
  *
  * Error HRESULTS returned by DataTarget APIs will propagate up and be returned
  * by the active ICorDebug API call.
  *
  * The DataTarget implementation must always return up-to-date information
- * about the target.  The target process should be stopped (not changing 
- * in any way) while ICorDebug APIs (and hence DataTarget APIs) are being 
+ * about the target.  The target process should be stopped (not changing
+ * in any way) while ICorDebug APIs (and hence DataTarget APIs) are being
  * called.  If the target is a live process and it's state changes,
  * OpenVirtualProcess needs to be called again to provide a replacement
  * ICorDebugProcess instance.
@@ -251,18 +251,18 @@ typedef struct CorDebugGuidToTypeMapping
 interface ICorDebugDataTarget : IUnknown
 {
     /*
-     * GetPlatform returns the processor architecture and operating system on 
-     * which the target process is (or was) running.  
+     * GetPlatform returns the processor architecture and operating system on
+     * which the target process is (or was) running.
      *
-     * This is used by ICorDebug to determine details of the target process 
-     * such as its pointer size, address space layout, register set, 
+     * This is used by ICorDebug to determine details of the target process
+     * such as its pointer size, address space layout, register set,
      * instruction format, context layout, and calling conventions, etc.
      * This platforms in this list are the only ones supported by this version
      * of ICorDebug, but more may be added in future versions.
      *
-     * Note that this may actually indicate the platform which is being 
+     * Note that this may actually indicate the platform which is being
      * emulated for the target, not the actual hardware in use.  For example,
-     * a process running in the WOW on Windows x64 should use 
+     * a process running in the WOW on Windows x64 should use
      * CORDB_PLATFORM_WINDOWS_X86.
      *
      * Implementations should be sure to describe what the platform of the
@@ -282,7 +282,7 @@ interface ICorDebugDataTarget : IUnknown
         CORDB_PLATFORM_WINDOWS_ARM64,     // Windows on ARM64
 
         CORDB_PLATFORM_POSIX_AMD64,       // Posix supporting OS on Intel x64
-        CORDB_PLATFORM_POSIX_X86,         // Posix supporting OS on Intel x86        
+        CORDB_PLATFORM_POSIX_X86,         // Posix supporting OS on Intel x86
         CORDB_PLATFORM_POSIX_ARM,         // Posix supporting OS on ARM32
         CORDB_PLATFORM_POSIX_ARM64        // Posix supporting OS on ARM64
     } CorDebugPlatform;
@@ -292,13 +292,13 @@ interface ICorDebugDataTarget : IUnknown
     /*
      * ReadVirtual - Read virtual memory from the target process.
      *
-     * Requests contiguous memory starting at the specified target address to 
-     * be read from the target process into the supplied buffer.  If at least 
-     * the first byte (at the specified start address) can be read, the call 
+     * Requests contiguous memory starting at the specified target address to
+     * be read from the target process into the supplied buffer.  If at least
+     * the first byte (at the specified start address) can be read, the call
      * should return success (to support efficient reading of data structures
      * with self-describing length, like null-terminated strings).
      *
-     * On success, the actual number of bytes read must be stored into 
+     * On success, the actual number of bytes read must be stored into
      * pBytesRead.
      */
     HRESULT ReadVirtual([in] CORDB_ADDRESS address,
@@ -309,12 +309,12 @@ interface ICorDebugDataTarget : IUnknown
     /*
      * GetThreadContext - Get the thread context (register values) for a thread.
      *
-     * Requests the current thread context for the specified (operating-system 
-     * defined) thread identifier.  The size and format of the context record 
-     * is platform dependant, and is determined by the result of the call to 
-     * GetPlatform.  
-     * 
-     * The context flags specify, in a platform-dependent manor, which portions 
+     * Requests the current thread context for the specified (operating-system
+     * defined) thread identifier.  The size and format of the context record
+     * is platform dependant, and is determined by the result of the call to
+     * GetPlatform.
+     *
+     * The context flags specify, in a platform-dependent manor, which portions
      * of the context should be read.  contextSize specifies the size of the
      * supplied buffer, but the function is free to not fill the whole buffer
      * if it is possible to determine the actual size from the context.
@@ -488,7 +488,7 @@ interface ICorDebugMergedAssemblyRecord : IUnknown
      *                 These names do not include qualifiers such as file extensions, culture, version, or public key token
      */
     HRESULT GetSimpleName([in] ULONG32 cchName, [out] ULONG32 *pcchName, [out, size_is(cchName), length_is(*pcchName)] WCHAR szName[]);
-    
+
     /*
      * GetVersion - Gives the assembly version information
      */
@@ -507,7 +507,7 @@ interface ICorDebugMergedAssemblyRecord : IUnknown
     /*
      * GetPublicKeyToken - Gives the assembly public key token (the last 8 bytes of a SHA1 hash of the public key)
      */
-    HRESULT GetPublicKeyToken([in] ULONG32 cbPublicKeyToken, [out] ULONG32 *pcbPublicKeyToken, 
+    HRESULT GetPublicKeyToken([in] ULONG32 cbPublicKeyToken, [out] ULONG32 *pcbPublicKeyToken,
         [out, size_is(cbPublicKeyToken), length_is(*pcbPublicKeyToken)] BYTE pbPublicKeyToken[]);
 
     /*
@@ -696,7 +696,7 @@ interface ICorDebugVirtualUnwinder : IUnknown
                        [out] ULONG32* contextSize,
                        [out, size_is(cbContextBuf)] BYTE contextBuf[]);
 
-    /* 
+    /*
      * Advances to the callers context.
      *
      * If a failing HRESULT is returned ICorDebug APIs will return CORDBG_E_DATA_TARGET_ERROR.
@@ -812,7 +812,7 @@ interface ICorDebugDataTarget3 : IUnknown
 };
 
 /*
- * Data target that knows how to obtain debugee's process id. 
+ * Data target that knows how to obtain debugee's process id.
  * Debugee is not necessarily a living process at that time or on the same machine.
  */
 [
@@ -832,20 +832,20 @@ interface ICorDebugDataTarget4 : IUnknown
 };
 
 /*
- * Mutable extension to the data target.  This version of ICorDebugDataTarget 
- * can be implemented by targets that wish to support modification of the target 
+ * Mutable extension to the data target.  This version of ICorDebugDataTarget
+ * can be implemented by targets that wish to support modification of the target
  * process (such as for live invasive debugging).
  *
- * All of these APIs are optional in the sense that no core inspection-based 
+ * All of these APIs are optional in the sense that no core inspection-based
  * debugging functionality will be lost by not implementing this interface or
  * by the failure of these methods.  Any failure HRESULT from these APIs will
  * propagate out as the HRESULT from the ICorDebug API call.
  *
  * Note that a single ICorDebug API call may result in multiple mutations,
- * and there is no mechanism for ensuring related mutations are applied 
+ * and there is no mechanism for ensuring related mutations are applied
  * transactionally (all-or-none).  This means that if a mutation fails after
  * others (for the same ICorDebug call) have succeeded, the target process may
- * be left in an inconsistent state and debugging may become unreliable.  
+ * be left in an inconsistent state and debugging may become unreliable.
   */
 [
     object,
@@ -879,7 +879,7 @@ interface ICorDebugMutableDataTarget : ICorDebugDataTarget
                              [in] ULONG32 contextSize,
                              [in, size_is(contextSize)] const BYTE * pContext);
 
-    /* 
+    /*
      * Invoke to change the continue-status for the outstanding debug-event on
      * the specified thread.
      *
@@ -887,7 +887,7 @@ interface ICorDebugMutableDataTarget : ICorDebugDataTarget
      *        dwThreadId - OS Thread Id of the debug event
      *    continueStatus - New continue status being requested.  See the
      *                     definition of CORDB_CONTINUE_STATUS for details.
-     * 
+     *
      * This API is used when the Debugger makes an ICorDebug API request
      * which requires the current debug event to be handled in a way that is
      * potentially different from which it would be otherwise.  For example,
@@ -902,8 +902,8 @@ interface ICorDebugMutableDataTarget : ICorDebugDataTarget
 
 
 /*
- * Interface used by the data access services layer to locate metadata 
- * of assemblies in a target. 
+ * Interface used by the data access services layer to locate metadata
+ * of assemblies in a target.
  *
  * The API client must implement this interface as appropriate for the
  * particular target (for example, a live process or a memory dump).
@@ -1131,7 +1131,7 @@ interface ICorDebugManagedCallback : IUnknown
                          [in] ICorDebugThread *thread);
 
     /*
-     * ExitThread is called when a thread which has run managed code exits. 
+     * ExitThread is called when a thread which has run managed code exits.
      * Once this callback is fired, the thread no longer will appear in thread enumerations.
      */
 
@@ -1289,14 +1289,14 @@ interface ICorDebugManagedCallback : IUnknown
                        [in] ICorDebugThread *pThread);
 
     /*
-     * UpdateModuleSymbols is called when PDB debug symbols are available for an 
-     * in-memory module. This is a debugger's chance to load the symbols 
+     * UpdateModuleSymbols is called when PDB debug symbols are available for an
+     * in-memory module. This is a debugger's chance to load the symbols
      * (using ISymUnmanagedBinder::GetReaderForStream), and bind source-level
      * breakpoints for the module.
-     * 
+     *
      * This callback is no longer dispatched for dynamic modules.  Instead,
      * debuggers should call ICorDebugModule3::CreateReaderForInMemorySymbols
-     * to obtain a symbol reader for a dynamic module.  
+     * to obtain a symbol reader for a dynamic module.
      */
     HRESULT UpdateModuleSymbols([in] ICorDebugAppDomain *pAppDomain,
                                 [in] ICorDebugModule *pModule,
@@ -1335,17 +1335,17 @@ interface ICorDebugManagedCallback : IUnknown
 interface ICorDebugManagedCallback3 : IUnknown
 {
     /* Callback indicating an enabled custom debugger notification has been
-     * raised. pThread points to the thread that issued the notification. 
-     * A subsequent call to GetCurrentCustomDebuggerNotification will retrieve the object that was passed to 
+     * raised. pThread points to the thread that issued the notification.
+     * A subsequent call to GetCurrentCustomDebuggerNotification will retrieve the object that was passed to
      * System.Diagnostics.Debugger.CustomNotification, whose type will be one
      * that has been enabled via SetEnableCustomNotification.
-     * Note that this will return non-null if and only if we are currently inside a CustomNotification 
-     * callback. 
+     * Note that this will return non-null if and only if we are currently inside a CustomNotification
+     * callback.
      * The debugger can read type-specific parameters from fields of the data
-     * object, and store responses into fields. 
+     * object, and store responses into fields.
      * ICorDebug imposes no policy on the types of notifications or their
      * contents, and their semantics are strictly a contract between
-     * debuggers and applications/frameworks.   
+     * debuggers and applications/frameworks.
      */
     HRESULT CustomNotification([in] ICorDebugThread * pThread, [in] ICorDebugAppDomain * pAppDomain);
 }
@@ -1359,7 +1359,8 @@ interface ICorDebugManagedCallback3 : IUnknown
 
 interface ICorDebugManagedCallback4 : IUnknown
 {
-    HRESULT SomeWork([in] ICorDebugThread * pThread, [in] ICorDebugAppDomain * pAppDomain);
+    HRESULT BeforeGarbageCollection(ICorDebugController* pController);
+    HRESULT AfterGarbageCollection(ICorDebugController* pController);
 }
 
 
@@ -1454,7 +1455,7 @@ interface ICorDebugManagedCallback2 : IUnknown
 
 
     /*
-     * For non-intercepted exceptions, ExceptionUnwind is called at the beginning of the second pass 
+     * For non-intercepted exceptions, ExceptionUnwind is called at the beginning of the second pass
      * when we start to unwind the stack.  For intercepted exceptions, ExceptionUnwind is called when
      * the interception is complete, conceptually at the end of the second pass.
      *
@@ -1647,15 +1648,15 @@ interface ICorDebug : IUnknown
      *
      * This should be set after Initialize and before any calls to CreateProcess or DebugActiveProcess.
      *
-     * However, for legacy purposes, it is not absolutely required to set this until 
-     * before the first native debug event is fired. Specifically, if CreateProcess has the 
+     * However, for legacy purposes, it is not absolutely required to set this until
+     * before the first native debug event is fired. Specifically, if CreateProcess has the
      * CREATE_SUSPENDED flag, native debug events will not be dispatched until the main thread
      * is resumed.
-     * DebugActiveProcess will dispatch native debug events immediately, and so the unmanaged callback 
+     * DebugActiveProcess will dispatch native debug events immediately, and so the unmanaged callback
      * must be set before DebugActiveProcess is called.
      *
-     * Returns: 
-     *    S_OK if callback pointer is successfully updated. 
+     * Returns:
+     *    S_OK if callback pointer is successfully updated.
      *    failure on any failure.
      *
      */
@@ -1742,7 +1743,7 @@ interface ICorDebug : IUnknown
 #pragma warning(pop)
 
 /*
- * A debugger can implement this interface and pass it to ICorDebugRemote to specify the host name of the 
+ * A debugger can implement this interface and pass it to ICorDebugRemote to specify the host name of the
  * target machine in Mac remote debugging scenarios.  This is only supported on Silverlight.
  */
 [
@@ -1755,26 +1756,26 @@ interface ICorDebugRemoteTarget : IUnknown
 {
     /*
      * Return the host name of the target machine.  The host name can either be a fully qualified domain name or
-     * an IPv4 address.  If cchHostName is 0 and szHostName is NULL, this function just returns the number of 
+     * an IPv4 address.  If cchHostName is 0 and szHostName is NULL, this function just returns the number of
      * characters including the NULL character in the host name.
      *
-     * cchHostName is the number of characters in the buffer szHostName.  If this is 0, then szHostName must 
+     * cchHostName is the number of characters in the buffer szHostName.  If this is 0, then szHostName must
      * be NULL.  If it is not 0, then szHostName must be non-NULL.
-     * 
-     * pcchHostName returns the number of characters including the NULL character in the host name.  This can 
+     *
+     * pcchHostName returns the number of characters including the NULL character in the host name.  This can
      * be NULL.
-     * 
+     *
      * szHostName is the buffer for returning the host name.
      */
 
     HRESULT GetHostName([in]  ULONG32 cchHostName,
                         [out, annotation("_Out_")] ULONG32 * pcchHostName,
-                        [out, size_is(cchHostName), length_is(*pcchHostName), annotation("_Out_writes_to_opt_(cchHostName, *pcchHostName)")] 
+                        [out, size_is(cchHostName), length_is(*pcchHostName), annotation("_Out_writes_to_opt_(cchHostName, *pcchHostName)")]
                                                      WCHAR szHostName[]);
 }
 
 /*
- * A debugger can QI for this interface from an ICorDebug interface in order to specify a target machine in 
+ * A debugger can QI for this interface from an ICorDebug interface in order to specify a target machine in
  * Mac remote debugging scenarios.  This is only supported on Silverlight.
  */
 [
@@ -1923,7 +1924,7 @@ interface ICorDebug2 : IUnknown
         ver_ICorDebugAppDomain3 = CorDebugVersion_4_5,
         ver_ICorDebugCode3 = CorDebugVersion_4_5,
         ver_ICorDebugILFrame3 = CorDebugVersion_4_5,
-        
+
         CorDebugLatestVersion = CorDebugVersion_4_5
 
     } CorDebugInterfaceVersion;
@@ -2076,7 +2077,7 @@ interface ICorDebugController : IUnknown
      *
      * Note that currently if unmanaged debugging is enabled this call will
      * fail due to OS limitations.
-     * 
+     *
      * Returns S_OK on success.
      *
      */
@@ -2184,13 +2185,13 @@ interface ICorDebugAppDomain : ICorDebugController
      *   callers know the full size of buffer they'd need to allocate to get the full string.
      *
      * if (cchName == 0) then we're in "query" mode:
-     *     This fails if szName is non-null or pcchName is null 
+     *     This fails if szName is non-null or pcchName is null
      *     Else this function will set pcchName to let the caller know how large of a buffer to allocate
      *     and return S_OK.
      *
-     * if (cchName != 0) then 
+     * if (cchName != 0) then
      *     This fails if szName is null.
-     *     Else this copies as much as can fit into szName (it will always null terminate szName) and returns S_OK. 
+     *     Else this copies as much as can fit into szName (it will always null terminate szName) and returns S_OK.
      *     pcchName can be null. If it's non-null, we set it.
      *
      * The expected usage pattern is that a client will call once to get the size of a buffer needed for the name,
@@ -2215,7 +2216,7 @@ interface ICorDebugAppDomain : ICorDebugController
 
     HRESULT GetObject([out] ICorDebugValue **ppObject);
 
-    /* 
+    /*
      * DEPRECATED.  This does nothing in V3.  Attaching is process-wide.
      */
 
@@ -2372,7 +2373,7 @@ interface ICorDebugAssembly : IUnknown
     /*
      * GetName returns the full path and filename of the assembly.
      * If the assembly has no filename (i.e. it is in-memory only),
-     * S_FALSE is returned, and a fabricated string is stored into szName. 
+     * S_FALSE is returned, and a fabricated string is stored into szName.
      */
 
     HRESULT GetName([in] ULONG32 cchName,
@@ -2417,7 +2418,7 @@ interface ICorDebugAssembly3 : IUnknown
     /*
      * Gets an enumeration for all the assemblies contained within this assembly
      * If the assembly isn't a container, the result is S_FALSE and the enumeration
-     * will be empty. Symbols are needed to compute this result; if they aren't 
+     * will be empty. Symbols are needed to compute this result; if they aren't
      * present an error will be returned and no enumeration provided.
      */
     HRESULT EnumerateContainedAssemblies(ICorDebugAssemblyEnum **ppAssemblies);
@@ -2553,7 +2554,7 @@ typedef struct COR_GC_REFERENCE
     ICorDebugAppDomain *Domain;         // The AppDomain of the handle/object, may be null.
     ICorDebugValue *Location;           // A reference to the object
     CorGCReferenceType Type;            // Where the root came from.
-    
+
     /*
         DependentSource - for HandleDependent
         RefCount - for HandleStrongRefCount
@@ -2582,13 +2583,13 @@ cpp_quote("#define _DEF_COR_ARRAY_LAYOUT_")
 typedef struct COR_ARRAY_LAYOUT
 {
     COR_TYPEID componentID; // The type of objects the array contains
-    
+
     CorElementType componentType;  // Whether the component itself is a GC reference, value class, or primitive
-    
+
     ULONG32 firstElementOffset; // The offset to the first element
     ULONG32 elementSize;     // The size of each element
     ULONG32 countOffset;     // The offset to the number of elements in the array.
-    
+
     // For multidimensional arrays (works with normal arrays too).
     ULONG32 rankSize;       // The size of the rank
     ULONG32 numRanks;       // The number of ranks in the array (1 for array, N for multidimensional array)
@@ -2617,7 +2618,7 @@ typedef struct COR_FIELD
     mdFieldDef token;   // FieldDef token to get the field info
     ULONG32 offset;     // Offset in object of data.
     COR_TYPEID id;      // TYPEID of the field
-    
+
     CorElementType fieldType;
 } COR_FIELD;
 cpp_quote("#endif // _DEF_COR_FIELD_")
@@ -2951,15 +2952,15 @@ interface ICorDebugProcess2 : IUnknown
 interface ICorDebugProcess3 : IUnknown
 {
     /*  Enables (or disables) custom debugger notifications of a specified
-     *  type (which implements ICustomDebuggerNotification).  
+     *  type (which implements ICustomDebuggerNotification).
      *  When this has been enabled, calls to
      *  System.Diagnostics.Debugger.CustomNotification with a data argument
      *  of the specified class will trigger a CustomNotification callback.
      *  Notifications are disabled by default and the debugger must opt-into
      *  any notification types it knows of and wishes to handle.
-     *  Since ICorDebugClass is scoped by appdomains, the debugger needs to 
-     *  call this API for every appdomain in the process if it's interested in 
-     *  receiving the notification across the entire process. 
+     *  Since ICorDebugClass is scoped by appdomains, the debugger needs to
+     *  call this API for every appdomain in the process if it's interested in
+     *  receiving the notification across the entire process.
      */
 
     HRESULT SetEnableCustomNotification(ICorDebugClass * pClass, BOOL fEnable);
@@ -2979,14 +2980,14 @@ interface ICorDebugProcess5 : IUnknown
     HRESULT GetObject([in] CORDB_ADDRESS addr, [out] ICorDebugObjectValue **pObject);
     HRESULT EnumerateGCReferences([in] BOOL enumerateWeakReferences, [out] ICorDebugGCReferenceEnum **ppEnum);
     HRESULT EnumerateHandles([in] CorGCReferenceType types, [out] ICorDebugGCReferenceEnum **ppEnum);
-    
+
     HRESULT GetTypeID([in] CORDB_ADDRESS obj, [out] COR_TYPEID *pId);
     HRESULT GetTypeForTypeID([in] COR_TYPEID id, [out] ICorDebugType **ppType);
-    
+
     HRESULT GetArrayLayout([in] COR_TYPEID id, [out] COR_ARRAY_LAYOUT *pLayout);
     HRESULT GetTypeLayout([in] COR_TYPEID id, [out] COR_TYPE_LAYOUT *pLayout);
     HRESULT GetTypeFields([in] COR_TYPEID id, ULONG32 celt, COR_FIELD fields[], ULONG32 *pceltNeeded);
-    
+
     /*
      *  Enables the specified policy.
      */
@@ -2997,12 +2998,12 @@ interface ICorDebugProcess5 : IUnknown
 // Describes formats of pRecord byte blob in DecodeEvent.
 // This is dependent on the target architecture.
 typedef enum CorDebugRecordFormat
-{        
+{
     FORMAT_WINDOWS_EXCEPTIONRECORD32 = 1,
     FORMAT_WINDOWS_EXCEPTIONRECORD64 = 2,
 } CorDebugRecordFormat;
 
-// dwFlags in DecodeEvent is dependent on the target architecture. 
+// dwFlags in DecodeEvent is dependent on the target architecture.
 // Definition of DecodeEvent flags on Windows.
 typedef enum CorDebugDecodeEventFlagsWindows
 {
@@ -3020,13 +3021,13 @@ typedef enum CorDebugDebugEventKind
     DEBUG_EVENT_KIND_MANAGED_EXCEPTION_UNHANDLED = 6
 } CorDebugDebugEventKind;
 
-// Describes what amount of cached data must be discarded based on changes to the   
+// Describes what amount of cached data must be discarded based on changes to the
 // process
 typedef enum CorDebugStateChange
 {
-    PROCESS_RUNNING = 0x0000001, // The process reached a new memory state via 
-                                 // forward execution.    
-    FLUSH_ALL       = 0x0000002, // The process' memory might be arbitrarily 
+    PROCESS_RUNNING = 0x0000001, // The process reached a new memory state via
+                                 // forward execution.
+    FLUSH_ALL       = 0x0000002, // The process' memory might be arbitrarily
                                  // different than it was before.
 } CorDebugStateChange;
 
@@ -3070,7 +3071,7 @@ typedef enum CorDebugCodeInvokePurpose
     CODE_INVOKE_PURPOSE_NONE,
     CODE_INVOKE_PURPOSE_NATIVE_TO_MANAGED_TRANSITION,  // The managed code will run any managed entrypoint
                                                        // such as a reverse p-invoke. Any more detailed purpose
-                                                       // is unknown by the runtime. 
+                                                       // is unknown by the runtime.
     CODE_INVOKE_PURPOSE_CLASS_INIT,                    // The managed code will run a static constructor
     CODE_INVOKE_PURPOSE_INTERFACE_DISPATCH,            // The managed code will run the implementation for
                                                        // some interface method that was called
@@ -3084,20 +3085,20 @@ typedef enum CorDebugCodeInvokePurpose
 ]
 interface ICorDebugProcess6 : IUnknown
 {
-    //Decodes managed debug events which have been encapsulated in the payload of    
+    //Decodes managed debug events which have been encapsulated in the payload of
     //specially crafted native exception debug events
     HRESULT DecodeEvent(
         [in, length_is(countBytes), size_is(countBytes)]  const BYTE pRecord[],
         [in] DWORD countBytes,
         [in] CorDebugRecordFormat format,
-        [in] DWORD dwFlags, 
-        [in] DWORD dwThreadId, 
+        [in] DWORD dwFlags,
+        [in] DWORD dwThreadId,
         [out] ICorDebugDebugEvent **ppEvent);
 
     // Debugger calls this to notify ICorDebug that the process is running.
     //
     // Notes:
-    //  ProcessStateChanged(PROCESS_RUNNING) has similar semantics to  
+    //  ProcessStateChanged(PROCESS_RUNNING) has similar semantics to
     //  ICorDebugProcess::Continue();
     HRESULT ProcessStateChanged([in] CorDebugStateChange change);
 
@@ -3110,13 +3111,13 @@ interface ICorDebugProcess6 : IUnknown
     // various ICorDebug APIs described below.
     //
     // Terminology
-    // The aggregate modules are called containers, the modules inside are called 
-    // sub-modules or virtual modules. Both container modules and sub-modules are 
-    // represented with the ICorDebugModule interface, however the behavior of the 
+    // The aggregate modules are called containers, the modules inside are called
+    // sub-modules or virtual modules. Both container modules and sub-modules are
+    // represented with the ICorDebugModule interface, however the behavior of the
     // interface is slightly different in each case, as described below.
-    // In addition there may still be modules loaded that weren't merged during build. 
+    // In addition there may still be modules loaded that weren't merged during build.
     // These modules, called regular modules, are neither container modules nor
-    // sub-modules. 
+    // sub-modules.
     //
     // Modules and assemblies
     // Multi-module assemblies are not supported for assembly merging scenarios
@@ -3139,7 +3140,7 @@ interface ICorDebugProcess6 : IUnknown
     //     -have a reduced set of metadata that corresponds only to the original
     //      assembly that was merged in.
     //     -The metadata names have no mangling.
-    //     -Metadata tokens are unlikely to match with the tokens in the original 
+    //     -Metadata tokens are unlikely to match with the tokens in the original
     //      assembly before it was merged in the build process
     //     -ICorDebugModule.GetName() returns the assembly name (not a file path)
     //     -ICorDebug.GetSize() returns the original unmerged image size.
@@ -3169,7 +3170,7 @@ interface ICorDebugProcess6 : IUnknown
     //     Disabled - Returns a list of container assemblies + regular assemblies
     //                (no sub-assemblies are shown)
     //     Enabled - Returns the list of sub-assemblies + regular assemblies
-    //                (no container assemblies are shown). 
+    //                (no container assemblies are shown).
     //                Note: If any container assembly is missing symbols, none of its
     //                sub-assemblies will be enumerated. If any regular assembly is
     //                missing symbols it may or may not be enumerated.
@@ -3190,10 +3191,10 @@ interface ICorDebugProcess6 : IUnknown
     HRESULT EnableVirtualModuleSplitting(BOOL enableSplitting);
 
     // Changes internal state of the debuggee so that the System.Debugger.IsAttached API in the BCL
-    // returns true. 
+    // returns true.
     //
     // Returns
-    //   S_OK - debuggee is succesfully updated 
+    //   S_OK - debuggee is succesfully updated
     //   CORDBG_E_MODULE_NOT_LOADED - assembly containing System.Debugger.IsAttached API is not loaded
     //   or some other error is preventing it from being recognized such as missing metadata. This error
     //   is common and benign - it is recommended to try the call again when future assemblies load.
@@ -3217,7 +3218,7 @@ interface ICorDebugProcess6 : IUnknown
     HRESULT GetExportStepInfo([in]LPCWSTR pszExportName, [out]CorDebugCodeInvokeKind* pInvokeKind, [out]CorDebugCodeInvokePurpose* pInvokePurpose);
 }
 
-typedef enum WriteableMetadataUpdateMode 
+typedef enum WriteableMetadataUpdateMode
 {
    LegacyCompatPolicy,
    AlwaysShowUpdates
@@ -3250,7 +3251,7 @@ interface ICorDebugProcess8 : IUnknown
     * EnableExceptionCallbacksOutsideOfMyCode enables/disables certain types of exception callback to ICorDebugManagedCallback2.
     * If the flag is FALSE:
     * 1) DEBUG_EXCEPTION_FIRST_CHANCE callbacks won't called in the debugger.
-    * 2) DEBUG_EXCEPTION_CATCH_HANDLER_FOUND callbacks won't be called if an exception never escapes into user code. 
+    * 2) DEBUG_EXCEPTION_CATCH_HANDLER_FOUND callbacks won't be called if an exception never escapes into user code.
     * (i.e. a path from an exception origin to an exception handler has no methods marked as JMC)
     *
     * Default value of this flag is TRUE.
@@ -3287,23 +3288,23 @@ interface ICorDebugModuleDebugEvent : ICorDebugDebugEvent
 ]
 interface ICorDebugExceptionDebugEvent : ICorDebugDebugEvent
 {
-    // The meaning of this stack pointer varies based on event type (available from  
+    // The meaning of this stack pointer varies based on event type (available from
     // ICorDebugDebugEvent.GetEventType())
     //
     // MANAGED_EXCEPTION_FIRST_CHANCE -> The stack pointer for the frame that threw the exception
-    // MANAGED_EXCEPTION_USER_FIRST_CHANCE -> The stack pointer for the user-code frame closest to the point of 
+    // MANAGED_EXCEPTION_USER_FIRST_CHANCE -> The stack pointer for the user-code frame closest to the point of
     // the thrown exception
     // MANAGED_EXCEPTION_CATCH_HANDLER_FOUND -> The stack pointer for the frame that contains the catch handler
     // MANAGED_EXCEPTION_UNHANDLED -> *pStackPointer will be NULL
     HRESULT GetStackPointer([out]CORDB_ADDRESS *pStackPointer);
 
-    // The meaning of the IP varies based on event type (available from  
+    // The meaning of the IP varies based on event type (available from
     // ICorDebugDebugEvent.GetEventType())
     //
     // MANAGED_EXCEPTION_FIRST_CHANCE -> The address of the faulting instruction
-    // MANAGED_EXCEPTION_USER_FIRST_CHANCE -> Within the frame indicated by GetStackPointer(), 
-    // this is the code address where execution would resume if no exception had been 
-    // raised. The exception may or may not cause different code to be executed in this 
+    // MANAGED_EXCEPTION_USER_FIRST_CHANCE -> Within the frame indicated by GetStackPointer(),
+    // this is the code address where execution would resume if no exception had been
+    // raised. The exception may or may not cause different code to be executed in this
     // frame such as a catch of finally clause.
     // MANAGED_EXCEPTION_CATCH_HANDLER_FOUND -> Within the frame indicated by GetStackPointer(),
     // this is the code address where catch handler execution will start
@@ -3747,7 +3748,7 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_ARM_D31,
 
         // ARM64 registers
-            
+
         REGISTER_ARM64_PC = 0,
         REGISTER_ARM64_SP,
         REGISTER_ARM64_FP,
@@ -4004,7 +4005,7 @@ interface ICorDebugThread : IUnknown
      * If the thread's user state includes USER_UNSAFE_POINT, then the thread may block a GC.
      * This means the suspended thread has a mcuh higher chance of causing a deadlock.
      *
-     * This may not affect debug events already queued. Thus a debugger should drain the entire 
+     * This may not affect debug events already queued. Thus a debugger should drain the entire
      * event queue (via calling HasQueuedCallbacks) before suspending or resuming threads. Else it
      * may get events on a thread that it believes it has already suspended.
      *
@@ -4255,7 +4256,7 @@ interface ICorDebugThread4 : IUnknown
 {
     /*
      * Returns S_OK if ICorDebugThread::GetCurrentException() is non-NULL and the exception
-     * it refers to has completed the first pass of exception handling without locating 
+     * it refers to has completed the first pass of exception handling without locating
      * a catch clause.
      * Returns S_FALSE if there is no exception, it hasn't completed first pass handling,
      * or a catch handler was located
@@ -4264,13 +4265,13 @@ interface ICorDebugThread4 : IUnknown
     HRESULT HasUnhandledException();
 
     HRESULT GetBlockingObjects([out] ICorDebugBlockingObjectEnum **ppBlockingObjectEnum);
-    /* 
+    /*
      * Gets the current CustomNotification object on the current thread. This could be NULL if no
      * current notification object exists. If we aren't currently inside a CustomNotification callback,
      * this will always return NULL.
-     * A debugger can examine this object to determine how to handle the notification. 
-     * See ICorDebugManagedCallback3::CustomNotification for more information about 
-     * custom notifications. 
+     * A debugger can examine this object to determine how to handle the notification.
+     * See ICorDebugManagedCallback3::CustomNotification for more information about
+     * custom notifications.
      */
     HRESULT GetCurrentCustomDebuggerNotification([out] ICorDebugValue ** ppNotificationObject);
 };
@@ -4292,11 +4293,11 @@ interface ICorDebugStackWalk : IUnknown
         SET_CONTEXT_FLAG_UNWIND_FRAME = 0x2,
     } CorDebugSetContextFlag;
 
-    /* 
+    /*
      * Get the current context of this stack frame.
-     * 
-     * The CONTEXT is retrieved from the ICorDebugStackWalk.  As unwinding may only restore a subset of the 
-     * registers, such as only non-volatile registers, the context may not exactly match the register state at 
+     *
+     * The CONTEXT is retrieved from the ICorDebugStackWalk.  As unwinding may only restore a subset of the
+     * registers, such as only non-volatile registers, the context may not exactly match the register state at
      * the time of the actual call.
      */
     HRESULT GetContext([in] ULONG32 contextFlags,
@@ -4304,14 +4305,14 @@ interface ICorDebugStackWalk : IUnknown
                        [out] ULONG32* contextSize,
                        [out, size_is(contextBufSize)] BYTE contextBuf[]);
 
-    /* 
+    /*
      * Change the current context of this stack walk, allowing the
      * debugger to move it to an arbitrary context. Does not actually
      * alter the current context of the thread whose stack is being walked.
      *
      * The CONTEXT has to be a valid CONTEXT of a stack frame on the thread.
      * If the CONTEXT is outside of the current thread's stack range, we'll
-     * return a failure HRESULT.  Otherwise, in the case of an invalid CONTEXT, 
+     * return a failure HRESULT.  Otherwise, in the case of an invalid CONTEXT,
      * the result is undefined.
      */
     HRESULT SetContext([in] CorDebugSetContextFlag flag,
@@ -4319,11 +4320,11 @@ interface ICorDebugStackWalk : IUnknown
                        [in, size_is(contextSize)] BYTE context[]);
 
     /*
-     * Attempt to advance the stackwalk to the next frame.  
+     * Attempt to advance the stackwalk to the next frame.
      * If the current frame type is a native stack frame, Next() will not advance to the caller frame.
      * Instead, Next() will advance to the next managed stack frame or the next internal frame marker.
      *
-     * If a debugger wants to unwind unmanaged stack frames, it needs to start from the 
+     * If a debugger wants to unwind unmanaged stack frames, it needs to start from the
      * native stack frame itself.  It can seed the unwind by calling GetContext().
      *
      * This function will return CORDBG_S_AT_END_OF_STACK when there are no more frames.
@@ -4366,7 +4367,7 @@ interface ICorDebugChain : IUnknown
      * call chain.  Note that you cannot make any assumptions about
      * what is actually stored on the stack - the numeric range is to compare
      * stack frame locations only.
-     * The start of a stack range is the leafmost boundary of the chain, and 
+     * The start of a stack range is the leafmost boundary of the chain, and
      * the end of a stack range is the rootmost boundary of the chain.
      */
 
@@ -4498,9 +4499,9 @@ interface ICorDebugFrame : IUnknown
     HRESULT GetCode([out] ICorDebugCode **ppCode);
 
     /*
-     * GetFunction returns the function for the code which this stack 
-     * frame is running.  
-     * For ICorDebugInternalFrames, this may point to a method the 
+     * GetFunction returns the function for the code which this stack
+     * frame is running.
+     * For ICorDebugInternalFrames, this may point to a method the
      * frame is associated with (which may be in a different AppDomain
      * from the frame itself), or may fail if the frame doesn't relate to any
      * particular function.
@@ -4511,7 +4512,7 @@ interface ICorDebugFrame : IUnknown
     /*
      * GetFunctionToken is a convenience routine to return the token for the
      * function for the code which this stack frame is running.
-     * The scope to resolve the token can be gotten from the ICorDebugFunction 
+     * The scope to resolve the token can be gotten from the ICorDebugFunction
      * associated with this frame.
      */
 
@@ -4524,7 +4525,7 @@ interface ICorDebugFrame : IUnknown
      * cannot make any assumptions about what is actually stored on
      * the stack - the numeric range is to compare stack frame
      * locations only.
-     * The start of a stack range is the leafmost boundary of the frame, and 
+     * The start of a stack range is the leafmost boundary of the frame, and
      * the end of a stack range is the rootmost boundary of the frame.
      */
 
@@ -4628,7 +4629,7 @@ interface ICorDebugInternalFrame2 : IUnknown
 /*
      * Check if an internal frame is closer to the leaf than pFrameToCompare.
      */
-    HRESULT IsCloserToLeaf([in] ICorDebugFrame * pFrameToCompare, 
+    HRESULT IsCloserToLeaf([in] ICorDebugFrame * pFrameToCompare,
                            [out] BOOL * pIsCloser);
 };
 
@@ -4727,7 +4728,7 @@ interface ICorDebugILFrame : ICorDebugFrame
     /*
      * EnumerateArguments returns a list of the arguments available in the
      * frame.  Note that this will include varargs arguments as well as
-     * arguments declared by the function signature (inlucding the implicit 
+     * arguments declared by the function signature (inlucding the implicit
      * "this" argument if any).
      */
 
@@ -4783,8 +4784,8 @@ interface ICorDebugILFrame2 : IUnknown
 {
     /*
      * Performs an on-stack replacement for an outstanding function remap opportunity.
-     * This is used to update execution of an edited function to the latest version, 
-     * preserving the current frame state (such as the values of all locals). 
+     * This is used to update execution of an edited function to the latest version,
+     * preserving the current frame state (such as the values of all locals).
      * This can only be called when a FunctionRemapOpportunity callback has been delivered
      * for this leaf frame, and the callback has not yet been continued.  newILOffset
      * is the offset into the new function at which execution should continue.
@@ -4857,7 +4858,7 @@ interface ICorDebugILFrame4 : IUnknown
     *    instrumented IL. If the IL is not instrumented the enumeration will
     *    be empty and S_OK is returned.
     */
-    
+
     HRESULT EnumerateLocalVariablesEx([in] ILCodeKind flags, [out] ICorDebugValueEnum **ppValueEnum);
 
     /*
@@ -4894,7 +4895,7 @@ interface ICorDebugILFrame4 : IUnknown
 };
 
 /*
- * ICorDebugNativeFrame is a specialized interface of ICorDebugFrame for jitted frames, i.e. 
+ * ICorDebugNativeFrame is a specialized interface of ICorDebugFrame for jitted frames, i.e.
  * native frames for managed methods.
  * (Note that jitted frames implement both ICorDebugILFrame and ICorDebugNativeFrame.)
  */
@@ -5046,7 +5047,7 @@ interface ICorDebugNativeFrame2 : IUnknown
 interface ICorDebugModule3 : IUnknown
 {
     /*
-     * CreateReaderForInMemorySymbols creates a debug symbol reader object (eg. 
+     * CreateReaderForInMemorySymbols creates a debug symbol reader object (eg.
      * ISymUnmanagedReader) for a dynamic module.  This symbol reader becomes stale
      * and is usually discarded whenever a LoadClass callback is delivered for the
      * module.
@@ -5063,7 +5064,7 @@ interface ICorDebugModule3 : IUnknown
      *      yet available.
      *
      * Notes:
-     *   This API can also be used to create a symbol reader object for in-memory 
+     *   This API can also be used to create a symbol reader object for in-memory
      *   (non-dynamic) modules, but only after the symbols are first available
      *   (indicated by the UpdateModuleSymbols callback).
      *
@@ -5072,7 +5073,7 @@ interface ICorDebugModule3 : IUnknown
      *   the underlying data may have changed (i.e. a LoadClass event).
      *
      *   Dynamic modules do not have any symbols available until the first type has been
-     *   loaded into them (as indicated by the LoadClass callback).  
+     *   loaded into them (as indicated by the LoadClass callback).
      */
     HRESULT CreateReaderForInMemorySymbols([in] REFIID riid,
                                            [out][iid_is(riid)] void **ppObj);
@@ -5082,7 +5083,7 @@ interface ICorDebugModule3 : IUnknown
  * ICorDebugRuntimeUnwindableFrame is a specialized interface of ICorDebugFrame for unmanaged methods
  * which requires special knowledge to unwind.  They are not jitted code.  When the debugger sees this type
  * of frames, it should use ICorDebugStackWalk::Next() to unwind, but it should do inspection itself.
- * The debugger can call ICorDebugStackWalk::GetContext() to retrieve the CONTEXT of the frame when it gets 
+ * The debugger can call ICorDebugStackWalk::GetContext() to retrieve the CONTEXT of the frame when it gets
  * an ICorDebugRuntimeUnwindableFrame.
  */
 
@@ -5135,8 +5136,8 @@ interface ICorDebugModule : IUnknown
     /*
      * GetName returns a name identifying the module.
      *
-     * For on-disk modules this is a full path.  For dynamic modules this 
-     * is just the filename if one was provided.  Otherwise, and for other 
+     * For on-disk modules this is a full path.  For dynamic modules this
+     * is just the filename if one was provided.  Otherwise, and for other
      * in-memory modules, this is just the simple name stored in the module's
      * metadata.
      */
@@ -5455,7 +5456,7 @@ ICorDebugFunction3 is a logical extension to ICorDebugFunction.
 interface ICorDebugFunction3 : IUnknown
 {
     /*
-     * If this function has an active rejit request it will be returned in 
+     * If this function has an active rejit request it will be returned in
      * pRejitedILCode.
      * If there is no active request (a common case) then *ppRejitedILCode = NULL
      *
@@ -5463,7 +5464,7 @@ interface ICorDebugFunction3 : IUnknown
      * ICorProfilerCallback4::GetReJITParameters(). It may not yet be jitted
      * and threads may still be executing in the original version of the code.
      *
-     * A rejit request becomes inactive during the profiler's call to 
+     * A rejit request becomes inactive during the profiler's call to
      * ICorProfInfo::RequestRevert. Even after being reverted a thread can still
      * be executing in the rejited code.
      */
@@ -5482,20 +5483,20 @@ ICorDebugFunction4 is a logical extension to ICorDebugFunction.
 interface ICorDebugFunction4 : IUnknown
 {
     /*
-     * Sets a breakpoint at offset 0 of any current or future jitted methods. 
+     * Sets a breakpoint at offset 0 of any current or future jitted methods.
      */
     HRESULT CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint);
 };
 
 /*
     ICorDebugCode represents an IL or native code blob.
- 
+
     For methods that take offsets, the units are the same as the units on the CordbCode object.
     (eg, IL offsets for an IL code object, and native offsets for a native code object)
- 
+
     V2 allows multiple code-regions. CordbCode presents an abstraction where these
     are merged together in a single linear, continuous space. So if the code is split
-    with 0x5 bytes at address 0x1000, and 0x10 bytes at address 0x2000, 
+    with 0x5 bytes at address 0x1000, and 0x10 bytes at address 0x2000,
     then:
     - GetAddress() yields a start address of 0x1000.
     - GetSize() is the size of the merged regions = 0x5+ 0x10 = 0x15 bytes.
@@ -5543,7 +5544,7 @@ interface ICorDebugCode : IUnknown
 
     /*
      * CreateBreakpoint creates a breakpoint in the function at the
-     * given offset. 
+     * given offset.
      *
      * If this code is IL code, and there is a jitted native version
      * of the code, the breakpoint will be applied in the jitted code
@@ -5741,25 +5742,25 @@ interface ICorDebugILCode2 : IUnknown
 
 /*
  ICorDebugClass represents a Class (mdTypeDef) in the IL image.
- For generic types, it represents the generic type definition (eg. List<T>) not any of 
- the specific instantiations (eg. List<int>). 
- 
+ For generic types, it represents the generic type definition (eg. List<T>) not any of
+ the specific instantiations (eg. List<int>).
+
  Use ICorDebugClass2::GetParameterizedType to build an ICorDebugType from an
  ICorDebugClass and type parameters.
 
- Classes live in a module and are uniquely identified by a mdTypeDef. 
+ Classes live in a module and are uniquely identified by a mdTypeDef.
  In other words, you can round-trip a class like so:
     ICorDebugClass * pClass1 = ...; // some initial class
-    
-    ICorDebugModule * pModule = NULL;    
+
+    ICorDebugModule * pModule = NULL;
     pClass1->GetModule(&pModule);
 
     mdTypeDef token;
     pClass1->GetToken(&token);
-    
+
     ICorDebugClass * pClass2;
-    pModule->GetClassFromToken(token, &pClass2); 
-    // Now: pClass1 == pClass2 
+    pModule->GetClassFromToken(token, &pClass2);
+    // Now: pClass1 == pClass2
 
 */
 [
@@ -5791,12 +5792,12 @@ interface ICorDebugClass : IUnknown
      * Note that if the class accepts type parameters, then you should
      * use GetStaticField on an appropriate ICorDebugType rather than on the
      * ICorDebugClass.
-     * 
+     *
      * Returns:
      *  S_OK on success.
      *  CORDBG_E_FIELD_NOT_STATIC if the field is not static.
      *  CORDBG_E_STATIC_VAR_NOT_AVAILABLE if field is not yet available (storage for statics
-     *    may be lazily allocated). 
+     *    may be lazily allocated).
      *  CORDBG_E_VARIABLE_IS_ACTUALLY_LITERAL if the field is actually a metadata literal. In this
      *    case, the debugger should get the value from the metadata.
      *  error on other errors.
@@ -5894,7 +5895,7 @@ interface ICorDebugEval : IUnknown
      * CallFunction sets up a function call.  Note that if the function
      * is virtual, this will perform virtual dispatch.  If the function is
      * not static, then the first argument must be the "this" object.
-     * If the function is in an a different AppDomain, a transition will 
+     * If the function is in an a different AppDomain, a transition will
      * occur (but all arguments must also be in the target AppDomain)
      */
 
@@ -6176,7 +6177,7 @@ interface ICorDebugValue3 : IUnknown
 {
     /*
      * GetSize returns the size of the value in bytes. It has the same
-     * semantics as ICorDebugValue::GetSize except that it works 
+     * semantics as ICorDebugValue::GetSize except that it works
      * for arrays >4GB.
      */
 
@@ -6342,7 +6343,7 @@ interface ICorDebugHeapValue2 : IUnknown
 interface ICorDebugHeapValue3 : IUnknown
 {
 
-    /* 
+    /*
      * Gets the owning thread for a monitor lock
      */
     HRESULT GetThreadOwningMonitorLock([out] ICorDebugThread **ppThread, [out] DWORD *pAcquisitionCount);
@@ -6585,7 +6586,7 @@ interface ICorDebugVariableHome : IUnknown
      * Returns E_FAIL if the variable is a function argument.
      */
     HRESULT GetSlotIndex([out] ULONG32 *pSlotIndex);
-    
+
     /*
      * GetArgumentIndex - gives the argument index of a function argument.
      * The argument index can be used to retrieve the metadata for this
@@ -6610,7 +6611,7 @@ interface ICorDebugVariableHome : IUnknown
                                   // location
         VLT_INVALID
     } VariableLocationType;
-    
+
     /*
      * GetLocationType - gives the type of native location. See
      * VariableLocationType.
@@ -6627,7 +6628,7 @@ interface ICorDebugVariableHome : IUnknown
      * register-relative location.
      */
     HRESULT GetRegister([out] CorDebugRegister *pRegister);
-    
+
     /*
      * GetOffset - gives the offset from the base register for a variable.
      * Returns E_FAIL if the variable is not in a register-relative memory
@@ -6638,7 +6639,7 @@ interface ICorDebugVariableHome : IUnknown
 
 
 
-/* 
+/*
  * ICorDebugHandleValue represents a reference value that the debugger has
  * explicitly created a GC handle to. It does not represent GC Handles in the debuggee process,
 
@@ -6709,18 +6710,18 @@ interface ICorDebugComObjectValue : IUnknown
      * that are cached by the COM object.
      */
     HRESULT GetCachedInterfaceTypes(
-                        [in] BOOL bIInspectableOnly, 
+                        [in] BOOL bIInspectableOnly,
                         [out] ICorDebugTypeEnum **ppInterfacesEnum);
 
     /*
      * GetCachedInterfacePointers returns at most celt values of the
      * interface pointer values cached by the COM object. It fills
-     * pcEltFetched with the actual number of fetched elements. 
+     * pcEltFetched with the actual number of fetched elements.
      * When called with NULL for ptrs, and 0 for celt, it simply returns
      * the number of elements it needs.
      */
     HRESULT GetCachedInterfacePointers(
-                        [in] BOOL bIInspectableOnly, 
+                        [in] BOOL bIInspectableOnly,
                         [in] ULONG32 celt,
                         [out] ULONG32 *pcEltFetched,
                         [out, size_is(celt), length_is(*pcEltFetched)] CORDB_ADDRESS * ptrs);
@@ -6969,7 +6970,7 @@ interface ICorDebugVariableHomeEnum : ICorDebugEnum
                      ICorDebugVariableHome *homes[],
                  [out] ULONG *pceltFetched);
 };
-    
+
 [
     object,
     local,
@@ -7018,7 +7019,7 @@ interface ICorDebugTypeEnum : ICorDebugEnum
  * represent instantiated generic types (Eg, List<int>)
  * Use the metadata interfaces to get static (Compile-time) information about the type.
  *
- * A type (and all of its type parameters) lives in an single AppDomain and becomes 
+ * A type (and all of its type parameters) lives in an single AppDomain and becomes
  * invalid once the containing ICorDebugAppDomain is unloaded.
  *
  * Types may be lazily loaded, so if the debugger queries for a type that hasn't been
@@ -7277,7 +7278,7 @@ interface ICorDebugMDA : IUnknown
     // Get the flags associated w/ the MDA. New flags may be added in future versions.
     typedef enum CorDebugMDAFlags
     {
-	// If this flag is high, then the thread may have slipped since the MDA was fired. 
+	// If this flag is high, then the thread may have slipped since the MDA was fired.
 	MDA_FLAG_SLIP = 0x2
     } CorDebugMDAFlags;
     HRESULT GetFlags([in] CorDebugMDAFlags * pFlags);

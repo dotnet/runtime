@@ -59,19 +59,19 @@ public:
 
     virtual void DetachThread(Thread *pRuntimeThread) = 0;
 
-    // Called when a module is being loaded into an AppDomain.  
+    // Called when a module is being loaded into an AppDomain.
     // This includes when a domain neutral module is loaded into a new AppDomain.
-    // This is called only when a debugger is attached, and will occur after the 
-    // related LoadAssembly and AddAppDomainToIPCBlock calls and before any 
+    // This is called only when a debugger is attached, and will occur after the
+    // related LoadAssembly and AddAppDomainToIPCBlock calls and before any
     // LoadClass calls for this module.
     virtual void LoadModule(Module *     pRuntimeModule,  // the module being loaded
                             LPCWSTR      psModuleName,    // module file name
                             DWORD        dwModuleName,    // number of characters in file name excludign null
                             Assembly *   pAssembly,       // the assembly the module belongs to
                             AppDomain *  pAppDomain,      // the AppDomain the module is being loaded into
-                            DomainFile * pDomainFile, 
-                            BOOL         fAttaching) = 0; // true if this notification is due to a debugger 
-                                                          // being attached to the process 
+                            DomainFile * pDomainFile,
+                            BOOL         fAttaching) = 0; // true if this notification is due to a debugger
+                                                          // being attached to the process
 
     // Called AFTER LoadModule, and after the module has reached FILE_LOADED. This lets
     // dbgapi do any processing that needs to wait until the FILE_LOADED stage (e.g.,
@@ -87,7 +87,7 @@ public:
     virtual void UnloadModule(Module* pRuntimeModule, AppDomain *pAppDomain) = 0;
 
     // Called when a Module* is being destroyed.
-    // Specifically, the Module has completed unloading (which may have been done asyncronously), all resources 
+    // Specifically, the Module has completed unloading (which may have been done asyncronously), all resources
     // associated are being freed, and the Module* is about to become invalid.  The debugger should remove all
     // references to this Module*.
     // NOTE: This is called REGARDLESS of whether a debugger is attached or not, and will occur after any other
@@ -157,7 +157,7 @@ public:
     //
     // RequestFavor ensures that the helper thread has been initialized to
     // execute favors and then calls Debugger:DoFavor. It blocks until the
-    // favor callback completes. 
+    // favor callback completes.
     //
     // Parameters:
     //   fp    - Favour callback function
@@ -165,7 +165,7 @@ public:
     //
     // Return values:
     //   S_OK if the function succeeds, else a failure HRESULT
-    //   
+    //
     virtual HRESULT RequestFavor(FAVORCALLBACK fp, void * pData) = 0;
 
 #endif // #ifndef DACCESS_COMPILE
@@ -247,7 +247,7 @@ public:
                                 SString * pMessage) = 0;
 
     // send a custom notification from the target to the RS. This will become an ICorDebugThread and
-    // ICorDebugAppDomain on the RS. 
+    // ICorDebugAppDomain on the RS.
     virtual void SendCustomDebuggerNotification(Thread * pThread, DomainFile * pDomainFile, mdTypeDef classToken) = 0;
 
     // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
@@ -286,12 +286,12 @@ public:
 
     virtual HRESULT GetILToNativeMappingIntoArrays(
         MethodDesc * pMethodDesc,
-        PCODE pCode, 
-        USHORT cMapMax, 
+        PCODE pCode,
+        USHORT cMapMax,
         USHORT * pcMap,
-        UINT ** prguiILOffset, 
+        UINT ** prguiILOffset,
         UINT ** prguiNativeOffset) = 0;
-    
+
     virtual DWORD GetHelperThreadID(void ) = 0;
 
     // Called whenever a new AppDomain is created, regardless of whether a debugger is attached.
@@ -304,9 +304,9 @@ public:
 
     virtual HRESULT UpdateAppDomainEntryInIPC (AppDomain *pAppDomain) = 0;
 
-    // Called when an assembly is being loaded into an AppDomain.  
+    // Called when an assembly is being loaded into an AppDomain.
     // This includes when a domain neutral assembly is loaded into a new AppDomain.
-    // This is called only when a debugger is attached, and will occur after the 
+    // This is called only when a debugger is attached, and will occur after the
     // related AddAppDomainToIPCBlock call and before any LoadModule or
     // LoadClass calls for this assembly.
     virtual void LoadAssembly(DomainAssembly * pDomainAssembly) = 0; // the assembly being loaded
@@ -409,7 +409,8 @@ public:
     virtual void EnumMemoryRegionsIfFuncEvalFrame(CLRDataEnumMemoryFlags flags, Frame * pFrame) = 0;
 #endif
 #ifndef DACCESS_COMPILE
-    virtual void SomeWork() = 0;
+    virtual void BeforeGarbageCollection() = 0;
+    virtual void AfterGarbageCollection() = 0;
 #endif
 };
 
