@@ -110,11 +110,9 @@ namespace System
                     versionFound = true;
 
                     // Allow the version to include a 'v' or 'V' prefix...
-                    if (value.Length > 0 && (value[0] == c_versionValuePrefix || value[0] == 'V'))
-                    {
-                        value = value.Substring(1);
-                    }
-                    Version realVersion = Version.Parse(value);
+                    Version realVersion = value.Length > 0 && (value[0] == c_versionValuePrefix || value[0] == 'V') ?
+                        Version.Parse(value.AsSpan(1)) :
+                        Version.Parse(value);
                     // The version class will represent some unset values as -1 internally (instead of 0).
                     version = realVersion.Major * 10000;
                     if (realVersion.Minor > 0)
