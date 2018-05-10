@@ -158,9 +158,9 @@ BOOL EnsureSignalAlternateStack()
         // (see kAltStackSize in compiler-rt/lib/sanitizer_common/sanitizer_posix_libcdep.cc)
         altStackSize += SIGSTKSZ * 4;
 #endif
-        void* altStack;
-        int st = posix_memalign(&altStack, GetVirtualPageSize(), altStackSize);
-        if (st == 0)
+        altStackSize = ALIGN_UP(altStackSize, GetVirtualPageSize());
+        void* altStack = mmap(NULL, altStackSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_STACK | MAP_PRIVATE, -1, 0);
+        if (altStack != MAP_FAILED)
         {
             // create a guard page for the alternate stack
             st = mprotect(altStack, GetVirtualPageSize(), PROT_NONE);
@@ -171,17 +171,12 @@ BOOL EnsureSignalAlternateStack()
                 ss.ss_size = altStackSize;
                 ss.ss_flags = 0;
                 st = sigaltstack(&ss, NULL);
-                if (st != 0)
-                {
-                    // Installation of the alternate stack failed, so revert the guard page protection
-                    int st2 = mprotect(altStack, GetVirtualPageSize(), PROT_READ | PROT_WRITE);
-                    _ASSERTE(st2 == 0);
-                }
             }
 
             if (st != 0)
             {
-                free(altStack);
+               int st2 = munmap(altStack, altStackSize);
+               _ASSERTE(st2 == 0);
             }
         }
     }
@@ -208,9 +203,8 @@ void FreeSignalAlternateStack()
     int st = sigaltstack(&ss, &oss);
     if ((st == 0) && (oss.ss_flags != SS_DISABLE))
     {
-        int st = mprotect(oss.ss_sp, GetVirtualPageSize(), PROT_READ | PROT_WRITE);
+        int st = munmap(oss.ss_sp, oss.ss_size);
         _ASSERTE(st == 0);
-        free(oss.ss_sp);
     }
 }
 #endif // !HAVE_MACH_EXCEPTIONS
