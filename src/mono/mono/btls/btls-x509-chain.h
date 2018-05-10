@@ -10,8 +10,8 @@
 #define __btls__btls_x509_chain__
 
 #include <stdio.h>
-#include <btls-ssl.h>
-#include <btls-x509.h>
+#include "btls-ssl.h"
+#include "btls-x509.h"
 
 MonoBtlsX509Chain *
 mono_btls_x509_chain_new (void);

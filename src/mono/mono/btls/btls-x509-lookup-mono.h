@@ -10,9 +10,9 @@
 #define __btls__btls_x509_lookup_mono__
 
 #include <stdio.h>
-#include <btls-ssl.h>
-#include <btls-x509.h>
-#include <btls-x509-store.h>
+#include "btls-ssl.h"
+#include "btls-x509.h"
+#include "btls-x509-store.h"
 
 typedef int (* MonoBtlsX509LookupMono_BySubject) (const void *instance, MonoBtlsX509Name *name, X509 **ret);
 

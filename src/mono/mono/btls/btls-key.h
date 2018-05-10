@@ -10,8 +10,8 @@
 #define __btls__btls_key__
 
 #include <stdio.h>
-#include <btls-ssl.h>
-#include <btls-x509.h>
+#include "btls-ssl.h"
+#include "btls-x509.h"
 
 EVP_PKEY *
 mono_btls_key_new ();

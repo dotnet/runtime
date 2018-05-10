@@ -10,7 +10,7 @@
 #define __btls__btls_x509_name__
 
 #include <stdio.h>
-#include <btls-ssl.h>
+#include "btls-ssl.h"
 
 typedef enum {
 	MONO_BTLS_X509_NAME_ENTRY_TYPE_UNKNOWN = 0,

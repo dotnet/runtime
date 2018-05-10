@@ -6,8 +6,8 @@
 //  Copyright © 2016 Xamarin. All rights reserved.
 //
 
-#include <btls-x509-lookup.h>
-#include <btls-x509-lookup-mono.h>
+#include "btls-x509-lookup.h"
+#include "btls-x509-lookup-mono.h"
 
 struct MonoBtlsX509Lookup {
 	MonoBtlsX509LookupType type;

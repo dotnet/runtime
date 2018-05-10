@@ -10,7 +10,7 @@
 #define __btls__btls_x509_store__
 
 #include <stdio.h>
-#include <btls-ssl.h>
+#include "btls-ssl.h"
 
 MonoBtlsX509Store *
 mono_btls_x509_store_new (void);

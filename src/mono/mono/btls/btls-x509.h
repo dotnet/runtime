@@ -10,8 +10,8 @@
 #define __btls__btls_x509__
 
 #include <stdio.h>
-#include <btls-ssl.h>
-#include <btls-x509-name.h>
+#include "btls-ssl.h"
+#include "btls-x509-name.h"
 
 typedef enum {
 	MONO_BTLS_X509_FORMAT_DER = 1,

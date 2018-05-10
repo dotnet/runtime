@@ -10,8 +10,8 @@
 #define __btls__btls_pkcs12__
 
 #include <stdio.h>
-#include <btls-ssl.h>
-#include <btls-x509.h>
+#include "btls-ssl.h"
+#include "btls-x509.h"
 
 MonoBtlsPkcs12 *
 mono_btls_pkcs12_new (void);

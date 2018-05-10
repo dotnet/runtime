@@ -10,8 +10,8 @@
 #define __btls__btls_x509_revoked__
 
 #include <stdio.h>
-#include <btls-ssl.h>
-#include <btls-x509-crl.h>
+#include "btls-ssl.h"
+#include "btls-x509-crl.h"
 
 MonoBtlsX509Revoked *
 mono_btls_x509_revoked_new (MonoBtlsX509Crl *owner, X509_REVOKED *revoked);

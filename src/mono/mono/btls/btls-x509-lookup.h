@@ -10,9 +10,9 @@
 #define __btls__btls_x509_lookup__
 
 #include <stdio.h>
-#include <btls-ssl.h>
-#include <btls-x509.h>
-#include <btls-x509-store.h>
+#include "btls-ssl.h"
+#include "btls-x509.h"
+#include "btls-x509-store.h"
 
 typedef enum {
 	MONO_BTLS_X509_LOOKUP_TYPE_UNKNOWN = 0,

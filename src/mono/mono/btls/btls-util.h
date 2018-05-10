@@ -17,7 +17,10 @@
 #ifndef MONO_API
 #if defined(_MSC_VER)
 
-#define MONO_API __declspec(dllexport)
+// MONO_API is not used consistently and therefore errors.
+// .def file is preferred.
+//#define MONO_API __declspec(dllexport)
+#define MONO_API /* nothing */
 
 #else
 

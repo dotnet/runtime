@@ -10,8 +10,8 @@
 #define __btls__btls_x509_verify_param__
 
 #include <stdio.h>
-#include <btls-ssl.h>
-#include <btls-x509.h>
+#include "btls-ssl.h"
+#include "btls-x509.h"
 
 typedef enum {
 	MONO_BTLS_X509_VERIFY_FLAGS_DEFAULT		= 0,

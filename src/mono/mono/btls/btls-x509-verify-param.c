@@ -6,8 +6,8 @@
 //  Copyright © 2016 Xamarin. All rights reserved.
 //
 
-#include <btls-x509-verify-param.h>
-#include <btls-x509-store-ctx.h>
+#include "btls-x509-verify-param.h"
+#include "btls-x509-store-ctx.h"
 
 struct MonoBtlsX509VerifyParam {
 	int owns;

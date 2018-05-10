@@ -6,8 +6,8 @@
 //  Copyright © 2016 Xamarin. All rights reserved.
 //
 
-#include <btls-x509-crl.h>
-#include <btls-x509-revoked.h>
+#include "btls-x509-crl.h"
+#include "btls-x509-revoked.h"
 
 struct MonoBtlsX509Crl {
 	X509_CRL *crl;

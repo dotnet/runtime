@@ -28,7 +28,9 @@ if (NOT "${BTLS_ARCH}" STREQUAL "")
 	set (CMAKE_SYSTEM_PROCESSOR "${BTLS_ARCH}")
 endif ()
 
-set (C_CXX_FLAGS "-Wall -Wsign-compare -Wmissing-field-initializers -fPIC -ggdb -fvisibility=hidden")
+if (NOT MSVC)
+	set (C_CXX_FLAGS "-Wall -Wsign-compare -Wmissing-field-initializers -fPIC -ggdb -fvisibility=hidden")
+endif ()
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_CXX_FLAGS} ${BTLS_CFLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${C_CXX_FLAGS} ${BTLS_CFLAGS}")
