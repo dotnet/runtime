@@ -238,6 +238,12 @@ sub_ovf_un_carry: dest:i src1:1 src2:i len:12
 subcc: dest:i src1:i src2:i len:12
 tailcall: len:120 clob:c
 tailcall_membase: src1:b len:120 clob:c
+
+# Tailcall parameters are moved with one instruction per 256 bytes,
+# of stacked parameters. Zero and six are the most common
+# totals. Division is not possible. Allocate an instruction per parameter.
+tailcall_parameter: len:6
+
 throw: src1:i len:26
 tls_get: dest:1 len:32
 tls_set: src1:1 len:32
