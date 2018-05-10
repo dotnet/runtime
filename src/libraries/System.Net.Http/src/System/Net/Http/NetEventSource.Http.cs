@@ -19,6 +19,7 @@ namespace System.Net
         private const int HandlerMessageId = HeadersInvalidValueId + 1;
         private const int AuthenticationInfoId = HandlerMessageId + 1;
         private const int AuthenticationErrorId = AuthenticationInfoId + 1;
+        private const int HandlerErrorId = AuthenticationErrorId + 1;
 
         [NonEvent]
         public static void UriBaseAddress(object obj, Uri baseAddress)
@@ -58,9 +59,14 @@ namespace System.Net
             WriteEvent(HeadersInvalidValueId, name, rawValue);
 
         [Event(HandlerMessageId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
-        public void HandlerMessage(int handlerId, int workerId, int requestId, string memberName, string message) =>
-            WriteEvent(HandlerMessageId, handlerId, workerId, requestId, memberName, message);
-            //Console.WriteLine($"{handlerId}/{workerId}/{requestId}: ({memberName}): {message}");  // uncomment for debugging only
+        public void HandlerMessage(int poolId, int workerId, int requestId, string memberName, string message) =>
+            WriteEvent(HandlerMessageId, poolId, workerId, requestId, memberName, message);
+            //Console.WriteLine($"{poolId}/{workerId}/{requestId}: ({memberName}): {message}");  // uncomment for debugging only
+
+        [Event(HandlerErrorId, Keywords = Keywords.Debug, Level = EventLevel.Error)]
+        public void HandlerMessageError(int poolId, int workerId, int requestId, string memberName, string message) =>
+            WriteEvent(HandlerErrorId, poolId, workerId, requestId, memberName, message);
+            //Console.WriteLine($"{poolId}/{workerId}/{requestId}: ({memberName}): {message}");  // uncomment for debugging only
 
         [NonEvent]
         public static void AuthenticationInfo(Uri uri, string message)
