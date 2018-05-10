@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 // Events that go both ways
 IPC_EVENT_TYPE0(DB_IPCE_INVALID_EVENT                ,0x0000)
 IPC_EVENT_TYPE0(DB_IPCE_TYPE_MASK                    ,0x0FFF)
 
 // Some rules:
-// 1. Type0 is for marking sections in the id range. 
+// 1. Type0 is for marking sections in the id range.
 //    Type1 is for events that go L->R, Type2 is for events that go R<-L.
 // 2. All non-type 0 events should have a unique identifier & value
 // 3. All type 1 events values should be in range [DB_IPCE_RUNTIME_FIRST, DB_IPCE_RUNTIME_LAST)
@@ -16,7 +16,7 @@ IPC_EVENT_TYPE0(DB_IPCE_TYPE_MASK                    ,0x0FFF)
 // 4. All event values should be monotonically increasing, though we can skip values.
 // 5. All values should be a subset of the bits specified by DB_IPCE_TYPE_MASK.
 //
-// These rules are enforced by a bunch of compile time checks (C_ASSERT) in 
+// These rules are enforced by a bunch of compile time checks (C_ASSERT) in
 // the function DoCompileTimeCheckOnDbgIpcEventTypes.
 // If you get compiler errors in this file, you are probably violating the rules above.
 
@@ -43,7 +43,7 @@ IPC_EVENT_TYPE1(DB_IPCE_APPLY_CHANGES_RESULT         ,0x0118)
 IPC_EVENT_TYPE1(DB_IPCE_CUSTOM_NOTIFICATION          ,0x011B)
 IPC_EVENT_TYPE1(DB_IPCE_USER_BREAKPOINT              ,0x011C)
 IPC_EVENT_TYPE1(DB_IPCE_FIRST_LOG_MESSAGE            ,0x011D)
-// DB_IPCE_CONTINUED_LOG_MESSAGE = 0x11E, used to be here in v1.1, 
+// DB_IPCE_CONTINUED_LOG_MESSAGE = 0x11E, used to be here in v1.1,
 // But we've removed that remove the v2.0 protocol
 IPC_EVENT_TYPE1(DB_IPCE_LOGSWITCH_SET_MESSAGE        ,0x011F)
 IPC_EVENT_TYPE1(DB_IPCE_CREATE_APP_DOMAIN            ,0x0120)
@@ -91,8 +91,9 @@ IPC_EVENT_TYPE1(DB_IPCE_METADATA_UPDATE              ,0x015D)
 IPC_EVENT_TYPE1(DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT,0x015E)
 IPC_EVENT_TYPE1(DB_IPCE_RESOLVE_UPDATE_METADATA_2_RESULT,0x015F)
 IPC_EVENT_TYPE1(DB_IPCE_DATA_BREAKPOINT              ,0x0160)
-IPC_EVENT_TYPE1(DB_IPCE_SOME_WORK                    , 0x0161)
-IPC_EVENT_TYPE0(DB_IPCE_RUNTIME_LAST                 ,0x0162)   // The last event from runtime
+IPC_EVENT_TYPE1(DB_IPCE_BEFORE_GARBAGE_COLLECTION    , 0x0161)
+IPC_EVENT_TYPE1(DB_IPCE_AFTER_GARBAGE_COLLECTION     , 0x0162)
+IPC_EVENT_TYPE0(DB_IPCE_RUNTIME_LAST                 ,0x0163)   // The last event from runtime
 
 
 

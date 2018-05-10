@@ -6,7 +6,7 @@
  /* File created by MIDL compiler version 8.01.0622 */
 /* at Mon Jan 18 19:14:07 2038
  */
-/* Compiler settings for C:/Dev/coreclr/src/inc/cordebug.idl:
+/* Compiler settings for F:/Dev/coreclr/src/inc/cordebug.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
@@ -3773,9 +3773,11 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
     ICorDebugManagedCallback4 : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE SomeWork( 
-            /* [in] */ ICorDebugThread *pThread,
-            /* [in] */ ICorDebugAppDomain *pAppDomain) = 0;
+        virtual HRESULT STDMETHODCALLTYPE BeforeGarbageCollection( 
+            ICorDebugController *pController) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE AfterGarbageCollection( 
+            ICorDebugController *pController) = 0;
         
     };
     
@@ -3798,10 +3800,13 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugManagedCallback4 * This);
         
-        HRESULT ( STDMETHODCALLTYPE *SomeWork )( 
+        HRESULT ( STDMETHODCALLTYPE *BeforeGarbageCollection )( 
             ICorDebugManagedCallback4 * This,
-            /* [in] */ ICorDebugThread *pThread,
-            /* [in] */ ICorDebugAppDomain *pAppDomain);
+            ICorDebugController *pController);
+        
+        HRESULT ( STDMETHODCALLTYPE *AfterGarbageCollection )( 
+            ICorDebugManagedCallback4 * This,
+            ICorDebugController *pController);
         
         END_INTERFACE
     } ICorDebugManagedCallback4Vtbl;
@@ -3826,8 +3831,11 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorDebugManagedCallback4_SomeWork(This,pThread,pAppDomain)	\
-    ( (This)->lpVtbl -> SomeWork(This,pThread,pAppDomain) ) 
+#define ICorDebugManagedCallback4_BeforeGarbageCollection(This,pController)	\
+    ( (This)->lpVtbl -> BeforeGarbageCollection(This,pController) ) 
+
+#define ICorDebugManagedCallback4_AfterGarbageCollection(This,pController)	\
+    ( (This)->lpVtbl -> AfterGarbageCollection(This,pController) ) 
 
 #endif /* COBJMACROS */
 

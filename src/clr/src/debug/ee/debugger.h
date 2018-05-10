@@ -126,7 +126,7 @@ public:
     // Clear the holder.
     ~AtSafePlaceHolder();
 
-    // True if the holder is acquired. 
+    // True if the holder is acquired.
     bool IsAtUnsafePlace();
 
     // Clear the holder (call DecThreadsAtUnsafePlaces if needed)
@@ -148,12 +148,12 @@ public:
 };
 
 #ifndef DACCESS_COMPILE
-template<BOOL TOGGLE, BOOL IFTHREAD> 
+template<BOOL TOGGLE, BOOL IFTHREAD>
 class GCHolderEEInterface<TRUE, TOGGLE, IFTHREAD>
 {
 private:
     bool startInCoop;
-    
+
 public:
     DEBUG_NOINLINE GCHolderEEInterface()
     {
@@ -173,8 +173,8 @@ public:
             startInCoop = true;
         }
         else
-        {            
-            // we're starting in PREEMP, need to switch to COOP    
+        {
+            // we're starting in PREEMP, need to switch to COOP
             startInCoop = false;
             g_pEEInterface->DisablePreemptiveGC();
         }
@@ -193,7 +193,7 @@ public:
 
         if (TOGGLE)
         {
-            // We're in COOP, toggle to PREEMPTIVE and back to COOP 
+            // We're in COOP, toggle to PREEMPTIVE and back to COOP
             // for synch purposes.
             g_pEEInterface->EnablePreemptiveGC();
             g_pEEInterface->DisablePreemptiveGC();
@@ -206,7 +206,7 @@ public:
         }
         else
         {
-            // If we started in PREEMPTIVE switch back    
+            // If we started in PREEMPTIVE switch back
             if (!startInCoop)
             {
                 g_pEEInterface->EnablePreemptiveGC();
@@ -215,13 +215,13 @@ public:
     };
 };
 
-template<BOOL TOGGLE, BOOL IFTHREAD> 
+template<BOOL TOGGLE, BOOL IFTHREAD>
 class GCHolderEEInterface<FALSE, TOGGLE, IFTHREAD>
 {
 private:
     bool startInCoop;
     bool conditional;
-    
+
     void EnterInternal(bool bStartInCoop, bool bConditional)
     {
         startInCoop = bStartInCoop;
@@ -262,8 +262,8 @@ private:
             // If we started in PREEMPTIVE switch back to PREEMPTIVE
             if (!startInCoop)
             {
-                g_pEEInterface->EnablePreemptiveGC();            
-            }    
+                g_pEEInterface->EnablePreemptiveGC();
+            }
         }
         else
         {
@@ -307,7 +307,7 @@ public:
 
 #define GCX_COOP_EEINTERFACE()                                          \
     GCHolderEEInterface<TRUE, FALSE, FALSE> __gcCoop_onlyOneAllowedPerScope
-    
+
 #define GCX_PREEMP_EEINTERFACE()                                        \
     GCHolderEEInterface<FALSE, FALSE, FALSE> __gcCoop_onlyOneAllowedPerScope
 
@@ -474,8 +474,8 @@ CONTEXT * GetManagedLiveCtx(Thread * pThread);
 
 // Once a module / appdomain is unloaded, all Right-side objects (such as breakpoints)
 // in that appdomain will get neutered and will thus be prevented from accessing
-// the unloaded appdomain. 
-// 
+// the unloaded appdomain.
+//
 // @dbgtodo jmc - This is now purely relegated to the LS. Eventually completely get rid of this
 // by moving fields off to Module or getting rid of the fields completely.
 typedef DPTR(class DebuggerModule) PTR_DebuggerModule;
@@ -520,9 +520,9 @@ class DebuggerModule
     // workaround to facilitate the removal of DebuggerModule.
     // </TODO>
     DebuggerModule * GetPrimaryModule();
-    DomainFile * GetDomainFile() 
+    DomainFile * GetDomainFile()
     {
-        LIMITED_METHOD_DAC_CONTRACT; 
+        LIMITED_METHOD_DAC_CONTRACT;
         return m_pRuntimeDomainFile;
     }
 
@@ -609,7 +609,7 @@ class HelperThreadFavor
     HelperThreadFavor();
     // No dtor because we intentionally leak all shutdown.
     void Init();
-    
+
 protected:
     // Stuff for having the helper thread do function calls for a thread
     // that blew its stack
@@ -657,12 +657,12 @@ protected:
 
     DebuggerPendingFuncEvalTable *m_pPendingEvals;
 
-    // The "debugger data lock" is a very small leaf lock used to protect debugger internal data structures (such 
+    // The "debugger data lock" is a very small leaf lock used to protect debugger internal data structures (such
     // as DJIs, DMIs, module table). It is a GC-unsafe-anymode lock and so it can't trigger a GC while being held.
-    // It also can't issue any callbacks into the EE or anycode that it does not directly control. 
+    // It also can't issue any callbacks into the EE or anycode that it does not directly control.
     // This is a separate lock from the the larger Debugger-lock / Controller lock, which allows regions under those
-    // locks to access debugger datastructures w/o blocking each other. 
-    Crst                  m_DebuggerDataLock;    
+    // locks to access debugger datastructures w/o blocking each other.
+    Crst                  m_DebuggerDataLock;
     HANDLE                m_CtrlCMutex;
     HANDLE                m_exAttachEvent;
     HANDLE                m_exUnmanagedAttachEvent;
@@ -671,7 +671,7 @@ protected:
 
     // Used by MapAndBindFunctionBreakpoints.  Note that this is thread-safe
     // only b/c we access it from within the DebuggerController::Lock
-    SIZE_T_UNORDERED_ARRAY m_BPMappingDuplicates; 
+    SIZE_T_UNORDERED_ARRAY m_BPMappingDuplicates;
 
     UnorderedPtrArray     m_pMemBlobs;
 
@@ -813,7 +813,7 @@ public:
     void RightSideDetach(void);
 
     //
-    // 
+    //
     //
     void ThreadProc(void);
     static DWORD WINAPI ThreadProcStatic(LPVOID parameter);
@@ -857,9 +857,9 @@ private:
     FAVORCALLBACK GetFavorFnPtr()           { return m_favorData.m_fpFavor; }
     void * GetFavorData()                   { return m_favorData.m_pFavorData; }
 
-    void SetFavorFnPtr(FAVORCALLBACK fp, void * pData)    
-    { 
-        m_favorData.m_fpFavor = fp; 
+    void SetFavorFnPtr(FAVORCALLBACK fp, void * pData)
+    {
+        m_favorData.m_fpFavor = fp;
         m_favorData.m_pFavorData = pData;
     }
     Crst * GetFavorLock()                   { return &m_favorData.m_FavorLock; }
@@ -867,8 +867,8 @@ private:
     HANDLE GetFavorReadEvent()              { return m_favorData.m_FavorReadEvent; }
     HANDLE GetFavorAvailableEvent()         { return m_favorData.m_FavorAvailableEvent; }
 
-    HelperThreadFavor m_favorData;  
-    
+    HelperThreadFavor m_favorData;
+
 
     HelperCanary * GetCanary()              { return &GetLazyData()->m_Canary; }
 
@@ -1038,7 +1038,7 @@ public:
     bool HasInstrumentedILMap() {return m_fHasInstrumentedILMap; }
 
     // TranslateToInstIL will take offOrig, and translate it to the
-    // correct IL offset if this code happens to be instrumented 
+    // correct IL offset if this code happens to be instrumented
     ULONG32 TranslateToInstIL(const InstrumentedILOffsetMapping * pMapping, ULONG32 offOrig, bool fOrigToInst);
 
 
@@ -1135,7 +1135,7 @@ static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == 64, "DebuggerHeapExec
 // We allocate the size of DebuggerHeapExecutableMemoryPage each time we need
 // more memory and divide each page into DebuggerHeapExecutableMemoryChunks for
 // use. The pages are self describing; the first chunk contains information
-// about which of the other chunks are used/free as well as a pointer to 
+// about which of the other chunks are used/free as well as a pointer to
 // the next page.
 // ------------------------------------------------------------------------ */
 struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
@@ -1185,7 +1185,7 @@ private:
 
 // ------------------------------------------------------------------------ */
 // DebuggerHeapExecutableMemoryAllocator class
-// Handles allocation and freeing (and all necessary bookkeeping) for 
+// Handles allocation and freeing (and all necessary bookkeeping) for
 // executable memory that the DebuggerHeap class needs. This is especially
 // useful on systems (like SELinux) where having executable code on the
 // heap is explicity disallowed for security reasons.
@@ -1272,8 +1272,8 @@ public:
         SUPPORTS_DAC;
     }
 
-    static CodeRegionInfo GetCodeRegionInfo(DebuggerJitInfo      * dji, 
-                                            MethodDesc           * md = NULL, 
+    static CodeRegionInfo GetCodeRegionInfo(DebuggerJitInfo      * dji,
+                                            MethodDesc           * md = NULL,
                                             PTR_CORDB_ADDRESS_TYPE addr = PTR_NULL);
 
     // Fills in the CodeRegoinInfo fields from the start address.
@@ -1418,7 +1418,7 @@ class DebuggerJitInfo
 public:
     PTR_MethodDesc           m_fd;
 
-    // Loader module is used to control life-time of DebufferJitInfo. Ideally, we would refactor the code to use LoaderAllocator here 
+    // Loader module is used to control life-time of DebufferJitInfo. Ideally, we would refactor the code to use LoaderAllocator here
     // instead because of it is what the VM actually uses to track the life time. It would make the debugger interface less chatty.
     PTR_Module               m_pLoaderModule;
 
@@ -1454,7 +1454,7 @@ protected:
     unsigned int             m_varNativeInfoCount;
 
     bool                     m_fAttemptInit;
-    
+
 #ifndef DACCESS_COMPILE
     void LazyInitBounds();
 #else
@@ -1478,15 +1478,15 @@ public:
         LazyInitBounds();
         return m_sequenceMap;
     }
-    
+
     unsigned int GetCallsiteMapCount()
     {
         SUPPORTS_DAC;
-        
+
         LazyInitBounds();
         return m_callsiteMapCount;
     }
-    
+
     PTR_DebuggerILToNativeMap GetCallSiteMap()
     {
         SUPPORTS_DAC;
@@ -1643,7 +1643,7 @@ public:
 };
 
 #if !defined(DACCESS_COMPILE)
-// @dbgtodo Microsoft inspection: get rid of this class when IPC events are eliminated. It's been copied to 
+// @dbgtodo Microsoft inspection: get rid of this class when IPC events are eliminated. It's been copied to
 // dacdbistructures
 /*
  * class MapSortIL:  A template class that will sort an array of DebuggerILToNativeMap.
@@ -1675,7 +1675,7 @@ class MapSortIL : public CQuickSort<DebuggerILToNativeMap>
                 DebuggerILToNativeMap *second)
     {
         LIMITED_METHOD_CONTRACT;
-        
+
         const DWORD call_inst = (DWORD)ICorDebugInfo::CALL_INSTRUCTION;
 
         //PROLOGs go first
@@ -1804,7 +1804,7 @@ public:
 #ifndef DACCESS_COMPILE
     Debugger();
     virtual ~Debugger();
-#else    
+#else
     virtual ~Debugger() {}
 #endif
 
@@ -1870,7 +1870,7 @@ public:
                 UINT uText,       // Resource Identifier for Text message
                 UINT uCaption,    // Resource Identifier for Caption
                 UINT uType,       // Style of MessageBox
-                BOOL displayForNonInteractive,      // Display even if the process is running non interactive 
+                BOOL displayForNonInteractive,      // Display even if the process is running non interactive
                 BOOL showFileNameInTitle,           // Flag to show FileName in Caption
                 ...);             // Additional Arguments
 
@@ -1896,7 +1896,7 @@ public:
                     DWORD dwModuleName,
                     Assembly *pAssembly,
                     AppDomain *pAppDomain,
-                    DomainFile * pDomainFile, 
+                    DomainFile * pDomainFile,
                     BOOL fAttaching);
     void LoadModuleFinished(Module* pRuntimeModule, AppDomain * pAppDomain);
     DebuggerModule * AddDebuggerModule(DomainFile * pDomainFile);
@@ -2031,10 +2031,10 @@ public:
 
     HRESULT GetILToNativeMappingIntoArrays(
         MethodDesc * pMethodDesc,
-        PCODE pCode, 
-        USHORT cMapMax, 
+        PCODE pCode,
+        USHORT cMapMax,
         USHORT * pcMap,
-        UINT ** prguiILOffset, 
+        UINT ** prguiILOffset,
         UINT ** prguiNativeOffset);
 
     PRD_TYPE GetPatchedOpcode(CORDB_ADDRESS_TYPE *ip);
@@ -2164,10 +2164,10 @@ public:
 
     void LockAndSendEnCRemapEvent(DebuggerJitInfo * dji, SIZE_T currentIP, SIZE_T *resumeIP);
     void LockAndSendEnCRemapCompleteEvent(MethodDesc *pFD);
-    void SendEnCUpdateEvent(DebuggerIPCEventType eventType, 
-                            Module * pModule, 
-                            mdToken memberToken, 
-                            mdTypeDef classToken, 
+    void SendEnCUpdateEvent(DebuggerIPCEventType eventType,
+                            Module * pModule,
+                            mdToken memberToken,
+                            mdTypeDef classToken,
                             SIZE_T enCVersion);
     void LockAndSendBreakpointSetError(PATCH_UNORDERED_ARRAY * listUnbindablePatches);
 
@@ -2176,7 +2176,7 @@ public:
         Thread * pThread,
         bool firstChance,
         bool fIsInterceptable,
-        bool continuable, 
+        bool continuable,
         SIZE_T currentIP,
         FramePointer framePointer,
         bool atSafePlace);
@@ -2200,7 +2200,7 @@ public:
     // Just send the actual event.
     void SendRawUserBreakpoint(Thread *thread);
 
-    
+
 
     void SendInterceptExceptionComplete(Thread *thread);
 
@@ -2383,11 +2383,11 @@ public:
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     static VOID M2UHandoffHijackWorker(
-                             T_CONTEXT *pContext,                   
+                             T_CONTEXT *pContext,
                              EXCEPTION_RECORD *pExceptionRecord);
 
     LONG FirstChanceSuspendHijackWorker(
-                             T_CONTEXT *pContext,                   
+                             T_CONTEXT *pContext,
                              EXCEPTION_RECORD *pExceptionRecord);
     static void GenericHijackFunc(void);
     static void SecondChanceHijackFunc(void);
@@ -2472,9 +2472,9 @@ public:
                    BOOL fIsIL);
 
     // Helper routines used by Debugger::SetIP
-    
-    // If we have a varargs function, we can't set the IP (we don't know how to pack/unpack the arguments), so if we 
-    // call SetIP with fCanSetIPOnly = true, we need to check for that. 
+
+    // If we have a varargs function, we can't set the IP (we don't know how to pack/unpack the arguments), so if we
+    // call SetIP with fCanSetIPOnly = true, we need to check for that.
     BOOL IsVarArgsFunction(unsigned int nEntries, PTR_NativeVarInfo varNativeInfo);
 
     HRESULT ShuffleVariablesGet(DebuggerJitInfo  *dji,
@@ -2589,8 +2589,8 @@ public:
 
 #else // DACCESS_COMPILE
     // determine whether the LS holds the data lock. If it does, we will assume the locked data is in an
-    // inconsistent state and will throw an exception. The DAC will execute this if we are executing code 
-    // that takes the lock. 
+    // inconsistent state and will throw an exception. The DAC will execute this if we are executing code
+    // that takes the lock.
     static void AcquireDebuggerDataLock(Debugger *pDebugger);
 
     // unimplemented--nothing to do here
@@ -2643,8 +2643,8 @@ public:
 
 private:
     DebuggerJitInfo *GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, DebuggerMethodInfo **pMethInfo);
-    
-    // Save the necessary information for the debugger to recognize an IP in one of the thread redirection 
+
+    // Save the necessary information for the debugger to recognize an IP in one of the thread redirection
     // functions.
     void InitializeHijackFunctionAddress();
 
@@ -2827,10 +2827,10 @@ private:
 
 
     // This is the main debugger lock. It is a large lock and used to synchronize complex operations
-    // such as sending IPC events, debugger sycnhronization, and attach / detach. 
+    // such as sending IPC events, debugger sycnhronization, and attach / detach.
     // The debugger effectively can't make any radical state changes without holding this lock.
-    // 
-    //     
+    //
+    //
     Crst                  m_mutex; // The main debugger lock.
 
     // Flag to track if the debugger Crst needs to go into "Shutdown for Finalizer" mode.
@@ -2861,13 +2861,13 @@ private:
     LONG                  m_dClassLoadCallbackCount;
 
     // Lazily initialized array of debugger modules
-    // @dbgtodo module - eventually, DebuggerModule should go away, 
+    // @dbgtodo module - eventually, DebuggerModule should go away,
     // and all such information should be stored in either the VM's module class or in the RS.
     DebuggerModuleTable          *m_pModules;
-    
+
     // DacDbiInterfaceImpl needs to be able to write to private fields in the debugger class.
     friend class DacDbiInterfaceImpl;
-    
+
     // Set OOP by RS to request a sync after a debug event.
     // Clear by LS when we sync.
     Volatile<BOOL>  m_RSRequestedSync;
@@ -2905,20 +2905,20 @@ public:
     // There are currently three cases where we set this field to true:
     //
     // 1) NotifyOfCHFFilter()
-    //      - If the CHF filter is the first handler we encounter in the first pass, then there is no 
+    //      - If the CHF filter is the first handler we encounter in the first pass, then there is no
     //        managed stack frame at which we can intercept the exception anyway.
     //
     // 2) LastChanceManagedException()
     //      - If Watson is launched for an unhandled exception, then the exception cannot be intercepted.
     //
     // 3) SecondChanceHijackFuncWorker()
-    //      - The RS hijack the thread to this function to prevent the OS from killing the process at 
+    //      - The RS hijack the thread to this function to prevent the OS from killing the process at
     //        the end of the first pass.  (When a debugger is attached, the OS does not run a second pass.)
     //        This function ensures that the debugger gets a second chance notification.
     BOOL                          m_forceNonInterceptable;
 
-    // When we are doing an early attach, the RS shim should not queue all the fake attach events for 
-    // the process, the appdomain, and the thread.  Otherwise we'll get duplicate events when these 
+    // When we are doing an early attach, the RS shim should not queue all the fake attach events for
+    // the process, the appdomain, and the thread.  Otherwise we'll get duplicate events when these
     // entities are actually created.  This flag is used to mark whether we are doing an early attach.
     // There are still time windows where we can get duplicate events, but this flag closes down the
     // most common scenario.
@@ -2952,7 +2952,8 @@ public:
     DWORD m_defines;
     DWORD m_mdDataStructureVersion;
 #ifndef DACCESS_COMPILE
-    virtual void SomeWork();
+    virtual void BeforeGarbageCollection();
+    virtual void AfterGarbageCollection();
 #endif
 };
 
@@ -3042,7 +3043,7 @@ public:
         void *p;
 
         DebuggerHeap* pHeap = g_pDebugger->GetInteropSafeHeap_NoThrow();
-        _ASSERTE(pHeap != NULL); // should already exist 
+        _ASSERTE(pHeap != NULL); // should already exist
 
         PREFIX_ASSUME( iCurSize >= 0 );
         S_UINT32 iNewSize = S_UINT32( iCurSize ) + S_UINT32( GrowSize(iCurSize) );
@@ -3106,7 +3107,7 @@ class DebuggerPendingFuncEvalTable : private CHashTableAndData<CNewZeroData>
     }
 
     ULONG HASH(Thread* pThread)
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
         return (ULONG)((SIZE_T)pThread);   // only use low 32-bits if 64-bit
     }
@@ -3188,7 +3189,7 @@ class DebuggerModuleTable : private CHashTableAndData<CNewZeroData>
 #endif // DACCESS_COMPILE
 
         Module * pModule1 = reinterpret_cast<Module *>(k1);
-        Module * pModule2 = 
+        Module * pModule2 =
             dac_cast<PTR_DebuggerModuleEntry>(const_cast<HASHENTRY *>(pc2))->module->GetRuntimeModule();
 
         return (pModule1 != pModule2);
@@ -3244,8 +3245,8 @@ public:
 // struct DebuggerMethodInfoKey:   Key for each of the method info hash table entries.
 // Module * m_pModule:  This and m_token make up the key
 // mdMethodDef m_token:  This and m_pModule make up the key
-// 
-// Note: This is used for hashing, so the structure must be totally blittable. 
+//
+// Note: This is used for hashing, so the structure must be totally blittable.
 typedef DPTR(struct DebuggerMethodInfoKey) PTR_DebuggerMethodInfoKey;
 struct DebuggerMethodInfoKey
 {
@@ -3339,7 +3340,7 @@ public:
     HRESULT AddMethodInfo(Module *pModule,
                        mdMethodDef token,
                        DebuggerMethodInfo *mi);
-                       
+
     HRESULT OverwriteMethodInfo(Module *pModule,
                              mdMethodDef token,
                              DebuggerMethodInfo *mi,
@@ -3352,7 +3353,7 @@ public:
     // (b) Perf: don't waste the memory!
     void ClearMethodsOfModule(Module *pModule);
     void DeleteEntryDMI(DebuggerMethodInfoEntry *entry);
-    
+
 #endif // #ifndef DACCESS_COMPILE
 
     DebuggerMethodInfo *GetMethodInfo(Module *pModule, mdMethodDef token);
@@ -3367,11 +3368,11 @@ public:
 class DebuggerEvalBreakpointInfoSegment
 {
 public:
-    // DebuggerEvalBreakpointInfoSegment contains just the breakpoint 
+    // DebuggerEvalBreakpointInfoSegment contains just the breakpoint
     // instruction and a pointer to the associated DebuggerEval. It makes
     // it easy to go from the instruction to the corresponding DebuggerEval
-    // object. It has been separated from the rest of the DebuggerEval 
-    // because it needs to be in a section of memory that's executable, 
+    // object. It has been separated from the rest of the DebuggerEval
+    // because it needs to be in a section of memory that's executable,
     // while the rest of DebuggerEval does not. By having it separate, we
     // don't need to have the DebuggerEval contents in executable memory.
     BYTE          m_breakpointInstruction[CORDbg_BREAK_INSTRUCTION_SIZE];
@@ -3509,7 +3510,7 @@ public:
         // Set flags to strategic values in case we access deleted memory.
         m_completed = false;
         m_rethrowAbortException = true;
-#endif        
+#endif
     }
 };
 
