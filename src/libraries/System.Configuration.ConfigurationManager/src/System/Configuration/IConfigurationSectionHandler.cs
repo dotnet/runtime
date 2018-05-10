@@ -7,14 +7,14 @@ using System.Xml;
 namespace System.Configuration
 {
     /// <summary>
-    ///     The IConfigSectionHandler interface defines the contract that all configuration section handlers
+    ///     The IConfigurationSectionHandler interface defines the contract that all configuration section handlers
     ///     must implement in order to participate in the resolution of configuration settings.
     ///     Composes and creates config objects.
-    ///     This interface is implemented by config providers. Classes implementing IConfigSectionHandler
+    ///     This interface is implemented by config providers. Classes implementing IConfigurationSectionHandler
     ///     define the rules for cooking XML config into usable objects. The cooked objects can be of arbitrary
     ///     type.
     ///     Configuration is composable (e.g., config in a child directory is layered over config in a parent
-    ///     directory), so, IConfigSectionHandler is supplied with the parent config as well as any number of
+    ///     directory), so, IConfigurationSectionHandler is supplied with the parent config as well as any number of
     ///     XML fragments.
     /// </summary>
     public interface IConfigurationSectionHandler
@@ -23,7 +23,7 @@ namespace System.Configuration
         ///     The function is responsible for inspecting "section", "context", and "parent", and creating
         ///     a config object.
         ///     Note that "parent" is guaranteed to be an object that was returned from a Create call on the
-        ///     same IConfigSectionHandler implementation. (E.g., if Create returns a Hashtable, then "parent"
+        ///     same IConfigurationSectionHandler implementation. (E.g., if Create returns a Hashtable, then "parent"
         ///     is always a Hashtable if it's non-null.)
         ///     Returned objects must be immutable. In particular, it's important that the "parent" object
         ///     being passed in is not altered: if a modification must be made, then it must be cloned before
