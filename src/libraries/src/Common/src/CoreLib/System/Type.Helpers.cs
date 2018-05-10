@@ -473,54 +473,31 @@ namespace System
         // This method will filter based upon the name.  A partial wildcard
         //  at the end of the string is supported.
         //  filterCriteria -- This is the string name
-        private static bool FilterNameImpl(MemberInfo m, object filterCriteria)
+        private static bool FilterNameImpl(MemberInfo m, object filterCriteria, StringComparison comparison)
         {
             // Check that the criteria object is a String object
-            if (filterCriteria == null || !(filterCriteria is string))
+            if (!(filterCriteria is string filterCriteriaString))
+            {
                 throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
+            }
 
-            // At the moment this fails if its done on a single line....
-            string str = ((string)filterCriteria);
-            str = str.Trim();
+            ReadOnlySpan<char> str = filterCriteriaString.AsSpan().Trim();
+            ReadOnlySpan<char> name = m.Name;
 
-            string name = m.Name;
             // Get the nested class name only, as opposed to the mangled one
             if (m.MemberType == MemberTypes.NestedType)
-                name = name.Substring(name.LastIndexOf('+') + 1);
+            {
+                name = name.Slice(name.LastIndexOf('+') + 1);
+            }
+
             // Check to see if this is a prefix or exact match requirement
             if (str.Length > 0 && str[str.Length - 1] == '*')
             {
-                str = str.Substring(0, str.Length - 1);
-                return (name.StartsWith(str, StringComparison.Ordinal));
+                str = str.Slice(0, str.Length - 1);
+                return name.StartsWith(str, comparison);
             }
 
-            return (name.Equals(str));
-        }
-
-        // FilterIgnoreCase
-        // This delegate will do a name search but does it with the
-        //  ignore case specified.
-        private static bool FilterNameIgnoreCaseImpl(MemberInfo m, object filterCriteria)
-        {
-            // Check that the criteria object is a String object
-            if (filterCriteria == null || !(filterCriteria is string))
-                throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
-
-            string str = (string)filterCriteria;
-            str = str.Trim();
-
-            string name = m.Name;
-            // Get the nested class name only, as opposed to the mangled one
-            if (m.MemberType == MemberTypes.NestedType)
-                name = name.Substring(name.LastIndexOf('+') + 1);
-            // Check to see if this is a prefix or exact match requirement
-            if (str.Length > 0 && str[str.Length - 1] == '*')
-            {
-                str = str.Substring(0, str.Length - 1);
-                return (string.Compare(name, 0, str, 0, str.Length, StringComparison.OrdinalIgnoreCase) == 0);
-            }
-
-            return (string.Compare(str, name, StringComparison.OrdinalIgnoreCase) == 0);
+            return name.Equals(str, comparison);
         }
     }
 }
