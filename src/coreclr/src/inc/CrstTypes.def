@@ -789,5 +789,5 @@ Crst NotifyGdb
 End
 
 Crst ReadyToRunEntryPointToMethodDescMap
-    AcquiredBefore ExecuteManRangeLock
+    AcquiredBefore ExecuteManRangeLock UniqueStack
 End
