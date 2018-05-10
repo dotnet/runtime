@@ -35,23 +35,15 @@ TAILCALL_DISABLED_TESTS_COMPILE += \
 # FIXME Some of these sound like negative tests -- "badtailcall". Verify and automate.
 # FIXME investigate and explain every test failure.
 TAILCALL_DISABLED_TESTS_RUN = \
-	tailcall/coreclr/JIT/Directed/IL/PInvokeTail/PInvokeTail.exe \
 	tailcall/coreclr/JIT/Directed/IL/PInvokeTail/tailwinapi.exe \
 	tailcall/coreclr/JIT/Directed/IL/Tailcall/Jittailcall2.exe \
 	tailcall/coreclr/JIT/Directed/IL/mutualrecur-tailcall/MutualRecur-TailCall.exe \
 	tailcall/coreclr/JIT/Directed/coverage/importer/Desktop/badtailcall.exe \
 	tailcall/coreclr/JIT/Directed/coverage/importer/badtailcall.exe \
 	tailcall/coreclr/JIT/Directed/pinvoke/tail.exe \
-	tailcall/coreclr/JIT/Directed/tailcall/tailcall.exe \
-	tailcall/coreclr/JIT/Directed/zeroinit/tail.exe \
 	tailcall/coreclr/JIT/IL_Conformance/Old/Base/tailcall.exe \
 	tailcall/coreclr/JIT/Methodical/Invoke/fptr/recurse_tail_call.exe \
 	tailcall/coreclr/JIT/Methodical/Invoke/fptr/recurse_tail_calli.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_enum.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_obj.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r4_r8_inl.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r8_r4_inl.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_v.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/deep_array.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/deep_array_nz.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/gcval_nested.exe \
@@ -61,7 +53,6 @@ TAILCALL_DISABLED_TESTS_RUN = \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_implicit.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_mutual_rec.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_switch.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_virt.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall_v4/delegateTail.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall_v4/hijacking.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall_v4/smallFrame.exe \
@@ -93,26 +84,30 @@ if FULL_AOT_TESTS
 TAILCALL_DISABLED_TESTS_COMPILE += \
 	tailcall/coreclr/JIT/opt/Tailcall/TailcallVerifyWithPrefix.exe
 
+# return type mismatch (float32 vs. float64)
+# 	tailcall/coreclr/JIT/Methodical/tailcall/compat_r8_r4_inl.exe
+# 	tailcall/coreclr/JIT/Methodical/tailcall/compat_r4_r8_inl.exe
+#
+# return type mismatch (int32 vs. enum)
+# 	tailcall/coreclr/JIT/Methodical/tailcall/compat_enum.exe
+#
+# FIXME depends on msvcrt.dll, and calli
+#	tailcall/coreclr/JIT/Directed/IL/PInvokeTail/PInvokeTail.exe
+#
+# FIXME reference parameter; requires range check to allow
+#	tailcall/coreclr/JIT/Directed/zeroinit/tail.exe
+
 # Tests that fail assert about tailcall.
 TAILCALL_DISABLED_TESTS_RUN += \
-	tailcall/coreclr/JIT/Directed/IL/PInvokeTail/PInvokeTail.exe \
 	tailcall/coreclr/JIT/Directed/IL/PInvokeTail/tailwinapi.exe \
 	tailcall/coreclr/JIT/Directed/pinvoke/tail.exe \
-	tailcall/coreclr/JIT/Directed/zeroinit/tail.exe \
 	tailcall/coreclr/JIT/Methodical/Invoke/fptr/recurse_tail_call.exe \
 	tailcall/coreclr/JIT/Methodical/Invoke/fptr/recurse_tail_calli.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/Desktop/thread-race.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_enum.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_obj.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r4_r8_inl.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r8_r4_inl.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_v.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/deep_array_nz.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/gcval_nested.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/pointer.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/reference_i.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_mutual_rec.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall/test_switch.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall_v4/delegateTail.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall_v4/tailcall_AV.exe \
 	tailcall/coreclr/JIT/Regression/VS-ia64-JIT/V1.2-M02/b102844/tailcallcalli.exe
@@ -896,7 +891,7 @@ PLATFORM_DISABLED_TESTS += tailcall/3.exe
 PLATFORM_DISABLED_TESTS += tailcall/4.exe
 PLATFORM_DISABLED_TESTS += tailcall/8273.exe
 PLATFORM_DISABLED_TESTS += tailcall-rgctxb-static.exe
-
+PLATFORM_DISABLED_TESTS += tailcall/coreclr/JIT/Methodical/tailcall/test_virt.exe # fix pending
 endif
 
 if POWERPC
@@ -950,6 +945,7 @@ PLATFORM_DISABLED_TESTS += tailcall/8273.exe
 PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail.exe
 PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack.exe
 PLATFORM_DISABLED_TESTS += ivtail1.exe
+PLATFORM_DISABLED_TESTS += tailcall/coreclr/JIT/Directed/tailcall/tailcall.exe  # interface
 endif
 
 if ARM64
@@ -1760,13 +1756,11 @@ TEST_TAILCALL_IL_SRC=\
 	tailcall/coreclr/JIT/Directed/coverage/importer/badtailcall.il \
 	tailcall/coreclr/JIT/Directed/coverage/importer/Desktop/badtailcall.il \
 	tailcall/coreclr/JIT/Directed/IL/mutualrecur-tailcall/MutualRecur-TailCall.il \
-	tailcall/coreclr/JIT/Directed/IL/PInvokeTail/PInvokeTail.il \
 	tailcall/coreclr/JIT/Directed/IL/PInvokeTail/tailwinapi.il \
 	tailcall/coreclr/JIT/Directed/IL/Tailcall/JitTailcall1.il \
 	tailcall/coreclr/JIT/Directed/IL/Tailcall/Jittailcall2.il \
 	tailcall/coreclr/JIT/Directed/pinvoke/tail.il \
 	tailcall/coreclr/JIT/Directed/tailcall/tailcall.il \
-	tailcall/coreclr/JIT/Directed/zeroinit/tail.il \
 	tailcall/coreclr/JIT/IL_Conformance/Old/Base/tailcall.il \
 	tailcall/coreclr/JIT/Methodical/Boxing/boxunbox/tailcall.il \
 	tailcall/coreclr/JIT/Methodical/Boxing/misc/tailjump.il \
@@ -1775,10 +1769,7 @@ TEST_TAILCALL_IL_SRC=\
 	tailcall/coreclr/JIT/Methodical/Invoke/SEH/catchfault_tail.il \
 	tailcall/coreclr/JIT/Methodical/Invoke/SEH/catchfinally_tail.il \
 	tailcall/coreclr/JIT/Methodical/nonvirtualcall/tailcall.il \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_enum.il \
 	tailcall/coreclr/JIT/Methodical/tailcall/compat_obj.il \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r4_r8_inl.il \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r8_r4_inl.il \
 	tailcall/coreclr/JIT/Methodical/tailcall/compat_v.il \
 	tailcall/coreclr/JIT/Methodical/tailcall/deep_array.il \
 	tailcall/coreclr/JIT/Methodical/tailcall/deep_array_nz.il \
