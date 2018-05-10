@@ -19,7 +19,7 @@ namespace Microsoft.Win32.SystemEventsTests
         {
             var invoked = new AutoResetEvent(false);
             SystemEvents.InvokeOnEventsThread(new Action(() => invoked.Set()));
-            Assert.True(invoked.WaitOne(PostMessageWait));
+            Assert.True(invoked.WaitOne(PostMessageWait * SystemEventsTest.ExpectedEventMultiplier));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -44,7 +44,7 @@ namespace Microsoft.Win32.SystemEventsTests
                     actualThreadId = Thread.CurrentThread.ManagedThreadId;
                     invoked.Set();
                 }));
-                Assert.True(invoked.WaitOne(PostMessageWait));
+                Assert.True(invoked.WaitOne(PostMessageWait * SystemEventsTest.ExpectedEventMultiplier));
                 Assert.Equal(expectedThreadId, actualThreadId);
             }
             finally
