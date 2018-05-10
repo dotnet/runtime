@@ -1,8 +1,8 @@
 ## This list file has been produced automatically. Any changes
 ## are subject to being overwritten when reproducing this file.
 ## 
-## Last Updated: 01-May-2018 14:29:30
-## Commit: 06fc2d9d0a28740dcede271aa94f79af41ceaed6
+## Last Updated: 09-May-2018 14:46:07
+## Commit: 718347e434964969641031bd2dd46dd6607b1390
 ## 
 [int8_il_r.cmd_1]
 RelativePath=JIT\Directed\shift\int8_il_r\int8_il_r.cmd
@@ -92489,7 +92489,7 @@ RelativePath=Loader\classloader\DefaultInterfaceMethods\constrainedcall\constrai
 WorkingDir=Loader\classloader\DefaultInterfaceMethods\constrainedcall\constrainedcall
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;15353;EXCLUDED;
+Categories=EXPECTED_FAIL;15353;EXCLUDED
 HostStyle=0
 
 [ConvertToUInt32_r.cmd_11617]
@@ -92665,7 +92665,7 @@ RelativePath=tracing\tracevalidation\tracelogging\tracelogging\tracelogging.cmd
 WorkingDir=tracing\tracevalidation\tracelogging\tracelogging
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;15494;EXCLUDED;
+Categories=EXPECTED_FAIL;15494;EXCLUDED
 HostStyle=0
 
 [DevDiv_543057a.cmd_11639]
@@ -94009,7 +94009,7 @@ RelativePath=tracing\eventsourcetrace\eventsourcetrace\eventsourcetrace.cmd
 WorkingDir=tracing\eventsourcetrace\eventsourcetrace
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;15494;EXCLUDED;
+Categories=EXPECTED_FAIL;15494;EXCLUDED
 HostStyle=0
 
 [DotProduct_ro.cmd_11807]
