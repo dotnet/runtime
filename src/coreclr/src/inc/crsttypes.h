@@ -322,7 +322,7 @@ int g_rgCrstLevelMap[] =
     3,			// CrstRCWCache
     0,			// CrstRCWCleanupList
     3,			// CrstRCWRefCache
-    3,			// CrstReadyToRunEntryPointToMethodDescMap
+    4,			// CrstReadyToRunEntryPointToMethodDescMap
     0,			// CrstReDacl
     9,			// CrstReflection
     7,			// CrstReJITDomainTable
