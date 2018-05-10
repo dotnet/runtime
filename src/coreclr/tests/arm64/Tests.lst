@@ -1,8 +1,8 @@
 ## This list file has been produced automatically. Any changes
 ## are subject to being overwritten when reproducing this file.
 ## 
-## Last Updated: 01-May-2018 13:57:39
-## Commit: 06fc2d9d0a28740dcede271aa94f79af41ceaed6
+## Last Updated: 09-May-2018 14:44:29
+## Commit: 718347e434964969641031bd2dd46dd6607b1390
 ## 
 [Dev10_535767.cmd_0]
 RelativePath=baseservices\compilerservices\dynamicobjectproperties\Dev10_535767\Dev10_535767.cmd
@@ -90913,7 +90913,7 @@ RelativePath=Loader\classloader\DefaultInterfaceMethods\sharedgenerics\sharedgen
 WorkingDir=Loader\classloader\DefaultInterfaceMethods\sharedgenerics\sharedgenerics_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [HorizontalSubtract_ro.cmd_11738]
@@ -91305,7 +91305,7 @@ RelativePath=Loader\classloader\DefaultInterfaceMethods\diamondshape\diamondshap
 WorkingDir=Loader\classloader\DefaultInterfaceMethods\diamondshape\diamondshape_d
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [CompareGreaterThanOrderedScalar_ro.cmd_11787]
@@ -91361,7 +91361,7 @@ RelativePath=baseservices\exceptions\stacktrace\Tier1StackTrace\Tier1StackTrace.
 WorkingDir=baseservices\exceptions\stacktrace\Tier1StackTrace
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED;Pri1
 HostStyle=0
 
 [ConvertToVector128Int32WithTruncation_r.cmd_11794]
@@ -91569,7 +91569,7 @@ RelativePath=Loader\classloader\DefaultInterfaceMethods\simple\simple\simple.cmd
 WorkingDir=Loader\classloader\DefaultInterfaceMethods\simple\simple
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [SetZeroVector256_ro.cmd_11820]
@@ -92081,7 +92081,7 @@ RelativePath=Loader\classloader\DefaultInterfaceMethods\valuetypes\valuetypes\va
 WorkingDir=Loader\classloader\DefaultInterfaceMethods\valuetypes\valuetypes
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [StoreAligned_ro.cmd_11884]
@@ -92505,7 +92505,7 @@ RelativePath=Loader\classloader\DefaultInterfaceMethods\constrainedcall\constrai
 WorkingDir=Loader\classloader\DefaultInterfaceMethods\constrainedcall\constrainedcall
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;15353;EXCLUDED;
+Categories=EXPECTED_FAIL;15353;EXCLUDED
 HostStyle=0
 
 [ConvertToUInt32_r.cmd_11937]
@@ -92673,7 +92673,7 @@ RelativePath=tracing\tracevalidation\tracelogging\tracelogging\tracelogging.cmd
 WorkingDir=tracing\tracevalidation\tracelogging\tracelogging
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;15494;EXCLUDED;
+Categories=EXPECTED_FAIL;15494;EXCLUDED
 HostStyle=0
 
 [DevDiv_543057a.cmd_11958]
@@ -92841,7 +92841,7 @@ RelativePath=reflection\Tier1Collectible\Tier1Collectible\Tier1Collectible.cmd
 WorkingDir=reflection\Tier1Collectible\Tier1Collectible
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED;Pri1
 HostStyle=0
 
 [interfacecctor.cmd_11979]
@@ -92849,7 +92849,7 @@ RelativePath=Regressions\coreclr\15650\interfacecctor\interfacecctor.cmd
 WorkingDir=Regressions\coreclr\15650\interfacecctor
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [SetVector128_ro.cmd_11980]
@@ -93161,7 +93161,7 @@ RelativePath=Regressions\coreclr\15827\nonvirtualcall\nonvirtualcall.cmd
 WorkingDir=Regressions\coreclr\15827\nonvirtualcall
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [CompareLessThanOrderedScalar_ro.cmd_12019]
@@ -93209,7 +93209,7 @@ RelativePath=Loader\classloader\DefaultInterfaceMethods\sharedgenerics\sharedgen
 WorkingDir=Loader\classloader\DefaultInterfaceMethods\sharedgenerics\sharedgenerics_d
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [Sqrt_r.cmd_12025]
@@ -93449,7 +93449,7 @@ RelativePath=Loader\classloader\DefaultInterfaceMethods\methodimpl\methodimpl\me
 WorkingDir=Loader\classloader\DefaultInterfaceMethods\methodimpl\methodimpl
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [rundown.cmd_12055]
@@ -93481,7 +93481,7 @@ RelativePath=Regressions\coreclr\16064\methodimpl\methodimpl.cmd
 WorkingDir=Regressions\coreclr\16064\methodimpl
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [CompareNotLessThanOrEqualScalar_ro.cmd_12059]
@@ -93561,7 +93561,7 @@ RelativePath=reflection\DefaultInterfaceMethods\InvokeConsumer\InvokeConsumer.cm
 WorkingDir=reflection\DefaultInterfaceMethods\InvokeConsumer
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [CompareLessThanUnorderedScalar_ro.cmd_12069]
@@ -93929,7 +93929,7 @@ RelativePath=reflection\DefaultInterfaceMethods\Emit\Emit.cmd
 WorkingDir=reflection\DefaultInterfaceMethods\Emit
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [shared.cmd_12115]
@@ -94009,7 +94009,7 @@ RelativePath=tracing\eventsourcetrace\eventsourcetrace\eventsourcetrace.cmd
 WorkingDir=tracing\eventsourcetrace\eventsourcetrace
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;15494;EXCLUDED;
+Categories=EXPECTED_FAIL;15494;EXCLUDED
 HostStyle=0
 
 [DotProduct_ro.cmd_12125]
@@ -94401,7 +94401,7 @@ RelativePath=Regressions\coreclr\15241\genericcontext\genericcontext.cmd
 WorkingDir=Regressions\coreclr\15241\genericcontext
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [MathFloorSingle_r.cmd_12174]
@@ -94673,7 +94673,7 @@ RelativePath=Loader\classloader\DefaultInterfaceMethods\diamondshape\diamondshap
 WorkingDir=Loader\classloader\DefaultInterfaceMethods\diamondshape\diamondshape_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9565;EXCLUDED;
+Categories=EXPECTED_FAIL;9565;EXCLUDED
 HostStyle=0
 
 [StoreAligned_r.cmd_12208]
