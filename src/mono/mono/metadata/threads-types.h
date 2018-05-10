@@ -341,7 +341,6 @@ mono_set_thread_dump_dir(gchar* dir);
 MONO_COLD void
 mono_set_pending_exception_handle (MonoExceptionHandle exc);
 
-#ifdef TARGET_OSX
 #define MONO_MAX_SUMMARY_NAME_LEN 140
 #define MONO_MAX_SUMMARY_THREADS 32
 #define MONO_MAX_SUMMARY_FRAMES 40
@@ -386,6 +385,5 @@ typedef struct {
 
 gboolean
 mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes);
-#endif
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

@@ -1002,6 +1002,10 @@ if test "x$with_structured_crashes" = "xno"; then
 AC_DEFINE(DISABLE_STRUCTURED_CRASH,1,[Do not create structured crash files during unmanaged crashes])
 fi
 
+if test "x$host_win32" = "xyes"; then
+AC_DEFINE(DISABLE_CRASH_REPORTING,1,[Do not use cooperative crash reporter])
+fi
+
 AC_ARG_ENABLE(monodroid, [ --enable-monodroid Enable runtime support for Monodroid (Xamarin.Android)], enable_monodroid=$enableval, enable_monodroid=no)
 AM_CONDITIONAL(ENABLE_MONODROID, test x$enable_monodroid = xyes)
 

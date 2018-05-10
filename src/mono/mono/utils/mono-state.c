@@ -15,7 +15,7 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/metadata/object-internals.h>
 
-#ifdef TARGET_OSX
+#ifndef DISABLE_CRASH_REPORTING
 
 extern GCStats mono_gc_stats;
 
@@ -482,4 +482,4 @@ mono_summarize_native_state_add_thread (MonoThreadSummary *thread, MonoContext *
 	mono_native_state_add_thread (&writer, thread, ctx);
 }
 
-#endif // HOST_WIN32
+#endif // DISABLE_CRASH_REPORTING

@@ -11,7 +11,7 @@
 #ifndef __MONO_UTILS_NATIVE_STATE__
 #define __MONO_UTILS_NATIVE_STATE__
 
-#ifdef TARGET_OSX
+#ifndef DISABLE_CRASH_REPORTING
 
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-context.h>
@@ -31,6 +31,6 @@ void
 mono_summarize_native_state_add_thread (MonoThreadSummary *thread, MonoContext *ctx);
 
 MONO_END_DECLS
-#endif // TARGET_OSX
+#endif // DISABLE_CRASH_REPORTING
 
 #endif // MONO_UTILS_NATIVE_STATE

@@ -83,6 +83,9 @@
 /* Disable support debug logging */
 /* #undef DISABLE_LOGGING */
 
+/* Disable runtime state dumping */
+#define DISABLE_CRASH_REPORTING 1
+
 /* Disable P/Invoke support */
 /* #undef DISABLE_PINVOKE */
 
