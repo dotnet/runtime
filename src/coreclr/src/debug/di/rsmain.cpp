@@ -868,8 +868,8 @@ namespace
         virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void** pInterface);
         virtual ULONG STDMETHODCALLTYPE AddRef();
         virtual ULONG STDMETHODCALLTYPE Release();
-        COM_METHOD BeforeGarbageCollection(ICorDebugController* pController);
-        COM_METHOD AfterGarbageCollection(ICorDebugController* pController);
+        COM_METHOD BeforeGarbageCollection(ICorDebugProcess* pProcess);
+        COM_METHOD AfterGarbageCollection(ICorDebugProcess* pProcess);
     private:
         // not implemented
         DefaultManagedCallback4(const DefaultManagedCallback4&);
@@ -923,22 +923,22 @@ namespace
     }
 
     HRESULT
-        DefaultManagedCallback4::BeforeGarbageCollection(ICorDebugController* pController)
+        DefaultManagedCallback4::BeforeGarbageCollection(ICorDebugProcess* pProcess)
     {
         //
         // Just ignore and continue the process.
         //
-        pController->Continue(false);
+        pProcess->Continue(false);
         return S_OK;
     }
 
     HRESULT
-        DefaultManagedCallback4::AfterGarbageCollection(ICorDebugController* pController)
+        DefaultManagedCallback4::AfterGarbageCollection(ICorDebugProcess* pProcess)
     {
         //
         // Just ignore and continue the process.
         //
-        pController->Continue(false);
+        pProcess->Continue(false);
         return S_OK;
     }
 }

@@ -3774,10 +3774,10 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
     {
     public:
         virtual HRESULT STDMETHODCALLTYPE BeforeGarbageCollection( 
-            ICorDebugController *pController) = 0;
+            ICorDebugProcess *pProcess) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE AfterGarbageCollection( 
-            ICorDebugController *pController) = 0;
+            ICorDebugProcess *pProcess) = 0;
         
     };
     
@@ -3802,11 +3802,11 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
         
         HRESULT ( STDMETHODCALLTYPE *BeforeGarbageCollection )( 
             ICorDebugManagedCallback4 * This,
-            ICorDebugController *pController);
+            ICorDebugProcess *pProcess);
         
         HRESULT ( STDMETHODCALLTYPE *AfterGarbageCollection )( 
             ICorDebugManagedCallback4 * This,
-            ICorDebugController *pController);
+            ICorDebugProcess *pProcess);
         
         END_INTERFACE
     } ICorDebugManagedCallback4Vtbl;
@@ -3831,11 +3831,11 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorDebugManagedCallback4_BeforeGarbageCollection(This,pController)	\
-    ( (This)->lpVtbl -> BeforeGarbageCollection(This,pController) ) 
+#define ICorDebugManagedCallback4_BeforeGarbageCollection(This,pProcess)	\
+    ( (This)->lpVtbl -> BeforeGarbageCollection(This,pProcess) ) 
 
-#define ICorDebugManagedCallback4_AfterGarbageCollection(This,pController)	\
-    ( (This)->lpVtbl -> AfterGarbageCollection(This,pController) ) 
+#define ICorDebugManagedCallback4_AfterGarbageCollection(This,pProcess)	\
+    ( (This)->lpVtbl -> AfterGarbageCollection(This,pProcess) ) 
 
 #endif /* COBJMACROS */
 
