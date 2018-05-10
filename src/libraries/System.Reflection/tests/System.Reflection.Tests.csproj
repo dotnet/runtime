@@ -21,6 +21,7 @@
     <Compile Include="ParameterInfoTests.cs" />
     <Compile Include="PropertyInfoTests.cs" />
     <Compile Include="ReflectionContextTests.cs" />
+    <Compile Include="TypeTests.cs" />
     <Compile Include="TypeInfoTests.cs" />
     <Compile Include="ExceptionTests.cs" />
   </ItemGroup>
