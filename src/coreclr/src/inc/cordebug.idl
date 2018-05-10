@@ -1359,8 +1359,8 @@ interface ICorDebugManagedCallback3 : IUnknown
 
 interface ICorDebugManagedCallback4 : IUnknown
 {
-    HRESULT BeforeGarbageCollection(ICorDebugController* pController);
-    HRESULT AfterGarbageCollection(ICorDebugController* pController);
+    HRESULT BeforeGarbageCollection(ICorDebugProcess* pProcess);
+    HRESULT AfterGarbageCollection(ICorDebugProcess* pProcess);
 }
 
 
