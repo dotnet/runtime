@@ -10,155 +10,27 @@ namespace System.Net.Http
 {
     internal static class WinHttpTraceHelper
     {
-        private const string WinHtpTraceEnvironmentVariable = "WINHTTPHANDLER_TRACE";
-        private static readonly bool s_traceEnabled = IsTraceEnabledViaEnvironmentVariable();
-
-        private static bool IsTraceEnabledViaEnvironmentVariable()
+        public static void TraceCallbackStatus(object thisOrContextObject, IntPtr handle, IntPtr context, uint status, [CallerMemberName] string memberName = null)
         {
-            string env;
-            try
-            {
-                env = Environment.GetEnvironmentVariable(WinHtpTraceEnvironmentVariable);
-            }
-            catch (SecurityException)
-            {
-                env = null;
-            }
+            Debug.Assert(NetEventSource.IsEnabled);
 
-            return !string.IsNullOrEmpty(env);
+            NetEventSource.Info(
+                thisOrContextObject,
+                $"handle=0x{handle.ToString("X")}, context=0x{context.ToString("X")}, {GetStringFromInternetStatus(status)}",
+                memberName);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsTraceEnabled()
+        public static void TraceAsyncError(object thisOrContextObject, Interop.WinHttp.WINHTTP_ASYNC_RESULT asyncResult, [CallerMemberName] string memberName = null)
         {
-            return s_traceEnabled;
-        }
-
-        public static void Trace(string message)
-        {
-            if (!IsTraceEnabled())
-            {
-                return;
-            }
-            
-            WriteLine(message);
-        }
-
-        public static void Trace(string format, bool arg0)
-        {
-            if (!IsTraceEnabled())
-            {
-                return;
-            }
-            
-            WriteLine(format, arg0);
-        }
-
-        public static void Trace(string format, int arg0)
-        {
-            if (!IsTraceEnabled())
-            {
-                return;
-            }
-            
-            WriteLine(format, arg0);
-        }
-
-        public static void Trace(string format, uint arg0)
-        {
-            if (!IsTraceEnabled())
-            {
-                return;
-            }
-            
-            WriteLine(format, arg0);
-        }
-
-        public static void Trace(string format, string arg0)
-        {
-            if (!IsTraceEnabled())
-            {
-                return;
-            }
-            
-            WriteLine(format, arg0);
-        }
-
-        public static void Trace(string format, string arg0, string arg1)
-        {
-            if (!IsTraceEnabled())
-            {
-                return;
-            }
-            
-            WriteLine(format, arg0, arg1);
-        }
-
-        public static void Trace(string format, IntPtr arg0, bool arg1, bool arg2)
-        {
-            if (!IsTraceEnabled())
-            {
-                return;
-            }
-            
-            WriteLine(format, arg0, arg1, arg2);
-        }
-
-        public static void Trace(string format, string arg0, bool arg1, string arg2, string arg3)
-        {
-            if (!IsTraceEnabled())
-            {
-                return;
-            }
-            
-            WriteLine(format, arg0, arg1, arg2, arg3);
-        }
-
-        public static void TraceCallbackStatus(string message, IntPtr handle, IntPtr context, uint status)
-        {
-            if (!IsTraceEnabled())
-            {
-                return;
-            }
-
-            WriteLine(
-                "{0}: handle=0x{1:X}, context=0x{2:X}, {3}",
-                message,
-                handle,
-                context,
-                GetStringFromInternetStatus(status));
-        }
-
-        public static void TraceAsyncError(string message, Interop.WinHttp.WINHTTP_ASYNC_RESULT asyncResult)
-        {
-            if (!IsTraceEnabled())
-            {
-                return;
-            }
+            Debug.Assert(NetEventSource.IsEnabled);
 
             uint apiIndex = (uint)asyncResult.dwResult.ToInt32();
             uint error = asyncResult.dwError;
             string apiName = GetNameFromApiIndex(apiIndex);
-            WriteLine(
-                "{0}: api={1}, error={2}({3}) \"{4}\"",
-                message,
-                apiName,
-                GetNameFromError(error),
-                error,
-                WinHttpException.GetErrorMessage((int)error, apiName));
-        }
-
-        private static void WriteLine(string message)
-        {
-            int id = Environment.CurrentManagedThreadId;
-            Debug.WriteLine("[{0}] {1}", id, message);
-        }
-
-        private static void WriteLine(string format, params object[] args)
-        {
-            string message = string.Format(format, args);
-            int id = Environment.CurrentManagedThreadId;
-            Debug.WriteLine("[{0}] {1}", id, message);
+            NetEventSource.Error(
+                thisOrContextObject,
+                $"api={apiName}, error={GetNameFromError(error)}({error}) \"{WinHttpException.GetErrorMessage((int)error, apiName)}\"",
+                memberName);
         }
 
         private static string GetNameFromApiIndex(uint index)

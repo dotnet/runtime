@@ -35,11 +35,11 @@ namespace System.Net.Http
 
             if (remoteCertificateStore.Count > 0)
             {
-                if (WinHttpTraceHelper.IsTraceEnabled())
+                if (NetEventSource.IsEnabled)
                 {
                     foreach (X509Certificate cert in remoteCertificateStore)
                     {
-                        WinHttpTraceHelper.Trace("WinHttpCertificateHelper.BuildChain: adding cert to ExtraStore: {0}", cert.Subject);
+                        NetEventSource.Info(remoteCertificateStore, $"Adding cert to ExtraStore: {cert.Subject}");
                     }
                 }
 
@@ -81,6 +81,7 @@ namespace System.Net.Http
                     {
                         if (status.dwError == Interop.Crypt32.CertChainPolicyErrors.CERT_E_CN_NO_MATCH)
                         {
+                            if (NetEventSource.IsEnabled) NetEventSource.Error(certificate, nameof(Interop.Crypt32.CertChainPolicyErrors.CERT_E_CN_NO_MATCH));
                             sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
                         }
                     }
@@ -88,6 +89,7 @@ namespace System.Net.Http
                     {
                         // Failure checking the policy. This is a rare error. We will assume the name check failed.
                         // TODO: Issue #2165. Log this error or perhaps throw an exception instead.
+                        if (NetEventSource.IsEnabled) NetEventSource.Error(certificate, "Failure calling {nameof(Interop.Crypt32.CertVerifyCertificateChainPolicy)}");
                         sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
                     }
                 }

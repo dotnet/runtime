@@ -309,16 +309,18 @@ namespace System.Net.Http
         // a pending operation, it would cause random failures in the other threads when we expect a valid handle.
         private void CancelPendingResponseStreamReadOperation()
         {
-            WinHttpTraceHelper.Trace("WinHttpResponseStream.CancelPendingResponseStreamReadOperation");
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             lock (_state.Lock)
             {
                 if (_state.AsyncReadInProgress)
                 {
-                    WinHttpTraceHelper.Trace("WinHttpResponseStream.CancelPendingResponseStreamReadOperation: before dispose");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info("before dispose");
                     _requestHandle?.Dispose(); // null check necessary to handle race condition between stream disposal and cancellation
-                    WinHttpTraceHelper.Trace("WinHttpResponseStream.CancelPendingResponseStreamReadOperation: after dispose");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info("after dispose");
                 }
             }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }        
     }
 }
