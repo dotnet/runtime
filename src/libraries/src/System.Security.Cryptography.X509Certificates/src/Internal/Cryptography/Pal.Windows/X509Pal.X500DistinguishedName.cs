@@ -37,11 +37,14 @@ namespace Internal.Cryptography.Pal
                     if (cchDecoded == 0)
                         throw ErrorCode.CERT_E_INVALID_NAME.ToCryptographicException();
 
-                    StringBuilder sb = new StringBuilder(cchDecoded);
-                    if (Interop.crypt32.CertNameToStr(CertEncodingType.All, ref nameBlob, dwStrType, sb, cchDecoded) == 0)
-                        throw ErrorCode.CERT_E_INVALID_NAME.ToCryptographicException();
+                    Span<char> buffer = cchDecoded <= 256 ? stackalloc char[cchDecoded] : new char[cchDecoded];
+                    fixed (char* ptr = &MemoryMarshal.GetReference(buffer))
+                    {
+                        if (Interop.crypt32.CertNameToStr(CertEncodingType.All, ref nameBlob, dwStrType, ptr, cchDecoded) == 0)
+                            throw ErrorCode.CERT_E_INVALID_NAME.ToCryptographicException();
+                    }
 
-                    return sb.ToString();
+                    return new string(buffer.Slice(0, cchDecoded - 1));
                 }
             }
         }
@@ -63,7 +66,7 @@ namespace Internal.Cryptography.Pal
             return encodedName;
         }
 
-        public string X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine)
+        public unsafe string X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine)
         {
             if (encodedDistinguishedName == null || encodedDistinguishedName.Length == 0)
                 return string.Empty;
@@ -85,22 +88,26 @@ namespace Internal.Cryptography.Pal
                 return encodedDistinguishedName.ToHexStringUpper();
             }
 
-            StringBuilder sb = new StringBuilder((cbFormat + 1) / 2);
-            if (!Interop.crypt32.CryptFormatObject(
-                CertEncodingType.X509_ASN_ENCODING,
-                FormatObjectType.None,
-                stringType,
-                IntPtr.Zero,
-                FormatObjectStructType.X509_NAME,
-                encodedDistinguishedName,
-                encodedDistinguishedName.Length,
-                sb,
-                ref cbFormat))
+            int spanLength = (cbFormat + 1) / 2;
+            Span<char> buffer = spanLength <= 256 ? stackalloc char[spanLength] : new char[spanLength];
+            fixed (char* ptr = &MemoryMarshal.GetReference(buffer))
             {
-                return encodedDistinguishedName.ToHexStringUpper();
+                if (!Interop.crypt32.CryptFormatObject(
+                    CertEncodingType.X509_ASN_ENCODING,
+                    FormatObjectType.None,
+                    stringType,
+                    IntPtr.Zero,
+                    FormatObjectStructType.X509_NAME,
+                    encodedDistinguishedName,
+                    encodedDistinguishedName.Length,
+                    (byte*)ptr,
+                    ref cbFormat))
+                {
+                    return encodedDistinguishedName.ToHexStringUpper();
+                }
             }
 
-            return sb.ToString();
+            return new string(buffer.Slice(0, (cbFormat / 2) - 1));
         }
 
         private static CertNameStrTypeAndFlags MapNameToStrFlag(X500DistinguishedNameFlags flag)

@@ -384,21 +384,14 @@ namespace Internal.Cryptography.Pal
             return true;
         }
 
-        private static string GetCertNameInfo(SafeCertContextHandle pCertContext, CertNameType dwNameType, CertNameFlags dwNameFlags)
+        private static unsafe string GetCertNameInfo(SafeCertContextHandle pCertContext, CertNameType dwNameType, CertNameFlags dwNameFlags)
         {
             Debug.Assert(dwNameType != CertNameType.CERT_NAME_ATTR_TYPE);
-
-            CertNameStringType stringType = CertNameStringType.CERT_X500_NAME_STR | CertNameStringType.CERT_NAME_STR_REVERSE_FLAG;
-
-            int cch = Interop.crypt32.CertGetNameString(pCertContext, dwNameType, dwNameFlags, ref stringType, null, 0);
-            if (cch == 0)
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
-
-            StringBuilder sb = new StringBuilder(cch);
-            if (0 == Interop.crypt32.CertGetNameString(pCertContext, dwNameType, dwNameFlags, ref stringType, sb, cch))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
-
-            return sb.ToString();
+            return Interop.crypt32.CertGetNameString(
+                pCertContext,
+                dwNameType,
+                dwNameFlags,
+                CertNameStringType.CERT_X500_NAME_STR | CertNameStringType.CERT_NAME_STR_REVERSE_FLAG);
         }
     }
 }
