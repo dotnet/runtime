@@ -21,8 +21,10 @@ public:
             MethodName* m_next;
             int         m_methodNameStart;
             int         m_methodNameLen;
+            bool        m_methodNameWildcardAtEnd;
             int         m_classNameStart;
             int         m_classNameLen;
+            bool        m_classNameWildcardAtEnd;
             int         m_numArgs;
         };
 
