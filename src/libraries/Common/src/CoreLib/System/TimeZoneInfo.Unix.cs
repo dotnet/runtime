@@ -1079,16 +1079,16 @@ namespace System
             return null;
         }
 
-        private static TimeSpan? TZif_ParseOffsetString(string offset)
+        private static TimeSpan? TZif_ParseOffsetString(ReadOnlySpan<char> offset)
         {
             TimeSpan? result = null;
 
-            if (!string.IsNullOrEmpty(offset))
+            if (offset.Length > 0)
             {
                 bool negative = offset[0] == '-';
                 if (negative || offset[0] == '+')
                 {
-                    offset = offset.Substring(1);
+                    offset = offset.Slice(1);
                 }
 
                 // Try parsing just hours first.
