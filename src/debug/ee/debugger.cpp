@@ -707,6 +707,7 @@ HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface)
 //-----------------------------------------------------------------------------
 void Debugger::SendSimpleIPCEventAndBlock()
 {
+    /*
     CONTRACTL
     {
         SO_NOT_MAINLINE;
@@ -714,6 +715,7 @@ void Debugger::SendSimpleIPCEventAndBlock()
         MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
     }
     CONTRACTL_END;
+    */
 
     // BEGIN will acquire the lock (END will release it). While blocking, the
     // debugger may have detached though, so we need to check for that.
@@ -5444,6 +5446,7 @@ DebuggerModule* Debugger::AddDebuggerModule(DomainFile * pDomainFile)
 // Neither pDbgLockHolder nor pAppDomain are used.
 void Debugger::TrapAllRuntimeThreads()
 {
+    /*
     CONTRACTL
     {
         SO_NOT_MAINLINE;
@@ -5459,6 +5462,7 @@ void Debugger::TrapAllRuntimeThreads()
                      !g_pEEInterface->IsPreemptiveGCDisabled());
     }
     CONTRACTL_END;
+    */
 
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
     // Only sync if RS requested it. 
@@ -6012,15 +6016,7 @@ void Debugger::SomeWork()
         pThread,
         pThread->GetDomain());
 
-    m_pRCThread->SendIPCEvent();
-
-    DebuggerIPCEvent* ipce2 = m_pRCThread->GetIPCEventSendBuffer();
-    InitIPCEvent(ipce2,
-        DB_IPCE_SYNC_COMPLETE,
-        pThread,
-        pThread->GetDomain());
-
-    m_pRCThread->SendIPCEvent();
+    SendSimpleIPCEventAndBlock();
 
     SENDIPCEVENT_END;
 }
