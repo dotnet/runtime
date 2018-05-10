@@ -9,13 +9,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public class SqlAdapterUpdateBatch
     {
-        private static string tcpConnStr = DataTestUtility.TcpConnStr;
-        private static string tableName = "BatchDemoTable";
-        private static List<EventInfo> entities;
-
         [Fact]
         public void SqlAdapterTest()
         {
+            string tableName = "BatchDemoTable";
             try
             {
                 var createTableQuery = "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='BatchDemoTable' AND xtype='U')" +
@@ -24,7 +21,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     "PRIMARY KEY CLUSTERED([TransactionNumber] ASC)WITH(PAD_INDEX = OFF,STATISTICS_NORECOMPUTE = OFF, " +
                     "IGNORE_DUP_KEY = OFF,ALLOW_ROW_LOCKS = ON,ALLOW_PAGE_LOCKS = ON,FILLFACTOR = 90) ON[PRIMARY]) ON[PRIMARY]";
 
-                using (var connection = new SqlConnection(tcpConnStr))
+                using (var connection = new SqlConnection(DataTestUtility.TcpConnStr))
                 using (var cmd = new SqlCommand(createTableQuery, connection))
                 {
                     connection.Open();
@@ -40,7 +37,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             finally
             {
                 var dropTableQuery = "DROP TABLE IF EXISTS " + tableName;
-                using (var connection = new SqlConnection(tcpConnStr))
+                using (var connection = new SqlConnection(DataTestUtility.TcpConnStr))
                 using (var cmd = new SqlCommand(dropTableQuery, connection))
                 {
                     connection.Open();
@@ -64,7 +61,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         public static void ExecuteNonQueries()
         {
-            entities = new List<EventInfo>
+            List<EventInfo> entities = new List<EventInfo>
             {
                 new EventInfo {Level = "L1", Message = "Message 1"},
                 new EventInfo {Level = "L2", Message = "Message 2"},
@@ -73,7 +70,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             };
 
             var sql = "INSERT INTO BatchDemoTable(Level, Message, EventTime)  VALUES(@Level, @Message, @EventTime)";
-            using (var connection = new SqlConnection(tcpConnStr))
+            using (var connection = new SqlConnection(DataTestUtility.TcpConnStr))
             using (var adapter = new SqlDataAdapter())
             using (var cmd = new SqlCommand(sql, connection))
             {
