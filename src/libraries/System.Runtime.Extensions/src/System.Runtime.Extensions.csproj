@@ -124,7 +124,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentDirectory.cs">
