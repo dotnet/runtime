@@ -76,6 +76,10 @@
 #include <mono/utils/mono-merp.h>
 #endif
 
+#ifndef HOST_WIN32
+#include <mono/utils/mono-threads-debug.h>
+#endif
+
 #if defined(HOST_WATCHOS)
 
 void
@@ -215,8 +219,18 @@ MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
-	if (mono_merp_enabled ())
-		mono_handle_native_crash ("SIGTERM", ctx, info);
+	// Note: this function only returns for a single thread
+	// When it's invoked on other threads once the dump begins,
+	// those threads perform their dumps and then sleep until we
+	// die. The dump ends with the exit(1) below
+	MonoContext mctx;
+	gchar *output = NULL;
+	mono_sigctx_to_monoctx (ctx, &mctx);
+	if (!mono_threads_summarize (&mctx, &output))
+		g_assert_not_reached ();
+
+	// Only the dumping-supervisor thread exits mono_thread_summarize
+	MOSTLY_ASYNC_SAFE_PRINTF("Unhandled exception dump: \n######\n%s\n######\n", output);
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 	exit (1);

@@ -264,6 +264,7 @@
 #define g_vasprintf monoeg_g_vasprintf
 #define g_win32_getlocale monoeg_g_win32_getlocale
 #define g_assertion_message monoeg_assertion_message
+#define g_get_assertion_message monoeg_get_assertion_message
 #define g_malloc monoeg_malloc
 #define g_malloc0 monoeg_malloc0
 #define g_ptr_array_grow monoeg_ptr_array_grow

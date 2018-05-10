@@ -445,8 +445,11 @@ mono_init_merp (const char *serviceName, const char *signal, pid_t crashed_pid, 
 }
 
 void
-mono_merp_invoke (pid_t crashed_pid, intptr_t thread_pointer, const char *signal)
+mono_merp_invoke (pid_t crashed_pid, intptr_t thread_pointer, const char *signal, const char *dump_file)
 {
+	if (dump_file != NULL)
+		fprintf (stderr, "Crashing Dump File:\n####\n%s\n####\n", dump_file);
+
 	// This unique service name is used to communicate with merp over mach service ports
 	char *serviceName = g_strdup_printf ("com.mono.merp.%.8x", crashed_pid);
 
