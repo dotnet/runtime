@@ -115,15 +115,15 @@ namespace System.Net.Security
                 }
 
                 return new string(byteChars, 0, byteCharsLength - 1);
-
-                char GetHexValue(int i)
-                {
-                    if (i < 10)
-                        return (char)(i + '0');
-
-                    return (char)(i - 10 + 'a');
-                }
             }
+        }
+
+        static char GetHexValue(int i)
+        {
+            if (i < 10)
+                return (char)(i + '0');
+
+            return (char)(i - 10 + 'a');
         }
 
         public static bool operator ==(SslApplicationProtocol left, SslApplicationProtocol right)
