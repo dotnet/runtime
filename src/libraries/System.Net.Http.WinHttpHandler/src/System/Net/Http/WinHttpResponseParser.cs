@@ -348,7 +348,7 @@ namespace System.Net.Http
             {
                 if ((data & Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP2) != 0)
                 {
-                    WinHttpTraceHelper.Trace("WinHttpHandler.IsResponseHttp2: return true");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(requestHandle, nameof(Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP2));
                     return true;
                 }
             }
