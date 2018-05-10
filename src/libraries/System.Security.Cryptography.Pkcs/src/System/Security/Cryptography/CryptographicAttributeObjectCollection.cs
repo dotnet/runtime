@@ -102,6 +102,22 @@ namespace System.Security.Cryptography
             }
         }
 
+        public bool IsSynchronized
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public object SyncRoot
+        {
+            get
+            {
+                return this;
+            }
+        }
+
         public CryptographicAttributeObjectEnumerator GetEnumerator()
         {
             return new CryptographicAttributeObjectEnumerator(this);
@@ -140,22 +156,6 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
             _list.CopyTo(array, index);
-        }
-
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                return this;
-            }
         }
 
         private readonly List<CryptographicAttributeObject> _list;
