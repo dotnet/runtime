@@ -3110,12 +3110,13 @@ mono_class_from_name_checked (MonoImage *image, const char* name_space, const ch
 MonoClass *
 mono_class_from_name (MonoImage *image, const char* name_space, const char *name)
 {
-	ERROR_DECL (error);
 	MonoClass *klass;
+	MONO_ENTER_GC_UNSAFE;
+	ERROR_DECL (error);
 
 	klass = mono_class_from_name_checked (image, name_space, name, error);
 	mono_error_cleanup (error); /* FIXME Don't swallow the error */
-
+	MONO_EXIT_GC_UNSAFE;
 	return klass;
 }
 

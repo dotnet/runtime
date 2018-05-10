@@ -426,10 +426,12 @@ mono_type_normalize (MonoType *type)
 MonoReflectionType*
 mono_type_get_object (MonoDomain *domain, MonoType *type)
 {
+	MonoReflectionType *ret;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionType *ret = mono_type_get_object_checked (domain, type, error);
+	ret = mono_type_get_object_checked (domain, type, error);
 	mono_error_cleanup (error);
-
+	MONO_EXIT_GC_UNSAFE;
 	return ret;
 }
 
