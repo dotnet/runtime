@@ -302,15 +302,22 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                int cbData = 0;
-                if (!Interop.crypt32.CertGetCertificateContextPropertyString(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, null, ref cbData))
-                    return string.Empty;
+                unsafe
+                {
+                    int cbData = 0;
+                    if (!Interop.crypt32.CertGetCertificateContextPropertyString(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, null, ref cbData))
+                        return string.Empty;
 
-                StringBuilder sb = new StringBuilder((cbData + 1) / 2);
-                if (!Interop.crypt32.CertGetCertificateContextPropertyString(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, sb, ref cbData))
-                    return string.Empty;
+                    int spanLength = (cbData + 1) / 2;
+                    Span<char> buffer = spanLength <= 256 ? stackalloc char[spanLength] : new char[spanLength];
+                    fixed (char* ptr = &MemoryMarshal.GetReference(buffer))
+                    {
+                        if (!Interop.crypt32.CertGetCertificateContextPropertyString(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, (byte*)ptr, ref cbData))
+                            return string.Empty;
+                    }
 
-                return sb.ToString();
+                    return new string(buffer.Slice(0, (cbData / 2) - 1));
+                }
             }
 
             set
@@ -386,22 +393,12 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public string GetNameInfo(X509NameType nameType, bool forIssuer)
-        {
-            CertNameType certNameType = MapNameType(nameType);
-            CertNameFlags certNameFlags = forIssuer ? CertNameFlags.CERT_NAME_ISSUER_FLAG : CertNameFlags.None;
-            CertNameStrTypeAndFlags strType = CertNameStrTypeAndFlags.CERT_X500_NAME_STR | CertNameStrTypeAndFlags.CERT_NAME_STR_REVERSE_FLAG;
-
-            int cchCount = Interop.crypt32.CertGetNameString(_certContext, certNameType, certNameFlags, ref strType, null, 0);
-            if (cchCount == 0)
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
-
-            StringBuilder sb = new StringBuilder(cchCount);
-            if (Interop.crypt32.CertGetNameString(_certContext, certNameType, certNameFlags, ref strType, sb, cchCount) == 0)
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
-
-            return sb.ToString();
-        }
+        public unsafe string GetNameInfo(X509NameType nameType, bool forIssuer) =>
+            Interop.crypt32.CertGetNameString(
+                _certContext,
+                MapNameType(nameType),
+                forIssuer ? CertNameFlags.CERT_NAME_ISSUER_FLAG : CertNameFlags.None,
+                CertNameStringType.CERT_X500_NAME_STR | CertNameStringType.CERT_NAME_STR_REVERSE_FLAG);
 
         public void AppendPrivateKeyInfo(StringBuilder sb)
         {
@@ -526,22 +523,12 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private string GetIssuerOrSubject(bool issuer)
-        {
-            CertNameFlags flags = issuer ? CertNameFlags.CERT_NAME_ISSUER_FLAG : CertNameFlags.None;
-            CertNameStringType stringType = CertNameStringType.CERT_X500_NAME_STR | CertNameStringType.CERT_NAME_STR_REVERSE_FLAG;
-
-            int cchCount = Interop.crypt32.CertGetNameString(_certContext, CertNameType.CERT_NAME_RDN_TYPE, flags, ref stringType, null, 0);
-            if (cchCount == 0)
-                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
-
-            StringBuilder sb = new StringBuilder(cchCount);
-            cchCount = Interop.crypt32.CertGetNameString(_certContext, CertNameType.CERT_NAME_RDN_TYPE, flags, ref stringType, sb, cchCount);
-            if (cchCount == 0)
-                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
-
-            return sb.ToString();
-        }
+        private unsafe string GetIssuerOrSubject(bool issuer) =>
+            Interop.crypt32.CertGetNameString(
+                _certContext,
+                CertNameType.CERT_NAME_RDN_TYPE,
+                issuer ? CertNameFlags.CERT_NAME_ISSUER_FLAG : CertNameFlags.None,
+                CertNameStringType.CERT_X500_NAME_STR | CertNameStringType.CERT_NAME_STR_REVERSE_FLAG);
 
         private CertificatePal(CertificatePal copyFrom)
         {

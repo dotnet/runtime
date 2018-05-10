@@ -78,7 +78,7 @@ internal static partial class Interop
         public static extern bool CertGetCertificateContextProperty(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, [Out] out IntPtr pvData, [In, Out] ref int pcbData);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CertGetCertificateContextProperty")]
-        public static extern bool CertGetCertificateContextPropertyString(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, [Out] StringBuilder pvData, [In, Out] ref int pcbData);
+        public static extern unsafe bool CertGetCertificateContextPropertyString(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, byte* pvData, ref int pcbData);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern unsafe bool CertSetCertificateContextProperty(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, CertSetPropertyFlags dwFlags, [In] CRYPTOAPI_BLOB* pvData);
@@ -89,8 +89,33 @@ internal static partial class Interop
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern unsafe bool CertSetCertificateContextProperty(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, CertSetPropertyFlags dwFlags, [In] SafeNCryptKeyHandle keyHandle);
 
+        public static unsafe string CertGetNameString(
+            SafeCertContextHandle certContext,
+            CertNameType certNameType,
+            CertNameFlags certNameFlags,
+            CertNameStringType strType)
+        {
+            int cchCount = CertGetNameString(certContext, certNameType, certNameFlags, strType, null, 0);
+            if (cchCount == 0)
+            {
+                throw Marshal.GetLastWin32Error().ToCryptographicException();
+            }
+
+            Span<char> buffer = cchCount <= 256 ? stackalloc char[cchCount] : new char[cchCount];
+            fixed (char* ptr = &MemoryMarshal.GetReference(buffer))
+            {
+                if (CertGetNameString(certContext, certNameType, certNameFlags, strType, ptr, cchCount) == 0)
+                {
+                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                }
+
+                Debug.Assert(buffer[cchCount - 1] == '\0');
+                return new string(buffer.Slice(0, cchCount - 1));
+            }
+        }
+
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CertGetNameStringW")]
-        public static extern int CertGetNameString(SafeCertContextHandle pCertContext, CertNameType dwType, CertNameFlags dwFlags, [In] ref CertNameStringType pvTypePara, [Out] StringBuilder pszNameString, int cchNameString);
+        private static extern unsafe int CertGetNameString(SafeCertContextHandle pCertContext, CertNameType dwType, CertNameFlags dwFlags, in CertNameStringType pvTypePara, char* pszNameString, int cchNameString);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern SafeCertContextHandle CertDuplicateCertificateContext(IntPtr pCertContext);
@@ -154,18 +179,18 @@ internal static partial class Interop
         public static extern bool PFXExportCertStore(SafeCertStoreHandle hStore, [In, Out] ref CRYPTOAPI_BLOB pPFX, SafePasswordHandle szPassword, PFXExportFlags dwFlags);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CertNameToStrW")]
-        public static extern int CertNameToStr(CertEncodingType dwCertEncodingType, [In] ref CRYPTOAPI_BLOB pName, CertNameStrTypeAndFlags dwStrType, StringBuilder psz, int csz);
+        public static extern unsafe int CertNameToStr(CertEncodingType dwCertEncodingType, [In] ref CRYPTOAPI_BLOB pName, CertNameStrTypeAndFlags dwStrType, char* psz, int csz);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CertStrToNameW")]
         public static extern bool CertStrToName(CertEncodingType dwCertEncodingType, string pszX500, CertNameStrTypeAndFlags dwStrType, IntPtr pvReserved, [Out] byte[] pbEncoded, [In, Out] ref int pcbEncoded, IntPtr ppszError);
 
-        public static bool CryptFormatObject(CertEncodingType dwCertEncodingType, FormatObjectType dwFormatType, FormatObjectStringType dwFormatStrType, IntPtr pFormatStruct, FormatObjectStructType lpszStructType, byte[] pbEncoded, int cbEncoded, StringBuilder pbFormat, ref int pcbFormat)
+        public static unsafe bool CryptFormatObject(CertEncodingType dwCertEncodingType, FormatObjectType dwFormatType, FormatObjectStringType dwFormatStrType, IntPtr pFormatStruct, FormatObjectStructType lpszStructType, byte[] pbEncoded, int cbEncoded, byte* pbFormat, ref int pcbFormat)
         {
             return CryptFormatObject(dwCertEncodingType, dwFormatType, dwFormatStrType, pFormatStruct, (IntPtr)lpszStructType, pbEncoded, cbEncoded, pbFormat, ref pcbFormat);
         }
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern bool CryptFormatObject(CertEncodingType dwCertEncodingType, FormatObjectType dwFormatType, FormatObjectStringType dwFormatStrType, IntPtr pFormatStruct, IntPtr lpszStructType, [In] byte[] pbEncoded, int cbEncoded, [Out] StringBuilder pbFormat, [In, Out] ref int pcbFormat);
+        private static extern unsafe bool CryptFormatObject(CertEncodingType dwCertEncodingType, FormatObjectType dwFormatType, FormatObjectStringType dwFormatStrType, IntPtr pFormatStruct, IntPtr lpszStructType, [In] byte[] pbEncoded, int cbEncoded, byte* pbFormat, [In, Out] ref int pcbFormat);
 
         public static bool CryptDecodeObject(CertEncodingType dwCertEncodingType, CryptDecodeObjectStructType lpszStructType, byte[] pbEncoded, int cbEncoded, CryptDecodeObjectFlags dwFlags, byte[] pvStructInfo, ref int pcbStructInfo)
         {
@@ -233,9 +258,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern bool CryptHashPublicKeyInfo(IntPtr hCryptProv, int algId, int dwFlags, CertEncodingType dwCertEncodingType, [In] ref CERT_PUBLIC_KEY_INFO pInfo, [Out] byte[] pbComputedHash, [In, Out] ref int pcbComputedHash);
-
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CertGetNameStringW")]
-        public static extern int CertGetNameString(SafeCertContextHandle pCertContext, CertNameType dwType, CertNameFlags dwFlags, [In] ref CertNameStrTypeAndFlags pvPara, [Out] StringBuilder pszNameString, int cchNameString);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern bool CertSaveStore(SafeCertStoreHandle hCertStore, CertEncodingType dwMsgAndCertEncodingType, CertStoreSaveAs dwSaveAs, CertStoreSaveTo dwSaveTo, ref CRYPTOAPI_BLOB pvSaveToPara, int dwFlags);
