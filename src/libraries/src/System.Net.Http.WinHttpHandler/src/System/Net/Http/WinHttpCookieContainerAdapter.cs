@@ -27,20 +27,18 @@ namespace System.Net.Http
             char[] buffer = null;
             uint index = 0;
             string cookieHeader;
-            WinHttpTraceHelper.Trace("WINHTTP_QUERY_SET_COOKIE");
             while (WinHttpResponseParser.GetResponseHeader(
                 requestHandle, Interop.WinHttp.WINHTTP_QUERY_SET_COOKIE, ref buffer, ref index, out cookieHeader))
             {
-                WinHttpTraceHelper.Trace(cookieHeader);
                 try
                 {
                     cookieContainer.SetCookies(request.RequestUri, cookieHeader);
-                    WinHttpTraceHelper.Trace(cookieHeader);
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(cookieContainer, $"Added cookie: {cookieHeader}");
                 }
                 catch (CookieException)
                 {
                     // We ignore malformed cookies in the response.
-                    WinHttpTraceHelper.Trace("Ignoring invalid cookie: {0}", cookieHeader);
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(cookieContainer, $"Ignoring invalid cookie: {cookieHeader}");
                 }
             }
         }

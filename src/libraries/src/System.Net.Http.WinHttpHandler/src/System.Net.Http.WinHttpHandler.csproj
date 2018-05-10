@@ -30,6 +30,7 @@
          up item called CompileItem and then just include it here. -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="@(CompileItem)" />
+    <Compile Include="System\Net\Http\NetEventSource.WinHttpHandler.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\CoreLib\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>

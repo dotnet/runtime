@@ -182,14 +182,7 @@ namespace System.Net.Http
 #if DEBUG
             Interlocked.Increment(ref s_dbg_callDispose);
 #endif
-            if (WinHttpTraceHelper.IsTraceEnabled())
-            {
-                WinHttpTraceHelper.Trace(
-                    "WinHttpRequestState.Dispose, GCHandle=0x{0:X}, disposed={1}, disposing={2}",
-                    ToIntPtr(),
-                    _disposed,
-                    disposing);
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GCHandle=0x{ToIntPtr().ToString("X")}, disposed={_disposed}, disposing={disposing}");
 
             // Since there is no finalizer and this class is sealed, the disposing parameter should be TRUE.
             Debug.Assert(disposing, "WinHttpRequestState.Dispose() should have disposing=TRUE");
