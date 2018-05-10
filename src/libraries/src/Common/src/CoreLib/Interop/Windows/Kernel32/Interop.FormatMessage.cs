@@ -64,25 +64,22 @@ internal partial class Interop
                 flags |= FORMAT_MESSAGE_FROM_HMODULE;
             }
 
-            int result;
+            int length;
             unsafe
             {
                 fixed (char* bufferPtr = &MemoryMarshal.GetReference(buffer))
                 {
-                    result = FormatMessage(flags, moduleHandle, unchecked((uint)errorCode), 0, bufferPtr, buffer.Length, null);
+                    length = FormatMessage(flags, moduleHandle, unchecked((uint)errorCode), 0, bufferPtr, buffer.Length, null);
                 }
             }
 
-            if (result != 0)
+            if (length != 0)
             {
-                int i = result;
-                while (i > 0)
+                while (length > 0 && buffer[length - 1] <= 32)
                 {
-                    char ch = buffer[i - 1];
-                    if (ch > 32 && ch != '.') break;
-                    i--;
+                    length--; // trim off spaces and non-printable ASCII chars at the end of the resource
                 }
-                errorMsg = buffer.Slice(0, i).ToString();
+                errorMsg = buffer.Slice(0, length).ToString();
             }
             else if (Marshal.GetLastWin32Error() == ERROR_INSUFFICIENT_BUFFER)
             {
