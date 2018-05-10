@@ -1137,27 +1137,30 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                 {
                     case GT_ADD:
                         // This identity does not apply for floating point (when x == -0.0)
-                        if (!varTypeIsFloating(typ))
+                        // (x + 0) == (0 + x) => x
+                        ZeroVN = VNZeroForType(typ);
+                        if (VNIsEqual(arg0VN, ZeroVN))
                         {
-                            // (x + 0) == (0 + x) => x
-                            ZeroVN = VNZeroForType(typ);
-                            if (arg0VN == ZeroVN)
-                            {
-                                resultVN = arg1VN;
-                            }
-                            else if (arg1VN == ZeroVN)
-                            {
-                                resultVN = arg0VN;
-                            }
+                            resultVN = arg1VN;
+                        }
+                        else if (VNIsEqual(arg1VN, ZeroVN))
+                        {
+                            resultVN = arg0VN;
                         }
                         break;
 
                     case GT_SUB:
+                        // This identity does not apply for floating point (when x == -0.0)
                         // (x - 0) => x
+                        // (x - x) => 0
                         ZeroVN = VNZeroForType(typ);
-                        if (arg1VN == ZeroVN)
+                        if (VNIsEqual(arg1VN, ZeroVN))
                         {
                             resultVN = arg0VN;
+                        }
+                        else if (VNIsEqual(arg0VN, arg1VN))
+                        {
+                            resultVN = ZeroVN;
                         }
                         break;
 
@@ -1249,8 +1252,12 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                         break;
 
                     case GT_EQ:
+                    case GT_GE:
+                    case GT_LE:
                         // (x == x) => true (unless x is NaN)
-                        if (!varTypeIsFloating(TypeOfVN(arg0VN)) && (arg0VN != NoVN) && (arg0VN == arg1VN))
+                        // (x <= x) => true (unless x is NaN)
+                        // (x >= x) => true (unless x is NaN)
+                        if (VNIsEqual(arg0VN, arg1VN))
                         {
                             resultVN = VNOneForType(typ);
                         }
@@ -1260,9 +1267,14 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                             resultVN = VNZeroForType(typ);
                         }
                         break;
+
                     case GT_NE:
+                    case GT_GT:
+                    case GT_LT:
                         // (x != x) => false (unless x is NaN)
-                        if (!varTypeIsFloating(TypeOfVN(arg0VN)) && (arg0VN != NoVN) && (arg0VN == arg1VN))
+                        // (x > x) => false (unless x is NaN)
+                        // (x < x) => false (unless x is NaN)
+                        if (VNIsEqual(arg0VN, arg1VN))
                         {
                             resultVN = VNZeroForType(typ);
                         }
@@ -1285,6 +1297,23 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         }
         else // must be a VNF_ function
         {
+            if (VNIsEqual(arg0VN, arg1VN))
+            {
+                // x <= x ==> true
+                // x >= x ==> true
+                if ((func == VNF_LE_UN) || (func == VNF_GE_UN))
+                {
+                    return VNOneForType(typ);
+                }
+                // x < x ==> false
+                // x > x ==> false
+                // x - x ==> 0
+                else if ((func == VNF_LT_UN) || (func == VNF_GT_UN) || (func == VNF_SUB_UN))
+                {
+                    return VNZeroForType(typ);
+                }
+            }
+
             if (func == VNF_CastClass)
             {
                 // In terms of values, a castclass always returns its second argument, the object being cast.
