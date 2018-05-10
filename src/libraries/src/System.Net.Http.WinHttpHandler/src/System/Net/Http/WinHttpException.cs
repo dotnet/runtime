@@ -72,7 +72,7 @@ namespace System.Net.Http
             // Look up specific error message in WINHTTP.DLL since it is not listed in default system resources
             // and thus can't be found by default .Net interop.
             IntPtr moduleHandle = Interop.Kernel32.GetModuleHandle(Interop.Libraries.WinHttp);
-            string httpError = Interop.Kernel32.GetMessage(moduleHandle, error);
+            string httpError = Interop.Kernel32.GetMessage(error, moduleHandle);
 
             return SR.Format(SR.net_http_winhttp_error, error, nameOfCalledFunction, httpError);
         }
