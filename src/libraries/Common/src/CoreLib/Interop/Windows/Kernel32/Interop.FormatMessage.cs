@@ -13,11 +13,8 @@ internal partial class Interop
         private const int FORMAT_MESSAGE_FROM_HMODULE = 0x00000800;
         private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
         private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
-        
+        private const int FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100;
         private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
-        private const int InitialBufferSize = 256; // small enough to be on stack, and large enough for most error messages
-        private const int BufferSizeIncreaseFactor = 4;
-        private const int MaxAllowedBufferSize = 65 * 1024;
 
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
         private static extern unsafe int FormatMessage(
@@ -25,38 +22,17 @@ internal partial class Interop
             IntPtr lpSource,
             uint dwMessageId,
             int dwLanguageId,
-            char* lpBuffer,
+            void* lpBuffer,
             int nSize,
-            IntPtr[] arguments);
+            IntPtr arguments);
 
         /// <summary>
         ///     Returns a string message for the specified Win32 error code.
         /// </summary>
-        internal static string GetMessage(int errorCode)
-        {
-            return GetMessage(IntPtr.Zero, errorCode);
-        }
+        internal static string GetMessage(int errorCode) =>
+            GetMessage(errorCode, IntPtr.Zero);
 
-        internal static string GetMessage(IntPtr moduleHandle, int errorCode)
-        {
-            Span<char> buffer = stackalloc char[InitialBufferSize];
-            do
-            {
-                if (TryGetErrorMessage(moduleHandle, errorCode, buffer, out string errorMsg))
-                {
-                    return errorMsg;
-                }
-
-                // Increase the capacity of the buffer.
-                buffer = new char[buffer.Length * BufferSizeIncreaseFactor];
-            }
-            while (buffer.Length < MaxAllowedBufferSize);
-
-            // If you come here then a size as large as 65K is also not sufficient and so we give the generic errorMsg.
-            return string.Format("Unknown error (0x{0:x})", errorCode);
-        }
-
-        private static bool TryGetErrorMessage(IntPtr moduleHandle, int errorCode, Span<char> buffer, out string errorMsg)
+        internal static unsafe string GetMessage(int errorCode, IntPtr moduleHandle)
         {
             int flags = FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ARGUMENT_ARRAY;
             if (moduleHandle != IntPtr.Zero)
@@ -64,48 +40,49 @@ internal partial class Interop
                 flags |= FORMAT_MESSAGE_FROM_HMODULE;
             }
 
-            int length;
-            unsafe
+            // First try to format the message into the stack based buffer.  Most error messages willl fit.
+            Span<char> stackBuffer = stackalloc char[256]; // arbitrary stack limit
+            fixed (char* bufferPtr = &MemoryMarshal.GetReference(stackBuffer))
             {
-                fixed (char* bufferPtr = &MemoryMarshal.GetReference(buffer))
+                int length = FormatMessage(flags, moduleHandle, unchecked((uint)errorCode), 0, bufferPtr, stackBuffer.Length, IntPtr.Zero);
+                if (length > 0)
                 {
-                    length = FormatMessage(flags, moduleHandle, unchecked((uint)errorCode), 0, bufferPtr, buffer.Length, null);
+                    return GetAndTrimString(stackBuffer.Slice(0, length));
                 }
             }
 
-            if (length != 0)
+            // We got back an error.  If the error indicated that there wasn't enough room to store
+            // the error message, then call FormatMessage again, but this time rather than passing in
+            // a buffer, have the method allocate one, which we then need to free.
+            if (Marshal.GetLastWin32Error() == ERROR_INSUFFICIENT_BUFFER)
             {
-                while (length > 0 && buffer[length - 1] <= 32)
+                IntPtr nativeMsgPtr = default;
+                try
                 {
-                    length--; // trim off spaces and non-printable ASCII chars at the end of the resource
+                    int length = FormatMessage(flags | FORMAT_MESSAGE_ALLOCATE_BUFFER, moduleHandle, unchecked((uint)errorCode), 0, &nativeMsgPtr, 0, IntPtr.Zero);
+                    if (length > 0)
+                    {
+                        return GetAndTrimString(new Span<char>((char*)nativeMsgPtr, length));
+                    }
                 }
-                errorMsg = buffer.Slice(0, length).ToString();
-            }
-            else if (Marshal.GetLastWin32Error() == ERROR_INSUFFICIENT_BUFFER)
-            {
-                errorMsg = "";
-                return false;
-            }
-            else
-            {
-                errorMsg = string.Format("Unknown error (0x{0:x})", errorCode);
+                finally
+                {
+                    Marshal.FreeHGlobal(nativeMsgPtr);
+                }
             }
 
-            return true;
+            // Couldn't get a message, so manufacture one.
+            return string.Format("Unknown error (0x{0:x})", errorCode);
         }
 
-        // Windows API FormatMessage lets you format a message string given an errorcode.
-        // Unlike other APIs this API does not support a way to query it for the total message size.
-        //
-        // So the API can only be used in one of these two ways.
-        // a. You pass a buffer of appropriate size and get the resource.
-        // b. Windows creates a buffer and passes the address back and the onus of releasing the buffer lies on the caller.
-        //
-        // Since the error code is coming from the user, it is not possible to know the size in advance.
-        // Unfortunately we can't use option b. since the buffer can only be freed using LocalFree and it is a private API on onecore.
-        // Also, using option b is ugly for the managed code and could cause memory leak in situations where freeing is unsuccessful.
-        // 
-        // As a result we use the following approach.
-        // We initially call the API with a buffer size of 256 and then gradually increase the size in case of failure until we reach the maximum allowed limit of 65K.
+        private static string GetAndTrimString(Span<char> buffer)
+        {
+            int length = buffer.Length;
+            while (length > 0 && buffer[length - 1] <= 32)
+            {
+                length--; // trim off spaces and non-printable ASCII chars at the end of the resource
+            }
+            return buffer.Slice(0, length).ToString();
+        }
     }
 }
