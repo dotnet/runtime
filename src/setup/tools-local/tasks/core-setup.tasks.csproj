@@ -15,7 +15,7 @@
       <Version>$(NugetProjectModelPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyModel">
-      <Version>1.1.1</Version>
+      <Version>2.1.0-preview2-26306-03</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'net46'">
