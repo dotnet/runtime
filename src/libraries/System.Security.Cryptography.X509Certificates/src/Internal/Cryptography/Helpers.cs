@@ -25,20 +25,24 @@ namespace Internal.Cryptography
         public static char[] ToHexArrayUpper(this byte[] bytes)
         {
             char[] chars = new char[bytes.Length * 2];
+            ToHexArrayUpper(bytes, chars);
+            return chars;
+        }
+
+        private static void ToHexArrayUpper(byte[] bytes, Span<char> chars)
+        {
+            Debug.Assert(chars.Length >= bytes.Length * 2);
             int i = 0;
             foreach (byte b in bytes)
             {
                 chars[i++] = NibbleToHex((byte)(b >> 4));
                 chars[i++] = NibbleToHex((byte)(b & 0xF));
             }
-            return chars;
         }
 
         // Encode a byte array as an upper case hex string.
-        public static string ToHexStringUpper(this byte[] bytes)
-        {
-            return new string(ToHexArrayUpper(bytes));
-        }
+        public static string ToHexStringUpper(this byte[] bytes) =>
+            string.Create(bytes.Length * 2, bytes, (chars, src) => ToHexArrayUpper(src, chars));
 
         // Decode a hex string-encoded byte array passed to various X509 crypto api.
         // The parsing rules are overly forgiving but for compat reasons, they cannot be tightened.
