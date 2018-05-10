@@ -216,10 +216,10 @@ public:
     ///
 
     // Implementation of ICorDebugManagedCallback4::BeforeGarbageCollection
-    COM_METHOD ShimProxyCallback::BeforeGarbageCollection(ICorDebugController* pController);
+    COM_METHOD ShimProxyCallback::BeforeGarbageCollection(ICorDebugProcess* pProcess);
 
     // Implementation of ICorDebugManagedCallback4::AfterGarbageCollection
-    COM_METHOD ShimProxyCallback::AfterGarbageCollection(ICorDebugController* pController);
+    COM_METHOD ShimProxyCallback::AfterGarbageCollection(ICorDebugProcess* pProcess);
 };
 
 

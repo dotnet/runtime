@@ -707,6 +707,7 @@ HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface)
 //-----------------------------------------------------------------------------
 void Debugger::SendSimpleIPCEventAndBlock()
 {
+    // TODO, databp, enable these contracts
     /*
     CONTRACTL
     {
@@ -5450,6 +5451,7 @@ DebuggerModule* Debugger::AddDebuggerModule(DomainFile * pDomainFile)
 // Neither pDbgLockHolder nor pAppDomain are used.
 void Debugger::TrapAllRuntimeThreads()
 {
+    // TODO, databp, enable these contracts
     /*
     CONTRACTL
     {

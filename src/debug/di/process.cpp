@@ -5021,7 +5021,7 @@ void CordbProcess::RawDispatchEvent(
         {
             {
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                pCallback4->BeforeGarbageCollection(static_cast<ICorDebugController*>(this));
+                pCallback4->BeforeGarbageCollection(static_cast<ICorDebugProcess*>(this));
             }
             break;
         }
@@ -5030,7 +5030,7 @@ void CordbProcess::RawDispatchEvent(
         {
             {
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                pCallback4->AfterGarbageCollection(static_cast<ICorDebugController*>(this));
+                pCallback4->AfterGarbageCollection(static_cast<ICorDebugProcess*>(this));
             }
             break;
         }
