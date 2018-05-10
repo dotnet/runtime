@@ -20,8 +20,8 @@ namespace System.Security.Cryptography
         public CryptographicAttributeObjectCollection(System.Security.Cryptography.CryptographicAttributeObject attribute) { }
         public int Count { get { throw null; } }
         public System.Security.Cryptography.CryptographicAttributeObject this[int index] { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        public bool IsSynchronized { get { throw null; } }
+        public object SyncRoot { get { throw null; } }
         public int Add(System.Security.Cryptography.AsnEncodedData asnEncodedData) { throw null; }
         public int Add(System.Security.Cryptography.CryptographicAttributeObject attribute) { throw null; }
         public void CopyTo(System.Security.Cryptography.CryptographicAttributeObject[] array, int index) { }
