@@ -38,7 +38,7 @@ internal static partial class Interop
 
     internal static partial class Kernel32
     {
-        public static string GetMessage(IntPtr moduleName, int error)
+        public static string GetMessage(int error, IntPtr moduleName)
         {
             string messageFormat = "Fake error message, error code: {0}";
             return string.Format(messageFormat, error);
