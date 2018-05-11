@@ -7576,8 +7576,8 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 	// so this check might not be needed.
 	ArgInfo const * const ainfo = callee_info->args + callee_sig->hasthis;
 	for (int i = 0; res && i < callee_sig->param_count; ++i) {
-		res = IS_SUPPORTED_TAILCALL (ainfo [i].storage != RegTypeStructByAddr)
-			&& IS_SUPPORTED_TAILCALL (ainfo [i].storage != RegTypeStructByAddrOnStack);
+		res = IS_SUPPORTED_TAILCALL (ainfo [i].regtype != RegTypeStructByAddr)
+			&& IS_SUPPORTED_TAILCALL (ainfo [i].regtype != RegTypeStructByAddrOnStack);
 	}
 
 	g_free (caller_info);
