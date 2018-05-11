@@ -15,6 +15,10 @@
 #define _DARWIN_C_SOURCE 1
 #endif
 
+#if defined (__HAIKU__)
+#include <os/kernel/OS.h>
+#endif
+
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/metadata/gc-internals.h>
@@ -226,6 +230,14 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 		strncpy (n, name, sizeof (n) - 1);
 		n [sizeof (n) - 1] = '\0';
 		pthread_setname_np (n);
+	}
+#elif defined (__HAIKU__)
+	thread_id haiku_tid;
+	haiku_tid = get_pthread_thread_id (tid);
+	if (!name) {
+		rename_thread (haiku_tid, "");
+	} else {
+		rename_thread (haiku_tid, name);
 	}
 #elif defined (__NetBSD__)
 	if (!name) {
