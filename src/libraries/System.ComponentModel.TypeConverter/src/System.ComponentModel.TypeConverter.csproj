@@ -37,7 +37,6 @@
     <Compile Include="System\ComponentModel\StringConverter.cs" />
     <Compile Include="System\ComponentModel\TimeSpanConverter.cs" />
     <Compile Include="System\ComponentModel\TypeConverter.cs" />
-    <Compile Include="System\ComponentModel\TypeConverterAttribute.cs" />
     <Compile Include="System\ComponentModel\TypeListConverter.cs" />
     <Compile Include="System\ComponentModel\UInt16Converter.cs" />
     <Compile Include="System\ComponentModel\UInt32Converter.cs" />
