@@ -159,6 +159,7 @@
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.ObjectModel" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />

@@ -457,6 +457,7 @@
     <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.ObjectModel" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />

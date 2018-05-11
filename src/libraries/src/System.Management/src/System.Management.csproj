@@ -71,6 +71,7 @@
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.ObjectModel" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />

@@ -11,6 +11,8 @@ using System.Runtime.Serialization;
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.InvalidEnumArgumentException))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.Component))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.ISupportInitialize))]
+// moved to System.ObjectModel
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.TypeConverterAttribute))]
 
 namespace System
 {
@@ -559,17 +561,6 @@ namespace System.ComponentModel
             public void CopyTo(System.Array array, int index) { }
             public System.Collections.IEnumerator GetEnumerator() { throw null; }
         }
-    }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(32767))]
-    public sealed partial class TypeConverterAttribute : System.Attribute
-    {
-        public static readonly System.ComponentModel.TypeConverterAttribute Default;
-        public TypeConverterAttribute() { }
-        public TypeConverterAttribute(string typeName) { }
-        public TypeConverterAttribute(System.Type type) { }
-        public string ConverterTypeName { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
-        public override int GetHashCode() { throw null; }
     }
     public abstract partial class TypeDescriptionProvider
     {
