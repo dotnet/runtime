@@ -92,6 +92,7 @@ public class TermInfo
             object info = CreateTermColorInfo(db);
             Assert.Equal(expectedForeground, EvaluateParameterizedStrings(GetForegroundFormat(info), colorValue));
             Assert.Equal(expectedBackground, EvaluateParameterizedStrings(GetBackgroundFormat(info), colorValue));
+            Assert.InRange(GetMaxColors(info), 1, int.MaxValue);
         }
     }
 

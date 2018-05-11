@@ -101,8 +101,8 @@ namespace System
             private readonly int _nameSectionNumBytes;
             /// <summary>The number of bytes in the Booleans section of the database.</summary>
             private readonly int _boolSectionNumBytes;
-            /// <summary>The number of shorts in the numbers section of the database.</summary>
-            private readonly int _numberSectionNumShorts;
+            /// <summary>The number of integers in the numbers section of the database.</summary>
+            private readonly int _numberSectionNumInts;
             /// <summary>The number of offsets in the strings section of the database.</summary>
             private readonly int _stringSectionNumOffsets;
             /// <summary>The number of bytes in the strings table of the database.</summary>
@@ -134,12 +134,12 @@ namespace System
 
                 _nameSectionNumBytes = ReadInt16(data, 2);
                 _boolSectionNumBytes = ReadInt16(data, 4);
-                _numberSectionNumShorts = ReadInt16(data, 6);
+                _numberSectionNumInts = ReadInt16(data, 6);
                 _stringSectionNumOffsets = ReadInt16(data, 8);
                 _stringTableNumBytes = ReadInt16(data, 10);
                 if (_nameSectionNumBytes < 0 ||
                     _boolSectionNumBytes < 0 ||
-                    _numberSectionNumShorts < 0 ||
+                    _numberSectionNumInts < 0 ||
                     _stringSectionNumOffsets < 0 ||
                     _stringTableNumBytes < 0)
                 {
@@ -285,7 +285,7 @@ namespace System
             /// The offset into data where the string offsets section begins.  We index into this section
             /// to find the location within the strings table where a string value exists.
             /// </summary>
-            private int StringOffsetsOffset { get { return NumbersOffset + (_numberSectionNumShorts * _sizeOfInt); } }
+            private int StringOffsetsOffset { get { return NumbersOffset + (_numberSectionNumInts * _sizeOfInt); } }
 
             /// <summary>The offset into data where the string table exists.</summary>
             private int StringsTableOffset { get { return StringOffsetsOffset + (_stringSectionNumOffsets * 2); } }
@@ -337,14 +337,14 @@ namespace System
                 int index = (int)numberIndex;
                 Debug.Assert(index >= 0);
 
-                if (index >= _numberSectionNumShorts)
+                if (index >= _numberSectionNumInts)
                 {
                     // Some terminfo files may not contain enough entries to actually
                     // have the requested one.
                     return -1;
                 }
 
-                return ReadInt16(_data, NumbersOffset + (index * 2));
+                return ReadInt(_data, NumbersOffset + (index * _sizeOfInt), _readAs32Bit);
             }
 
             /// <summary>Parses the extended string information from the terminfo data.</summary>
