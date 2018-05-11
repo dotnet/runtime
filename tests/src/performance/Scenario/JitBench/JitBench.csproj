@@ -54,8 +54,5 @@
           Overwrite="true"
           Encoding="Unicode"/>
   </Target>
-  <Target Name="AfterBuild">
-      <Copy SourceFiles="Resources\word2vecnet.patch" DestinationFolder="$(OutDir)" />
-  </Target>
   
 </Project>
