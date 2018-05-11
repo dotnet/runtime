@@ -58,13 +58,13 @@
         // s4[j].a2 = 16;
         ldloca.s   s4
         ldloc      j
-        conv.i8
+        conv.i
         ldc.i4.s   84
-        conv.i8
+        conv.i
         mul
         add
         ldc.i4.s   80
-        conv.i8
+        conv.i
         add
         ldc.i4.s   16
         stind.i4
@@ -72,16 +72,16 @@
         // s4[i] = s4[j];
         ldloca.s   s4
         ldloc      i
-        conv.i8
+        conv.i
         ldc.i4.s   84
-        conv.i8
+        conv.i
         mul
         add
         ldloca.s   s4
         ldloc      j
-        conv.i8
+        conv.i
         ldc.i4.s   84
-        conv.i8
+        conv.i
         mul
         add
         ldc.i4.s   84
@@ -92,9 +92,9 @@
         ldloca.s   s2
         ldloca.s   s4
         ldloc      i
-        conv.i8
+        conv.i
         ldc.i4.s   84
-        conv.i8
+        conv.i
         mul
         add
         ldc.i4.s   84
@@ -104,13 +104,13 @@
         // if (s4[i].a2 != 16) goto F1
         ldloca.s   s4
         ldloc      i
-        conv.i8
+        conv.i
         ldc.i4.s   84
-        conv.i8
+        conv.i
         mul
         add
         ldc.i4.s   80
-        conv.i8
+        conv.i
         add
         ldind.i4
         ldc.i4.s   16
