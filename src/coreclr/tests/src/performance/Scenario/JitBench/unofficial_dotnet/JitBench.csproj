@@ -55,10 +55,5 @@
 
   <!-- The CoreCLR test build system requires a target named RestorePackage in order to do BatchRestore -->
   <Target Name="RestorePackage" DependsOnTargets="Restore" />
-  <Target Name="CustomCopyContent" AfterTargets="AfterBuild">
-    <Copy SourceFiles="..\Resources\word2vecnet.patch" DestinationFolder="$(OutDir)" />
-  </Target>
-  <Target Name="CustomCopyContentOnPublish" AfterTargets="AfterPublish">
-    <Copy SourceFiles="..\Resources\word2vecnet.patch" DestinationFolder="$(PublishDir)" />
-  </Target>
+
 </Project>
