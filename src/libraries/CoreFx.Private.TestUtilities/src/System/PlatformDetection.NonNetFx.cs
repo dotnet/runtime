@@ -14,6 +14,7 @@ namespace System
         public static bool IsNetfx462OrNewer => false;
         public static bool IsNetfx470OrNewer => false;
         public static bool IsNetfx471OrNewer => false;
+        public static bool IsNetfx472OrNewer => false;
 
 
         [DllImport("libc", ExactSpelling = true, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]

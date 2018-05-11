@@ -24,6 +24,8 @@ namespace System
 
         public static bool IsNetfx471OrNewer => GetFrameworkVersion() >= new Version(4, 7, 1);
 
+        public static bool IsNetfx472OrNewer => GetFrameworkVersion() >= new Version(4, 7, 2);
+
         public static string LibcRelease => "";
         public static string LibcVersion => "";
 
