@@ -32,6 +32,7 @@
     <Compile Include="SQL\ParameterTest\DateTimeVariantTest.cs" />
     <Compile Include="SQL\ParameterTest\OutputParameter.cs" />
     <Compile Include="SQL\ParameterTest\ParametersTest.cs" />
+    <Compile Include="SQL\ParameterTest\SqlAdapterUpdateBatch.cs" />
     <Compile Include="SQL\ParameterTest\SqlVariantParam.cs" />
     <Compile Include="SQL\ParameterTest\SteAttribute.cs" />
     <Compile Include="SQL\ParameterTest\SteParam.cs" />
