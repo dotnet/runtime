@@ -12913,12 +12913,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             DO_LDFTN:
                 op1 = impMethodPointer(&resolvedToken, &callInfo);
+
                 if (compDonotInline())
                 {
                     return;
                 }
 
+                // Call info may have more precise information about the function than
+                // the resolved token.
                 CORINFO_RESOLVED_TOKEN* heapToken = impAllocateToken(resolvedToken);
+                assert(callInfo.hMethod != nullptr);
+                heapToken->hMethod = callInfo.hMethod;
                 impPushOnStack(op1, typeInfo(heapToken));
 
                 break;
@@ -13025,8 +13030,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 CORINFO_RESOLVED_TOKEN* heapToken = impAllocateToken(resolvedToken);
+
                 assert(heapToken->tokenType == CORINFO_TOKENKIND_Method);
+                assert(callInfo.hMethod != nullptr);
+
                 heapToken->tokenType = CORINFO_TOKENKIND_Ldvirtftn;
+                heapToken->hMethod   = callInfo.hMethod;
                 impPushOnStack(fptr, typeInfo(heapToken));
 
                 break;
