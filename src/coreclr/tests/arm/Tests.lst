@@ -94708,3 +94708,11 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
+[GitHub_17585.cmd_11895]
+RelativePath=JIT\Regression\JitBlue\GitHub_17585\GitHub_17585\GitHub_17585.cmd
+WorkingDir=JIT\Regression\JitBlue\GitHub_17585\GitHub_17585
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_FAIL;17585;EXCLUDED
+HostStyle=0
+
