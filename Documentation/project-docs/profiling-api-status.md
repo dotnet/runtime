@@ -14,10 +14,6 @@ The .NET Core project started with the codebase from the desktop CoreCLR/Silverl
 
 The implementation of this API was making some questionable assumptions about Windows OS API behavior in order to walk callstacks asynchronously. When operating in this async mode we aren't yet confident we can produce reasonable implementations for other platforms. Our understanding is that most users of this API are attempting to do sample based profiling. If so we think it may be easier to offer a runtime provided event stream of sample callstacks to accomplish the same scenario without needing the API, but we also haven't heard any demand for it. Feedback welcome!
 
-### Profiler does not disable Concurrent GC
-
-See github issue [#13153](https://github.com/dotnet/coreclr/issues/13153) for more details.
-
 ### ReJIT on ARM
 
 ReJIT feature is only available on x86/x64 for now. 
