@@ -97,6 +97,7 @@
     <Reference Include="System.IO" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.FileSystem.Watcher" />
+    <Reference Include="System.ObjectModel" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
