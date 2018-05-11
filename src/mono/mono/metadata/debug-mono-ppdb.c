@@ -415,7 +415,14 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 
 	method_idx = mono_metadata_token_index (method->token);
 
-	mono_metadata_decode_row (&tables [MONO_TABLE_METHODBODY], method_idx-1, cols, MONO_METHODBODY_SIZE);
+	MonoTableInfo *methodbody_table = &tables [MONO_TABLE_METHODBODY];
+	if (G_UNLIKELY (method_idx - 1 >= methodbody_table->rows)) {
+		char *method_name = mono_method_full_name (method, FALSE);
+		g_error ("Method idx %d is greater than number of rows (%d) in PPDB MethodDebugInformation table, for method %s in '%s'. Likely a malformed PDB file.",
+			   method_idx - 1, methodbody_table->rows, method_name, image->name);
+		g_free (method_name);
+	}
+	mono_metadata_decode_row (methodbody_table, method_idx - 1, cols, MONO_METHODBODY_SIZE);
 
 	docidx = cols [MONO_METHODBODY_DOCUMENT];
 
