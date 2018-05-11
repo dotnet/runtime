@@ -3,7 +3,7 @@
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <!-- Setting NETCoreAppMaximumVersion to a high version so that the sdk doesn't complain if we're restoring/publishing for a higher version than the sdk. -->
     <NETCoreAppMaximumVersion>99.9</NETCoreAppMaximumVersion>
-    <PackageConflictPreferredPackages Condition="'$(TargetFramework)' != 'netcoreapp2.0'">Microsoft.Private.CoreFx.NETCoreApp;runtime.$(RID).Microsoft.Private.CoreFx.NETCoreApp;$(PackageConflictPreferredPackages)</PackageConflictPreferredPackages>
+    <PackageConflictPreferredPackages Condition="'$(TargetFramework)' != 'netcoreapp2.0'">Microsoft.Private.CoreFx.NETCoreApp;runtime.$(RuntimeIdentifiers).Microsoft.Private.CoreFx.NETCoreApp;$(PackageConflictPreferredPackages)</PackageConflictPreferredPackages>
     <DisableImplicitFrameworkReferences Condition="$(TargetFramework.Contains('netcoreapp'))">true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
 
@@ -12,7 +12,7 @@
    </ItemGroup>
    <ItemGroup Condition="'$(TargetFramework)' != 'netcoreapp2.0'">
     <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="$(PrivateCorefxPackageVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.1.0-*" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.2.0-*" />
    </ItemGroup>
    <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />

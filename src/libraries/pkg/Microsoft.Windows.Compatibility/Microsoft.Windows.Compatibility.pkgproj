@@ -2,12 +2,14 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+      <!-- We use the PackageVersion property defined in Packaging.props for the Prerelease packages which are using it to be built -->
+    <_PreReleasePackageVersion>$(PackageVersion)</_PreReleasePackageVersion>
     <PackageVersion>2.1.0</PackageVersion>
     <ServiceModelVersion>4.4.1</ServiceModelVersion>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <PrereleaseLibraryPackage>
-      <Version>4.5.0</Version>
+      <Version>$(_PreReleasePackageVersion)</Version>
     </PrereleaseLibraryPackage>
   </ItemDefinitionGroup>
   <ItemGroup>
