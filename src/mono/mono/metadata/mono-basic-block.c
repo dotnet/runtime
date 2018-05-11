@@ -611,7 +611,7 @@ mono_opcode_value_and_size (const unsigned char **ip, const unsigned char *end, 
 		entries = read32 (p + 1);
 		if (entries >= (0xFFFFFFFFU / 4))
 			return -1;
-		size = 4 + 4 * entries;
+		size = 5 + 4 * entries;
 		break;
 	}
 	default:
