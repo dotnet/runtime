@@ -145,6 +145,11 @@
     <Compile Include="Reflection\MethodUsedViaReflection.cs" />
     <Compile Include="Reflection\PropertyUsedViaReflection.cs" />
     <Compile Include="Reflection\TypeUsedViaReflection.cs" />
+    <Compile Include="Reflection\TypeUsedViaReflectionAssemblyDoesntExist.cs" />
+    <Compile Include="Reflection\TypeUsedViaReflectionLdstrIncomplete.cs" />
+    <Compile Include="Reflection\TypeUsedViaReflectionLdstrValidButChanged.cs" />
+    <Compile Include="Reflection\TypeUsedViaReflectionTypeDoesntExist.cs" />
+    <Compile Include="Reflection\TypeUsedViaReflectionTypeNameIsSymbol.cs" />
     <Compile Include="Reflection\UsedViaReflectionIntegrationTest.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly.cs" />
     <Compile Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1.cs" />

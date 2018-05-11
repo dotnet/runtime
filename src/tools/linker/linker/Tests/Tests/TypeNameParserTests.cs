@@ -90,6 +90,28 @@ namespace Mono.Linker.Tests {
 			Assert.That (assemblyName, Is.Null);
 		}
 
+		[Test]
+		public void MissingTypeName ()
+		{
+			Assert.That (TypeNameParser.TryParseTypeAssemblyQualifiedName (", System", out string typeName, out string assemblyName), Is.False);
+			Assert.That (typeName, Is.Null);
+			Assert.That (assemblyName, Is.Null);
+		}
+
+		
+		[TestCase ("A[]][")]
+		[TestCase ("A][")]
+		[TestCase ("A[")]
+		[TestCase (",    ,    ")]
+		[TestCase (", , , ")]
+		[TestCase (", , , , ")]
+		public void InvalidValues (string name)
+		{
+			Assert.That (TypeNameParser.TryParseTypeAssemblyQualifiedName (name, out string typeName, out string assemblyName), Is.False);
+			Assert.That (typeName, Is.Null);
+			Assert.That (assemblyName, Is.Null);
+		}
+
 		class SampleNestedType {
 		}
 
