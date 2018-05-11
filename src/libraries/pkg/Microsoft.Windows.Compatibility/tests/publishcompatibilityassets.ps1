@@ -1,7 +1,7 @@
 param (
-$targetFramework = "netcoreapp2.1",
-$runtimeVersion = "2.1.0-*",
-$refDirName = "netcoreapp21_compat",
+$targetFramework = "netcoreapp2.2",
+$runtimeVersion = "2.2.0-*",
+$refDirName = "netcoreapp22_compat",
 $rid = "win7-x64"
 )
 
@@ -44,9 +44,11 @@ $restoreSources = -join("https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.
 $compatPackageVersion = _getPackageVersion "Microsoft.Windows.Compatibility"
 $privatePackageVersion = _getPackageVersion "Microsoft.Private.CoreFx.NETCoreApp"
 
-& $dotnetPath restore --packages $packagesCachePath /p:RestoreSources="$restoreSources" /p:TargetFramework=$targetFramework /p:CompatibilityPackageVersion=$compatPackageVersion /p:PrivateCorefxPackageVersion=$privatePackageVersion /p:RID=$rid $csprojPath
+Write-Output "Calling dotnet restore"
+& $dotnetPath restore --packages $packagesCachePath /p:RestoreSources="$restoreSources" /p:TargetFramework=$targetFramework /p:CompatibilityPackageVersion=$compatPackageVersion /p:PrivateCorefxPackageVersion=$privatePackageVersion /p:RuntimeIdentifiers=$rid $csprojPath
 
-& $dotnetPath publish -r $rid /p:RestoreSources="$restoreSources" /p:TargetFramework=$targetFramework /p:CompatibilityPackageVersion=$compatPackageVersion /p:RuntimeFrameworkVersion=$runtimeFramework /p:PrivateCorefxPackageVersion=$privatePackageVersion /p:RID=$rid $csprojPath
+Write-Output "Calling dotnet publish"
+& $dotnetPath publish -r $rid /p:RestoreSources="$restoreSources" /p:TargetFramework=$targetFramework /p:CompatibilityPackageVersion=$compatPackageVersion /p:RuntimeFrameworkVersion=$runtimeFramework /p:PrivateCorefxPackageVersion=$privatePackageVersion /p:RuntimeIdentifiers=$rid $csprojPath
 
 $outputPath = -join($PSScriptRoot, "\bin\Debug\", $targetFramework, "\", $rid, "\publish\refs\")
 
