@@ -10751,7 +10751,8 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         bool srcSingleLclVarAsg  = false;
         bool destSingleLclVarAsg = false;
 
-        if ((destLclVar != nullptr) && (srcLclVar == destLclVar) && (destFldSeq == srcFldSeq))
+        if ((destLclVar != nullptr) && (srcLclVar == destLclVar) && (destFldSeq == srcFldSeq) &&
+            destFldSeq != FieldSeqStore::NotAField())
         {
             // Self-assign; no effect.
             GenTree* nop = gtNewNothingNode();
