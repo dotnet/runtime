@@ -3,15 +3,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Reflection;
 using Microsoft.Xunit.Performance.Api;
 using System.Runtime.InteropServices;
+using System.Globalization;
 
 namespace JitBench
 {
-    class Word2VecBenchmark : MLBenchmark
+    class Word2VecBenchmark : Benchmark
     {
-        public Word2VecBenchmark() : base("Word2Vec") { }
+        private static readonly HashSet<int> DefaultExitCodes = new HashSet<int>(new[] { 0 });
+
+        public Word2VecBenchmark() : base("Word2Vec")
+        {
+            ExePath = "Word2VecScenario.dll";
+        }
 
         public override bool IsArchitectureSupported(Architecture arch)
         {
@@ -24,27 +29,9 @@ namespace JitBench
             //unless customers tell us its a problem'. I'm OK telling people not to use tiered jitting 
             //if their app already uses most of the address space on x86, and having an intermitently 
             //failing test in a perf suite won't give us useful info hence x64 only for this one.
+
             return arch == Architecture.X64;
         }
-
-        protected override string ExecutableName => "Word2VecScenario.dll";
-
-        protected override string GetWord2VecNetSrcDirectory(string outputDir)
-        {
-            return Path.Combine(GetWord2VecNetRepoRootDir(outputDir), "Word2VecScenario");
-        }
-    }
-
-    abstract class MLBenchmark : Benchmark
-    {
-        private static readonly HashSet<int> DefaultExitCodes = new HashSet<int>(new[] { 0 });
-
-        public MLBenchmark(string name) : base(name)
-        {
-            ExePath = ExecutableName;
-        }
-
-        protected abstract string ExecutableName { get; }
 
         public override async Task Setup(DotNetInstallation dotNetInstall, string outputDir, bool useExistingSetup, ITestOutputHelper output)
         {
@@ -67,11 +54,8 @@ namespace JitBench
             string word2VecNetRepoRootDir = GetWord2VecNetRepoRootDir(outputDir);
             FileTasks.DeleteDirectory(word2VecNetRepoRootDir, output);
 
-            string word2VecPatchFullPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), Word2VecNetPatch);
-
             await ExecuteGitCommand($"clone {Word2VecNetRepoUrl} {word2VecNetRepoRootDir}", output);
             await ExecuteGitCommand($"checkout {Word2VecNetCommitSha1Id}", output, workingDirectory: word2VecNetRepoRootDir);
-            await ExecuteGitCommand($"apply {word2VecPatchFullPath}", output, workingDirectory: word2VecNetRepoRootDir);
         }
 
         async Task ExecuteGitCommand(string arguments, ITestOutputHelper output, string workingDirectory = null)
@@ -146,6 +130,7 @@ namespace JitBench
             double? trainingTime = null;
             double? firstSearchTime = null;
             double? steadyStateMedianTime = null;
+            var currentDecimalSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
 
             using (var reader = new StringReader(stdout))
             {
@@ -166,7 +151,7 @@ namespace JitBench
                         continue;
                     }
 
-                    match = Regex.Match(line, @"^Steadystate median search time: \s*(\d+\.\d+)ms$");
+                    match = Regex.Match(line, $@"^Steadystate median search time: \s*(\d+\{currentDecimalSeparator}\d+)ms$");
                     if (match.Success && match.Groups.Count == 2)
                     {
                         //many lines will match, but the final values of these variables will be from the last batch which is presumably the
@@ -226,7 +211,10 @@ namespace JitBench
             return Path.Combine(outputDir, "W"); 
         }
 
-        protected abstract string GetWord2VecNetSrcDirectory(string outputDir);
+        protected string GetWord2VecNetSrcDirectory(string outputDir)
+        {
+            return Path.Combine(GetWord2VecNetRepoRootDir(outputDir), "Word2VecScenario");
+        }
 
         string GetWord2VecNetPublishDirectory(DotNetInstallation dotNetInstall, string outputDir, string tfm)
         {
@@ -257,15 +245,11 @@ namespace JitBench
             return workspace;
         }
 
-        private const string Word2VecNetRepoUrl = "https://github.com/eabdullin/Word2Vec.Net";
-        private const string Word2VecNetCommitSha1Id = "6012a2b5b886926918d51b1b56387d785115f448";
-        private const string Word2VecNetPatch = "word2vecnet.patch";
-        private const string EnvironmentFileName = "Word2VecNetEnvironment.txt";
-        private const string StoreDirName = ".store";
+        private const string Word2VecNetRepoUrl = "https://github.com/dotnet-perf-bot/Word2Vec.Net.git";
+        private const string Word2VecNetCommitSha1Id = "bbf60216bd735ba2ccc3a54570ce735789968f2d";
         private readonly Metric TrainingMetric = new Metric("Training", "ms");
         private readonly Metric FirstSearchMetric = new Metric("First Search", "ms");
         private readonly Metric MedianSearchMetric = new Metric("Median Search", "ms");
-        private readonly Metric MeanSearchMetric = new Metric("Mean Search", "ms");
     }
 }
 
