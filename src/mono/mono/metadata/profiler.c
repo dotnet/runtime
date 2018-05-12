@@ -1041,7 +1041,7 @@ mono_profiler_install_thread (MonoLegacyProfileThreadFunc start, MonoLegacyProfi
 }
 
 static void
-gc_event_cb (MonoProfiler *prof, MonoProfilerGCEvent event, uint32_t generation)
+gc_event_cb (MonoProfiler *prof, MonoProfilerGCEvent event, uint32_t generation, gboolean is_serial)
 {
 	prof->gc_event (prof->profiler, event, generation);
 }

@@ -148,8 +148,6 @@ get_boot_time (void)
 gint64
 mono_msec_boottime (void)
 {
-	gint64 retval = 0;
-
 	/* clock_gettime () is found by configure on Apple builds, but its only present from ios 10, macos 10.12, tvos 10 and watchos 3 */
 #if !defined (TARGET_WASM) && ((defined(HAVE_CLOCK_MONOTONIC_COARSE) || defined(HAVE_CLOCK_MONOTONIC)) && !(defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS)))
 	clockid_t clockType =
@@ -161,9 +159,9 @@ mono_msec_boottime (void)
 	struct timespec ts;
 	if (clock_gettime (clockType, &ts) != 0) {
 		g_error ("clock_gettime(CLOCK_MONOTONIC*) failed; errno is %d", errno, strerror (errno));
-		goto exit;
+		return 0;
 	}
-	retval = (ts.tv_sec * tccSecondsToMillieSeconds) + (ts.tv_nsec / tccMillieSecondsToNanoSeconds);
+	return (ts.tv_sec * tccSecondsToMillieSeconds) + (ts.tv_nsec / tccMillieSecondsToNanoSeconds);
 
 #elif HAVE_MACH_ABSOLUTE_TIME
 	static gboolean timebase_inited;
@@ -178,31 +176,29 @@ mono_msec_boottime (void)
 		mono_memory_barrier ();
 		timebase_inited = TRUE;
 	}
-	retval = (mach_absolute_time () * s_TimebaseInfo.numer / s_TimebaseInfo.denom) / tccMillieSecondsToNanoSeconds;
+	return (mach_absolute_time () * s_TimebaseInfo.numer / s_TimebaseInfo.denom) / tccMillieSecondsToNanoSeconds;
 
 #elif HAVE_GETHRTIME
-	retval = (gint64)(gethrtime () / tccMillieSecondsToNanoSeconds);
+	return (gint64)(gethrtime () / tccMillieSecondsToNanoSeconds);
 
 #elif HAVE_READ_REAL_TIME
 	timebasestruct_t tb;
 	read_real_time (&tb, TIMEBASE_SZ);
 	if (time_base_to_time (&tb, TIMEBASE_SZ) != 0) {
 		g_error ("time_base_to_time() failed; errno is %d (%s)", errno, strerror (errno));
-		goto exit;
+		return 0;
 	}
-	retval = (tb.tb_high * tccSecondsToMillieSeconds) + (tb.tb_low / tccMillieSecondsToNanoSeconds);
+	return (tb.tb_high * tccSecondsToMillieSeconds) + (tb.tb_low / tccMillieSecondsToNanoSeconds);
 
 #else
 	struct timeval tv;
 	if (gettimeofday (&tv, NULL) == -1) {
 		g_error ("gettimeofday() failed; errno is %d (%s)", errno, strerror (errno));
-		goto exit;
+		return 0;
 	}
-    retval = (tv.tv_sec * tccSecondsToMillieSeconds) + (tv.tv_usec / tccMillieSecondsToMicroSeconds);
+    return (tv.tv_sec * tccSecondsToMillieSeconds) + (tv.tv_usec / tccMillieSecondsToMicroSeconds);
 
 #endif /* HAVE_CLOCK_MONOTONIC */
-exit:
-	return retval;
 }
 
 /* Returns the number of 100ns ticks from unspecified time: this should be monotonic */
