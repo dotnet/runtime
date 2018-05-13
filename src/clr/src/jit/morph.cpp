@@ -10744,20 +10744,23 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             }
         }
 
+        // Check to see if we are doing a copy to/from the same local block.
+        // If so, morph it to a nop.
+        if ((destLclVar != nullptr) && (srcLclVar == destLclVar) && (destFldSeq == srcFldSeq) &&
+            destFldSeq != FieldSeqStore::NotAField())
+        {
+            JITDUMP("Self-copy; replaced with a NOP.\n");
+            GenTree* nop = gtNewNothingNode();
+            INDEBUG(nop->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            return nop;
+        }
+
         // Check to see if we are required to do a copy block because the struct contains holes
         // and either the src or dest is externally visible
         //
         bool requiresCopyBlock   = false;
         bool srcSingleLclVarAsg  = false;
         bool destSingleLclVarAsg = false;
-
-        if ((destLclVar != nullptr) && (srcLclVar == destLclVar) && (destFldSeq == srcFldSeq))
-        {
-            // Self-assign; no effect.
-            GenTree* nop = gtNewNothingNode();
-            INDEBUG(nop->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-            return nop;
-        }
 
         // If either src or dest is a reg-sized non-field-addressed struct, keep the copyBlock.
         if ((destLclVar != nullptr && destLclVar->lvRegStruct) || (srcLclVar != nullptr && srcLclVar->lvRegStruct))
