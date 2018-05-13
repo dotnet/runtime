@@ -114,7 +114,7 @@ An application may also add tags and baggage to the current activity when proces
 Note that in the [Incoming Request Sample](#starting-and-stopping-activity), we pass `HttpContext` to DiagnosticSource, so that the application has access to the request properties in order to enrich the current activity.
 
 ### Subscribe to DiagnosticSource
-```
+```C#
     DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
     {
         if (listener.Name == "MyActivitySource")
@@ -132,7 +132,7 @@ Note that in the [Incoming Request Sample](#starting-and-stopping-activity), we 
 
 ### Log Events
 
-```
+```C#
     public void LogActivityStart()
     {
         var document = new Dictionary<string,object>
