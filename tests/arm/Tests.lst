@@ -94713,6 +94713,6 @@ RelativePath=JIT\Regression\JitBlue\GitHub_17585\GitHub_17585\GitHub_17585.cmd
 WorkingDir=JIT\Regression\JitBlue\GitHub_17585\GitHub_17585
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;17585;EXCLUDED
+Categories=EXPECTED_PASS
 HostStyle=0
 
