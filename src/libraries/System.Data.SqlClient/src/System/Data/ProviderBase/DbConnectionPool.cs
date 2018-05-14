@@ -669,40 +669,6 @@ namespace System.Data.ProviderBase
                 _cleanupWait,
                 _cleanupWait);
 
-        private static readonly string[] AzureSqlServerEndpoints = {SR.GetString(SR.AZURESQL_GenericEndpoint),
-                                                                      SR.GetString(SR.AZURESQL_GermanEndpoint),
-                                                                      SR.GetString(SR.AZURESQL_UsGovEndpoint),
-                                                                      SR.GetString(SR.AZURESQL_ChinaEndpoint) };
-        private static bool IsAzureSqlServerEndpoint(string dataSource)
-        {
-            // remove server port
-            var i = dataSource.LastIndexOf(',');
-            if (i >= 0)
-            {
-                dataSource = dataSource.Substring(0, i);
-            }
-
-            // check for the instance name
-            i = dataSource.LastIndexOf('\\');
-            if (i >= 0)
-            {
-                dataSource = dataSource.Substring(0, i);
-            }
-
-            // trim redundant whitespaces
-            dataSource = dataSource.Trim();
-
-            // check if servername end with any azure endpoints
-            for (i = 0; i < AzureSqlServerEndpoints.Length; i++)
-            {
-                if (dataSource.EndsWith(AzureSqlServerEndpoints[i], StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         private bool IsBlockingPeriodEnabled()
         {
             var poolGroupConnectionOptions = _connectionPoolGroup.ConnectionOptions as SqlConnectionString;
@@ -716,7 +682,7 @@ namespace System.Data.ProviderBase
             {
                 case System.Data.SqlClient.PoolBlockingPeriod.Auto:
                     {
-                        if (IsAzureSqlServerEndpoint(poolGroupConnectionOptions.DataSource))
+                        if (ADP.IsAzureSqlServerEndpoint(poolGroupConnectionOptions.DataSource))
                         {
                             return false; // in Azure it will be Disabled
                         }

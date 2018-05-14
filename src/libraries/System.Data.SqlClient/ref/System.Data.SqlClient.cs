@@ -544,7 +544,7 @@ namespace System.Data.SqlClient
         public override bool Remove(string keyword) { throw null; }
         public override bool ShouldSerialize(string keyword) { throw null; }
         public override bool TryGetValue(string keyword, out object value) { throw null; }
-		public System.Data.SqlClient.PoolBlockingPeriod PoolBlockingPeriod { get { throw null; } set { } }
+	public System.Data.SqlClient.PoolBlockingPeriod PoolBlockingPeriod { get { throw null; } set { } }
     }
     public sealed partial class SqlDataAdapter : System.Data.Common.DbDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {
