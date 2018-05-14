@@ -655,6 +655,12 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             // Deal with the multi register passed struct args.
             GenTreeFieldList* fieldListPtr = source->AsFieldList();
 
+#ifdef _TARGET_ARM64_
+            // Arm64 ABI does not include argument splitting between registers and stack
+            assert(fieldListPtr);
+            assert(fieldListPtr->gtFieldOffset == 0);
+#endif // _TARGET_ARM64_
+
             // Evaluate each of the GT_FIELD_LIST items into their register
             // and store their register into the outgoing argument area
             for (; fieldListPtr != nullptr; fieldListPtr = fieldListPtr->Rest())
@@ -666,11 +672,21 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 var_types type = nextArgNode->TypeGet();
                 emitAttr  attr = emitTypeSize(type);
 
+#ifdef _TARGET_ARM64_
+                // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
+                // argument area
+                emit->emitIns_S_R(ins_Store(type), attr, reg, varNumOut, argOffsetOut + fieldListPtr->gtFieldOffset);
+
+                // We can't write beyound the outgoing area area
+                assert((argOffsetOut + fieldListPtr->gtFieldOffset + EA_SIZE_IN_BYTES(attr)) <= argOffsetMax);
+#else
+                // TODO-ARM-Bug?  The following code will pack copied structs
                 // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
                 // argument area
                 emit->emitIns_S_R(ins_Store(type), attr, reg, varNumOut, argOffsetOut);
                 argOffsetOut += EA_SIZE_IN_BYTES(attr);
                 assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+#endif // _TARGET_ARM64_
             }
         }
         else // We must have a GT_OBJ or a GT_LCL_VAR
