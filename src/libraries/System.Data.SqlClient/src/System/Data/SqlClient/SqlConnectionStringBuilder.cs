@@ -30,6 +30,7 @@ namespace System.Data.SqlClient
             Pooling,
             MinPoolSize,
             MaxPoolSize,
+            PoolBlockingPeriod,
 
             MultipleActiveResultSets,
             Replication,
@@ -99,6 +100,7 @@ namespace System.Data.SqlClient
         private bool _pooling = DbConnectionStringDefaults.Pooling;
         private bool _replication = DbConnectionStringDefaults.Replication;
         private bool _userInstance = DbConnectionStringDefaults.UserInstance;
+        private PoolBlockingPeriod _poolBlockingPeriod = DbConnectionStringDefaults.PoolBlockingPeriod;
 
         private static string[] CreateValidKeywords()
         {
@@ -106,6 +108,7 @@ namespace System.Data.SqlClient
             validKeywords[(int)Keywords.ApplicationIntent] = DbConnectionStringKeywords.ApplicationIntent;
             validKeywords[(int)Keywords.ApplicationName] = DbConnectionStringKeywords.ApplicationName;
             validKeywords[(int)Keywords.AttachDBFilename] = DbConnectionStringKeywords.AttachDBFilename;
+            validKeywords[(int)Keywords.PoolBlockingPeriod] = DbConnectionStringKeywords.PoolBlockingPeriod;
             validKeywords[(int)Keywords.ConnectTimeout] = DbConnectionStringKeywords.ConnectTimeout;
             validKeywords[(int)Keywords.CurrentLanguage] = DbConnectionStringKeywords.CurrentLanguage;
             validKeywords[(int)Keywords.DataSource] = DbConnectionStringKeywords.DataSource;
@@ -142,6 +145,7 @@ namespace System.Data.SqlClient
             hash.Add(DbConnectionStringKeywords.ApplicationIntent, Keywords.ApplicationIntent);
             hash.Add(DbConnectionStringKeywords.ApplicationName, Keywords.ApplicationName);
             hash.Add(DbConnectionStringKeywords.AttachDBFilename, Keywords.AttachDBFilename);
+            hash.Add(DbConnectionStringKeywords.PoolBlockingPeriod, Keywords.PoolBlockingPeriod);
             hash.Add(DbConnectionStringKeywords.ConnectTimeout, Keywords.ConnectTimeout);
             hash.Add(DbConnectionStringKeywords.CurrentLanguage, Keywords.CurrentLanguage);
             hash.Add(DbConnectionStringKeywords.DataSource, Keywords.DataSource);
@@ -239,6 +243,7 @@ namespace System.Data.SqlClient
                         case Keywords.PacketSize: PacketSize = ConvertToInt32(value); break;
 
                         case Keywords.IntegratedSecurity: IntegratedSecurity = ConvertToIntegratedSecurity(value); break;
+                        case Keywords.PoolBlockingPeriod: PoolBlockingPeriod = ConvertToPoolBlockingPeriod(keyword, value); break;
 
                         case Keywords.Encrypt: Encrypt = ConvertToBoolean(value); break;
                         case Keywords.TrustServerCertificate: TrustServerCertificate = ConvertToBoolean(value); break;
@@ -296,6 +301,21 @@ namespace System.Data.SqlClient
             {
                 SetValue(DbConnectionStringKeywords.AttachDBFilename, value);
                 _attachDBFilename = value;
+            }
+        }
+
+        public PoolBlockingPeriod PoolBlockingPeriod
+        {
+            get { return _poolBlockingPeriod; }
+            set
+            {
+                if (!DbConnectionStringBuilderUtil.IsValidPoolBlockingPeriodValue(value))
+                {
+                    throw ADP.InvalidEnumerationValue(typeof(PoolBlockingPeriod), (int)value);
+                }
+
+                SetPoolBlockingPeriodValue(value);
+                _poolBlockingPeriod = value;
             }
         }
 
@@ -663,6 +683,10 @@ namespace System.Data.SqlClient
         {
             return DbConnectionStringBuilderUtil.ConvertToApplicationIntent(keyword, value);
         }
+        private static PoolBlockingPeriod ConvertToPoolBlockingPeriod(string keyword, object value)
+        {
+            return DbConnectionStringBuilderUtil.ConvertToPoolBlockingPeriod(keyword, value);
+        }
 
         private object GetAt(Keywords index)
         {
@@ -671,6 +695,7 @@ namespace System.Data.SqlClient
                 case Keywords.ApplicationIntent: return this.ApplicationIntent;
                 case Keywords.ApplicationName: return ApplicationName;
                 case Keywords.AttachDBFilename: return AttachDBFilename;
+                case Keywords.PoolBlockingPeriod: return PoolBlockingPeriod;
                 case Keywords.ConnectTimeout: return ConnectTimeout;
                 case Keywords.CurrentLanguage: return CurrentLanguage;
                 case Keywords.DataSource: return DataSource;
@@ -744,6 +769,9 @@ namespace System.Data.SqlClient
                     break;
                 case Keywords.AttachDBFilename:
                     _attachDBFilename = DbConnectionStringDefaults.AttachDBFilename;
+                    break;
+                case Keywords.PoolBlockingPeriod:
+                    _poolBlockingPeriod = DbConnectionStringDefaults.PoolBlockingPeriod;
                     break;
                 case Keywords.ConnectTimeout:
                     _connectTimeout = DbConnectionStringDefaults.ConnectTimeout;
@@ -849,6 +877,11 @@ namespace System.Data.SqlClient
         {
             Debug.Assert(DbConnectionStringBuilderUtil.IsValidApplicationIntentValue(value), "invalid value");
             base[DbConnectionStringKeywords.ApplicationIntent] = DbConnectionStringBuilderUtil.ApplicationIntentToString(value);
+        }
+        private void SetPoolBlockingPeriodValue(PoolBlockingPeriod value)
+        {
+            Debug.Assert(DbConnectionStringBuilderUtil.IsValidPoolBlockingPeriodValue(value), "Invalid value for PoolBlockingPeriod");
+            base[DbConnectionStringKeywords.PoolBlockingPeriod] = DbConnectionStringBuilderUtil.PoolBlockingPeriodToString(value);
         }
 
         public override bool ShouldSerialize(string keyword)
