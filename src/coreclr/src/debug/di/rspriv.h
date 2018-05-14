@@ -3465,7 +3465,8 @@ public:
                  type == DB_IPCE_INTERCEPT_EXCEPTION ||
                  type == DB_IPCE_GET_NGEN_COMPILER_FLAGS ||
                  type == DB_IPCE_SET_NGEN_COMPILER_FLAGS || 
-                 type == DB_IPCE_SET_VALUE_CLASS);
+                 type == DB_IPCE_SET_VALUE_CLASS ||
+                 type == DB_IPCE_GET_CONTAINER);
 
         ipce->type = type;
         ipce->hr = S_OK;

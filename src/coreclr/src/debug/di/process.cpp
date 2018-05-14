@@ -2532,10 +2532,35 @@ COM_METHOD CordbProcess::EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExce
 COM_METHOD CordbProcess::GetContainerObject(CORDB_ADDRESS interiorPointer, ICorDebugValue** ppContainerObject)
 {
     HRESULT hr = S_OK;
-    PUBLIC_API_BEGIN(this);
+    // TODO, databp, I don't know what I am doing, NO_LOCK doesn't sound right
+    PUBLIC_API_NO_LOCK_BEGIN(this);
 
-    // TODO, databp, implementation
-    hr = E_NOTIMPL;
+    RSLockHolder ch(this->GetStopGoLock());
+
+    DebuggerIPCEvent      event;
+    this->InitIPCEvent(&event,
+        DB_IPCE_GET_CONTAINER,
+        true,
+        VMPTR_AppDomain::NullPtr());
+
+    event.GetContainer.interiorPointer = CORDB_ADDRESS_TO_PTR(interiorPointer);
+
+    HRESULT hr = this->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
+    hr = WORST_HR(hr, event.hr);
+
+    if (SUCCEEDED(hr))
+    {
+        _ASSERTE(event.type == DB_IPCE_GET_CONTAINER_RESULT);
+        CORDB_ADDRESS containerAddress = PTR_TO_CORDB_ADDRESS(event.GetContainerResult.answer);
+        ICorDebugObjectValue* pResult;
+        hr = this->GetObject(containerAddress, &pResult);
+        if (SUCCEEDED(hr))
+        {
+            hr = pResult->QueryInterface(__uuidof(ICorDebugValue), (void**)ppContainerObject);
+            // TODO, databp, smart pointer
+            pResult->Release();
+        }
+    }
 
     PUBLIC_API_END(hr);
     return hr;
