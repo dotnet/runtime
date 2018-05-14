@@ -209,6 +209,11 @@ namespace System.Data.SqlClient
             get => ((SqlConnectionString)ConnectionOptions).TypeSystemAssemblyVersion;
         }
 
+        internal PoolBlockingPeriod PoolBlockingPeriod
+        {
+            get => ((SqlConnectionString)ConnectionOptions).PoolBlockingPeriod;
+        }
+
         internal int ConnectRetryInterval
         {
             get => ((SqlConnectionString)ConnectionOptions).ConnectRetryInterval;

@@ -131,6 +131,7 @@
     <Compile Include="System\Data\SqlClient\ApplicationIntent.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.cs" />
     <Compile Include="System\Data\SqlClient\ParameterPeekAheadValue.cs" />
+	<Compile Include="System\Data\SqlClient\PoolBlockingPeriod.cs" />
     <Compile Include="System\Data\SqlClient\RowsCopiedEventArgs.cs" />
     <Compile Include="System\Data\SqlClient\RowsCopiedEventHandler.cs" />
     <Compile Include="System\Data\SqlClient\SortOrder.cs" />
