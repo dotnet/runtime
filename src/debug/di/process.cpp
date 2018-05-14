@@ -2529,6 +2529,18 @@ COM_METHOD CordbProcess::EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExce
     return hr;
 }
 
+COM_METHOD CordbProcess::GetContainerObject(CORDB_ADDRESS interiorPointer, ICorDebugValue** ppContainerObject)
+{
+    HRESULT hr = S_OK;
+    PUBLIC_API_BEGIN(this);
+
+    // TODO, databp, implementation
+    hr = E_NOTIMPL;
+
+    PUBLIC_API_END(hr);
+    return hr;
+}
+
 COM_METHOD CordbProcess::CreateBreakpoint(CORDB_ADDRESS address, ICorDebugValueBreakpoint **ppBreakpoint)
 {
     HRESULT hr = S_OK;
