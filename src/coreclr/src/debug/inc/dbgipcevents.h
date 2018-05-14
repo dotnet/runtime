@@ -2350,6 +2350,15 @@ struct MSLAYOUT DebuggerIPCEvent
             ULONG nMetadataSize;
         } MetadataUpdateRequest;
 
+        struct MSLAYOUT
+        {
+            void* interiorPointer;
+        } GetContainer;
+
+        struct MSLAYOUT
+        {
+            void* answer;
+        } GetContainerResult;
     };
 };
 
