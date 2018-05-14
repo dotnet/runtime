@@ -216,7 +216,6 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 #ifdef TARGET_OSX
 MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 {
-	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	// Note: this function only returns for a single thread

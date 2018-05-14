@@ -6124,17 +6124,19 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_PAVGB_UN:
 		case OP_PAVGW_UN: {
-			LLVMValueRef val, ones_vec;
+			LLVMValueRef ones_vec;
 			LLVMValueRef ones [32];
 			int vector_size = LLVMGetVectorSize (LLVMTypeOf (lhs));
 			LLVMTypeRef ext_elem_type = vector_size == 16 ? LLVMInt16Type () : LLVMInt32Type ();
-			LLVMTypeRef ext_type = LLVMVectorType (ext_elem_type, vector_size);
 
 			for (int i = 0; i < 32; ++i)
 				ones [i] = LLVMConstInt (ext_elem_type, 1, FALSE);
 			ones_vec = LLVMConstVector (ones, vector_size);
 
 #if LLVM_API_VERSION >= 500
+			LLVMValueRef val;
+			LLVMTypeRef ext_type = LLVMVectorType (ext_elem_type, vector_size);
+
 			/* Have to increase the vector element size to prevent overflows */
 			/* res = trunc ((zext (lhs) + zext (rhs) + 1) >> 1) */
 			val = LLVMBuildAdd (builder, LLVMBuildZExt (builder, lhs, ext_type, ""), LLVMBuildZExt (builder, rhs, ext_type, ""), "");

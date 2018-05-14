@@ -144,6 +144,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 
 	if (!ebp) {
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wframe-address"
 		printf (") ip: %p\n", MONO_RETURN_ADDRESS_N (1));
 #pragma GCC diagnostic pop
