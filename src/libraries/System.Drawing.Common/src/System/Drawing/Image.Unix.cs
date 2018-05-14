@@ -50,22 +50,8 @@ namespace System.Drawing
 #endif
     public abstract partial class Image
     {
-        public delegate bool GetThumbnailImageAbort();
-        private object tag;
-
-        internal IntPtr nativeImage = IntPtr.Zero;
-
-        // constructor
-        internal Image()
-        {
-        }
-
         // public methods
         // static
-        public static Image FromFile(string filename)
-        {
-            return FromFile(filename, false);
-        }
 
         public static Image FromFile(string filename, bool useEmbeddedColorManagement)
         {
@@ -82,35 +68,6 @@ namespace System.Drawing
             SafeNativeMethods.Gdip.CheckStatus(st);
 
             return CreateFromHandle(imagePtr);
-        }
-
-        public static Bitmap FromHbitmap(IntPtr hbitmap)
-        {
-            return FromHbitmap(hbitmap, IntPtr.Zero);
-        }
-
-        public static Bitmap FromHbitmap(IntPtr hbitmap, IntPtr hpalette)
-        {
-            IntPtr imagePtr;
-            int st;
-
-            st = SafeNativeMethods.Gdip.GdipCreateBitmapFromHBITMAP(new HandleRef(null, hbitmap), new HandleRef(null, hpalette), out imagePtr);
-
-            SafeNativeMethods.Gdip.CheckStatus(st);
-            return new Bitmap(imagePtr);
-        }
-
-        // note: FromStream can return either a Bitmap or Metafile instance
-
-        public static Image FromStream(Stream stream)
-        {
-            return LoadFromStream(stream, false);
-        }
-
-        [MonoLimitation("useEmbeddedColorManagement  isn't supported.")]
-        public static Image FromStream(Stream stream, bool useEmbeddedColorManagement)
-        {
-            return LoadFromStream(stream, false);
         }
 
         // See http://support.microsoft.com/default.aspx?scid=kb;en-us;831419 for performance discussion    
@@ -215,16 +172,6 @@ namespace System.Drawing
             return result;
         }
 
-        public static bool IsCanonicalPixelFormat(PixelFormat pixfmt)
-        {
-            return ((pixfmt & PixelFormat.Canonical) != 0);
-        }
-
-        public static bool IsExtendedPixelFormat(PixelFormat pixfmt)
-        {
-            return ((pixfmt & PixelFormat.Extended) != 0);
-        }
-
         internal static IntPtr InitFromStream(Stream stream)
         {
             if (stream == null)
@@ -304,17 +251,6 @@ namespace System.Drawing
             return eps;
         }
 
-        public int GetFrameCount(FrameDimension dimension)
-        {
-            uint count;
-            Guid guid = dimension.Guid;
-
-            int status = SafeNativeMethods.Gdip.GdipImageGetFrameCount(nativeImage, ref guid, out count);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-
-            return (int)count;
-        }
-
         public PropertyItem GetPropertyItem(int propid)
         {
             int propSize;
@@ -364,19 +300,6 @@ namespace System.Drawing
             return ThumbNail;
         }
 
-
-        public void RemovePropertyItem(int propid)
-        {
-            int status = SafeNativeMethods.Gdip.GdipRemovePropertyItem(nativeImage, propid);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-        public void RotateFlip(RotateFlipType rotateFlipType)
-        {
-            int status = SafeNativeMethods.Gdip.GdipImageRotateFlip(nativeImage, rotateFlipType);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
         internal ImageCodecInfo findEncoderForFormat(ImageFormat format)
         {
             ImageCodecInfo[] encoders = ImageCodecInfo.GetImageEncoders();
@@ -396,11 +319,6 @@ namespace System.Drawing
             }
 
             return encoder;
-        }
-
-        public void Save(string filename)
-        {
-            Save(filename, RawFormat);
         }
 
         public void Save(string filename, ImageFormat format)
@@ -494,16 +412,6 @@ namespace System.Drawing
             SafeNativeMethods.Gdip.CheckStatus(st);
         }
 
-        public int SelectActiveFrame(FrameDimension dimension, int frameIndex)
-        {
-            Guid guid = dimension.Guid;
-            int st = SafeNativeMethods.Gdip.GdipImageSelectActiveFrame(nativeImage, ref guid, frameIndex);
-
-            SafeNativeMethods.Gdip.CheckStatus(st);
-
-            return frameIndex;
-        }
-
         public void SetPropertyItem(PropertyItem propitem)
         {
             if (propitem == null)
@@ -535,20 +443,6 @@ namespace System.Drawing
             }
         }
 
-        // properties    
-        [Browsable(false)]
-        public int Flags
-        {
-            get
-            {
-                int flags;
-
-                int status = SafeNativeMethods.Gdip.GdipGetImageFlags(nativeImage, out flags);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-                return flags;
-            }
-        }
-
         [Browsable(false)]
         public Guid[] FrameDimensionsList
         {
@@ -561,34 +455,6 @@ namespace System.Drawing
                 status = SafeNativeMethods.Gdip.GdipImageGetFrameDimensionsList(nativeImage, guid, found);
                 SafeNativeMethods.Gdip.CheckStatus(status);
                 return guid;
-            }
-        }
-
-        [DefaultValue(false)]
-        [Browsable(false)]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int Height
-        {
-            get
-            {
-                uint height;
-                int status = SafeNativeMethods.Gdip.GdipGetImageHeight(nativeImage, out height);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-
-                return (int)height;
-            }
-        }
-
-        public float HorizontalResolution
-        {
-            get
-            {
-                float resolution;
-
-                int status = SafeNativeMethods.Gdip.GdipGetImageHorizontalResolution(nativeImage, out resolution);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-
-                return resolution;
             }
         }
 
@@ -648,31 +514,6 @@ namespace System.Drawing
             finally
             {
                 Marshal.FreeHGlobal(palette_data);
-            }
-        }
-
-
-        public SizeF PhysicalDimension
-        {
-            get
-            {
-                float width, height;
-                int status = SafeNativeMethods.Gdip.GdipGetImageDimension(nativeImage, out width, out height);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-
-                return new SizeF(width, height);
-            }
-        }
-
-        public PixelFormat PixelFormat
-        {
-            get
-            {
-                PixelFormat pixFormat;
-                int status = SafeNativeMethods.Gdip.GdipGetImagePixelFormat(nativeImage, out pixFormat);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-
-                return pixFormat;
             }
         }
 
@@ -742,76 +583,6 @@ namespace System.Drawing
             }
         }
 
-        public ImageFormat RawFormat
-        {
-            get
-            {
-                Guid guid;
-                int st = SafeNativeMethods.Gdip.GdipGetImageRawFormat(nativeImage, out guid);
-
-                SafeNativeMethods.Gdip.CheckStatus(st);
-                return new ImageFormat(guid);
-            }
-        }
-
-        public Size Size
-        {
-            get
-            {
-                return new Size(Width, Height);
-            }
-        }
-
-        [DefaultValue(null)]
-        [LocalizableAttribute(false)]
-#if !NETCORE
-    [BindableAttribute(true)]     
-    [TypeConverter (typeof (StringConverter))]
-#endif
-        public object Tag
-        {
-            get { return tag; }
-            set { tag = value; }
-        }
-        public float VerticalResolution
-        {
-            get
-            {
-                float resolution;
-
-                int status = SafeNativeMethods.Gdip.GdipGetImageVerticalResolution(nativeImage, out resolution);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-
-                return resolution;
-            }
-        }
-
-        [DefaultValue(false)]
-        [Browsable(false)]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int Width
-        {
-            get
-            {
-                uint width;
-                int status = SafeNativeMethods.Gdip.GdipGetImageWidth(nativeImage, out width);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-
-                return (int)width;
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        ~Image()
-        {
-            Dispose(false);
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (nativeImage != IntPtr.Zero)
@@ -834,6 +605,10 @@ namespace System.Drawing
             else
                 return new Metafile(newimage);
         }
-    }
 
+        internal static void ValidateImage(IntPtr bitmap)
+        {
+            // No validation is performed on Unix.
+        }
+    }
 }
