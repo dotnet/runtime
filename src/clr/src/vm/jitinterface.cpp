@@ -8040,6 +8040,9 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
         if (dontInline(inlineResult))
         {
             const char * str = (reason ? reason : "");
+            SString strReason;
+            strReason.SetANSI(str);
+
 
             FireEtwMethodJitInliningFailed(methodBeingCompiledNames[0].GetUnicode(),
                                            methodBeingCompiledNames[1].GetUnicode(),
@@ -8051,7 +8054,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                                            inlineeNames[1].GetUnicode(),
                                            inlineeNames[2].GetUnicode(),
                                            inlineResult == INLINE_NEVER,
-                                           str,
+                                           strReason.GetUnicode(),
                                            GetClrInstanceId());
         }
         else
@@ -8364,6 +8367,8 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
         if (tailCallResult == TAILCALL_FAIL)
         {
             const char * str = (reason ? reason : "");
+            SString strReason;
+            strReason.SetANSI(str);
 
             FireEtwMethodJitTailCallFailed(methodBeingCompiledNames[0].GetUnicode(),
                                            methodBeingCompiledNames[1].GetUnicode(),
@@ -8375,7 +8380,7 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
                                            calleeNames[1].GetUnicode(),
                                            calleeNames[2].GetUnicode(),
                                            fIsTailPrefix,
-                                           str,
+                                           strReason.GetUnicode(),
                                            GetClrInstanceId());
         }
         else
