@@ -3259,6 +3259,17 @@ interface ICorDebugProcess8 : IUnknown
     HRESULT EnableExceptionCallbacksOutsideOfMyCode([in] BOOL enableExceptionsOutsideOfJMC);
 }
 
+[
+    object,
+    local,
+    uuid(8F378F6F-1017-4461-9890-ECF64C54079F),
+    pointer_default(unique)
+]
+interface ICorDebugProcess9 : IUnknown
+{
+    HRESULT GetContainerObject([in] CORDB_ADDRESS interiorPointer, [out] ICorDebugValue** ppContainerObject);
+}
+
 // Event types MODULE_LOADED and MODULE_UNLOADED implement this interface
 [
     object,
