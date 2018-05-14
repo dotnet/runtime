@@ -165,17 +165,5 @@ namespace System.SpanTests
             TestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Contains(_span, (StringComparison)6));
         }
 
-        [Theory]
-        [InlineData("Hello", "ello", true)]
-        [InlineData("Hello", "ELL", false)]
-        [InlineData("Hello", "Larger Hello", false)]
-        [InlineData("Hello", "Goodbye", false)]
-        [InlineData("", "", true)]
-        [InlineData("", "hello", false)]
-        [InlineData("Hello", "", true)]
-        public static void Contains(string s, string value, bool expected)
-        {
-            Assert.Equal(expected, s.AsSpan().Contains(value.AsSpan(), StringComparison.Ordinal));
-        }
     }
 }
