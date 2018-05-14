@@ -3265,6 +3265,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     BlockRange().InsertAfter(thisExpr, newThisAddr, newThis);
 
     thisArgNode->gtOp.gtOp1 = newThis;
+    ContainCheckIndir(newThis->AsIndir());
 
     // the control target is
     // [originalThis + firstTgtOffs]
