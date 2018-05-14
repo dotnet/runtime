@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+m // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -9,7 +9,7 @@
 
 #include "jitconfig.h"
 
-JitConfigValues JitConfig;
+    JitConfigValues JitConfig;
 
 void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* host)
 {
@@ -24,24 +24,26 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
     }
     else
     {
-        m_list = (char*)host->allocateMemory(utf8ListLen);
-        if (WszWideCharToMultiByte(CP_UTF8, 0, list, -1, const_cast<LPSTR>(m_list), utf8ListLen, nullptr, nullptr) == 0)
+        // char* m_list;
+        //
+        m_list = static_cast<char*>(host->allocateMemory(utf8ListLen));
+        if (WszWideCharToMultiByte(CP_UTF8, 0, list, -1, static_cast<LPSTR>(m_list), utf8ListLen, nullptr, nullptr) ==
+            0)
         {
             // Failed to convert the list. Free the memory and ignore the list.
-            host->freeMemory(reinterpret_cast<void*>(const_cast<char*>(m_list)));
+            host->freeMemory(static_cast<void*>(m_list));
             m_list = nullptr;
             return;
         }
     }
 
-    const char SEP_CHAR  = ' '; // character used to separate each entry
-    const char WILD_CHAR = '*'; // character used as the wildcard match everything
-
-    wchar_t      currChar  = '?';     // The current character
-    int          nameStart = -1;      // Index of the start of the current class or method name
-    MethodName   currentName;         // Buffer used while parsing the current entry
-    MethodName** lastName = &m_names; // Last entry inserted into the list
-    bool         isQuoted = false;
+    const char   SEP_CHAR  = ' ';      // character used to separate each entry
+    const char   WILD_CHAR = '*';      // character used as the wildcard match everything
+    char         currChar  = '?';      // The current character
+    int          nameStart = -1;       // Index of the start of the current class or method name
+    MethodName** lastName  = &m_names; // Last entry inserted into the list
+    bool         isQuoted  = false;    // true while parsing inside a quote "this-is-a-quoted-region"
+    MethodName   currentName;          // Buffer used while parsing the current entry
 
     currentName.m_next                    = nullptr;
     currentName.m_methodNameStart         = -1;
@@ -242,7 +244,7 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
                     assert((currChar == '\0') || (currChar == SEP_CHAR) || (currChar == ')'));
 
                     // We have parsed an entire method name; create a new entry in the list for it.
-                    MethodName* name = (MethodName*)host->allocateMemory(sizeof(MethodName));
+                    MethodName* name = static_cast<MethodName*>(host->allocateMemory(sizeof(MethodName)));
                     *name            = currentName;
 
                     assert(name->m_next == nullptr);
@@ -290,11 +292,11 @@ void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
     for (MethodName *name = m_names, *next = nullptr; name != nullptr; name = next)
     {
         next = name->m_next;
-        host->freeMemory(reinterpret_cast<void*>(const_cast<MethodName*>(name)));
+        host->freeMemory(static_cast<void*>(name));
     }
     if (m_list != nullptr)
     {
-        host->freeMemory(reinterpret_cast<void*>(const_cast<char*>(m_list)));
+        host->freeMemory(static_cast<void*>(m_list));
         m_list = nullptr;
     }
     m_names = nullptr;
@@ -302,9 +304,8 @@ void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
 
 static bool matchesName(const char* const name, int nameLen, bool wildcardAtEnd, const char* const s2)
 {
-    // s2 must start with the characters in 'name'
-    bool result = (strncmp(name, s2, nameLen) == 0);
-    if (result == false)
+    // 's2' must start with 'nameLen' characters of 'name'
+    if (strncmp(name, s2, nameLen) != 0)
     {
         return false;
     }
@@ -314,6 +315,8 @@ static bool matchesName(const char* const name, int nameLen, bool wildcardAtEnd,
     {
         return false;
     }
+
+    // we have a successful match
     return true;
 }
 
