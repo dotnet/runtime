@@ -5497,7 +5497,6 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
     LclVarDsc* varDsc = &(lvaTable[lcl->gtLclNum]);
     assert(varDsc->lvPromoted == true);
 
-    unsigned          offset      = 0;
     unsigned          fieldCount  = varDsc->lvFieldCnt;
     GenTreeFieldList* listEntry   = nullptr;
     GenTreeFieldList* newArg      = nullptr;
@@ -5508,12 +5507,12 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
     {
         LclVarDsc* fieldVarDsc = &lvaTable[fieldLclNum];
         GenTree*   lclVar      = gtNewLclvNode(fieldLclNum, fieldVarDsc->lvType);
-        listEntry = new (this, GT_FIELD_LIST) GenTreeFieldList(lclVar, offset, fieldVarDsc->lvType, listEntry);
+        listEntry              = new (this, GT_FIELD_LIST)
+            GenTreeFieldList(lclVar, fieldVarDsc->lvFldOffset, fieldVarDsc->lvType, listEntry);
         if (newArg == nullptr)
         {
             newArg = listEntry;
         }
-        offset += TARGET_POINTER_SIZE;
         fieldLclNum++;
     }
     return newArg;
