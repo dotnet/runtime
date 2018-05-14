@@ -301,6 +301,10 @@ namespace System.Reflection.Emit
                 if (destType.IsByRef)
                     destType = destType.GetElementType();
 
+                // Convert nullable types to their underlying type.
+                // This is necessary for nullable enum types to pass the IsEnum check that's coming next.
+                destType = Nullable.GetUnderlyingType(destType) ?? destType;
+
                 if (destType.IsEnum)
                 {
                     //                                   |  UnderlyingSystemType     |  Enum.GetUnderlyingType() |  IsEnum
