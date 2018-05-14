@@ -35,7 +35,7 @@ namespace System.Collections.Concurrent
     /// concurrently from multiple threads.
     /// </remarks>
     [DebuggerDisplay("Count = {Count}")]
-    [DebuggerTypeProxy(typeof(SystemCollectionsConcurrent_ProducerConsumerCollectionDebugView<>))]
+    [DebuggerTypeProxy(typeof(ProducerConsumerCollectionDebugView<>))]
     internal class ConcurrentStack<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
     {
         /// <summary>
@@ -407,6 +407,36 @@ namespace System.Collections.Concurrent
 
             return list;
         }
+
+        /// <summary>
+        /// Attempts to add an object to the <see cref="T:System.Collections.Concurrent.IProducerConsumerCollection{T}"/>.
+        /// </summary>
+        /// <param name="item">The object to add to the <see
+        /// cref="T:System.Collections.Concurrent.IProducerConsumerCollection{T}"/>. The value can be a null
+        /// reference (Nothing in Visual Basic) for reference types.
+        /// </param>
+        /// <returns>true if the object was added successfully; otherwise, false.</returns>
+        /// <remarks>For <see cref="ConcurrentStack{T}"/>, this operation will always insert the object onto the
+        /// top of the <see cref="ConcurrentStack{T}"/>
+        /// and return true.</remarks>
+        bool IProducerConsumerCollection<T>.TryAdd(T item)
+        {
+            Push(item);
+            return true;
+        }
+
+        /// <summary>
+        /// Attempts to remove and return an object from the <see cref="T:System.Collections.Concurrent.IProducerConsumerCollection{T}"/>.
+        /// </summary>
+        /// <param name="item">
+        /// When this method returns, if the operation was successful, <paramref name="item"/> contains the
+        /// object removed. If no object was available to be removed, the value is unspecified.
+        /// </param>
+        /// <returns>true if an element was removed and returned successfully; otherwise, false.</returns>
+        /// <remarks>For <see cref="ConcurrentStack{T}"/>, this operation will attempt to pop the object at
+        /// the top of the <see cref="ConcurrentStack{T}"/>.
+        /// </remarks>
+        bool IProducerConsumerCollection<T>.TryTake(out T item) => TryPop(out item);
 
         /// <summary>
         /// Returns an enumerator that iterates through the <see cref="ConcurrentStack{T}"/>.
