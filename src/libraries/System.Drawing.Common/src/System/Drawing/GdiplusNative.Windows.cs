@@ -125,12 +125,10 @@ namespace System.Drawing
                 GdipGetAllPropertyItems_ptr = FunctionWrapper.Load<GdipGetAllPropertyItems_delegate>(s_gdipModule, "GdipGetAllPropertyItems", LibraryName);
                 GdipSetPropertyItem_ptr = FunctionWrapper.Load<GdipSetPropertyItem_delegate>(s_gdipModule, "GdipSetPropertyItem", LibraryName);
                 GdipImageForceValidation_ptr = FunctionWrapper.Load<GdipImageForceValidation_delegate>(s_gdipModule, "GdipImageForceValidation", LibraryName);
-                GdipFlush_ptr = FunctionWrapper.Load<GdipFlush_delegate>(s_gdipModule, "GdipFlush", LibraryName);
                 GdipCreateFromHDC_ptr = FunctionWrapper.Load<GdipCreateFromHDC_delegate>(s_gdipModule, "GdipCreateFromHDC", LibraryName);
                 GdipCreateFromHDC2_ptr = FunctionWrapper.Load<GdipCreateFromHDC2_delegate>(s_gdipModule, "GdipCreateFromHDC2", LibraryName);
                 GdipCreateFromHWND_ptr = FunctionWrapper.Load<GdipCreateFromHWND_delegate>(s_gdipModule, "GdipCreateFromHWND", LibraryName);
                 GdipDeleteGraphics_ptr = FunctionWrapper.Load<GdipDeleteGraphics_delegate>(s_gdipModule, "GdipDeleteGraphics", LibraryName);
-                GdipGetDC_ptr = FunctionWrapper.Load<GdipGetDC_delegate>(s_gdipModule, "GdipGetDC", LibraryName);
                 GdipReleaseDC_ptr = FunctionWrapper.Load<GdipReleaseDC_delegate>(s_gdipModule, "GdipReleaseDC", LibraryName);
                 GdipSetCompositingMode_ptr = FunctionWrapper.Load<GdipSetCompositingMode_delegate>(s_gdipModule, "GdipSetCompositingMode", LibraryName);
                 GdipSetTextRenderingHint_ptr = FunctionWrapper.Load<GdipSetTextRenderingHint_delegate>(s_gdipModule, "GdipSetTextRenderingHint", LibraryName);
@@ -639,12 +637,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipImageForceValidation_delegate> GdipImageForceValidation_ptr;
             internal static int GdipImageForceValidation(HandleRef image) => GdipImageForceValidation_ptr.Delegate(image);
 
-
-
-            private delegate int GdipFlush_delegate(HandleRef graphics, FlushIntention intention);
-            private static FunctionWrapper<GdipFlush_delegate> GdipFlush_ptr;
-            internal static int GdipFlush(HandleRef graphics, FlushIntention intention) => GdipFlush_ptr.Delegate(graphics, intention);
-
             private delegate int GdipCreateFromHDC_delegate(HandleRef hdc, out IntPtr graphics);
             private static FunctionWrapper<GdipCreateFromHDC_delegate> GdipCreateFromHDC_ptr;
             internal static int GdipCreateFromHDC(HandleRef hdc, out IntPtr graphics) => GdipCreateFromHDC_ptr.Delegate(hdc, out graphics);
@@ -660,10 +652,6 @@ namespace System.Drawing
             private delegate int GdipDeleteGraphics_delegate(HandleRef graphics);
             private static FunctionWrapper<GdipDeleteGraphics_delegate> GdipDeleteGraphics_ptr;
             internal static int IntGdipDeleteGraphics(HandleRef graphics) => GdipDeleteGraphics_ptr.Delegate(graphics);
-
-            private delegate int GdipGetDC_delegate(HandleRef graphics, out IntPtr hdc);
-            private static FunctionWrapper<GdipGetDC_delegate> GdipGetDC_ptr;
-            internal static int GdipGetDC(HandleRef graphics, out IntPtr hdc) => GdipGetDC_ptr.Delegate(graphics, out hdc);
 
             private delegate int GdipReleaseDC_delegate(HandleRef graphics, HandleRef hdc);
             private static FunctionWrapper<GdipReleaseDC_delegate> GdipReleaseDC_ptr;

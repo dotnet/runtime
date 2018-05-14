@@ -121,7 +121,6 @@ namespace System.Drawing
                 GdipFillRectangles_ptr = FunctionWrapper.Load<GdipFillRectangles_delegate>(s_gdipModule, "GdipFillRectangles", LibraryName);
                 GdipFillRectanglesI_ptr = FunctionWrapper.Load<GdipFillRectanglesI_delegate>(s_gdipModule, "GdipFillRectanglesI", LibraryName);
                 GdipDrawString_ptr = FunctionWrapper.Load<GdipDrawString_delegate>(s_gdipModule, "GdipDrawString", LibraryName);
-                GdipGetDC_ptr = FunctionWrapper.Load<GdipGetDC_delegate>(s_gdipModule, "GdipGetDC", LibraryName);
                 GdipReleaseDC_ptr = FunctionWrapper.Load<GdipReleaseDC_delegate>(s_gdipModule, "GdipReleaseDC", LibraryName);
                 GdipDrawImageRectI_ptr = FunctionWrapper.Load<GdipDrawImageRectI_delegate>(s_gdipModule, "GdipDrawImageRectI", LibraryName);
                 GdipGetRenderingOrigin_ptr = FunctionWrapper.Load<GdipGetRenderingOrigin_delegate>(s_gdipModule, "GdipGetRenderingOrigin", LibraryName);
@@ -167,7 +166,6 @@ namespace System.Drawing
                 GdipGetTextContrast_ptr = FunctionWrapper.Load<GdipGetTextContrast_delegate>(s_gdipModule, "GdipGetTextContrast", LibraryName);
                 GdipSetTextRenderingHint_ptr = FunctionWrapper.Load<GdipSetTextRenderingHint_delegate>(s_gdipModule, "GdipSetTextRenderingHint", LibraryName);
                 GdipGetTextRenderingHint_ptr = FunctionWrapper.Load<GdipGetTextRenderingHint_delegate>(s_gdipModule, "GdipGetTextRenderingHint", LibraryName);
-                GdipFlush_ptr = FunctionWrapper.Load<GdipFlush_delegate>(s_gdipModule, "GdipFlush", LibraryName);
                 GdipAddPathString_ptr = FunctionWrapper.Load<GdipAddPathString_delegate>(s_gdipModule, "GdipAddPathString", LibraryName);
                 GdipAddPathStringI_ptr = FunctionWrapper.Load<GdipAddPathStringI_delegate>(s_gdipModule, "GdipAddPathStringI", LibraryName);
                 GdipCreateFromHWND_ptr = FunctionWrapper.Load<GdipCreateFromHWND_delegate>(s_gdipModule, "GdipCreateFromHWND", LibraryName);
@@ -474,10 +472,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipDrawString_delegate> GdipDrawString_ptr;
             internal static int GdipDrawString(IntPtr graphics, string text, int len, IntPtr font, ref RectangleF rc, IntPtr format, IntPtr brush) => GdipDrawString_ptr.Delegate(graphics, text, len, font, ref rc, format, brush);
 
-            private delegate int GdipGetDC_delegate(IntPtr graphics, out IntPtr hdc);
-            private static FunctionWrapper<GdipGetDC_delegate> GdipGetDC_ptr;
-            internal static int GdipGetDC(IntPtr graphics, out IntPtr hdc) => GdipGetDC_ptr.Delegate(graphics, out hdc);
-
             private delegate int GdipReleaseDC_delegate(IntPtr graphics, IntPtr hdc);
             private static FunctionWrapper<GdipReleaseDC_delegate> GdipReleaseDC_ptr;
             internal static int GdipReleaseDC(IntPtr graphics, IntPtr hdc) => GdipReleaseDC_ptr.Delegate(graphics, hdc);
@@ -658,10 +652,6 @@ namespace System.Drawing
             private delegate int GdipGetTextRenderingHint_delegate(IntPtr graphics, out TextRenderingHint mode);
             private static FunctionWrapper<GdipGetTextRenderingHint_delegate> GdipGetTextRenderingHint_ptr;
             internal static int GdipGetTextRenderingHint(IntPtr graphics, out TextRenderingHint mode) => GdipGetTextRenderingHint_ptr.Delegate(graphics, out mode);
-
-            private delegate int GdipFlush_delegate(IntPtr graphics, FlushIntention intention);
-            private static FunctionWrapper<GdipFlush_delegate> GdipFlush_ptr;
-            internal static int GdipFlush(IntPtr graphics, FlushIntention intention) => GdipFlush_ptr.Delegate(graphics, intention);
 
             private delegate int GdipAddPathString_delegate(IntPtr path, [MarshalAs(UnmanagedType.LPWStr)]string s, int lenght, IntPtr family, int style, float emSize, ref RectangleF layoutRect, IntPtr format);
             private static FunctionWrapper<GdipAddPathString_delegate> GdipAddPathString_ptr;

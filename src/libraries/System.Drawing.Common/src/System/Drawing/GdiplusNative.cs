@@ -300,6 +300,8 @@ namespace System.Drawing
                 GdipIsVisiblePointI_ptr = FunctionWrapper.Load<GdipIsVisiblePointI_delegate>(s_gdipModule, "GdipIsVisiblePointI", LibraryName);
                 GdipIsVisibleRect_ptr = FunctionWrapper.Load<GdipIsVisibleRect_delegate>(s_gdipModule, "GdipIsVisibleRect", LibraryName);
                 GdipIsVisibleRectI_ptr = FunctionWrapper.Load<GdipIsVisibleRectI_delegate>(s_gdipModule, "GdipIsVisibleRectI", LibraryName);
+                GdipFlush_ptr = FunctionWrapper.Load<GdipFlush_delegate>(s_gdipModule, "GdipFlush", LibraryName);
+                GdipGetDC_ptr = FunctionWrapper.Load<GdipGetDC_delegate>(s_gdipModule, "GdipGetDC", LibraryName);
                 GdipSetStringFormatMeasurableCharacterRanges_ptr = FunctionWrapper.Load<GdipSetStringFormatMeasurableCharacterRanges_delegate>(s_gdipModule, "GdipSetStringFormatMeasurableCharacterRanges", LibraryName);
                 GdipCreateStringFormat_ptr = FunctionWrapper.Load<GdipCreateStringFormat_delegate>(s_gdipModule, "GdipCreateStringFormat", LibraryName);
                 GdipStringFormatGetGenericDefault_ptr = FunctionWrapper.Load<GdipStringFormatGetGenericDefault_delegate>(s_gdipModule, "GdipStringFormatGetGenericDefault", LibraryName);
@@ -1476,6 +1478,14 @@ namespace System.Drawing
             private delegate int GdipIsVisibleRectI_delegate(HandleRef graphics, int x, int y, int width, int height, out int boolean);
             private static FunctionWrapper<GdipIsVisibleRectI_delegate> GdipIsVisibleRectI_ptr;
             internal static int GdipIsVisibleRectI(HandleRef graphics, int x, int y, int width, int height, out int boolean) => GdipIsVisibleRectI_ptr.Delegate(graphics, x, y, width, height, out boolean);
+
+            private delegate int GdipFlush_delegate(HandleRef graphics, FlushIntention intention);
+            private static FunctionWrapper<GdipFlush_delegate> GdipFlush_ptr;
+            internal static int GdipFlush(HandleRef graphics, FlushIntention intention) => GdipFlush_ptr.Delegate(graphics, intention);
+
+            private delegate int GdipGetDC_delegate(HandleRef graphics, out IntPtr hdc);
+            private static FunctionWrapper<GdipGetDC_delegate> GdipGetDC_ptr;
+            internal static int GdipGetDC(HandleRef graphics, out IntPtr hdc) => GdipGetDC_ptr.Delegate(graphics, out hdc);
 
             private delegate int GdipSetStringFormatMeasurableCharacterRanges_delegate(HandleRef format, int rangeCount, [In] [Out] CharacterRange[] range);
             private static FunctionWrapper<GdipSetStringFormatMeasurableCharacterRanges_delegate> GdipSetStringFormatMeasurableCharacterRanges_ptr;
