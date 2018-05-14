@@ -23,6 +23,12 @@ namespace System.Reflection
 
             if (fieldType.IsEnum && raw == false)
             {
+                // NOTE: Unlike in `TypeBuilder.SetConstantValue`, if `fieldType` describes
+                // a nullable enum type `Nullable<TEnum>`, we do not unpack it to `TEnum` to
+                // successfully enter this `if` clause. Default values of `TEnum?`-typed
+                // parameters have been reported as values of the underlying type, changing
+                // this now might be a breaking change.
+
                 long defaultValue = 0;
 
                 switch (corElementType)

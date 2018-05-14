@@ -149,7 +149,10 @@ void PEImageLayout::ApplyBaseRelocations()
     SIZE_T cbWriteableRegion = 0;
     DWORD dwOldProtection = 0;
 
-    BOOL bRelocDone = FALSE;
+    BYTE * pFlushRegion = NULL;
+    SIZE_T cbFlushRegion = 0;
+    // The page size of PE file relocs is always 4096 bytes
+    const SIZE_T cbPageSize = 4096;
 
     COUNT_T dirPos = 0;
     while (dirPos < dirSize)
@@ -184,13 +187,6 @@ void PEImageLayout::ApplyBaseRelocations()
                                        dwOldProtection, &dwOldProtection))
                     ThrowLastError();
 
-                if (bRelocDone && bExecRegion)
-                {
-                    ClrFlushInstructionCache(pWriteableRegion, cbWriteableRegion);
-                }
-
-                bRelocDone = FALSE;
-
                 dwOldProtection = 0;
             }
 
@@ -223,6 +219,7 @@ void PEImageLayout::ApplyBaseRelocations()
             }
         }
 
+        BYTE* pEndAddressToFlush = NULL;
         for (COUNT_T fixupIndex = 0; fixupIndex < fixupsCount; fixupIndex++)
         {
             USHORT fixup = VAL16(fixups[fixupIndex]);
@@ -233,13 +230,13 @@ void PEImageLayout::ApplyBaseRelocations()
             {
             case IMAGE_REL_BASED_PTR:
                 *(TADDR *)address += delta;
-                bRelocDone = TRUE;
+                pEndAddressToFlush = max(pEndAddressToFlush, address + sizeof(TADDR));
                 break;
 
 #ifdef _TARGET_ARM_
             case IMAGE_REL_BASED_THUMB_MOV32:
                 PutThumb2Mov32((UINT16 *)address, GetThumb2Mov32((UINT16 *)address) + delta);
-                bRelocDone = TRUE;
+                pEndAddressToFlush = max(pEndAddressToFlush, address + 8);
                 break;
 #endif
 
@@ -250,6 +247,24 @@ void PEImageLayout::ApplyBaseRelocations()
             default:
                 _ASSERTE(!"Unhandled reloc type!");
             }
+        }
+
+        BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
+            PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
+
+        if (bExecRegion && pEndAddressToFlush != NULL)
+        {
+            // If the current page is not next to the pending region to flush, flush the current pending region and start a new one
+            if (pageAddress >= pFlushRegion + cbFlushRegion + cbPageSize || pageAddress < pFlushRegion)
+            {
+                if (pFlushRegion != NULL)
+                {
+                    ClrFlushInstructionCache(pFlushRegion, cbFlushRegion);
+                }
+                pFlushRegion = pageAddress;
+            }
+
+            cbFlushRegion = pEndAddressToFlush - pFlushRegion;
         }
 
         dirPos += fixupsSize;
@@ -266,13 +281,13 @@ void PEImageLayout::ApplyBaseRelocations()
         if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                dwOldProtection, &dwOldProtection))
             ThrowLastError();
-
-        if (bRelocDone && bExecRegion)
-        {
-            ClrFlushInstructionCache(pWriteableRegion, cbWriteableRegion);
-        }
     }
 #endif // CROSSGEN_COMPILE
+
+    if (pFlushRegion != NULL)
+    {
+        ClrFlushInstructionCache(pFlushRegion, cbFlushRegion);
+    }
 }
 #endif // FEATURE_PREJIT
 
