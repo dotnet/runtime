@@ -8,6 +8,13 @@
 
 namespace System.Net.Sockets
 {
+    public partial class NetworkStream : System.IO.Stream
+    {
+        public override int Read(System.Span<byte> buffer) { throw null; }
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public override void Write(System.ReadOnlySpan<byte> buffer) { }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+    }
     public partial class Socket : System.IDisposable
     {
         public int Receive(Span<byte> buffer) { throw null; }
