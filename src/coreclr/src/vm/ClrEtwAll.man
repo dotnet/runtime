@@ -1816,7 +1816,7 @@
                         <data name="InlineeName" inType="win:UnicodeString" />
                         <data name="InlineeNameSignature" inType="win:UnicodeString" />
                         <data name="FailAlways" inType="win:Boolean" />
-                        <data name="FailReason" inType="win:AnsiString" />
+                        <data name="FailReason" inType="win:UnicodeString" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
 
                         <UserData>
@@ -1834,6 +1834,38 @@
                                 <FailReason> %11 </FailReason>
                                 <ClrInstanceID> %12 </ClrInstanceID>
                             </MethodJitInliningFailed>
+                        </UserData>
+                    </template>
+
+                    <template tid="MethodJitInliningFailedAnsi">
+                        <data name="MethodBeingCompiledNamespace" inType="win:UnicodeString" />
+                        <data name="MethodBeingCompiledName" inType="win:UnicodeString" />
+                        <data name="MethodBeingCompiledNameSignature" inType="win:UnicodeString" />
+                        <data name="InlinerNamespace" inType="win:UnicodeString" />
+                        <data name="InlinerName" inType="win:UnicodeString" />
+                        <data name="InlinerNameSignature" inType="win:UnicodeString" />
+                        <data name="InlineeNamespace" inType="win:UnicodeString" />
+                        <data name="InlineeName" inType="win:UnicodeString" />
+                        <data name="InlineeNameSignature" inType="win:UnicodeString" />
+                        <data name="FailAlways" inType="win:Boolean" />
+                        <data name="FailReason" inType="win:AnsiString" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <MethodJitInliningFailedAnsi xmlns="myNs">
+                                <MethodBeingCompiledNamespace> %1 </MethodBeingCompiledNamespace>
+                                <MethodBeingCompiledName> %2 </MethodBeingCompiledName>
+                                <MethodBeingCompiledNameSignature> %3 </MethodBeingCompiledNameSignature>
+                                <InlinerNamespace> %4 </InlinerNamespace>
+                                <InlinerName> %5 </InlinerName>
+                                <InlinerNameSignature> %6 </InlinerNameSignature>
+                                <InlineeNamespace> %7 </InlineeNamespace>
+                                <InlineeName> %8 </InlineeName>
+                                <InlineeNameSignature> %9 </InlineeNameSignature>
+                                <FailAlways> %10 </FailAlways>
+                                <FailReason> %11 </FailReason>
+                                <ClrInstanceID> %12 </ClrInstanceID>
+                            </MethodJitInliningFailedAnsi>
                         </UserData>
                     </template>
 
@@ -1880,7 +1912,7 @@
                         <data name="CalleeName" inType="win:UnicodeString" />
                         <data name="CalleeNameSignature" inType="win:UnicodeString" />
                         <data name="TailPrefix" inType="win:Boolean" />
-                        <data name="FailReason" inType="win:AnsiString" />
+                        <data name="FailReason" inType="win:UnicodeString" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
 
                         <UserData>
@@ -1898,6 +1930,38 @@
                                 <FailReason> %11 </FailReason>
                                 <ClrInstanceID> %12 </ClrInstanceID>
                             </MethodJitTailCallFailed>
+                        </UserData>
+                    </template>
+
+                    <template tid="MethodJitTailCallFailedAnsi">
+                        <data name="MethodBeingCompiledNamespace" inType="win:UnicodeString" />
+                        <data name="MethodBeingCompiledName" inType="win:UnicodeString" />
+                        <data name="MethodBeingCompiledNameSignature" inType="win:UnicodeString" />
+                        <data name="CallerNamespace" inType="win:UnicodeString" />
+                        <data name="CallerName" inType="win:UnicodeString" />
+                        <data name="CallerNameSignature" inType="win:UnicodeString" />
+                        <data name="CalleeNamespace" inType="win:UnicodeString" />
+                        <data name="CalleeName" inType="win:UnicodeString" />
+                        <data name="CalleeNameSignature" inType="win:UnicodeString" />
+                        <data name="TailPrefix" inType="win:Boolean" />
+                        <data name="FailReason" inType="win:AnsiString" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <MethodJitTailCallFailedAnsi xmlns="myNs">
+                                <MethodBeingCompiledNamespace> %1 </MethodBeingCompiledNamespace>
+                                <MethodBeingCompiledName> %2 </MethodBeingCompiledName>
+                                <MethodBeingCompiledNameSignature> %3 </MethodBeingCompiledNameSignature>
+                                <CallerNamespace> %4 </CallerNamespace>
+                                <CallerName> %5 </CallerName>
+                                <CallerNameSignature> %6 </CallerNameSignature>
+                                <CalleeNamespace> %7 </CalleeNamespace>
+                                <CalleeName> %8 </CalleeName>
+                                <CalleeNameSignature> %9 </CalleeNameSignature>
+                                <TailPrefix> %10 </TailPrefix>
+                                <FailReason> %11 </FailReason>
+                                <ClrInstanceID> %12 </ClrInstanceID>
+                            </MethodJitTailCallFailedAnsi>
                         </UserData>
                     </template>
                     
@@ -2961,10 +3025,10 @@
                            symbol="MethodJitInliningSucceeded"
                            message="$(string.RuntimePublisher.MethodJitInliningSucceededEventMessage)"/>
 
-                    <event value="186" version="0" level="win:Verbose"  template="MethodJitInliningFailed"
+                    <event value="186" version="0" level="win:Verbose"  template="MethodJitInliningFailedAnsi"
                            keywords ="JitTracingKeyword" opcode="JitInliningFailed"
                            task="CLRMethod"
-                           symbol="MethodJitInliningFailed"
+                           symbol="MethodJitInliningFailedAnsi"
                            message="$(string.RuntimePublisher.MethodJitInliningFailedEventMessage)"/>
 
                     <event value="188" version="0" level="win:Verbose"  template="MethodJitTailCallSucceeded"
@@ -2973,10 +3037,10 @@
                            symbol="MethodJitTailCallSucceeded"
                            message="$(string.RuntimePublisher.MethodJitTailCallSucceededEventMessage)"/>
 
-                    <event value="189" version="0" level="win:Verbose"  template="MethodJitTailCallFailed"
+                    <event value="189" version="0" level="win:Verbose"  template="MethodJitTailCallFailedAnsi"
                            keywords ="JitTracingKeyword" opcode="JitTailCallFailed"
                            task="CLRMethod"
-                           symbol="MethodJitTailCallFailed"
+                           symbol="MethodJitTailCallFailedAnsi"
                            message="$(string.RuntimePublisher.MethodJitTailCallFailedEventMessage)"/>
 
                     <event value="190" version="0" level="win:Verbose"  template="MethodILToNativeMap"
@@ -2984,6 +3048,18 @@
                            task="CLRMethod"
                            symbol="MethodILToNativeMap"
                            message="$(string.RuntimePublisher.MethodILToNativeMapEventMessage)"/>
+
+                    <event value="191" version="0" level="win:Verbose"  template="MethodJitTailCallFailed"
+                           keywords ="JitTracingKeyword" opcode="JitTailCallFailed"
+                           task="CLRMethod"
+                           symbol="MethodJitTailCallFailed"
+                           message="$(string.RuntimePublisher.MethodJitTailCallFailedEventMessage)"/>
+
+                    <event value="192" version="0" level="win:Verbose"  template="MethodJitInliningFailed"
+                           keywords ="JitTracingKeyword" opcode="JitInliningFailed"
+                           task="CLRMethod"
+                           symbol="MethodJitInliningFailed"
+                           message="$(string.RuntimePublisher.MethodJitInliningFailedEventMessage)"/>
 
                     <!-- CLR Loader events -->
                     <!-- The following 2 events are now defunct -->
@@ -5057,6 +5133,18 @@
                         <data name="COMInterfacePointer" inType="win:Pointer" />
                         <data name="NewRefCount" inType="win:UInt32" />
                         <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClassName" inType="win:UnicodeString" />
+                        <data name="NameSpace" inType="win:UnicodeString" />
+                        <data name="Operation" inType="win:UnicodeString" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                    </template>
+
+                    <template tid="CCWRefCountChangeAnsi">
+                        <data name="HandleID" inType="win:Pointer" />
+                        <data name="ObjectID" inType="win:Pointer" />
+                        <data name="COMInterfacePointer" inType="win:Pointer" />
+                        <data name="NewRefCount" inType="win:UInt32" />
+                        <data name="AppDomainID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ClassName" inType="win:AnsiString" />
                         <data name="NameSpace" inType="win:AnsiString" />
                         <data name="Operation" inType="win:UnicodeString" />
@@ -6017,11 +6105,11 @@
                            task="GarbageCollectionPrivate"
                            symbol="PrvFinalizeObject" message="$(string.PrivatePublisher.FinalizeObjectEventMessage)"/>
 
-                    <event value="193" version="0" level="win:Verbose"  template="CCWRefCountChange"
+                    <event value="193" version="0" level="win:Verbose"  template="CCWRefCountChangeAnsi"
                            keywords="InteropPrivateKeyword"  
                            opcode="CCWRefCountChange"
                            task="GarbageCollectionPrivate"
-                           symbol="CCWRefCountChange" message="$(string.PrivatePublisher.CCWRefCountChangeEventMessage)"/>
+                           symbol="CCWRefCountChangeAnsi" message="$(string.PrivatePublisher.CCWRefCountChangeEventMessage)"/>
 
                     <event value="194" version="0" level="win:Verbose"  template="PrvSetGCHandle"
                            keywords="GCHandlePrivateKeyword"  
@@ -6050,6 +6138,12 @@
                            opcode="PinPlugAtGCTime"
                            task="GarbageCollectionPrivate"
                            symbol="PinPlugAtGCTime" message="$(string.PrivatePublisher.PinPlugAtGCTimeEventMessage)"/>
+
+                    <event value="200" version="0" level="win:Verbose"  template="CCWRefCountChange"
+                           keywords="InteropPrivateKeyword"  
+                           opcode="CCWRefCountChange"
+                           task="GarbageCollectionPrivate"
+                           symbol="CCWRefCountChange" message="$(string.PrivatePublisher.CCWRefCountChangeEventMessage)"/>
 
                     <event value="310" version="0" level="win:Verbose" template="LoaderHeapPrivate"
                            keywords="LoaderHeapPrivateKeyword" opcode="AllocRequest"
