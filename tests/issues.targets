@@ -214,15 +214,6 @@
             <Issue>11469, The test causes OutOfMemory exception in crossgen mode.</Issue> 
         </ExcludeList>
     </ItemGroup>
-	
-	<!-- The following are x64 failures -->
-
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x64'">
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_17585\GitHub_17585\GitHub_17585.cmd">
-            <Issue>17585</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
 
     <!-- The following are ARM32 failures -->
 
