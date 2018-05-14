@@ -360,6 +360,13 @@ typedef interface ICorDebugProcess8 ICorDebugProcess8;
 #endif 	/* __ICorDebugProcess8_FWD_DEFINED__ */
 
 
+#ifndef __ICorDebugProcess9_FWD_DEFINED__
+#define __ICorDebugProcess9_FWD_DEFINED__
+typedef interface ICorDebugProcess9 ICorDebugProcess9;
+
+#endif 	/* __ICorDebugProcess9_FWD_DEFINED__ */
+
+
 #ifndef __ICorDebugModuleDebugEvent_FWD_DEFINED__
 #define __ICorDebugModuleDebugEvent_FWD_DEFINED__
 typedef interface ICorDebugModuleDebugEvent ICorDebugModuleDebugEvent;
@@ -7804,6 +7811,88 @@ EXTERN_C const IID IID_ICorDebugProcess8;
 #endif 	/* __ICorDebugProcess8_INTERFACE_DEFINED__ */
 
 
+#ifndef __ICorDebugProcess9_INTERFACE_DEFINED__
+#define __ICorDebugProcess9_INTERFACE_DEFINED__
+
+/* interface ICorDebugProcess9 */
+/* [unique][uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ICorDebugProcess9;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("8F378F6F-1017-4461-9890-ECF64C54079F")
+    ICorDebugProcess9 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetContainerObject( 
+            /* [in] */ CORDB_ADDRESS interiorPointer,
+            /* [out] */ ICorDebugValue **ppContainerObject) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ICorDebugProcess9Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ICorDebugProcess9 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ICorDebugProcess9 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ICorDebugProcess9 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetContainerObject )( 
+            ICorDebugProcess9 * This,
+            /* [in] */ CORDB_ADDRESS interiorPointer,
+            /* [out] */ ICorDebugValue **ppContainerObject);
+        
+        END_INTERFACE
+    } ICorDebugProcess9Vtbl;
+
+    interface ICorDebugProcess9
+    {
+        CONST_VTBL struct ICorDebugProcess9Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ICorDebugProcess9_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ICorDebugProcess9_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ICorDebugProcess9_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ICorDebugProcess9_GetContainerObject(This,interiorPointer,ppContainerObject)	\
+    ( (This)->lpVtbl -> GetContainerObject(This,interiorPointer,ppContainerObject) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ICorDebugProcess9_INTERFACE_DEFINED__ */
+
+
 #ifndef __ICorDebugModuleDebugEvent_INTERFACE_DEFINED__
 #define __ICorDebugModuleDebugEvent_INTERFACE_DEFINED__
 
@@ -10788,7 +10877,7 @@ EXTERN_C const IID IID_ICorDebugILFrame3;
 #endif 	/* __ICorDebugILFrame3_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_cordebug_0000_0066 */
+/* interface __MIDL_itf_cordebug_0000_0067 */
 /* [local] */ 
 
 typedef 
@@ -10800,8 +10889,8 @@ enum ILCodeKind
 
 
 
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0066_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0066_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0067_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0067_v0_0_s_ifspec;
 
 #ifndef __ICorDebugILFrame4_INTERFACE_DEFINED__
 #define __ICorDebugILFrame4_INTERFACE_DEFINED__
@@ -11165,15 +11254,15 @@ EXTERN_C const IID IID_ICorDebugNativeFrame;
 #endif 	/* __ICorDebugNativeFrame_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_cordebug_0000_0068 */
+/* interface __MIDL_itf_cordebug_0000_0069 */
 /* [local] */ 
 
 #pragma warning(push)
 #pragma warning(disable:28718)	
 
 
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0068_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0068_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0069_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0069_v0_0_s_ifspec;
 
 #ifndef __ICorDebugNativeFrame2_INTERFACE_DEFINED__
 #define __ICorDebugNativeFrame2_INTERFACE_DEFINED__
@@ -11743,14 +11832,14 @@ EXTERN_C const IID IID_ICorDebugModule;
 #endif 	/* __ICorDebugModule_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_cordebug_0000_0072 */
+/* interface __MIDL_itf_cordebug_0000_0073 */
 /* [local] */ 
 
 #pragma warning(pop)
 
 
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0072_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0072_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0073_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0073_v0_0_s_ifspec;
 
 #ifndef __ICorDebugModule2_INTERFACE_DEFINED__
 #define __ICorDebugModule2_INTERFACE_DEFINED__
@@ -14707,15 +14796,15 @@ EXTERN_C const IID IID_ICorDebugBoxValue;
 #endif 	/* __ICorDebugBoxValue_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_cordebug_0000_0098 */
+/* interface __MIDL_itf_cordebug_0000_0099 */
 /* [local] */ 
 
 #pragma warning(push)
 #pragma warning(disable:28718)	
 
 
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0098_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0098_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0099_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0099_v0_0_s_ifspec;
 
 #ifndef __ICorDebugStringValue_INTERFACE_DEFINED__
 #define __ICorDebugStringValue_INTERFACE_DEFINED__
@@ -14855,14 +14944,14 @@ EXTERN_C const IID IID_ICorDebugStringValue;
 #endif 	/* __ICorDebugStringValue_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_cordebug_0000_0099 */
+/* interface __MIDL_itf_cordebug_0000_0100 */
 /* [local] */ 
 
 #pragma warning(pop)
 
 
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0099_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0099_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0100_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0100_v0_0_s_ifspec;
 
 #ifndef __ICorDebugArrayValue_INTERFACE_DEFINED__
 #define __ICorDebugArrayValue_INTERFACE_DEFINED__
@@ -17637,15 +17726,15 @@ EXTERN_C const IID IID_ICorDebugBlockingObjectEnum;
 #endif 	/* __ICorDebugBlockingObjectEnum_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_cordebug_0000_0123 */
+/* interface __MIDL_itf_cordebug_0000_0124 */
 /* [local] */ 
 
 #pragma warning(push)
 #pragma warning(disable:28718)
 
 
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0123_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0123_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0124_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0124_v0_0_s_ifspec;
 
 #ifndef __ICorDebugMDA_INTERFACE_DEFINED__
 #define __ICorDebugMDA_INTERFACE_DEFINED__
@@ -17785,7 +17874,7 @@ EXTERN_C const IID IID_ICorDebugMDA;
 #endif 	/* __ICorDebugMDA_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_cordebug_0000_0124 */
+/* interface __MIDL_itf_cordebug_0000_0125 */
 /* [local] */ 
 
 #pragma warning(pop)
@@ -17793,8 +17882,8 @@ EXTERN_C const IID IID_ICorDebugMDA;
 #pragma warning(disable:28718)	
 
 
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0124_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0124_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0125_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0125_v0_0_s_ifspec;
 
 #ifndef __ICorDebugEditAndContinueErrorInfo_INTERFACE_DEFINED__
 #define __ICorDebugEditAndContinueErrorInfo_INTERFACE_DEFINED__
@@ -17910,14 +17999,14 @@ EXTERN_C const IID IID_ICorDebugEditAndContinueErrorInfo;
 #endif 	/* __ICorDebugEditAndContinueErrorInfo_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_cordebug_0000_0125 */
+/* interface __MIDL_itf_cordebug_0000_0126 */
 /* [local] */ 
 
 #pragma warning(pop)
 
 
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0125_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0125_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0126_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_cordebug_0000_0126_v0_0_s_ifspec;
 
 #ifndef __ICorDebugEditAndContinueSnapshot_INTERFACE_DEFINED__
 #define __ICorDebugEditAndContinueSnapshot_INTERFACE_DEFINED__

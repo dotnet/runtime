@@ -3162,6 +3162,11 @@ public:
     //-----------------------------------------------------------
     COM_METHOD EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExceptionsOutsideOfJMC);
 
+    //-----------------------------------------------------------
+    // ICorDebugProcess9
+    //-----------------------------------------------------------
+    COM_METHOD GetContainerObject(CORDB_ADDRESS interiorPointer, ICorDebugValue** ppContainerObject);
+
     COM_METHOD CreateBreakpoint(CORDB_ADDRESS address, ICorDebugValueBreakpoint **ppBreakpoint);
 
 #ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
