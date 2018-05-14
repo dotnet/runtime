@@ -978,7 +978,7 @@ public:
         Thread::VirtualUnwindCallFrame(&context);
         Thread::VirtualUnwindCallFrame(&context);
 
-        return pContext->Rip;
+        return context.Rip;
 #elif defined(_TARGET_ARM_)
         return *((PCODE *)pContext->R11 + 1);      
 #elif defined(_TARGET_ARM64_)
