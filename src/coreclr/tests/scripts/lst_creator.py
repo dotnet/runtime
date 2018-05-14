@@ -301,7 +301,7 @@ def main(args):
         sys.exit(1)
 
     if pri0_test_dir is None or not os.path.isdir(pri0_test_dir):
-        print "Error the Pri1 test directory passed is not a valid directory."
+        print "Error the Pri0 test directory passed is not a valid directory."
         sys.exit(1)
 
     if pri1_test_dir is None or not os.path.isdir(pri1_test_dir):

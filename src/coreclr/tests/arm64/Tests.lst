@@ -1,8 +1,8 @@
 ## This list file has been produced automatically. Any changes
 ## are subject to being overwritten when reproducing this file.
 ## 
-## Last Updated: 09-May-2018 14:44:29
-## Commit: 718347e434964969641031bd2dd46dd6607b1390
+## Last Updated: 09-May-2018 17:46:52
+## Commit: aa8dd0d8a9b1bb47e00fcd694342ed5defb46508
 ## 
 [Dev10_535767.cmd_0]
 RelativePath=baseservices\compilerservices\dynamicobjectproperties\Dev10_535767\Dev10_535767.cmd
@@ -94739,3 +94739,28 @@ Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_FAIL;6675;EXCLUDED
 HostStyle=0
+
+[DevDiv_590772.cmd_12216]
+RelativePath=JIT\Regression\JitBlue\DevDiv_590772\DevDiv_590772\DevDiv_590772.cmd
+WorkingDir=JIT\Regression\JitBlue\DevDiv_590772\DevDiv_590772
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_FAIL;17968;EXCLUDED
+HostStyle=0
+
+[DevDiv_605447.cmd_12217]
+RelativePath=JIT\Regression\JitBlue\DevDiv_605447\DevDiv_605447\DevDiv_605447.cmd
+WorkingDir=JIT\Regression\JitBlue\DevDiv_605447\DevDiv_605447
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_FAIL;17966;EXCLUDED
+HostStyle=0
+
+[DevDiv_590771.cmd_12218]
+RelativePath=JIT\Regression\JitBlue\DevDiv_590771\DevDiv_590771\DevDiv_590771.cmd
+WorkingDir=JIT\Regression\JitBlue\DevDiv_590771\DevDiv_590771
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_FAIL;17967;EXCLUDED
+HostStyle=0
+
