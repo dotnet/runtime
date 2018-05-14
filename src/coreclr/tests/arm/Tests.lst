@@ -1,8 +1,8 @@
 ## This list file has been produced automatically. Any changes
 ## are subject to being overwritten when reproducing this file.
 ## 
-## Last Updated: 09-May-2018 14:46:07
-## Commit: 718347e434964969641031bd2dd46dd6607b1390
+## Last Updated: 09-May-2018 17:42:09
+## Commit: aa8dd0d8a9b1bb47e00fcd694342ed5defb46508
 ## 
 [int8_il_r.cmd_1]
 RelativePath=JIT\Directed\shift\int8_il_r\int8_il_r.cmd
@@ -94714,5 +94714,29 @@ WorkingDir=JIT\Regression\JitBlue\GitHub_17585\GitHub_17585
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
+HostStyle=0
+
+[DevDiv_590772.cmd_11896]
+RelativePath=JIT\Regression\JitBlue\DevDiv_590772\DevDiv_590772\DevDiv_590772.cmd
+WorkingDir=JIT\Regression\JitBlue\DevDiv_590772\DevDiv_590772
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS;Pri1;NEW
+HostStyle=0
+
+[DevDiv_605447.cmd_11897]
+RelativePath=JIT\Regression\JitBlue\DevDiv_605447\DevDiv_605447\DevDiv_605447.cmd
+WorkingDir=JIT\Regression\JitBlue\DevDiv_605447\DevDiv_605447
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS;Pri1;NEW
+HostStyle=0
+
+[DevDiv_590771.cmd_11898]
+RelativePath=JIT\Regression\JitBlue\DevDiv_590771\DevDiv_590771\DevDiv_590771.cmd
+WorkingDir=JIT\Regression\JitBlue\DevDiv_590771\DevDiv_590771
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS;Pri1;NEW
 HostStyle=0
 
