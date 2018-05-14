@@ -25,7 +25,7 @@ namespace System.Drawing
             int status = SafeNativeMethods.Gdip.GdipCreateBitmapFromStream(new GPStream(stream), out bitmap);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
-            ValidateBitmap(bitmap);
+            ValidateImage(bitmap);
 
             SetNativeImage(bitmap);
             EnsureSave(this, null, stream);
@@ -51,20 +51,10 @@ namespace System.Drawing
             }
             SafeNativeMethods.Gdip.CheckStatus(status);
 
-            ValidateBitmap(bitmap);
+            ValidateImage(bitmap);
 
             SetNativeImage(bitmap);
             EnsureSave(this, null, stream);
-        }
-
-        private void ValidateBitmap(IntPtr bitmap)
-        {
-            int status = SafeNativeMethods.Gdip.GdipImageForceValidation(new HandleRef(null, bitmap));
-            if (status != SafeNativeMethods.Gdip.Ok)
-            {
-                SafeNativeMethods.Gdip.GdipDisposeImage(new HandleRef(null, bitmap));
-                throw SafeNativeMethods.Gdip.StatusException(status);
-            }
         }
     }
 }
