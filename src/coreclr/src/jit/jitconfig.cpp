@@ -9,7 +9,7 @@
 
 #include "jitconfig.h"
 
-    JitConfigValues JitConfig;
+JitConfigValues JitConfig;
 
 void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* host)
 {
