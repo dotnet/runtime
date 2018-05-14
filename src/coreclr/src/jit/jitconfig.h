@@ -28,7 +28,7 @@ public:
             int         m_numArgs;
         };
 
-        const char* m_list;
+        char*       m_list;
         MethodName* m_names;
 
         MethodSet(const MethodSet& other) = delete;
@@ -38,9 +38,10 @@ public:
         MethodSet()
         {
         }
+
         inline const char* list() const
         {
-            return m_list;
+            return const_cast<const char*>(m_list);
         }
 
         void initialize(const wchar_t* list, ICorJitHost* host);
