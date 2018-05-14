@@ -6319,8 +6319,8 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         _ASSERTE(IsCloserToLeaf(dbgLastFP, info->m_activeFrame.fp));
 #endif
 
-#ifdef FEATURE_STUBS_AS_IL
-        if (info->m_activeFrame.md->IsILStub() && info->m_activeFrame.md->AsDynamicMethodDesc()->IsMulticastStub())
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
+        if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsILStub() && info->m_activeFrame.md->AsDynamicMethodDesc()->IsMulticastStub())
         {
             LOG((LF_CORDB, LL_INFO10000,
                  "DS::TSO: multicast frame.\n"));
@@ -6347,7 +6347,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                 break;          
         }
         else 
-#endif // FEATURE_STUBS_AS_IL
+#endif // FEATURE_MULTICASTSTUB_AS_IL
         if (info->m_activeFrame.managed)
         {
             LOG((LF_CORDB, LL_INFO10000,
