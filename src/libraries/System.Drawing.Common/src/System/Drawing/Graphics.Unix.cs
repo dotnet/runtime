@@ -50,7 +50,6 @@ namespace System.Drawing
         private bool disposed = false;
         private static float defDpiX = 0;
         private static float defDpiY = 0;
-        private IntPtr deviceContextHdc;
 
         public delegate bool EnumerateMetafileProc(EmfPlusRecordType recordType,
                                 int flags,
@@ -277,6 +276,11 @@ namespace System.Drawing
             int status;
             if (!disposed)
             {
+                if (_nativeHdc != IntPtr.Zero) // avoid a handle leak.
+                {
+                    ReleaseHdc();
+                }
+
                 if (!SafeNativeMethods.Gdip.UseX11Drawable)
                 {
                     Flush();
@@ -1641,26 +1645,7 @@ namespace System.Drawing
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
-
-        public void Flush()
-        {
-            Flush(FlushIntention.Flush);
-        }
-
-
-        public void Flush(FlushIntention intention)
-        {
-            if (nativeObject == IntPtr.Zero)
-            {
-                return;
-            }
-
-            int status = SafeNativeMethods.Gdip.GdipFlush(nativeObject, intention);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-
-            if (maccontext != null)
-                maccontext.Synchronize();
-        }
+        private void FlushCore() => maccontext?.Synchronize();
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Graphics FromHdc(IntPtr hdc)
@@ -1756,12 +1741,6 @@ namespace System.Drawing
         public static IntPtr GetHalftonePalette()
         {
             throw new NotImplementedException();
-        }
-
-        public IntPtr GetHdc()
-        {
-            SafeNativeMethods.Gdip.CheckStatus(SafeNativeMethods.Gdip.GdipGetDC(this.nativeObject, out deviceContextHdc));
-            return deviceContextHdc;
         }
 
         public Color GetNearestColor(Color color)
@@ -1890,26 +1869,15 @@ namespace System.Drawing
             return new SizeF(boundingBox.Width, boundingBox.Height);
         }
 
-        [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public void ReleaseHdc(IntPtr hdc)
-        {
-            ReleaseHdcInternal(hdc);
-        }
-
-        public void ReleaseHdc()
-        {
-            ReleaseHdcInternal(deviceContextHdc);
-        }
-
         [MonoLimitation("Can only be used when hdc was provided by Graphics.GetHdc() method")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void ReleaseHdcInternal(IntPtr hdc)
         {
             int status = SafeNativeMethods.Gdip.InvalidParameter;
-            if (hdc == deviceContextHdc)
+            if (hdc == _nativeHdc)
             {
-                status = SafeNativeMethods.Gdip.GdipReleaseDC(nativeObject, deviceContextHdc);
-                deviceContextHdc = IntPtr.Zero;
+                status = SafeNativeMethods.Gdip.GdipReleaseDC(nativeObject, _nativeHdc);
+                _nativeHdc = IntPtr.Zero;
             }
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
