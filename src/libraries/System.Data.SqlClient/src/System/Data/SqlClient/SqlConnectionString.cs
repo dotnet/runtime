@@ -41,6 +41,8 @@ namespace System.Data.SqlClient
             internal const bool Persist_Security_Info = false;
             internal const bool Pooling = true;
             internal const bool TrustServerCertificate = false;
+            internal const string User_ID = "";
+            internal const string Type_System_Version = "";
             internal const bool User_Instance = false;
             internal const bool Replication = false;
             internal const int Connect_Retry_Count = 1;
