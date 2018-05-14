@@ -12,4 +12,3 @@ System.Net.NameResolution.Pal.Tests  # https://github.com/dotnet/coreclr/issues/
 System.Net.NetworkInformation.Functional.Tests # https://github.com/dotnet/coreclr/issues/17753 -- segmentation fault
 System.Net.Sockets.Tests             # https://github.com/dotnet/coreclr/issues/17753 -- segmentation fault
 System.Text.RegularExpressions.Tests # https://github.com/dotnet/coreclr/issues/17754 -- timeout -- JitMinOpts only
-System.Transactions.Local.Tests      # https://github.com/dotnet/coreclr/issues/17754 -- timeout
