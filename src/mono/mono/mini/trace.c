@@ -143,11 +143,26 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 	g_free (fname);
 
 	if (!ebp) {
+
+// https://github.com/mono/mono/issues/8572
+// Build fails on Redhat 6.8 with GCC 4.4.7.
+// Old gcc does not allow pragma diagnostic within function.
+#if __clang__ || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+#define GCC_PRAGMA_DIAGNOSTIC_WITHIN_FUNCTION 1
+#endif
+
+#if GCC_PRAGMA_DIAGNOSTIC_WITHIN_FUNCTION
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wframe-address"
+#endif
+
 		printf (") ip: %p\n", MONO_RETURN_ADDRESS_N (1));
+
+#if GCC_PRAGMA_DIAGNOSTIC_WITHIN_FUNCTION
 #pragma GCC diagnostic pop
+#endif
+
 		goto unlock;
 	}
 
