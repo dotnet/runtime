@@ -70,6 +70,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\lldb.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\lldb.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\memory-access.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\intrinsics.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-profiler.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp-stubs.c" />
   </ItemGroup>

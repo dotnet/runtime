@@ -208,6 +208,9 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\memory-access.c">
       <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\intrinsics.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-profiler.c">
       <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClCompile>
