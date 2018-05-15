@@ -368,6 +368,7 @@ public:
 
     int GetIndex(_Key key)
     {
+        AssertCodeMsg(this != nullptr, EXCEPTIONCODE_MC, "There is no such LWM (in GetIndex)");
         if (numItems == 0)
             return -1;
 
@@ -405,6 +406,7 @@ public:
     _Item Get(_Key key)
     {
         int index = GetIndex(key);
+        AssertCodeMsg(index != -1, EXCEPTIONCODE_MC, "Didn't find Item (in Get)");
         return GetItem(index);
     }
 
