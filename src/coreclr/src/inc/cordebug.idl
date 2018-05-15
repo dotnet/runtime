@@ -3267,7 +3267,7 @@ interface ICorDebugProcess8 : IUnknown
 ]
 interface ICorDebugProcess9 : IUnknown
 {
-    HRESULT GetContainerObject([in] CORDB_ADDRESS interiorPointer, [out] ICorDebugValue** ppContainerObject);
+    HRESULT GetContainerObject([in] CORDB_ADDRESS interiorPointer, [out] ICorDebugObjectValue** ppContainerObject);
 }
 
 // Event types MODULE_LOADED and MODULE_UNLOADED implement this interface
