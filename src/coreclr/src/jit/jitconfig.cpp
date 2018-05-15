@@ -16,6 +16,44 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
     assert(m_list == nullptr);
     assert(m_names == nullptr);
 
+    // Convert the input list to UTF-8
+    int utf8ListLen = WszWideCharToMultiByte(CP_UTF8, 0, list, -1, nullptr, 0, nullptr, nullptr);
+    if (utf8ListLen == 0)
+    {
+        return;
+    }
+    else
+    {
+        // char* m_list;
+        //
+        m_list = static_cast<char*>(host->allocateMemory(utf8ListLen));
+        if (WszWideCharToMultiByte(CP_UTF8, 0, list, -1, static_cast<LPSTR>(m_list), utf8ListLen, nullptr, nullptr) ==
+            0)
+        {
+            // Failed to convert the list. Free the memory and ignore the list.
+            host->freeMemory(static_cast<void*>(m_list));
+            m_list = nullptr;
+            return;
+        }
+    }
+
+    const char   SEP_CHAR  = ' ';      // character used to separate each entry
+    const char   WILD_CHAR = '*';      // character used as the wildcard match everything
+    char         currChar  = '?';      // The current character
+    int          nameStart = -1;       // Index of the start of the current class or method name
+    MethodName** lastName  = &m_names; // Last entry inserted into the list
+    bool         isQuoted  = false;    // true while parsing inside a quote "this-is-a-quoted-region"
+    MethodName   currentName;          // Buffer used while parsing the current entry
+
+    currentName.m_next                    = nullptr;
+    currentName.m_methodNameStart         = -1;
+    currentName.m_methodNameLen           = -1;
+    currentName.m_methodNameWildcardAtEnd = false;
+    currentName.m_classNameStart          = -1;
+    currentName.m_classNameLen            = -1;
+    currentName.m_classNameWildcardAtEnd  = false;
+    currentName.m_numArgs                 = -1;
+
     enum State
     {
         NO_NAME,
@@ -24,41 +62,16 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
         ARG_LIST
     }; // parsing state machine
 
-    const char SEP_CHAR = ' '; // current character use to separate each entry
-
-    wchar_t      lastChar  = '?';     // dummy
-    int          nameStart = -1;      // Index of the start of the current class or method name
-    MethodName   currentName;         // Buffer used while parsing the current entry
-    MethodName** lastName = &m_names; // Last entry inserted into the list
-    bool         isQuoted = false;
-
-    currentName.m_next            = nullptr;
-    currentName.m_methodNameStart = -1;
-    currentName.m_methodNameLen   = -1;
-    currentName.m_classNameStart  = -1;
-    currentName.m_classNameLen    = -1;
-    currentName.m_numArgs         = -1;
-
-    // Convert the input list to UTF-8
-    int utf8ListLen = WszWideCharToMultiByte(CP_UTF8, 0, list, -1, nullptr, 0, nullptr, nullptr);
-    m_list          = (char*)host->allocateMemory(utf8ListLen);
-    if (WszWideCharToMultiByte(CP_UTF8, 0, list, -1, const_cast<LPSTR>(m_list), utf8ListLen, nullptr, nullptr) == 0)
-    {
-        // Failed to convert the list. Free the memory and ignore the list.
-        host->freeMemory(reinterpret_cast<void*>(const_cast<char*>(m_list)));
-        m_list = nullptr;
-        return;
-    }
-
     State state = NO_NAME;
-    for (int i = 0; lastChar != '\0'; i++)
+    for (int i = 0; (currChar != '\0'); i++)
     {
-        lastChar = m_list[i];
+        currChar = m_list[i];
 
         switch (state)
         {
             case NO_NAME:
-                if (m_list[i] != SEP_CHAR)
+                // skip over zero or more blanks, then expect CLS_NAME
+                if (currChar != SEP_CHAR)
                 {
                     nameStart = i;
                     state     = CLS_NAME; // we have found the start of the next entry
@@ -66,48 +79,73 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
                 break;
 
             case CLS_NAME:
+                // Check for a quoted Class Name: (i.e. "MyClass")
                 if (m_list[nameStart] == '"')
                 {
-                    for (; m_list[i] != '\0' && m_list[i] != '"'; i++)
+                    // Advance until we see the second "
+                    //
+                    for (; (currChar != '\0'); i++)
                     {
-                        ;
+                        currChar = m_list[i];
+                        // Advance until we see the second "
+                        if (currChar == '"')
+                            break;
+                        // or until we see the end of string
+                        if (currChar == '\0')
+                            break;
                     }
 
+                    // skip the initial "
                     nameStart++;
                     isQuoted = true;
                 }
 
-                if (m_list[i] == ':')
+                // A colon denotes the end of the Class name and the start of the Method name
+                if (currChar == ':')
                 {
-                    if (m_list[nameStart] == '*' && !isQuoted)
-                    {
-                        // The class name is a wildcard; mark it invalid.
-                        currentName.m_classNameStart = -1;
-                        currentName.m_classNameLen   = -1;
-                    }
-                    else
-                    {
-                        currentName.m_classNameStart = nameStart;
-                        currentName.m_classNameLen   = i - nameStart;
+                    // Record the class name
+                    currentName.m_classNameStart = nameStart;
+                    currentName.m_classNameLen   = i - nameStart;
 
-                        // Remove the trailing quote, if any
-                        if (isQuoted)
-                        {
-                            currentName.m_classNameLen--;
-                            isQuoted = false;
-                        }
-                    }
-
-                    // Accept class::name syntax as well
+                    // Also accept the double colon syntax as well  (i.e class::method)
+                    //
                     if (m_list[i + 1] == ':')
                     {
                         i++;
                     }
 
+                    if (isQuoted)
+                    {
+                        // Remove the trailing "
+                        currentName.m_classNameLen--;
+                        isQuoted = false;
+                    }
+
+                    // Is the first character a wildcard?
+                    if (m_list[currentName.m_classNameStart] == WILD_CHAR)
+                    {
+                        // The class name is a full wildcard; mark it as such.
+                        currentName.m_classNameStart = -1;
+                        currentName.m_classNameLen   = -1;
+                    }
+                    // Is there a wildcard at the end of the class name?
+                    //
+                    else if (m_list[currentName.m_classNameStart + currentName.m_classNameLen - 1] == WILD_CHAR)
+                    {
+                        // i.e. bar*:method, will match any class that starts with "bar"
+
+                        // Remove the trailing WILD_CHAR from class name
+                        currentName.m_classNameWildcardAtEnd = true;
+                        currentName.m_classNameLen--; // backup for WILD_CHAR
+                    }
+
+                    // The method name will start at the next character
                     nameStart = i + 1;
-                    state     = FUNC_NAME;
+
+                    // Now expect FUNC_NAME
+                    state = FUNC_NAME;
                 }
-                else if (m_list[i] == '\0' || m_list[i] == SEP_CHAR || m_list[i] == '(')
+                else if ((currChar == '\0') || (currChar == SEP_CHAR) || (currChar == '('))
                 {
                     // Treat this as a method name without a class name.
                     currentName.m_classNameStart = -1;
@@ -117,59 +155,85 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
                 break;
 
             case FUNC_NAME:
-                if (m_list[nameStart] == '"')
+                // Check for a quoted method name: i.e. className:"MyFunc"
+                //
+                // Note that we may have already parsed a quoted string above in CLS_NAME, i.e. "Func":
+                if (!isQuoted && (m_list[nameStart] == '"'))
                 {
-                    // The first half of the outer contdition handles the case where the
-                    // class name is valid.
-                    for (; nameStart == i || (m_list[i] != '\0' && m_list[i] != '"'); i++)
+                    // Advance until we see the second "
+                    //
+                    for (; (currChar != '\0'); i++)
                     {
-                        ;
+                        currChar = m_list[i];
+                        // Advance until we see the second "
+                        if (currChar == '"')
+                            break;
+                        // or until we see the end of string
+                        if (currChar == '\0')
+                            break;
                     }
 
+                    // skip the initial "
                     nameStart++;
                     isQuoted = true;
                 }
 
-                if (m_list[i] == '\0' || m_list[i] == SEP_CHAR || m_list[i] == '(')
+                if ((currChar == '\0') || (currChar == SEP_CHAR) || (currChar == '('))
                 {
                 DONE_FUNC_NAME:
-                    assert(m_list[i] == '\0' || m_list[i] == SEP_CHAR || m_list[i] == '(');
+                    assert((currChar == '\0') || (currChar == SEP_CHAR) || (currChar == '('));
 
-                    if (m_list[nameStart] == '*' && !isQuoted)
+                    // Record the method name
+                    currentName.m_methodNameStart = nameStart;
+                    currentName.m_methodNameLen   = i - nameStart;
+
+                    if (isQuoted)
                     {
-                        // The method name is a wildcard; mark it invalid.
+                        // Remove the trailing "
+                        currentName.m_methodNameLen--;
+                        isQuoted = false;
+                    }
+
+                    // Is the first character a wildcard?
+                    if (m_list[currentName.m_methodNameStart] == WILD_CHAR)
+                    {
+                        // The method name is a full wildcard; mark it as such.
                         currentName.m_methodNameStart = -1;
                         currentName.m_methodNameLen   = -1;
                     }
-                    else
+                    // Is there a wildcard at the end of the method name?
+                    //
+                    else if (m_list[currentName.m_methodNameStart + currentName.m_methodNameLen - 1] == WILD_CHAR)
                     {
-                        currentName.m_methodNameStart = nameStart;
-                        currentName.m_methodNameLen   = i - nameStart;
+                        // i.e. class:foo*, will match any method that starts with "foo"
 
-                        // Remove the trailing quote, if any
-                        if (isQuoted)
-                        {
-                            currentName.m_classNameLen--;
-                            isQuoted = false;
-                        }
+                        // Remove the trailing WILD_CHAR from method name
+                        currentName.m_methodNameLen--; // backup for WILD_CHAR
+                        currentName.m_methodNameWildcardAtEnd = true;
                     }
 
-                    if (m_list[i] == '\0' || m_list[i] == SEP_CHAR)
+                    // should we expect an ARG_LIST?
+                    //
+                    if (currChar == '(')
                     {
                         currentName.m_numArgs = -1;
+                        // Expect an ARG_LIST
+                        state = ARG_LIST;
+                    }
+                    else // reached the end of string or a SEP_CHAR
+                    {
+                        assert((currChar == '\0') || (currChar == SEP_CHAR));
+
+                        currentName.m_numArgs = -1;
+
+                        // There isn't an ARG_LIST
                         goto DONE_ARG_LIST;
-                    }
-                    else
-                    {
-                        assert(m_list[i] == '(');
-                        currentName.m_numArgs = -1;
-                        state                 = ARG_LIST;
                     }
                 }
                 break;
 
             case ARG_LIST:
-                if (m_list[i] == '\0' || m_list[i] == ')')
+                if ((currChar == '\0') || (currChar == ')'))
                 {
                     if (currentName.m_numArgs == -1)
                     {
@@ -177,10 +241,10 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
                     }
 
                 DONE_ARG_LIST:
-                    assert(m_list[i] == '\0' || m_list[i] == SEP_CHAR || m_list[i] == ')');
+                    assert((currChar == '\0') || (currChar == SEP_CHAR) || (currChar == ')'));
 
                     // We have parsed an entire method name; create a new entry in the list for it.
-                    MethodName* name = (MethodName*)host->allocateMemory(sizeof(MethodName));
+                    MethodName* name = static_cast<MethodName*>(host->allocateMemory(sizeof(MethodName)));
                     *name            = currentName;
 
                     assert(name->m_next == nullptr);
@@ -191,25 +255,24 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
 
                     // Skip anything after the argument list until we find the next
                     // separator character. Otherwise if we see "func(a,b):foo" we
-                    // create entries for "func(a,b)" as well as ":foo".
-                    if (m_list[i] == ')')
+                    // would create entries for "func(a,b)" as well as ":foo".
+                    if (currChar == ')')
                     {
-                        for (; m_list[i] && m_list[i] != SEP_CHAR; i++)
+                        do
                         {
-                            ;
-                        }
-
-                        lastChar = m_list[i];
+                            currChar = m_list[++i];
+                        } while ((currChar != '\0') && (currChar != SEP_CHAR));
                     }
                 }
-                else
+                else // We are looking at the ARG_LIST
                 {
-                    if (m_list[i] != SEP_CHAR && currentName.m_numArgs == -1)
+                    if ((currChar != SEP_CHAR) && (currentName.m_numArgs == -1))
                     {
                         currentName.m_numArgs = 1;
                     }
 
-                    if (m_list[i] == ',')
+                    // A comma means that there is an additional arg
+                    if (currChar == ',')
                     {
                         currentName.m_numArgs++;
                     }
@@ -229,19 +292,32 @@ void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
     for (MethodName *name = m_names, *next = nullptr; name != nullptr; name = next)
     {
         next = name->m_next;
-        host->freeMemory(reinterpret_cast<void*>(const_cast<MethodName*>(name)));
+        host->freeMemory(static_cast<void*>(name));
     }
     if (m_list != nullptr)
     {
-        host->freeMemory(reinterpret_cast<void*>(const_cast<char*>(m_list)));
+        host->freeMemory(static_cast<void*>(m_list));
         m_list = nullptr;
     }
     m_names = nullptr;
 }
 
-static bool matchesName(const char* const name, int nameLen, const char* const s2)
+static bool matchesName(const char* const name, int nameLen, bool wildcardAtEnd, const char* const s2)
 {
-    return strncmp(name, s2, nameLen) == 0 && s2[nameLen] == '\0';
+    // 's2' must start with 'nameLen' characters of 'name'
+    if (strncmp(name, s2, nameLen) != 0)
+    {
+        return false;
+    }
+
+    // if we don't have a wildcardAtEnd then s2 also need to be zero terminated
+    if (!wildcardAtEnd && (s2[nameLen] != '\0'))
+    {
+        return false;
+    }
+
+    // we have a successful match
+    return true;
 }
 
 bool JitConfigValues::MethodSet::contains(const char*       methodName,
@@ -263,12 +339,12 @@ bool JitConfigValues::MethodSet::contains(const char*       methodName,
         if (name->m_methodNameStart != -1)
         {
             const char* expectedMethodName = &m_list[name->m_methodNameStart];
-            if (!matchesName(expectedMethodName, name->m_methodNameLen, methodName))
+            if (!matchesName(expectedMethodName, name->m_methodNameLen, name->m_methodNameWildcardAtEnd, methodName))
             {
                 // C++ embeds the class name into the method name; deal with that here.
                 const char* colon = strchr(methodName, ':');
                 if (colon != nullptr && colon[1] == ':' &&
-                    matchesName(expectedMethodName, name->m_methodNameLen, methodName))
+                    matchesName(expectedMethodName, name->m_methodNameLen, name->m_methodNameWildcardAtEnd, methodName))
                 {
                     int classLen = (int)(colon - methodName);
                     if (name->m_classNameStart == -1 ||
@@ -284,14 +360,8 @@ bool JitConfigValues::MethodSet::contains(const char*       methodName,
 
         // If m_classNameStart is valid, check for a mismatch
         if (className == nullptr || name->m_classNameStart == -1 ||
-            matchesName(&m_list[name->m_classNameStart], name->m_classNameLen, className))
-        {
-            return true;
-        }
-
-        // Check for suffix wildcard like System.*
-        if (name->m_classNameLen > 0 && m_list[name->m_classNameStart + name->m_classNameLen - 1] == '*' &&
-            strncmp(&m_list[name->m_classNameStart], className, name->m_classNameLen - 1) == 0)
+            matchesName(&m_list[name->m_classNameStart], name->m_classNameLen, name->m_classNameWildcardAtEnd,
+                        className))
         {
             return true;
         }
@@ -302,7 +372,8 @@ bool JitConfigValues::MethodSet::contains(const char*       methodName,
         if (nsSep != nullptr && nsSep != className)
         {
             const char* onlyClass = nsSep[-1] == '.' ? nsSep : &nsSep[1];
-            if (matchesName(&m_list[name->m_classNameStart], name->m_classNameLen, onlyClass))
+            if (matchesName(&m_list[name->m_classNameStart], name->m_classNameLen, name->m_classNameWildcardAtEnd,
+                            onlyClass))
             {
                 return true;
             }
