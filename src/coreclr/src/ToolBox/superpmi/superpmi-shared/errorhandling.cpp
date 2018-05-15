@@ -63,6 +63,10 @@ void SpmiException::ShowAndDeleteMessage()
         delete[] exMessage;
         exMessage = nullptr;
     }
+    else
+    {
+        LogError("Unexpected exception was thrown.");
+    }
 }
 
 void SpmiException::DeleteMessage()
