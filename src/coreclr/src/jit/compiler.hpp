@@ -3575,29 +3575,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-/*****************************************************************************
- *
- *  Update the current set of live variables based on the life set recorded
- *  in the given expression tree node.
- */
-
-template <bool ForCodeGen>
-inline void Compiler::compUpdateLife(GenTree* tree)
-{
-    // TODO-Cleanup: We shouldn't really be calling this more than once
-    if (tree == compCurLifeTree)
-    {
-        return;
-    }
-
-    if (!tree->OperIsNonPhiLocal() && fgIsIndirOfAddrOfLocal(tree) == nullptr)
-    {
-        return;
-    }
-
-    compUpdateLifeVar<ForCodeGen>(tree);
-}
-
 template <bool ForCodeGen>
 inline void Compiler::compUpdateLife(VARSET_VALARG_TP newLife)
 {
