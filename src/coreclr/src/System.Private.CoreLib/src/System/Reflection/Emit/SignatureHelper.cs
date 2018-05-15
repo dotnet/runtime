@@ -289,7 +289,6 @@ namespace System.Reflection.Emit
             // in the signature based on clsArgument. This helper is called for return type.
 
             Debug.Assert(clsArgument != null);
-            Debug.Assert((optionalCustomModifiers == null && requiredCustomModifiers == null) || !clsArgument.ContainsGenericParameters);
 
             if (optionalCustomModifiers != null)
             {
