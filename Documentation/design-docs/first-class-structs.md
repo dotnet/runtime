@@ -52,7 +52,15 @@ static foo getfoo() { return new foo(); }
     eliminate unneeded copies locally (i.e. not just due to inlining), in the case where
     the struct may or may not be passed or returned directly.
   * Unfortunately, there is not currently a scenario or test case for this issue.
-  
+
+* [\#2908 Unix: Unecessary struct copy while passing by value on stack](https://github.com/dotnet/coreclr/issues/2908)
+* [\#6264 Unix: Unnecessary struct copy while passsing struct of size <=16](https://github.com/dotnet/coreclr/issues/6264)
+* [\#6266 Unix: Unnecessary copies for promoted struct arguments](https://github.com/dotnet/coreclr/issues/6266)
+* [\#16619 [RyuJIT] Eliminate unecessary copies when passing structs](https://github.com/dotnet/coreclr/issues/16619)
+  * These require changing both the callsite and the callee to avoid copying the parameter onto the stack.
+  * Should be addressed with work items 5 and 10. SIMD parameters are a special case (see #6265), but should be addressed at the
+    same time.
+
 * [\#3144 Avoid marking tmp as DoNotEnregister in tmp=GT_CALL() where call returns a
   enregisterable struct in two return registers](https://github.com/dotnet/coreclr/issues/3144)
   * This issue could be addressed without First Class Structs. However,
@@ -73,7 +81,19 @@ static foo getfoo() { return new foo(); }
   * The test case in this issue generates effectively the same loop body on most targets except for x86.
     Addressing this requires us to "Add support in prolog to extract fields, and
     remove the restriction of not promoting incoming reg structs that have more than one field" - see [Dependent Work Items](https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/first-class-structs.md#dependent-work-items)
+    
+* [\#6265 Unix: Unnecessary copies for struct argument with GT_ADDR(GT_SIMD)](https://github.com/dotnet/coreclr/issues/6265)
+  * The IR for passing structs doesn't support having a `GT_SIMD` node as an argument. This should be fixed by work item 10 below.
 
+* [\#11816 Extra zeroing with structs and inlining](https://github.com/dotnet/coreclr/issues/11816)
+  * This issue illustrates the failure of the JIT to eliminate zero-initialization of structs that are subsequently fully
+    defined. It is a related but somewhat different manifestation of the issue in #1133, i.e. that structs are not
+    fully supported in value numbering and optimization.
+
+* [\#12865 JIT: inefficient codegen for calls returning 16-byte structs on Linux x64](https://github.com/dotnet/coreclr/issues/12865)
+  * This is related to #3144, and requires supporting the assignment of a multi-reg call return into a promoted local variable,
+    and enabling subsequent elimination of any redundant copies.
+  
 Normalizing Struct Types
 ------------------------
 We would like to facilitate full enregistration of structs with the following properties:
