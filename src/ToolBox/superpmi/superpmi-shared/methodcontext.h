@@ -1226,9 +1226,7 @@ public:
     void dmpGetClassName(DWORDLONG key, DWORD value);
     const char* repGetClassName(CORINFO_CLASS_HANDLE cls);
 
-    void recGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls,
-                                     char*                className,
-                                     const char**         namespaceName);
+    void recGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, char* className, const char** namespaceName);
     void dmpGetClassNameFromMetadata(DLD key, DD value);
     const char* repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName);
 
@@ -1404,7 +1402,7 @@ enum mcPackets
     Packet_GetTokenTypeAsHandle                          = 89,
     Packet_GetTypeForBox                                 = 90,
     Packet_GetTypeForPrimitiveValueClass                 = 91,
-    Packet_GetTypeForPrimitiveNumericClass                 = 168, // Added 12/7/2017
+    Packet_GetTypeForPrimitiveNumericClass               = 168, // Added 12/7/2017
     Packet_GetUnboxedEntry                               = 165, // Added 10/26/17
     Packet_GetUnBoxHelper                                = 92,
     Packet_GetReadyToRunHelper                           = 150, // Added 10/10/2014

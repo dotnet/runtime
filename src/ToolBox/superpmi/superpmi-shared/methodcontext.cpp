@@ -1926,7 +1926,8 @@ void MethodContext::recGetTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls,
 }
 void MethodContext::dmpGetTypeForPrimitiveNumericClass(DWORDLONG key, DWORD value)
 {
-    printf("GetTypeForPrimitiveNumericClass key cls-%016llX, value cit-%u(%s)", key, value, toString((CorInfoType)value));
+    printf("GetTypeForPrimitiveNumericClass key cls-%016llX, value cit-%u(%s)", key, value,
+           toString((CorInfoType)value));
 }
 CorInfoType MethodContext::repGetTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
 {
@@ -5704,20 +5705,17 @@ const char* MethodContext::repGetClassName(CORINFO_CLASS_HANDLE cls)
     return name;
 }
 
-void MethodContext::recGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls,
-                                                char*               className,
-                                                const char**        namespaceName)
+void MethodContext::recGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, char* className, const char** namespaceName)
 {
     if (GetClassNameFromMetadata == nullptr)
         GetClassNameFromMetadata = new LightWeightMap<DLD, DD>();
-    DD value;
+    DD  value;
     DLD key;
     key.A = (DWORDLONG)cls;
     key.B = (namespaceName != nullptr);
 
     if (className != nullptr)
-        value.A = 
-            GetClassNameFromMetadata->AddBuffer((unsigned char*)className, (DWORD)strlen(className) + 1);
+        value.A = GetClassNameFromMetadata->AddBuffer((unsigned char*)className, (DWORD)strlen(className) + 1);
     else
         value.A = (DWORD)-1;
 
@@ -5744,8 +5742,8 @@ void MethodContext::dmpGetClassNameFromMetadata(DLD key, DD value)
 const char* MethodContext::repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName)
 {
     const char* result = nullptr;
-    DD         value;
-    DLD        key;
+    DD          value;
+    DLD         key;
     key.A = (DWORDLONG)cls;
     key.B = (namespaceName != nullptr);
 
@@ -5773,7 +5771,9 @@ const char* MethodContext::repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls,
     return result;
 }
 
-void MethodContext::recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result, unsigned index)
+void MethodContext::recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls,
+                                                    CORINFO_CLASS_HANDLE result,
+                                                    unsigned             index)
 {
     if (GetTypeInstantiationArgument == nullptr)
         GetTypeInstantiationArgument = new LightWeightMap<DWORDLONG, DWORDLONG>();
@@ -5790,7 +5790,6 @@ void MethodContext::dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG val
     GetTypeInstantiationArgument->Unlock();
 }
 
-
 CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
 {
     CORINFO_CLASS_HANDLE result = nullptr;
@@ -5803,10 +5802,10 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLAS
         itemIndex = GetTypeInstantiationArgument->GetIndex(key);
     if (itemIndex >= 0)
     {
-        value = GetTypeInstantiationArgument->Get(key);
+        value  = GetTypeInstantiationArgument->Get(key);
         result = (CORINFO_CLASS_HANDLE)value;
     }
-    
+
     DEBUG_REP(dmpGetTypeInstantiationArgument(key, value));
     return result;
 }
