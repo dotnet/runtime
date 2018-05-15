@@ -4,13 +4,13 @@ First Class Structs
 Objectives
 ----------
 Primary Objectives
-* Avoid forcing structs to the stack if they are only assigned to/from, or passed to/returned
- from a call or intrinsic
- - Including SIMD types as well as other pointer-sized-or-less struct types
- - Enable enregistration of structs that have no field accesses
-* Optimize these types as effectively as any other basic type
- - Value numbering, especially for types that are used in intrinsics (e.g. SIMD)
- - Register allocation
+- Avoid forcing structs to the stack if they are only assigned to/from, or passed to/returned
+  from a call or intrinsic
+  - Including SIMD types as well as other pointer-sized-or-less struct types
+- Enable enregistration of structs that have no field accesses
+- Optimize these types as effectively as any other basic type
+  - Value numbering, especially for types that are used in intrinsics (e.g. SIMD)
+  - Register allocation
 
 Secondary Objectives
 * No “swizzling” or lying about struct types – they are always struct types
@@ -22,9 +22,9 @@ The following issues illustrate some of the motivation for improving the handlin
 (structs) in RyuJIT:
 
 * [\#11407 [RyuJIT] Fully enregister structs that fit into a single register when profitable](https://github.com/dotnet/coreclr/issues/11407), also VSO Bug 98404: .NET JIT x86 - poor code generated for value type initialization
- * This is a simple test case that should generate simply `xor eax; ret` on x86 and x64, but
-   instead generates many unnecessary copies. It is addressed by full enregistration of
-   structs that fit into a register:
+  * This is a simple test case that should generate simply `xor eax; ret` on x86 and x64, but
+    instead generates many unnecessary copies. It is addressed by full enregistration of
+    structs that fit into a register:
  
 ```C#
 struct foo { public byte b1, b2, b3, b4; }
@@ -32,13 +32,13 @@ static foo getfoo() { return new foo(); }
 ```
 
 * [\#1133 JIT: Excessive copies when inlining](https://github.com/dotnet/coreclr/issues/1133)
- * The scenario given in this issue involves a struct that is larger than 8 bytes, so
-   it is not impacted by the fixed-size types. However, by enabling assertion propagation
-   for struct types (which, in turn is made easier by using normal assignments), the
-   excess copies can be eliminated.
-   * Note that these copies are not generated when passing and returning scalar types,
-     and it may be worth considering (in future) whether we can avoiding adding them
-     in the first place.
+  * The scenario given in this issue involves a struct that is larger than 8 bytes, so
+    it is not impacted by the fixed-size types. However, by enabling value numbering and assertion propagation
+    for struct types (which, in turn is made easier by using normal assignments), the
+    excess copies can be eliminated.
+    * Note that these copies are not generated when passing and returning scalar types,
+      and it may be worth considering (in future) whether we can avoiding adding them
+      in the first place.
  
 * [\#1161  RyuJIT properly optimizes structs with a single field if the field type is int but not if it is double](https://github.com/dotnet/coreclr/issues/1161)
   * This issue arises because we never promote a struct with a single double field, due to
@@ -48,7 +48,7 @@ static foo getfoo() { return new foo(); }
   
 * [\#1636 Add optimization to avoid copying a struct if passed by reference and there are no
   writes to and no reads after passed to a callee](https://github.com/dotnet/coreclr/issues/1636).
-  * This issue is nearly the same as the above, except that in this case the desire is to
+  * This issue is related to #1133, except that in this case the desire is to
     eliminate unneeded copies locally (i.e. not just due to inlining), in the case where
     the struct may or may not be passed or returned directly.
   * Unfortunately, there is not currently a scenario or test case for this issue.
@@ -62,11 +62,20 @@ static foo getfoo() { return new foo(); }
     
 * [\#3539 RyuJIT: Poor code quality for tight generic loop with many inlineable calls](https://github.com/dotnet/coreclr/issues/3539)
 (factor x8 slower than non-generic few calls loop).
-  * I am still investigating this issue.
+  * This appears to be the same fundamental issue as #1133. Since there is a benchmark associated with this, it should be
+    verified when #1133 is addressed.
+
+* [\#4766 Pi-Digits: Extra Struct copies of BigInteger](https://github.com/dotnet/coreclr/issues/4766)
+  * In addition to suffering from the same issue as #1133, this has a struct that is promoted even though it is
+    passed (by reference) to its non-inlined constructor. This means that any copy to/from this struct will be field-by-field.
 
 * [\#5556 RuyJIT: structs in parameters and enregistering](https://github.com/dotnet/coreclr/issues/5556)
-  * This also requires further investigation, but requires us to "Add support in prolog to extract fields, and
+  * The test case in this issue generates effectively the same loop body on most targets except for x86.
+    Addressing this requires us to "Add support in prolog to extract fields, and
     remove the restriction of not promoting incoming reg structs that have more than one field" - see [Dependent Work Items](https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/first-class-structs.md#dependent-work-items)
+
+* [\#11407 [RyuJIT] Fully enregister structs that fit into a single register when profitable](https://github.com/dotnet/coreclr/issues/11407)
+  * See work item 7.
 
 Normalizing Struct Types
 ------------------------
