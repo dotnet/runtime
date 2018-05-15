@@ -614,8 +614,7 @@ namespace System.Data.SqlClient
         internal System.Data.SqlClient.PoolBlockingPeriod ConvertValueToPoolBlockingPeriod()
         {
             string value;
-            TryGetParsetableValue(KEY.PoolBlockingPeriod, out value); 
-            if (value == null)
+            if (!TryGetParsetableValue(KEY.PoolBlockingPeriod, out value))
             {
                 return DEFAULT.PoolBlockingPeriod;
             }
@@ -624,11 +623,7 @@ namespace System.Data.SqlClient
             {
                 return DbConnectionStringBuilderUtil.ConvertToPoolBlockingPeriod(KEY.PoolBlockingPeriod, value);
             }
-            catch (FormatException e)
-            {
-                throw ADP.InvalidConnectionOptionValue(KEY.PoolBlockingPeriod, e);
-            }
-            catch (OverflowException e)
+            catch (Exception e) when (e is FormatException || e is OverflowException)
             {
                 throw ADP.InvalidConnectionOptionValue(KEY.PoolBlockingPeriod, e);
             }
