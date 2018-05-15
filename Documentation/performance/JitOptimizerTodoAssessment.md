@@ -12,22 +12,42 @@ Big-Ticket Items
 
 ### Improved Struct Handling
 
-This is an area that has received recent attention, with the [first-class structs](https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/first-class-structs.md)
-work and the struct promotion improvements that went in for `Span<T>`.  Work here
-is expected to continue and can happen incrementally.  Possible next steps:
+Most of the work required to improve struct handling in RyuJIT is captered in the [first-class structs](https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/first-class-structs.md)
+document, though that document needs to be updated to reflect the work that has already been done.
 
- - Struct promotion stress mode (test mode to improve robustness/reliability)
- - Promotion of more structs; relax limits on e.g. field count (should generally
-   help performance-sensitive code where structs are increasingly used to avoid
-   heap allocations)
- - Improve handling of System V struct passing (I think we currently insert
-   some unnecessary round-trips through memory at call boundaries due to
-   internal representation issues)
- - Implicit byref parameter promotion w/o shadow copy
+Recent improvements include the struct promotion improvements that went in for `Span<T>`.
 
-We don't have specific benchmarks that we know would jump in response to any of
-these.  May well be able to find some with some looking, though this may be an
-area where current performance-sensitive code avoids structs.
+Work to improve struct handling is expected to continue and can happen incrementally.
+
+Possible next steps:
+
+ - Code quality improvements:
+   - Promotion of more structs. Relaxing limits, such as on field count, should generally
+     help performance-sensitive code where structs are increasingly used to avoid
+     heap allocations.
+   - Implicit byref parameter promotion w/o shadow copy.
+   - Improve support for value numbering optimizations on structs, especially for copy propagation
+     and assertion propagation of zero-initialization.
+     - This impacts the pi-digits benchmark.
+   - Unify the handling of struct arguments - in particular remove some of the Unix-specific code
+     that is responsible for some of the extra copies that are inserted around calls.
+     - This improves a number of methods in the Devirtualization benchmarks.
+   - Eliminate additional cases where structs are unnecessarily forced to memory when passed to or
+     returned from calls, even though there is a one-to-one match between fields and registers.
+     - This impacts the binarytrees benchmark.
+   - Enable non-memory assignments of same-sized structs with different field composition.
+     This is effectively what is required to allow passing of structs in registers (on targets that
+     support it) when the fields don't match the registers.
+
+ - Test and reliability improvements:
+   - Struct promotion stress mode (test mode to improve robustness/reliability) - i.e. eliminate
+     or greatly increase current limits on the size or number of fields.
+
+
+We don't have specific benchmarks that we know would jump in response to all of
+the code quality improvements, though most have issues associated with them.
+We may well be able to find some additional benchmarks or real-world-code with some looking,
+though it may be the case that current performance-sensitive code avoids structs.
 
 There's also work going on in corefx to use `Span<T>` more broadly.  We should
 make sure we are expanding our span benchmarks appropriately to track and
