@@ -560,8 +560,8 @@ namespace System.Text
         /// <summary>
         /// EnumerateChunks returns ChunkEnumerable that follows the IEnumerable pattern and
         /// thus can be used in a C# 'foreach' statement.   Thus 
-        ///      foreach (ReadOnlyMemory<char> span in sb.EnumerateChunks())
-        ///      {  /* opererate on bytes using 'span' */   }
+        ///      foreach (ReadOnlyMemory<char> chunk in sb.EnumerateChunks())
+        ///      {  /* opererate on bytes using 'chunk' */   }
         ///      
         /// </summary>
         public ChunkEnumerable EnumerateChunks() => new ChunkEnumerable(this);
@@ -599,7 +599,7 @@ namespace System.Text
                 _currentChunk = next;
                 return true;
             }
-            public ReadOnlySpan<char> Current => new ReadOnlySpan<char>(_currentChunk.m_ChunkChars, 0, _currentChunk.m_ChunkLength);
+            public ReadOnlyMemory<char> Current => new ReadOnlyMemory<char>(_currentChunk.m_ChunkChars, 0, _currentChunk.m_ChunkLength);
 
             #region private
             internal ChunkEnumerator(StringBuilder stringBuilder)
