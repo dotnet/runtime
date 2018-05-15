@@ -98,27 +98,25 @@ namespace System.Data.Common
                 throw ADP.ConvertFailed(value.GetType(), typeof(String), e);
             }
         }
+
         #region <<PoolBlockingPeriod Utility>>
-        const string PoolBlockingPeriodAutoString = "Auto";
-        const string PoolBlockingPeriodAlwaysBlockString = "AlwaysBlock";
-        const string PoolBlockingPeriodNeverBlockString = "NeverBlock";
 
         internal static bool TryConvertToPoolBlockingPeriod(string value, out PoolBlockingPeriod result)
         {
             Debug.Assert(Enum.GetNames(typeof(PoolBlockingPeriod)).Length == 3, "PoolBlockingPeriod enum has changed, update needed");
             Debug.Assert(null != value, "TryConvertToPoolBlockingPeriod(null,...)");
 
-            if (StringComparer.OrdinalIgnoreCase.Equals(value, PoolBlockingPeriodAutoString))
+            if (StringComparer.OrdinalIgnoreCase.Equals(value, nameof(PoolBlockingPeriod.Auto)))
             {
                 result = PoolBlockingPeriod.Auto;
                 return true;
             }
-            else if (StringComparer.OrdinalIgnoreCase.Equals(value, PoolBlockingPeriodAlwaysBlockString))
+            else if (StringComparer.OrdinalIgnoreCase.Equals(value, nameof(PoolBlockingPeriod.AlwaysBlock)))
             {
                 result = PoolBlockingPeriod.AlwaysBlock;
                 return true;
             }
-            else if (StringComparer.OrdinalIgnoreCase.Equals(value, PoolBlockingPeriodNeverBlockString))
+            else if (StringComparer.OrdinalIgnoreCase.Equals(value, nameof(PoolBlockingPeriod.NeverBlock)))
             {
                 result = PoolBlockingPeriod.NeverBlock;
                 return true;
@@ -133,24 +131,21 @@ namespace System.Data.Common
         internal static bool IsValidPoolBlockingPeriodValue(PoolBlockingPeriod value)
         {
             Debug.Assert(Enum.GetNames(typeof(PoolBlockingPeriod)).Length == 3, "PoolBlockingPeriod enum has changed, update needed");
-            return value == PoolBlockingPeriod.Auto || value == PoolBlockingPeriod.AlwaysBlock || value == PoolBlockingPeriod.NeverBlock;
+            return (uint)value <= (uint)PoolBlockingPeriod.NeverBlock;
         }
 
         internal static string PoolBlockingPeriodToString(PoolBlockingPeriod value)
         {
             Debug.Assert(IsValidPoolBlockingPeriodValue(value));
 
-            if (value == PoolBlockingPeriod.AlwaysBlock)
+            switch (value)
             {
-                return PoolBlockingPeriodAlwaysBlockString;
-            }
-            if (value == PoolBlockingPeriod.NeverBlock)
-            {
-                return PoolBlockingPeriodNeverBlockString;
-            }
-            else
-            {
-                return PoolBlockingPeriodAutoString;
+                case PoolBlockingPeriod.AlwaysBlock:
+                    return nameof(PoolBlockingPeriod.AlwaysBlock);
+                case PoolBlockingPeriod.NeverBlock:
+                    return nameof(PoolBlockingPeriod.NeverBlock);
+                default:
+                    return nameof(PoolBlockingPeriod.Auto);
             }
         }
 
