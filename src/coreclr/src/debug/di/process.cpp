@@ -2529,7 +2529,7 @@ COM_METHOD CordbProcess::EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExce
     return hr;
 }
 
-COM_METHOD CordbProcess::GetContainerObject(CORDB_ADDRESS interiorPointer, ICorDebugValue** ppContainerObject)
+COM_METHOD CordbProcess::GetContainerObject(CORDB_ADDRESS interiorPointer, ICorDebugObjectValue** ppContainerObject)
 {
     HRESULT hr = S_OK;
     // TODO, databp, I don't know what I am doing, NO_LOCK doesn't sound right
@@ -2552,14 +2552,7 @@ COM_METHOD CordbProcess::GetContainerObject(CORDB_ADDRESS interiorPointer, ICorD
     {
         _ASSERTE(event.type == DB_IPCE_GET_CONTAINER_RESULT);
         CORDB_ADDRESS containerAddress = PTR_TO_CORDB_ADDRESS(event.GetContainerResult.answer);
-        ICorDebugObjectValue* pResult;
-        hr = this->GetObject(containerAddress, &pResult);
-        if (SUCCEEDED(hr))
-        {
-            hr = pResult->QueryInterface(__uuidof(ICorDebugValue), (void**)ppContainerObject);
-            // TODO, databp, smart pointer
-            pResult->Release();
-        }
+        hr = this->GetObject(containerAddress, ppContainerObject);
     }
 
     PUBLIC_API_END(hr);
