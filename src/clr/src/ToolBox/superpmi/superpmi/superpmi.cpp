@@ -122,6 +122,7 @@ void InvokeNearDiffer(NearDiffer*           nearDiffer,
 // -2   : JIT failed to initialize
 // 1    : there were compilation failures
 // 2    : there were asm diffs
+// 3    : there were missing values in method context
 int __cdecl main(int argc, char* argv[])
 {
 #ifdef FEATURE_PAL
@@ -159,7 +160,7 @@ int __cdecl main(int argc, char* argv[])
 #endif
 
     bool   collectThroughput = false;
-    MCList failingMCL, diffMCL;
+    MCList failingToReplayMCL, diffMCL;
 
     CommandLine::Options o;
     if (!CommandLine::Parse(argc, argv, &o))
@@ -214,7 +215,7 @@ int __cdecl main(int argc, char* argv[])
 
     if (o.mclFilename != nullptr)
     {
-        failingMCL.InitializeMCL(o.mclFilename);
+        failingToReplayMCL.InitializeMCL(o.mclFilename);
     }
     if (o.diffMCLFilename != nullptr)
     {
@@ -230,11 +231,13 @@ int __cdecl main(int argc, char* argv[])
         return -1;
     }
 
-    int loadedCount = 0;
-    int jittedCount = 0;
-    int matchCount  = 0;
-    int failCount   = 0;
-    int index       = 0;
+    int loadedCount       = 0;
+    int jittedCount       = 0;
+    int matchCount        = 0;
+    int failToReplayCount = 0;
+    int errorCount        = 0;
+    int missingCount      = 0;
+    int index             = 0;
 
     st1.Start();
     NearDiffer nearDiffer(o.targetArchitecture, o.useCoreDisTools);
@@ -265,13 +268,13 @@ int __cdecl main(int argc, char* argv[])
             if (o.applyDiff)
             {
                 LogVerbose(" %2.1f%% - Loaded %d  Jitted %d  Matching %d  FailedCompile %d at %d per second",
-                           reader->PercentComplete(), loadedCount, jittedCount, matchCount, failCount,
+                           reader->PercentComplete(), loadedCount, jittedCount, matchCount, failToReplayCount,
                            (int)((double)500 / st1.GetSeconds()));
             }
             else
             {
                 LogVerbose(" %2.1f%% - Loaded %d  Jitted %d  FailedCompile %d at %d per second",
-                           reader->PercentComplete(), loadedCount, jittedCount, failCount,
+                           reader->PercentComplete(), loadedCount, jittedCount, failToReplayCount,
                            (int)((double)500 / st1.GetSeconds()));
             }
             st1.Start();
@@ -372,7 +375,7 @@ int __cdecl main(int argc, char* argv[])
             if ((res == JitInstance::RESULT_SUCCESS) && (res2 != JitInstance::RESULT_SUCCESS) &&
                 (o.mclFilename != nullptr))
             {
-                failingMCL.AddMethodToMCL(reader->GetMethodContextIndex());
+                failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
             }
         }
 
@@ -490,21 +493,22 @@ int __cdecl main(int argc, char* argv[])
                 }
                 else
                 {
-                    InvokeNearDiffer(&nearDiffer, &o, &mc, &crl, &matchCount, &reader, &failingMCL, &diffMCL);
+                    InvokeNearDiffer(&nearDiffer, &o, &mc, &crl, &matchCount, &reader, &failingToReplayMCL, &diffMCL);
                 }
             }
         }
         else
         {
-            failCount++;
+            failToReplayCount++;
 
             if (o.mclFilename != nullptr)
-                failingMCL.AddMethodToMCL(reader->GetMethodContextIndex());
+                failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
 
             // The following only apply specifically to failures caused by errors (as opposed
             // to, for instance, failures caused by missing JIT-EE details).
             if (res == JitInstance::RESULT_ERROR)
             {
+                errorCount++;
                 LogError("main method %d of size %d failed to load and compile correctly.",
                          reader->GetMethodContextIndex(), mc->methodSize);
                 if ((o.reproName != nullptr) && (o.indexCount == -1))
@@ -533,6 +537,11 @@ int __cdecl main(int argc, char* argv[])
                     __debugbreak();
                 }
             }
+            else
+            {
+                Assert(res == JitInstance::RESULT_MISSING);
+                missingCount++;
+            }
         }
 
         delete crl;
@@ -540,28 +549,15 @@ int __cdecl main(int argc, char* argv[])
     }
     delete reader;
 
-    int result = 0;
-
     // NOTE: these output status strings are parsed by parallelsuperpmi.cpp::ProcessChildStdOut().
     if (o.applyDiff)
     {
-        LogInfo(g_AsmDiffsSummaryFormatString, loadedCount, jittedCount, failCount,
-                jittedCount - failCount - matchCount);
-
-        if (matchCount != jittedCount)
-        {
-            result = 2;
-        }
+        LogInfo(g_AsmDiffsSummaryFormatString, loadedCount, jittedCount, failToReplayCount,
+                jittedCount - failToReplayCount - matchCount);
     }
     else
     {
-        LogInfo(g_SummaryFormatString, loadedCount, jittedCount, failCount);
-    }
-
-    // Failure to JIT overrides diffs for the error code.
-    if (failCount > 0)
-    {
-        result = 1;
+        LogInfo(g_SummaryFormatString, loadedCount, jittedCount, failToReplayCount);
     }
 
     st2.Stop();
@@ -574,12 +570,36 @@ int __cdecl main(int argc, char* argv[])
 
     if (o.mclFilename != nullptr)
     {
-        failingMCL.CloseMCL();
+        failingToReplayMCL.CloseMCL();
     }
     if (o.diffMCLFilename != nullptr)
     {
         diffMCL.CloseMCL();
     }
     Logger::Shutdown();
+
+    enum Result
+    {
+        Success,
+        Error,
+        Diffs,
+        Misses
+    };
+
+    Result result = Success;
+
+    if (errorCount > 0)
+    {
+        result = Error;
+    }
+    else if (o.applyDiff && matchCount != jittedCount)
+    {
+        result = Diffs;
+    }
+    else if (missingCount > 0)
+    {
+        result = Misses;
+    }
+
     return result;
 }
