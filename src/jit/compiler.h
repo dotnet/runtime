@@ -7263,6 +7263,8 @@ public:
         compChangeLife</*ForCodeGen*/ true>(newLife);
     }
 
+#ifdef LEGACY_BACKEND
+
     template <bool ForCodeGen>
     void compUpdateLife(GenTree* tree);
 
@@ -7271,6 +7273,8 @@ public:
     // use.  (Can be more than one var in the case of dependently promoted struct vars.)
     template <bool ForCodeGen>
     void compUpdateLifeVar(GenTree* tree, VARSET_TP* pLastUseVars = nullptr);
+
+#endif // LEGACY_BACKEND
 
     template <bool ForCodeGen>
     inline void compUpdateLife(VARSET_VALARG_TP newLife);

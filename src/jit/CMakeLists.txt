@@ -76,6 +76,7 @@ set( JIT_SOURCES
   utils.cpp
   valuenum.cpp
   stacklevelsetter.cpp
+  treelifeupdater.cpp
 )
 
 # Add header files to Visual Studio vcxproj, not required for unixes
@@ -191,6 +192,7 @@ if (WIN32)
     varset.h
     vartype.h
     x86_instrs.h
+    treelifeupdater.h
   )
 endif(WIN32)
 
