@@ -24,7 +24,7 @@ The following issues illustrate some of the motivation for improving the handlin
 * [\#11407 [RyuJIT] Fully enregister structs that fit into a single register when profitable](https://github.com/dotnet/coreclr/issues/11407), also VSO Bug 98404: .NET JIT x86 - poor code generated for value type initialization
   * This is a simple test case that should generate simply `xor eax; ret` on x86 and x64, but
     instead generates many unnecessary copies. It is addressed by full enregistration of
-    structs that fit into a register:
+    structs that fit into a register (see work item 7):
  
 ```C#
 struct foo { public byte b1, b2, b3, b4; }
@@ -73,9 +73,6 @@ static foo getfoo() { return new foo(); }
   * The test case in this issue generates effectively the same loop body on most targets except for x86.
     Addressing this requires us to "Add support in prolog to extract fields, and
     remove the restriction of not promoting incoming reg structs that have more than one field" - see [Dependent Work Items](https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/first-class-structs.md#dependent-work-items)
-
-* [\#11407 [RyuJIT] Fully enregister structs that fit into a single register when profitable](https://github.com/dotnet/coreclr/issues/11407)
-  * See work item 7.
 
 Normalizing Struct Types
 ------------------------
