@@ -89,10 +89,14 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
                         currChar = m_list[i];
                         // Advance until we see the second "
                         if (currChar == '"')
+                        {
                             break;
+                        }
                         // or until we see the end of string
                         if (currChar == '\0')
+                        {
                             break;
+                        }
                     }
 
                     // skip the initial "
@@ -167,10 +171,14 @@ void JitConfigValues::MethodSet::initialize(const wchar_t* list, ICorJitHost* ho
                         currChar = m_list[i];
                         // Advance until we see the second "
                         if (currChar == '"')
+                        {
                             break;
+                        }
                         // or until we see the end of string
                         if (currChar == '\0')
+                        {
                             break;
+                        }
                     }
 
                     // skip the initial "
