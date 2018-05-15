@@ -19,6 +19,7 @@
 
 #include "jitpch.h"
 #include "ssabuilder.h"
+#include "treelifeupdater.h"
 
 template <typename T>
 inline static T* allocate_any(jitstd::allocator<void>& alloc, size_t count = 1)
@@ -317,6 +318,8 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
     }
 #endif
 
+    TreeLifeUpdater<false> treeLifeUpdater(this);
+
     // There are no definitions at the start of the block. So clear it.
     compCurLifeTree = nullptr;
     VarSetOps::Assign(this, compCurLife, block->bbLiveIn);
@@ -327,7 +330,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
         // Walk the tree to find if any local variable can be replaced with current live definitions.
         for (GenTree* tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
         {
-            compUpdateLife</*ForCodeGen*/ false>(tree);
+            treeLifeUpdater.UpdateLife(tree);
 
             optCopyProp(block, stmt, tree, curSsaName);
 

@@ -23,6 +23,7 @@
 
 #include "regset.h"
 #include "jitgcinfo.h"
+#include "treelifeupdater.h"
 
 // Forward reference types
 
@@ -150,6 +151,8 @@ protected:
     regMaskTP genLiveMask(GenTree* tree);
     regMaskTP genLiveMask(VARSET_VALARG_TP liveSet);
 #endif
+
+    TreeLifeUpdater<true>* treeLifeUpdater;
 
 public:
     bool genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf);
