@@ -7828,7 +7828,7 @@ EXTERN_C const IID IID_ICorDebugProcess9;
     public:
         virtual HRESULT STDMETHODCALLTYPE GetContainerObject( 
             /* [in] */ CORDB_ADDRESS interiorPointer,
-            /* [out] */ ICorDebugValue **ppContainerObject) = 0;
+            /* [out] */ ICorDebugObjectValue **ppContainerObject) = 0;
         
     };
     
@@ -7854,7 +7854,7 @@ EXTERN_C const IID IID_ICorDebugProcess9;
         HRESULT ( STDMETHODCALLTYPE *GetContainerObject )( 
             ICorDebugProcess9 * This,
             /* [in] */ CORDB_ADDRESS interiorPointer,
-            /* [out] */ ICorDebugValue **ppContainerObject);
+            /* [out] */ ICorDebugObjectValue **ppContainerObject);
         
         END_INTERFACE
     } ICorDebugProcess9Vtbl;
