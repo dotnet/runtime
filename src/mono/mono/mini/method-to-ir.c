@@ -721,7 +721,7 @@ ip_in_finally_clause (MonoCompile *cfg, int offset)
 
 /* Find clauses between ip and target, from inner to outer */
 static GList*
-mono_find_leave_clauses (MonoCompile *cfg, unsigned char *ip, unsigned char *target)
+mono_find_leave_clauses (MonoCompile *cfg, guchar *ip, guchar *target)
 {
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
@@ -4151,7 +4151,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 }
 
 static MonoInst*
-handle_array_new (MonoCompile *cfg, int rank, MonoInst **sp, unsigned char *ip)
+handle_array_new (MonoCompile *cfg, int rank, MonoInst **sp, guchar *ip)
 {
 	MonoJitICallInfo *info;
 
@@ -4648,7 +4648,7 @@ mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 }
 
 static MonoInst*
-mini_emit_ldelema_ins (MonoCompile *cfg, MonoMethod *cmethod, MonoInst **sp, unsigned char *ip, gboolean is_set)
+mini_emit_ldelema_ins (MonoCompile *cfg, MonoMethod *cmethod, MonoInst **sp, guchar *ip, gboolean is_set)
 {
 	int rank;
 	MonoInst *addr;
@@ -4977,8 +4977,8 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	GHashTable *prev_cbb_hash;
 	MonoBasicBlock **prev_cil_offset_to_bb;
 	MonoBasicBlock *prev_cbb;
-	const unsigned char *prev_ip;
-	unsigned char *prev_cil_start;
+	const guchar *prev_ip;
+	guchar *prev_cil_start;
 	guint32 prev_cil_offset_to_bb_len;
 	MonoMethod *prev_current_method;
 	MonoGenericContext *prev_generic_context;
@@ -5219,10 +5219,10 @@ ip_in_bb (MonoCompile *cfg, MonoBasicBlock *bb, const guint8* ip)
 }
 
 static int
-get_basic_blocks (MonoCompile *cfg, MonoMethodHeader* header, guint real_offset, unsigned char *start, unsigned char *end, unsigned char **pos)
+get_basic_blocks (MonoCompile *cfg, MonoMethodHeader* header, guint real_offset, guchar *start, guchar *end, guchar **pos)
 {
-	unsigned char *ip = start;
-	unsigned char *target;
+	guchar *ip = start;
+	guchar *target;
 	int i;
 	guint cli_addr;
 	MonoBasicBlock *bblock;
@@ -5293,7 +5293,7 @@ get_basic_blocks (MonoCompile *cfg, MonoMethodHeader* header, guint real_offset,
 		}
 
 		if (i == CEE_THROW) {
-			unsigned char *bb_start = ip - 1;
+			guchar *bb_start = ip - 1;
 			
 			/* Find the start of the bblock containing the throw */
 			bblock = NULL;
@@ -5425,22 +5425,22 @@ ensure_method_is_allowed_to_call_method (MonoCompile *cfg, MonoMethod *caller, M
 		emit_throw_exception (cfg, ex);
 }
 
-static unsigned char*
-il_read_op (unsigned char *ip, unsigned char *end, unsigned char first_byte, MonoOpcodeEnum desired_il_op)
+static guchar*
+il_read_op (guchar *ip, guchar *end, guchar first_byte, MonoOpcodeEnum desired_il_op)
 // If ip is desired_il_op, return the next ip, else NULL.
 {
 	if (G_LIKELY (ip < end) && G_UNLIKELY (*ip == first_byte)) {
 		MonoOpcodeEnum il_op = MonoOpcodeEnum_Invalid;
 		// mono_opcode_value_and_size updates ip, but not in the expected way.
-		const unsigned char *temp_ip  = ip;
+		const guchar *temp_ip  = ip;
 		const int size = mono_opcode_value_and_size (&temp_ip, end, &il_op);
 		return G_UNLIKELY (size > 0 && il_op == desired_il_op) ? (ip + size) : NULL;
 	}
 	return NULL;
 }
 
-static unsigned char*
-il_read_op_and_token (unsigned char *ip, unsigned char *end, unsigned char first_byte, MonoOpcodeEnum desired_il_op, guint32 *token)
+static guchar*
+il_read_op_and_token (guchar *ip, guchar *end, guchar first_byte, MonoOpcodeEnum desired_il_op, guint32 *token)
 {
 	ip = il_read_op (ip, end, first_byte, desired_il_op);
 	if (ip)
@@ -5448,8 +5448,8 @@ il_read_op_and_token (unsigned char *ip, unsigned char *end, unsigned char first
 	return ip;
 }
 
-static unsigned char*
-il_read_branch_and_target (unsigned char *ip, unsigned char *end, unsigned char first_byte, MonoOpcodeEnum desired_il_op, int size, unsigned char **target)
+static guchar*
+il_read_branch_and_target (guchar *ip, guchar *end, guchar first_byte, MonoOpcodeEnum desired_il_op, int size, guchar **target)
 {
 	ip = il_read_op (ip, end, first_byte, desired_il_op);
 	if (ip) {
@@ -5486,7 +5486,7 @@ il_read_branch_and_target (unsigned char *ip, unsigned char *end, unsigned char 
  * sequence and return the pointer to the data and the size.
  */
 static const char*
-initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, unsigned char *end, MonoClass *klass, guint32 len, int *out_size, guint32 *out_field_token)
+initialize_array_data (MonoMethod *method, gboolean aot, guchar *ip, guchar *end, MonoClass *klass, guint32 len, int *out_size, guint32 *out_field_token)
 {
 	/*
 	 * newarr[System.Int32]
@@ -5566,7 +5566,7 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, unsi
 }
 
 static void
-set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsigned char *ip)
+set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, guchar *ip)
 {
 	ERROR_DECL (error);
 	char *method_fname = mono_method_full_name (method, TRUE);
@@ -5700,14 +5700,14 @@ emit_starg_ir (MonoCompile *cfg, MonoInst **sp, int n)
  * ldloca inhibits many optimizations so try to get rid of it in common
  * cases.
  */
-static unsigned char *
-emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *end, int local)
+static guchar *
+emit_optimized_ldloca_ir (MonoCompile *cfg, guchar *ip, guchar *end, int local)
 {
 	guint32 token;
 	MonoClass *klass;
 	MonoType *type;
 
-	unsigned char *start = ip;
+	guchar *start = ip;
 
 	if  ((ip = il_read_initobj (ip, end, &token)) && ip_in_bb (cfg, cfg->cbb, start + 1)) {
 		/* From the INITOBJ case */
@@ -6311,7 +6311,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	guint32 token, ins_flag;
 	MonoClass *klass;
 	MonoClass *constrained_class = NULL;
-	unsigned char *ip, *end, *target, *err_pos;
+	guchar *ip, *end, *target, *err_pos;
 	MonoMethodSignature *sig;
 	MonoGenericContext *generic_context = NULL;
 	MonoGenericContainer *generic_container = NULL;
@@ -6358,7 +6358,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	generic_container = mono_method_get_generic_container (method);
 	sig = mono_method_signature (method);
 	num_args = sig->hasthis + sig->param_count;
-	ip = (unsigned char*)header->code;
+	ip = (guchar*)header->code;
 	cfg->cil_start = ip;
 	end = ip + header->code_size;
 	cfg->stat_cil_code_size += header->code_size;
@@ -6766,9 +6766,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	start_new_bblock = 0;
 	MonoOpcodeEnum il_op = MonoOpcodeEnum_Invalid;
 
-	for (unsigned char *next_ip = ip; ip < end; ip = next_ip) {
+	for (guchar *next_ip = ip; ip < end; ip = next_ip) {
 		MonoOpcodeEnum previous_il_op = il_op;
-		const unsigned char *tmp_ip = ip;
+		const guchar *tmp_ip = ip;
 		const int op_size = mono_opcode_value_and_size (&tmp_ip, end, &il_op);
 		CHECK_OPSIZE (op_size);
 		next_ip += op_size;
@@ -6996,7 +6996,7 @@ starg:
 			n = ip [1];
 			goto ldloc;
 		case CEE_LDLOCA_S: {
-			unsigned char *tmp_ip;
+			guchar *tmp_ip;
 			n = ip [1];
 ldloca:
 			CHECK_STACK_OVF (1);
