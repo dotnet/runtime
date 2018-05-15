@@ -682,14 +682,7 @@ namespace System.Data.ProviderBase
             {
                 case System.Data.SqlClient.PoolBlockingPeriod.Auto:
                     {
-                        if (ADP.IsAzureSqlServerEndpoint(poolGroupConnectionOptions.DataSource))
-                        {
-                            return false; // in Azure it will be Disabled
-                        }
-                        else
-                        {
-                            return true; // in Non Azure, it will be Enabled
-                        }
+                        return !ADP.IsAzureSqlServerEndpoint(poolGroupConnectionOptions.DataSource);
                     }
                 case System.Data.SqlClient.PoolBlockingPeriod.AlwaysBlock:
                     {
