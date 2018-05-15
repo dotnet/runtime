@@ -514,7 +514,7 @@ bool JitInstance::resetConfig(MethodContext* firstContext)
         return false;
     }
 
-    mc = firstContext;
+    mc                   = firstContext;
     ICorJitHost* newHost = new JitHost(*this);
 
     if (!callJitStartup(newHost))
