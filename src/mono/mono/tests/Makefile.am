@@ -801,6 +801,9 @@ TESTS_IL_SRC=			\
 	ldfldvt.il \
 	newobj-abstract.il
 
+# This test crashes the runtime, even with recent fixes.
+#	incorrect-ldvirtftn-read-behind-for-dup.il
+
 TESTS_GSHARED_SRC = \
 	generics-sharing.2.cs	\
 	shared-generic-methods.2.cs	\

@@ -57,6 +57,20 @@ gboolean mono_verifier_verify_memberref_field_signature (MonoImage *image, guint
 gboolean mono_verifier_verify_typeref_row (MonoImage *image, guint32 row, MonoError *error);
 gboolean mono_verifier_verify_methodimpl_row (MonoImage *image, guint32 row, MonoError *error);
 gboolean mono_verifier_is_signature_compatible (MonoMethodSignature *target, MonoMethodSignature *candidate);
+
+/*Token validation macros and functions */
+#define IS_MEMBER_REF(token) (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
+#define IS_METHOD_DEF(token) (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
+#define IS_METHOD_SPEC(token) (mono_metadata_token_table (token) == MONO_TABLE_METHODSPEC)
+#define IS_FIELD_DEF(token) (mono_metadata_token_table (token) == MONO_TABLE_FIELD)
+
+#define IS_TYPE_REF(token) (mono_metadata_token_table (token) == MONO_TABLE_TYPEREF)
+#define IS_TYPE_DEF(token) (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF)
+#define IS_TYPE_SPEC(token) (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC)
+#define IS_METHOD_DEF_OR_REF_OR_SPEC(token) (IS_METHOD_DEF (token) || IS_MEMBER_REF (token) || IS_METHOD_SPEC (token))
+#define IS_TYPE_DEF_OR_REF_OR_SPEC(token) (IS_TYPE_DEF (token) || IS_TYPE_REF (token) || IS_TYPE_SPEC (token))
+#define IS_FIELD_DEF_OR_REF(token) (IS_FIELD_DEF (token) || IS_MEMBER_REF (token))
+
 G_END_DECLS
 
 #endif  /* __MONO_METADATA_VERIFY_INTERNAL_H__ */

@@ -356,20 +356,6 @@ init_verifier_stats (void)
 
 //////////////////////////////////////////////////////////////////
 
-
-/*Token validation macros and functions */
-#define IS_MEMBER_REF(token) (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
-#define IS_METHOD_DEF(token) (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
-#define IS_METHOD_SPEC(token) (mono_metadata_token_table (token) == MONO_TABLE_METHODSPEC)
-#define IS_FIELD_DEF(token) (mono_metadata_token_table (token) == MONO_TABLE_FIELD)
-
-#define IS_TYPE_REF(token) (mono_metadata_token_table (token) == MONO_TABLE_TYPEREF)
-#define IS_TYPE_DEF(token) (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF)
-#define IS_TYPE_SPEC(token) (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC)
-#define IS_METHOD_DEF_OR_REF_OR_SPEC(token) (IS_METHOD_DEF (token) || IS_MEMBER_REF (token) || IS_METHOD_SPEC (token))
-#define IS_TYPE_DEF_OR_REF_OR_SPEC(token) (IS_TYPE_DEF (token) || IS_TYPE_REF (token) || IS_TYPE_SPEC (token))
-#define IS_FIELD_DEF_OR_REF(token) (IS_FIELD_DEF (token) || IS_MEMBER_REF (token))
-
 /*
  * Verify if @token refers to a valid row on int's table.
  */
@@ -5144,7 +5130,7 @@ mono_method_verify (MonoMethod *method, int level)
 		ip_offset = (guint) (ip - code_start);
 		{
 			const unsigned char *ip_copy = ip;
-			int op;
+			MonoOpcodeEnum op;
 
 			if (ip_offset > bb->end) {
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or EH block at [0x%04x] targets middle instruction at 0x%04x", bb->end, ip_offset));
