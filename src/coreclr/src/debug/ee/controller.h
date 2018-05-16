@@ -1774,19 +1774,9 @@ private:
 class DebuggerDataBreakpoint : public DebuggerController
 {
 public:
-    static void CreateDebuggerDataBreakpoint(Thread* pThread, AppDomain* pAppDomain, CONTEXT* context)
+    DebuggerDataBreakpoint() : DebuggerController(NULL, NULL)
     {
-        _ASSERTE(g_DataBreakpointCount < 5);
-
-        DebuggerDataBreakpoint* newDataBp = new DebuggerDataBreakpoint(g_DataBreakpointCount, pThread, pAppDomain, context);
-        g_DataBreakpoints[g_DataBreakpointCount++] = newDataBp;
-    }
-
-    DebuggerDataBreakpoint(unsigned int index, Thread* pThread, AppDomain* pAppDomain, CONTEXT* context) : DebuggerController(pThread, pAppDomain)
-    {
-        LOG((LF_CORDB, LL_INFO10000, "D::DDBP: New Data Breakpoint set for 0x%x\n", context->Dr0));
-        memcpy(&m_Context, context, sizeof(CONTEXT));
-        m_Index = index;
+        LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Data Breakpoint event created\n"));
     }
     
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType(void)
@@ -1827,47 +1817,10 @@ public:
         bool hitDataBp = false;
 
         PDR6 pdr6 = (PDR6)&(pContext->Dr6);
-        PDR7 pdr7 = (PDR7)&(pContext->Dr7);
-        
-        if (m_Index == 0)
+
+        if (pdr6->B0 || pdr6->B1 || pdr6->B2 || pdr6->B3)
         {
-            if (pdr6->B0)
-            {
-                if (pContext->Dr0 == m_Context.Dr0 && pdr7->L0 != 0)
-                {
-                    hitDataBp = true;
-                }
-            }
-        }
-        else if (m_Index == 1)
-        {
-            if (pdr6->B1)
-            {
-                if (pContext->Dr1 == m_Context.Dr1 && pdr7->L1 != 0)
-                {
-                    hitDataBp = true;
-                }
-            }
-        }
-        else if (m_Index == 2)
-        {
-            if (pdr6->B2)
-            {
-                if (pContext->Dr2 == m_Context.Dr2 && pdr7->L2 != 0)
-                {
-                    hitDataBp = true;
-                }
-            }
-        }
-        else if (m_Index == 3)
-        {
-            if (pdr6->B3)
-            {
-                if (pContext->Dr3 == m_Context.Dr3 && pdr7->L3 != 0)
-                {
-                    hitDataBp = true;
-                }
-            }
+            hitDataBp = true;
         }
 
         if (hitDataBp)
@@ -1882,16 +1835,7 @@ public:
         return hitDataBp;
     }
 
-    unsigned int GetIndex()
-    {
-        return m_Index;
-    }
-
-    static DebuggerDataBreakpoint* g_DataBreakpoints[4];
-    static unsigned int g_DataBreakpointCount;
-private:
-    CONTEXT m_Context;
-    unsigned int m_Index;
+    static DebuggerDataBreakpoint g_DebuggerDataBreakpoint;
 };
 
 
