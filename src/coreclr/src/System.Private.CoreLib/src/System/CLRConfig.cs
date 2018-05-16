@@ -41,11 +41,11 @@ namespace System
                         return true;
                     break;
                 case 4:
-                    if ("true".AsSpan().EqualsOrdinalIgnoreCase(buffer.Slice(0, 4)))
+                    if (bool.IsTrueStringIgnoreCase(buffer.Slice(0, 4)))
                         return true;
                     break;
                 case 5:
-                    if ("false".AsSpan().EqualsOrdinalIgnoreCase(buffer.Slice(0, 5)))
+                    if (bool.IsFalseStringIgnoreCase(buffer.Slice(0, 5)))
                         return false;
                     break;
             }
