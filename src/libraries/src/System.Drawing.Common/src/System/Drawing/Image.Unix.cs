@@ -71,7 +71,6 @@ namespace System.Drawing
         }
 
         // See http://support.microsoft.com/default.aspx?scid=kb;en-us;831419 for performance discussion    
-        [MonoLimitation("useEmbeddedColorManagement  and validateImageData aren't supported.")]
         public static Image FromStream(Stream stream, bool useEmbeddedColorManagement, bool validateImageData)
         {
             return LoadFromStream(stream, false);

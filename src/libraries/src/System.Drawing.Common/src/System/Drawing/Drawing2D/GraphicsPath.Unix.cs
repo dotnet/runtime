@@ -622,7 +622,6 @@ namespace System.Drawing.Drawing2D
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
-        [MonoTODO("The StringFormat parameter is ignored when using libgdiplus.")]
         public void AddString(string s, FontFamily family, int style, float emSize, Point origin, StringFormat format)
         {
             Rectangle layout = new Rectangle();
@@ -631,7 +630,6 @@ namespace System.Drawing.Drawing2D
             AddString(s, family, style, emSize, layout, format);
         }
 
-        [MonoTODO("The StringFormat parameter is ignored when using libgdiplus.")]
         public void AddString(string s, FontFamily family, int style, float emSize, PointF origin, StringFormat format)
         {
             RectangleF layout = new RectangleF();
@@ -640,7 +638,6 @@ namespace System.Drawing.Drawing2D
             AddString(s, family, style, emSize, layout, format);
         }
 
-        [MonoTODO("The layoutRect and StringFormat parameters are ignored when using libgdiplus.")]
         public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat format)
         {
             if (family == null)
@@ -652,7 +649,6 @@ namespace System.Drawing.Drawing2D
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
-        [MonoTODO("The layoutRect and StringFormat parameters are ignored when using libgdiplus.")]
         public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat format)
         {
             if (family == null)
@@ -854,25 +850,21 @@ namespace System.Drawing.Drawing2D
             SafeNativeMethods.Gdip.CheckStatus(s);
         }
 
-        [MonoTODO("GdipWarpPath isn't implemented in libgdiplus")]
         public void Warp(PointF[] destPoints, RectangleF srcRect)
         {
             Warp(destPoints, srcRect, null, WarpMode.Perspective, FlatnessDefault);
         }
 
-        [MonoTODO("GdipWarpPath isn't implemented in libgdiplus")]
         public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix matrix)
         {
             Warp(destPoints, srcRect, matrix, WarpMode.Perspective, FlatnessDefault);
         }
 
-        [MonoTODO("GdipWarpPath isn't implemented in libgdiplus")]
         public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix matrix, WarpMode warpMode)
         {
             Warp(destPoints, srcRect, matrix, warpMode, FlatnessDefault);
         }
 
-        [MonoTODO("GdipWarpPath isn't implemented in libgdiplus")]
         public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix matrix, WarpMode warpMode, float flatness)
         {
             if (destPoints == null)
@@ -886,19 +878,16 @@ namespace System.Drawing.Drawing2D
             SafeNativeMethods.Gdip.CheckStatus(s);
         }
 
-        [MonoTODO("GdipWidenPath isn't implemented in libgdiplus")]
         public void Widen(Pen pen)
         {
             Widen(pen, null, FlatnessDefault);
         }
 
-        [MonoTODO("GdipWidenPath isn't implemented in libgdiplus")]
         public void Widen(Pen pen, Matrix matrix)
         {
             Widen(pen, matrix, FlatnessDefault);
         }
 
-        [MonoTODO("GdipWidenPath isn't implemented in libgdiplus")]
         public void Widen(Pen pen, Matrix matrix, float flatness)
         {
             if (pen == null)
