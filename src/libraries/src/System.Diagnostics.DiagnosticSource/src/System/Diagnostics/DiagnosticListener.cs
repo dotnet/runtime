@@ -57,17 +57,12 @@ namespace System.Diagnostics
         // Subscription implementation 
         /// <summary>
         /// Add a subscriber (Observer).  If the isEnabled parameter is non-null it indicates that some events are 
-        /// uninteresting can be skipped for efficiency.  
-        /// 
-        /// Note that the isEnabled predicate an OPTIONAL OPTIMIZATION to allow the instrumentation site to avoid 
-        /// setting up the payload  and calling 'Write' when no subscriber cares about it. In particular the 
-        /// instrumentation site has the option of ignoring the IsEnabled() predicate (not calling it) and simply
-        /// calling Write().   Thus if the subscriber requires the filtering, it needs to do it itself.  
+        /// uninteresting and can be skipped for efficiency.  
         /// </summary>
         /// <param name="observer">Subscriber (IObserver)</param>
         /// <param name="isEnabled">Filters events based on their name (string). Should return true if the event is enabled.  
         /// 
-        /// Note that the isEnabled predicate an OPTIONAL OPTIMIZATION to allow the instrumentation site to avoid 
+        /// Note that the isEnabled predicate is an OPTIONAL OPTIMIZATION to allow the instrumentation site to avoid 
         /// setting up the payload and calling 'Write' when no subscriber cares about it. In particular the 
         /// instrumentation site has the option of ignoring the IsEnabled() predicate (not calling it) and simply
         /// calling Write().   Thus if the subscriber requires the filtering, it needs to do it itself. 
@@ -100,10 +95,10 @@ namespace System.Diagnostics
         /// A particular instrumentation site HAS THE OPTION of calling one or more 'IsEnabled' overloads  in which
         /// it passes the name of the event and up to two other (instrumentation site specific) objects as arguments.
         /// If any of these 'IsEnabled' calls are made then this 'isEnabled' predicate is invoked with passed values
-        /// (the if shorter overloads are used, null is passed for missing context objects).   
+        /// (if shorter overloads are used, null is passed for missing context objects).   
         /// 
         /// This gives any particular instrumentation site the ability to pass up to two pieces of information to the 
-        /// subscriber do sophisticated, efficient filtering.  This requires more coupling between the instrumentation
+        /// subscriber to do sophisticated, efficient filtering.  This requires more coupling between the instrumentation
         /// site and the subscriber code.  
         /// 
         /// It IS expected that a particular instrumentation site may call different overloads of IsEnabled for the 
@@ -111,8 +106,8 @@ namespace System.Diagnostics
         /// 'isEnabled' returns true calling again with context objects.   The isEnabled filter should be designed 
         /// with this in mind. 
         /// 
-        /// Note that the isEnabled predicate an OPTIONAL OPTIMIZATION to allow the instrumentation site to avoid 
-        /// setting up the payload  and calling 'Write' when no subscriber cares about it. In particular the 
+        /// Note that the isEnabled predicate is an OPTIONAL OPTIMIZATION to allow the instrumentation site to avoid 
+        /// setting up the payload and calling 'Write' when no subscriber cares about it. In particular the 
         /// instrumentation site has the option of ignoring the IsEnabled() predicate (not calling it) and simply
         /// calling Write().   Thus if the subscriber requires the filtering, it needs to do it itself.  
         /// 
