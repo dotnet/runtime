@@ -32,10 +32,28 @@ namespace System.Threading.Tasks
 
     /// <summary>Provides an awaitable result of an asynchronous operation.</summary>
     /// <remarks>
-    /// <see cref="ValueTask"/>s are meant to be directly awaited.  To do more complicated operations with them, a <see cref="Task"/>
-    /// should be extracted using <see cref="AsTask"/>.  Such operations might include caching an instance to be awaited later,
-    /// registering multiple continuations with a single operation, awaiting the same task multiple times, and using combinators over
-    /// multiple operations.
+    /// <see cref="ValueTask"/> instances are meant to be directly awaited.  To do more complicated operations with them, a <see cref="Task"/>
+    /// should be extracted using <see cref="AsTask"/>.  Such operations might include caching a task instance to be awaited later,
+    /// registering multiple continuations with a single task, awaiting the same task multiple times, and using combinators over
+    /// multiple operations:
+    /// <list type="bullet">
+    /// <item>
+    /// Once the result of a <see cref="ValueTask"/> instance has been retrieved, do not attempt to retrieve it again.
+    /// <see cref="ValueTask"/> instances may be backed by <see cref="IValueTaskSource"/> instances that are reusable, and such
+    /// instances may use the act of retrieving the instances result as a notification that the instance may now be reused for
+    /// a different operation.  Attempting to then reuse that same <see cref="ValueTask"/> results in undefined behavior.
+    /// </item>
+    /// <item>
+    /// Do not attempt to add multiple continuations to the same <see cref="ValueTask"/>.  While this might work if the
+    /// <see cref="ValueTask"/> wraps a <code>T</code> or a <see cref="Task"/>, it may not work if the <see cref="ValueTask"/>
+    /// was constructed from an <see cref="IValueTaskSource"/>.
+    /// </item>
+    /// <item>
+    /// Some operations that return a <see cref="ValueTask"/> may invalidate it based on some subsequent operation being performed.
+    /// Unless otherwise documented, assume that a <see cref="ValueTask"/> should be awaited prior to performing any additional operations
+    /// on the instance from which it was retrieved.
+    /// </item>
+    /// </list>
     /// </remarks>
     [AsyncMethodBuilder(typeof(AsyncValueTaskMethodBuilder))]
     [StructLayout(LayoutKind.Auto)]
@@ -408,10 +426,28 @@ namespace System.Threading.Tasks
     /// <summary>Provides a value type that can represent a synchronously available value or a task object.</summary>
     /// <typeparam name="TResult">Specifies the type of the result.</typeparam>
     /// <remarks>
-    /// <see cref="ValueTask{TResult}"/>s are meant to be directly awaited.  To do more complicated operations with them, a <see cref="Task"/>
-    /// should be extracted using <see cref="AsTask"/> or <see cref="Preserve"/>.  Such operations might include caching an instance to
-    /// be awaited later, registering multiple continuations with a single operation, awaiting the same task multiple times, and using
-    /// combinators over multiple operations.
+    /// <see cref="ValueTask{TResult}"/> instances are meant to be directly awaited.  To do more complicated operations with them, a <see cref="Task{TResult}"/>
+    /// should be extracted using <see cref="AsTask"/>.  Such operations might include caching a task instance to be awaited later,
+    /// registering multiple continuations with a single task, awaiting the same task multiple times, and using combinators over
+    /// multiple operations:
+    /// <list type="bullet">
+    /// <item>
+    /// Once the result of a <see cref="ValueTask{TResult}"/> instance has been retrieved, do not attempt to retrieve it again.
+    /// <see cref="ValueTask{TResult}"/> instances may be backed by <see cref="IValueTaskSource{TResult}"/> instances that are reusable, and such
+    /// instances may use the act of retrieving the instances result as a notification that the instance may now be reused for
+    /// a different operation.  Attempting to then reuse that same <see cref="ValueTask{TResult}"/> results in undefined behavior.
+    /// </item>
+    /// <item>
+    /// Do not attempt to add multiple continuations to the same <see cref="ValueTask{TResult}"/>.  While this might work if the
+    /// <see cref="ValueTask{TResult}"/> wraps a <code>T</code> or a <see cref="Task{TResult}"/>, it may not work if the <see cref="Task{TResult}"/>
+    /// was constructed from an <see cref="IValueTaskSource{TResult}"/>.
+    /// </item>
+    /// <item>
+    /// Some operations that return a <see cref="ValueTask{TResult}"/> may invalidate it based on some subsequent operation being performed.
+    /// Unless otherwise documented, assume that a <see cref="ValueTask{TResult}"/> should be awaited prior to performing any additional operations
+    /// on the instance from which it was retrieved.
+    /// </item>
+    /// </list>
     /// </remarks>
     [AsyncMethodBuilder(typeof(AsyncValueTaskMethodBuilder<>))]
     [StructLayout(LayoutKind.Auto)]
