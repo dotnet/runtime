@@ -298,20 +298,17 @@ namespace System.Reflection.Emit
                 ParameterInfo[] parameters = con.GetParameters();
                 if (parameters == null)
                     throw new ArgumentException(SR.Argument_InvalidConstructorInfo);
-
-                Type[] parameterTypes = new Type[parameters.Length];
-                Type[][] requiredCustomModifiers = new Type[parameters.Length][];
-                Type[][] optionalCustomModifiers = new Type[parameters.Length][];
-
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     if (parameters[i] == null)
                         throw new ArgumentException(SR.Argument_InvalidConstructorInfo);
-
-                    parameterTypes[i] = parameters[i].ParameterType;
-                    requiredCustomModifiers[i] = parameters[i].GetRequiredCustomModifiers();
-                    optionalCustomModifiers[i] = parameters[i].GetOptionalCustomModifiers();
                 }
+
+                SignatureHelper.ExtractParametersTypeArrays(
+                    parameters,
+                    out Type[] parameterTypes,
+                    out Type[][] requiredCustomModifiers,
+                    out Type[][] optionalCustomModifiers);
 
                 tr = GetTypeTokenInternal(con.ReflectedType).Token;
 
@@ -380,7 +377,7 @@ namespace System.Reflection.Emit
 
         private int GetMemberRefToken(MethodBase method, IEnumerable<Type> optionalParameterTypes)
         {
-            Type[] parameterTypes;
+            ParameterInfo[] parameters;
             Type returnType;
             int tkParent;
             int cGenericParameters = 0;
@@ -447,17 +444,24 @@ namespace System.Reflection.Emit
                     }
                 }
 
-                parameterTypes = methDef.GetParameterTypes();
+                parameters = methDef.GetParameters();
                 returnType = MethodBuilder.GetMethodBaseReturnType(methDef);
             }
             else
             {
-                parameterTypes = method.GetParameterTypes();
+                parameters = method.GetParameters();
                 returnType = MethodBuilder.GetMethodBaseReturnType(method);
             }
 
+            SignatureHelper.ExtractParametersTypeArrays(
+                parameters,
+                out Type[] parameterTypes,
+                out Type[][] parameterTypeRequiredCustomModifiers,
+                out Type[][] parameterTypeOptionalCustomModifiers);
+
             int sigLength;
             byte[] sigBytes = GetMemberRefSignature(method.CallingConvention, returnType, parameterTypes,
+                parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
                 optionalParameterTypes, cGenericParameters).InternalGetSignature(out sigLength);
 
             if (method.DeclaringType.IsGenericType)
@@ -484,15 +488,22 @@ namespace System.Reflection.Emit
         }
 
         internal SignatureHelper GetMemberRefSignature(CallingConventions call, Type returnType,
-            Type[] parameterTypes, IEnumerable<Type> optionalParameterTypes, int cGenericParameters)
+            Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers,
+            IEnumerable<Type> optionalParameterTypes, int cGenericParameters)
         {
             SignatureHelper sig = SignatureHelper.GetMethodSigHelper(this, call, returnType, cGenericParameters);
 
+            Debug.Assert(parameterTypeRequiredCustomModifiers == null
+                     || (parameterTypeRequiredCustomModifiers.Length == (parameterTypes?.Length ?? 0)));
+
+            Debug.Assert(parameterTypeOptionalCustomModifiers == null
+                     || (parameterTypeOptionalCustomModifiers.Length == (parameterTypes?.Length ?? 0)));
+
             if (parameterTypes != null)
             {
-                foreach (Type t in parameterTypes)
+                for (int i = 0; i < parameterTypes.Length; i++)
                 {
-                    sig.AddArgument(t);
+                    sig.AddArgument(parameterTypes[i], parameterTypeRequiredCustomModifiers?[i], parameterTypeOptionalCustomModifiers?[i]);
                 }
             }
 
@@ -1268,16 +1279,11 @@ namespace System.Reflection.Emit
                     // go through the slower code path, i.e. retrieve parameters and form signature helper.
                     ParameterInfo[] parameters = method.GetParameters();
 
-                    Type[] parameterTypes = new Type[parameters.Length];
-                    Type[][] requiredCustomModifiers = new Type[parameterTypes.Length][];
-                    Type[][] optionalCustomModifiers = new Type[parameterTypes.Length][];
-
-                    for (int i = 0; i < parameters.Length; i++)
-                    {
-                        parameterTypes[i] = parameters[i].ParameterType;
-                        requiredCustomModifiers[i] = parameters[i].GetRequiredCustomModifiers();
-                        optionalCustomModifiers[i] = parameters[i].GetOptionalCustomModifiers();
-                    }
+                    SignatureHelper.ExtractParametersTypeArrays(
+                        parameters,
+                        out Type[] parameterTypes,
+                        out Type[][] requiredCustomModifiers,
+                        out Type[][] optionalCustomModifiers);
 
                     tr = getGenericTypeDefinition ? GetTypeToken(method.DeclaringType).Token : GetTypeTokenInternal(method.DeclaringType).Token;
 
