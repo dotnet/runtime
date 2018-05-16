@@ -14,7 +14,7 @@ namespace System.Collections.Concurrent
     /// These segments are linked together to form the unbounded <see cref="ConcurrentQueue{T}"/>. 
     /// </summary>
     [DebuggerDisplay("Capacity = {Capacity}")]
-    internal sealed class Segment<T>
+    internal sealed class ConcurrentQueueSegment<T>
     {
         // Segment design is inspired by the algorithm outlined at:
         // http://www.1024cores.net/home/lock-free-algorithms/queues/bounded-mpmc-queue
@@ -33,14 +33,14 @@ namespace System.Collections.Concurrent
         internal bool _frozenForEnqueues;
 #pragma warning disable 0649 // some builds don't assign to this field
         /// <summary>The segment following this one in the queue, or null if this segment is the last in the queue.</summary>
-        internal Segment<T> _nextSegment;
+        internal ConcurrentQueueSegment<T> _nextSegment;
 #pragma warning restore 0649
 
         /// <summary>Creates the segment.</summary>
         /// <param name="boundedLength">
         /// The maximum number of elements the segment can contain.  Must be a power of 2.
         /// </param>
-        internal Segment(int boundedLength)
+        internal ConcurrentQueueSegment(int boundedLength)
         {
             // Validate the length
             Debug.Assert(boundedLength >= 2, $"Must be >= 2, got {boundedLength}");
