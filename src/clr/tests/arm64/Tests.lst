@@ -39313,7 +39313,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i06\mcc_i06.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i06
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;6675;EXCLUDED;NATIVE_INTEROP
+Categories=EXPECTED_PASS;NATIVE_INTEROP
 HostStyle=0
 
 [mcc_i07.cmd_5191]
@@ -39345,7 +39345,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i16\mcc_i16.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i16
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;6675;EXCLUDED
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [mcc_i17.cmd_5199]
@@ -39377,7 +39377,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i36\mcc_i36.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i36
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;6675;EXCLUDED
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [mcc_i37.cmd_5207]
@@ -39409,7 +39409,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i56\mcc_i56.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i56
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;6675;EXCLUDED
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [mcc_i57.cmd_5215]
@@ -39441,7 +39441,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i66\mcc_i66.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i66
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;6675;EXCLUDED
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [mcc_i67.cmd_5223]
@@ -39473,7 +39473,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i76\mcc_i76.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i76
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;6675;EXCLUDED
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [mcc_i77.cmd_5231]
@@ -39505,7 +39505,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i86\mcc_i86.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i86
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;6675;EXCLUDED;NATIVE_INTEROP
+Categories=EXPECTED_PASS;NATIVE_INTEROP
 HostStyle=0
 
 [mcc_i87.cmd_5239]
@@ -54825,7 +54825,7 @@ RelativePath=JIT\Methodical\Invoke\25params\25param2c_il_d\25param2c_il_d.cmd
 WorkingDir=JIT\Methodical\Invoke\25params\25param2c_il_d
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;6675;EXCLUDED
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [25param2c_il_r.cmd_7167]
@@ -54833,7 +54833,7 @@ RelativePath=JIT\Methodical\Invoke\25params\25param2c_il_r\25param2c_il_r.cmd
 WorkingDir=JIT\Methodical\Invoke\25params\25param2c_il_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;6675;EXCLUDED;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [25param3a_cs_d.cmd_7168]
@@ -92737,7 +92737,7 @@ RelativePath=CoreMangLib\system\span\SlowTailCallArgs\SlowTailCallArgs.cmd
 WorkingDir=CoreMangLib\system\span\SlowTailCallArgs
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;6675;EXCLUDED;Pri1
+Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [GitHub_13057.cmd_11966]
@@ -94737,7 +94737,7 @@ RelativePath=JIT\Regression\JitBlue\GitHub_17585\GitHub_17585\GitHub_17585.cmd
 WorkingDir=JIT\Regression\JitBlue\GitHub_17585\GitHub_17585
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;6675;EXCLUDED
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [DevDiv_590772.cmd_12216]
