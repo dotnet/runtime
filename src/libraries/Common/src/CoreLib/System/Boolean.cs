@@ -175,6 +175,27 @@ namespace System
         // Static Methods
         // 
 
+        // Custom string compares for early application use by config switches, etc
+        // 
+        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            return (value.Length == 4 &&
+                    (value[0] == 't' || value[0] == 'T') &&
+                    (value[1] == 'r' || value[1] == 'R') &&
+                    (value[2] == 'u' || value[2] == 'U') &&
+                    (value[3] == 'e' || value[3] == 'E'));
+        }
+
+        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            return (value.Length == 5 &&
+                    (value[0] == 'f' || value[0] == 'F') &&
+                    (value[1] == 'a' || value[1] == 'A') &&
+                    (value[2] == 'l' || value[2] == 'L') &&
+                    (value[3] == 's' || value[3] == 'S') &&
+                    (value[4] == 'e' || value[4] == 'E'));
+        }
+
         // Determines whether a String represents true or false.
         // 
         public static Boolean Parse(String value)
@@ -201,15 +222,13 @@ namespace System
 
         public static bool TryParse(ReadOnlySpan<char> value, out bool result)
         {
-            ReadOnlySpan<char> trueSpan = TrueLiteral.AsSpan();
-            if (trueSpan.EqualsOrdinalIgnoreCase(value))
+            if (IsTrueStringIgnoreCase(value))
             {
                 result = true;
                 return true;
             }
 
-            ReadOnlySpan<char> falseSpan = FalseLiteral.AsSpan();
-            if (falseSpan.EqualsOrdinalIgnoreCase(value))
+            if (IsFalseStringIgnoreCase(value))
             {
                 result = false;
                 return true;
@@ -218,13 +237,13 @@ namespace System
             // Special case: Trim whitespace as well as null characters.
             value = TrimWhiteSpaceAndNull(value);
 
-            if (trueSpan.EqualsOrdinalIgnoreCase(value))
+            if (IsTrueStringIgnoreCase(value))
             {
                 result = true;
                 return true;
             }
 
-            if (falseSpan.EqualsOrdinalIgnoreCase(value))
+            if (IsFalseStringIgnoreCase(value))
             {
                 result = false;
                 return true;
