@@ -45,8 +45,7 @@ DebuggerController             *DebuggerController::g_controllers = NULL;
 DebuggerControllerPage         *DebuggerController::g_protections = NULL;
 CrstStatic                      DebuggerController::g_criticalSection;
 int                             DebuggerController::g_cTotalMethodEnter = 0;
-DebuggerDataBreakpoint         *DebuggerDataBreakpoint::g_DataBreakpoints[4];
-unsigned int                    DebuggerDataBreakpoint::g_DataBreakpointCount = 0;
+DebuggerDataBreakpoint          DebuggerDataBreakpoint::g_DebuggerDataBreakpoint;
 
 // Is this patch at a position at which it's safe to take a stack?
 bool DebuggerControllerPatch::IsSafeForStackTrace()
@@ -2728,17 +2727,10 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
     }
 
     if (stWhat & ST_SINGLE_STEP &&
-        tpr != TPR_TRIGGER_ONLY_THIS && DebuggerDataBreakpoint::g_DataBreakpointCount > 0)
+        tpr != TPR_TRIGGER_ONLY_THIS && 
+        DebuggerDataBreakpoint::g_DebuggerDataBreakpoint.TriggerDataBreakpoint(thread, context))
     {
-        for (unsigned int i = 0; i < DebuggerDataBreakpoint::g_DataBreakpointCount; i++)
-        {
-            LOG((LF_CORDB, LL_INFO10000, "DC::SFT: Trigger data breakpoint controller\n"));
-
-            if (DebuggerDataBreakpoint::g_DataBreakpoints[i]->TriggerDataBreakpoint(thread, context))
-            {
-                pDcq->dcqEnqueue(DebuggerDataBreakpoint::g_DataBreakpoints[i], FALSE);
-            }
-        }
+        pDcq->dcqEnqueue(&DebuggerDataBreakpoint::g_DebuggerDataBreakpoint, FALSE);
     }
 
     if (stWhat & ST_SINGLE_STEP &&
@@ -3024,35 +3016,35 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         reabort = thread->m_StateNC & Thread::TSNC_DebuggerReAbort;
         SENDIPCEVENT_END;
 
-        CONTEXT c;
-        c.ContextFlags = CONTEXT_DEBUG_REGISTERS;
-        thread->GetThreadContext(&c);
+        //CONTEXT c;
+        //c.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+        //thread->GetThreadContext(&c);
 
-        context->Dr7 = c.Dr7;
-        context->Dr0 = c.Dr0;
-        context->Dr1 = c.Dr1;
-        context->Dr2 = c.Dr2;
-        context->Dr3 = c.Dr3;
+        //context->Dr7 = c.Dr7;
+        //context->Dr0 = c.Dr0;
+        //context->Dr1 = c.Dr1;
+        //context->Dr2 = c.Dr2;
+        //context->Dr3 = c.Dr3;
 
-        if (context->Dr0 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 0)
-        {
-            DebuggerDataBreakpoint::CreateDebuggerDataBreakpoint(thread, thread->GetDomain(), context);
-        }
+        //if (context->Dr0 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 0)
+        //{
+        //    DebuggerDataBreakpoint::CreateDebuggerDataBreakpoint(thread, thread->GetDomain(), context);
+        //}
 
-        if (context->Dr1 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 1)
-        {
-            DebuggerDataBreakpoint::CreateDebuggerDataBreakpoint(thread, thread->GetDomain(), context);
-        }
+        //if (context->Dr1 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 1)
+        //{
+        //    DebuggerDataBreakpoint::CreateDebuggerDataBreakpoint(thread, thread->GetDomain(), context);
+        //}
 
-        if (context->Dr2 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 2)
-        {
-            DebuggerDataBreakpoint::CreateDebuggerDataBreakpoint(thread, thread->GetDomain(), context);
-        }
+        //if (context->Dr2 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 2)
+        //{
+        //    DebuggerDataBreakpoint::CreateDebuggerDataBreakpoint(thread, thread->GetDomain(), context);
+        //}
 
-        if (context->Dr3 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 3)
-        {
-            DebuggerDataBreakpoint::CreateDebuggerDataBreakpoint(thread, thread->GetDomain(), context);
-        }
+        //if (context->Dr3 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 3)
+        //{
+        //    DebuggerDataBreakpoint::CreateDebuggerDataBreakpoint(thread, thread->GetDomain(), context);
+        //}
 
         if (!atSafePlace)
             g_pDebugger->DecThreadsAtUnsafePlaces();

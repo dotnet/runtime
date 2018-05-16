@@ -6,7 +6,7 @@
  /* File created by MIDL compiler version 8.01.0622 */
 /* at Mon Jan 18 19:14:07 2038
  */
-/* Compiler settings for F:/Dev/coreclr/src/inc/cordebug.idl:
+/* Compiler settings for D:/dotnet/coreclr/src/inc/cordebug.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
@@ -3781,10 +3781,13 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
     {
     public:
         virtual HRESULT STDMETHODCALLTYPE BeforeGarbageCollection( 
-            ICorDebugProcess *pProcess) = 0;
+            /* [in] */ ICorDebugProcess *pProcess) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE AfterGarbageCollection( 
-            ICorDebugProcess *pProcess) = 0;
+            /* [in] */ ICorDebugProcess *pProcess) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE DataBreakpoint( 
+            /* [in] */ ICorDebugProcess *pProcess) = 0;
         
     };
     
@@ -3809,11 +3812,15 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
         
         HRESULT ( STDMETHODCALLTYPE *BeforeGarbageCollection )( 
             ICorDebugManagedCallback4 * This,
-            ICorDebugProcess *pProcess);
+            /* [in] */ ICorDebugProcess *pProcess);
         
         HRESULT ( STDMETHODCALLTYPE *AfterGarbageCollection )( 
             ICorDebugManagedCallback4 * This,
-            ICorDebugProcess *pProcess);
+            /* [in] */ ICorDebugProcess *pProcess);
+        
+        HRESULT ( STDMETHODCALLTYPE *DataBreakpoint )( 
+            ICorDebugManagedCallback4 * This,
+            /* [in] */ ICorDebugProcess *pProcess);
         
         END_INTERFACE
     } ICorDebugManagedCallback4Vtbl;
@@ -3843,6 +3850,9 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
 
 #define ICorDebugManagedCallback4_AfterGarbageCollection(This,pProcess)	\
     ( (This)->lpVtbl -> AfterGarbageCollection(This,pProcess) ) 
+
+#define ICorDebugManagedCallback4_DataBreakpoint(This,pProcess)	\
+    ( (This)->lpVtbl -> DataBreakpoint(This,pProcess) ) 
 
 #endif /* COBJMACROS */
 
