@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -20,6 +21,41 @@ public partial class CancelKeyPressTests : RemoteExecutorTestBase
     public void HandlerInvokedForSigQuit()
     {
         HandlerInvokedForSignal(SIGQUIT);
+    }
+
+    [PlatformSpecific(TestPlatforms.AnyUnix)]  // events are triggered by Unix signals (SIGINT, SIGQUIT, SIGCHLD).
+    public void ExitDetectionNotBlockedByHandler()
+    {
+        RemoteInvoke(() =>
+        {
+            var mre = new ManualResetEventSlim();
+            var tcs = new TaskCompletionSource<object>();
+
+            // CancelKeyPress is triggered by SIGINT/SIGQUIT
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                tcs.SetResult(null);
+                // Block CancelKeyPress
+                Assert.True(mre.Wait(WaitFailTestTimeoutSeconds * 1000));
+            };
+
+            // Generate CancelKeyPress
+            Assert.Equal(0, kill(Process.GetCurrentProcess().Id, SIGINT));
+            // Wait till we block CancelKeyPress
+            Assert.True(tcs.Task.Wait(WaitFailTestTimeoutSeconds * 1000));
+
+            // Create a process and wait for it to exit.
+            using (RemoteInvokeHandle handle = RemoteInvoke(() => SuccessExitCode))
+            {
+                // Process exit is detected on SIGCHLD
+                Assert.Equal(SuccessExitCode, handle.ExitCode);
+            }
+
+            // Release CancelKeyPress
+            mre.Set();
+
+            return SuccessExitCode;
+        }).Dispose();
     }
 
     private void HandlerInvokedForSignal(int signalOuter)
