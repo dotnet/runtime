@@ -8740,11 +8740,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                     // NYI - TAILCALL_RECURSIVE/TAILCALL_HELPER.
                     // So, bail out if we can't make fast tail call.
                     szFailReason = "Non-qualified fast tail call";
-
-                    if (call->IsTailPrefixedCall())
-                    {
-                        NYI_ARM64("Arm64 does not support tail calls via helpers.");
-                    }
                 }
 #endif
 #endif // LEGACY_BACKEND
