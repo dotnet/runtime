@@ -630,16 +630,7 @@ namespace System.Security.Cryptography.Asn1
 
                 if (fieldData.TagType == UniversalTagNumber.Integer)
                 {
-                    return (value, writer) =>
-                    {
-                        // TODO: split netstandard/netcoreapp for span usage?
-                        ReadOnlyMemory<byte> valAsMemory = (ReadOnlyMemory<byte>)value;
-                        byte[] tooBig = new byte[valAsMemory.Length + 1];
-                        valAsMemory.Span.CopyTo(tooBig.AsSpan(1));
-                        Array.Reverse(tooBig);
-                        BigInteger bigInt = new BigInteger(tooBig);
-                        writer.WriteInteger(bigInt);
-                    };
+                    return (value, writer) => writer.WriteInteger(tag, ((ReadOnlyMemory<byte>)value).Span);
                 }
 
                 Debug.Fail($"No ReadOnlyMemory<byte> handler for {fieldData.TagType}");
