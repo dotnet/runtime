@@ -21,7 +21,7 @@ namespace System.Globalization
                 string switchValue = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
                 if (switchValue != null)
                 {
-                    ret = switchValue.Equals("true", StringComparison.OrdinalIgnoreCase) || switchValue.Equals("1");
+                    ret = bool.IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1");
                 }
             }
 
