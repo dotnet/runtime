@@ -1106,8 +1106,6 @@ namespace System
 
         internal sealed class ControlCHandlerRegistrar
         {
-            private static readonly Interop.Sys.CtrlCallback _handler = 
-                c => Console.HandleBreakEvent(c == Interop.Sys.CtrlCode.Break ? ConsoleSpecialKey.ControlBreak : ConsoleSpecialKey.ControlC);
             private bool _handlerRegistered;
 
             internal void Register()
@@ -1115,7 +1113,7 @@ namespace System
                 EnsureInitialized();
 
                 Debug.Assert(!_handlerRegistered);
-                Interop.Sys.RegisterForCtrl(_handler);
+                Interop.Sys.RegisterForCtrl(c => OnBreakEvent(c));
                 _handlerRegistered = true;
             }
 
@@ -1124,6 +1122,28 @@ namespace System
                 Debug.Assert(_handlerRegistered);
                 _handlerRegistered = false;
                 Interop.Sys.UnregisterForCtrl();
+            }
+
+            private static void OnBreakEvent(Interop.Sys.CtrlCode ctrlCode)
+            {
+                // This is called on the native signal handling thread. We need to move to another thread so
+                // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
+                // on work triggered from the signal handling thread.
+                // We use a new thread rather than queueing to the ThreadPool in order to prioritize handling
+                // in case the ThreadPool is saturated.
+                Thread handlerThread = new Thread(HandleBreakEvent) { IsBackground = true };
+                handlerThread.Start(ctrlCode);
+            }
+
+            private static void HandleBreakEvent(object state)
+            {
+                var ctrlCode = (Interop.Sys.CtrlCode)state;
+                ConsoleSpecialKey controlKey = (ctrlCode == Interop.Sys.CtrlCode.Break ? ConsoleSpecialKey.ControlBreak : ConsoleSpecialKey.ControlC);
+                bool cancel = Console.HandleBreakEvent(controlKey);
+                if (!cancel)
+                {
+                    Interop.Sys.RestoreAndHandleCtrl(ctrlCode);
+                }
             }
         }
     }
