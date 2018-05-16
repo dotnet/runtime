@@ -35,7 +35,7 @@ namespace System.Collections.Concurrent
     /// concurrently from multiple threads.
     /// </remarks>
     [DebuggerDisplay("Count = {Count}")]
-    [DebuggerTypeProxy(typeof(ProducerConsumerCollectionDebugView<>))]
+    [DebuggerTypeProxy(typeof(IProducerConsumerCollectionDebugView<>))]
     internal class ConcurrentStack<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
     {
         /// <summary>

@@ -11,7 +11,7 @@ namespace System.Collections.Concurrent
     /// collection's contents at a point in time.
     /// </summary>
     /// <typeparam name="T">The type of elements stored within.</typeparam>
-    internal sealed class ProducerConsumerCollectionDebugView<T>
+    internal sealed class IProducerConsumerCollectionDebugView<T>
     {
         private readonly IProducerConsumerCollection<T> _collection; // The collection being viewed.
 
@@ -19,7 +19,7 @@ namespace System.Collections.Concurrent
         /// Constructs a new debugger view object for the provided collection object.
         /// </summary>
         /// <param name="collection">A collection to browse in the debugger.</param>
-        internal ProducerConsumerCollectionDebugView(IProducerConsumerCollection<T> collection)
+        public IProducerConsumerCollectionDebugView(IProducerConsumerCollection<T> collection)
         {
             if (collection == null)
             {
@@ -33,7 +33,7 @@ namespace System.Collections.Concurrent
         /// Returns a snapshot of the underlying collection's elements.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        internal T[] Items
+        public T[] Items
         {
             get { return _collection.ToArray(); }
         }
