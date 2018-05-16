@@ -1379,6 +1379,36 @@ HRESULT ShimProxyCallback::AfterGarbageCollection(ICorDebugProcess* pProcess)
     return S_OK;
 }
 
+// Implementation of ICorDebugManagedCallback4::DataBreakpoint
+// Arguments:
+//      input:
+//          pProcess - process in which the notification occurred
+// Return value: S_OK
+HRESULT ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess)
+{
+    m_pShim->PreDispatchEvent();
+    class DataBreakpointEvent : public ManagedEvent
+    {
+        // callbacks parameters. These are strong references
+        RSExtSmartPtr<ICorDebugProcess > m_pProcess;
+
+    public:
+        // Ctor
+        DataBreakpointEvent(ICorDebugProcess* pProcess) :
+            ManagedEvent()
+        {
+            this->m_pProcess.Assign(pProcess);
+        }
+
+        HRESULT Dispatch(DispatchArgs args)
+        {
+            return args.GetCallback4()->DataBreakpoint(m_pProcess);
+        }
+    }; // end class AfterGarbageCollectionEvent
+
+    m_pShim->GetManagedEventQueue()->QueueEvent(new DataBreakpointEvent(pProcess));
+    return S_OK;
+}
 
 
 
