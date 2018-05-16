@@ -242,6 +242,47 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        public static void EncryptToNegativeSerialNumber()
+        {
+            CertLoader negativeSerial = Certificates.NegativeSerialNumber;
+
+            const string expectedSerial = "FD319CB1514B06AF49E00522277E43C8";
+
+            byte[] content = { 1, 2, 3 };
+            ContentInfo contentInfo = new ContentInfo(content);
+            EnvelopedCms cms = new EnvelopedCms(contentInfo);
+
+            using (X509Certificate2 cert = negativeSerial.GetCertificate())
+            {
+                Assert.Equal(expectedSerial, cert.SerialNumber);
+
+                CmsRecipient recipient = new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                cms.Encrypt(recipient);
+            }
+
+            EnvelopedCms cms2 = new EnvelopedCms();
+            cms2.Decode(cms.Encode());
+
+            RecipientInfoCollection recipients = cms2.RecipientInfos;
+            Assert.Equal(1, recipients.Count);
+
+            RecipientInfo recipientInfo = recipients[0];
+            Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, recipientInfo.RecipientIdentifier.Type);
+
+            X509IssuerSerial issuerSerial = (X509IssuerSerial)recipientInfo.RecipientIdentifier.Value;
+            Assert.Equal(expectedSerial, issuerSerial.SerialNumber);
+
+            using (X509Certificate2 cert = negativeSerial.TryGetCertificateWithPrivateKey())
+            {
+                Assert.Equal(expectedSerial, cert.SerialNumber);
+
+                cms2.Decrypt(new X509Certificate2Collection(cert));
+            }
+
+            Assert.Equal(content, cms2.ContentInfo.Content);
+        }
+
+        [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void TestDecryptSimpleAes128_IssuerAndSerial()
         {
