@@ -1,3 +1,5 @@
+#error This file is not used.
+
 /* Poping */
 /* 1 bit */
 #define Pop0    1
@@ -74,23 +76,23 @@
 #define Push1   128
 
 enum {
-	InlineBrTarget,
-	InlineField,
-	InlineI,
-	InlineI8,
-	InlineMethod,
-	InlineNone,
-	InlineR,
-	InlineSig,
-	InlineString,
-	InlineSwitch,
-	InlineTok,
-	InlineType,
-	InlineVar,
-	ShortInlineBrTarget,
-	ShortInlineI,
-	ShortInlineR,
-	ShortInlineVar
+	InlineBrTarget      = 0,
+	InlineField         = 1,
+	InlineI             = 2,
+	InlineI8            = 3,
+	InlineMethod        = 4,
+	InlineNone          = 5,
+	InlineR             = 6,
+	InlineSig           = 7,
+	InlineString        = 8,
+	InlineSwitch        = 9,
+	InlineTok           = 10,
+	InlineType          = 11,
+	InlineVar           = 12,
+	ShortInlineBrTarget = 13,
+	ShortInlineI        = 14,
+	ShortInlineR        = 15,
+	ShortInlineVar      = 16,
 };
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -256,7 +258,7 @@ disassemble_cil (MonoMetadata *m, const unsigned char *start, int size)
 			fprintf (output, "Varidx-%d", (int) x);
 			ptr++;
 			break;
-		}m
+		}
 
 		}
 

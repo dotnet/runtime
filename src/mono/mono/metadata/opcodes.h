@@ -46,23 +46,23 @@ enum {
 };
 
 enum {
-	MonoInlineNone,
-	MonoInlineType,
-	MonoInlineField,
-	MonoInlineMethod,
-	MonoInlineTok,
-	MonoInlineString,
-	MonoInlineSig,
-	MonoInlineVar,
-	MonoShortInlineVar,
-	MonoInlineBrTarget,
-	MonoShortInlineBrTarget,
-	MonoInlineSwitch,
-	MonoInlineR,
-	MonoShortInlineR,
-	MonoInlineI,
-	MonoShortInlineI,
-	MonoInlineI8
+	MonoInlineNone          = 0,
+	MonoInlineType          = 1,
+	MonoInlineField         = 2,
+	MonoInlineMethod        = 3,
+	MonoInlineTok           = 4,
+	MonoInlineString        = 5,
+	MonoInlineSig           = 6,
+	MonoInlineVar           = 7,
+	MonoShortInlineVar      = 8,
+	MonoInlineBrTarget      = 9,
+	MonoShortInlineBrTarget = 10,
+	MonoInlineSwitch        = 11,
+	MonoInlineR             = 12,
+	MonoShortInlineR        = 13,
+	MonoInlineI             = 14,
+	MonoShortInlineI        = 15,
+	MonoInlineI8            = 16,
 };
 
 typedef struct {
