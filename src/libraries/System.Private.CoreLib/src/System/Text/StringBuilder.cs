@@ -573,9 +573,12 @@ namespace System.Text
         /// </summary>
         public struct ChunkEnumerable
         {
-            internal ChunkEnumerable(StringBuilder stringBuilder) { _stringBuilder = stringBuilder; }
+            internal ChunkEnumerable(StringBuilder stringBuilder) {
+                Debug.Assert(stringBuilder != null);    // Because it is only called with at 'this' pointer.    
+                _stringBuilder = stringBuilder;
+            }
             public ChunkEnumerator GetEnumerator() => new ChunkEnumerator(this._stringBuilder);
-            private StringBuilder _stringBuilder;
+            private StringBuilder _stringBuilder;   // We insure this is never null. 
         }
 
         /// <summary>
@@ -604,8 +607,9 @@ namespace System.Text
             #region private
             internal ChunkEnumerator(StringBuilder stringBuilder)
             {
+                Debug.Assert(stringBuilder != null);
                 _firstChunk = stringBuilder;
-                _currentChunk = null;
+                _currentChunk = null;   // MoveNext will find the last chunk if we do this.  
                 _manyChunks = null;
 
                 // There is a performance-vs-allocation tradeoff.   Because the chunks
@@ -647,7 +651,7 @@ namespace System.Text
                 public ManyChunkInfo(StringBuilder stringBuilder, int chunkCount)
                 {
                     _chunks = new StringBuilder[chunkCount];
-                    while (0 < --chunkCount)
+                    while (0 <= --chunkCount)
                     {
                         _chunks[chunkCount] = stringBuilder;
                         stringBuilder = stringBuilder.m_ChunkPrevious;
@@ -661,7 +665,7 @@ namespace System.Text
             StringBuilder _firstChunk;        // The first Stringbuilder chunk (which is the end of the logical string)
             StringBuilder _currentChunk;      // The chunk that this enumerator is currently returning (Current).  
             ManyChunkInfo _manyChunks;        // Only used for long string builders with many chunks (see constructor)
-            #endregion
+#endregion
         }
 
         /// <summary>
@@ -1186,7 +1190,7 @@ namespace System.Text
             return this;
         }
 
-        #region AppendJoin
+#region AppendJoin
 
         public unsafe StringBuilder AppendJoin(string separator, params object[] values)
         {
@@ -1294,7 +1298,7 @@ namespace System.Text
             return this;
         }
 
-        #endregion
+#endregion
 
         public StringBuilder Insert(int index, String value)
         {
