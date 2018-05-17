@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.IO.Pipelines
 {
@@ -93,7 +94,11 @@ namespace System.IO.Pipelines
         /// <summary>
         /// The amount of writable bytes in this segment. It is the amount of bytes between Length and End
         /// </summary>
-        public int WritableBytes => AvailableMemory.Length - End;
+        public int WritableBytes
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => AvailableMemory.Length - End;
+        }
 
         public void SetNext(BufferSegment segment)
         {
