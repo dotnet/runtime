@@ -101,6 +101,7 @@ namespace System.Net
     [System.FlagsAttribute]
     public enum DecompressionMethods
     {
+        Brotli = 4,
         Deflate = 2,
         GZip = 1,
         None = 0,
