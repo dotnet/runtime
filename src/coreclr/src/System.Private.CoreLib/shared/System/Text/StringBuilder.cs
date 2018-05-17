@@ -561,7 +561,7 @@ namespace System.Text
         /// EnumerateChunks returns ChunkEnumerable that follows the IEnumerable pattern and
         /// thus can be used in a C# 'foreach' statement.   Thus 
         ///      foreach (ReadOnlyMemory<char> chunk in sb.EnumerateChunks())
-        ///      {  /* opererate on bytes using 'chunk' */   }
+        ///      {  /* operate on bytes using 'chunk' */   }
         ///      
         /// </summary>
         public ChunkEnumerable EnumerateChunks() => new ChunkEnumerable(this);
