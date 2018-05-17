@@ -7840,9 +7840,9 @@ EXTERN_C const IID IID_ICorDebugProcess9;
     ICorDebugProcess9 : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE GetContainerObject( 
+        virtual HRESULT STDMETHODCALLTYPE GetContainingObject( 
             /* [in] */ CORDB_ADDRESS interiorPointer,
-            /* [out] */ ICorDebugObjectValue **ppContainerObject) = 0;
+            /* [out] */ ICorDebugObjectValue **ppContainingObject) = 0;
         
     };
     
@@ -7865,10 +7865,10 @@ EXTERN_C const IID IID_ICorDebugProcess9;
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugProcess9 * This);
         
-        HRESULT ( STDMETHODCALLTYPE *GetContainerObject )( 
+        HRESULT ( STDMETHODCALLTYPE *GetContainingObject )( 
             ICorDebugProcess9 * This,
             /* [in] */ CORDB_ADDRESS interiorPointer,
-            /* [out] */ ICorDebugObjectValue **ppContainerObject);
+            /* [out] */ ICorDebugObjectValue **ppContainingObject);
         
         END_INTERFACE
     } ICorDebugProcess9Vtbl;
@@ -7893,8 +7893,8 @@ EXTERN_C const IID IID_ICorDebugProcess9;
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorDebugProcess9_GetContainerObject(This,interiorPointer,ppContainerObject)	\
-    ( (This)->lpVtbl -> GetContainerObject(This,interiorPointer,ppContainerObject) ) 
+#define ICorDebugProcess9_GetContainingObject(This,interiorPointer,ppContainingObject)	\
+    ( (This)->lpVtbl -> GetContainingObject(This,interiorPointer,ppContainingObject) ) 
 
 #endif /* COBJMACROS */
 

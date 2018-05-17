@@ -3165,7 +3165,7 @@ public:
     //-----------------------------------------------------------
     // ICorDebugProcess9
     //-----------------------------------------------------------
-    COM_METHOD GetContainerObject(CORDB_ADDRESS interiorPointer, ICorDebugObjectValue** ppContainerObject);
+    COM_METHOD GetContainingObject(CORDB_ADDRESS interiorPointer, ICorDebugObjectValue** ppContainingObject);
 
 #ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
     // ---------------------------------------------------------------
