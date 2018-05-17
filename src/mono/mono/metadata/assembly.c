@@ -2372,7 +2372,7 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
 MonoAssembly*
 chain_redirections_loadfrom (MonoImage *image, MonoImageOpenStatus *out_status)
 {
-	MonoImageOpenStatus status;
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssembly *redirected = NULL;
 
 	redirected = mono_assembly_binding_applies_to_image (image, &status);
