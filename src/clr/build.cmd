@@ -359,11 +359,12 @@ REM Find python and set it to the variable PYTHON
 echo import sys; sys.stdout.write(sys.executable) | (py -3 || py -2 || python3 || python2 || python) > %TEMP%\pythonlocation.txt 2> NUL
 set /p PYTHON=<%TEMP%\pythonlocation.txt
 
+if NOT DEFINED PYTHON (
+    echo %__MsgPrefix%Error: Could not find a python installation
+    exit /b 1
+)
+
 if /i "%__BuildNative%"=="1" (
-    if NOT DEFINED PYTHON (
-        echo %__MsgPrefix%Error: Could not find a python installation
-        exit /b 1
-    )
 
     echo %__MsgPrefix%Laying out dynamically generated files consumed by the native build system
     echo %__MsgPrefix%Laying out dynamically generated Event test files and etmdummy stub functions
@@ -374,6 +375,12 @@ if /i "%__BuildNative%"=="1" (
 
     echo %__MsgPrefix%Laying out ETW event logging interface
     "!PYTHON!" -B -Wall %__SourceDir%\scripts\genEtwProvider.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate %__IntermediatesIncDir% --exc %__SourceDir%\vm\ClrEtwAllMeta.lst || exit /b 1
+)
+
+if /i "%__BuildCoreLib%"=="1" (
+
+    echo %__MsgPrefix%Laying out dynamically generated EventSource classes
+    "!PYTHON!" -B -Wall %__SourceDir%\scripts\genRuntimeEventSources.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate %__IntermediatesEventingDir% || exit /b 1
 )
 
 if /i "%__DoCrossArchBuild%"=="1" (
@@ -391,6 +398,9 @@ if /i "%__DoCrossArchBuild%"=="1" (
 
     echo %__MsgPrefix%Laying out dynamically generated EventPipe Implementation
     "!PYTHON!" -B -Wall %__SourceDir%\scripts\genEventPipe.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate !__CrossCompIntermediatesEventingDir!\eventpipe --nonextern || exit /b 1
+
+    echo %__MsgPrefix%Laying out dynamically generated EventSource classes
+    "!PYTHON!" -B -Wall %__SourceDir%\scripts\genRuntimeEventSources.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate !__CrossCompIntermediatesEventingDir! || exit /b 1
 
     echo %__MsgPrefix%Laying out ETW event logging interface
     "!PYTHON!" -B -Wall %__SourceDir%\scripts\genEtwProvider.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate !__CrossCompIntermediatesIncDir! --exc %__SourceDir%\vm\ClrEtwAllMeta.lst || exit /b 1

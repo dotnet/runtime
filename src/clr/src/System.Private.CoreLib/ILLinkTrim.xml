@@ -35,5 +35,7 @@
     </type>
     <!-- Accessed via private reflection by tracing controller. -->
     <type fullname="System.Diagnostics.Tracing.EventPipe*" />
+    <!-- Accessed via private reflection and by native code. -->
+    <type fullname="System.Diagnostics.Tracing.RuntimeEventSource" />
   </assembly>
 </linker>
