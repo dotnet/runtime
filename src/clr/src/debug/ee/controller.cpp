@@ -45,7 +45,6 @@ DebuggerController             *DebuggerController::g_controllers = NULL;
 DebuggerControllerPage         *DebuggerController::g_protections = NULL;
 CrstStatic                      DebuggerController::g_criticalSection;
 int                             DebuggerController::g_cTotalMethodEnter = 0;
-DebuggerDataBreakpoint          DebuggerDataBreakpoint::g_DebuggerDataBreakpoint;
 
 // Is this patch at a position at which it's safe to take a stack?
 bool DebuggerControllerPatch::IsSafeForStackTrace()
@@ -2728,9 +2727,10 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
 
     if (stWhat & ST_SINGLE_STEP &&
         tpr != TPR_TRIGGER_ONLY_THIS && 
-        DebuggerDataBreakpoint::g_DebuggerDataBreakpoint.TriggerDataBreakpoint(thread, context))
+        DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
     {
-        pDcq->dcqEnqueue(&DebuggerDataBreakpoint::g_DebuggerDataBreakpoint, FALSE);
+        DebuggerDataBreakpoint *pDataBreakpoint = new DebuggerDataBreakpoint(thread);
+        pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
     }
 
     if (stWhat & ST_SINGLE_STEP &&
@@ -3016,15 +3016,15 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         reabort = thread->m_StateNC & Thread::TSNC_DebuggerReAbort;
         SENDIPCEVENT_END;
 
-        //CONTEXT c;
-        //c.ContextFlags = CONTEXT_DEBUG_REGISTERS;
-        //thread->GetThreadContext(&c);
+        CONTEXT c;
+        c.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+        thread->GetThreadContext(&c);
 
-        //context->Dr7 = c.Dr7;
-        //context->Dr0 = c.Dr0;
-        //context->Dr1 = c.Dr1;
-        //context->Dr2 = c.Dr2;
-        //context->Dr3 = c.Dr3;
+        context->Dr7 = c.Dr7;
+        context->Dr0 = c.Dr0;
+        context->Dr1 = c.Dr1;
+        context->Dr2 = c.Dr2;
+        context->Dr3 = c.Dr3;
 
         //if (context->Dr0 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 0)
         //{
