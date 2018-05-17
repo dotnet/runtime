@@ -170,10 +170,57 @@ to_android_priority (GLogLevelFlags log_level)
 	return ANDROID_LOG_UNKNOWN;
 }
 
+#define LOG_MESSAGE_MAX_LEN 4096
+
+static void
+android_log_line (gint log_priority, const gchar *log_domain, gchar *log_message, gint log_len)
+{
+	gchar log_buf [LOG_MESSAGE_MAX_LEN];
+
+	g_assert (log_len <= LOG_MESSAGE_MAX_LEN - 1);
+
+	/* If line is longer than LOG_MESSAGE_MAX_LEN - 1, then we simply cut it out. This is consistent with the previous behavior. */
+	strncpy (log_buf, log_message, log_len);
+	log_buf [log_len] = '\0';
+
+	__android_log_write (log_priority, log_domain, log_buf);
+}
+
+static void
+android_log (gint log_priority, const gchar *log_domain, const gchar *log_message)
+{
+	gint log_message_len, log_message_p_len;
+	gchar *log_message_p;
+
+	log_message_len = strlen (log_message);
+	if (log_message_len <= LOG_MESSAGE_MAX_LEN) {
+		__android_log_write (log_priority, log_domain, log_message);
+		return;
+	}
+
+	for (log_message_p = log_message; log_message_p < log_message + log_message_len;) {
+		gchar *p = strstr (log_message_p, "\n");
+		if (p == NULL) {
+			/* There is no more "\n". */
+			android_log_line (log_priority, log_domain, log_message_p, LOG_MESSAGE_MAX_LEN - 1);
+			break;
+		}
+
+		log_message_p_len = p - log_message_p;
+		if (log_message_p_len > LOG_MESSAGE_MAX_LEN - 1)
+			log_message_p_len = LOG_MESSAGE_MAX_LEN - 1;
+
+		android_log_line (log_priority, log_domain, log_message_p, log_message_p_len);
+
+		/* Set `log_message_p` to the character right after "\n" */
+		log_message_p = p + 1;
+	}
+}
+
 void
 g_log_default_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer unused_data)
 {
-	__android_log_write (to_android_priority (log_level), log_domain, message);
+	android_log (to_android_priority (log_level), log_domain, message);
 	if (log_level & fatal)
 		abort ();
 }
@@ -182,14 +229,14 @@ static void
 default_stdout_handler (const gchar *message)
 {
 	/* TODO: provide a proper app name */
-	__android_log_write (ANDROID_LOG_ERROR, "mono", message);
+	android_log (ANDROID_LOG_ERROR, "mono", message);
 }
 
 static void
 default_stderr_handler (const gchar *message)
 {
 	/* TODO: provide a proper app name */
-	__android_log_write (ANDROID_LOG_ERROR, "mono", message);
+	android_log (ANDROID_LOG_ERROR, "mono", message);
 }
 
 
