@@ -33,6 +33,7 @@
 #include "corcompile.h"
 #include "iceefilegen.h"
 #include "corpriv.h"
+#include "gcinfotypes.h"
 
 #include "holder.h"
 #include "strongname.h"

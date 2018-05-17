@@ -128,16 +128,16 @@ static const struct ImportSectionProperties
     BYTE                    Type;
     BYTE                    EntrySize;
     WORD                    Flags;
-}   
+}
 c_ImportSectionProperties[ZapImportSectionType_Count] =
 {
-    { /* ZapImportSectionType_Handle,       */ CORCOMPILE_IMPORT_TYPE_UNKNOWN,         0,              0                               },
-    { /* ZapImportSectionType_TypeHandle,   */ CORCOMPILE_IMPORT_TYPE_TYPE_HANDLE,     sizeof(TADDR),  0                               },
-    { /* ZapImportSectionType_MethodHandle, */ CORCOMPILE_IMPORT_TYPE_METHOD_HANDLE,   sizeof(TADDR),  0                               },
+    { /* ZapImportSectionType_Handle,       */ CORCOMPILE_IMPORT_TYPE_UNKNOWN,         0,                    0                               },
+    { /* ZapImportSectionType_TypeHandle,   */ CORCOMPILE_IMPORT_TYPE_TYPE_HANDLE,     TARGET_POINTER_SIZE,  0                               },
+    { /* ZapImportSectionType_MethodHandle, */ CORCOMPILE_IMPORT_TYPE_METHOD_HANDLE,   TARGET_POINTER_SIZE,  0                               },
 #ifdef _TARGET_ARM_
-    { /* ZapImportSectionType_PCode,        */ CORCOMPILE_IMPORT_TYPE_UNKNOWN,         0,              CORCOMPILE_IMPORT_FLAGS_PCODE   },
+    { /* ZapImportSectionType_PCode,        */ CORCOMPILE_IMPORT_TYPE_UNKNOWN,         0,                    CORCOMPILE_IMPORT_FLAGS_PCODE   },
 #endif
-    { /* ZapImportSectionType_StringHandle, */ CORCOMPILE_IMPORT_TYPE_STRING_HANDLE,   sizeof(TADDR),  0                               },
+    { /* ZapImportSectionType_StringHandle, */ CORCOMPILE_IMPORT_TYPE_STRING_HANDLE,   TARGET_POINTER_SIZE,  0                               },
 };
 
 void ZapImportTable::PlaceImport(ZapImport * pImport)
@@ -229,8 +229,8 @@ void ZapImportTable::PlaceFixups(ZapImport ** pImports, NibbleWriter& writer)
         int tableIndex = pImport->GetSectionIndex();
         unsigned offset = pImport->GetOffset();
 
-        _ASSERTE(offset % sizeof(SIZE_T) == 0);
-        offset /= sizeof(SIZE_T);
+        _ASSERTE(offset % TARGET_POINTER_SIZE == 0);
+        offset /= TARGET_POINTER_SIZE;
 
         if (tableIndex != curTableIndex)
         {
@@ -607,12 +607,12 @@ public:
 
     virtual DWORD GetSize()
     {
-        return sizeof(TADDR);
+        return TARGET_POINTER_SIZE;
     }
 
     virtual UINT GetAlignment()
     {
-        return sizeof(TADDR);
+        return TARGET_POINTER_SIZE;
     }
 
     virtual ZapNodeType GetType()
@@ -661,7 +661,7 @@ void ZapImportSectionSignatures::PlaceStubDispatchCell(ZapImport * pImport)
     if (m_pImportSection->GetNodeCount() == 0)
     {
         m_dwIndex = m_pImage->GetImportSectionsTable()->Append(CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH, CORCOMPILE_IMPORT_FLAGS_PCODE,
-            sizeof(TADDR), m_pImportSection, this, m_pGCRefMapTable);
+            TARGET_POINTER_SIZE, m_pImportSection, this, m_pGCRefMapTable);
     }
 
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -706,12 +706,12 @@ public:
 
     virtual DWORD GetSize()
     {
-        return sizeof(TADDR);
+        return TARGET_POINTER_SIZE;
     }
 
     virtual UINT GetAlignment()
     {
-        return sizeof(TADDR);
+        return TARGET_POINTER_SIZE;
     }
 
     virtual ZapNodeType GetType()
@@ -763,7 +763,7 @@ void ZapImportSectionSignatures::PlaceExternalMethodCell(ZapImport * pImport)
     if (m_pImportSection->GetNodeCount() == 0)
     {
         m_dwIndex = m_pImage->GetImportSectionsTable()->Append(CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH, CORCOMPILE_IMPORT_FLAGS_PCODE,
-            sizeof(TADDR), m_pImportSection, this, m_pGCRefMapTable);
+            TARGET_POINTER_SIZE, m_pImportSection, this, m_pGCRefMapTable);
     }
 
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -1320,7 +1320,7 @@ public:
 
     virtual DWORD GetSize()
     {
-        return 2 * sizeof(TADDR);
+        return 2 * TARGET_POINTER_SIZE;
     }
 
     virtual void Save(ZapWriter * pZapWriter)
@@ -1440,7 +1440,7 @@ public:
     virtual DWORD GetSize()
     {
         // fixup cell, 3 pointers to interception method (Enter/Leave/Tailcall) and opaque handle
-        return kZapProfilingHandleImportValueIndexCount * sizeof(TADDR);
+        return kZapProfilingHandleImportValueIndexCount * TARGET_POINTER_SIZE;
     }
 
     virtual void Save(ZapWriter * pZapWriter)
@@ -1682,12 +1682,12 @@ public:
 
     virtual DWORD GetSize()
     {
-        return sizeof(TADDR);
+        return TARGET_POINTER_SIZE;
     }
 
     virtual UINT GetAlignment()
     {
-        return sizeof(TADDR);
+        return TARGET_POINTER_SIZE;
     }
 
     virtual ZapNodeType GetType()
@@ -1773,7 +1773,7 @@ void ZapImportSectionSignatures::PlaceDynamicHelperCell(ZapImport * pImport)
     if (m_pImportSection->GetNodeCount() == 0)
     {
         m_dwIndex = m_pImage->GetImportSectionsTable()->Append(CORCOMPILE_IMPORT_TYPE_UNKNOWN, CORCOMPILE_IMPORT_FLAGS_PCODE,
-            sizeof(TADDR), m_pImportSection, this, m_pGCRefMapTable);
+            TARGET_POINTER_SIZE, m_pImportSection, this, m_pGCRefMapTable);
     }
 
     // Create the delay load helper
