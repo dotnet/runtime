@@ -18,6 +18,58 @@ namespace System.Xml
     // Represents an entire document. An XmlDocument contains XML data.
     public class XmlDocument : XmlNode
     {
+        private const string DocumentName = "#document";
+        private const string DocumentFragmentName = "#document-fragment";
+        private const string CommentName = "#comment";
+        private const string TextName = "#text";
+        private const string CDataSectionName = "#cdata-section";
+        private const string EntityName = "#entity";
+        private const string ID = "id";
+        private const string Xmlns = "xmlns";
+        private const string Xml = "xml";
+        private const string Space = "space";
+        private const string Lang = "lang";
+        private const string NonSignificantWhitespaceName = "#whitespace";
+        private const string SignificantWhitespaceName = "#significant-whitespace";
+
+        // The seed index below requires that the constant strings above and the seed array below are 
+        // kept in the same order.
+        private const int DocumentNameSeedIndex = 0;
+        private const int DocumentFragmentNameSeedIndex = 1;
+        private const int CommentNameSeedIndex = 2;
+        private const int TextNameSeedIndex = 3;
+        private const int CDataSectionNameSeedIndex = 4;
+        private const int EntityNameSeedIndex = 5;
+        private const int IDSeedIndex = 6;
+        private const int XmlnsSeedIndex = 7;
+        private const int XmlSeedIndex = 8;
+        private const int SpaceSeedIndex = 9;
+        private const int LangSeedIndex = 10;
+        private const int NonSignificantWhitespaceNameSeedIndex = 11;
+        private const int SignificantWhitespaceNameSeedIndex = 12;
+        private const int NsXmlNsSeedIndex = 13;
+        private const int NsXmlSeedIndex = 14;
+
+        // If changing the array below ensure that the seed indexes before match
+        private static readonly (string key, int hash)[] s_nameTableSeeds = new []
+            {
+                (DocumentName, System.Xml.NameTable.ComputeHash32(DocumentName)),
+                (DocumentFragmentName, System.Xml.NameTable.ComputeHash32(DocumentFragmentName)),
+                (CommentName, System.Xml.NameTable.ComputeHash32(CommentName)),
+                (TextName, System.Xml.NameTable.ComputeHash32(TextName)),
+                (CDataSectionName, System.Xml.NameTable.ComputeHash32(CDataSectionName)),
+                (EntityName, System.Xml.NameTable.ComputeHash32(EntityName)),
+                (ID, System.Xml.NameTable.ComputeHash32(ID)),
+                (Xmlns, System.Xml.NameTable.ComputeHash32(Xmlns)),
+                (Xml, System.Xml.NameTable.ComputeHash32(Xml)),
+                (Space, System.Xml.NameTable.ComputeHash32(Space)),
+                (Lang, System.Xml.NameTable.ComputeHash32(Lang)),
+                (NonSignificantWhitespaceName, System.Xml.NameTable.ComputeHash32(NonSignificantWhitespaceName)),
+                (SignificantWhitespaceName, System.Xml.NameTable.ComputeHash32(SignificantWhitespaceName)),
+                (XmlReservedNs.NsXmlNs, System.Xml.NameTable.ComputeHash32(XmlReservedNs.NsXmlNs)),
+                (XmlReservedNs.NsXml, System.Xml.NameTable.ComputeHash32(XmlReservedNs.NsXml))
+            };
+
         private XmlImplementation _implementation;
         private DomNameTable _domNameTable; // hash table of XmlName
         private XmlLinkedNode _lastChild;
@@ -58,7 +110,6 @@ namespace System.Xml
         internal string strXml;
         internal string strSpace;
         internal string strLang;
-        internal string strEmpty;
 
         internal string strNonSignificantWhitespaceName;
         internal string strSignificantWhitespaceName;
@@ -94,28 +145,53 @@ namespace System.Xml
             _implementation = imp;
             _domNameTable = new DomNameTable(this);
 
-            // force the following string instances to be default in the nametable
-            XmlNameTable nt = this.NameTable;
-            nt.Add(string.Empty);
-            strDocumentName = nt.Add("#document");
-            strDocumentFragmentName = nt.Add("#document-fragment");
-            strCommentName = nt.Add("#comment");
-            strTextName = nt.Add("#text");
-            strCDataSectionName = nt.Add("#cdata-section");
-            strEntityName = nt.Add("#entity");
-            strID = nt.Add("id");
-            strNonSignificantWhitespaceName = nt.Add("#whitespace");
-            strSignificantWhitespaceName = nt.Add("#significant-whitespace");
-            strXmlns = nt.Add("xmlns");
-            strXml = nt.Add("xml");
-            strSpace = nt.Add("space");
-            strLang = nt.Add("lang");
-            strReservedXmlns = nt.Add(XmlReservedNs.NsXmlNs);
-            strReservedXml = nt.Add(XmlReservedNs.NsXml);
-            strEmpty = nt.Add(String.Empty);
+            strXmlns = Xmlns;
+            strXml = Xml;
+            strReservedXmlns = XmlReservedNs.NsXmlNs;
+            strReservedXml = XmlReservedNs.NsXml;
             baseURI = String.Empty;
-
             objLock = new object();
+
+            if (imp.NameTable.GetType() == typeof(NameTable))
+            {
+                // When the name table being used is of type NameTable avoid re-calculating the hash codes.
+                NameTable nt = (NameTable)imp.NameTable;
+
+                strDocumentName = nt.GetOrAddEntry(s_nameTableSeeds[DocumentNameSeedIndex].key, s_nameTableSeeds[DocumentNameSeedIndex].hash);
+                strDocumentFragmentName = nt.GetOrAddEntry(s_nameTableSeeds[DocumentFragmentNameSeedIndex].key, s_nameTableSeeds[DocumentFragmentNameSeedIndex].hash);
+                strCommentName = nt.GetOrAddEntry(s_nameTableSeeds[CommentNameSeedIndex].key, s_nameTableSeeds[CommentNameSeedIndex].hash);
+                strTextName = nt.GetOrAddEntry(s_nameTableSeeds[TextNameSeedIndex].key, s_nameTableSeeds[TextNameSeedIndex].hash);
+                strCDataSectionName = nt.GetOrAddEntry(s_nameTableSeeds[CDataSectionNameSeedIndex].key, s_nameTableSeeds[CDataSectionNameSeedIndex].hash);
+                strEntityName = nt.GetOrAddEntry(s_nameTableSeeds[EntityNameSeedIndex].key, s_nameTableSeeds[EntityNameSeedIndex].hash);
+                strID = nt.GetOrAddEntry(s_nameTableSeeds[IDSeedIndex].key, s_nameTableSeeds[IDSeedIndex].hash);
+                strNonSignificantWhitespaceName = nt.GetOrAddEntry(s_nameTableSeeds[NonSignificantWhitespaceNameSeedIndex].key, s_nameTableSeeds[NonSignificantWhitespaceNameSeedIndex].hash);
+                strSignificantWhitespaceName = nt.GetOrAddEntry(s_nameTableSeeds[SignificantWhitespaceNameSeedIndex].key, s_nameTableSeeds[SignificantWhitespaceNameSeedIndex].hash);
+                strXmlns = nt.GetOrAddEntry(s_nameTableSeeds[XmlnsSeedIndex].key, s_nameTableSeeds[XmlnsSeedIndex].hash);
+                strXml = nt.GetOrAddEntry(s_nameTableSeeds[XmlSeedIndex].key, s_nameTableSeeds[XmlSeedIndex].hash);
+                strSpace = nt.GetOrAddEntry(s_nameTableSeeds[SpaceSeedIndex].key, s_nameTableSeeds[SpaceSeedIndex].hash);
+                strLang = nt.GetOrAddEntry(s_nameTableSeeds[LangSeedIndex].key, s_nameTableSeeds[LangSeedIndex].hash);
+                strReservedXmlns = nt.GetOrAddEntry(s_nameTableSeeds[NsXmlNsSeedIndex].key, s_nameTableSeeds[NsXmlNsSeedIndex].hash);
+                strReservedXml = nt.GetOrAddEntry(s_nameTableSeeds[NsXmlSeedIndex].key, s_nameTableSeeds[NsXmlSeedIndex].hash);
+            }
+            else
+            {
+                XmlNameTable customNameTable = imp.NameTable;
+                strDocumentName = customNameTable.Add(DocumentName);
+                strDocumentFragmentName = customNameTable.Add(DocumentFragmentName);
+                strCommentName = customNameTable.Add(CommentName);
+                strTextName = customNameTable.Add(TextName);
+                strCDataSectionName = customNameTable.Add(CDataSectionName);
+                strEntityName = customNameTable.Add(EntityName);
+                strID = customNameTable.Add(ID);
+                strNonSignificantWhitespaceName = customNameTable.Add(NonSignificantWhitespaceName);
+                strSignificantWhitespaceName = customNameTable.Add(SignificantWhitespaceName);
+                strXmlns = customNameTable.Add(Xmlns);
+                strXml = customNameTable.Add(Xml);
+                strSpace = customNameTable.Add(Space);
+                strLang = customNameTable.Add(Lang);
+                strReservedXmlns = customNameTable.Add(XmlReservedNs.NsXmlNs);
+                strReservedXml = customNameTable.Add(XmlReservedNs.NsXml);
+            }
         }
 
         internal SchemaInfo DtdSchemaInfo
@@ -165,7 +241,7 @@ namespace System.Xml
                 object oPrefix = xmlName.Prefix;
                 object oNamespaceURI = xmlName.NamespaceURI;
                 object oLocalName = xmlName.LocalName;
-                if ((oPrefix == (object)strXmlns || (oPrefix == (object)strEmpty && oLocalName == (object)strXmlns)) ^ (oNamespaceURI == (object)strReservedXmlns))
+                if ((oPrefix == (object)strXmlns || (xmlName.Prefix.Length == 0 && oLocalName == (object)strXmlns)) ^ (oNamespaceURI == (object)strReservedXmlns))
                     throw new ArgumentException(SR.Format(SR.Xdom_Attr_Reserved_XmlNS, namespaceURI));
             }
             return xmlName;
