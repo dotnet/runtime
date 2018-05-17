@@ -6103,8 +6103,8 @@ void Debugger::SendDataBreakpoint(Thread *thread, CONTEXT *context,
         DB_IPCE_DATA_BREAKPOINT,
         thread,
         thread->GetDomain());
-    //ipce->DataBreakpointData.index = breakpoint->GetIndex();
-    _ASSERTE(breakpoint->m_pAppDomain == ipce->vmAppDomain.GetRawPtr());
+    ipce->DataBreakpointData.dataBreakpointMask = context->Dr6;
+    //_ASSERTE(breakpoint->m_pAppDomain == ipce->vmAppDomain.GetRawPtr());
 
     m_pRCThread->SendIPCEvent();
 }

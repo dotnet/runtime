@@ -1774,7 +1774,7 @@ private:
 class DebuggerDataBreakpoint : public DebuggerController
 {
 public:
-    DebuggerDataBreakpoint() : DebuggerController(NULL, NULL)
+    DebuggerDataBreakpoint(Thread* pThread) : DebuggerController(pThread, NULL)
     {
         LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Data Breakpoint event created\n"));
     }
@@ -1810,7 +1810,7 @@ public:
         return false;
     }
 
-    bool TriggerDataBreakpoint(Thread *thread, CONTEXT * pContext)
+    static bool TriggerDataBreakpoint(Thread *thread, CONTEXT * pContext)
     {
         LOG((LF_CORDB, LL_INFO10000, "D::DDBP: Doing TriggerDataBreakpoint...\n"));
 
@@ -1835,7 +1835,6 @@ public:
         return hitDataBp;
     }
 
-    static DebuggerDataBreakpoint g_DebuggerDataBreakpoint;
 };
 
 
