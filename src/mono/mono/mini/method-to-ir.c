@@ -9667,8 +9667,7 @@ calli_end:
 
 					store->flags |= ins_flag;
 				}
-				ins_flag = 0;
-				break;
+				goto field_access_end;
 			}
 
 #ifndef DISABLE_REMOTING
@@ -9745,8 +9744,7 @@ calli_end:
 						ins = mono_emit_simd_field_load (cfg, field, sp [0]);
 						if (ins) {
 							*sp++ = ins;
-							ins_flag = 0;
-							break;
+							goto field_access_end;
 						}
 					}
 
@@ -9769,10 +9767,8 @@ calli_end:
 				}
 			}
 
-			if (is_instance) {
-				ins_flag = 0;
-				break;
-			}
+			if (is_instance)
+				goto field_access_end;
 
 			/* STATIC CASE */
 			context_used = mini_class_check_context_used (cfg, klass);
@@ -10052,11 +10048,11 @@ calli_end:
 
 					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, field->type, ins->dreg, 0);
 					load->flags |= ins_flag;
-					ins_flag = 0;
 					*sp++ = load;
 				}
 			}
 
+field_access_end:
 			if ((il_op == CEE_LDFLD || il_op == CEE_LDSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
 				/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
