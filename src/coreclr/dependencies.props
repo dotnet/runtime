@@ -23,18 +23,18 @@
 
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>740ad52a71898d36e00847c3ba134d0aaa0d0460</CoreFxCurrentRef>
-    <CoreClrCurrentRef>cca1ec9cc928c96c0806de56f6b289d9dbde1df9</CoreClrCurrentRef>
+    <CoreFxCurrentRef>d75d356c1b3c628f7c249c727d523be70b19fbdb</CoreFxCurrentRef>
+    <CoreClrCurrentRef>d75d356c1b3c628f7c249c727d523be70b19fbdb</CoreClrCurrentRef>
     <BuildToolsCurrentRef>740ad52a71898d36e00847c3ba134d0aaa0d0460</BuildToolsCurrentRef>
-    <PgoDataCurrentRef>3200dec3d24dabddde6913647e643acbccae0035</PgoDataCurrentRef>
+    <PgoDataCurrentRef>d75d356c1b3c628f7c249c727d523be70b19fbdb</PgoDataCurrentRef>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview1-26515-04</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCorePlatformsPackageVersion>2.2.0-preview1-26515-04</MicrosoftNETCorePlatformsPackageVersion>
-    <PgoDataPackageVersion>99.99.99-master-20180424-0039</PgoDataPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.2.0-preview1-26516-05</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview1-26517-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>2.2.0-preview1-26517-01</MicrosoftNETCorePlatformsPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20180516-1546</PgoDataPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.2.0-preview1-26517-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
     <XunitConsoleNetcorePackageVersion>1.0.2-prerelease-00177</XunitConsoleNetcorePackageVersion>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
