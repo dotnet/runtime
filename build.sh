@@ -220,6 +220,9 @@ generate_event_logging_sources()
     echo "Laying out dynamically generated EventPipe Implementation"
     $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genEventPipe.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__OutputEventingDir/eventpipe"
 
+    echo "Laying out dynamically generated EventSource classes"
+    $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genRuntimeEventSources.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__OutputEventingDir"
+
     # determine the logging system
     case $__BuildOS in
         Linux|FreeBSD)
@@ -242,7 +245,7 @@ generate_event_logging_sources()
 generate_event_logging()
 {
     # Event Logging Infrastructure
-    if [[ $__SkipCoreCLR == 0 || $__ConfigureOnly == 1 ]]; then
+    if [[ $__SkipCoreCLR == 0 || $__SkipMSCorLib == 0 || $__ConfigureOnly == 1 ]]; then
         generate_event_logging_sources "$__IntermediatesDir" "the native build system"
     fi
 
