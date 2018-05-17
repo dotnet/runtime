@@ -3787,7 +3787,9 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
             /* [in] */ ICorDebugProcess *pProcess) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE DataBreakpoint( 
-            /* [in] */ ICorDebugProcess *pProcess) = 0;
+            /* [in] */ ICorDebugProcess *pProcess,
+            /* [in] */ ICorDebugThread *pThread,
+            /* [in] */ ULONG64 dataBreakpointMask) = 0;
         
     };
     
@@ -3820,7 +3822,9 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
         
         HRESULT ( STDMETHODCALLTYPE *DataBreakpoint )( 
             ICorDebugManagedCallback4 * This,
-            /* [in] */ ICorDebugProcess *pProcess);
+            /* [in] */ ICorDebugProcess *pProcess,
+            /* [in] */ ICorDebugThread *pThread,
+            /* [in] */ ULONG64 dataBreakpointMask);
         
         END_INTERFACE
     } ICorDebugManagedCallback4Vtbl;
@@ -3851,8 +3855,8 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
 #define ICorDebugManagedCallback4_AfterGarbageCollection(This,pProcess)	\
     ( (This)->lpVtbl -> AfterGarbageCollection(This,pProcess) ) 
 
-#define ICorDebugManagedCallback4_DataBreakpoint(This,pProcess)	\
-    ( (This)->lpVtbl -> DataBreakpoint(This,pProcess) ) 
+#define ICorDebugManagedCallback4_DataBreakpoint(This,pProcess,pThread,dataBreakpointMask)	\
+    ( (This)->lpVtbl -> DataBreakpoint(This,pProcess,pThread,dataBreakpointMask) ) 
 
 #endif /* COBJMACROS */
 

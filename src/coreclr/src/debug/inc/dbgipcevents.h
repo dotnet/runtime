@@ -2012,7 +2012,7 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            unsigned int index;
+            DWORD64              dataBreakpointMask;
         } DataBreakpointData;
 
         struct MSLAYOUT

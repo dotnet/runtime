@@ -4930,8 +4930,12 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_DATA_BREAKPOINT:
         {
-            PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-            pCallback4->DataBreakpoint(static_cast<ICorDebugProcess*>(this));
+            _ASSERTE(pThread != NULL);
+        
+            {
+                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
+                pCallback4->DataBreakpoint(static_cast<ICorDebugProcess*>(this), pThread, pEvent->DataBreakpointData.dataBreakpointMask);
+            }
             break;
         }
         break;
