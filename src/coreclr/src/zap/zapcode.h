@@ -792,7 +792,7 @@ public:
 
     virtual UINT GetAlignment()
     {
-        return sizeof(TADDR);
+        return TARGET_POINTER_SIZE;
     }
 
     virtual ZapNodeType GetType()
@@ -829,7 +829,7 @@ public:
     }
     virtual UINT GetAlignment()
     {
-        return sizeof(TADDR);
+        return TARGET_POINTER_SIZE;
     }
     virtual DWORD GetSize();
     virtual void Save(ZapWriter* pZapWriter);
