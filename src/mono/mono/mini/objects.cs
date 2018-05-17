@@ -1907,6 +1907,25 @@ ncells ) {
 		return dataPtr [0] == 1.0f ? 0 : 1;
 	}
 
+	class AClass1 {
+	}
+
+	class BClass1 : AClass1 {
+	}
+
+	class CClass1 {
+	}
+
+	public static int test_0_array_of_magic_iface () {
+		// Need to make this an object otherwise csc removes the cast
+		object d = new [] { new [] { new BClass1 () } };
+		if (!(d is IList<AClass1> []))
+			return 1;
+		if (d is IList<CClass1> [])
+			return 2;
+		var e2 = (IList<AClass1> []) d;
+		return 0;
+	}
 }
 
 #if __MOBILE__

@@ -295,12 +295,20 @@ mini_emit_castclass_inst (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClas
 		int eclass_reg = alloc_preg (cfg);
 
 		g_assert (!klass_inst);
+
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, klass_reg, m_class_offsetof_rank ());
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rank_reg, m_class_get_rank (klass));
 		MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
+
 		//		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, m_class_offsetof_cast_class ());
-		if (m_class_get_cast_class (klass) == mono_defaults.object_class) {
+		if (m_class_is_array_special_interface (m_class_get_cast_class (klass))) {
+			MonoInst *src;
+
+			MONO_INST_NEW (cfg, src, OP_LOCAL);
+			src->dreg = obj_reg;
+			emit_castclass_with_cache_no_details (cfg, src, klass, 0);
+		} else if (m_class_get_cast_class (klass) == mono_defaults.object_class) {
 			int parent_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, parent_reg, eclass_reg, m_class_offsetof_parent ());
 			mini_emit_class_check_branch (cfg, parent_reg, m_class_get_parent (mono_defaults.enum_class), OP_PBNE_UN, object_is_null);
@@ -667,7 +675,13 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, false_bb);
 			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, m_class_offsetof_cast_class ());
-			if (m_class_get_cast_class (klass) == mono_defaults.object_class) {
+			if (m_class_is_array_special_interface (m_class_get_cast_class (klass))) {
+				MonoInst *move, *res_inst;
+
+				res_inst = emit_isinst_with_cache (cfg, src, klass, context_used);
+				EMIT_NEW_UNALU (cfg, move, OP_MOVE, res_reg, res_inst->dreg);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+			} else if (m_class_get_cast_class (klass) == mono_defaults.object_class) {
 				int parent_reg = alloc_preg (cfg);
 				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, parent_reg, eclass_reg, m_class_offsetof_parent ());
 				mini_emit_class_check_branch (cfg, parent_reg, m_class_get_parent (mono_defaults.enum_class), OP_PBNE_UN, is_null_bb);
