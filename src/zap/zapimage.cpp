@@ -158,7 +158,7 @@ void ZapImage::InitializeSections()
     m_pUnwindDataTable = new (GetHeap()) ZapUnwindDataTable(this);
 #endif
 
-    m_pEEInfoTable = ZapBlob::NewAlignedBlob(this, NULL, sizeof(CORCOMPILE_EE_INFO_TABLE), sizeof(TADDR));
+    m_pEEInfoTable = ZapBlob::NewAlignedBlob(this, NULL, sizeof(CORCOMPILE_EE_INFO_TABLE), TARGET_POINTER_SIZE);
     m_pEETableSection->Place(m_pEEInfoTable);
 
     //
@@ -331,7 +331,7 @@ void ZapImage::AllocateVirtualSections()
 
         m_pPreloadSections[CORCOMPILE_SECTION_RVA_STATICS_HOT] = NewVirtualSection(pDataSection, IBCProfiledSection | HotRange | RVAStaticsSection);
 
-        m_pDelayLoadInfoTableSection[ZapImportSectionType_Eager] = NewVirtualSection(pDataSection, IBCUnProfiledSection | HotRange | DelayLoadInfoTableEagerSection, sizeof(TADDR));
+        m_pDelayLoadInfoTableSection[ZapImportSectionType_Eager] = NewVirtualSection(pDataSection, IBCUnProfiledSection | HotRange | DelayLoadInfoTableEagerSection, TARGET_POINTER_SIZE);
 
         //
         // Allocate dynamic info tables
@@ -340,12 +340,12 @@ void ZapImage::AllocateVirtualSections()
         // Place the HOT CorCompileTables now, the cold ones would be placed later in this routine (after other HOT sections)
         for (int i=0; i<ZapImportSectionType_Count; i++)
         {
-            m_pDelayLoadInfoTableSection[i] = NewVirtualSection(pDataSection, IBCProfiledSection | HotRange | DelayLoadInfoTableSection, sizeof(TADDR));
+            m_pDelayLoadInfoTableSection[i] = NewVirtualSection(pDataSection, IBCProfiledSection | HotRange | DelayLoadInfoTableSection, TARGET_POINTER_SIZE);
         }
 
-        m_pDynamicHelperCellSection = NewVirtualSection(pDataSection, IBCProfiledSection | HotColdSortedRange | ExternalMethodDataSection, sizeof(TADDR));
+        m_pDynamicHelperCellSection = NewVirtualSection(pDataSection, IBCProfiledSection | HotColdSortedRange | ExternalMethodDataSection, TARGET_POINTER_SIZE);
 
-        m_pExternalMethodCellSection = NewVirtualSection(pDataSection, IBCProfiledSection | HotColdSortedRange | ExternalMethodThunkSection, sizeof(TADDR));
+        m_pExternalMethodCellSection = NewVirtualSection(pDataSection, IBCProfiledSection | HotColdSortedRange | ExternalMethodThunkSection, TARGET_POINTER_SIZE);
 
         // m_pStubDispatchCellSection is  deliberately placed  directly after
         // the last m_pDelayLoadInfoTableSection (all .data sections go together in the order indicated).
@@ -359,12 +359,12 @@ void ZapImage::AllocateVirtualSections()
         // make sure the hot data is grouped with hot data in the
         // m_pDelayLoadInfoTableSection sections.
 
-        m_pStubDispatchCellSection = NewVirtualSection(pDataSection, IBCProfiledSection | HotColdSortedRange | StubDispatchDataSection, sizeof(TADDR));
+        m_pStubDispatchCellSection = NewVirtualSection(pDataSection, IBCProfiledSection | HotColdSortedRange | StubDispatchDataSection, TARGET_POINTER_SIZE);
 
         // Earlier we placed the HOT corCompile tables. Now place the cold ones after the stub dispatch cell section. 
         for (int i=0; i<ZapImportSectionType_Count; i++)
         {
-            m_pDelayLoadInfoTableSection[ZapImportSectionType_Cold + i] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | DelayLoadInfoTableSection, sizeof(TADDR));
+            m_pDelayLoadInfoTableSection[ZapImportSectionType_Cold + i] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | DelayLoadInfoTableSection, TARGET_POINTER_SIZE);
         }
 
         //
@@ -373,26 +373,26 @@ void ZapImage::AllocateVirtualSections()
 
         // This is everyhing that is assumed to be warm in the first strata
         // of non-profiled scenarios.  MethodTables related to objects etc.
-        m_pPreloadSections[CORCOMPILE_SECTION_WARM] = NewVirtualSection(pDataSection, IBCProfiledSection | WarmRange | EEDataSection, sizeof(TADDR));
+        m_pPreloadSections[CORCOMPILE_SECTION_WARM] = NewVirtualSection(pDataSection, IBCProfiledSection | WarmRange | EEDataSection, TARGET_POINTER_SIZE);
 
         m_pPreloadSections[CORCOMPILE_SECTION_RVA_STATICS_COLD] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | RVAStaticsSection);
 
         // In an ideal world these are cold in both profiled and the first strata
         // of non-profiled scenarios (i.e. no reflection, etc. )  The sections at the
         // bottom correspond to further strata of non-profiled scenarios.
-        m_pPreloadSections[CORCOMPILE_SECTION_CLASS_COLD] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | ClassSection, sizeof(TADDR));
-        m_pPreloadSections[CORCOMPILE_SECTION_CROSS_DOMAIN_INFO] = NewVirtualSection(pDataSection, IBCUnProfiledSection | ColdRange | CrossDomainInfoSection, sizeof(TADDR));
-        m_pPreloadSections[CORCOMPILE_SECTION_METHOD_DESC_COLD] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | MethodDescSection, sizeof(TADDR));
-        m_pPreloadSections[CORCOMPILE_SECTION_METHOD_DESC_COLD_WRITEABLE] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | MethodDescWriteableSection, sizeof(TADDR));
-        m_pPreloadSections[CORCOMPILE_SECTION_MODULE_COLD] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | ModuleSection, sizeof(TADDR));
-        m_pPreloadSections[CORCOMPILE_SECTION_DEBUG_COLD] = NewVirtualSection(pDataSection, IBCUnProfiledSection | ColdRange | DebugSection, sizeof(TADDR));
+        m_pPreloadSections[CORCOMPILE_SECTION_CLASS_COLD] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | ClassSection, TARGET_POINTER_SIZE);
+        m_pPreloadSections[CORCOMPILE_SECTION_CROSS_DOMAIN_INFO] = NewVirtualSection(pDataSection, IBCUnProfiledSection | ColdRange | CrossDomainInfoSection, TARGET_POINTER_SIZE);
+        m_pPreloadSections[CORCOMPILE_SECTION_METHOD_DESC_COLD] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | MethodDescSection, TARGET_POINTER_SIZE);
+        m_pPreloadSections[CORCOMPILE_SECTION_METHOD_DESC_COLD_WRITEABLE] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | MethodDescWriteableSection, TARGET_POINTER_SIZE);
+        m_pPreloadSections[CORCOMPILE_SECTION_MODULE_COLD] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | ModuleSection, TARGET_POINTER_SIZE);
+        m_pPreloadSections[CORCOMPILE_SECTION_DEBUG_COLD] = NewVirtualSection(pDataSection, IBCUnProfiledSection | ColdRange | DebugSection, TARGET_POINTER_SIZE);
 
         //
         // If we're instrumenting allocate a section for writing profile data
         //
         if (m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR))
         {
-            m_pInstrumentSection = NewVirtualSection(pDataSection, IBCUnProfiledSection | ColdRange | InstrumentSection, sizeof(TADDR));
+            m_pInstrumentSection = NewVirtualSection(pDataSection, IBCUnProfiledSection | ColdRange | InstrumentSection, TARGET_POINTER_SIZE);
         }
     }
 
@@ -419,14 +419,14 @@ void ZapImage::AllocateVirtualSections()
         m_pHelperTableSection               = NewVirtualSection(pXDataSection, IBCProfiledSection | HotColdSortedRange| HelperTableSection, HELPER_TABLE_ALIGN);
 
         // hot for writing, i.e. profiling has indicated a write to this item, so at least one write likely per item at some point
-        m_pPreloadSections[CORCOMPILE_SECTION_METHOD_PRECODE_WRITE] = NewVirtualSection(pXDataSection, IBCProfiledSection | HotRange | MethodPrecodeWriteSection, sizeof(TADDR));
-        m_pPreloadSections[CORCOMPILE_SECTION_METHOD_PRECODE_HOT] = NewVirtualSection(pXDataSection, IBCProfiledSection | HotRange | MethodPrecodeSection, sizeof(TADDR));
+        m_pPreloadSections[CORCOMPILE_SECTION_METHOD_PRECODE_WRITE] = NewVirtualSection(pXDataSection, IBCProfiledSection | HotRange | MethodPrecodeWriteSection, TARGET_POINTER_SIZE);
+        m_pPreloadSections[CORCOMPILE_SECTION_METHOD_PRECODE_HOT] = NewVirtualSection(pXDataSection, IBCProfiledSection | HotRange | MethodPrecodeSection, TARGET_POINTER_SIZE);
 
         //
         // cold sections
         //
-        m_pPreloadSections[CORCOMPILE_SECTION_METHOD_PRECODE_COLD] = NewVirtualSection(pXDataSection, IBCProfiledSection | ColdRange | MethodPrecodeSection, sizeof(TADDR));
-        m_pPreloadSections[CORCOMPILE_SECTION_METHOD_PRECODE_COLD_WRITEABLE] = NewVirtualSection(pXDataSection, IBCProfiledSection | ColdRange | MethodPrecodeWriteableSection, sizeof(TADDR));
+        m_pPreloadSections[CORCOMPILE_SECTION_METHOD_PRECODE_COLD] = NewVirtualSection(pXDataSection, IBCProfiledSection | ColdRange | MethodPrecodeSection, TARGET_POINTER_SIZE);
+        m_pPreloadSections[CORCOMPILE_SECTION_METHOD_PRECODE_COLD_WRITEABLE] = NewVirtualSection(pXDataSection, IBCProfiledSection | ColdRange | MethodPrecodeWriteableSection, TARGET_POINTER_SIZE);
     }
 
     {
@@ -520,8 +520,8 @@ void ZapImage::AllocateVirtualSections()
         // actually find any duplicates and put those in a small section.  For the rest, where there wasn't a duplicate in the entire image, we leave the
         // singleton in its normal place in the READONLY_HOT section, which was selected carefully by IBC.
         //
-        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_SHARED_HOT] = NewVirtualSection(pTextSection, IBCProfiledSection | HotRange | ReadonlySharedSection, sizeof(TADDR));
-        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_HOT] = NewVirtualSection(pTextSection, IBCProfiledSection | HotRange | ReadonlySection, sizeof(TADDR));
+        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_SHARED_HOT] = NewVirtualSection(pTextSection, IBCProfiledSection | HotRange | ReadonlySharedSection, TARGET_POINTER_SIZE);
+        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_HOT] = NewVirtualSection(pTextSection, IBCProfiledSection | HotRange | ReadonlySection, TARGET_POINTER_SIZE);
 
         //
         // GC Info for methods which were touched during profiling but didn't explicitly have
@@ -571,8 +571,8 @@ void ZapImage::AllocateVirtualSections()
         m_pUnwindDataSection = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ColdRange | UnwindDataSection, sizeof(DWORD));
 #endif // defined(WIN64EXCEPTIONS)
 
-        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_WARM] = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ReadonlySection, sizeof(TADDR));
-        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_VCHUNKS_AND_DICTIONARY] = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ReadonlySection, sizeof(TADDR));
+        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_WARM] = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ReadonlySection, TARGET_POINTER_SIZE);
+        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_VCHUNKS_AND_DICTIONARY] = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | ReadonlySection, TARGET_POINTER_SIZE);
 
         //
         // GC Info for methods which were not touched in profiling
@@ -581,7 +581,7 @@ void ZapImage::AllocateVirtualSections()
 
         m_pDelayLoadInfoDelayListSectionCold = NewVirtualSection(pTextSection, IBCProfiledSection | ColdRange | DelayLoadInfoDelayListSection, sizeof(DWORD));
 
-        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_COLD] = NewVirtualSection(pTextSection, IBCProfiledSection | ColdRange | ReadonlySection, sizeof(TADDR));
+        m_pPreloadSections[CORCOMPILE_SECTION_READONLY_COLD] = NewVirtualSection(pTextSection, IBCProfiledSection | ColdRange | ReadonlySection, TARGET_POINTER_SIZE);
 
         //
         // Allocate the cold code section near the end of the image

@@ -88,12 +88,12 @@ public:
 
     virtual DWORD GetSize()
     {
-        return sizeof(TADDR);
+        return TARGET_POINTER_SIZE;
     }
 
     virtual UINT GetAlignment()
     {
-        return sizeof(TADDR);
+        return TARGET_POINTER_SIZE;
     }
 
     virtual void Save(ZapWriter * pZapWriter);

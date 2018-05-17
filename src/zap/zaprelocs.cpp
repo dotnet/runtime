@@ -46,7 +46,7 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
     case IMAGE_REL_BASED_PTR:
 #ifdef _TARGET_ARM_
         // Misaligned relocs disable ASLR on ARM. We should never ever emit them.
-        _ASSERTE(IS_ALIGNED(rva, sizeof(TADDR)));
+        _ASSERTE(IS_ALIGNED(rva, TARGET_POINTER_SIZE));
 #endif
         *(UNALIGNED TADDR *)pLocation = pActualTarget;
         break;
@@ -350,7 +350,7 @@ COUNT_T ZapBlobWithRelocs::GetCountOfStraddlerRelocations(DWORD dwPos)
     {
         if (pReloc->m_type == IMAGE_REL_BASED_PTR)
         {
-            if (AlignmentTrim(dwPos + pReloc->m_offset, RELOCATION_PAGE_SIZE) > RELOCATION_PAGE_SIZE - sizeof(TADDR))
+            if (AlignmentTrim(dwPos + pReloc->m_offset, RELOCATION_PAGE_SIZE) > RELOCATION_PAGE_SIZE - TARGET_POINTER_SIZE)
                 nStraddlers++;          
         }
     }
