@@ -3,11 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 
 namespace R2RDump
 {
     class R2RDump
     {
+        public static void OutputWarning(string warning)
+        {
+            Console.WriteLine($"Warning: {warning}");
+        }
+
         public static int Main(string[] args)
         {
             try
@@ -27,10 +33,17 @@ namespace R2RDump
 
                     Console.WriteLine("============== R2R Header ==============");
                     Console.WriteLine(r2r.R2RHeader.ToString());
-                    for (int i = 0; i < r2r.R2RHeader.NumberOfSections; i++)
+                    foreach (KeyValuePair<R2RSection.SectionType, R2RSection> section in r2r.R2RHeader.Sections)
                     {
-                        Console.WriteLine("------------------");
-                        Console.WriteLine(r2r.R2RHeader.Sections[i].ToString());
+                        Console.WriteLine("------------------\n");
+                        Console.WriteLine(section.Value.ToString());
+                    }
+
+                    Console.WriteLine("============== Native Code ==============");
+                    foreach (R2RMethod method in r2r.R2RMethods)
+                    {
+                        Console.WriteLine(method.ToString());
+                        Console.WriteLine("------------------\n");
                     }
                 }
             }

@@ -29,22 +29,16 @@ namespace R2RDump
         /// <summary>
         /// The RVA to the section
         /// </summary>
-        public uint RelativeVirtualAddress { get; }
+        public int RelativeVirtualAddress { get; }
 
         /// <summary>
         /// The size of the section
         /// </summary>
-        public uint Size { get; }
+        public int Size { get; }
 
-        public R2RSection(int type, uint rva, uint size)
+        public R2RSection(SectionType type, int rva, int size)
         {
-            if (Enum.IsDefined(typeof(SectionType), type)) { 
-                Type = (SectionType)type;
-            }
-            else
-            {
-                throw new System.BadImageFormatException("Invalid ReadyToRun section type");
-            }
+            Type = type;
             RelativeVirtualAddress = rva;
             Size = size;
         }
