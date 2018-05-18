@@ -3117,8 +3117,20 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
 
-	// Change memory allocation in decode_type if you change
-	g_assert (!t->has_cmods);
+	if (t->has_cmods) {
+		MonoCustomModContainer *cm = mono_type_get_cmods (t);
+
+		*p = MONO_TYPE_CMOD_REQD;
+		++p;
+
+		encode_value (cm->count, p, &p);
+		int iindex = get_image_index (acfg, cm->image);
+		encode_value (iindex, p, &p);
+		for (int i = 0; i < cm->count; ++i) {
+			encode_value (cm->modifiers [i].required, p, &p);
+			encode_value (cm->modifiers [i].token, p, &p);
+		}
+	}
 
 	/* t->attrs can be ignored */
 	//g_assert (t->attrs == 0);

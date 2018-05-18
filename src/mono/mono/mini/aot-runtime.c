@@ -272,10 +272,9 @@ load_image (MonoAotModule *amodule, int index, MonoError *error)
 
 	error_init (error);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: module %s wants to load image %d: %s", amodule->aot_name, index, amodule->image_names[index].name);
-
 	if (amodule->image_table [index])
 		return amodule->image_table [index];
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: module %s wants to load image %d: %s", amodule->aot_name, index, amodule->image_names[index].name);
 	if (amodule->out_of_date) {
 		mono_error_set_bad_image_by_name (error, amodule->aot_name, "Image out of date");
 		return NULL;
@@ -654,10 +653,29 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 	guint8 *p = buf;
 	MonoType *t;
 
-	// In encode_type, we have g_assert (!t->has_mods);
-	// This is the only reason we can do sizeof (MonoType)
-	t = (MonoType *) g_malloc0 (sizeof (MonoType));
-	error_init (error);
+	if (*p == MONO_TYPE_CMOD_REQD) {
+		++p;
+
+		int count = decode_value (p, &p);
+
+		t = (MonoType*)g_malloc0 (mono_sizeof_type_with_mods (count));
+		t->has_cmods = TRUE;
+
+		MonoCustomModContainer *cm = mono_type_get_cmods (t);
+		int iindex = decode_value (p, &p);
+		cm->image = load_image (module, iindex, error);
+		if (!cm->image) {
+			g_free (t);
+			return NULL;
+		}
+		cm->count = count;
+		for (int i = 0; i < cm->count; ++i) {
+			cm->modifiers [i].required = decode_value (p, &p);
+			cm->modifiers [i].token = decode_value (p, &p);
+		}
+	} else {
+		t = (MonoType *) g_malloc0 (sizeof (MonoType));
+	}
 
 	while (TRUE) {
 		if (*p == MONO_TYPE_PINNED) {
