@@ -207,17 +207,15 @@ namespace System.Reflection.Emit
         }
 
         internal virtual SignatureHelper GetMemberRefSignature(CallingConventions call, Type returnType,
-            Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers,
-            Type[] optionalParameterTypes)
+            Type[] parameterTypes, Type[] optionalParameterTypes)
         {
-            return GetMemberRefSignature(call, returnType, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, optionalParameterTypes, 0);
+            return GetMemberRefSignature(call, returnType, parameterTypes, optionalParameterTypes, 0);
         }
 
         private SignatureHelper GetMemberRefSignature(CallingConventions call, Type returnType,
-            Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers,
-            Type[] optionalParameterTypes, int cGenericParameters)
+            Type[] parameterTypes, Type[] optionalParameterTypes, int cGenericParameters)
         {
-            return ((ModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers, optionalParameterTypes, cGenericParameters);
+            return ((ModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, optionalParameterTypes, cGenericParameters);
         }
 
         internal byte[] BakeByteArray()
@@ -508,8 +506,6 @@ namespace System.Reflection.Emit
             sig = GetMemberRefSignature(callingConvention,
                                         returnType,
                                         parameterTypes,
-                                        null,
-                                        null,
                                         optionalParameterTypes);
 
             EnsureCapacity(7);
