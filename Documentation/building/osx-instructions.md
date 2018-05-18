@@ -101,6 +101,7 @@ Build the Framework
 ===================
 
 ```sh
+dotnet-mbp:coreclr richlander$ cd ../corefx/
 dotnet-mbp:corefx richlander$ ./build.sh
 ```
 
