@@ -597,7 +597,7 @@ namespace System.Text
                 Debug.Assert(stringBuilder != null);    // Because it is only called with a 'this' pointer.    
                 _stringBuilder = stringBuilder;
             }
-            private StringBuilder _stringBuilder;   // We insure this is never null. 
+            readonly private StringBuilder _stringBuilder;   // We ensure this is never null. 
             #endregion
         }
 
@@ -686,13 +686,14 @@ namespace System.Text
                     }
                     _chunkPos = -1;
                 }
-                StringBuilder[] _chunks;    // These are in normal order (first chunk first) 
+
+                readonly StringBuilder[] _chunks;    // These are in normal order (first chunk first) 
                 int _chunkPos;
             }
 
-            StringBuilder _firstChunk;        // The first Stringbuilder chunk (which is the end of the logical string)
-            StringBuilder _currentChunk;      // The chunk that this enumerator is currently returning (Current).  
-            ManyChunkInfo _manyChunks;        // Only used for long string builders with many chunks (see constructor)
+            readonly StringBuilder _firstChunk; // The first Stringbuilder chunk (which is the end of the logical string)
+            StringBuilder _currentChunk;        // The chunk that this enumerator is currently returning (Current).  
+            readonly ManyChunkInfo _manyChunks; // Only used for long string builders with many chunks (see constructor)
 #endregion
         }
 
