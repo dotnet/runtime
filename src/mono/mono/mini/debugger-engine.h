@@ -147,6 +147,13 @@ typedef struct {
 	GPtrArray *children;
 } MonoBreakpoint;
 
+typedef struct {
+	MonoJitInfo *ji;
+	MonoDomain *domain;
+	MonoMethod *method;
+	guint32 native_offset;
+} DbgEngineStackFrame;
+
 void mono_de_init (void);
 void mono_de_cleanup (void);
 
