@@ -584,7 +584,7 @@ namespace System.Text
         /// It needs to be public (so the compiler can use it when building a foreach statement) 
         /// but users typically don't use it explicitly (which is why it is a nested type).  
         /// </summary>
-        public struct ChunkEnumerable
+        readonly public struct ChunkEnumerable
         {
             /// <summary>
             /// Implements the IEnumerable pattern.  
