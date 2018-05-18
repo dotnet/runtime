@@ -563,8 +563,19 @@ namespace System.Text
         /// as chunks (ReadOnlyMemory) of characters.  An example use is:
         /// 
         ///      foreach (ReadOnlyMemory<char> chunk in sb.EnumerateChunks())
-        ///      {  /* operate on chars using 'chunk' */   }
+        ///         foreach(char c in chunk.Span)
+        ///             { /* operation on c }
         ///      
+        /// Note that creating a ReadOnlySpan from a ReadOnlyMemory is expensive compared to the
+        /// fetching of the character, so create a local variable for the SPAN if you need to use
+        /// a for statement for example 
+        /// 
+        ///    foreach (ReadOnlyMemory<char> chunk in sb.EnumerateChunks())
+        ///    {
+        ///         var span = chunk.Span;
+        ///         for(int i = 0; i < span.Length; i++)
+        ///             { /* operation on span[i] */ }
+        ///    }
         /// </summary>
         public ChunkEnumerable EnumerateChunks() => new ChunkEnumerable(this);
 
@@ -583,7 +594,7 @@ namespace System.Text
             #region private
             internal ChunkEnumerable(StringBuilder stringBuilder)
             {
-                Debug.Assert(stringBuilder != null);    // Because it is only called with at 'this' pointer.    
+                Debug.Assert(stringBuilder != null);    // Because it is only called with a 'this' pointer.    
                 _stringBuilder = stringBuilder;
             }
             private StringBuilder _stringBuilder;   // We insure this is never null. 
@@ -593,7 +604,7 @@ namespace System.Text
         /// <summary>
         /// ChunkEnumerator supports the IEnumerator pattern so foreach works (see EnumerateChunks)  
         /// It needs to be public (so the compiler can use it when building a foreach statement) 
-        /// but users typically don't use it explicitly (which is why it is a nested type).  
+        /// but users typically don't use it explicitly (which is why it is a nested type). 
         /// </summary>
         public struct ChunkEnumerator
         {
@@ -614,6 +625,7 @@ namespace System.Text
                 _currentChunk = next;
                 return true;
             }
+
             /// <summary>
             /// Implements the IEnumerator pattern.
             /// </summary>
@@ -668,6 +680,7 @@ namespace System.Text
                     _chunks = new StringBuilder[chunkCount];
                     while (0 <= --chunkCount)
                     {
+                        Debug.Assert(stringBuilder != null);
                         _chunks[chunkCount] = stringBuilder;
                         stringBuilder = stringBuilder.m_ChunkPrevious;
                     }
