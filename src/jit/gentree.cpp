@@ -13730,7 +13730,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     {
         hasSrcSideEffect = true;
 
-        if (copySrc->gtType == TYP_STRUCT)
+        if (varTypeIsStruct(copySrc->gtType))
         {
             isStructCopy = true;
 
