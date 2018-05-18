@@ -1006,6 +1006,7 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_SSE2_ConvertToInt32:
+        case NI_SSE2_ConvertToInt32WithTruncation:
         case NI_SSE2_ConvertToInt64:
         case NI_SSE2_ConvertToUInt32:
         case NI_SSE2_ConvertToUInt64:
