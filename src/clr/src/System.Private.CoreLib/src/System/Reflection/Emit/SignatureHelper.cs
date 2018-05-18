@@ -191,58 +191,6 @@ namespace System.Reflection.Emit
 
             return new SignatureHelper(module, type);
         }
-
-        internal static void ExtractParametersTypeArrays(ParameterInfo[] parameters,
-                                                         out Type[] parameterTypes,
-                                                         out Type[][] parameterTypeRequiredCustomModifiers,
-                                                         out Type[][] parameterTypeOptionalCustomModifiers)
-        {
-            // This method tries to allocate as few arrays as possible. In the absence of parameters or
-            // custom modifiers, arrays or single items will default to null. The returned arrays will
-            // generally be fed back to a `SignatureHelper` which must perform null checks where necessary.
-
-            Type[] types = null;
-            Type[][] requiredCustomModifiers = null;
-            Type[][] optionalCustomModifiers = null;
-
-            Debug.Assert(parameters != null);
-
-            if (parameters.Length > 0)
-            {
-                types = new Type[parameters.Length];
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    Debug.Assert(parameters[i] != null);
-
-                    types[i] = parameters[i].ParameterType;
-
-                    Type[] rcms = parameters[i].GetRequiredCustomModifiers();
-                    if (rcms.Length > 0)
-                    {
-                        if (requiredCustomModifiers == null)
-                        {
-                            requiredCustomModifiers = new Type[parameters.Length][];
-                        }
-                        requiredCustomModifiers[i] = rcms;
-                    }
-
-                    Type[] ocms = parameters[i].GetOptionalCustomModifiers();
-                    if (ocms.Length > 0)
-                    {
-                        if (optionalCustomModifiers == null)
-                        {
-                            optionalCustomModifiers = new Type[parameters.Length][];
-                        }
-                        optionalCustomModifiers[i] = ocms;
-                    }
-                }
-            }
-
-            parameterTypes = types;
-            parameterTypeRequiredCustomModifiers = requiredCustomModifiers;
-            parameterTypeOptionalCustomModifiers = optionalCustomModifiers;
-        }
-
         #endregion
 
         #region Private Data Members
