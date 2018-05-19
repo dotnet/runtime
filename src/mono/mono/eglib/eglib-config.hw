@@ -9,6 +9,7 @@
 #ifdef _MSC_VER
 
 #include <io.h>
+#include <stddef.h>
 
 #define G_GNUC_PRETTY_FUNCTION   __FUNCTION__
 #define G_GNUC_UNUSED            
@@ -17,23 +18,22 @@
 #define G_BREAKPOINT()           __debugbreak()
 #define MAXPATHLEN 242
 
-typedef uintptr_t gsize;
-typedef intptr_t gssize;
+typedef size_t gsize;
+typedef ptrdiff_t gssize;
 typedef int pid_t;
 
 #define G_DIR_SEPARATOR          '\\'
 #define G_DIR_SEPARATOR_S        "\\"
 #define G_SEARCHPATH_SEPARATOR_S ";"
 #define G_SEARCHPATH_SEPARATOR   ';'
+
 #ifdef _WIN64
-#define G_GSIZE_FORMAT   "I64u" // assuming Microsoft C runtime back to circa year 2000, newer supports "ll"
+// Correct for Win32 and Win64 since circa 2000.
+#define G_GSIZE_FORMAT   "Iu"
 #else
+// Correct for Win32 since circa 1992.
 #define G_GSIZE_FORMAT   "u"
 #endif
-#define GPOINTER_TO_INT(ptr)   ((gint)(intptr_t) (ptr))
-#define GPOINTER_TO_UINT(ptr)  ((guint)(intptr_t) (ptr))
-#define GINT_TO_POINTER(v)     ((gpointer)(intptr_t) (v))
-#define GUINT_TO_POINTER(v)    ((gpointer)(intptr_t) (v))
 
 // https://msdn.microsoft.com/en-us/library/40bbyw78.aspx
 #define STDOUT_FILENO (1)

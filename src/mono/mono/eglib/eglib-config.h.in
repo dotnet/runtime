@@ -14,17 +14,13 @@
 #define G_DIR_SEPARATOR_S        "@PATHSEP@"
 #define G_BREAKPOINT()           @BREAKPOINT@
 #define G_OS_@OS@
-#define GPOINTER_TO_INT(ptr)   @GPOINTER_TO_INT@
-#define GPOINTER_TO_UINT(ptr)  @GPOINTER_TO_UINT@
-#define GINT_TO_POINTER(v)     @GINT_TO_POINTER@
-#define GUINT_TO_POINTER(v)    @GUINT_TO_POINTER@
 
 #if @HAVE_ALLOCA_H@ == 1
 #define G_HAVE_ALLOCA_H
 #endif
 
-typedef unsigned @GSIZE@ gsize;
-typedef signed   @GSIZE@ gssize;
+typedef @GSIZE@ gsize;
+typedef @GSSIZE@ gssize;
 
 #define G_GSIZE_FORMAT   @GSIZE_FORMAT@
 
