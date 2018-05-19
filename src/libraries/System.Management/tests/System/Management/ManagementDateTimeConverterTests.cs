@@ -24,6 +24,15 @@ namespace System.Management.Tests
         }
 
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        public void DateTime_MinValue_RoundTrip()
+        {
+            string dmtfFromDateTimeMinValue = ManagementDateTimeConverter.ToDmtfDateTime(DateTime.MinValue);
+            DateTime convertedDate = ManagementDateTimeConverter.ToDateTime(dmtfFromDateTimeMinValue);
+            Assert.Equal(DateTimeKind.Unspecified, convertedDate.Kind);
+            Assert.Equal(DateTime.MinValue, convertedDate);
+        }
+
+        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
         public void TimeSpan_RoundTrip()
         {
             var timeSpan = new TimeSpan(10, 12, 25, 32, 123);
