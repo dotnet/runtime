@@ -31,7 +31,7 @@ namespace System
                 ((long*)numbers)[0] = 0L;
                 ((long*)numbers)[1] = 0L;
                 isLoopback = Parse(str, numbers, start, ref scopeId);
-                return '[' + CreateCanonicalName(numbers) + ']';
+                return '[' + CreateCanonicalName(numbers) + ((numbers[0] == 0xfe80) ? scopeId : "") + ']';
             }
         }
 
