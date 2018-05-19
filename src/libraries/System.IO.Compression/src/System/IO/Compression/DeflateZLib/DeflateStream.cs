@@ -313,7 +313,6 @@ namespace System.IO.Compression
                 ThrowStreamClosedException();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowStreamClosedException()
         {
             throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
@@ -325,7 +324,6 @@ namespace System.IO.Compression
                 ThrowCannotReadFromDeflateStreamException();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowCannotReadFromDeflateStreamException()
         {
             throw new InvalidOperationException(SR.CannotReadFromDeflateStream);
@@ -337,7 +335,6 @@ namespace System.IO.Compression
                 ThrowCannotWriteToDeflateStreamException();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowCannotWriteToDeflateStreamException()
         {
             throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
