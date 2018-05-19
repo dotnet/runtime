@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
+using System.Linq;
 using Xunit;
 
 namespace System.IO.Tests
@@ -129,6 +129,56 @@ namespace System.IO.Tests
             linkPathFI.Delete();
             linkPathFI.Refresh();
             Assert.False(linkPathFI.Exists, "linkPath should no longer exist");
+        }
+
+        [Fact]
+        public void UnsharedFileExists()
+        {
+            string path = GetTestFilePath();
+            using (FileStream stream = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
+            {
+                RemoteInvoke((p) =>
+                {
+                    FileInfo info = new FileInfo(p);
+                    Assert.True(info.Exists);
+                    return SuccessExitCode;
+                }, path).Dispose();
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)]
+        public void LockedFileExists()
+        {
+            string path = GetTestFilePath();
+            File.WriteAllBytes(path, new byte[10]);
+
+            using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                stream.Lock(0, 10);
+
+                RemoteInvoke((p) =>
+                {
+                    FileInfo info = new FileInfo(p);
+                    Assert.True(info.Exists);
+                    return SuccessExitCode;
+                }, path).Dispose();
+
+                stream.Unlock(0, 10);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PageFileExists()
+        {
+            // Typically there is a page file on the C: drive, if not, don't bother trying to track it down.
+            string pageFilePath = Directory.EnumerateFiles(@"C:\", "pagefile.sys").FirstOrDefault();
+            if (pageFilePath != null)
+            {
+                FileInfo info = new FileInfo(pageFilePath);
+                Assert.True(info.Exists);
+            }
         }
     }
 }

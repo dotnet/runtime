@@ -100,5 +100,22 @@ namespace System.IO.Tests
             // Assert.InRange is inclusive
             Assert.InRange(fi.CreationTimeUtc, before, fi.LastWriteTimeUtc);
         }
+
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PageFileHasTimes()
+        {
+            // Typically there is a page file on the C: drive, if not, don't bother trying to track it down.
+            string pageFilePath = Directory.EnumerateFiles(@"C:\", "pagefile.sys").FirstOrDefault();
+            if (pageFilePath != null)
+            {
+                Assert.All(TimeFunctions(), (item) =>
+                {
+                    var time = item.Getter(new FileInfo(pageFilePath));
+                    Assert.NotEqual(DateTime.FromFileTime(0), time);
+                });
+            }
+        }
     }
 }

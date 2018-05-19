@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.IO.Tests
@@ -74,6 +75,22 @@ namespace System.IO.Tests
                 ((path, time) => File.SetLastWriteTimeUtc(path, time)),
                 ((path) => File.GetLastWriteTimeUtc(path)),
                 DateTimeKind.Utc);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PageFileHasTimes()
+        {
+            // Typically there is a page file on the C: drive, if not, don't bother trying to track it down.
+            string pageFilePath = Directory.EnumerateFiles(@"C:\", "pagefile.sys").FirstOrDefault();
+            if (pageFilePath != null)
+            {
+                Assert.All(TimeFunctions(), (item) =>
+                {
+                    var time = item.Getter(pageFilePath);
+                    Assert.NotEqual(DateTime.FromFileTime(0), time);
+                });
+            }
         }
     }
 }
