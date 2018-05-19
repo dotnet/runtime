@@ -618,6 +618,21 @@ namespace System.IO.Compression
             }
         }
 
+        [Theory]
+        [InlineData(CompressionMode.Compress)]
+        [InlineData(CompressionMode.Decompress)]
+        public void CopyTo_ArgumentValidation(CompressionMode mode)
+        {
+            using (Stream compressor = CreateStream(new MemoryStream(), mode))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("destination", () => { compressor.CopyTo(null); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => { compressor.CopyTo(new MemoryStream(), 0); });
+                Assert.Throws<NotSupportedException>(() => { compressor.CopyTo(new MemoryStream(new byte[1], writable: false)); });
+                compressor.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => { compressor.CopyTo(new MemoryStream()); });
+            }
+        }
+
         public enum ReadWriteMode
         {
             SyncArray,
