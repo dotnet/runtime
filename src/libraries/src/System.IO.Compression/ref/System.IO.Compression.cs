@@ -49,6 +49,7 @@ namespace System.IO.Compression
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] array, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public override void CopyTo(Stream destination, int bufferSize) { }
     }
     public partial class GZipStream : System.IO.Stream
     {
