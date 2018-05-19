@@ -11289,14 +11289,11 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             asg = gtNewAssignNode(dest, src);
 
             // If we spilled the address, and we didn't do individual field assignments to promoted fields,
-            // and it was of a local, record the assignment as an indirect update of a local.
+            // and it was of a local, ensure that the destination local variable has been marked as address
+            // exposed. Neither liveness nor SSA are able to track this kind of indirect assignments.
             if (addrSpill && !destDoFldAsg && destLclNum != BAD_VAR_NUM)
             {
-                curFieldSeq   = GetFieldSeqStore()->Append(destFldSeq, curFieldSeq);
-                bool isEntire = (genTypeSize(var_types(lvaTable[destLclNum].lvType)) == genTypeSize(dest->TypeGet()));
-                IndirectAssignmentAnnotation* pIndirAnnot =
-                    new (this, CMK_Unknown) IndirectAssignmentAnnotation(destLclNum, curFieldSeq, isEntire);
-                GetIndirAssignMap()->Set(asg, pIndirAnnot);
+                noway_assert(lvaTable[destLclNum].lvAddrExposed);
             }
 
 #if LOCAL_ASSERTION_PROP

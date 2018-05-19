@@ -6243,9 +6243,6 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
                     // If it is a PtrToLoc, lib and cons VNs will be the same.
                     if (argIsVNFunc)
                     {
-                        IndirectAssignmentAnnotation* pIndirAnnot =
-                            nullptr; // This will be used if "tree" is an "indirect assignment",
-                                     // explained below.
                         if (funcApp.m_func == VNF_PtrToLoc)
                         {
                             assert(arg->gtVNPair.BothEqual()); // If it's a PtrToLoc, lib/cons shouldn't differ.
@@ -6258,11 +6255,9 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
                             {
                                 FieldSeqNode* fieldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
 
-                                // Either "arg" is the address of (part of) a local itself, or the assignment is an
-                                // "indirect assignment", where an outer comma expression assigned the address of a
-                                // local to a temp, and that temp is our lhs, and we recorded this in a table when we
-                                // made the indirect assignment...or else we have a "rogue" PtrToLoc, one that should
-                                // have made the local in question address-exposed.  Assert on that.
+                                // Either "arg" is the address of (part of) a local itself, or else we have
+                                // a "rogue" PtrToLoc, one that should have made the local in question
+                                // address-exposed.  Assert on that.
                                 GenTreeLclVarCommon* lclVarTree   = nullptr;
                                 bool                 isEntire     = false;
                                 unsigned             lclDefSsaNum = SsaConfig::RESERVED_SSA_NUM;
@@ -6294,32 +6289,6 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
                                                                         .GetPerSsaData(lclVarTree->GetSsaNum())
                                                                         ->m_vnPair;
                                         lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
-                                        newLhsVNPair =
-                                            vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, fieldSeq, rhsVNPair,
-                                                                                lhs->TypeGet(), compCurBB);
-                                    }
-                                    lvaTable[lclNum].GetPerSsaData(lclDefSsaNum)->m_vnPair = newLhsVNPair;
-                                }
-                                else if (m_indirAssignMap != nullptr && GetIndirAssignMap()->Lookup(tree, &pIndirAnnot))
-                                {
-                                    // The local #'s should agree.
-                                    assert(lclNum == pIndirAnnot->m_lclNum);
-                                    assert(pIndirAnnot->m_defSsaNum != SsaConfig::RESERVED_SSA_NUM);
-                                    lclDefSsaNum = pIndirAnnot->m_defSsaNum;
-                                    // Does this assignment write the entire width of the local?
-                                    if (genTypeSize(lhs->TypeGet()) == genTypeSize(var_types(lvaTable[lclNum].lvType)))
-                                    {
-                                        assert(pIndirAnnot->m_useSsaNum == SsaConfig::RESERVED_SSA_NUM);
-                                        assert(pIndirAnnot->m_isEntire);
-                                        newLhsVNPair = rhsVNPair;
-                                    }
-                                    else
-                                    {
-                                        assert(pIndirAnnot->m_useSsaNum != SsaConfig::RESERVED_SSA_NUM);
-                                        assert(!pIndirAnnot->m_isEntire);
-                                        assert(pIndirAnnot->m_fieldSeq == fieldSeq);
-                                        ValueNumPair oldLhsVNPair =
-                                            lvaTable[lclNum].GetPerSsaData(pIndirAnnot->m_useSsaNum)->m_vnPair;
                                         newLhsVNPair =
                                             vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, fieldSeq, rhsVNPair,
                                                                                 lhs->TypeGet(), compCurBB);
