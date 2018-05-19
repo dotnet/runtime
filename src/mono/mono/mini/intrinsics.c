@@ -1113,6 +1113,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (mono_type_is_native_blittable (arg0))
 				return mini_emit_memory_load (cfg, arg0, args [0], 0, 0);
 		}
+	} else if (cmethod->klass == mono_defaults.enum_class && !strcmp (cmethod->name, "HasFlag") &&
+			   args [0]->opcode == OP_BOX && args [1]->opcode == OP_BOX_ICONST && args [0]->klass == args [1]->klass) {
+		args [1]->opcode = OP_ICONST;
+		ins = mini_handle_enum_has_flag (cfg, args [0]->klass, NULL, args [0]->sreg1, args [1]);
+		NULLIFY_INS (args [0]);
+		return ins;
 	}
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS

@@ -42,6 +42,9 @@ MINI_OP(OP_CHECK_THIS,	"checkthis", NONE, IREG, NONE)
 MINI_OP(OP_SEQ_POINT, "seq_point", NONE, NONE, NONE)
 MINI_OP(OP_IL_SEQ_POINT, "il_seq_point", NONE, NONE, NONE)
 MINI_OP(OP_IMPLICIT_EXCEPTION, "implicit_exception", NONE, NONE, NONE)
+MINI_OP(OP_BOX, "box", IREG, IREG, NONE)
+/* A box of the int value in inst_c0 */
+MINI_OP(OP_BOX_ICONST, "box_iconst", IREG, NONE, NONE)
 
 /* CALL opcodes need to stay together, see MONO_IS_CALL macro */
 MINI_OP(OP_VOIDCALL,	"voidcall", NONE, NONE, NONE)

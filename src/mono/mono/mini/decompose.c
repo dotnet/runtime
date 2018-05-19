@@ -1207,6 +1207,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 		if (cfg->verbose_level > 2) mono_print_bb (bb, "BEFORE LOWER-VTYPE-OPTS ");
 
 		cfg->cbb->code = cfg->cbb->last_ins = NULL;
+		cfg->cbb->out_of_line = bb->out_of_line;
 		restart = TRUE;
 
 		while (restart) {
@@ -1432,6 +1433,30 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 						}
 						ins->dreg = -1;
 					}
+					break;
+				}
+				case OP_BOX:
+				case OP_BOX_ICONST: {
+					MonoInst *src;
+
+					/* Temporary value required by emit_box () */
+					if (ins->opcode == OP_BOX_ICONST) {
+						NEW_ICONST (cfg, src, ins->inst_c0);
+						src->klass = ins->klass;
+						MONO_ADD_INS (cfg->cbb, src);
+					} else {
+						MONO_INST_NEW (cfg, src, OP_LOCAL);
+						src->type = STACK_MP;
+						src->klass = ins->klass;
+						src->dreg = ins->sreg1;
+					}
+					MonoInst *tmp = mini_emit_box (cfg, src, ins->klass, mini_class_check_context_used (cfg, ins->klass));
+					g_assert (tmp);
+
+					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, tmp->dreg);
+
+					/* This might be decomposed into other vtype opcodes */
+					restart = TRUE;
 					break;
 				}
 				default:

@@ -1306,8 +1306,13 @@ check_values_to_signature (MonoInst *args, MonoType *this_ins, MonoMethodSignatu
 inline static MonoInst *
 mono_get_domainvar (MonoCompile *cfg)
 {
-	if (!cfg->domainvar)
+	if (!cfg->domainvar) {
+		/* Make sure we don't generate references after checking whenever to init this */
+		g_assert (!cfg->domainvar_inited);
 		cfg->domainvar = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+		/* Avoid optimizing it away */
+		cfg->domainvar->flags |= MONO_INST_VOLATILE;
+	}
 	return cfg->domainvar;
 }
 
@@ -3844,8 +3849,8 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 /*
  * Returns NULL and set the cfg exception on error.
  */	
-static MonoInst*
-handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
+MonoInst*
+mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 {
 	MonoInst *alloc, *ins;
 
@@ -3956,14 +3961,14 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used)
 		MONO_START_BB (cfg, end_bb);
 
 		return res;
-	} else {
-		alloc = handle_alloc (cfg, klass, TRUE, context_used);
-		if (!alloc)
-			return NULL;
-
-		EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), alloc->dreg, sizeof (MonoObject), val->dreg);
-		return alloc;
 	}
+
+	alloc = handle_alloc (cfg, klass, TRUE, context_used);
+	if (!alloc)
+		return NULL;
+
+	EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), alloc->dreg, sizeof (MonoObject), val->dreg);
+	return alloc;
 }
 
 static gboolean
@@ -3976,8 +3981,8 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 	return FALSE;
 }
 
-static G_GNUC_UNUSED MonoInst*
-handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, MonoInst *enum_flag)
+G_GNUC_UNUSED MonoInst*
+mini_handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, int enum_val_reg, MonoInst *enum_flag)
 {
 	MonoType *enum_type = mono_type_get_underlying_type (m_class_get_byval_arg (klass));
 	guint32 load_opc = mono_type_to_load_membase (cfg, enum_type);
@@ -4003,7 +4008,12 @@ handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, M
 		int and_reg = is_i4 ? alloc_ireg (cfg) : alloc_lreg (cfg);
 		int dest_reg = alloc_ireg (cfg);
 
-		EMIT_NEW_LOAD_MEMBASE (cfg, load, load_opc, enum_reg, enum_this->dreg, 0);
+		if (enum_this) {
+			EMIT_NEW_LOAD_MEMBASE (cfg, load, load_opc, enum_reg, enum_this->dreg, 0);
+		} else {
+			g_assert (enum_val_reg != -1);
+			enum_reg = enum_val_reg;
+		}
 		EMIT_NEW_BIALU (cfg, and_, is_i4 ? OP_IAND : OP_LAND, and_reg, enum_reg, enum_flag->dreg);
 		EMIT_NEW_BIALU (cfg, cmp, is_i4 ? OP_ICOMPARE : OP_LCOMPARE, -1, and_reg, enum_flag->dreg);
 		EMIT_NEW_UNALU (cfg, ceq, is_i4 ? OP_ICEQ : OP_LCEQ, dest_reg, -1);
@@ -7679,7 +7689,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						/* The called method is not virtual, i.e. Object:GetType (), the receiver is a vtype, has to box */
 						EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (constrained_class), sp [0]->dreg, 0);
 						ins->klass = constrained_class;
-						sp [0] = handle_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class));
+						sp [0] = mini_emit_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class));
 						CHECK_CFG_EXCEPTION;
 					} else if (need_box) {
 						MonoInst *box_type;
@@ -7714,7 +7724,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						MONO_START_BB (cfg, is_ref_bb);
 						EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (constrained_class), sp [0]->dreg, 0);
 						ins->klass = constrained_class;
-						sp [0] = handle_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class));
+						sp [0] = mini_emit_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class));
 						if (cfg->llvm_only)
 							ins = emit_llvmonly_calli (cfg, fsig, sp, addr);
 						else
@@ -7748,7 +7758,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 */
 					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (constrained_class), sp [0]->dreg, 0);
 					ins->klass = constrained_class;
-					sp [0] = handle_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class));
+					sp [0] = mini_emit_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class));
 					CHECK_CFG_EXCEPTION;
 				} else if (!m_class_is_valuetype (constrained_class)) {
 					int dreg = alloc_ireg_ref (cfg);
@@ -7782,7 +7792,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							/* Enum implements some interfaces, so treat this as the first case */
 							EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (constrained_class), sp [0]->dreg, 0);
 							ins->klass = constrained_class;
-							sp [0] = handle_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class));
+							sp [0] = mini_emit_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class));
 							CHECK_CFG_EXCEPTION;
 						}
 					}
@@ -9376,6 +9386,8 @@ calli_end:
 			 * If we find this sequence and the operand types on box and constrained
 			 * are equal, we can emit a specialized instruction sequence instead of
 			 * the very slow HasFlag () call.
+			 * This code sequence is generated by older mcs/csc, the newer one is handled in
+			 * emit_inst_for_method ().
 			 */
 			guint32 constrained_token;
 			guint32 callvirt_token;
@@ -9406,7 +9418,7 @@ calli_end:
 					enum_this = sp [0];
 					enum_flag = sp [1];
 
-					*sp++ = handle_enum_has_flag (cfg, klass, enum_this, enum_flag);
+					*sp++ = mini_handle_enum_has_flag (cfg, klass, enum_this, -1, enum_flag);
 					break;
 				}
 			}
@@ -9468,8 +9480,29 @@ calli_end:
 				break;
 			}
 
-			*sp++ = handle_box (cfg, val, klass, context_used);
-
+			if (mono_class_is_enum (klass) && !(val->type == STACK_I8 && SIZEOF_VOID_P == 4)) {
+				/* Can't do this with 64 bit enums on 32 bit since the vtype decomp pass is ran after the long decomp pass */
+				if (val->opcode == OP_ICONST) {
+					MONO_INST_NEW (cfg, ins, OP_BOX_ICONST);
+					ins->type = STACK_OBJ;
+					ins->klass = klass;
+					ins->inst_c0 = val->inst_c0;
+					ins->dreg = alloc_dreg (cfg, val->type);
+				} else {
+					MONO_INST_NEW (cfg, ins, OP_BOX);
+					ins->type = STACK_OBJ;
+					ins->klass = klass;
+					ins->sreg1 = val->dreg;
+					ins->dreg = alloc_dreg (cfg, val->type);
+				}
+				MONO_ADD_INS (cfg->cbb, ins);
+				*sp++ = ins;
+				/* Create domainvar early so it gets initialized earlier than this code */
+				if (cfg->opt & MONO_OPT_SHARED)
+					mono_get_domainvar (cfg);
+			} else {
+				*sp++ = mini_emit_box (cfg, val, klass, context_used);
+			}
 			CHECK_CFG_EXCEPTION;
 			inline_costs += 1;
 			break;
@@ -11669,6 +11702,7 @@ mono_ldptr:
 		get_domain = mono_create_tls_get (cfg, TLS_KEY_DOMAIN);
 		NEW_TEMPSTORE (cfg, store, cfg->domainvar->inst_c0, get_domain);
 		MONO_ADD_INS (cfg->cbb, store);
+		cfg->domainvar_inited = TRUE;
 	}
 
 #if defined(TARGET_POWERPC) || defined(TARGET_X86)

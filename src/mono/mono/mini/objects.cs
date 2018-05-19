@@ -1272,6 +1272,27 @@ ncells ) {
 		return sb.ToString () == "ADC" ? 0 : 1;
 	}
 
+	enum FlagsEnum {
+		None = 0,
+		A = 1,
+		B = 2,
+		C = 4
+	}
+
+	public static int test_0_intrins_enum_hasflag () {
+		var e = FlagsEnum.A | FlagsEnum.B;
+
+		if (!e.HasFlag (FlagsEnum.A))
+			return 1;
+		if (!e.HasFlag (FlagsEnum.A | FlagsEnum.B))
+			return 2;
+		if (!e.HasFlag (FlagsEnum.None))
+			return 3;
+		if (e.HasFlag (FlagsEnum.C))
+			return 4;
+		return 0;
+	}
+
 	public class Bar {
 		bool allowLocation = true;
         Foo f = new Foo ();	
