@@ -76,7 +76,7 @@ namespace System.Collections.Concurrent
             _crossSegmentLock = new object();
 
             // Determine the initial segment size.  We'll use the default,
-            // unless the collection is known to be larger than than, in which
+            // unless the collection is known to be larger than that, in which
             // case we round its length up to a power of 2, as all segments must
             // be a power of 2 in length.
             int length = InitialSegmentLength;
@@ -276,26 +276,24 @@ namespace System.Collections.Concurrent
         {
             get
             {
-                ConcurrentQueueSegment<T> head, tail;
-                int headHead, headTail, tailHead, tailTail;
                 var spinner = new SpinWait();
                 while (true)
                 {
                     // Capture the head and tail, as well as the head's head and tail.
-                    head = _head;
-                    tail = _tail;
-                    headHead = Volatile.Read(ref head._headAndTail.Head);
-                    headTail = Volatile.Read(ref head._headAndTail.Tail);
+                    ConcurrentQueueSegment<T> head = _head;
+                    ConcurrentQueueSegment<T> tail = _tail;
+                    int headHead = Volatile.Read(ref head._headAndTail.Head);
+                    int headTail = Volatile.Read(ref head._headAndTail.Tail);
 
                     if (head == tail)
                     {
-                        // There was a single segment in the queue.  If the captured
-                        // values still (or again) represent reality, return the segment's
-                        // count. A single segment should be the most common case once the
-                        // queue's size has stabilized after segments have grown to
-                        // the point where growing is no longer needed.
+                        // There was a single segment in the queue.  If the captured segments still
+                        // match, then we can trust the values to compute the segment's count. (It's
+                        // theoretically possible the values could have looped around and still exactly match,
+                        // but that would required at least ~4 billion elements to have been enqueued and
+                        // dequeued between the reads.)
                         if (head == _head &&
-                            head == _tail &&
+                            tail == _tail &&
                             headHead == Volatile.Read(ref head._headAndTail.Head) &&
                             headTail == Volatile.Read(ref head._headAndTail.Tail))
                         {
@@ -304,11 +302,10 @@ namespace System.Collections.Concurrent
                     }
                     else if (head._nextSegment == tail)
                     {
-                        // There were two segments in the queue.  Get the positions
-                        // from the tail, and if the captured values still (or again) match
-                        // reality, return the sum of the counts from both segments.
-                        tailHead = Volatile.Read(ref tail._headAndTail.Head);
-                        tailTail = Volatile.Read(ref tail._headAndTail.Tail);
+                        // There were two segments in the queue.  Get the positions from the tail, and as above,
+                        // if the captured values match the previous reads, return the sum of the counts from both segments.
+                        int tailHead = Volatile.Read(ref tail._headAndTail.Head);
+                        int tailTail = Volatile.Read(ref tail._headAndTail.Tail);
                         if (head == _head &&
                             tail == _tail &&
                             headHead == Volatile.Read(ref head._headAndTail.Head) &&
@@ -316,17 +313,52 @@ namespace System.Collections.Concurrent
                             tailHead == Volatile.Read(ref tail._headAndTail.Head) &&
                             tailTail == Volatile.Read(ref tail._headAndTail.Tail))
                         {
-                            // We got stable values, so we can just compute the sizes based on those
-                            // values and return the sum of the counts of the segments.
                             return GetCount(head, headHead, headTail) + GetCount(tail, tailHead, tailTail);
                         }
                     }
                     else
                     {
-                        // There were more than two segments.  Take the slower path, where we freeze the
-                        // queue and then count the now stable segments.
-                        SnapForObservation(out head, out headHead, out tail, out tailTail);
-                        return unchecked((int)GetCount(head, headHead, tail, tailTail));
+                        // There were more than two segments in the queue.  Fall back to taking the cross-segment lock,
+                        // which will ensure that the head and tail segments we read are stable (since the lock is needed to change them);
+                        // for the two-segment case above, we can simply rely on subsequent comparisons, but for the two+ case, we need
+                        // to be able to trust the internal segments between the head and tail.
+                        lock (_crossSegmentLock)
+                        {
+                            // Now that we hold the lock, re-read the previously captured head and tail segments and head positions.
+                            // If either has changed, start over.
+                            if (head == _head && tail == _tail)
+                            {
+                                // Get the positions from the tail, and as above, if the captured values match the previous reads,
+                                // we can use the values to compute the count of the head and tail segments.
+                                int tailHead = Volatile.Read(ref tail._headAndTail.Head);
+                                int tailTail = Volatile.Read(ref tail._headAndTail.Tail);
+                                if (headHead == Volatile.Read(ref head._headAndTail.Head) &&
+                                    headTail == Volatile.Read(ref head._headAndTail.Tail) &&
+                                    tailHead == Volatile.Read(ref tail._headAndTail.Head) &&
+                                    tailTail == Volatile.Read(ref tail._headAndTail.Tail))
+                                {
+                                    // We got stable values for the head and tail segments, so we can just compute the sizes
+                                    // based on those and add them. Note that this and the below additions to count may overflow: previous
+                                    // implementations allowed that, so we don't check, either, and it is theoretically possible for the
+                                    // queue to store more than int.MaxValue items.
+                                    int count = GetCount(head, headHead, headTail) + GetCount(tail, tailHead, tailTail);
+
+                                    // Now add the counts for each internal segment. Since there were segments before these,
+                                    // for counting purposes we consider them to start at the 0th element, and since there is at
+                                    // least one segment after each, each was frozen, so we can count until each's frozen tail.
+                                    // With the cross-segment lock held, we're guaranteed that all of these internal segments are
+                                    // consistent, as the head and tail segment can't be changed while we're holding the lock, and
+                                    // dequeueing and enqueueing can only be done from the head and tail segments, which these aren't.
+                                    for (ConcurrentQueueSegment<T> s = head._nextSegment; s != tail; s = s._nextSegment)
+                                    {
+                                        Debug.Assert(s._frozenForEnqueues, "Internal segment must be frozen as there's a following segment.");
+                                        count += s._headAndTail.Tail - s.FreezeOffset;
+                                    }
+
+                                    return count;
+                                }
+                            }
+                        }
                     }
 
                     // We raced with enqueues/dequeues and captured an inconsistent picture of the queue.
