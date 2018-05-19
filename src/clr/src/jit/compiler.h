@@ -4006,58 +4006,6 @@ public:
     // rather than the "use" SSA number recorded in the tree "lcl".
     inline unsigned GetSsaNumForLocalVarDef(GenTree* lcl);
 
-    // Some assignments assign to a local "indirectly": they are part of a comma expression that takes the address
-    // of the local (or a field thereof), assigns this address to a temp, and uses an indirection of this temp as
-    // the LHS of the assignment.  This actually arises in exactly one situation.  At the source level we assign one
-    // struct local to another: "s1 = s2".  This becomes a copyblk.  If "s2" is promoted into  field variables "s2f0",
-    // ..."s2fn", then the copyblk will morph to a comma expression that takes the address of "s1" and does field-wise
-    // assignments:
-    //   (byref addrS1 = &s1,
-    //    *(addrS1 * offsetof(f0)) = s2f0,
-    //    ...
-    //    *(addrS1 * offsetof(fn)) = s2fn)
-    //
-    // It would be a shame, given the simple form at the source level, to be unable to track the values in the
-    // fields of "s1" after this.  But "s1" does not appear in the assignments that modify it.  How, then, to
-    // give it SSA names and value numbers?
-    //
-    // The solution is to use the side table described below to annotate each of the field-wise assignments at the
-    // end with an instance of the structure below, whose fields are described in the declaration.
-    struct IndirectAssignmentAnnotation
-    {
-        unsigned      m_lclNum;   // The local num that is being indirectly assigned.
-        FieldSeqNode* m_fieldSeq; // If the LHS of the struct assignment is itself a struct field dereference,
-                                  // as in "s0.g = s2", then "m_lclNum" would be "s0", and "m_fieldSeq" would
-                                  // be the singleton field sequence "g".  The individual assignments would
-                                  // further append the fields of "s.g" to that.
-        bool m_isEntire;          // True iff this assignment writes all of m_lclNum.  (This can occur if the
-                                  // structure has a single field).
-        unsigned m_defSsaNum;     // The new SSA number of "m_lclNum" after the assignment.
-        unsigned m_useSsaNum;     // Only valid if "m_isEntire" is false; if so, the SSA number of "m_lclNum" before the
-                                  // assignment.
-
-        IndirectAssignmentAnnotation(unsigned      lclNum,
-                                     FieldSeqNode* fldSeq,
-                                     bool          isEntire,
-                                     unsigned      defSsaNum = SsaConfig::RESERVED_SSA_NUM,
-                                     unsigned      useSsaNum = SsaConfig::RESERVED_SSA_NUM)
-            : m_lclNum(lclNum), m_fieldSeq(fldSeq), m_isEntire(isEntire), m_defSsaNum(defSsaNum), m_useSsaNum(useSsaNum)
-        {
-        }
-    };
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, IndirectAssignmentAnnotation*> NodeToIndirAssignMap;
-    NodeToIndirAssignMap* m_indirAssignMap;
-    NodeToIndirAssignMap* GetIndirAssignMap()
-    {
-        if (m_indirAssignMap == nullptr)
-        {
-            // Create a CompAllocator that labels sub-structure with CMK_IndirAssignMap, and use that for allocation.
-            CompAllocator* ialloc = new (this, CMK_IndirAssignMap) CompAllocator(this, CMK_IndirAssignMap);
-            m_indirAssignMap      = new (ialloc) NodeToIndirAssignMap(ialloc);
-        }
-        return m_indirAssignMap;
-    }
-
     // Performs SSA conversion.
     void fgSsaBuild();
 
