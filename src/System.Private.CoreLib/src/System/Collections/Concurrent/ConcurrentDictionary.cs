@@ -664,17 +664,15 @@ namespace System.Collections.Concurrent
             }
         }
 
-        // These exception throwing sites have been extracted into their own NoInlining methods
-        // as these are uncommonly needed and when inlined are observed to prevent the inlining
-        // of important methods like TryGetValue and ContainsKey.
+        // These exception throwing sites have been extracted into their own methods as these are
+        // uncommonly needed and when inlined are observed to prevent the inlining of important
+        // methods like TryGetValue and ContainsKey.
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowKeyNotFoundException(object key)
         {
             throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowKeyNullException()
         {
             throw new ArgumentNullException("key");
