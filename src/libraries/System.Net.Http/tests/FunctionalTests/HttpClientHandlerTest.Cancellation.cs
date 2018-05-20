@@ -13,6 +13,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
     public abstract class HttpClientHandler_Cancellation_Test : HttpClientTestBase
     {
         [Theory]

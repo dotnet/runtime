@@ -390,6 +390,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
