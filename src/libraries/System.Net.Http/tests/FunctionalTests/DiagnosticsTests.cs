@@ -468,6 +468,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
@@ -716,6 +717,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [Fact]
         public void SendAsync_NullRequest_ThrowsArgumentNullException()
         {
