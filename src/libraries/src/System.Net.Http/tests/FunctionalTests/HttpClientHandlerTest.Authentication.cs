@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
     public abstract class HttpClientHandler_Authentication_Test : HttpClientTestBase
     {
         private const string Username = "testusername";
