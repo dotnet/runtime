@@ -1,6 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{16EE6633-F557-5C9E-9EF3-B5334B044F47}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -87,5 +85,4 @@
     <PreferredIANANamesPath>Data\PreferredCodePageNames.csv</PreferredIANANamesPath>
     <OutputDataTablePath>System\Text\EncodingTable.Data.cs</OutputDataTablePath>
   </PropertyGroup>
-  <Import Project="$(ToolsDir)encoding.targets" Condition="Exists('$(ToolsDir)encoding.targets')" />
 </Project>

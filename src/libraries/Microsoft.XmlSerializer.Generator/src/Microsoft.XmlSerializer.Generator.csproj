@@ -1,6 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{80958E8B-2FEB-4F95-83F9-825CA1ED26F8}</ProjectGuid>
     <AssemblyName>dotnet-Microsoft.XmlSerializer.Generator</AssemblyName>
@@ -17,5 +15,4 @@
     <Compile Include="Sgen.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <Import Project=".\GenerateThisAssemblyCs.targets" />
 </Project>

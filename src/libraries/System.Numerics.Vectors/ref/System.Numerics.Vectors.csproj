@@ -1,6 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{650277B5-9423-4ACE-BB54-2659995B21C7}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)'=='true' AND '$(TargetGroup)' != 'net45'">true</IsPartialFacadeAssembly>
@@ -36,5 +34,4 @@
   <ItemGroup Condition="'$(TargetsNetCoreApp)'=='true' OR '$(TargetsUap)' == 'true'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
