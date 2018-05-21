@@ -14,7 +14,7 @@
 #include <glib.h>
 #include <mono/metadata/object.h>
 #include <mono/utils/mono-compiler.h>
-#include <mono/utils/mono-coop-semaphore.h>
+#include <mono/utils/mono-coop-mutex.h>
 
 G_BEGIN_DECLS
 
@@ -42,7 +42,8 @@ struct _MonoThreadsSync
 #endif
 	GSList *wait_list;
 	void *data;
-	MonoCoopSem *entry_sem;
+	MonoCoopMutex *entry_mutex;
+	MonoCoopCond *entry_cond;
 };
 
 /*

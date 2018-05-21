@@ -116,15 +116,12 @@ mon_status_init_entry_count (guint32 status)
 }
 
 static inline guint32
-mon_status_increment_entry_count (guint32 status)
+mon_status_add_entry_count (guint32 status, int val)
 {
-	return status + (1 << ENTRY_COUNT_SHIFT);
-}
-
-static inline guint32
-mon_status_decrement_entry_count (guint32 status)
-{
-	return status - (1 << ENTRY_COUNT_SHIFT);
+	if (val > 0)
+		return status + (val << ENTRY_COUNT_SHIFT);
+	else
+		return status - ((-val) << ENTRY_COUNT_SHIFT);
 }
 
 static inline gboolean
@@ -334,12 +331,12 @@ mono_locks_dump (gboolean include_untaken)
 					to_recycle++;
 			} else {
 				if (!monitor_is_on_freelist ((MonoThreadsSync *)mon->data)) {
-					MonoObject *holder = (MonoObject *)mono_gchandle_get_target ((guint32)mon->data);
+					MonoObject *holder = (MonoObject *)mono_gchandle_get_target ((guint32)(gsize)mon->data);
 					if (mon_status_get_owner (mon->status)) {
 						g_print ("Lock %p in object %p held by thread %d, nest level: %d\n",
 							mon, holder, mon_status_get_owner (mon->status), mon->nest);
-						if (mon->entry_sem)
-							g_print ("\tWaiting on semaphore %p: %d\n", mon->entry_sem, mon_status_get_entry_count (mon->status));
+						if (mon->entry_cond)
+							g_print ("\tWaiting on condvar %p: %d\n", mon->entry_cond, mon_status_get_entry_count (mon->status));
 					} else if (include_untaken) {
 						g_print ("Lock %p in object %p untaken\n", mon, holder);
 					}
@@ -358,10 +355,15 @@ mon_finalize (MonoThreadsSync *mon)
 {
 	LOCK_DEBUG (g_message ("%s: Finalizing sync %p", __func__, mon));
 
-	if (mon->entry_sem != NULL) {
-		mono_coop_sem_destroy (mon->entry_sem);
-		g_free (mon->entry_sem);
-		mon->entry_sem = NULL;
+	if (mon->entry_cond != NULL) {
+		mono_coop_cond_destroy (mon->entry_cond);
+		g_free (mon->entry_cond);
+		mon->entry_cond = NULL;
+	}
+	if (mon->entry_mutex != NULL) {
+		mono_coop_mutex_destroy (mon->entry_mutex);
+		g_free (mon->entry_mutex);
+		mon->entry_mutex = NULL;
 	}
 	/* If this isn't empty then something is seriously broken - it
 	 * means a thread is still waiting on the object that owned
@@ -391,7 +393,7 @@ mon_new (gsize id)
 		new_ = NULL;
 		for (marray = monitor_allocated; marray; marray = marray->next) {
 			for (i = 0; i < marray->num_monitors; ++i) {
-				if (mono_gchandle_get_target ((guint32)marray->monitors [i].data) == NULL) {
+				if (mono_gchandle_get_target ((guint32)(gsize)marray->monitors [i].data) == NULL) {
 					new_ = &marray->monitors [i];
 					if (new_->wait_list) {
 						/* Orphaned events left by aborted threads */
@@ -401,7 +403,7 @@ mon_new (gsize id)
 							new_->wait_list = g_slist_remove (new_->wait_list, new_->wait_list->data);
 						}
 					}
-					mono_gchandle_free ((guint32)new_->data);
+					mono_gchandle_free ((guint32)(gsize)new_->data);
 					new_->data = monitor_freelist;
 					monitor_freelist = new_;
 				}
@@ -469,7 +471,7 @@ static void
 discard_mon (MonoThreadsSync *mon)
 {
 	mono_monitor_allocator_lock ();
-	mono_gchandle_free ((guint32)mon->data);
+	mono_gchandle_free ((guint32)(gsize)mon->data);
 	mon_finalize (mon);
 	mono_monitor_allocator_unlock ();
 }
@@ -669,23 +671,15 @@ mono_monitor_exit_inflated (MonoObject *obj)
 
 		old_status = mon->status;
 
-		/*
-		 * Release lock and do the wakeup stuff. It's possible that
-		 * the last blocking thread gave up waiting just before we
-		 * release the semaphore resulting in a negative entry count
-		 * and a futile wakeup next time there's contention for this
-		 * object.
-		 */
 		for (;;) {
-			gboolean have_waiters = mon_status_have_waiters (old_status);
-	
 			new_status = mon_status_set_owner (old_status, 0);
-			if (have_waiters)
-				new_status = mon_status_decrement_entry_count (new_status);
 			tmp_status = mono_atomic_cas_i32 ((gint32*)&mon->status, new_status, old_status);
 			if (tmp_status == old_status) {
-				if (have_waiters)
-					mono_coop_sem_post (mon->entry_sem);
+				if (mon_status_have_waiters (old_status)) {
+					mono_coop_mutex_lock (mon->entry_mutex);
+					mono_coop_cond_signal (mon->entry_cond);
+					mono_coop_mutex_unlock (mon->entry_mutex);
+				}
 				break;
 			}
 			old_status = tmp_status;
@@ -723,21 +717,60 @@ mono_monitor_exit_flat (MonoObject *obj, LockWord old_lw)
 	LOCK_DEBUG (g_message ("%s: (%d) Object %p is now locked %d times; LW = %p", __func__, mono_thread_info_get_small_id (), obj, lock_word_get_nest (new_lw), obj->synchronisation));
 }
 
-static void
-mon_decrement_entry_count (MonoThreadsSync *mon)
+static gboolean
+mon_add_entry_count (MonoThreadsSync *mon, int val)
 {
 	guint32 old_status, tmp_status, new_status;
 
-	/* Decrement entry count */
 	old_status = mon->status;
 	for (;;) {
-		new_status = mon_status_decrement_entry_count (old_status);
+		/* The lock is free, we should retry */
+		if (val > 0 && mon_status_get_owner (old_status) == 0)
+			return FALSE;
+		new_status = mon_status_add_entry_count (old_status, val);
 		tmp_status = mono_atomic_cas_i32 ((gint32*)&mon->status, new_status, old_status);
 		if (tmp_status == old_status) {
 			break;
 		}
 		old_status = tmp_status;
 	}
+
+	return TRUE;
+}
+
+static void
+mon_init_cond_var (MonoThreadsSync *mon)
+{
+	if (mon->entry_mutex == NULL) {
+		/* Create the mutex */
+		MonoCoopMutex *mutex = g_new0 (MonoCoopMutex, 1);
+		mono_coop_mutex_init (mutex);
+		if (mono_atomic_cas_ptr ((gpointer*)&mon->entry_mutex, mutex, NULL) != NULL) {
+			/* Someone else just put a handle here */
+			mono_coop_mutex_destroy (mutex);
+			g_free (mutex);
+		}
+	}
+
+	if (mon->entry_cond == NULL) {
+		/* Create the condition variable */
+		MonoCoopCond *cond = g_new0 (MonoCoopCond, 1);
+		mono_coop_cond_init (cond);
+		if (mono_atomic_cas_ptr ((gpointer*)&mon->entry_cond, cond, NULL) != NULL) {
+			/* Someone else just put a handle here */
+			mono_coop_cond_destroy (cond);
+			g_free (cond);
+		}
+	}
+}
+
+static void
+signal_monitor (gpointer mon_untyped)
+{
+	MonoThreadsSync *mon = (MonoThreadsSync*) mon_untyped;
+	mono_coop_mutex_lock (mon->entry_mutex);
+	mono_coop_cond_broadcast (mon->entry_cond);
+	mono_coop_mutex_unlock (mon->entry_mutex);
 }
 
 /* If allow_interruption==TRUE, the method will be interrumped if abort or suspend
@@ -748,13 +781,11 @@ mono_monitor_try_enter_inflated (MonoObject *obj, guint32 ms, gboolean allow_int
 {
 	LockWord lw;
 	MonoThreadsSync *mon;
-	HANDLE sem;
 	gint64 then = 0, now, delta;
 	guint32 waitms;
 	guint32 new_status, old_status, tmp_status;
-	MonoSemTimedwaitRet wait_ret;
 	MonoInternalThread *thread;
-	gboolean interrupted = FALSE;
+	gboolean interrupted, timedout;
 
 	LOCK_DEBUG (g_message("%s: (%d) Trying to lock object %p (%d ms)", __func__, id, obj, ms));
 
@@ -809,6 +840,9 @@ retry:
 	MONO_PROFILER_RAISE (monitor_contention, (obj));
 
 	/* The slow path begins here. */
+
+	/* Make sure the sync primitives are created */
+	mon_init_cond_var (mon);
 retry_contended:
 	/* a small amount of duplicated code, but it allows us to insert the profiler
 	 * callbacks without impacting the fast path: from here on we don't need to go back to the
@@ -834,43 +868,21 @@ retry_contended:
 		}
 	}
 
-	/* If the object is currently locked by this thread... */
-	if (mon_status_get_owner (old_status) == id) {
-		mon->nest++;
-		MONO_PROFILER_RAISE (monitor_acquired, (obj));
-		return 1;
-	}
-
-	/* We need to make sure there's a semaphore handle (creating it if
-	 * necessary), and block on it
-	 */
-	if (mon->entry_sem == NULL) {
-		/* Create the semaphore */
-		sem = g_new0 (MonoCoopSem, 1);
-		mono_coop_sem_init (sem, 0);
-		if (mono_atomic_cas_ptr ((gpointer*)&mon->entry_sem, sem, NULL) != NULL) {
-			/* Someone else just put a handle here */
-			mono_coop_sem_destroy (sem);
-			g_free (sem);
-		}
-	}
-
 	/*
-	 * We need to register ourselves as waiting if it is the first time we are waiting,
-	 * of if we were signaled and failed to acquire the lock.
+	 * We need to register ourselves as waiting.
+	 *
+	 * If we set the entry count, we are guaranteed to be notified when the monitor
+	 * is released. Because we have the entry_mutex lock taken during this time and
+	 * wait on the condvar, we are guaranteed not to miss the wakeup.
+	 *
+	 * If the owner of the monitor releases the lock and there are no registered
+	 * waiters at that point, a new entering thread is guaranteed to check first
+	 * that the monitor is free.
 	 */
-	if (!interrupted) {
-		old_status = mon->status;
-		for (;;) {
-			if (mon_status_get_owner (old_status) == 0)
-				goto retry_contended;
-			new_status = mon_status_increment_entry_count (old_status);
-			tmp_status = mono_atomic_cas_i32 ((gint32*)&mon->status, new_status, old_status);
-			if (tmp_status == old_status) {
-				break;
-			}
-			old_status = tmp_status;
-		}
+	mono_coop_mutex_lock (mon->entry_mutex);
+	if (!mon_add_entry_count (mon, 1)) {
+		mono_coop_mutex_unlock (mon->entry_mutex);
+		goto retry_contended;
 	}
 
 	if (ms != MONO_INFINITE_WAIT) {
@@ -884,46 +896,37 @@ retry_contended:
 #endif
 	thread = mono_thread_internal_current ();
 
-	/*
-	 * If we allow interruption, we check the test state for an abort request before going into sleep.
-	 * This is a workaround to the fact that Thread.Abort does non-sticky interruption of semaphores.
-	 *
-	 * Semaphores don't support the sticky interruption with mono_thread_info_install_interrupt.
-	 *
-	 * A better fix would be to switch to wait with something that allows sticky interrupts together
-	 * with wrapping it with abort_protected_block_count for the non-alertable cases.
-	 * And somehow make this whole dance atomic and not crazy expensive. Good luck.
-	 *
-	 */
-	if (allow_interruption) {
-		if (!mono_thread_test_and_set_state (thread, ThreadState_AbortRequested, ThreadState_WaitSleepJoin)) {
-			wait_ret = MONO_SEM_TIMEDWAIT_RET_ALERTED;
-			goto done_waiting;
+	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
+	mono_thread_info_install_interrupt (signal_monitor, mon, &interrupted);
+	if (!interrupted) {
+		timedout = FALSE;
+		if (ms == MONO_INFINITE_WAIT) {
+			mono_coop_cond_wait (mon->entry_cond, mon->entry_mutex);
+		} else {
+			if (mono_coop_cond_timedwait (mon->entry_cond, mon->entry_mutex, waitms) == -1)
+				timedout = TRUE;
 		}
-	} else {
-		mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
+		mono_thread_info_uninstall_interrupt (&interrupted);
 	}
-
-	/*
-	 * We pass ALERTABLE instead of allow_interruption since we have to check for the
-	 * StopRequested case below.
-	 */
-	wait_ret = mono_coop_sem_timedwait (mon->entry_sem, waitms, MONO_SEM_FLAGS_ALERTABLE);
-
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
-done_waiting:
+	mon_add_entry_count (mon, -1);
+	mono_coop_mutex_unlock (mon->entry_mutex);
+
 #ifndef DISABLE_PERFCOUNTERS
 	mono_atomic_dec_i32 (&mono_perfcounters->thread_queue_len);
 #endif
 
-	if (wait_ret == MONO_SEM_TIMEDWAIT_RET_ALERTED && !allow_interruption) {
-		interrupted = TRUE;
+	if (timedout || (interrupted && allow_interruption)) {
+		/* we're done */
+	} else {
 		/* 
 		 * We have to obey a stop/suspend request even if 
 		 * allow_interruption is FALSE to avoid hangs at shutdown.
+		 * FIXME Handle abort protected blocks
 		 */
-		if (!mono_thread_test_state (mono_thread_internal_current (), ThreadState_SuspendRequested | ThreadState_AbortRequested)) {
+		if ((interrupted && !mono_thread_test_state (mono_thread_internal_current (), ThreadState_SuspendRequested | ThreadState_AbortRequested)) || !interrupted) {
+			/* We were interrupted (and allow_interruption is FALSE) or we were signaled */
 			if (ms != MONO_INFINITE_WAIT) {
 				now = mono_msec_ticks ();
 
@@ -940,23 +943,14 @@ done_waiting:
 			/* retry from the top */
 			goto retry_contended;
 		}
-	} else if (wait_ret == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
-		interrupted = FALSE;
-		/* retry from the top */
-		goto retry_contended;
-	} else if (wait_ret == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT) {
-		/* we're done */
 	}
-
-	/* Timed out or interrupted */
-	mon_decrement_entry_count (mon);
 
 	MONO_PROFILER_RAISE (monitor_failed, (obj));
 
-	if (wait_ret == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
+	if (interrupted) {
 		LOCK_DEBUG (g_message ("%s: (%d) interrupted waiting, returning -1", __func__, id));
 		return -1;
-	} else if (wait_ret == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT) {
+	} else if (timedout) {
 		LOCK_DEBUG (g_message ("%s: (%d) timed out waiting, returning FALSE", __func__, id));
 		return 0;
 	} else {
@@ -1129,7 +1123,7 @@ mono_monitor_get_object_monitor_gchandle (MonoObject *object)
 
 	if (lock_word_is_inflated (lw)) {
 		MonoThreadsSync *mon = lock_word_get_inflated_lock (lw);
-		return (guint32)mon->data;
+		return (guint32)(gsize)mon->data;
 	}
 	return 0;
 }
