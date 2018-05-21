@@ -17,6 +17,7 @@
 #define THUMB_CODE 1
 #endif
 
+typedef ULONGLONG                   FPRegister64;
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
