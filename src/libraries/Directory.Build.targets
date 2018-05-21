@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), dir.targets))\dir.targets" />
+  <Target Name="_CheckForInvalidConfigurationAndPlatform" />
+  <Target Name="_CheckForUnsupportedTargetFramework" />
+  <Target Name="RunResolvePackageDependencies" />
+  <Target Name="AddSkipGetTargetFrameworkToProjectReferences" Condition="'@(ProjectReference)' != ''">
+    <ItemGroup>
+      <ProjectReference>
+        <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+      </ProjectReference>
+    </ItemGroup>
+  </Target>
+</Project> 

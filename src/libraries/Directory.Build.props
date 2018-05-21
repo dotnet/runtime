@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <NoWarn>CS3021;$(NoWarn)</NoWarn>
+    <RestoreOutputPath>F:\git\corefx\src\System.Runtime\ref\</RestoreOutputPath>
+    <IsSDKProject>true</IsSDKProject>
+  </PropertyGroup>
+  <PropertyGroup>
+    <CSharpCoreTargetsPath>$(MSBuildExtensionsPath32)\Roslyn\Microsoft.CSharp.Core.targets</CSharpCoreTargetsPath>
+    <VisualBasicCoreTargetsPath>$(MSBuildExtensionsPath32)\Roslyn\Microsoft.VisualBasic.Core.targets</VisualBasicCoreTargetsPath>
+  </PropertyGroup>
+</Project> 
