@@ -466,7 +466,13 @@ namespace System.Net.WebSockets.Client.Tests
                 // Now do a receive to get the payload.
                 var receiveBuffer = new byte[1];
                 t = ReceiveAsync(cws, new ArraySegment<byte>(receiveBuffer), ctsDefault.Token);
-                Assert.Equal(TaskStatus.RanToCompletion, t.Status);
+
+                // Skip synchronous completion check on UAP since it uses WinRT APIs underneath.
+                if (!PlatformDetection.IsUap)
+                {
+                    Assert.Equal(TaskStatus.RanToCompletion, t.Status);
+                }
+
                 r = await t;
                 Assert.Equal(WebSocketMessageType.Binary, r.MessageType);
                 Assert.Equal(1, r.Count);
