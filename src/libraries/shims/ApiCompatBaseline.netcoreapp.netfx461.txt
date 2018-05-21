@@ -2,44 +2,34 @@ ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.ServiceMod
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Web.ApplicationServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35)' referenced by the contract assembly 'Assembly(Name=System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.ServiceModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Xml.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35)'.
-ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51)' referenced by the contract assembly 'Assembly(Name=System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
-ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51)' referenced by the contract assembly 'Assembly(Name=System.DirectoryServices.AccountManagement, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
-ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.IO.FileSystem.AccessControl, Version=4.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
-ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Security.AccessControl, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
-ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51)' referenced by the contract assembly 'Assembly(Name=System.DirectoryServices.Protocols, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
+Compat issues with assembly mscorlib:
+TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 Compat issues with assembly System:
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerParameters.Evidence.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerParameters.Evidence.set(System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerResults.Evidence.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.CodeDom.Compiler.CompilerResults.Evidence.set(System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Configuration:
+TypesMustExist : Type 'System.Configuration.ConfigurationPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Configuration.ConfigurationPermissionAttribute' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord, System.Security.PermissionSet, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 InterfacesShouldHaveSameMembers : Contract interface member 'System.Configuration.Internal.IInternalConfigHost.GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord, System.Security.PermissionSet, System.Boolean)' is not in the implementation.
 MembersMustExist : Member 'System.Configuration.Internal.IInternalConfigHost.GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord, System.Security.PermissionSet, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Data:
 MembersMustExist : Member 'Microsoft.SqlServer.Server.SqlMetaData..ctor(System.String, System.Data.SqlDbType, System.Type)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.SqlServer.Server.SqlMetaData..ctor(System.String, System.Data.SqlDbType, System.Type, System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.SqlServer.Server.SqlMetaData..ctor(System.String, System.Data.SqlDbType, System.Type, System.String, System.Boolean, System.Boolean, System.Data.SqlClient.SortOrder, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.SqlServer.Server.SqlMetaData.DbType.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.SqlServer.Server.SqlMetaData.Type.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.Common.DbProviderFactory.CreatePermission(System.Security.Permissions.PermissionState)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.Odbc.OdbcConnection.EnlistDistributedTransaction(System.EnterpriseServices.ITransaction)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.Odbc.OdbcFactory.CreatePermission(System.Security.Permissions.PermissionState)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlBulkCopyOptions System.Data.SqlClient.SqlBulkCopyOptions.AllowEncryptedValueModifications' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlClientFactory.CreatePermission(System.Security.Permissions.PermissionState)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand..ctor(System.String, System.Data.SqlClient.SqlConnection, System.Data.SqlClient.SqlTransaction, System.Data.SqlClient.SqlCommandColumnEncryptionSetting)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteNonQuery()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteNonQuery(System.AsyncCallback, System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteReader()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteReader(System.AsyncCallback, System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteReader(System.AsyncCallback, System.Object, System.Data.CommandBehavior)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteReader(System.Data.CommandBehavior)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteXmlReader()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.BeginExecuteXmlReader(System.AsyncCallback, System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.ColumnEncryptionSetting.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.EndExecuteNonQuery(System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.EndExecuteReader(System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.EndExecuteXmlReader(System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.NotificationAutoEnlist.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.NotificationAutoEnlist.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnection..ctor(System.String, System.Data.SqlClient.SqlCredential)' does not exist in the implementation but it does exist in the contract.
@@ -66,10 +56,43 @@ MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.Netw
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.NetworkLibrary.set(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.TransparentNetworkIPResolution.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.TransparentNetworkIPResolution.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlDataReader.IsCommandBehavior(System.Data.CommandBehavior)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.ForceColumnEncryption.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.ForceColumnEncryption.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameterCollection.Add(System.String, System.Object)' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.DirectoryServices:
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.DirectoryServicesCOMException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionEntry' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionEntryCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.DSDescriptionAttribute' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.DirectoryServices.Protocols:
+MembersMustExist : Member 'System.DirectoryServices.Protocols.AddRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+CannotMakeTypeAbstract : Type 'System.DirectoryServices.Protocols.BerConverter' is abstract in the implementation but is not abstract in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.CompareRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.DeleteRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.DirectoryRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.DsmlAuthRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlAuthResponse' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlDirectoryIdentifier' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlDocument' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlDocumentProcessing' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlErrorProcessing' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlErrorResponse' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlInvalidDocumentException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlRequestDocument' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlResponseDocument' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlResponseOrder' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlSoapConnection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlSoapHttpConnection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.ErrorResponseCategory' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.ErrorResponseException' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.ExtendedRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.ModifyDNRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.ModifyRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.SearchRequest..ctor(System.String, System.Xml.XmlDocument, System.DirectoryServices.Protocols.SearchScope, System.String[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.SearchRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security:
 MembersMustExist : Member 'System.Security.Cryptography.CryptographicAttributeObjectCollection.IsSynchronized.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.CryptographicAttributeObjectCollection.SyncRoot.get()' does not exist in the implementation but it does exist in the contract.
@@ -81,17 +104,12 @@ MembersMustExist : Member 'System.Security.Cryptography.Pkcs.AlgorithmIdentifier
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.AlgorithmIdentifier.Parameters.set(System.Byte[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsRecipientCollection.IsSynchronized.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsRecipientCollection.SyncRoot.get()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Pkcs.CmsSigner' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.EnvelopedCms..ctor(System.Security.Cryptography.Pkcs.SubjectIdentifierType, System.Security.Cryptography.Pkcs.ContentInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.EnvelopedCms..ctor(System.Security.Cryptography.Pkcs.SubjectIdentifierType, System.Security.Cryptography.Pkcs.ContentInfo, System.Security.Cryptography.Pkcs.AlgorithmIdentifier)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.EnvelopedCms.Encrypt()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.Pkcs.KeyAgreeKeyChoice' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.RecipientInfoCollection.IsSynchronized.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.RecipientInfoCollection.SyncRoot.get()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Pkcs.SignedCms' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Pkcs.SignerInfo' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Pkcs.SignerInfoCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Pkcs.SignerInfoEnumerator' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.X509Certificate2UI' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.X509SelectionFlag' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Permissions.DataProtectionPermission' does not exist in the implementation but it does exist in the contract.
@@ -99,9 +117,6 @@ TypesMustExist : Type 'System.Security.Permissions.DataProtectionPermissionAttri
 TypesMustExist : Type 'System.Security.Permissions.DataProtectionPermissionFlags' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.ServiceProcess:
 TypesMustExist : Type 'System.ServiceProcess.ServiceAccount' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceProcess.ServiceBase.AutoLog.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceProcess.ServiceBase.AutoLog.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ServiceProcess.ServiceBase.EventLog.get()' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Xml:
 MembersMustExist : Member 'System.Xml.Xsl.XslCompiledTransform.TemporaryFiles.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
@@ -253,4 +268,4 @@ TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEven
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventHandler' does not exist in the implementation but it does exist in the contract.
-Total Issues: 239
+Total Issues: 256
