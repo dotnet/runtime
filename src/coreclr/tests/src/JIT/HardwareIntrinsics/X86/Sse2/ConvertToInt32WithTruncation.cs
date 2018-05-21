@@ -27,13 +27,13 @@ namespace IntelHardwareIntrinsicTest
                     for (int i = 0; i < testsCount; i++)
                     {
                         (Vector128<double>, Vector128<double>) value = doubleTable[i];
-                        int result = Sse2.ConvertToInt32(value.Item1);
+                        int result = Sse2.ConvertToInt32WithTruncation(value.Item1);
                         doubleTable.SetOutArray(result);
                     }
 
                     CheckMethodEightOne<double, int> checkDouble = (Span<double> x, Span<double> y, int z, ref int a) =>
                     {
-                        a = (int) Math.Round(x[0], 0);
+                        a = (int) x[0];
                         return a == z;
                     };
 
