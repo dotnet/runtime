@@ -1331,7 +1331,7 @@ namespace System.Net.WebSockets
                 cancellationToken);
         }
 
-        // From https://raw.githubusercontent.com/aspnet/WebSockets/dev/src/Microsoft.AspNetCore.WebSockets.Protocol/Utilities.cs
+        // From https://github.com/aspnet/WebSockets/blob/aa63e27fce2e9202698053620679a9a1059b501e/src/Microsoft.AspNetCore.WebSockets.Protocol/Utilities.cs#L75
         // Performs a stateful validation of UTF-8 bytes.
         // It checks for valid formatting, overlong encodings, surrogates, and value ranges.
         private static bool TryValidateUtf8(Span<byte> span, bool endOfMessage, Utf8MessageState state)
