@@ -6135,22 +6135,21 @@ public:
     void CleanupStack();
     void MarkStackFramesDirty();
 
-#if !defined(DBG_TARGET_ARM) // @ARMTODO
 
 #if defined(DBG_TARGET_X86)
     // Converts the values in the floating point register area of the context to real number values.
     void Get32bitFPRegisters(CONTEXT * pContext);
 
-#elif defined(DBG_TARGET_AMD64) ||  defined(DBG_TARGET_ARM64)
+#elif defined(DBG_TARGET_AMD64) ||  defined(DBG_TARGET_ARM64) || defined(DBG_TARGET_ARM)
     // Converts the values in the floating point register area of the context to real number values.
     void Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int start, int nRegisters);
+
 #endif // DBG_TARGET_X86
 
    // Initializes the float state members of this instance of CordbThread. This function gets the context and
    // converts the floating point values from their context representation to real number values.    
    void LoadFloatState();
 
-#endif //!DBG_TARGET_ARM @ARMTODO
 
     HRESULT SetIP(  bool fCanSetIPOnly,
                     CordbNativeCode * pNativeCode,
@@ -6298,11 +6297,9 @@ public:
     //  Instead, we mark m_fFramesFresh in CleanupStack() and clear the cache only when it is used next time.
     CDynArray<CordbFrame *> m_stackFrames;
 
-#if !defined(DBG_TARGET_ARM) // @ARMTODO
     bool                  m_fFloatStateValid;
     unsigned int          m_floatStackTop;
     double                m_floatValues[DebuggerIPCE_FloatCount];
-#endif // !DBG_TARGET_ARM @ARMTODO
 
 private:
     // True for the window after an Exception callback, but before it's been continued.
@@ -7106,11 +7103,9 @@ public:
                                            ICorDebugValue **ppValue);
     UINT_PTR * GetAddressOfRegister(CorDebugRegister regNum) const;
     CORDB_ADDRESS GetLeftSideAddressOfRegister(CorDebugRegister regNum) const;
-#if !defined(DBG_TARGET_ARM) // @ARMTODO
     HRESULT GetLocalFloatingPointValue(DWORD index,
                                             CordbType * pType,
                                             ICorDebugValue **ppValue);
-#endif // !DBG_TARGET_ARM @ARMTODO
 
 
     CORDB_ADDRESS GetLSStackAddress(ICorDebugInfo::RegNum regNum, signed offset);
