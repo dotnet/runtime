@@ -1503,50 +1503,65 @@ mini_debug_usage (void)
 #define MONO_ARCHITECTURE MONO_ARCH_ARCHITECTURE
 #endif
 
-static const char info[] =
+static char *
+mono_get_version_info (void) 
+{
+	GString *output;
+	output = g_string_new ("");
+
 #ifdef HAVE_KW_THREAD
-	"\tTLS:           __thread\n"
+	g_string_append_printf (output, "\tTLS:           __thread\n");
 #else
-	"\tTLS:           normal\n"
+	g_string_append_printf (output, "\tTLS:           \n");
 #endif /* HAVE_KW_THREAD */
+
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-    "\tSIGSEGV:       altstack\n"
+	g_string_append_printf (output, "\tSIGSEGV:       altstack\n");
 #else
-    "\tSIGSEGV:       normal\n"
+	g_string_append_printf (output, "\tSIGSEGV:       normal\n");
 #endif
+
 #ifdef HAVE_EPOLL
-    "\tNotifications: epoll\n"
+	g_string_append_printf (output, "\tNotifications: epoll\n");
 #elif defined(HAVE_KQUEUE)
-    "\tNotification:  kqueue\n"
+	g_string_append_printf (output, "\tNotification:  kqueue\n");
 #else
-    "\tNotification:  Thread + polling\n"
+	g_string_append_printf (output, "\tNotification:  Thread + polling\n");
 #endif
-        "\tArchitecture:  " MONO_ARCHITECTURE "\n"
-	"\tDisabled:      " DISABLED_FEATURES "\n"
-	"\tMisc:          "
+
+	g_string_append_printf (output, "\tArchitecture:  %s\n", MONO_ARCHITECTURE);
+	g_string_append_printf (output, "\tDisabled:      %s\n", DISABLED_FEATURES);
+
+	g_string_append_printf (output, "\tMisc:          ");
 #ifdef MONO_SMALL_CONFIG
-	"smallconfig "
+	g_string_append_printf (output, "smallconfig ");
 #endif
+
 #ifdef MONO_BIG_ARRAYS
-	"bigarrays "
+	g_string_append_printf (output, "bigarrays ");
 #endif
+
 #if !defined(DISABLE_SDB)
-	"softdebug "
+	g_string_append_printf (output, "softdebug ");
 #endif
-		"\n"
+	g_string_append_printf (output, "\n");
+
 #ifndef DISABLE_INTERPRETER
-	"\tInterpreter:   yes\n"
+	g_string_append_printf (output, "\tInterpreter:   yes\n");
 #else
-	"\tInterpreter:   no\n"
+	g_string_append_printf (output, "\tInterpreter:   no\n");
 #endif
+
 #ifdef MONO_ARCH_LLVM_SUPPORTED
 #ifdef ENABLE_LLVM
-	"\tLLVM:          yes( LLVM_API_VERSION )\n"
+	g_string_append_printf (output, "\tLLVM:          yes(%d)\n", LLVM_API_VERSION);
 #else
-	"\tLLVM:          supported, not enabled.\n"
+	g_string_append_printf (output, "\tLLVM:          supported, not enabled.\n");
 #endif
 #endif
-	"";
+
+	return g_string_free (output, FALSE);
+}
 
 #ifndef MONO_ARCH_AOT_SUPPORTED
 #define error_if_aot_unsupported() do {fprintf (stderr, "AOT compilation is not supported on this platform.\n"); exit (1);} while (0)
@@ -1867,7 +1882,10 @@ mono_main (int argc, char* argv[])
 
 			g_print ("Mono JIT compiler version %s\nCopyright (C) 2002-2014 Novell, Inc, Xamarin Inc and Contributors. www.mono-project.com\n", build);
 			g_free (build);
+			char *info = mono_get_version_info ();
 			g_print (info);
+			g_free (info);
+
 			gc_descr = mono_gc_get_description ();
 			g_print ("\tGC:            %s\n", gc_descr);
 			g_free (gc_descr);

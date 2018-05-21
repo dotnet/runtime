@@ -42,30 +42,30 @@ if ENABLE_LLVM
 #    LLVM_LDFLAGS
 
 if INTERNAL_LLVM 
-	llvm_config:=$(monodir)/llvm/usr/bin/llvm-config
+llvm_config:=$(monodir)/llvm/usr/bin/llvm-config
 else
-	llvm_config:=$(EXTERNAL_LLVM_CONFIG)
+llvm_config:=$(EXTERNAL_LLVM_CONFIG)
 endif
-	llvm_system_libs:=$(shell $(llvm_config) --system-libs 2>/dev/null | grep -- -)
-	LLVM_VERSION:=$(shell $(llvm_config) --version)
-	
-	llvm_api_version_from_config:=$(shell $(llvm_config) --mono-api-version 2>/dev/null)
-	llvm_api_version:=$(shell if [  -z "$(llvm_api_version_from_config)" ]; then echo "0"; else echo "$(llvm_api_version_from_config)"; fi)
-	
-	llvm_cflags_from_config:=$(shell $(llvm_config) --cflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g')
-	llvm_cxxflags_from_config:=$(shell $(llvm_config) --cxxflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g')
-	LLVM_CFLAGS_INTERNAL:=$(llvm_cflags_from_config) -DLLVM_API_VERSION=$(llvm_api_version)
-	LLVM_CXXFLAGS_INTERNAL:=$(llvm_cxxflags_from_config) -fno-rtti -fexceptions -DLLVM_API_VERSION=$(llvm_api_version)
-	
-	llvm_common_libs:=$(shell $(llvm_config) --libs analysis core bitwriter $(LLVM_CODEGEN_LIBS))
-	# The one that doesn't work will be null, so just concatenate them
-	llvm_libs_for_old:=$(shell $(llvm_config) --libs mcjit jit)
-	llvm_libs_for_new:=$(shell $(llvm_config) --libs orcjit)
-	
-	libcpp_flag:=$(if $(findstring -stdlib=libc++,$(LLVM_CXXFLAGS)),-lstdc++,-lc++)
-	llvm_libs_from_config:=$(libcpp_flag) $(llvm_common_libs) $(llvm_libs_for_old) $(llvm_libs_for_new)
-	
-	LLVM_LDFLAGS_INTERNAL:=$(llvm_libs_from_config) $(llvm_system_libs) $(shell $(llvm_config) --ldflags) 
+llvm_system_libs:=$(shell $(llvm_config) --system-libs 2>/dev/null | grep -- -)
+LLVM_VERSION:=$(shell $(llvm_config) --version)
+
+llvm_api_version_from_config:=$(shell $(llvm_config) --mono-api-version 2>/dev/null)
+llvm_api_version:=$(shell if [  -z "$(llvm_api_version_from_config)" ]; then echo "0"; else echo "$(llvm_api_version_from_config)"; fi)
+
+llvm_cflags_from_config:=$(shell $(llvm_config) --cflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g')
+llvm_cxxflags_from_config:=$(shell $(llvm_config) --cxxflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g')
+LLVM_CFLAGS_INTERNAL:=$(llvm_cflags_from_config) -DLLVM_API_VERSION=$(llvm_api_version)
+LLVM_CXXFLAGS_INTERNAL:=$(llvm_cxxflags_from_config) -fno-rtti -fexceptions -DLLVM_API_VERSION=$(llvm_api_version)
+
+llvm_common_libs:=$(shell $(llvm_config) --libs analysis core bitwriter $(LLVM_CODEGEN_LIBS))
+# The one that doesn't work will be null, so just concatenate them
+llvm_libs_for_old:=$(shell $(llvm_config) --libs mcjit jit)
+llvm_libs_for_new:=$(shell $(llvm_config) --libs orcjit)
+
+libcpp_flag:=$(if $(findstring -stdlib=libc++,$(LLVM_CXXFLAGS)),-lstdc++,-lc++)
+llvm_libs_from_config:=$(libcpp_flag) $(llvm_common_libs) $(llvm_libs_for_old) $(llvm_libs_for_new)
+
+LLVM_LDFLAGS_INTERNAL:=$(llvm_libs_from_config) $(llvm_system_libs) $(shell $(llvm_config) --ldflags) 
 endif
 
 LLVM_CFLAGS:=$(LLVM_CFLAGS_EXTERNAL) $(LLVM_CFLAGS_INTERNAL)
