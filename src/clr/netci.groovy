@@ -210,6 +210,11 @@ class Constants {
                 'Checked'
             ]
         ],
+        'Tizen': [
+            'armem': [
+                'Checked'
+            ]
+        ],
     ]
 
     // A set of scenarios that are valid for arm/arm64/armlb tests run on hardware. This is a map from valid scenario name
@@ -1017,7 +1022,7 @@ def static getDockerImageName(def architecture, def os, def isBuild) {
                 return "microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180404203310"
             }
             else if (os == 'Tizen') {
-                return "hqueue/dotnetcore:ubuntu1404_cross_prereqs_v4-tizen_rootfs"
+                return "gbalykov/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180426002255-tizen-rootfs-4.0m2"
             }
         }
         else if (architecture == 'arm') {
@@ -1790,15 +1795,21 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 case 'Ubuntu16.04':
                     assert scenario != 'innerloop'
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
-                        "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
                     break
 
                 case 'Tizen':
                     architecture = 'armel'
 
-                    assert scenario != 'innerloop'
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
-                        "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
+                    if (scenario == 'innerloop') {
+                        if (configuration == 'Checked') {
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Innerloop Build and Test")
+                        }
+                    }
+                    else {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build",
+                            "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
+                    }
                     break
             }
 
