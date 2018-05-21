@@ -120,9 +120,9 @@ def static getOSGroup(def os) {
 
                         newJob.with {
                             logRotator {
-                                artifactDaysToKeep(21)
+                                artifactDaysToKeep(14)
                                 daysToKeep(30)
-                                artifactNumToKeep(200)
+                                artifactNumToKeep(100)
                                 numToKeep(200)
                             }
                             wrappers {
@@ -365,9 +365,9 @@ def static getFullPerfJobName(def project, def os, def isPR) {
         newJob.with {
             // Enable the log rotator
             logRotator {
-                artifactDaysToKeep(21)
+                artifactDaysToKeep(14)
                 daysToKeep(30)
-                artifactNumToKeep(200)
+                artifactNumToKeep(100)
                 numToKeep(200)
             }
             wrappers {
@@ -641,9 +641,9 @@ parallel(
 
                     newJob.with {
                         logRotator {
-                            artifactDaysToKeep(21)
+                            artifactDaysToKeep(14)
                             daysToKeep(30)
-                            artifactNumToKeep(200)
+                            artifactNumToKeep(100)
                             numToKeep(200)
                         }
                         wrappers {
@@ -754,9 +754,9 @@ parallel(
 
         newJob.with {
             logRotator {
-                artifactDaysToKeep(21)
+                artifactDaysToKeep(14)
                 daysToKeep(30)
-                artifactNumToKeep(200)
+                artifactNumToKeep(100)
                 numToKeep(200)
             }
             wrappers {
@@ -843,9 +843,9 @@ parallel(
 
                     newJob.with {
                         logRotator {
-                            artifactDaysToKeep(21)
+                            artifactDaysToKeep(14)
                             daysToKeep(30)
-                            artifactNumToKeep(200)
+                            artifactNumToKeep(100)
                             numToKeep(200)
                         }
                         wrappers {
