@@ -4,7 +4,6 @@
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <NoWarn>CS3021;$(NoWarn)</NoWarn>
-    <RestoreOutputPath>$(MSBuildThisFileDirectory)\System.Runtime\ref\</RestoreOutputPath>
     <IsSDKProject>true</IsSDKProject>
   </PropertyGroup>
   <PropertyGroup>
