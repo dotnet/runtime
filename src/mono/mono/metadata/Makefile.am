@@ -149,6 +149,39 @@ libmono_ilgen_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonos
 endif
 endif
 
+if !HOST_WIN32
+if !HOST_WASM
+if !ENABLE_MONODROID
+if !ENABLE_MONOTOUCH
+lib_LTLIBRARIES += libmono-system-native.la
+endif
+endif
+endif
+endif
+
+libmono_system_native_la_SOURCES = \
+	pal_config.h \
+	../../external/corefx/src/Native/Unix/Common/pal_compiler.h \
+	../../external/corefx/src/Native/Unix/Common/pal_safecrt.h \
+	../../external/corefx/src/Native/Unix/Common/pal_types.h \
+	../../external/corefx/src/Native/Unix/Common/pal_utilities.h \
+	../../external/corefx/src/Native/Unix/System.Native/pal_errno.c \
+	../../external/corefx/src/Native/Unix/System.Native/pal_errno.h \
+	../../external/corefx/src/Native/Unix/System.Native/pal_io.c \
+	../../external/corefx/src/Native/Unix/System.Native/pal_io.h \
+	../../external/corefx/src/Native/Unix/System.Native/pal_maphardwaretype.c \
+	../../external/corefx/src/Native/Unix/System.Native/pal_maphardwaretype.h \
+	../../external/corefx/src/Native/Unix/System.Native/pal_memory.c \
+	../../external/corefx/src/Native/Unix/System.Native/pal_memory.h \
+	../../external/corefx/src/Native/Unix/System.Native/pal_networking.c \
+	../../external/corefx/src/Native/Unix/System.Native/pal_networking.h \
+	../../external/corefx/src/Native/Unix/System.Native/pal_networkstatistics.c \
+	../../external/corefx/src/Native/Unix/System.Native/pal_networkstatistics.h \
+	../../external/corefx/src/Native/Unix/System.Native/pal_tcpstate.c \
+	../../external/corefx/src/Native/Unix/System.Native/pal_tcpstate.h
+
+libmono_system_native_la_CFLAGS = -I$(abs_top_srcdir)/external/corefx/src/Native/Unix/Common -I$(abs_top_srcdir)/external/corefx/src/Native/Unix/System.Native -Wno-typedef-redefinition
+
 CLEANFILES = mono-bundle.stamp
 
 null_sources = \

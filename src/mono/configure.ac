@@ -40,7 +40,7 @@ MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
 # This can be reset to 0 when Mono's version number is bumped
 # since it's part of the corlib version (the prefix '1' in the full
 # version number is to ensure the number isn't treated as octal in C)
-MONO_CORLIB_COUNTER=5
+MONO_CORLIB_COUNTER=6
 MONO_CORLIB_VERSION=`printf "1%02d%02d%02d%03d" $MONO_VERSION_MAJOR $MONO_VERSION_MINOR 0 $MONO_CORLIB_COUNTER`
 
 AC_DEFINE_UNQUOTED(MONO_CORLIB_VERSION,$MONO_CORLIB_VERSION,[Version of the corlib-runtime interface])
@@ -116,6 +116,7 @@ platform_android=no
 platform_tizen=no
 platform_ios=no
 host_darwin=no
+host_linux=no
 
 
 if test "x$enable_wasm" = "xyes"; then
@@ -258,6 +259,7 @@ case "$host" in
 		mono_cv_clang=no
 		;;
 	*-*-linux*)
+		host_linux=yes
 		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
 		if test "x$disable_munmap" != "xyes"; then
 			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
@@ -736,9 +738,9 @@ else
 		;;
 	esac
 fi
-CFLAGS="$CFLAGS -g $WARN"
+CFLAGS="$WARN $CFLAGS -g"
 CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -g"
-CPPFLAGS="$CPPFLAGS -g $WARN"
+CPPFLAGS="$WARN $CPPFLAGS -g"
 
 # Where's the 'mcs' source tree?
 if test -d $srcdir/mcs; then
@@ -998,6 +1000,20 @@ fi
 
 if test "x$with_structured_crashes" = "xno"; then
 AC_DEFINE(DISABLE_STRUCTURED_CRASH,1,[Do not create structured crash files during unmanaged crashes])
+fi
+
+AC_ARG_ENABLE(monodroid, [ --enable-monodroid Enable runtime support for Monodroid (Xamarin.Android)], enable_monodroid=$enableval, enable_monodroid=no)
+AM_CONDITIONAL(ENABLE_MONODROID, test x$enable_monodroid = xyes)
+
+AC_ARG_ENABLE(monotouch, [ --enable-monotouch Enable runtime support for Monotouch (Xamarin.iOS and Xamarin.Mac)], enable_monotouch=$enableval, enable_monotouch=no)
+AM_CONDITIONAL(ENABLE_MONOTOUCH, test x$enable_monotouch = xyes)
+
+if test x$enable_monodroid = xyes; then
+	AC_DEFINE(ENABLE_MONODROID, 1, [Enable runtime support for Monodroid (Xamarin.Android)])
+fi
+
+if test x$enable_monotouch = xyes; then
+	AC_DEFINE(ENABLE_MONOTOUCH, 1, [Enable runtime support for Monotouch (Xamarin.iOS and Xamarin.Mac)])
 fi
 
 #
@@ -1736,9 +1752,22 @@ if test x$host_win32 = xno; then
 		AC_MSG_RESULT(no)
 	])
 
+	AC_MSG_CHECKING(for CLOCK_REALTIME)
+	AC_TRY_COMPILE([#include <time.h>], [
+		const int foo = CLOCK_REALTIME;
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_CLOCK_REALTIME, 1, [CLOCK_REALTIME])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
 	AC_CHECK_FUNC(mach_absolute_time, [AC_DEFINE(HAVE_MACH_ABSOLUTE_TIME, 1, [mach_absolute_time])])
 	AC_CHECK_FUNC(gethrtime, [AC_DEFINE(HAVE_GETHRTIME, 1, [gethrtime])])
 	AC_CHECK_FUNC(read_real_time, [AC_DEFINE(HAVE_READ_REAL_TIME, 1, [read_real_time])])
+	AC_CHECK_FUNC(mach_timebase_info, [AC_DEFINE(HAVE_MACH_TIMEBASE_INFO, 1, [mach_timebase_info])])
+	AC_CHECK_FUNC(futimes,            [AC_DEFINE(HAVE_FUTIMES, 1, [futimes])])
+	AC_CHECK_FUNC(futimens,           [AC_DEFINE(HAVE_FUTIMENS, 1, [futimens])])
 
 	dnl hires monotonic clock support
 	AC_SEARCH_LIBS(clock_gettime, rt)
@@ -2755,7 +2784,6 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(statvfs)
 	AC_CHECK_FUNCS(fstatvfs)
 	AC_CHECK_FUNCS(stime)
-	AC_CHECK_FUNCS(strerror_r)
 	AC_CHECK_FUNCS(ttyname_r)
 	AC_CHECK_FUNCS(psignal)
 	AC_CHECK_FUNCS(getlogin_r)
@@ -2881,6 +2909,455 @@ if test x$host_win32 = xno; then
 		AC_CHECK_HEADERS(sys/random.h)
 		AC_CHECK_FUNCS(getrandom getentropy)
 	fi
+
+	dnl *********************************
+	dnl *** Checks for System.Native  ***
+	dnl *********************************
+
+	AC_MSG_CHECKING(for linux/in.h)
+	AC_TRY_COMPILE([
+		#include <sys/socket.h>
+		#include <linux/in.h>
+	], [
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_LINUX_IN_H, 1, [linux/in.h])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_MSG_CHECKING(for struct in_pktinfo)
+	AC_TRY_COMPILE([
+		#ifdef HAVE_LINUX_IN_H
+		#include <sys/socket.h>
+		#include <linux/in.h>
+		#else
+		#include <netinet/in.h>
+		#endif
+	], [
+		struct in_pktinfo pktinfo;
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IN_PKTINFO, 1, [struct in_pktinfo])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_MSG_CHECKING(for struct ip_mreqn)
+	AC_TRY_COMPILE([
+		#if HAVE_LINUX_IN_H
+		#include <sys/socket.h>
+		#include <linux/in.h>
+		#else
+		#include <netinet/in.h>
+		#endif
+	], [
+		struct ip_mreqn mreqn;
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_IP_MREQN, 1, struct ip_mreqn)
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	if test x$host_darwin = xno; then
+		AC_MSG_CHECKING(for struct flock64)
+		AC_TRY_COMPILE([
+			#include <fcntl.h>
+		], [
+			struct flock64;
+		],[
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(HAVE_FLOCK64, 1, struct flock64)
+		], [
+			AC_MSG_RESULT(no)
+		])
+	fi
+
+	AC_CHECK_FUNC(lseek64,           [AC_DEFINE(HAVE_LSEEK64, 1, [lseek64])])
+	AC_CHECK_FUNC(mmap64,            [AC_DEFINE(HAVE_MMAP64, 1, [mmap64])])
+	AC_CHECK_FUNC(ftruncate64,       [AC_DEFINE(HAVE_FTRUNCATE64, 1, [ftruncate64])])
+	AC_CHECK_FUNC(posix_fadvise64,   [AC_DEFINE(HAVE_POSIX_FADVISE64, 1, [posix_fadvise64])])
+	AC_CHECK_FUNC(stat64,            [AC_DEFINE(HAVE_STAT64, 1, [stat64])])
+	AC_CHECK_DECL(pipe2,             [AC_DEFINE(HAVE_PIPE2, 1, [pipe2])])
+	AC_CHECK_FUNC(getmntinfo,        [AC_DEFINE(HAVE_GETMNTINFO, 1, [getmntinfo])], [], [[#include <unistd.h>]])
+	AC_CHECK_FUNC(strcpy_s,          [AC_DEFINE(HAVE_STRCPY_S, 1, [strcpy_s])])
+	AC_CHECK_FUNC(strlcpy,           [AC_DEFINE(HAVE_STRLCPY, 1, [strlcpy])])
+	AC_CHECK_FUNC(posix_fadvise,     [AC_DEFINE(HAVE_POSIX_FADVISE, 1, [posix_fadvise])])
+	AC_CHECK_FUNC(ioctl,             [AC_DEFINE(HAVE_IOCTL, 1, [ioctl])])
+	AC_CHECK_FUNC(sched_getaffinity, [AC_DEFINE(HAVE_SCHED_GETAFFINITY, 1, [sched_getaffinity])])
+	AC_CHECK_FUNC(sched_setaffinity, [AC_DEFINE(HAVE_SCHED_SETAFFINITY, 1, [sched_setaffinity])])
+	AC_CHECK_DECL(TIOCGWINSZ,        [AC_DEFINE(HAVE_TIOCGWINSZ, 1, [TIOCGWINSZ])], [], [[#include <sys/ioctl.h>]])
+	AC_CHECK_FUNC(tcgetattr,         [AC_DEFINE(HAVE_TCGETATTR, 1, [tcgetattr])])
+	AC_CHECK_FUNC(tcsetattr,         [AC_DEFINE(HAVE_TCSETATTR, 1, [tcsetattr])])
+	AC_CHECK_DECL(ECHO,              [AC_DEFINE(HAVE_ECHO, 1, [ECHO])], [], [[#include <termios.h>]])
+	AC_CHECK_DECL(ICANON,            [AC_DEFINE(HAVE_ICANON, 1, [ICANON])], [], [[#include <termios.h>]])
+	AC_CHECK_DECL(TCSANOW,           [AC_DEFINE(HAVE_TCSANOW, 1, [TCSANOW])], [], [[#include <termios.h>]])
+
+	AC_CHECK_MEMBER(struct stat.st_birthtimespec, [AC_DEFINE(HAVE_STAT_BIRTHTIME, 1, [struct stat.st_birthtime])], [], [[#include <sys/types.h>], [#include <sys/stat.h>]])
+	AC_CHECK_MEMBER(struct stat.st_atimespec,     [AC_DEFINE(HAVE_STAT_TIMESPEC, 1, [struct stat.st_atimespec])], [], [[#include <sys/types.h>], [#include <sys/stat.h>]])
+	AC_CHECK_MEMBER(struct stat.st_atim,          [AC_DEFINE(HAVE_STAT_TIM, 1, [struct stat.st_atim])], [], [[#include <sys/types.h>], [#include <sys/stat.h>]])
+	AC_CHECK_MEMBER(struct stat.st_atimensec,     [AC_DEFINE(HAVE_STAT_NSEC, 1, [struct stat.st_atimensec])], [], [[#include <sys/types.h>], [#include <sys/stat.h>]])
+	AC_CHECK_MEMBER(struct dirent.d_namlen,       [AC_DEFINE(HAVE_DIRENT_NAME_LEN, 1, [struct dirent.d_namlen])], [], [[#include <dirent.h>]])
+	AC_CHECK_MEMBER(struct statfs.f_fstypename,   [AC_DEFINE(HAVE_STATFS_FSTYPENAME, 1, [struct statfs.f_fstypename])], [], [[#include <sys/mount.h>]])
+	AC_CHECK_MEMBER(struct statvfs.f_fstypename,  [AC_DEFINE(HAVE_STATVFS_FSTYPENAME, 1, [struct statvfs.f_fstypename])], [], [[#include <sys/mount.h>]])
+
+	AC_MSG_CHECKING(for struct statfs)
+	AC_TRY_COMPILE([
+		#if defined(HAVE_STATFS_FSTYPENAME) || defined(HAVE_STATVFS_FSTYPENAME)
+		#include <sys/mount.h>
+		#else
+		#include <sys/statfs.h>
+		#endif
+	], [
+		struct statfs;
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_STATFS, 1, [struct statfs])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	if test "x$ac_cv_func_strerror_r_char_p" = "xyes" ; then
+		AC_DEFINE(HAVE_GNU_STRERROR_R, 1, [char* strerror(int errnum, char *buf, size_t buflen)])
+	fi
+
+	AC_MSG_CHECKING(for readdir_r)
+	AC_TRY_COMPILE([
+		#include <dirent.h>
+	], [
+		DIR* dir;
+		struct dirent* entry;
+		struct dirent* result;
+		readdir_r(dir, entry, &result);
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_READDIR_R, 1, [readdir_r])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_MSG_CHECKING(for kevent with void *data)
+	AC_TRY_COMPILE([
+		#include <sys/types.h>
+		#include <sys/event.h>
+	], [
+		struct kevent event;
+		void* data;
+		EV_SET(&event, 0, EVFILT_READ, 0, 0, 0, data);
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(KEVENT_HAS_VOID_UDATA, 1, [kevent with void *data])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_CHECK_MEMBER(struct fd_set.fds_bits,   [AC_DEFINE(HAVE_FDS_BITS, 1, [struct fd_set.fds_bits])], [], [[#include <sys/select.h>]])
+	AC_CHECK_MEMBER(struct fd_set.__fds_bits, [AC_DEFINE(HAVE_PRIVATE_FDS_BITS, 1, [struct fd_set.__fds_bits])], [], [[#include <sys/select.h>]])
+
+	AC_MSG_CHECKING(for sendfile with 4 arguments)
+	AC_TRY_COMPILE([
+		#include <sys/sendfile.h>
+	], [
+		int result = sendfile(0, 0, 0, 0);
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_SENDFILE_4, 1, [sendfile with 4 arguments])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_MSG_CHECKING(for sendfile with 6 arguments)
+	AC_TRY_COMPILE([
+		#include <stdlib.h>
+		#include <sys/types.h>
+		#include <sys/socket.h>
+		#include <sys/uio.h>
+	], [
+		int result = sendfile(0, 0, 0, NULL, NULL, 0);
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_SENDFILE_6, 1, [sendfile with 6 arguments])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_CHECK_FUNC(fcopyfile,     [AC_DEFINE(HAVE_FCOPYFILE, 1, [fcopyfile])])
+	AC_CHECK_FUNC(epoll_create1, [AC_DEFINE(HAVE_EPOLL, 1, [epoll_create1])])
+	AC_CHECK_FUNC(accept4,       [AC_DEFINE(HAVE_ACCEPT4, 1, [accept4])])
+	AC_CHECK_FUNC(kqueue,        [AC_DEFINE(HAVE_KQUEUE, 1, [kqueue])])
+
+	ORIG_CFLAGS="$CFLAGS"
+	CFLAGS="-Werror -Wsign-conversion"
+
+	AC_MSG_CHECKING(for getnameinfo with signed flags)
+	AC_TRY_COMPILE([
+		#include <sys/types.h>
+		#include <netdb.h>
+	], [
+		const struct sockaddr *addr;
+		socklen_t addrlen;
+		char *host;
+		socklen_t hostlen;
+		char *serv;
+		socklen_t servlen;
+		int flags;
+		int result = getnameinfo(addr, addrlen, host, hostlen, serv, servlen, flags);
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETNAMEINFO_SIGNED_FLAGS, 1, [getnameinfo with signed flags])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	CFLAGS="$ORIG_CFLAGS"
+
+	if test "x$host_linux" = "xyes"; then
+		AC_DEFINE(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO, 1, [HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO])
+	else
+		AC_DEFINE(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO, 0, [HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO])
+	fi
+
+	ORIG_CFLAGS="$CFLAGS"
+	CFLAGS="-Werror -Wsign-conversion"
+
+	AC_MSG_CHECKING(for bind with unsigned addrlen)
+	AC_TRY_COMPILE([
+		#include <sys/socket.h>
+	], [
+		int fd;
+		struct sockaddr* addr;
+		socklen_t addrLen;
+		bind(fd, addr, addrLen);
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(BIND_ADDRLEN_UNSIGNED, 1, [bind with unsigned addrlen])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_MSG_CHECKING(for struct ipv6_mreq with unsigned ipv6mr_interface)
+	AC_TRY_COMPILE([
+		#include <netinet/in.h>
+		#include <netinet/tcp.h>
+	], [
+		struct ipv6_mreq opt;
+		unsigned int index = 0;
+		opt.ipv6mr_interface = index;
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(IPV6MR_INTERFACE_UNSIGNED, 1, [struct ipv6_mreq with unsigned ipv6mr_interface])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_MSG_CHECKING(for inotify_rm_watch with unsigned wd)
+	AC_TRY_COMPILE([
+		#include <sys/inotify.h>
+	], [
+		intptr_t fd;
+		uint32_t wd;
+		int result = inotify_rm_watch(fd, wd);
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(INOTIFY_RM_WATCH_WD_UNSIGNED, 1, [inotify_rm_watch with unsigned wd])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	CFLAGS="$ORIG_CFLAGS"
+
+	AC_MSG_CHECKING(for shm_open that works well enough with mmap)
+	if test "x$ac_cv_func_shm_open" = "xno" -o "x$ac_cv_func_shm_open_working_with_mmap" = "xno" ; then
+		AC_MSG_RESULT(no)
+	else
+		AC_TRY_RUN([
+			#include <sys/mman.h>
+			#include <fcntl.h>
+			#include <unistd.h>
+
+			int main ()
+			{
+				int fd = shm_open("/mono_configure_shm_open", O_CREAT | O_RDWR, 0777);
+				if (fd == -1)
+					return -1;
+
+				shm_unlink("/mono_configure_shm_open");
+
+				// NOTE: PROT_EXEC and MAP_PRIVATE don't work well with shm_open
+				//       on at least the current version of Mac OS X
+
+				if (mmap(NULL, 1, PROT_EXEC, MAP_PRIVATE, fd, 0) == MAP_FAILED)
+					return -1;
+
+				return 0;
+			}
+		],[
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP, 1, [shm_open that works well enough with mmap])
+		], [
+			AC_MSG_RESULT(no)
+		])
+	fi
+
+	AC_MSG_CHECKING(for getpriority with int who)
+	AC_TRY_COMPILE([
+		#include <sys/resource.h>
+	], [
+		int which;
+		int who;
+		int result = getpriority(which, who);
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(PRIORITY_REQUIRES_INT_WHO, 1, [getpriority with int who])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_MSG_CHECKING(for kevent with int parameters)
+	AC_TRY_COMPILE([
+		#include <sys/types.h>
+		#include <sys/event.h>
+	], [
+		int kg;
+		const struct kevent* chagelist;
+		int nchanges;
+		struct kevent* eventlist;
+		int nevents;
+		const struct timespec* timeout;
+		int result = kevent(kg, chagelist, nchanges, eventlist, nevents, timeout);
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(KEVENT_REQUIRES_INT_PARAMS, 1, [kevent with int parameters])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	ORIG_CFLAGS="$CFLAGS"
+	CFLAGS="-Werror -Wimplicit-function-declaration"
+
+	AC_MSG_CHECKING(for mkstemps)
+	AC_TRY_COMPILE([
+		#include <stdlib.h>
+		#include <unistd.h>
+		#include <string.h>
+	], [
+		char *template;
+		int suffixlen;
+		int result = mkstemps(template, suffixlen);
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_MKSTEMPS, 1, [mkstemps])
+		have_mkstemps=yes
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	CFLAGS="$ORIG_CFLAGS"
+
+	if test "x$have_mkstemps" != "xyes" -a "x$ac_cv_func_mkstemp" != "xyes"; then
+		AC_MSG_ERROR([Cannot find mkstemps or mkstemp on this platform])
+	fi
+
+	AC_MSG_CHECKING(for tcp/var.h)
+	AC_TRY_COMPILE([
+		#include <sys/types.h>
+		#include <sys/socketvar.h>
+		#include <netinet/ip.h>
+		#include <netinet/tcp.h>
+		#include <netinet/tcp_var.h>
+	], [
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_TCP_VAR_H, 1, [tcp/var.h])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_CHECK_HEADERS([sys/cdefs.h])
+
+	AC_MSG_CHECKING(for TCPSTATE enum in netinet/tcp.h)
+	AC_TRY_COMPILE([
+		#ifdef HAVE_SYS_CDEFS_H
+		#include <sys/cdefs.h>
+		#endif
+		#include <netinet/tcp.h>
+	], [
+		int result = TCP_ESTABLISHED;
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_TCP_H_TCPSTATE_ENUM, 1, [TCPSTATE enum in netinet/tcp.h])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_CHECK_DECL(TCPS_ESTABLISHED, [AC_DEFINE(HAVE_TCP_FSM_H, 1, [HAVE_TCP_FSM_H])], [], [[#include <netinet/tcp_fsm.h>]])
+
+	AC_MSG_CHECKING(for struct rt_msghdr)
+	AC_TRY_COMPILE([
+		#include <sys/types.h>
+		#include <net/route.h>
+	], [
+		struct rt_msghdr;
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_RT_MSGHDR, 1, [struct rt_msghdr])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_CHECK_HEADERS([sys/sysctl.h])
+	AC_CHECK_HEADERS([linux/rtnetlink.h])
+
+	AC_CHECK_FUNC(getpeereid,    [AC_DEFINE(HAVE_GETPEEREID, 1, [getpeereid])])
+	AC_CHECK_FUNC(getdomainname, [AC_DEFINE(HAVE_GETDOMAINNAME, 1, [getdomainname])])
+	AC_CHECK_FUNC(uname,         [AC_DEFINE(HAVE_UNAME, 1, [uname])])
+
+	ORIG_CFLAGS="$CFLAGS"
+	CFLAGS="-Werror -Weverything"
+
+	AC_MSG_CHECKING(for getdomainname with size_t namelen)
+	AC_TRY_COMPILE([
+		#include <unistd.h>
+	], [
+		size_t namelen = 20;
+		char name[20];
+		int result = getdomainname(name, namelen);
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETDOMAINNAME_SIZET, 1, [getdomainname with size_t namelen])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	CFLAGS="$ORIG_CFLAGS"
+
+	AC_CHECK_FUNC(inotify_init, [AC_DEFINE(HAVE_INOTIFY_INIT, 1, [inotify_init])])
+	AC_CHECK_FUNC(inotify_add_watch, [AC_DEFINE(HAVE_INOTIFY_ADD_WATCH, 1, [inotify_add_watch])])
+	AC_CHECK_FUNC(inotify_rm_watch, [AC_DEFINE(HAVE_INOTIFY_RM_WATCH, 1, [inotify_rm_watch])])
+
+	if test "x$ac_cv_func_inotify_init" = "xyes" -a "x$ac_cv_func_inotify_add_watch" = "xyes" -a "x$ac_cv_func_inotify_rm_watch" = "xyes"; then
+		AC_DEFINE(HAVE_INOTIFY, 1, [HAVE_INOTIFY])
+	elif test "x$host_linux" = "xyes"; then
+		AC_MSG_ERROR([Cannot find inotify functions on a Linux platform.])
+	fi
+
+	AC_CHECK_HEADERS([crt_externs.h])
+
+	AC_MSG_CHECKING(for _NSGetEnviron)
+	AC_TRY_COMPILE([
+		#include <crt_externs.h>
+	], [
+		char **result = *(_NSGetEnviron());
+	],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_NSGETENVIRON, 1, [_NSGetEnviron])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	AC_CHECK_DECL(IN_EXCL_UNLINK, [AC_DEFINE(HAVE_IN_EXCL_UNLINK, 1, [IN_EXCL_UNLINK])], [], [[#include <sys/inotify.h>]])
+
 else
 	dnl *********************************
 	dnl *** Checks for Windows compilation ***
@@ -4115,7 +4592,7 @@ AC_SUBST(PIDTYPE)
 AC_DEFINE(HAVE_CLASSIC_WINAPI_SUPPORT, 1, [Use classic Windows API support])
 AC_DEFINE(HAVE_UWP_WINAPI_SUPPORT, 0, [Don't use UWP Windows API support])
 
-AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf strerror_r)
+AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
 AC_CHECK_FUNCS(getrlimit)
 AC_CHECK_FUNCS(fork execv execve)
 
