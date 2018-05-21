@@ -79,10 +79,8 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
     m_pAppDomain(NULL),
     m_debugState(THREAD_RUN),
     m_fFramesFresh(false),
-#if !defined(DBG_TARGET_ARM) // @ARMTODO
     m_fFloatStateValid(false), 
     m_floatStackTop(0),
-#endif // !DBG_TARGET_ARM @ARMTODO
     m_fException(false),
     m_fCreationEventQueued(false),
     m_EnCRemapFunctionIP(NULL),
@@ -109,7 +107,7 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
     m_vmLeftSideContext = VMPTR_CONTEXT::NullPtr();
     m_vmExcepObjHandle = VMPTR_OBJECTHANDLE::NullPtr();
 
-#if defined(_DEBUG) && !defined(DBG_TARGET_ARM) // @ARMTODO
+#if defined(_DEBUG)
     for (unsigned int i = 0;
          i < (sizeof(m_floatValues) / sizeof(m_floatValues[0]));
          i++)
@@ -1328,10 +1326,8 @@ void CordbThread::MarkStackFramesDirty()
 
     _ASSERTE(GetProcess()->ThreadHoldsProcessLock());
 
-#if !defined(DBG_TARGET_ARM) // @ARMTODO
     // invalidate the cached floating point state
     m_fFloatStateValid = false;
-#endif // !defined(DBG_TARGET_ARM) @ARMTODO
 
     // This flag is only true between the window when we get an exception callback and 
     // when we call continue.  Since this function is only called when we continue, we 
@@ -1433,15 +1429,14 @@ HRESULT CordbThread::FindFrame(ICorDebugFrame ** ppFrame, FramePointer fp)
 }
 
 
-#if !defined(DBG_TARGET_ARM) // @ARMTODO
 
-#if defined(CROSS_COMPILE) && defined(_TARGET_ARM64_)
+#if defined(CROSS_COMPILE) && (defined(_TARGET_ARM64_) || defined(_TARGET_ARM_))
 extern "C" double FPFillR8(void* pFillSlot)
 {
     _ASSERTE(!"nyi for platform");
     return 0;
 }
-#elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) 
+#elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
 extern "C" double FPFillR8(void* pFillSlot);
 #endif
 
@@ -1536,7 +1531,7 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
     m_floatStackTop = floatStackTop;
 } // CordbThread::Get32bitFPRegisters
 
-#elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
 
 // CordbThread::Get64bitFPRegisters
 // Converts the values in the floating point register area of the context to real number values. See
@@ -1596,6 +1591,8 @@ void CordbThread::LoadFloatState()
     Get64bitFPRegisters((FPRegister64*) &(tempContext.Xmm0), 0, 16);
 #elif defined(_TARGET_ARM64_)
     Get64bitFPRegisters((FPRegister64*) &(tempContext.V), 0, 32);
+#elif defined (_TARGET_ARM_)
+    Get64bitFPRegisters((FPRegister64*) &(tempContext.D), 0, 32);
 #else 
     _ASSERTE(!"nyi for platform");
 #endif // !_TARGET_X86_
@@ -1603,7 +1600,6 @@ void CordbThread::LoadFloatState()
     m_fFloatStateValid = true;
 } // CordbThread::LoadFloatState
 
-#endif // !DBG_TARGET_ARM @ARMTODO
 
 const bool SetIP_fCanSetIPOnly = TRUE;
 const bool SetIP_fSetIP = FALSE;
@@ -7058,7 +7054,6 @@ CordbNativeFrame::GetLocalMemoryRegisterValue(CORDB_ADDRESS highWordAddress,
     return hr;
 }
 
-#if !defined(DBG_TARGET_ARM) // @ARMTODO
 HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
                                                      CordbType * pType,
                                                      ICorDebugValue **ppValue)
@@ -7083,6 +7078,11 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
         (index <= REGISTER_ARM64_V31)))
         return E_INVALIDARG;
     index -= REGISTER_ARM64_V0;
+#elif defined(DBG_TARGET_ARM)
+    if (!((index >= REGISTER_ARM_D0) &&
+        (index <= REGISTER_ARM_D31)))
+        return E_INVALIDARG;
+    index -= REGISTER_ARM_D0;
 #else
     if (!((index >= REGISTER_X86_FPSTACK_0) &&
           (index <= REGISTER_X86_FPSTACK_7)))
@@ -7150,7 +7150,6 @@ HRESULT CordbNativeFrame::GetLocalFloatingPointValue(DWORD index,
 
     return hr;
 }
-#endif // !DBG_TARGET_ARM @ARMTODO
 
 //---------------------------------------------------------------------------------------
 //
@@ -8790,9 +8789,6 @@ HRESULT CordbJITILFrame::GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDeb
 
 HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue **ppReturnValue)
 {
-#if defined(DBG_TARGET_ARM) 
-    return E_NOTIMPL;
-#else
 
 
 #if defined(DBG_TARGET_X86)
@@ -8801,14 +8797,21 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
     const CorDebugRegister floatRegister = REGISTER_AMD64_XMM0;
 #elif  defined(DBG_TARGET_ARM64)
     const CorDebugRegister floatRegister = REGISTER_ARM64_V0;
+#elif  defined(DBG_TARGET_ARM)
+    const CorDebugRegister floatRegister = REGISTER_ARM_D0;
 #endif
     
 #if defined(DBG_TARGET_X86)
     const CorDebugRegister ptrRegister = REGISTER_X86_EAX;
+    const CorDebugRegister ptrHighWordRegister = REGISTER_X86_EDX;
 #elif defined(DBG_TARGET_AMD64)
     const CorDebugRegister ptrRegister = REGISTER_AMD64_RAX;
 #elif  defined(DBG_TARGET_ARM64)
     const CorDebugRegister ptrRegister = REGISTER_ARM64_X0;
+#elif  defined(DBG_TARGET_ARM)
+    const CorDebugRegister ptrRegister = REGISTER_ARM_R0;
+    const CorDebugRegister ptrHighWordRegister = REGISTER_ARM_R1;
+
 #endif
 
     CorElementType corReturnType = pType->GetElementType();
@@ -8820,14 +8823,13 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
     case ELEMENT_TYPE_R4:
     case ELEMENT_TYPE_R8:
         return m_nativeFrame->GetLocalFloatingPointValue(floatRegister, pType, ppReturnValue);
-  
-#ifdef DBG_TARGET_X86
+
+#if defined(DBG_TARGET_X86) || defined(DBG_TARGET_ARM)
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
-        return m_nativeFrame->GetLocalDoubleRegisterValue(REGISTER_X86_EDX, REGISTER_X86_EAX, pType, ppReturnValue);
+        return m_nativeFrame->GetLocalDoubleRegisterValue(ptrHighWordRegister, ptrRegister, pType, ppReturnValue);
 #endif
     }
-#endif
 }
 
 HRESULT CordbJITILFrame::EnumerateLocalVariablesEx(ILCodeKind flags, ICorDebugValueEnum **ppValueEnum)

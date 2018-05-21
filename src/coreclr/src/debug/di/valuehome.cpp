@@ -430,7 +430,6 @@ void MemRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 
 } // MemRegValueHome::GetEnregisteredValue
 
-#if !defined(DBG_TARGET_ARM) // @ARMTODO
 
 // ----------------------------------------------------------------------------
 // FloatRegValueHome member function implementations
@@ -581,7 +580,6 @@ void FloatRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
     ThrowHR(E_NOTIMPL);
 } // FloatRegValueHome::GetEnregisteredValue
 
-#endif // !DBG_TARGET_ARM @ARMTODO
 
 // ============================================================================
 // RemoteValueHome implementation
