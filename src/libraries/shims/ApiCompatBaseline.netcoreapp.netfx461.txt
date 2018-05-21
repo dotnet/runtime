@@ -28,16 +28,6 @@ TypesMustExist : Type 'System.Runtime.Serialization.Formatters.ISoapMessage' doe
 TypesMustExist : Type 'System.Runtime.Serialization.Formatters.ServerFault' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Serialization.Formatters.SoapFault' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Serialization.Formatters.SoapMessage' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyAccessRule' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyAuditRule' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyRights' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.AccessControl.CryptoKeySecurity' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.CryptoAPITransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.HMACRIPEMD160' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.MACTripleDES' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.RijndaelManagedTransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.RIPEMD160' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.RIPEMD160Managed' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Policy.ApplicationSecurityInfo' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Policy.ApplicationSecurityManager' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Policy.IApplicationTrustManager' does not exist in the implementation but it does exist in the contract.
@@ -100,6 +90,7 @@ TypesMustExist : Type 'System.Security.Claims.DynamicRoleClaimProvider' does not
 TypesMustExist : Type 'System.Web.AspNetHostingPermission' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Web.AspNetHostingPermissionAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Web.AspNetHostingPermissionLevel' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Windows.Markup.ValueSerializerAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 Compat issues with assembly System.ComponentModel.DataAnnotations:
 TypesMustExist : Type 'System.ComponentModel.DataAnnotations.AssociatedMetadataTypeTypeDescriptionProvider' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ComponentModel.DataAnnotations.BindableTypeAttribute' does not exist in the implementation but it does exist in the contract.
@@ -108,9 +99,6 @@ TypesMustExist : Type 'System.ComponentModel.DataAnnotations.ScaffoldTableAttrib
 Compat issues with assembly System.Configuration:
 TypesMustExist : Type 'System.Configuration.ConfigurationPermission' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Configuration.ConfigurationPermissionAttribute' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord, System.Security.PermissionSet, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-InterfacesShouldHaveSameMembers : Contract interface member 'System.Configuration.Internal.IInternalConfigHost.GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord, System.Security.PermissionSet, System.Boolean)' is not in the implementation.
-MembersMustExist : Member 'System.Configuration.Internal.IInternalConfigHost.GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord, System.Security.PermissionSet, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Core:
 TypesMustExist : Type 'System.Diagnostics.EventSchemaTraceListener' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.TraceLogRetentionOption' does not exist in the implementation but it does exist in the contract.
@@ -199,7 +187,6 @@ TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.TrustStatus
 Compat issues with assembly System.Data:
 TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlContext' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlFacetAttribute' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.SqlServer.Server.SqlMetaData..ctor(System.String, System.Data.SqlDbType, System.Type)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlPipe' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlProcedureAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlTriggerAttribute' does not exist in the implementation but it does exist in the contract.
@@ -257,14 +244,9 @@ MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.EndExecuteReader(Sys
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.NotificationAutoEnlist.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.NotificationAutoEnlist.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.SqlCommandColumnEncryptionSetting' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlConnection..ctor(System.String, System.Data.SqlClient.SqlCredential)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.AccessToken.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.AccessToken.set(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.ChangePassword(System.String, System.Data.SqlClient.SqlCredential, System.Security.SecureString)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.ChangePassword(System.String, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.ColumnEncryptionTrustedMasterKeyPaths.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.Credential.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.Credential.set(System.Data.SqlClient.SqlCredential)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.EnlistDistributedTransaction(System.EnterpriseServices.ITransaction)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.RegisterColumnEncryptionKeyStoreProviders(System.Collections.Generic.IDictionary<System.String, System.Data.SqlClient.SqlColumnEncryptionKeyStoreProvider>)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.SqlClient.SqlConnectionColumnEncryptionSetting' does not exist in the implementation but it does exist in the contract.
@@ -347,6 +329,7 @@ MembersMustExist : Member 'System.DirectoryServices.Protocols.ModifyRequest.ToXm
 MembersMustExist : Member 'System.DirectoryServices.Protocols.SearchRequest..ctor(System.String, System.Xml.XmlDocument, System.DirectoryServices.Protocols.SearchScope, System.String[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DirectoryServices.Protocols.SearchRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Drawing:
+CannotMakeTypeAbstract : Type 'System.Drawing.ColorTranslator' is abstract in the implementation but is not abstract in the contract.
 TypesMustExist : Type 'System.Drawing.FontConverter' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.IconConverter' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Drawing.ImageConverter' does not exist in the implementation but it does exist in the contract.
@@ -440,8 +423,6 @@ TypesMustExist : Type 'System.Runtime.Serialization.Configuration.TypeElementCol
 TypesMustExist : Type 'System.Xml.IXmlMtomReaderInitializer' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.IXmlMtomWriterInitializer' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security:
-MembersMustExist : Member 'System.Security.Cryptography.CryptographicAttributeObjectCollection.IsSynchronized.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.CryptographicAttributeObjectCollection.SyncRoot.get()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.DataProtector' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.DpapiDataProtector' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.MemoryProtectionScope' does not exist in the implementation but it does exist in the contract.
@@ -509,6 +490,8 @@ TypesMustExist : Type 'System.ServiceModel.Web.WebOperationContext' does not exi
 TypesMustExist : Type 'System.ServiceModel.Web.WebServiceHost' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.ServiceProcess:
 TypesMustExist : Type 'System.ServiceProcess.ServiceAccount' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ServiceProcess.ServiceControllerPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ServiceProcess.ServiceProcessDescriptionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 Compat issues with assembly System.Transactions:
 TypesMustExist : Type 'System.Transactions.Configuration.DefaultSettingsSection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Transactions.Configuration.MachineSettingsSection' does not exist in the implementation but it does exist in the contract.
@@ -516,6 +499,7 @@ TypesMustExist : Type 'System.Transactions.Configuration.TransactionsSectionGrou
 Compat issues with assembly System.Xml:
 TypesMustExist : Type 'System.Xml.XmlXapResolver' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.Serialization.CodeExporter' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Serialization.SchemaImporter.Extensions.get()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.Serialization.SoapCodeExporter' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.Serialization.SoapSchemaExporter' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.Serialization.SoapSchemaImporter' does not exist in the implementation but it does exist in the contract.
@@ -654,6 +638,7 @@ TypesMustExist : Type 'System.Windows.Markup.DesignerSerializationOptionsAttribu
 TypesMustExist : Type 'System.Windows.Markup.InternalTypeHelper' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Markup.IReceiveMarkupExtension' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Markup.ServiceProviders' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Windows.Markup.ValueSerializerAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Windows.Markup.Primitives.MarkupObject' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Markup.Primitives.MarkupProperty' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Media.DisableDpiAwarenessAttribute' does not exist in the implementation but it does exist in the contract.
@@ -681,4 +666,4 @@ TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEven
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventHandler' does not exist in the implementation but it does exist in the contract.
-Total Issues: 662
+Total Issues: 647

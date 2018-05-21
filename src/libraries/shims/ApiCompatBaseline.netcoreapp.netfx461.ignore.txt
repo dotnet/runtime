@@ -189,6 +189,20 @@ MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.DefinePInvokeMetho
 MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.DefinePInvokeMethod(System.String, System.String, System.String, System.Reflection.MethodAttributes, System.Reflection.CallingConventions, System.Type, System.Type[], System.Type[], System.Type[], System.Type[][], System.Type[][], System.Runtime.InteropServices.CallingConvention, System.Runtime.InteropServices.CharSet)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.TypeToken.get()' does not exist in the implementation but it does exist in the contract.
 
+// Consciously are not bringing to core
+TypesMustExist : Type 'System.Security.Cryptography.CryptoAPITransform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.HMACRIPEMD160' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.MACTripleDES' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.RijndaelManagedTransform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.RIPEMD160' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.RIPEMD160Managed' does not exist in the implementation but it does exist in the contract.
+
+// Too coupled to ACLs
+TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyAccessRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyAuditRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyRights' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CryptoKeySecurity' does not exist in the implementation but it does exist in the contract.
+
 // Interfaces were intentional removals
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlMethodAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlUserDefinedAggregateAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
