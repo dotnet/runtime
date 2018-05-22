@@ -304,7 +304,7 @@ namespace System.Globalization
         {
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
-                return String.Compare(string1, string2, StringComparison.OrdinalIgnoreCase);
+                return string.Compare(string1, string2, StringComparison.OrdinalIgnoreCase);
             }
 
             // Verify the options before we do any real comparison.
@@ -315,7 +315,7 @@ namespace System.Globalization
                     throw new ArgumentException(SR.Argument_CompareOptionOrdinal, nameof(options));
                 }
 
-                return String.CompareOrdinal(string1, string2);
+                return string.CompareOrdinal(string1, string2);
             }
 
             if ((options & ValidCompareMaskOffFlags) != 0)
@@ -343,7 +343,7 @@ namespace System.Globalization
                 if ((options & CompareOptions.IgnoreCase) != 0)
                     return CompareOrdinalIgnoreCase(string1, string2);
 
-                return String.CompareOrdinal(string1, string2);
+                return string.CompareOrdinal(string1, string2);
             }
 
             return CompareString(string1.AsSpan(), string2.AsSpan(), options);
@@ -449,7 +449,7 @@ namespace System.Globalization
         {
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
-                int result = String.Compare(string1, offset1, string2, offset2, length1 < length2 ? length1 : length2, StringComparison.OrdinalIgnoreCase);
+                int result = string.Compare(string1, offset1, string2, offset2, length1 < length2 ? length1 : length2, StringComparison.OrdinalIgnoreCase);
                 if ((length1 != length2) && result == 0)
                     return (length1 > length2 ? 1 : -1);
                 return (result);

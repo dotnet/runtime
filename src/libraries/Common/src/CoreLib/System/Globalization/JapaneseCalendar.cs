@@ -303,7 +303,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(year),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
                                 1,
@@ -325,10 +325,10 @@ namespace System.Globalization
         // Return the various era strings
         // Note: The arrays are backwards of the eras
         //
-        internal static String[] EraNames()
+        internal static string[] EraNames()
         {
             EraInfo[] eras = GetEraInfo();
-            String[] eraNames = new String[eras.Length];
+            string[] eraNames = new string[eras.Length];
 
             for (int i = 0; i < eras.Length; i++)
             {
@@ -339,10 +339,10 @@ namespace System.Globalization
             return eraNames;
         }
 
-        internal static String[] AbbrevEraNames()
+        internal static string[] AbbrevEraNames()
         {
             EraInfo[] eras = GetEraInfo();
-            String[] erasAbbrev = new String[eras.Length];
+            string[] erasAbbrev = new string[eras.Length];
 
             for (int i = 0; i < eras.Length; i++)
             {
@@ -353,10 +353,10 @@ namespace System.Globalization
             return erasAbbrev;
         }
 
-        internal static String[] EnglishEraNames()
+        internal static string[] EnglishEraNames()
         {
             EraInfo[] eras = GetEraInfo();
-            String[] erasEnglish = new String[eras.Length];
+            string[] erasEnglish = new string[eras.Length];
 
             for (int i = 0; i < eras.Length; i++)
             {
@@ -392,7 +392,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 "year",
-                                String.Format(
+                                string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     99,

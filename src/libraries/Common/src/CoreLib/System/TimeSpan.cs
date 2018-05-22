@@ -364,7 +364,7 @@ namespace System
         {
             if (s == null)
             {
-                result = default(TimeSpan);
+                result = default;
                 return false;
             }
             return TimeSpanParse.TryParse(s, null, out result);
@@ -378,7 +378,7 @@ namespace System
         {
             if (input == null)
             {
-                result = default(TimeSpan);
+                result = default;
                 return false;
             }
             return TimeSpanParse.TryParse(input, formatProvider, out result);
@@ -405,7 +405,7 @@ namespace System
         {
             if (input == null)
             {
-                result = default(TimeSpan);
+                result = default;
                 return false;
             }
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None, out result);
@@ -437,7 +437,7 @@ namespace System
             ValidateStyles(styles, nameof(styles));
             if (input == null)
             {
-                result = default(TimeSpan);
+                result = default;
                 return false;
             }
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, styles, out result);
