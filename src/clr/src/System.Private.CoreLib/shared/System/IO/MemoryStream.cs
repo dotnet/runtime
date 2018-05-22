@@ -208,7 +208,7 @@ namespace System.IO
         {
             if (!_exposable)
             {
-                buffer = default(ArraySegment<byte>);
+                buffer = default;
                 return false;
             }
 
@@ -426,7 +426,7 @@ namespace System.IO
             }
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -752,7 +752,7 @@ namespace System.IO
             }
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {

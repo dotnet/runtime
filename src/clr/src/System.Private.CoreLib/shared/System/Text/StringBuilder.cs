@@ -353,7 +353,7 @@ namespace System.Text
             return Capacity;
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             AssertInvariants();
 
@@ -655,7 +655,7 @@ namespace System.Text
         /// Appends a string to the end of this builder.
         /// </summary>
         /// <param name="value">The string to append.</param>
-        public StringBuilder Append(String value)
+        public StringBuilder Append(string value)
         {
             if (value != null)
             {
@@ -910,7 +910,7 @@ namespace System.Text
         /// <param name="index">The index to insert in this builder.</param>
         /// <param name="value">The string to insert.</param>
         /// <param name="count">The number of times to insert the string.</param>
-        public StringBuilder Insert(int index, String value, int count)
+        public StringBuilder Insert(int index, string value, int count)
         {
             if (count < 0)
             {
@@ -1189,7 +1189,7 @@ namespace System.Text
 
         #endregion
 
-        public StringBuilder Insert(int index, String value)
+        public StringBuilder Insert(int index, string value)
         {
             if ((uint)index > (uint)Length)
             {
@@ -1319,13 +1319,13 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder AppendFormat(String format, Object arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
+        public StringBuilder AppendFormat(string format, Object arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
 
-        public StringBuilder AppendFormat(String format, Object arg0, Object arg1) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
+        public StringBuilder AppendFormat(string format, Object arg0, Object arg1) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
 
-        public StringBuilder AppendFormat(String format, Object arg0, Object arg1, Object arg2) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
+        public StringBuilder AppendFormat(string format, Object arg0, Object arg1, Object arg2) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
 
-        public StringBuilder AppendFormat(String format, params Object[] args)
+        public StringBuilder AppendFormat(string format, params Object[] args)
         {
             if (args == null)
             {
@@ -1338,13 +1338,13 @@ namespace System.Text
             return AppendFormatHelper(null, format, new ParamsArray(args));
         }
 
-        public StringBuilder AppendFormat(IFormatProvider provider, String format, Object arg0) => AppendFormatHelper(provider, format, new ParamsArray(arg0));
+        public StringBuilder AppendFormat(IFormatProvider provider, string format, Object arg0) => AppendFormatHelper(provider, format, new ParamsArray(arg0));
 
-        public StringBuilder AppendFormat(IFormatProvider provider, String format, Object arg0, Object arg1) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1));
+        public StringBuilder AppendFormat(IFormatProvider provider, string format, Object arg0, Object arg1) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1));
 
-        public StringBuilder AppendFormat(IFormatProvider provider, String format, Object arg0, Object arg1, Object arg2) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
+        public StringBuilder AppendFormat(IFormatProvider provider, string format, Object arg0, Object arg1, Object arg2) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
 
-        public StringBuilder AppendFormat(IFormatProvider provider, String format, params Object[] args)
+        public StringBuilder AppendFormat(IFormatProvider provider, string format, params Object[] args)
         {
             if (args == null)
             {
@@ -1366,7 +1366,7 @@ namespace System.Text
         private const int IndexLimit = 1000000; // Note:            0 <= ArgIndex < IndexLimit
         private const int WidthLimit = 1000000; // Note:  -WidthLimit <  ArgAlign < WidthLimit
 
-        internal StringBuilder AppendFormatHelper(IFormatProvider provider, String format, ParamsArray args)
+        internal StringBuilder AppendFormatHelper(IFormatProvider provider, string format, ParamsArray args)
         {
             if (format == null)
             {
@@ -1503,7 +1503,7 @@ namespace System.Text
                 // Start of parsing of optional formatting parameter.
                 //
                 Object arg = args[index];
-                String itemFormat = null;
+                string itemFormat = null;
                 ReadOnlySpan<char> itemFormatSpan = default; // used if itemFormat is null
                 // Is current character a colon? which indicates start of formatting parameter.
                 if (ch == ':')
@@ -1573,7 +1573,7 @@ namespace System.Text
                 if (ch != '}') FormatError();
                 // Construct the output for this arg hole.
                 pos++;
-                String s = null;
+                string s = null;
                 if (cf != null)
                 {
                     if (itemFormatSpan.Length != 0 && itemFormat == null)
@@ -1616,7 +1616,7 @@ namespace System.Text
                     }
                 }
                 // Append it to the final output of the Format String.
-                if (s == null) s = String.Empty;
+                if (s == null) s = string.Empty;
                 int pad = width - s.Length;
                 if (!leftJustify && pad > 0) Append(' ', pad);
                 Append(s);
@@ -1635,7 +1635,7 @@ namespace System.Text
         /// If <paramref name="newValue"/> is <c>null</c>, instances of <paramref name="oldValue"/>
         /// are removed from this builder.
         /// </remarks>
-        public StringBuilder Replace(String oldValue, String newValue) => Replace(oldValue, newValue, 0, Length);
+        public StringBuilder Replace(string oldValue, string newValue) => Replace(oldValue, newValue, 0, Length);
 
         /// <summary>
         /// Determines if the contents of this builder are equal to the contents of another builder.
@@ -1724,7 +1724,7 @@ namespace System.Text
         /// If <paramref name="newValue"/> is <c>null</c>, instances of <paramref name="oldValue"/>
         /// are removed from this builder.
         /// </remarks>
-        public StringBuilder Replace(String oldValue, String newValue, int startIndex, int count)
+        public StringBuilder Replace(string oldValue, string newValue, int startIndex, int count)
         {
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)

@@ -163,7 +163,7 @@ namespace System.StubHelpers
             if (IntPtr.Zero == cstr)
                 return null;
             int nbBytes = StubHelpers.strlen((sbyte*)cstr);
-            return String.CreateStringFromEncoding((byte*)cstr, nbBytes, Encoding.UTF8);
+            return string.CreateStringFromEncoding((byte*)cstr, nbBytes, Encoding.UTF8);
         }
 
         internal static void ClearNative(IntPtr pNative)
@@ -308,7 +308,7 @@ namespace System.StubHelpers
                     // String .ctor, since newing up a 0 sized string will always return String.Emtpy.
                     // When we marshal that out as a bstr, it can wind up getting modified which
                     // corrupts String.Empty.
-                    ret = String.FastAllocateString(0);
+                    ret = string.FastAllocateString(0);
                 }
                 else
                 {
@@ -1065,7 +1065,7 @@ namespace System.StubHelpers
                 int allocSize = (pManagedHome.Length + 1) * 2;
                 pNativeHome = Marshal.AllocCoTaskMem(allocSize);
 
-                String.InternalCopy(pManagedHome, pNativeHome, allocSize);
+                string.InternalCopy(pManagedHome, pNativeHome, allocSize);
             }
 
             return pNativeHome;
@@ -1380,7 +1380,7 @@ namespace System.StubHelpers
             }
 
             string typeName = WindowsRuntimeMarshal.HStringToString(pNativeType->typeName);
-            if (String.IsNullOrEmpty(typeName))
+            if (string.IsNullOrEmpty(typeName))
             {
                 managedType = null;
                 return;

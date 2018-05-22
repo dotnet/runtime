@@ -457,7 +457,7 @@ namespace System.Diagnostics.Contracts
         /// This method can only be used within the argument to the <seealso cref="Ensures(bool)"/> contract.
         /// </remarks>
         [Pure]
-        public static T Result<T>() { return default(T); }
+        public static T Result<T>() { return default; }
 
         /// <summary>
         /// Represents the final (output) value of an out parameter when returning from a method.
@@ -469,7 +469,7 @@ namespace System.Diagnostics.Contracts
         /// This method can only be used within the argument to the <seealso cref="Ensures(bool)"/> contract.
         /// </remarks>
         [Pure]
-        public static T ValueAtReturn<T>(out T value) { value = default(T); return value; }
+        public static T ValueAtReturn<T>(out T value) { value = default; return value; }
 
         /// <summary>
         /// Represents the value of <paramref name="value"/> as it was at the start of the method or property.
@@ -481,7 +481,7 @@ namespace System.Diagnostics.Contracts
         /// This method can only be used within the argument to the <seealso cref="Ensures(bool)"/> contract.
         /// </remarks>
         [Pure]
-        public static T OldValue<T>(T value) { return default(T); }
+        public static T OldValue<T>(T value) { return default; }
 
         #endregion Old, Result, and Out Parameters
 

@@ -43,7 +43,7 @@ namespace System.Threading
         /// <remarks>
         /// The <see cref="CancellationToken"/> value returned by this property will be non-cancelable by default.
         /// </remarks>
-        public static CancellationToken None => default(CancellationToken);
+        public static CancellationToken None => default;
 
         /// <summary>
         /// Gets whether cancellation has been requested for this token.
@@ -235,7 +235,7 @@ namespace System.Threading
             CancellationTokenSource source = _source;
             return source != null ?
                 source.InternalRegister(callback, state, useSyncContext ? SynchronizationContext.Current : null, useExecutionContext ? ExecutionContext.Capture() : null) :
-                default(CancellationTokenRegistration); // Nothing to do for tokens than can never reach the canceled state. Give back a dummy registration.
+                default; // Nothing to do for tokens than can never reach the canceled state. Give back a dummy registration.
         }
 
         /// <summary>

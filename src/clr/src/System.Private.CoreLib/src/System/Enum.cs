@@ -368,7 +368,7 @@ namespace System
 
         public static bool TryParse<TEnum>(String value, bool ignoreCase, out TEnum result) where TEnum : struct
         {
-            result = default(TEnum);
+            result = default;
             EnumResult parseResult = new EnumResult();
             bool retValue;
 

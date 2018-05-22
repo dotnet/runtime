@@ -221,7 +221,7 @@ namespace System.Runtime.Loader
             }
 
             // The simple names should match at the very least
-            if (String.IsNullOrEmpty(loadedSimpleName) || (!requestedSimpleName.Equals(loadedSimpleName, StringComparison.InvariantCultureIgnoreCase)))
+            if (string.IsNullOrEmpty(loadedSimpleName) || (!requestedSimpleName.Equals(loadedSimpleName, StringComparison.InvariantCultureIgnoreCase)))
                 throw new InvalidOperationException(SR.Argument_CustomAssemblyLoadContextRequestedNameMismatch);
 
             return assembly;

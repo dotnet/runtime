@@ -357,7 +357,7 @@ namespace System.Runtime.CompilerServices
                 if (table != null)
                 {
                     // Ensure we don't keep the last current alive unnecessarily
-                    _current = default(KeyValuePair<TKey, TValue>);
+                    _current = default;
 
                     // Decrement the ref count that was incremented when constructed
                     lock (table._lock)
@@ -634,8 +634,8 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
-                key = default(TKey);
-                value = default(TValue);
+                key = default;
+                value = default;
                 return false;
             }
 

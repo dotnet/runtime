@@ -95,7 +95,7 @@ namespace Microsoft.Win32
 
         // Names of keys.  This array must be in the same order as the HKEY values listed above.
         //
-        private static readonly String[] hkeyNames = new String[] {
+        private static readonly string[] hkeyNames = new string[] {
                 "HKEY_CLASSES_ROOT",
                 "HKEY_CURRENT_USER",
                 "HKEY_LOCAL_MACHINE",
@@ -113,7 +113,7 @@ namespace Microsoft.Win32
 
         private volatile SafeRegistryHandle hkey = null;
         private volatile int state = 0;
-        private volatile String keyName;
+        private volatile string keyName;
         private volatile bool remoteKey = false;
         private volatile RegistryKeyPermissionCheck checkMode;
         private volatile RegistryView regView = RegistryView.Default;
@@ -196,7 +196,7 @@ namespace Microsoft.Win32
             Dispose(true);
         }
 
-        public void DeleteValue(String name, bool throwOnMissingValue)
+        public void DeleteValue(string name, bool throwOnMissingValue)
         {
             EnsureWriteable();
             int errorCode = Win32Native.RegDeleteValue(hkey, name);
@@ -304,7 +304,7 @@ namespace Microsoft.Win32
          *
          * @return the Subkey requested, or <b>null</b> if the operation failed.
          */
-        public RegistryKey OpenSubKey(String name)
+        public RegistryKey OpenSubKey(string name)
         {
             return OpenSubKey(name, false);
         }
@@ -447,7 +447,7 @@ namespace Microsoft.Win32
          *
          * @return the data associated with the value.
          */
-        public Object GetValue(String name)
+        public Object GetValue(string name)
         {
             return InternalGetValue(name, null, false, true);
         }
@@ -465,12 +465,12 @@ namespace Microsoft.Win32
          *
          * @return the data associated with the value.
          */
-        public Object GetValue(String name, Object defaultValue)
+        public Object GetValue(string name, Object defaultValue)
         {
             return InternalGetValue(name, defaultValue, false, true);
         }
 
-        public Object GetValue(String name, Object defaultValue, RegistryValueOptions options)
+        public Object GetValue(string name, Object defaultValue, RegistryValueOptions options)
         {
             if (options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames)
             {
@@ -480,7 +480,7 @@ namespace Microsoft.Win32
             return InternalGetValue(name, defaultValue, doNotExpand, true);
         }
 
-        internal Object InternalGetValue(String name, Object defaultValue, bool doNotExpand, bool checkSecurity)
+        internal Object InternalGetValue(string name, Object defaultValue, bool doNotExpand, bool checkSecurity)
         {
             if (checkSecurity)
             {
@@ -605,13 +605,13 @@ namespace Microsoft.Win32
                         ret = Win32Native.RegQueryValueEx(hkey, name, null, ref type, blob, ref datasize);
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
-                            data = new String(blob, 0, blob.Length - 1);
+                            data = new string(blob, 0, blob.Length - 1);
                         }
                         else
                         {
                             // in the very unlikely case the data is missing null termination, 
                             // pass in the whole char[] to prevent truncating a character
-                            data = new String(blob);
+                            data = new string(blob);
                         }
                     }
                     break;
@@ -636,17 +636,17 @@ namespace Microsoft.Win32
 
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
-                            data = new String(blob, 0, blob.Length - 1);
+                            data = new string(blob, 0, blob.Length - 1);
                         }
                         else
                         {
                             // in the very unlikely case the data is missing null termination, 
                             // pass in the whole char[] to prevent truncating a character
-                            data = new String(blob);
+                            data = new string(blob);
                         }
 
                         if (!doNotExpand)
-                            data = Environment.ExpandEnvironmentVariables((String)data);
+                            data = Environment.ExpandEnvironmentVariables((string)data);
                     }
                     break;
                 case Win32Native.REG_MULTI_SZ:
@@ -688,7 +688,7 @@ namespace Microsoft.Win32
                         }
 
 
-                        IList<String> strings = new List<String>();
+                        IList<string> strings = new List<string>();
                         int cur = 0;
                         int len = blob.Length;
 
@@ -705,25 +705,25 @@ namespace Microsoft.Win32
                                 Debug.Assert(blob[nextNull] == (char)0, "blob[nextNull] should be 0");
                                 if (nextNull - cur > 0)
                                 {
-                                    strings.Add(new String(blob, cur, nextNull - cur));
+                                    strings.Add(new string(blob, cur, nextNull - cur));
                                 }
                                 else
                                 {
                                     // we found an empty string.  But if we're at the end of the data, 
                                     // it's just the extra null terminator. 
                                     if (nextNull != len - 1)
-                                        strings.Add(String.Empty);
+                                        strings.Add(string.Empty);
                                 }
                             }
                             else
                             {
-                                strings.Add(new String(blob, cur, len - cur));
+                                strings.Add(new string(blob, cur, len - cur));
                             }
                             cur = nextNull + 1;
                         }
 
-                        data = new String[strings.Count];
-                        strings.CopyTo((String[])data, 0);
+                        data = new string[strings.Count];
+                        strings.CopyTo((string[])data, 0);
                     }
                     break;
                 case Win32Native.REG_LINK:
@@ -760,12 +760,12 @@ namespace Microsoft.Win32
          * @param name Name of value to store data in.
          * @param value Data to store.
          */
-        public void SetValue(String name, Object value)
+        public void SetValue(string name, Object value)
         {
             SetValue(name, value, RegistryValueKind.Unknown);
         }
 
-        public unsafe void SetValue(String name, Object value, RegistryValueKind valueKind)
+        public unsafe void SetValue(string name, Object value, RegistryValueKind valueKind)
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
@@ -795,7 +795,7 @@ namespace Microsoft.Win32
                     case RegistryValueKind.ExpandString:
                     case RegistryValueKind.String:
                         {
-                            String data = value.ToString();
+                            string data = value.ToString();
                             ret = Win32Native.RegSetValueEx(hkey,
                                 name,
                                 0,
@@ -834,7 +834,7 @@ namespace Microsoft.Win32
                                 for (int i = 0; i < dataStrings.Length; i++)
                                 {
                                     // Assumes that the Strings are always null terminated.
-                                    String.InternalCopy(dataStrings[i], currentPtr, (checked(dataStrings[i].Length * 2)));
+                                    string.InternalCopy(dataStrings[i], currentPtr, (checked(dataStrings[i].Length * 2)));
                                     currentPtr = new IntPtr((long)currentPtr + (checked(dataStrings[i].Length * 2)));
                                     *(char*)(currentPtr.ToPointer()) = '\0';
                                     currentPtr = new IntPtr((long)currentPtr + 2);
@@ -929,7 +929,7 @@ namespace Microsoft.Win32
             {
                 if (value is byte[])
                     return RegistryValueKind.Binary;
-                else if (value is String[])
+                else if (value is string[])
                     return RegistryValueKind.MultiString;
                 else
                     throw new ArgumentException(SR.Format(SR.Arg_RegSetBadArrType, value.GetType().Name));
@@ -943,7 +943,7 @@ namespace Microsoft.Win32
          *
          * @return a string representing the key.
          */
-        public override String ToString()
+        public override string ToString()
         {
             EnsureNotDisposed();
             return keyName;
@@ -956,7 +956,7 @@ namespace Microsoft.Win32
          * error, and depending on the error, insert a string into the message
          * gotten from the ResourceManager.
          */
-        internal void Win32Error(int errorCode, String str)
+        internal void Win32Error(int errorCode, string str)
         {
             switch (errorCode)
             {
@@ -994,7 +994,7 @@ namespace Microsoft.Win32
             }
         }
 
-        internal static String FixupName(String name)
+        internal static string FixupName(string name)
         {
             Debug.Assert(name != null, "[FixupName]name!=null");
             if (name.IndexOf('\\') == -1)

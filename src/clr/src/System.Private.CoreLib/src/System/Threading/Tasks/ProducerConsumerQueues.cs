@@ -204,7 +204,7 @@ namespace System.Threading.Tasks
             if (first != segment.m_state.m_lastCopy)
             {
                 result = array[first];
-                array[first] = default(T); // Clear the slot to release the element
+                array[first] = default; // Clear the slot to release the element
                 segment.m_state.m_first = (first + 1) & (array.Length - 1);
                 return true;
             }
@@ -239,12 +239,12 @@ namespace System.Threading.Tasks
 
             if (first == segment.m_state.m_last)
             {
-                result = default(T);
+                result = default;
                 return false;
             }
 
             result = array[first];
-            array[first] = default(T); // Clear the slot to release the element
+            array[first] = default; // Clear the slot to release the element
             segment.m_state.m_first = (first + 1) & (segment.m_array.Length - 1);
             segment.m_state.m_lastCopy = segment.m_state.m_last; // Refresh m_lastCopy to ensure that m_first has not passed m_lastCopy
 

@@ -143,7 +143,7 @@ namespace System.Runtime.CompilerServices
             // but where for one reason or another synchronous rather than asynchronous waiting is needed.
             if (!task.IsCompleted)
             {
-                bool taskCompleted = task.InternalWait(Timeout.Infinite, default(CancellationToken));
+                bool taskCompleted = task.InternalWait(Timeout.Infinite, default);
                 Debug.Assert(taskCompleted, "With an infinite timeout, the task should have always completed.");
             }
 

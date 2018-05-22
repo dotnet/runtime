@@ -316,7 +316,7 @@ namespace System
 
         public static Object ChangeType(Object value, Type conversionType, IFormatProvider provider)
         {
-            if (ReferenceEquals(conversionType, null))
+            if (conversionType is null)
             {
                 throw new ArgumentNullException(nameof(conversionType));
             }
@@ -2008,7 +2008,7 @@ namespace System
             IFormattable formattable = value as IFormattable;
             if (formattable != null)
                 return formattable.ToString(null, provider);
-            return value == null ? String.Empty : value.ToString();
+            return value == null ? string.Empty : value.ToString();
         }
 
         public static string ToString(bool value)

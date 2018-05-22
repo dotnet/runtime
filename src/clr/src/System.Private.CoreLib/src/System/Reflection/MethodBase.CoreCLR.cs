@@ -21,7 +21,7 @@ namespace System.Reflection
 
             Type declaringType = m.DeclaringType;
             if (declaringType != null && declaringType.IsGenericType)
-                throw new ArgumentException(String.Format(
+                throw new ArgumentException(string.Format(
                     CultureInfo.CurrentCulture, SR.Argument_MethodDeclaringTypeGeneric,
                     m, declaringType.GetGenericTypeDefinition()));
 
@@ -96,7 +96,7 @@ namespace System.Reflection
         {
             get
             {
-                return String.Format("{0}.{1}", DeclaringType.FullName, FormatNameAndSig());
+                return string.Format("{0}.{1}", DeclaringType.FullName, FormatNameAndSig());
             }
         }
         internal string FormatNameAndSig()
