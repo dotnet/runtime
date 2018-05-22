@@ -32,6 +32,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal;
 
 namespace System.Threading.Tasks
 {
@@ -540,19 +541,5 @@ namespace System.Threading.Tasks
                 }
             }
         }
-    }
-
-
-    /// <summary>A placeholder class for common padding constants and eventually routines.</summary>
-    static class PaddingHelpers
-    {
-        /// <summary>A size greater than or equal to the size of the most common CPU cache lines.</summary>
-        internal const int CACHE_LINE_SIZE = 128;
-    }
-
-    /// <summary>Padding structure used to minimize false sharing in SingleProducerSingleConsumerQueue{T}.</summary>
-    [StructLayout(LayoutKind.Explicit, Size = PaddingHelpers.CACHE_LINE_SIZE - sizeof(Int32))]
-    struct PaddingFor32
-    {
     }
 }
