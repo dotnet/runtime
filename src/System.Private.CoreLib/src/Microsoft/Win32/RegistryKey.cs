@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 /*
   Note on transaction support:
   Eventually we will want to add support for NT's transactions to our
-  RegistryKey API's (possibly Whidbey M3?).  When we do this, here's
+  RegistryKey API's.  When we do this, here's
   the list of API's we need to make transaction-aware:
 
   RegCreateKeyEx
@@ -21,7 +20,7 @@
 
   We can ignore RegConnectRegistry (remote registry access doesn't yet have
   transaction support) and RegFlushKey.  RegCloseKey doesn't require any
-  additional work.  .
+  additional work.
  */
 
 /*
@@ -45,7 +44,6 @@
   HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Terminal Server\RegistryExtensionFlags, the least significant bit must be 1.
   HKLM\SYSTEM\CurrentControlSet\Control\TerminalServer\TSAppCompat must be 1
   There might possibly be an interaction with yet a third registry key as well.
-
 */
 
 using Microsoft.Win32.SafeHandles;
@@ -58,15 +56,13 @@ using System.Text;
 
 namespace Microsoft.Win32
 {
-    /**
-     * Registry encapsulation. To get an instance of a RegistryKey use the
-     * Registry class's static members then call OpenSubKey.
-     *
-     * @see Registry
-     * @security(checkDllCalls=off)
-     * @security(checkClassLinking=on)
-     */
-    internal sealed class RegistryKey : MarshalByRefObject, IDisposable
+    /// <summary>Registry encapsulation. To get an instance of a RegistryKey use the Registry class's static members then call OpenSubKey.</summary>
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    sealed class RegistryKey : MarshalByRefObject, IDisposable
     {
         // We could use const here, if C# supported ELEMENT_TYPE_I fully.
         internal static readonly IntPtr HKEY_CLASSES_ROOT = new IntPtr(unchecked((int)0x80000000));
@@ -76,33 +72,16 @@ namespace Microsoft.Win32
         internal static readonly IntPtr HKEY_PERFORMANCE_DATA = new IntPtr(unchecked((int)0x80000004));
         internal static readonly IntPtr HKEY_CURRENT_CONFIG = new IntPtr(unchecked((int)0x80000005));
 
-        // Dirty indicates that we have munged data that should be potentially
-        // written to disk.
-        //
-        private const int STATE_DIRTY = 0x0001;
-
-        // SystemKey indicates that this is a "SYSTEMKEY" and shouldn't be "opened"
-        // or "closed".
-        //
-        private const int STATE_SYSTEMKEY = 0x0002;
-
-        // Access
-        //
-        private const int STATE_WRITEACCESS = 0x0004;
-
-        // Indicates if this key is for HKEY_PERFORMANCE_DATA
-        private const int STATE_PERF_DATA = 0x0008;
-
-        // Names of keys.  This array must be in the same order as the HKEY values listed above.
-        //
-        private static readonly string[] hkeyNames = new string[] {
-                "HKEY_CLASSES_ROOT",
-                "HKEY_CURRENT_USER",
-                "HKEY_LOCAL_MACHINE",
-                "HKEY_USERS",
-                "HKEY_PERFORMANCE_DATA",
-                "HKEY_CURRENT_CONFIG",
-                };
+        /// <summary>Names of keys.  This array must be in the same order as the HKEY values listed above.</summary>
+        private static readonly string[] s_hkeyNames = new string[]
+        {
+            "HKEY_CLASSES_ROOT",
+            "HKEY_CURRENT_USER",
+            "HKEY_LOCAL_MACHINE",
+            "HKEY_USERS",
+            "HKEY_PERFORMANCE_DATA",
+            "HKEY_CURRENT_CONFIG"
+        };
 
         // MSDN defines the following limits for registry key names & values:
         // Key Name: 255 characters
@@ -111,39 +90,122 @@ namespace Microsoft.Win32
         private const int MaxKeyLength = 255;
         private const int MaxValueLength = 16383;
 
-        private volatile SafeRegistryHandle hkey = null;
-        private volatile int state = 0;
-        private volatile string keyName;
-        private volatile bool remoteKey = false;
+        private volatile SafeRegistryHandle _hkey = null;
+        private volatile string _keyName;
+        private volatile bool _remoteKey = false;
+        private volatile StateFlags _state;
         private volatile RegistryKeyPermissionCheck checkMode;
-        private volatile RegistryView regView = RegistryView.Default;
+        private volatile RegistryView _regView = RegistryView.Default;
 
-        /**
-         * Creates a RegistryKey.
-         *
-         * This key is bound to hkey, if writable is <b>false</b> then no write operations
-         * will be allowed. If systemkey is set then the hkey won't be released
-         * when the object is GC'ed.
-         * The remoteKey flag when set to true indicates that we are dealing with registry entries
-         * on a remote machine and requires the program making these calls to have full trust.
-         */
+        /// <summary>
+        /// Creates a RegistryKey.
+        /// This key is bound to hkey, if writable is <b>false</b> then no write operations
+        /// will be allowed. If systemkey is set then the hkey won't be released
+        /// when the object is GC'ed.
+        /// The remoteKey flag when set to true indicates that we are dealing with registry entries
+        /// on a remote machine and requires the program making these calls to have full trust.
+        /// </summary>
         private RegistryKey(SafeRegistryHandle hkey, bool writable, bool systemkey, bool remoteKey, bool isPerfData, RegistryView view)
         {
-            this.hkey = hkey;
-            keyName = "";
-            this.remoteKey = remoteKey;
-            regView = view;
+            _hkey = hkey;
+            _keyName = "";
+            _remoteKey = remoteKey;
+            _regView = view;
+
             if (systemkey)
             {
-                state |= STATE_SYSTEMKEY;
+                _state |= StateFlags.SystemKey;
             }
             if (writable)
             {
-                state |= STATE_WRITEACCESS;
+                _state |= StateFlags.WriteAccess;
             }
             if (isPerfData)
-                state |= STATE_PERF_DATA;
+            {
+                _state |= StateFlags.PerfData;
+            }
             ValidateKeyView(view);
+        }
+
+        /// <summary>Retrieves a string representation of this key.</summary>
+        /// <returns>A string representing the key.</returns>
+        public override string ToString()
+        {
+            EnsureNotDisposed();
+            return _keyName;
+        }
+
+        private static void FixupPath(StringBuilder path)
+        {
+            Debug.Assert(path != null);
+            int length = path.Length;
+            bool fixup = false;
+            char markerChar = (char)0xFFFF;
+
+            int i = 1;
+            while (i < length - 1)
+            {
+                if (path[i] == '\\')
+                {
+                    i++;
+                    while (i < length)
+                    {
+                        if (path[i] == '\\')
+                        {
+                            path[i] = markerChar;
+                            i++;
+                            fixup = true;
+                        }
+                        else
+                            break;
+                    }
+                }
+                i++;
+            }
+
+            if (fixup)
+            {
+                i = 0;
+                int j = 0;
+                while (i < length)
+                {
+                    if (path[i] == markerChar)
+                    {
+                        i++;
+                        continue;
+                    }
+                    path[j] = path[i];
+                    i++;
+                    j++;
+                }
+                path.Length += j - i;
+            }
+        }
+
+        /// <summary>Retrieves the current state of the dirty property.</summary>
+        /// <remarks>A key is marked as dirty if any operation has occurred that modifies the contents of the key.</remarks>
+        /// <returns><b>true</b> if the key has been modified.</returns>
+        private bool IsDirty() => (_state & StateFlags.Dirty) != 0;
+
+        private bool IsSystemKey() => (_state & StateFlags.SystemKey) != 0;
+
+        private bool IsWritable() => (_state & StateFlags.WriteAccess) != 0;
+
+        private bool IsPerfDataKey() => (_state & StateFlags.PerfData) != 0;
+
+        private void SetDirty() => _state |= StateFlags.Dirty;
+
+        [Flags]
+        private enum StateFlags
+        {
+            /// <summary>Dirty indicates that we have munged data that should be potentially written to disk.</summary>
+            Dirty = 0x0001,
+            /// <summary>SystemKey indicates that this is a "SYSTEMKEY" and shouldn't be "opened" or "closed".</summary>
+            SystemKey = 0x0002,
+            /// <summary>Access</summary>
+            WriteAccess = 0x0004,
+            /// <summary>Indicates if this key is for HKEY_PERFORMANCE_DATA</summary>
+            PerfData = 0x0008
         }
 
         /**
@@ -156,13 +218,13 @@ namespace Microsoft.Win32
 
         private void Dispose(bool disposing)
         {
-            if (hkey != null)
+            if (_hkey != null)
             {
                 if (!IsSystemKey())
                 {
                     try
                     {
-                        hkey.Dispose();
+                        _hkey.Dispose();
                     }
                     catch (IOException)
                     {
@@ -170,7 +232,7 @@ namespace Microsoft.Win32
                     }
                     finally
                     {
-                        hkey = null;
+                        _hkey = null;
                     }
                 }
                 else if (disposing && IsPerfDataKey())
@@ -199,7 +261,7 @@ namespace Microsoft.Win32
         public void DeleteValue(string name, bool throwOnMissingValue)
         {
             EnsureWriteable();
-            int errorCode = Win32Native.RegDeleteValue(hkey, name);
+            int errorCode = Win32Native.RegDeleteValue(_hkey, name);
 
             //
             // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCED_RANGE  
@@ -243,7 +305,7 @@ namespace Microsoft.Win32
         internal static RegistryKey GetBaseKey(IntPtr hKey, RegistryView view)
         {
             int index = ((int)hKey) & 0x0FFFFFFF;
-            Debug.Assert(index >= 0 && index < hkeyNames.Length, "index is out of range!");
+            Debug.Assert(index >= 0 && index < s_hkeyNames.Length, "index is out of range!");
             Debug.Assert((((int)hKey) & 0xFFFFFFF0) == 0x80000000, "Invalid hkey value!");
 
             bool isPerf = hKey == HKEY_PERFORMANCE_DATA;
@@ -252,7 +314,7 @@ namespace Microsoft.Win32
 
             RegistryKey key = new RegistryKey(srh, true, true, false, isPerf, view);
             key.checkMode = RegistryKeyPermissionCheck.Default;
-            key.keyName = hkeyNames[index];
+            key._keyName = s_hkeyNames[index];
             return key;
         }
 
@@ -272,17 +334,17 @@ namespace Microsoft.Win32
             name = FixupName(name); // Fixup multiple slashes to a single slash
 
             SafeRegistryHandle result = null;
-            int ret = Win32Native.RegOpenKeyEx(hkey,
+            int ret = Win32Native.RegOpenKeyEx(_hkey,
                 name,
                 0,
-                GetRegistryKeyAccess(writable) | (int)regView,
+                GetRegistryKeyAccess(writable) | (int)_regView,
                 out result);
 
             if (ret == 0 && !result.IsInvalid)
             {
-                RegistryKey key = new RegistryKey(result, writable, false, remoteKey, false, regView);
+                RegistryKey key = new RegistryKey(result, writable, false, _remoteKey, false, _regView);
                 key.checkMode = GetSubKeyPermissonCheck(writable);
-                key.keyName = keyName + "\\" + name;
+                key._keyName = _keyName + "\\" + name;
                 return key;
             }
 
@@ -325,7 +387,7 @@ namespace Microsoft.Win32
                 int nameLength = name.Length;
 
                 while ((result = Win32Native.RegEnumKeyEx(
-                    hkey,
+                    _hkey,
                     names.Count,
                     name,
                     ref nameLength,
@@ -379,7 +441,7 @@ namespace Microsoft.Win32
                 int nameLength = name.Length;
 
                 while ((result = Win32Native.RegEnumValue(
-                    hkey,
+                    _hkey,
                     names.Count,
                     name,
                     ref nameLength,
@@ -436,18 +498,14 @@ namespace Microsoft.Win32
             return names.ToArray();
         }
 
-        /**
-         * Retrieves the specified value. <b>null</b> is returned if the value
-         * doesn't exist.
-         *
-         * Note that <var>name</var> can be null or "", at which point the
-         * unnamed or default value of this Registry key is returned, if any.
-         *
-         * @param name Name of value to retrieve.
-         *
-         * @return the data associated with the value.
-         */
-        public Object GetValue(string name)
+        /// <summary>Retrieves the specified value. <b>null</b> is returned if the value doesn't exist</summary>
+        /// <remarks>
+        /// Note that <var>name</var> can be null or "", at which point the
+        /// unnamed or default value of this Registry key is returned, if any.
+        /// </remarks>
+        /// <param name="name">Name of value to retrieve.</param>
+        /// <returns>The data associated with the value.</returns>
+        public object GetValue(string name)
         {
             return InternalGetValue(name, null, false, true);
         }
@@ -492,7 +550,7 @@ namespace Microsoft.Win32
             int type = 0;
             int datasize = 0;
 
-            int ret = Win32Native.RegQueryValueEx(hkey, name, null, ref type, (byte[])null, ref datasize);
+            int ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
 
             if (ret != 0)
             {
@@ -503,7 +561,7 @@ namespace Microsoft.Win32
 
                     int r;
                     byte[] blob = new byte[size];
-                    while (Interop.Errors.ERROR_MORE_DATA == (r = Win32Native.RegQueryValueEx(hkey, name, null, ref type, blob, ref sizeInput)))
+                    while (Interop.Errors.ERROR_MORE_DATA == (r = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
                     {
                         if (size == Int32.MaxValue)
                         {
@@ -551,7 +609,7 @@ namespace Microsoft.Win32
                 case Win32Native.REG_BINARY:
                     {
                         byte[] blob = new byte[datasize];
-                        ret = Win32Native.RegQueryValueEx(hkey, name, null, ref type, blob, ref datasize);
+                        ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         data = blob;
                     }
                     break;
@@ -565,7 +623,7 @@ namespace Microsoft.Win32
                         long blob = 0;
                         Debug.Assert(datasize == 8, "datasize==8");
                         // Here, datasize must be 8 when calling this
-                        ret = Win32Native.RegQueryValueEx(hkey, name, null, ref type, ref blob, ref datasize);
+                        ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
                         data = blob;
                     }
@@ -580,7 +638,7 @@ namespace Microsoft.Win32
                         int blob = 0;
                         Debug.Assert(datasize == 4, "datasize==4");
                         // Here, datasize must be four when calling this
-                        ret = Win32Native.RegQueryValueEx(hkey, name, null, ref type, ref blob, ref datasize);
+                        ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
                         data = blob;
                     }
@@ -602,7 +660,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Win32Native.RegQueryValueEx(hkey, name, null, ref type, blob, ref datasize);
+                        ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
                             data = new string(blob, 0, blob.Length - 1);
@@ -632,7 +690,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Win32Native.RegQueryValueEx(hkey, name, null, ref type, blob, ref datasize);
+                        ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
@@ -665,7 +723,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Win32Native.RegQueryValueEx(hkey, name, null, ref type, blob, ref datasize);
+                        ret = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
                         // make sure the string is null terminated before processing the data
                         if (blob.Length > 0 && blob[blob.Length - 1] != (char)0)
@@ -734,26 +792,6 @@ namespace Microsoft.Win32
             return data;
         }
 
-        private bool IsSystemKey()
-        {
-            return (state & STATE_SYSTEMKEY) != 0;
-        }
-
-        private bool IsWritable()
-        {
-            return (state & STATE_WRITEACCESS) != 0;
-        }
-
-        private bool IsPerfDataKey()
-        {
-            return (state & STATE_PERF_DATA) != 0;
-        }
-
-        private void SetDirty()
-        {
-            state |= STATE_DIRTY;
-        }
-
         /**
          * Sets the specified value.
          *
@@ -796,7 +834,7 @@ namespace Microsoft.Win32
                     case RegistryValueKind.String:
                         {
                             string data = value.ToString();
-                            ret = Win32Native.RegSetValueEx(hkey,
+                            ret = Win32Native.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 valueKind,
@@ -843,7 +881,7 @@ namespace Microsoft.Win32
                                 *(char*)(currentPtr.ToPointer()) = '\0';
                                 currentPtr = new IntPtr((long)currentPtr + 2);
 
-                                ret = Win32Native.RegSetValueEx(hkey,
+                                ret = Win32Native.RegSetValueEx(_hkey,
                                     name,
                                     0,
                                     RegistryValueKind.MultiString,
@@ -856,7 +894,7 @@ namespace Microsoft.Win32
                     case RegistryValueKind.None:
                     case RegistryValueKind.Binary:
                         byte[] dataBytes = (byte[])value;
-                        ret = Win32Native.RegSetValueEx(hkey,
+                        ret = Win32Native.RegSetValueEx(_hkey,
                             name,
                             0,
                             (valueKind == RegistryValueKind.None ? Win32Native.REG_NONE : RegistryValueKind.Binary),
@@ -870,7 +908,7 @@ namespace Microsoft.Win32
                             // unboxed and cast at the same time.  I.e. ((int)(object)(short) 5) will fail.
                             int data = Convert.ToInt32(value, System.Globalization.CultureInfo.InvariantCulture);
 
-                            ret = Win32Native.RegSetValueEx(hkey,
+                            ret = Win32Native.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 RegistryValueKind.DWord,
@@ -883,7 +921,7 @@ namespace Microsoft.Win32
                         {
                             long data = Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture);
 
-                            ret = Win32Native.RegSetValueEx(hkey,
+                            ret = Win32Native.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 RegistryValueKind.QWord,
@@ -939,17 +977,6 @@ namespace Microsoft.Win32
         }
 
         /**
-         * Retrieves a string representation of this key.
-         *
-         * @return a string representing the key.
-         */
-        public override string ToString()
-        {
-            EnsureNotDisposed();
-            return keyName;
-        }
-
-        /**
          * After calling GetLastWin32Error(), it clears the last error field,
          * so you must save the HResult and pass it to this method.  This method
          * will determine the appropriate exception to throw dependent on your
@@ -981,8 +1008,8 @@ namespace Microsoft.Win32
                      */
                     if (!IsPerfDataKey())
                     {
-                        hkey.SetHandleAsInvalid();
-                        hkey = null;
+                        _hkey.SetHandleAsInvalid();
+                        _hkey = null;
                     }
                     goto default;
 
@@ -1008,59 +1035,11 @@ namespace Microsoft.Win32
             return sb.ToString();
         }
 
-
-        private static void FixupPath(StringBuilder path)
-        {
-            Debug.Assert(path != null);
-            int length = path.Length;
-            bool fixup = false;
-            char markerChar = (char)0xFFFF;
-
-            int i = 1;
-            while (i < length - 1)
-            {
-                if (path[i] == '\\')
-                {
-                    i++;
-                    while (i < length)
-                    {
-                        if (path[i] == '\\')
-                        {
-                            path[i] = markerChar;
-                            i++;
-                            fixup = true;
-                        }
-                        else
-                            break;
-                    }
-                }
-                i++;
-            }
-
-            if (fixup)
-            {
-                i = 0;
-                int j = 0;
-                while (i < length)
-                {
-                    if (path[i] == markerChar)
-                    {
-                        i++;
-                        continue;
-                    }
-                    path[j] = path[i];
-                    i++;
-                    j++;
-                }
-                path.Length += j - i;
-            }
-        }
-
         private void EnsureNotDisposed()
         {
-            if (hkey == null)
+            if (_hkey == null)
             {
-                ThrowHelper.ThrowObjectDisposedException(keyName, ExceptionResource.ObjectDisposed_RegKeyClosed);
+                ThrowHelper.ThrowObjectDisposedException(_keyName, ExceptionResource.ObjectDisposed_RegKeyClosed);
             }
         }
 

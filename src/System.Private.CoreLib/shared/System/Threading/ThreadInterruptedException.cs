@@ -2,29 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-/*=============================================================================
-**
-**
-**
-** Purpose: An exception class to indicate that the thread was interrupted
-**          from a waiting state.
-**
-**
-=============================================================================*/
-
-using System.Threading;
-using System;
 using System.Runtime.Serialization;
 
 namespace System.Threading
 {
+    /// <summary>
+    /// An exception class to indicate that the thread was interrupted from a waiting state.
+    /// </summary>
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ThreadInterruptedException : SystemException
     {
-        public ThreadInterruptedException()
-            : base(GetMessageFromNativeResources(ExceptionMessageKind.ThreadInterrupted))
+        public ThreadInterruptedException() : base(
+#if CORECLR
+            GetMessageFromNativeResources(ExceptionMessageKind.ThreadInterrupted)
+#else
+            SR.Threading_ThreadInterrupted
+#endif
+            )
         {
             HResult = HResults.COR_E_THREADINTERRUPTED;
         }

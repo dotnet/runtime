@@ -727,7 +727,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool nIsTransient(int hr);
 
-
         // This piece of infrastructure exists to help avoid deadlocks 
         // between parts of mscorlib that might throw an exception while 
         // holding a lock that are also used by mscorlib's ResourceManager
