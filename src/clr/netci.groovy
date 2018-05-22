@@ -35,7 +35,7 @@ def static getOSGroup(def os) {
 // We use this class (vs variables) so that the static functions can access data here.
 class Constants {
 
-    // We have very limited ARM64 hardware (used for ARM/ARMLB/ARM64 testing). So only allow certain branches to use it.
+    // We have very limited ARM64 hardware (used for ARM/ARM64 testing). So only allow certain branches to use it.
     def static LimitedHardwareBranches = [
                'master']
 
@@ -170,9 +170,6 @@ class Constants {
             ],
             'arm64': [
                 'Checked'
-            ],
-            'armlb': [
-                'Checked'
             ]
         ],
         'Windows_NT_BuildOnly': [
@@ -217,7 +214,7 @@ class Constants {
         ],
     ]
 
-    // A set of scenarios that are valid for arm/arm64/armlb tests run on hardware. This is a map from valid scenario name
+    // A set of scenarios that are valid for arm/arm64 tests run on hardware. This is a map from valid scenario name
     // to Tests.lst file categories to exclude.
     //
     // This list should contain a subset of the scenarios from `allScenarios`. Please keep this in the same order as that,
@@ -411,14 +408,13 @@ class Constants {
 
     // This is the set of architectures
     // Some of these are pseudo-architectures:
-    //    armlb -- same as arm, but use the LEGACY_BACKEND JIT
     //    armem -- ARM builds/runs using an emulator. Used for Ubuntu/Ubuntu16.04/Tizen runs.
     //    x86_arm_altjit -- ARM runs on x86 using the ARM altjit
     //    x64_arm64_altjit -- ARM64 runs on x64 using the ARM64 altjit
-    def static architectureList = ['arm', 'armlb', 'armem', 'x86_arm_altjit', 'x64_arm64_altjit', 'arm64', 'x64', 'x86']
+    def static architectureList = ['arm', 'armem', 'x86_arm_altjit', 'x64_arm64_altjit', 'arm64', 'x64', 'x86']
 
     // This set of architectures that cross build on Windows and run on Windows ARM64 hardware.
-    def static armWindowsCrossArchitectureList = ['arm', 'armlb', 'arm64']
+    def static armWindowsCrossArchitectureList = ['arm', 'arm64']
 }
 
 // **************************************************************
@@ -556,7 +552,7 @@ def static setMachineAffinity(def job, def os, def architecture, def options = n
     assert os instanceof String
     assert architecture instanceof String
 
-    def armArches = ['arm', 'armlb', 'armem', 'arm64']
+    def armArches = ['arm', 'armem', 'arm64']
     def supportedArmLinuxOs = ['Ubuntu', 'Ubuntu16.04', 'Tizen']
 
     if (!(architecture in armArches)) {
@@ -573,9 +569,9 @@ def static setMachineAffinity(def job, def os, def architecture, def options = n
     // Windows_NT
     // 
     // Arm32 (Build) -> latest-arm64
-    //       |-> os == "Windows_NT" && (architecture == "arm" || architecture == "armlb") && options['use_arm64_build_machine'] == true
+    //       |-> os == "Windows_NT" && (architecture == "arm") && options['use_arm64_build_machine'] == true
     // Arm32 (Test)  -> arm64-windows_nt
-    //       |-> os == "Windows_NT" && (architecture == "arm" || architecture == "armlb") && options['use_arm64_build_machine'] == false
+    //       |-> os == "Windows_NT" && (architecture == "arm") && options['use_arm64_build_machine'] == false
     //
     // Arm64 (Build) -> latest-arm64
     //       |-> os == "Windows_NT" && architecture == "arm64" && options['use_arm64_build_machine'] == true
@@ -834,7 +830,7 @@ def static setJobTimeout(newJob, isPR, architecture, configuration, scenario, is
         else if (isGcReliabilityFramework(scenario)) {
             timeout = 1440
         }
-        else if (architecture == 'armlb' || architecture == 'armem' || architecture == 'arm64') {
+        else if (architecture == 'armem' || architecture == 'arm64') {
             timeout = 240
         }
 
@@ -1049,7 +1045,7 @@ def static getDockerImageName(def architecture, def os, def isBuild) {
 // We have a limited amount of some hardware. For these, scale back the periodic testing we do,
 // and only allowing using this hardware in some specific branches.
 def static jobRequiresLimitedHardware(def architecture, def os) {
-    if (((architecture == 'arm64') || (architecture == 'arm') || (architecture == 'armlb')) && (os == 'Windows_NT')) {
+    if (((architecture == 'arm64') || (architecture == 'arm')) && (os == 'Windows_NT')) {
         // These test jobs require ARM64 hardware
         return true
     }
@@ -1112,7 +1108,6 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
                 baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             }
             break
-        case 'armlb':
         case 'arm':
             baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             break
@@ -1193,7 +1188,6 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                     }
                     break
                 case 'armem':
-                case 'armlb':
                     addGithubPushTriggerHelper(job)
                     break
                 case 'x86_arm_altjit':
@@ -1816,7 +1810,6 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             break
         // editor brace matching: }
 
-        case 'armlb':
         case 'arm': // editor brace matching: {
 
             // Triggers on the non-flow jobs aren't necessary
@@ -1848,10 +1841,6 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
 
             switch (os) {
                 case 'Ubuntu':
-                    if (architecture == 'armlb') { // No arm legacy backend testing for Ubuntu
-                        break
-                    }
-
                     if (scenario == 'innerloop') {
                         if (configuration == 'Checked') {
                             Utilities.addGithubPRTriggerForBranch(job, branch, contextString)
@@ -1863,10 +1852,6 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     break
 
                 case 'Windows_NT':
-                    if (architecture == "armlb") {
-                        // Disable armlb windows jobs
-                        break
-                    }
                     switch (scenario) {
                         case 'innerloop':
                             // Only Checked is an innerloop trigger.
@@ -2283,19 +2268,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         }
                     }
                     break
-                case 'armlb':
                 case 'arm':
                     assert isArmWindowsScenario(scenario)
 
                     def buildArchitecture = 'arm'
-
                     def buildOpts = ''
-
-                    // For 'armlb' (the JIT LEGACY_BACKEND architecture for arm), tell build.cmd to use legacy backend for crossgen compilation.
-                    // Legacy backend is not the default JIT; it is an aljit. So, this is a special case.
-                    if (architecture == 'armlb') {
-                        buildOpts += ' -crossgenaltjit legacyjit.dll'
-                    }
 
                     if (doCoreFxTesting) {
                         // We shouldn't need to build the tests. However, run-corefx-tests.py currently depends on having the restored corefx
@@ -2613,9 +2590,6 @@ def static shouldGenerateJob(def scenario, def isPR, def architecture, def confi
                 return false
             }
             break
-        case 'armlb':
-            // Do not create armlb jobs
-            return false
         case 'x86_arm_altjit':
         case 'x64_arm64_altjit':
             if (os != 'Windows_NT') {
@@ -2713,7 +2687,7 @@ def static shouldGenerateJob(def scenario, def isPR, def architecture, def confi
                 break
 
             default:
-                // arm64, armlb: stress is handled through flow jobs.
+                // arm64: stress is handled through flow jobs.
                 // armem: no stress jobs for ARM emulator.
                 return false
         }
@@ -2935,7 +2909,7 @@ Constants.allScenarios.each { scenario ->
     } // isPR
 } // scenario
 
-// Create a Windows ARM/ARMLB/ARM64 test job that will be used by a flow job.
+// Create a Windows ARM/ARM64 test job that will be used by a flow job.
 // Returns the newly created job.
 def static CreateWindowsArmTestJob(def dslFactory, def project, def architecture, def os, def configuration, def scenario, def isPR, def inputCoreCLRBuildName)
 {
@@ -2998,14 +2972,6 @@ def static CreateWindowsArmTestJob(def dslFactory, def project, def architecture
                 addEnvVariable("COMPlus_NoGuiOnAssert", "1")
                 addEnvVariable("COMPlus_ContinueOnAssert", "0")
 
-                // ARM legacy backend; this is an altjit.
-                if (architecture == 'armlb') {
-                    addEnvVariable("COMPlus_AltJit", "*")
-                    addEnvVariable("COMPlus_AltJitNgen", "*")
-                    addEnvVariable("COMPlus_AltJitName", "legacyjit.dll")
-                    addEnvVariable("COMPlus_AltJitAssertOnNYI", "1")
-                }
-
                 // If we are running a stress mode, we'll set those variables as well
                 if (isJitStressScenario(scenario) || isR2RStressScenario(scenario)) {
                     def stressValues = null
@@ -3056,11 +3022,7 @@ def static CreateWindowsArmTestJob(def dslFactory, def project, def architecture
                 def smartyCommand = "C:\\Tools\\Smarty.exe /noecid /noie /workers 9 /inc EXPECTED_PASS "
                 def addSmartyFlag = { flag -> smartyCommand += flag + " "}
                 def addExclude = { exclude -> addSmartyFlag("/exc " + exclude)}
-                def addArchSpecificExclude = { architectureToExclude, exclude -> if (architectureToExclude == "armlb") { addExclude("LEGACYJIT_" + exclude) } else { addExclude(exclude) } }
-
-                if (architecture == 'armlb') {
-                    addExclude("LEGACYJIT_FAIL")
-                }
+                def addArchSpecificExclude = { architectureToExclude, exclude -> addExclude(exclude) }
 
                 // Exclude tests based on scenario.
                 Constants.validArmWindowsScenarios[scenario].each { excludeTag ->
@@ -3080,8 +3042,7 @@ def static CreateWindowsArmTestJob(def dslFactory, def project, def architecture
 
                 def testListArch = [
                     'arm64': 'arm64',
-                    'arm': 'arm',
-                    'armlb': 'arm'
+                    'arm': 'arm'
                 ]
 
                 def archLocation = testListArch[architecture]
@@ -3507,12 +3468,6 @@ def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def c
                 return false
             }
             break
-        case 'armlb':
-            if (os != 'Windows_NT') {
-                return false
-            }
-            // Do not create armlb windows jobs.
-            return false
         case 'arm':
             if (os != "Ubuntu" && os != "Windows_NT") {
                 return false
@@ -3598,8 +3553,8 @@ def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def c
             return false
         }
 
-        // On Windows, CoreFx tests currently not implemented for ARM64 or ARMLB.
-        if (isCoreFxScenario(scenario) && (os == 'Windows_NT') && ((architecture == 'arm64') || (architecture == 'armlb'))) {
+        // On Windows, CoreFx tests currently not implemented for ARM64.
+        if (isCoreFxScenario(scenario) && (os == 'Windows_NT') && (architecture == 'arm64')) {
             return false
         }
     }
@@ -3669,8 +3624,7 @@ def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def c
     return true
 }
 
-// Create jobs requiring flow jobs. This includes x64 non-Windows, arm/arm64 Ubuntu, and arm/arm64/armlb Windows.
-// Note: no armlb non-Windows; we expect to deprecate/remove armlb soon, so don't want to add new testing for it.
+// Create jobs requiring flow jobs. This includes x64 non-Windows, arm/arm64 Ubuntu, and arm/arm64 Windows.
 Constants.allScenarios.each { scenario ->
     [true, false].each { isPR ->
         Constants.architectureList.each { architecture ->
