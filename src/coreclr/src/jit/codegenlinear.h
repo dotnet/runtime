@@ -8,8 +8,6 @@
 // definition of the CodeGen class.
 //
 
-#ifndef LEGACY_BACKEND // Not necessary (it's this way in the #include location), but helpful to IntelliSense
-
 void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree);
 void genCodeForTreeNode(GenTree* treeNode);
 void genCodeForBinary(GenTree* treeNode);
@@ -370,5 +368,3 @@ inline void genCheckConsumeNode(GenTree* treeNode)
 {
 }
 #endif // DEBUG
-
-#endif // !LEGACY_BACKEND

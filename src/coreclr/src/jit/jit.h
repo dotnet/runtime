@@ -272,14 +272,14 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(UNIX_AMD64_ABI) || (!defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND))
+#if defined(UNIX_AMD64_ABI) || !defined(_TARGET_64BIT_)
 #define FEATURE_PUT_STRUCT_ARG_STK 1
 #define PUT_STRUCT_ARG_STK_ONLY_ARG(x) , x
 #define PUT_STRUCT_ARG_STK_ONLY(x) x
-#else // !(defined(UNIX_AMD64_ABI)|| (!defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)))
+#else // !(defined(UNIX_AMD64_ABI) || !defined(_TARGET_64BIT_))
 #define PUT_STRUCT_ARG_STK_ONLY_ARG(x)
 #define PUT_STRUCT_ARG_STK_ONLY(x)
-#endif // !(defined(UNIX_AMD64_ABI)|| (!defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)))
+#endif // !(defined(UNIX_AMD64_ABI)|| !defined(_TARGET_64BIT_))
 
 #if defined(UNIX_AMD64_ABI)
 #define UNIX_AMD64_ABI_ONLY_ARG(x) , x

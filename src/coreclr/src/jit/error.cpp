@@ -129,7 +129,7 @@ void noWayAssertBodyConditional(
     }
 }
 
-#if defined(ALT_JIT) && (!defined(_TARGET_X86_) || !defined(LEGACY_BACKEND))
+#if defined(ALT_JIT)
 
 /*****************************************************************************/
 void notYetImplemented(const char* msg, const char* filename, unsigned line)
@@ -193,7 +193,7 @@ void notYetImplemented(const char* msg, const char* filename, unsigned line)
     }
 }
 
-#endif // #if defined(ALT_JIT) && (!defined(_TARGET_X86_) || !defined(LEGACY_BACKEND))
+#endif // #if defined(ALT_JIT)
 
 /*****************************************************************************/
 LONG __JITfilter(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)

@@ -324,11 +324,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
 
 bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
 {
-#ifdef LEGACY_BACKEND
-    assert(binop->OperIs(GT_ADD, GT_ASG_ADD));
-#else
     assert(binop->OperIs(GT_ADD));
-#endif
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
@@ -411,15 +407,8 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
             case GT_ASG:
                 return IsMonotonicallyIncreasing(asg->gtGetOp2(), rejectNegativeConst);
 
-#ifdef LEGACY_BACKEND
-            case GT_ASG_ADD:
-                return IsBinOpMonotonicallyIncreasing(asg);
-#endif
-
             default:
-#ifndef LEGACY_BACKEND
                 noway_assert(false);
-#endif
                 // All other 'asg->OperGet()' kinds, return false
                 break;
         }
@@ -812,11 +801,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 // Compute the range for a binary operation.
 Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monotonic DEBUGARG(int indent))
 {
-#ifdef LEGACY_BACKEND
-    assert(binop->OperIs(GT_ADD, GT_ASG_ADD));
-#else
     assert(binop->OperIs(GT_ADD));
-#endif
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
@@ -907,18 +892,8 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
             return range;
         }
 
-#ifdef LEGACY_BACKEND
-        case GT_ASG_ADD:
-            // If the operator of the definition is +=, then compute the range of the operands of +.
-            // Note that gtGetOp1 will return op1 to be the lhs; in the formulation of ssa, we have
-            // a side table for defs and the lhs of a += is considered to be a use for SSA numbering.
-            return ComputeRangeForBinOp(asgBlock, asg, monotonic DEBUGARG(indent));
-#endif
-
         default:
-#ifndef LEGACY_BACKEND
             noway_assert(false);
-#endif
             // All other 'asg->OperGet()' kinds, return Limit::keUnknown
             break;
     }
@@ -1046,16 +1021,8 @@ bool RangeCheck::DoesVarDefOverflow(GenTreeLclVarCommon* lcl)
         case GT_ASG:
             return DoesOverflow(asgBlock, asg->gtGetOp2());
 
-#ifdef LEGACY_BACKEND
-        case GT_ASG_ADD:
-            // For GT_ASG_ADD, op2 is use, op1 is also use since we side table for defs in useasg case.
-            return DoesBinOpOverflow(asgBlock, asg);
-#endif
-
         default:
-#ifndef LEGACY_BACKEND
             noway_assert(false);
-#endif
             // All other 'asg->OperGet()' kinds, conservatively return true
             break;
     }

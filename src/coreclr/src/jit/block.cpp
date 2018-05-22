@@ -363,17 +363,10 @@ void BasicBlock::dspFlags()
     {
         printf("IBC ");
     }
-#ifdef LEGACY_BACKEND
-    if (bbFlags & BBF_FORWARD_SWITCH)
-    {
-        printf("fswitch ");
-    }
-#else  // !LEGACY_BACKEND
     if (bbFlags & BBF_IS_LIR)
     {
         printf("LIR ");
     }
-#endif // LEGACY_BACKEND
     if (bbFlags & BBF_KEEP_BBJ_ALWAYS)
     {
         printf("KEEP ");
@@ -636,9 +629,6 @@ bool BasicBlock::CloneBlockState(
     to->bbCodeOffs    = from->bbCodeOffs;
     to->bbCodeOffsEnd = from->bbCodeOffsEnd;
     VarSetOps::AssignAllowUninitRhs(compiler, to->bbScope, from->bbScope);
-#if FEATURE_STACK_FP_X87
-    to->bbFPStateX87 = from->bbFPStateX87;
-#endif // FEATURE_STACK_FP_X87
     to->bbNatLoopNum = from->bbNatLoopNum;
 #ifdef DEBUG
     to->bbLoopNum     = from->bbLoopNum;
@@ -663,9 +653,6 @@ bool BasicBlock::CloneBlockState(
 // LIR helpers
 void BasicBlock::MakeLIR(GenTree* firstNode, GenTree* lastNode)
 {
-#ifdef LEGACY_BACKEND
-    unreached();
-#else  // !LEGACY_BACKEND
     assert(!IsLIR());
     assert((firstNode == nullptr) == (lastNode == nullptr));
     assert((firstNode == lastNode) || firstNode->Precedes(lastNode));
@@ -673,18 +660,13 @@ void BasicBlock::MakeLIR(GenTree* firstNode, GenTree* lastNode)
     m_firstNode = firstNode;
     m_lastNode  = lastNode;
     bbFlags |= BBF_IS_LIR;
-#endif // LEGACY_BACKEND
 }
 
 bool BasicBlock::IsLIR()
 {
-#ifdef LEGACY_BACKEND
-    return false;
-#else  // !LEGACY_BACKEND
     const bool isLIR = (bbFlags & BBF_IS_LIR) != 0;
     assert((bbTreeList == nullptr) || ((isLIR) == !bbTreeList->IsStatement()));
     return isLIR;
-#endif // LEGACY_BACKEND
 }
 
 //------------------------------------------------------------------------
@@ -1311,12 +1293,10 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
         block->bbNum = ++fgBBNumMax;
     }
 
-#ifndef LEGACY_BACKEND
     if (compRationalIRForm)
     {
         block->bbFlags |= BBF_IS_LIR;
     }
-#endif // !LEGACY_BACKEND
 
     block->bbRefs   = 1;
     block->bbWeight = BB_UNITY_WEIGHT;

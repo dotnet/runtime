@@ -30,8 +30,6 @@
 #pragma hdrstop
 #endif
 
-#ifndef LEGACY_BACKEND // This file is ONLY used for the RyuJIT backend that uses the linear scan register allocator.
-
 #ifdef FEATURE_SIMD
 
 // Intrinsic Id to intrinsic info map
@@ -3116,5 +3114,3 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 }
 
 #endif // FEATURE_SIMD
-
-#endif // !LEGACY_BACKEND

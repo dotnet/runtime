@@ -26,7 +26,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 #pragma hdrstop
 #endif
 
-#ifndef LEGACY_BACKEND // This file is ONLY used for the RyuJIT backend that uses the linear scan register allocator
 #ifndef _TARGET_64BIT_ // DecomposeLongs is only used on 32-bit platforms
 
 #include "decomposelongs.h"
@@ -2000,4 +1999,3 @@ genTreeOps DecomposeLongs::GetLoOper(genTreeOps oper)
 }
 
 #endif // !_TARGET_64BIT_
-#endif // !LEGACY_BACKEND

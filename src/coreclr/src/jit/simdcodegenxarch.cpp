@@ -15,17 +15,15 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifndef LEGACY_BACKEND // This file is ONLY used for the RyuJIT backend that uses the linear scan register allocator.
-
 #ifdef _TARGET_XARCH_
+#ifdef FEATURE_SIMD
+
 #include "emit.h"
 #include "codegen.h"
 #include "sideeffects.h"
 #include "lower.h"
 #include "gcinfo.h"
 #include "gcinfoencoder.h"
-
-#ifdef FEATURE_SIMD
 
 // Instruction immediates
 
@@ -3209,4 +3207,3 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 
 #endif // FEATURE_SIMD
 #endif //_TARGET_XARCH_
-#endif // !LEGACY_BACKEND

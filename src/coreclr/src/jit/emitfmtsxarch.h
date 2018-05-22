@@ -200,55 +200,6 @@ IF_DEF(AWR_RRD_CNS, IS_AM_WR|IS_R1_RD,          AMD_CNS)  // write [adr], read r
 
 IF_DEF(ARW_SHF,     IS_AM_RW,                   AMD_CNS)  // shift [adr], const
 
-
-
-//----------------------------------------------------------------------------
-// The following formats are used for FP coprocessor instructions
-//----------------------------------------------------------------------------
-#if FEATURE_STACK_FP_X87
-
-IF_DEF(FRD,         IS_FP_STK,                  NONE)     // read  ST(n)
-IF_DEF(FWR,         IS_FP_STK,                  NONE)     // write ST(n)
-IF_DEF(FRW,         IS_FP_STK,                  NONE)     // r/w   ST(n)
-
-IF_DEF(TRD,         IS_FP_STK,                  NONE)     // read  ST(0)
-IF_DEF(TWR,         IS_FP_STK,                  NONE)     // write ST(0)
-IF_DEF(TRW,         IS_FP_STK,                  NONE)     // r/w   ST(0)
-
-IF_DEF(FRD_TRD,     IS_FP_STK,                  NONE)     // read  ST(n), read ST(0)
-IF_DEF(FWR_TRD,     IS_FP_STK,                  NONE)     // write ST(n), read ST(0)
-IF_DEF(FRW_TRD,     IS_FP_STK,                  NONE)     // r/w   ST(n), read ST(0)
-
-IF_DEF(TRD_FRD,     IS_FP_STK,                  NONE)     // read  ST(0), read ST(n)
-IF_DEF(TWR_FRD,     IS_FP_STK,                  NONE)     // write ST(0), read ST(n)
-IF_DEF(TRW_FRD,     IS_FP_STK,                  NONE)     // r/w   ST(0), read ST(n)
-
-IF_DEF(TRD_SRD,     IS_FP_STK|IS_SF_RD,         NONE)     // read  ST(0), read [stk]
-IF_DEF(TWR_SRD,     IS_FP_STK|IS_SF_RD,         NONE)     // write ST(0), read [stk]
-IF_DEF(TRW_SRD,     IS_FP_STK|IS_SF_RD,         NONE)     // r/w   ST(0), read [stk]
-
-//////(SRD_TRD,     IS_FP_STK|IS_SF_RD,         NONE)     // read  [stk], read ST(n)
-IF_DEF(SWR_TRD,     IS_FP_STK|IS_SF_WR,         NONE)     // write [stk], read ST(n)
-//////(SRW_TRD,     IS_FP_STK|IS_SF_RW,         NONE)     // r/w   [stk], read ST(n)
-
-IF_DEF(TRD_MRD,     IS_FP_STK|IS_GM_RD,         NONE)     // read  ST(0), read [mem]
-IF_DEF(TWR_MRD,     IS_FP_STK|IS_GM_RD,         NONE)     // write ST(0), read [mem]
-IF_DEF(TRW_MRD,     IS_FP_STK|IS_GM_RD,         NONE)     // r/w   ST(0), read [mem]
-
-//////(MRD_TRD,     IS_FP_STK|IS_GM_RD,         NONE)     // read  [mem], read ST(n)
-IF_DEF(MWR_TRD,     IS_FP_STK|IS_GM_WR,         NONE)     // write [mem], read ST(n)
-//////(MRW_TRD,     IS_FP_STK|IS_GM_RW,         NONE)     // r/w   [mem], read ST(n)
-
-IF_DEF(TRD_ARD,     IS_FP_STK|IS_AM_RD,         AMD )     // read  ST(0), read [adr]
-IF_DEF(TWR_ARD,     IS_FP_STK|IS_AM_RD,         AMD )     // write ST(0), read [adr]
-IF_DEF(TRW_ARD,     IS_FP_STK|IS_AM_RD,         AMD )     // r/w   ST(0), read [adr]
-
-//////(ARD_TRD,     IS_FP_STK|IS_AM_RD,         AMD )     // read  [adr], read ST(n)
-IF_DEF(AWR_TRD,     IS_FP_STK|IS_AM_WR,         AMD )     // write [adr], read ST(n)
-//////(ARW_TRD,     IS_FP_STK|IS_AM_RW,         AMD )     // r/w   [adr], read ST(n)
-
-#endif // FEATURE_STACK_FP_X87
-
 //////////////////////////////////////////////////////////////////////////////
 
 #undef IF_DEF

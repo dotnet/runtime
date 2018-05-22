@@ -7,7 +7,6 @@
 #pragma hdrstop
 #endif
 
-#ifndef LEGACY_BACKEND
 // return op that is the store equivalent of the given load opcode
 genTreeOps storeForm(genTreeOps loadForm)
 {
@@ -1068,4 +1067,3 @@ void Rationalizer::DoPhase()
 
     comp->compRationalIRForm = true;
 }
-#endif // LEGACY_BACKEND
