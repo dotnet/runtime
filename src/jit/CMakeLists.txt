@@ -71,12 +71,12 @@ set( JIT_SOURCES
   smweights.cpp
   ssabuilder.cpp
   ssarenamestate.cpp
+  stacklevelsetter.cpp
+  treelifeupdater.cpp
   typeinfo.cpp
   unwind.cpp
   utils.cpp
   valuenum.cpp
-  stacklevelsetter.cpp
-  treelifeupdater.cpp
 )
 
 # Add header files to Visual Studio vcxproj, not required for unixes
@@ -181,9 +181,11 @@ if (WIN32)
     ssabuilder.h
     ssaconfig.h
     ssarenamestate.h
+    stacklevelsetter.h
     target.h
     tinyarray.h
     titypes.h
+    treelifeupdater.h
     typelist.h
     unwind.h
     utils.h
@@ -192,7 +194,6 @@ if (WIN32)
     varset.h
     vartype.h
     x86_instrs.h
-    treelifeupdater.h
   )
 endif(WIN32)
 
