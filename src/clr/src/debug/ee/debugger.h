@@ -3791,12 +3791,14 @@ HANDLE OpenWin32EventOrThrow(
 
 #define SENDIPCEVENT_RAW_BEGIN_EX(pDbgLockHolder, gcxStmt)      \
   {                                                             \
+    ThreadStore::EnterThreadStoreLockOnly();                             \
     Debugger::DebuggerLockHolder *__pDbgLockHolder = pDbgLockHolder; \
     gcxStmt;                                                    \
     g_pDebugger->LockForEventSending(__pDbgLockHolder);
 
 #define SENDIPCEVENT_RAW_END_EX                                 \
     g_pDebugger->UnlockFromEventSending(__pDbgLockHolder);      \
+    ThreadStore::LeaveThreadStoreLockOnly();                             \
   }
 
 #define SENDIPCEVENT_RAW_BEGIN(pDbgLockHolder)                  \
@@ -3821,6 +3823,7 @@ HANDLE OpenWin32EventOrThrow(
         Debugger::DebuggerLockHolder __dbgLockHolder(pDebugger, FALSE);                   \
         Debugger::DebuggerLockHolder *__pDbgLockHolder = &__dbgLockHolder;                \
         gcxStmt;                                                                          \
+        ThreadStore::EnterThreadStoreLockOnly();                                          \
         g_pDebugger->LockForEventSending(__pDbgLockHolder);                               \
         /* Check if the thread has been suspended by the debugger via SetDebugState(). */ \
         if (thread != NULL && thread->HasThreadStateNC(Thread::TSNC_DebuggerUserSuspend)) \
@@ -3835,6 +3838,7 @@ HANDLE OpenWin32EventOrThrow(
             ;                                                   \
         }                                                       \
         g_pDebugger->UnlockFromEventSending(__pDbgLockHolder);  \
+        ThreadStore::LeaveThreadStoreLockOnly();                \
       } /* ~gcxStmt & ~DebuggerLockHolder */                    \
     } while (__fRetry);                                         \
     FireEtwDebugIPCEventEnd();                                  \
