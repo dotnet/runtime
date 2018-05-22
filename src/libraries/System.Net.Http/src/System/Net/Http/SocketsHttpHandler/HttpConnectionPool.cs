@@ -600,27 +600,53 @@ namespace System.Net.Http
                 // Mark the pool as still being active.
                 _usedSinceLastCleanup = true;
 
-                // If there's someone waiting for a connection, simply
-                // transfer this one to them rather than pooling it.
-                if (_waitersTail != null && !connection.EnsureReadAheadAndPollRead())
+                // If this connection has expired, it's not reusable, so dispose of it rather than storing it.
+                // Disposing it will alert any waiters that a connection slot has become available.
+                TimeSpan lifetime = _poolManager.Settings._pooledConnectionLifetime;
+                if (lifetime != Timeout.InfiniteTimeSpan &&
+                    (lifetime == TimeSpan.Zero || connection.CreationTime + lifetime <= DateTime.UtcNow))
                 {
-                    ConnectionWaiter waiter = DequeueWaiter();
-                    waiter._cancellationTokenRegistration.Dispose();
-
-                    if (NetEventSource.IsEnabled) connection.Trace("Transferring connection returned to pool.");
-                    waiter.SetResult((connection, null));
-
+                    if (NetEventSource.IsEnabled) connection.Trace("Disposing connection returned to the pool. Connection lifetime expired.");
+                    connection.Dispose();
                     return;
+                }
+
+                // If there's someone waiting for a connection and this one's still valid, simply transfer this one to them rather than pooling it.
+                // Note that while we checked connection lifetime above, we don't check idle timeout, as even if idle timeout
+                // is zero, we consider a connection that's just handed from one use to another to never actually be idle.
+                bool receivedUnexpectedData = false;
+                if (_waitersTail != null)
+                {
+                    receivedUnexpectedData = connection.EnsureReadAheadAndPollRead();
+                    if (!receivedUnexpectedData)
+                    {
+                        ConnectionWaiter waiter = DequeueWaiter();
+                        waiter._cancellationTokenRegistration.Dispose();
+
+                        if (NetEventSource.IsEnabled) connection.Trace("Transferring connection returned to pool.");
+                        waiter.SetResult((connection, null));
+
+                        return;
+                    }
                 }
 
                 // If the pool has been disposed of, dispose the connection being returned,
                 // as the pool is being deactivated. We do this after the above in order to
                 // use pooled connections to satisfy any requests that pended before the
                 // the pool was disposed of.  We also dispose of connections if connection
-                // timeouts are such that the connection would immediately expire, anyway.
-                if (_disposed || _poolManager.AvoidStoringConnections)
+                // timeouts are such that the connection would immediately expire, anyway, as
+                // well as for connections that have unexpectedly received extraneous data / EOF.
+                if (receivedUnexpectedData ||
+                    _disposed ||
+                    _poolManager.Settings._pooledConnectionIdleTimeout == TimeSpan.Zero)
                 {
-                    if (NetEventSource.IsEnabled) connection.Trace("Disposing connection returned to disposed pool.");
+                    if (NetEventSource.IsEnabled)
+                    {
+                        connection.Trace(
+                            receivedUnexpectedData ? "Disposing connection returned to pool. Read-ahead unexpectedly completed." :
+                            _disposed ? "Disposing connection returned to pool. Pool was disposed." :
+                            "Disposing connection returned to pool. Zero idle timeout.");
+                    }
                     connection.Dispose();
                     return;
                 }

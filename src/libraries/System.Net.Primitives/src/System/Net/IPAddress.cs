@@ -670,7 +670,6 @@ namespace System.Net
             return new IPAddress(address);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static byte[] ThrowAddressNullException() => throw new ArgumentNullException("address");
     }
 }

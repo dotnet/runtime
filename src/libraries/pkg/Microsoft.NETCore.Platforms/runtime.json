@@ -1817,6 +1817,19 @@
         "linux-corert"
       ]
     },
+    "tizen-x86": {
+      "#import": [
+        "tizen",
+        "linux-x86"
+      ]
+    },
+    "tizen-x86-corert": {
+      "#import": [
+        "tizen-corert",
+        "tizen-x86",
+        "linux-x86-corert"
+      ]
+    },
     "tizen.4.0.0": {
       "#import": [
         "tizen"
@@ -1840,6 +1853,59 @@
       "#import": [
         "tizen.4.0.0",
         "tizen-corert"
+      ]
+    },
+    "tizen.4.0.0-x86": {
+      "#import": [
+        "tizen.4.0.0",
+        "tizen-x86"
+      ]
+    },
+    "tizen.4.0.0-x86-corert": {
+      "#import": [
+        "tizen.4.0.0-corert",
+        "tizen.4.0.0-x86",
+        "tizen.4.0.0",
+        "tizen-x86-corert"
+      ]
+    },
+    "tizen.5.0.0": {
+      "#import": [
+        "tizen.4.0.0"
+      ]
+    },
+    "tizen.5.0.0-armel": {
+      "#import": [
+        "tizen.5.0.0",
+        "tizen.4.0.0-armel"
+      ]
+    },
+    "tizen.5.0.0-armel-corert": {
+      "#import": [
+        "tizen.5.0.0-corert",
+        "tizen.5.0.0-armel",
+        "tizen.5.0.0",
+        "tizen.4.0.0-armel-corert"
+      ]
+    },
+    "tizen.5.0.0-corert": {
+      "#import": [
+        "tizen.5.0.0",
+        "tizen.4.0.0-corert"
+      ]
+    },
+    "tizen.5.0.0-x86": {
+      "#import": [
+        "tizen.5.0.0",
+        "tizen.4.0.0-x86"
+      ]
+    },
+    "tizen.5.0.0-x86-corert": {
+      "#import": [
+        "tizen.5.0.0-corert",
+        "tizen.5.0.0-x86",
+        "tizen.5.0.0",
+        "tizen.4.0.0-x86-corert"
       ]
     },
     "ubuntu": {

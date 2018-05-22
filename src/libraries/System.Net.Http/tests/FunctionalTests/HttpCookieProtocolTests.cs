@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
     public abstract class HttpCookieProtocolTests : HttpClientTestBase
     {
         private const string s_cookieName = "ABC";
@@ -200,8 +201,8 @@ namespace System.Net.Http.Functional.Tests
 
             if (IsCurlHandler)
             {
-                // Issue #26983
                 // CurlHandler ignores container cookies when custom Cookie header is set.
+                // SocketsHttpHandler behaves the expected way. Not worth fixing in CurlHandler as it is going away.
                 return;
             }
 
@@ -242,8 +243,8 @@ namespace System.Net.Http.Functional.Tests
 
             if (IsCurlHandler)
             {
-                // Issue #26983
                 // CurlHandler ignores container cookies when custom Cookie header is set.
+                // SocketsHttpHandler behaves the expected way. Not worth fixing in CurlHandler as it is going away.
                 return;
             }
 

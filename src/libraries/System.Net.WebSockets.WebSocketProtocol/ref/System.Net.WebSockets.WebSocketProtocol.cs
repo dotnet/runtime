@@ -7,8 +7,8 @@
 
 namespace System.Net.WebSockets
 {
-    public static class WebSocketProtocol
+    public static partial class WebSocketProtocol
     {
-        public static WebSocket CreateFromStream(System.IO.Stream stream, bool isServer, string subProtocol, System.TimeSpan keepAliveInterval) { throw null; }
+        public static System.Net.WebSockets.WebSocket CreateFromStream(System.IO.Stream stream, bool isServer, string subProtocol, System.TimeSpan keepAliveInterval) { throw null; }
     }
 }

@@ -20,7 +20,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\StringBuilderCache.cs">
       <Link>System\StringBuilderCache.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Marvin.cs">

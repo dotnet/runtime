@@ -468,11 +468,19 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [ActiveIssue(29482)]
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
         {
+            if (IsCurlHandler)
+            {
+                // The only way to throw a synchronous exception for CurlHandler through
+                // DiagnosticHandler is when the Request uri scheme is Https, and the
+                // backend doesn't support SSL.
+                return;
+            }
+
             RemoteInvoke(useSocketsHttpHandlerString =>
             {
                 bool exceptionLogged = false;
@@ -503,21 +511,38 @@ namespace System.Net.Http.Functional.Tests
                     using (HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString))
                     using (HttpClient client = new HttpClient(handler))
                     {
+                        // Set a https proxy.
+                        handler.Proxy = new WebProxy($"https://{Guid.NewGuid()}.com", false);
+                        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"http://{Guid.NewGuid()}.com");
+
                         if (bool.Parse(useSocketsHttpHandlerString))
                         {
-                            // Forces a synchronous exception for SocketsHttpHandler
-                            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"http://{Guid.NewGuid()}.com");
-                            request.Version = new Version(0, 0);
+                            // Forces a synchronous exception for SocketsHttpHandler.
+                            // SocketsHttpHandler only allow http scheme for proxies.
 
-                            Assert.ThrowsAsync<NotSupportedException>(() => client.SendAsync(request)).Wait();
+                            // We cannot use Assert.Throws<Exception>(() => { SendAsync(...); }) to verify the
+                            // synchronous exception here, because DiagnosticsHandler SendAsync() method has async
+                            // modifier, and returns Task. If the call is not awaited, the current test method will continue
+                            // run before the call is completed, thus Assert.Throws() will not capture the exception.
+                            // We need to wait for the Task to complete synchronously, to validate the exception.
+                            Task sendTask = client.SendAsync(request);
+                            Assert.True(sendTask.IsFaulted);
+                            Assert.IsType<NotSupportedException>(sendTask.Exception.InnerException);
                         }
                         else
                         {
-                            // Forces a synchronous exception for WinHttpHandler
-                            handler.UseCookies = true;
-                            handler.CookieContainer = null;
+                            // Forces a synchronous exception for WinHttpHandler.
+                            // WinHttpHandler will not allow (proxy != null && !UseCustomProxy).
+                            handler.UseProxy = false;
 
-                            Assert.ThrowsAsync<InvalidOperationException>(() => client.GetAsync($"http://{Guid.NewGuid()}.com")).Wait();
+                            // We cannot use Assert.Throws<Exception>(() => { SendAsync(...); }) to verify the
+                            // synchronous exception here, because DiagnosticsHandler SendAsync() method has async
+                            // modifier, and returns Task. If the call is not awaited, the current test method will continue
+                            // run before the call is completed, thus Assert.Throws() will not capture the exception.
+                            // We need to wait for the Task to complete synchronously, to validate the exception.
+                            Task sendTask = client.SendAsync(request);
+                            Assert.True(sendTask.IsFaulted);
+                            Assert.IsType<InvalidOperationException>(sendTask.Exception.InnerException);
                         }
                     }
                     // Poll with a timeout since logging response is not synchronized with returning a response.
@@ -690,6 +715,36 @@ namespace System.Net.Http.Functional.Tests
 
                 return SuccessExitCode;
             }, UseSocketsHttpHandler.ToString()).Dispose();
+        }
+
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [Fact]
+        public void SendAsync_NullRequest_ThrowsArgumentNullException()
+        {
+            RemoteInvoke(() =>
+            {
+                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(null);
+                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
+                {
+                    diagnosticListenerObserver.Enable();
+
+                    using (MyHandler handler = new MyHandler())
+                    {
+                        Assert.ThrowsAsync<ArgumentNullException>(() => handler.SendAsync(null)).Wait();
+                    }
+                }
+
+                diagnosticListenerObserver.Disable();
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        private class MyHandler : HttpClientHandler
+        {
+            internal Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
+            {
+                return SendAsync(request, CancellationToken.None);
+            }
         }
 
         private static T GetPropertyValueFromAnonymousTypeInstance<T>(object obj, string propertyName)

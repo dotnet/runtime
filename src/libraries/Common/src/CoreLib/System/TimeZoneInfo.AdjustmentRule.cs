@@ -39,8 +39,8 @@ namespace System
 
             internal bool HasDaylightSaving =>
                 DaylightDelta != TimeSpan.Zero ||
-                (DaylightTransitionStart != default(TransitionTime) && DaylightTransitionStart.TimeOfDay != DateTime.MinValue) ||
-                (DaylightTransitionEnd != default(TransitionTime) && DaylightTransitionEnd.TimeOfDay != DateTime.MinValue.AddMilliseconds(1));
+                (DaylightTransitionStart != default && DaylightTransitionStart.TimeOfDay != DateTime.MinValue) ||
+                (DaylightTransitionEnd != default && DaylightTransitionEnd.TimeOfDay != DateTime.MinValue.AddMilliseconds(1));
 
             public bool Equals(AdjustmentRule other) =>
                 other != null &&

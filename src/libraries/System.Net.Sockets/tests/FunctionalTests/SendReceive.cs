@@ -837,6 +837,90 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(e.SocketErrorCode, SocketError.InvalidArgument);
             }
         }
+
+        [Fact]
+        public async Task SendAsync_ConcurrentDispose_SucceedsOrThrowsAppropriateException()
+        {
+            if (UsesSync) return;
+
+            for (int i = 0; i < 20; i++) // run multiple times to attempt to force various interleavings
+            {
+                (Socket client, Socket server) = CreateConnectedSocketPair();
+                using (client)
+                using (server)
+                using (var b = new Barrier(2))
+                {
+                    Task dispose = Task.Factory.StartNew(() =>
+                    {
+                        b.SignalAndWait();
+                        client.Dispose();
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+                    Task send = Task.Factory.StartNew(() =>
+                    {
+                        b.SignalAndWait();
+                        SendAsync(client, new ArraySegment<byte>(new byte[1])).GetAwaiter().GetResult();
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+                    await dispose;
+                    Exception error = await Record.ExceptionAsync(() => send);
+                    if (error != null)
+                    {
+                        Assert.True(error is ObjectDisposedException || error is SocketException, error.ToString());
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ReceiveAsync_ConcurrentDispose_SucceedsOrThrowsAppropriateException()
+        {
+            if (UsesSync) return;
+
+            for (int i = 0; i < 20; i++) // run multiple times to attempt to force various interleavings
+            {
+                (Socket client, Socket server) = CreateConnectedSocketPair();
+                using (client)
+                using (server)
+                using (var b = new Barrier(2))
+                {
+                    Task dispose = Task.Factory.StartNew(() =>
+                    {
+                        b.SignalAndWait();
+                        client.Dispose();
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+                    Task send = Task.Factory.StartNew(() =>
+                    {
+                        SendAsync(server, new ArraySegment<byte>(new byte[1])).GetAwaiter().GetResult();
+                        b.SignalAndWait();
+                        ReceiveAsync(client, new ArraySegment<byte>(new byte[1])).GetAwaiter().GetResult();
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+                    await dispose;
+                    Exception error = await Record.ExceptionAsync(() => send);
+                    if (error != null)
+                    {
+                        Assert.True(error is ObjectDisposedException || error is SocketException, error.ToString());
+                    }
+                }
+            }
+        }
+
+        protected static (Socket, Socket) CreateConnectedSocketPair()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                client.Connect(listener.LocalEndPoint);
+                Socket server = listener.Accept();
+
+                return (client, server);
+            }
+        }
     }
 
     public class SendReceive
@@ -1247,21 +1331,6 @@ namespace System.Net.Sockets.Tests
                     }
                 }
             }).Dispose();
-        }
-
-        private static (Socket, Socket) CreateConnectedSocketPair()
-        {
-            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                listener.Listen(1);
-
-                Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                client.Connect(listener.LocalEndPoint);
-                Socket server = listener.Accept();
-
-                return (client, server);
-            }
         }
     }
 

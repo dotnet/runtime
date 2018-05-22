@@ -40,7 +40,7 @@ namespace System.Drawing
             }
             SafeNativeMethods.Gdip.CheckStatus(status);
 
-            ValidateBitmap(bitmap);
+            ValidateImage(bitmap);
 
             SetNativeImage(bitmap);
             EnsureSave(this, filename, null);

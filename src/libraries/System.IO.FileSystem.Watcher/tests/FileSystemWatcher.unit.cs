@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -97,11 +94,12 @@ namespace System.IO.Tests
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             {
                 // Null filter
-                AssertExtensions.Throws<ArgumentNullException>("filter", () => new FileSystemWatcher(testDirectory.Path, null));
+                Assert.Throws<ArgumentNullException>("filter", () => new FileSystemWatcher(testDirectory.Path, null));
 
                 // Null path
-                AssertExtensions.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null));
-                AssertExtensions.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, "*"));
+                Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, null));
+                Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null));
+                Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, "*"));
             }
         }
 
@@ -237,13 +235,10 @@ namespace System.IO.Tests
             watcher.Filter = "abc.dll";
             Assert.Equal("abc.dll", watcher.Filter);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || // expect no change for OrdinalIgnoreCase-equal strings
-                RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (!(PlatformDetection.IsFullFramework || PlatformDetection.IsOSX))
             {
-                // expect no change for OrdinalIgnoreCase-equal strings
-                // it's unclear why desktop does this but preserve it for compat
                 watcher.Filter = "ABC.DLL";
-                Assert.Equal("abc.dll", watcher.Filter);
+                Assert.Equal("ABC.DLL", watcher.Filter);
             }
 
             // We can make this setting by first changing to another value then back.
@@ -469,7 +464,7 @@ namespace System.IO.Tests
             using (var file = new TempFile(Path.Combine(dir.Path, "file")))
             using (var fsw = new FileSystemWatcher(dir.Path))
             {
-                AutoResetEvent eventOccurred = WatchRenamed(fsw);
+                AutoResetEvent eventOccurred = WatchRenamed(fsw).EventOccured;
 
                 string newPath = Path.Combine(dir.Path, "newPath");
 
@@ -620,7 +615,7 @@ namespace System.IO.Tests
             using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
             using (var fsw = new FileSystemWatcher(dir.Path))
             {
-                AutoResetEvent are = WatchCreated(fsw);
+                AutoResetEvent are = WatchCreated(fsw).EventOccured;
 
                 fsw.Filter = "*";
                 fsw.EnableRaisingEvents = true;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using System.Drawing.Internal;
 using System.Runtime.InteropServices;
@@ -13,6 +14,43 @@ namespace System.Drawing
     /// </summary>
     public sealed partial class Graphics : MarshalByRefObject, IDisposable, IDeviceContext
     {
+        /// <summary>
+        /// Handle to native DC - obtained from the GDI+ graphics object. We need to cache it to implement
+        /// IDeviceContext interface.
+        /// </summary>
+        private IntPtr _nativeHdc;
+
+        public IntPtr GetHdc()
+        {
+            IntPtr hdc = IntPtr.Zero;
+            int status = SafeNativeMethods.Gdip.GdipGetDC(new HandleRef(this, NativeGraphics), out hdc);
+            SafeNativeMethods.Gdip.CheckStatus(status);
+
+            _nativeHdc = hdc; // need to cache the hdc to be able to release with a call to IDeviceContext.ReleaseHdc().
+            return _nativeHdc;
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        public void ReleaseHdc(IntPtr hdc) => ReleaseHdcInternal(hdc);
+
+        public void ReleaseHdc() => ReleaseHdcInternal(_nativeHdc);
+
+        /// <summary>
+        /// Forces immediate execution of all operations currently on the stack.
+        /// </summary>
+        public void Flush() => Flush(FlushIntention.Flush);
+
+        /// <summary>
+        /// Forces execution of all operations currently on the stack.
+        /// </summary>
+        public void Flush(FlushIntention intention)
+        {
+            int status = SafeNativeMethods.Gdip.GdipFlush(new HandleRef(this, NativeGraphics), intention);
+            SafeNativeMethods.Gdip.CheckStatus(status);
+
+            FlushCore();
+        }
+
         public void SetClip(Graphics g) => SetClip(g, CombineMode.Replace);
 
         public void SetClip(Graphics g, CombineMode combineMode)

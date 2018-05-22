@@ -80,7 +80,8 @@ namespace System
                     // Reduce space for search, cause we don't care if we find the search value after the index of a previously found value
                     searchSpaceLength = tempIndex;
 
-                    if (index == 0) break;
+                    if (index == 0)
+                        break;
                 }
             }
             return index;
@@ -98,7 +99,8 @@ namespace System
             for (int i = 0; i < valueLength; i++)
             {
                 var tempIndex = LastIndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
-                if (tempIndex > index) index = tempIndex;
+                if (tempIndex > index)
+                    index = tempIndex;
             }
             return index;
         }
@@ -1007,7 +1009,8 @@ namespace System
             while ((byte*)minLength > (byte*)i)
             {
                 int result = Unsafe.AddByteOffset(ref first, i).CompareTo(Unsafe.AddByteOffset(ref second, i));
-                if (result != 0) return result;
+                if (result != 0)
+                    return result;
                 i += 1;
             }
 

@@ -64,7 +64,15 @@ namespace System.Net.Sockets
                     }
                     catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
                     {
+                        bool closed = IsClosed;
                         CloseAsIs();
+                        if (closed)
+                        {
+                            // If the handle was closed just before the call to BindHandle,
+                            // we could end up getting an ArgumentException, which we should
+                            // instead propagate as an ObjectDisposedException.
+                            throw new ObjectDisposedException(typeof(Socket).FullName, exception);
+                        }
                         throw;
                     }
 

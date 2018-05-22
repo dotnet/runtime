@@ -806,7 +806,7 @@ namespace System
             styles = ValidateStyles(styles, nameof(styles));
             if (input == null)
             {
-                result = default(DateTimeOffset);
+                result = default;
                 return false;
             }
 
@@ -835,7 +835,7 @@ namespace System
             styles = ValidateStyles(styles, nameof(styles));
             if (input == null || format == null)
             {
-                result = default(DateTimeOffset);
+                result = default;
                 return false;
             }
 
@@ -866,7 +866,7 @@ namespace System
             styles = ValidateStyles(styles, nameof(styles));
             if (input == null)
             {
-                result = default(DateTimeOffset);
+                result = default;
                 return false;
             }
 

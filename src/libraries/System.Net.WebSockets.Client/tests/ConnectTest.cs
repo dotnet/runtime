@@ -29,8 +29,8 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(WebSocketError.Success, ex.WebSocketErrorCode);
                 Assert.Equal(WebSocketState.Closed, cws.State);
 
-                // The .NET Native toolchain optimizes away exception messages.
-                if (!PlatformDetection.IsNetNative)
+                // .NET Framework and UAP implmentations have different exception message from .NET Core.
+                if (!PlatformDetection.IsFullFramework && !PlatformDetection.IsUap)
                 {
                     Assert.Equal(exceptionMessage, ex.Message);
                 }

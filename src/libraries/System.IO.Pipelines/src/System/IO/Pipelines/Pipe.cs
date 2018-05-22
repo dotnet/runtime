@@ -151,7 +151,11 @@ namespace System.IO.Pipelines
                 }
             }
 
-            return _writingHead.AvailableMemory.Slice(_writingHead.End, _writingHead.WritableBytes);
+            // Slice the AvailableMemory to the WritableBytes size
+            int end = _writingHead.End;
+            Memory<byte> availableMemory = _writingHead.AvailableMemory;
+            availableMemory = availableMemory.Slice(end, availableMemory.Length - end);
+            return availableMemory;
         }
 
         private BufferSegment AllocateWriteHeadUnsynchronized(int sizeHint)
