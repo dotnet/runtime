@@ -558,8 +558,8 @@ namespace System.Text
         }
 
         /// <summary>
-        /// EnumerateChunks returns ChunkEnumerable that follows the IEnumerable pattern and
-        /// thus can be used in a C# 'foreach' statemens to retreive the data in the StringBuilder
+        /// EnumerateChunks returns ChunkEnumerator that follows the IEnumerable pattern and
+        /// thus can be used in a C# 'foreach' statements to retreive the data in the StringBuilder
         /// as chunks (ReadOnlyMemory) of characters.  An example use is:
         /// 
         ///      foreach (ReadOnlyMemory<char> chunk in sb.EnumerateChunks())
@@ -577,37 +577,24 @@ namespace System.Text
         ///             { /* operation on span[i] */ }
         ///    }
         /// </summary>
-        public ChunkEnumerable EnumerateChunks() => new ChunkEnumerable(this);
+        public ChunkEnumerator EnumerateChunks() => new ChunkEnumerator(this);
+
 
         /// <summary>
-        /// ChunkEnumerable supports the IEnumerable pattern so foreach works (see EnumerateChunks)  
-        /// It needs to be public (so the compiler can use it when building a foreach statement) 
-        /// but users typically don't use it explicitly (which is why it is a nested type).  
-        /// </summary>
-        readonly public struct ChunkEnumerable
-        {
-            /// <summary>
-            /// Implements the IEnumerable pattern.  
-            /// </summary>
-            public ChunkEnumerator GetEnumerator() => new ChunkEnumerator(this._stringBuilder);
-
-            #region private
-            internal ChunkEnumerable(StringBuilder stringBuilder)
-            {
-                Debug.Assert(stringBuilder != null);    // Because it is only called with a 'this' pointer.    
-                _stringBuilder = stringBuilder;
-            }
-            readonly private StringBuilder _stringBuilder;   // We ensure this is never null. 
-            #endregion
-        }
-
-        /// <summary>
-        /// ChunkEnumerator supports the IEnumerator pattern so foreach works (see EnumerateChunks)  
-        /// It needs to be public (so the compiler can use it when building a foreach statement) 
-        /// but users typically don't use it explicitly (which is why it is a nested type). 
+        /// ChunkEnumerator supports both the IEnumerable and IEnumerator pattern so foreach 
+        /// works (see EnumerateChunks).  It needs to be public (so the compiler can use it 
+        /// when building a foreach statement) but users typically don't use it explicitly.
+        /// (which is why it is a nested type). 
         /// </summary>
         public struct ChunkEnumerator
         {
+            [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] // Only here to make foreach work
+
+            /// <summary>
+            /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator  
+            /// </summary>
+            public ChunkEnumerator GetEnumerator() { return this;  }
+
             /// <summary>
             /// Implements the IEnumerator pattern.
             /// </summary>
