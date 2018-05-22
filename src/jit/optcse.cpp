@@ -1935,12 +1935,6 @@ public:
         no_cse_cost  = candidate->UseCount() * candidate->Cost();
         yes_cse_cost = (candidate->DefCount() * cse_def_cost) + (candidate->UseCount() * cse_use_cost);
 
-#if CPU_LONG_USES_REGPAIR
-        if (candidate->Expr()->TypeGet() == TYP_LONG)
-        {
-            yes_cse_cost *= 2;
-        }
-#endif
         no_cse_cost += extra_no_cost;
         yes_cse_cost += extra_yes_cost;
 
@@ -1998,11 +1992,6 @@ public:
             // increase the cutoffs for aggressive and moderate CSE's
             //
             int incr = BB_UNITY_WEIGHT;
-
-#if CPU_LONG_USES_REGPAIR
-            if (successfulCandidate->Expr()->TypeGet() == TYP_LONG)
-                incr *= 2;
-#endif
 
             if (cseRefCnt > aggressiveRefCnt)
             {

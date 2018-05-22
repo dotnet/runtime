@@ -873,7 +873,7 @@ void* GenTree::operator new(size_t sz, Compiler* comp, genTreeOps oper)
 #if SMALL_TREE_NODES
     size_t size = GenTree::s_gtNodeSizes[oper];
 #else
-    size_t   size    = TREE_NODE_SZ_LARGE;
+    size_t   size = TREE_NODE_SZ_LARGE;
 #endif
 
 #if MEASURE_NODE_SIZE
@@ -900,18 +900,11 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
 #ifdef DEBUG
     gtDebugFlags = 0;
 #endif // DEBUG
-#ifdef LEGACY_BACKEND
-    gtUsedRegs = 0;
-#endif // LEGACY_BACKEND
 #if FEATURE_ANYCSE
     gtCSEnum = NO_CSE;
 #endif // FEATURE_ANYCSE
 #if ASSERTION_PROP
     ClearAssertion();
-#endif
-
-#if FEATURE_STACK_FP_X87
-    gtFPlvl = 0;
 #endif
 
     gtNext   = nullptr;
@@ -1041,7 +1034,7 @@ inline GenTree* Compiler::gtNewLargeOperNode(genTreeOps oper, var_types type, Ge
 
     GenTree* node = new (this, LargeOpOpcode()) GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/ true));
 #else
-    GenTree* node    = new (this, oper) GenTreeOp(oper, type, op1, op2);
+    GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, op2);
 #endif
 
     return node;
@@ -1067,7 +1060,7 @@ inline GenTree* Compiler::gtNewIconHandleNode(size_t value, unsigned flags, Fiel
 #if defined(LATE_DISASM)
     node = new (this, LargeOpOpcode()) GenTreeIntCon(TYP_I_IMPL, value, fields DEBUGARG(/*largeNode*/ true));
 #else
-    node             = new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, value, fields);
+    node          = new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, value, fields);
 #endif
     node->gtFlags |= flags;
     return node;
@@ -1219,7 +1212,7 @@ inline GenTree* Compiler::gtNewFieldRef(
     assert(GenTree::s_gtNodeSizes[GT_IND] <= GenTree::s_gtNodeSizes[GT_FIELD]);
     GenTree* tree = new (this, GT_FIELD) GenTreeField(typ);
 #else
-    GenTree*    tree = new (this, GT_FIELD) GenTreeField(typ);
+    GenTree* tree = new (this, GT_FIELD) GenTreeField(typ);
 #endif
     tree->gtField.gtFldObj    = obj;
     tree->gtField.gtFldHnd    = fldHnd;
@@ -1367,58 +1360,13 @@ inline void Compiler::gtSetStmtInfo(GenTree* stmt)
     assert(stmt->gtOper == GT_STMT);
     GenTree* expr = stmt->gtStmt.gtStmtExpr;
 
-#if FEATURE_STACK_FP_X87
-    /* We will try to compute the FP stack level at each node */
-    codeGen->genResetFPstkLevel();
-
-    /* Sometimes we need to redo the FP level computation */
-    gtFPstLvlRedo = false;
-#endif // FEATURE_STACK_FP_X87
-
-#ifdef DEBUG
-    if (verbose && 0)
-    {
-        gtDispTree(stmt);
-    }
-#endif
-
     /* Recursively process the expression */
 
     gtSetEvalOrder(expr);
 
     // Set the statement to have the same costs as the top node of the tree.
     stmt->CopyCosts(expr);
-
-#if FEATURE_STACK_FP_X87
-    /* Unused float values leave one operand on the stack */
-    assert(codeGen->genGetFPstkLevel() == 0 || codeGen->genGetFPstkLevel() == 1);
-
-    /* Do we need to recompute FP stack levels? */
-
-    if (gtFPstLvlRedo)
-    {
-        codeGen->genResetFPstkLevel();
-        gtComputeFPlvls(expr);
-        assert(codeGen->genGetFPstkLevel() == 0 || codeGen->genGetFPstkLevel() == 1);
-    }
-#endif // FEATURE_STACK_FP_X87
 }
-
-#if FEATURE_STACK_FP_X87
-inline unsigned Compiler::gtSetEvalOrderAndRestoreFPstkLevel(GenTree* tree)
-{
-    unsigned FPlvlSave     = codeGen->genFPstkLevel;
-    unsigned result        = gtSetEvalOrder(tree);
-    codeGen->genFPstkLevel = FPlvlSave;
-
-    return result;
-}
-#else  // !FEATURE_STACK_FP_X87
-inline unsigned Compiler::gtSetEvalOrderAndRestoreFPstkLevel(GenTree* tree)
-{
-    return gtSetEvalOrder(tree);
-}
-#endif // FEATURE_STACK_FP_X87
 
 /*****************************************************************************/
 #if SMALL_TREE_NODES
@@ -1469,7 +1417,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         gtIntCon.gtFieldSeq = nullptr;
     }
 
-#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+#if defined(_TARGET_ARM_)
     if (oper == GT_MUL_LONG)
     {
         // We sometimes bash GT_MUL to GT_MUL_LONG, which converts it from GenTreeOp to GenTreeMultiRegOp.
@@ -2114,17 +2062,6 @@ inline void LclVarDsc::setPrefReg(regNumber regNum, Compiler* comp)
     /* Overwrite the lvPrefReg field */
 
     lvPrefReg = (regMaskSmall)regMask;
-
-#ifdef LEGACY_BACKEND
-    // This is specific to the classic register allocator.
-    // While walking the trees during reg predict we set the lvPrefReg mask
-    // and then re-sort the 'tracked' variable when the lvPrefReg mask changes.
-    if (lvTracked)
-    {
-        /* Flag this change, set lvaSortAgain to true */
-        comp->lvaSortAgain = true;
-    }
-#endif // LEGACY_BACKEND
 }
 
 /*****************************************************************************
@@ -2169,17 +2106,6 @@ inline void LclVarDsc::addPrefReg(regMaskTP regMask, Compiler* comp)
     /* Update the lvPrefReg field */
 
     lvPrefReg |= regMask;
-
-#ifdef LEGACY_BACKEND
-    // This is specific to the classic register allocator
-    // While walking the trees during reg predict we set the lvPrefReg mask
-    // and then resort the 'tracked' variable when the lvPrefReg mask changes
-    if (lvTracked)
-    {
-        /* Flag this change, set lvaSortAgain to true */
-        comp->lvaSortAgain = true;
-    }
-#endif // LEGACY_BACKEND
 }
 
 /*****************************************************************************
@@ -2394,16 +2320,11 @@ inline
             // On amd64, every param has a stack location, except on Unix-like systems.
             assert(varDsc->lvIsParam);
 #endif // UNIX_AMD64_ABI
-#elif !defined(LEGACY_BACKEND)
-            // For !LEGACY_BACKEND on other targets, a stack parameter that is enregistered or prespilled
+#else  // !_TARGET_AMD64_
+            // For other targets, a stack parameter that is enregistered or prespilled
             // for profiling on ARM will have a stack location.
             assert((varDsc->lvIsParam && !varDsc->lvIsRegArg) || isPrespilledArg);
-#else  // !(_TARGET_AMD64 || defined(LEGACY_BACKEND))
-            // Otherwise, we only have a valid stack location for:
-            // A parameter that was passed on the stack, being homed into its register home,
-            // or a prespilled argument on arm under profiler.
-            assert((varDsc->lvIsParam && !varDsc->lvIsRegArg && varDsc->lvRegister) || isPrespilledArg);
-#endif // !(_TARGET_AMD64 || defined(LEGACY_BACKEND))
+#endif // !_TARGET_AMD64_
         }
 
         FPbased = varDsc->lvFramePointerBased;
@@ -2435,13 +2356,11 @@ inline
         if (lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT)
         {
             TempDsc* tmpDsc = tmpFindNum(varNum);
-#ifndef LEGACY_BACKEND
             // The temp might be in use, since this might be during code generation.
             if (tmpDsc == nullptr)
             {
                 tmpDsc = tmpFindNum(varNum, Compiler::TEMP_USAGE_USED);
             }
-#endif // !LEGACY_BACKEND
             assert(tmpDsc != nullptr);
             offset = tmpDsc->tdTempOffs();
             type   = tmpDsc->tdTempType();
@@ -3134,94 +3053,6 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
     return (offset > compMaxUncheckedOffsetForNullObject);
 }
 
-#if defined(LEGACY_BACKEND)
-
-/***********************************************************************************
-*
-*  Returns true if back-end will do other than integer division which currently occurs only
-*  if "divisor" is a positive integer constant and a power of 2 other than 1 and INT_MIN
-*/
-
-inline bool Compiler::fgIsSignedDivOptimizable(GenTree* divisor)
-{
-    if (!opts.MinOpts() && divisor->IsCnsIntOrI())
-    {
-        ssize_t ival = divisor->gtIntConCommon.IconValue();
-
-        /* Is the divisor a power of 2 (excluding INT_MIN) ?.
-           The intent of the third condition below is to exclude INT_MIN on a 64-bit platform
-           and during codegen we need to encode ival-1 within 32 bits.  If ival were INT_MIN
-           then ival-1 would cause underflow.
-
-           Note that we could put #ifdef around the third check so that it is applied only on
-           64-bit platforms but the below is a more generic way to express it as it is a no-op
-           on 32-bit platforms.
-         */
-        return (ival > 0 && genMaxOneBit(ival) && ((ssize_t)(int)ival == ival));
-    }
-
-    return false;
-}
-
-/************************************************************************************
-*
-*  Returns true if back-end will do other than integer division which currently occurs
-* if "divisor" is an unsigned integer constant and a power of 2 other than 1 and zero.
-*/
-
-inline bool Compiler::fgIsUnsignedDivOptimizable(GenTree* divisor)
-{
-    if (!opts.MinOpts() && divisor->IsCnsIntOrI())
-    {
-        size_t ival = divisor->gtIntCon.gtIconVal;
-
-        /* Is the divisor a power of 2 ? */
-        return ival && genMaxOneBit(ival);
-    }
-
-    return false;
-}
-
-/*****************************************************************************
-*
-*  Returns true if back-end will do other than integer division which currently occurs
-*  if "divisor" is a positive integer constant and a power of 2 other than zero
-*/
-
-inline bool Compiler::fgIsSignedModOptimizable(GenTree* divisor)
-{
-    if (!opts.MinOpts() && divisor->IsCnsIntOrI())
-    {
-        size_t ival = divisor->gtIntCon.gtIconVal;
-
-        /* Is the divisor a power of 2  ? */
-        return ssize_t(ival) > 0 && genMaxOneBit(ival);
-    }
-
-    return false;
-}
-
-/*****************************************************************************
-*
-*  Returns true if back-end will do other than integer division which currently occurs
-*  if "divisor" is a positive integer constant and a power of 2 other than zero
-*/
-
-inline bool Compiler::fgIsUnsignedModOptimizable(GenTree* divisor)
-{
-    if (!opts.MinOpts() && divisor->IsCnsIntOrI())
-    {
-        size_t ival = divisor->gtIntCon.gtIconVal;
-
-        /* Is the divisor a power of 2  ? */
-        return ival != 0 && ival == (unsigned)genFindLowestBit(ival);
-    }
-
-    return false;
-}
-
-#endif // LEGACY_BACKEND
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3549,8 +3380,6 @@ inline regMaskTP genIntAllRegArgMask(unsigned numRegs)
     return result;
 }
 
-#if !FEATURE_STACK_FP_X87
-
 inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
 {
     assert(numRegs <= MAX_FLOAT_REG_ARG);
@@ -3562,8 +3391,6 @@ inline regMaskTP genFltAllRegArgMask(unsigned numRegs)
     }
     return result;
 }
-
-#endif // !FEATURE_STACK_FP_X87
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -4808,9 +4635,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_END_LFIN:
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
-#ifndef LEGACY_BACKEND
         case GT_JMPTABLE:
-#endif // LEGACY_BACKEND
         case GT_REG_VAR:
         case GT_CLS_VAR:
         case GT_CLS_VAR_ADDR:
@@ -4856,7 +4681,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-#if defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_ARM_)
         case GT_PUTARG_SPLIT:
 #endif
         case GT_RETURNTRAP:

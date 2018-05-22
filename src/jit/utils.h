@@ -390,9 +390,7 @@ public:
     PhasedVar& operator=(const T& value)
     {
 #ifdef DEBUG
-#ifndef LEGACY_BACKEND
         assert(m_writePhase);
-#endif // !LEGACY_BACKEND
         m_initialized = true;
 #endif // DEBUG
         m_value = value;
@@ -402,9 +400,7 @@ public:
     PhasedVar& operator&=(const T& value)
     {
 #ifdef DEBUG
-#ifndef LEGACY_BACKEND
         assert(m_writePhase);
-#endif // !LEGACY_BACKEND
         m_initialized = true;
 #endif // DEBUG
         m_value &= value;

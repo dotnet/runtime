@@ -930,11 +930,7 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         case TYP_ULONG:
             return VNForLongCon(0);
         case TYP_FLOAT:
-#if FEATURE_X87_DOUBLES
-            return VNForDoubleCon(0.0);
-#else
             return VNForFloatCon(0.0f);
-#endif
         case TYP_DOUBLE:
             return VNForDoubleCon(0.0);
         case TYP_REF:
@@ -5981,53 +5977,7 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
             }
             else // Must be an "op="
             {
-#ifndef LEGACY_BACKEND
                 unreached();
-#else
-                // If the LHS is an IND, we didn't evaluate it when we visited it previously.
-                // But we didn't know that the parent was an op=.  We do now, so go back and evaluate it.
-                // (We actually check if the effective val is the IND.  We will have evaluated any non-last
-                // args of an LHS comma already -- including their memory effects.)
-                GenTree* lhsVal = lhs->gtEffectiveVal(/*commaOnly*/ true);
-                if (lhsVal->OperIsIndir() || (lhsVal->OperGet() == GT_CLS_VAR))
-                {
-                    fgValueNumberTree(lhsVal, /*evalAsgLhsInd*/ true);
-                }
-                // Now we can make this assertion:
-                assert(lhsVal->gtVNPair.BothDefined());
-                genTreeOps op = GenTree::OpAsgToOper(oper);
-                if (GenTree::OperIsBinary(op))
-                {
-                    ValueNumPair lhsNormVNP;
-                    ValueNumPair lhsExcVNP;
-                    lhsExcVNP.SetBoth(ValueNumStore::VNForEmptyExcSet());
-                    vnStore->VNPUnpackExc(lhsVal->gtVNPair, &lhsNormVNP, &lhsExcVNP);
-                    assert(rhs->gtVNPair.BothDefined());
-                    ValueNumPair rhsNormVNP;
-                    ValueNumPair rhsExcVNP;
-                    rhsExcVNP.SetBoth(ValueNumStore::VNForEmptyExcSet());
-                    vnStore->VNPUnpackExc(rhs->gtVNPair, &rhsNormVNP, &rhsExcVNP);
-                    rhsVNPair = vnStore->VNPWithExc(vnStore->VNPairForFunc(tree->TypeGet(),
-                                                                           GetVNFuncForOper(op, (tree->gtFlags &
-                                                                                                 GTF_UNSIGNED) != 0),
-                                                                           lhsNormVNP, rhsNormVNP),
-                                                    vnStore->VNPExcSetUnion(lhsExcVNP, rhsExcVNP));
-                }
-                else
-                {
-                    // As of now, GT_CHS ==> GT_NEG is the only pattern fitting this.
-                    assert(GenTree::OperIsUnary(op));
-                    ValueNumPair lhsNormVNP;
-                    ValueNumPair lhsExcVNP;
-                    lhsExcVNP.SetBoth(ValueNumStore::VNForEmptyExcSet());
-                    vnStore->VNPUnpackExc(lhsVal->gtVNPair, &lhsNormVNP, &lhsExcVNP);
-                    rhsVNPair = vnStore->VNPWithExc(vnStore->VNPairForFunc(tree->TypeGet(),
-                                                                           GetVNFuncForOper(op, (tree->gtFlags &
-                                                                                                 GTF_UNSIGNED) != 0),
-                                                                           lhsNormVNP),
-                                                    lhsExcVNP);
-                }
-#endif // !LEGACY_BACKEND
             }
 
             // Is the type being stored different from the type computed by the rhs?

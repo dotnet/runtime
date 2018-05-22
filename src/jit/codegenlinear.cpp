@@ -15,7 +15,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifndef LEGACY_BACKEND // This file is ONLY used for the RyuJIT backend that uses the linear scan register allocator.
 #include "emit.h"
 #include "codegen.h"
 
@@ -695,21 +694,6 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
-//
-
-//------------------------------------------------------------------------
-// genGetAssignedReg: Get the register assigned to the given node
-//
-// Arguments:
-//    tree      - the lclVar node whose assigned register we want
-//
-// Return Value:
-//    The assigned regNumber
-//
-regNumber CodeGenInterface::genGetAssignedReg(GenTree* tree)
-{
-    return tree->gtRegNum;
-}
 
 //------------------------------------------------------------------------
 // genSpillVar: Spill a local variable
@@ -749,22 +733,8 @@ void CodeGen::genSpillVar(GenTree* tree)
         }
 
         instruction storeIns = ins_Store(lclTyp, compiler->isSIMDTypeLocalAligned(varNum));
-#if CPU_LONG_USES_REGPAIR
-        if (varTypeIsMultiReg(tree))
-        {
-            assert(varDsc->lvRegNum == genRegPairLo(tree->gtRegPair));
-            assert(varDsc->lvOtherReg == genRegPairHi(tree->gtRegPair));
-            regNumber regLo = genRegPairLo(tree->gtRegPair);
-            regNumber regHi = genRegPairHi(tree->gtRegPair);
-            inst_TT_RV(storeIns, tree, regLo);
-            inst_TT_RV(storeIns, tree, regHi, 4);
-        }
-        else
-#endif
-        {
-            assert(varDsc->lvRegNum == tree->gtRegNum);
-            inst_TT_RV(storeIns, tree, tree->gtRegNum, 0, size);
-        }
+        assert(varDsc->lvRegNum == tree->gtRegNum);
+        inst_TT_RV(storeIns, tree, tree->gtRegNum, 0, size);
 
         if (restoreRegVar)
         {
@@ -1929,5 +1899,3 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
     }
     // The per-case functions call genProduceReg()
 }
-
-#endif // !LEGACY_BACKEND

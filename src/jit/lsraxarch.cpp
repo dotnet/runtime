@@ -20,8 +20,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifndef LEGACY_BACKEND // This file is ONLY used for the RyuJIT backend that uses the linear scan register allocator
-
 #ifdef _TARGET_XARCH_
 
 #include "jit.h"
@@ -278,7 +276,7 @@ void LinearScan::BuildNode(GenTree* tree)
 
         case GT_MUL:
         case GT_MULHI:
-#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_X86_)
         case GT_MUL_LONG:
 #endif
             BuildMul(tree->AsOp());
@@ -1839,9 +1837,6 @@ void LinearScan::BuildIntrinsic(GenTree* tree)
         case CORINFO_INTRINSIC_Round:
         case CORINFO_INTRINSIC_Ceiling:
         case CORINFO_INTRINSIC_Floor:
-#if defined(LEGACY_BACKEND)
-            NYI_X86("Math intrinsics Round, Ceiling, and Floor");
-#endif // LEGACY_BACKEND
             break;
 
         default:
@@ -2836,5 +2831,3 @@ bool LinearScan::ExcludeNonByteableRegisters(GenTree* tree)
 #endif // _TARGET_X86_
 
 #endif // _TARGET_XARCH_
-
-#endif // !LEGACY_BACKEND

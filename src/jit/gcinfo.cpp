@@ -259,9 +259,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTree* tgt, GenTree
     switch (tgt->gtOper)
     {
 
-#ifndef LEGACY_BACKEND
         case GT_STOREIND:
-#endif               // !LEGACY_BACKEND
         case GT_IND: /* Could be the managed heap */
             if (tgt->TypeGet() == TYP_BYREF)
             {
@@ -300,38 +298,15 @@ bool GCInfo::gcIsWriteBarrierAsgNode(GenTree* op)
     {
         return gcIsWriteBarrierCandidate(op->gtOp.gtOp1, op->gtOp.gtOp2) != WBF_NoBarrier;
     }
-#ifndef LEGACY_BACKEND
     else if (op->gtOper == GT_STOREIND)
     {
         return gcIsWriteBarrierCandidate(op, op->gtOp.gtOp2) != WBF_NoBarrier;
     }
-#endif // !LEGACY_BACKEND
     else
     {
         return false;
     }
 }
-
-/*****************************************************************************/
-/*****************************************************************************
- *
- *  If the given tree value is sitting in a register, free it now.
- */
-
-#ifdef LEGACY_BACKEND
-void GCInfo::gcMarkRegPtrVal(GenTree* tree)
-{
-    if (varTypeIsGC(tree->TypeGet()))
-    {
-        if (tree->gtOper == GT_LCL_VAR)
-            compiler->codeGen->genMarkLclVar(tree);
-        if (tree->InReg())
-        {
-            gcMarkRegSetNpt(genRegMask(tree->gtRegNum));
-        }
-    }
-}
-#endif // LEGACY_BACKEND
 
 /*****************************************************************************/
 /*****************************************************************************
@@ -433,11 +408,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* untrackedCount, UNALIGNED 
                 /* Has this argument been fully enregistered? */
                 CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifndef LEGACY_BACKEND
                 if (!varDsc->lvOnFrame)
-#else  // LEGACY_BACKEND
-                if (varDsc->lvRegister)
-#endif // LEGACY_BACKEND
                 {
                     /* if a CEE_JMP has been used, then we need to report all the arguments
                        even if they are enregistered, since we will be using this value
@@ -801,7 +772,6 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
     return GCInfo::WBF_BarrierUnknown;
 }
 
-#ifndef LEGACY_BACKEND
 //------------------------------------------------------------------------
 // gcUpdateForRegVarMove: Update the masks when a variable is moved
 //
@@ -868,7 +838,6 @@ void GCInfo::gcUpdateForRegVarMove(regMaskTP srcMask, regMaskTP dstMask, LclVarD
         VarSetOps::AddElemD(compiler, gcVarPtrSetCur, varDsc->lvVarIndex);
     }
 }
-#endif // !LEGACY_BACKEND
 
 /*****************************************************************************/
 /*****************************************************************************/

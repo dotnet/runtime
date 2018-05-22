@@ -30,12 +30,8 @@ inline static bool isDoubleReg(regNumber reg)
 
 // code_t is a type used to accumulate bits of opcode + prefixes. On amd64, it must be 64 bits
 // to support the REX prefixes. On both x86 and amd64, it must be 64 bits to support AVX, with
-// its 3-byte VEX prefix. For legacy backend (which doesn't support AVX), leave it as size_t.
-#if defined(LEGACY_BACKEND)
-typedef size_t code_t;
-#else  // !defined(LEGACY_BACKEND)
+// its 3-byte VEX prefix.
 typedef unsigned __int64 code_t;
-#endif // !defined(LEGACY_BACKEND)
 
 struct CnsVal
 {
@@ -117,8 +113,6 @@ bool hasRexPrefix(code_t code)
 #endif // !_TARGET_AMD64_
 }
 
-#ifndef LEGACY_BACKEND
-
 // 3-byte VEX prefix starts with byte 0xC4
 #define VEX_PREFIX_MASK_3BYTE 0xFF000000000000ULL
 #define VEX_PREFIX_CODE_3BYTE 0xC4000000000000ULL
@@ -196,70 +190,6 @@ bool isPrefetch(instruction ins)
 {
     return (ins == INS_prefetcht0) || (ins == INS_prefetcht1) || (ins == INS_prefetcht2) || (ins == INS_prefetchnta);
 }
-#else  // LEGACY_BACKEND
-bool UseVEXEncoding()
-{
-    return false;
-}
-void SetUseVEXEncoding(bool value)
-{
-}
-bool ContainsAVX()
-{
-    return false;
-}
-void SetContainsAVX(bool value)
-{
-}
-bool Contains256bitAVX()
-{
-    return false;
-}
-void SetContains256bitAVX(bool value)
-{
-}
-bool hasVexPrefix(code_t code)
-{
-    return false;
-}
-bool IsDstDstSrcAVXInstruction(instruction ins)
-{
-    return false;
-}
-bool IsDstSrcSrcAVXInstruction(instruction ins)
-{
-    return false;
-}
-bool IsThreeOperandAVXInstruction(instruction ins)
-{
-    return false;
-}
-bool isAvxBlendv(instruction ins)
-{
-    return false;
-}
-bool isSse41Blendv(instruction ins)
-{
-    return false;
-}
-bool TakesVexPrefix(instruction ins)
-{
-    return false;
-}
-bool isPrefetch(instruction ins)
-{
-    return false;
-}
-
-code_t AddVexPrefixIfNeeded(instruction ins, code_t code, emitAttr attr)
-{
-    return code;
-}
-code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr size)
-{
-    return code;
-}
-#endif // LEGACY_BACKEND
 
 /************************************************************************/
 /*             Debug-only routines to display instructions              */
@@ -386,7 +316,6 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 
 void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival);
 
-#ifndef LEGACY_BACKEND
 void emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs);
 
 void emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, insFormat fmt);
@@ -400,7 +329,6 @@ void emitIns_R_C_I(instruction ins, emitAttr attr, regNumber reg1, CORINFO_FIELD
 void emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, int ival);
 
 void emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, insFormat fmt);
-#endif // !LEGACY_BACKEND
 
 void emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs);
 
@@ -411,13 +339,11 @@ void emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regNumber reg
 
 void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3);
 
-#ifndef LEGACY_BACKEND
 void emitIns_R_R_A_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, int ival, insFormat fmt);
 void emitIns_R_R_AR_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs, int ival);
 void emitIns_AR_R_I(instruction ins, emitAttr attr, regNumber base, int disp, regNumber ireg, int ival);
-#endif // !LEGACY_BACKEND
 
 void emitIns_R_R_C_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, CORINFO_FIELD_HANDLE fldHnd, int offs, int ival);
@@ -426,9 +352,7 @@ void emitIns_R_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber r
 
 void emitIns_R_R_S_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs, int ival);
 
-#ifndef LEGACY_BACKEND
 void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4);
-#endif // !LEGACY_BACKEND
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
@@ -501,12 +425,6 @@ void emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber reg, regNumber
 void emitIns_SIMD_R_R_R_R(
     instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, regNumber reg3);
 #endif // FEATURE_HW_INTRINSICS
-
-#if FEATURE_STACK_FP_X87
-void emitIns_F_F0(instruction ins, unsigned fpreg);
-
-void emitIns_F0_F(instruction ins, unsigned fpreg);
-#endif // FEATURE_STACK_FP_X87
 
 enum EmitCallType
 {
