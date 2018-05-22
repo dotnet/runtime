@@ -73,6 +73,7 @@
 #include <mono/utils/networking.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/w32api.h>
+#include <mono/mini/debugger-state-machine.h>
 #include "debugger-agent.h"
 #include "mini.h"
 #include "seq-points.h"

@@ -7,6 +7,7 @@
 
 #include "mini.h"
 #include <mono/metadata/seq-points-data.h>
+#include <mono/mini/debugger-state-machine.h>
 
 /*
 FIXME:

@@ -454,6 +454,8 @@ common_sources = \
 	debugger-agent.h 	\
 	debugger-engine.h	\
 	debugger-agent-stubs.c	\
+	debugger-state-machine.c	\
+	debugger-state-machine.h	\
 	xdebug.c			\
 	mini-llvm.h			\
 	mini-llvm-cpp.h	\
