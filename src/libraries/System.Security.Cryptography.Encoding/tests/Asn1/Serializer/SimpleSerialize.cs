@@ -427,5 +427,20 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Assert.Equal(expectedHex, writer.Encode().ByteArrayToHex());
             }
         }
+
+        [Fact]
+        public static void WriteNegativeIntegers()
+        {
+            BigIntegers bigIntegers = new BigIntegers
+            {
+                First = -273,
+                Second = new byte[] { 0xFE, 0xED, 0xF0, 0x0D },
+            };
+
+            using (AsnWriter writer = AsnSerializer.Serialize(bigIntegers, AsnEncodingRules.DER))
+            {
+                Assert.Equal("300A0202FEEF0204FEEDF00D", writer.EncodeAsSpan().ByteArrayToHex());
+            }
+        }
     }
 }

@@ -38,8 +38,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing.Imaging
 {
-
-    [MonoTODO("Metafiles, both WMF and EMF formats, are only partially supported.")]
 #if !NETCORE
     [Serializable]
     [Editor ("System.Drawing.Design.MetafileEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
@@ -318,7 +316,6 @@ namespace System.Drawing.Imaging
             return nativeImage;
         }
 
-        [MonoLimitation("Metafiles aren't only partially supported by libgdiplus.")]
         public MetafileHeader GetMetafileHeader()
         {
             IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));
@@ -334,7 +331,6 @@ namespace System.Drawing.Imaging
             }
         }
 
-        [MonoLimitation("Metafiles aren't only partially supported by libgdiplus.")]
         public static MetafileHeader GetMetafileHeader(IntPtr henhmetafile)
         {
             IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));
@@ -350,7 +346,6 @@ namespace System.Drawing.Imaging
             }
         }
 
-        [MonoLimitation("Metafiles aren't only partially supported by libgdiplus.")]
         public static MetafileHeader GetMetafileHeader(Stream stream)
         {
             if (stream == null)
@@ -375,7 +370,6 @@ namespace System.Drawing.Imaging
             }
         }
 
-        [MonoLimitation("Metafiles aren't only partially supported by libgdiplus.")]
         public static MetafileHeader GetMetafileHeader(string fileName)
         {
             if (fileName == null)
@@ -394,7 +388,6 @@ namespace System.Drawing.Imaging
             }
         }
 
-        [MonoLimitation("Metafiles aren't only partially supported by libgdiplus.")]
         public static MetafileHeader GetMetafileHeader(IntPtr hmetafile, WmfPlaceableFileHeader wmfHeader)
         {
             IntPtr header = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeader)));
@@ -410,7 +403,6 @@ namespace System.Drawing.Imaging
             }
         }
 
-        [MonoLimitation("Metafiles aren't only partially supported by libgdiplus.")]
         public void PlayRecord(EmfPlusRecordType recordType, int flags, int dataSize, byte[] data)
         {
             int status = SafeNativeMethods.Gdip.GdipPlayMetafileRecord(nativeImage, recordType, flags, dataSize, data);

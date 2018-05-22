@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System
@@ -72,6 +73,24 @@ namespace System
 
             return false;
         }
+
+        private static Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
+
+        [MethodImpl(MethodImplOptions.NoOptimization)]
+        private static bool IsLargeArrayNotSupported()
+        {
+            try
+            {
+                var tmp = new byte[int.MaxValue];
+                return tmp == null;
+            }
+            catch (OutOfMemoryException)
+            {
+                return true;
+            }
+        }
+
+        public static bool IsNotIntMaxValueArrayIndexSupported => s_largeArrayIsNotSupported.Value;
 
         public static bool IsNonZeroLowerBoundArraySupported
         {

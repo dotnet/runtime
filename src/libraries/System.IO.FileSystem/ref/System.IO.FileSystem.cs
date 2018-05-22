@@ -217,6 +217,7 @@ namespace System.IO
         public abstract string Name { get; }
         public abstract void Delete();
         public void Refresh() { }
+        public override string ToString() { throw null; }
     }
     public enum SearchOption
     {

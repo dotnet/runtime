@@ -61,6 +61,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [Fact]
         public async Task PostAsyncExpect100Continue_FailsAfterContentSendStarted_Throws()
         {

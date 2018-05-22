@@ -128,7 +128,7 @@ enum CtrlCode
     Break = 1
 };
 
-typedef int32_t (*CtrlCallback)(enum CtrlCode signalCode);
+typedef void (*CtrlCallback)(enum CtrlCode signalCode);
 /**
  * Called by pal_signal.cpp to reinitialize the console on SIGCONT/SIGCHLD.
  */

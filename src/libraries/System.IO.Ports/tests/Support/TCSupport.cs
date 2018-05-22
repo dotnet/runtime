@@ -32,6 +32,12 @@ namespace Legacy.Support
 
         private static void InitializeSerialInfo()
         {
+            if (PlatformDetection.IsWindowsNanoServer)
+            {
+                s_localMachineSerialPortRequirements = SerialPortRequirements.None;
+                return;
+            }
+
             GenerateSerialInfo();
 
             if (s_localMachineSerialInfo.LoopbackPortName != null)

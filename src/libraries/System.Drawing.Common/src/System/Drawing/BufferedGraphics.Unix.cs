@@ -111,7 +111,6 @@ namespace System.Drawing
             target.DrawImage(membmp, size);
         }
 
-        [MonoTODO("The targetDC parameter has no equivalent in libgdiplus.")]
         public void Render(IntPtr targetDC)
         {
             throw new NotImplementedException();

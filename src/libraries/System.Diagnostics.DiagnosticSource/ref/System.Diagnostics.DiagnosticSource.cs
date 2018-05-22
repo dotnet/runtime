@@ -17,8 +17,9 @@ namespace System.Diagnostics {
     public virtual System.IDisposable Subscribe(System.IObserver<System.Collections.Generic.KeyValuePair<string, object>> observer) { throw null; }
     public virtual System.IDisposable Subscribe(System.IObserver<System.Collections.Generic.KeyValuePair<string, object>> observer, System.Predicate<string> isEnabled) { throw null; }
     public virtual System.IDisposable Subscribe(System.IObserver<System.Collections.Generic.KeyValuePair<string, object>> observer, System.Func<string, object, object, bool> isEnabled) { throw null; }
+    public override string ToString() { throw null; }
     public override void Write(string name, object parameters) { }
-  }
+    }
   public abstract partial class DiagnosticSource {
     protected DiagnosticSource() { }
     public abstract bool IsEnabled(string name);

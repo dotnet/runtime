@@ -382,9 +382,15 @@ namespace System.Net.WebSockets
 
                         bool endOfMessage = false;
                         uint readCount = Math.Min(dataAvailable, (uint) buffer.Count);
-                        var dataBuffer = reader.ReadBuffer(readCount);
-                        // Safe to cast readCount to int as the maximum value that readCount can be is buffer.Count.
-                        dataBuffer.CopyTo(0, buffer.Array, buffer.Offset, (int) readCount);
+
+                        if (readCount > 0)
+                        {
+                            IBuffer dataBuffer = reader.ReadBuffer(readCount);
+
+                            // Safe to cast readCount to int as the maximum value that readCount can be is buffer.Count.
+                            dataBuffer.CopyTo(0, buffer.Array, buffer.Offset, (int) readCount);
+                        }
+
                         if (dataAvailable == readCount)
                         {
                             endOfMessage = !IsPartialMessageEvent(args);

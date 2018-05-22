@@ -227,9 +227,9 @@ namespace System.Net.Sockets
             }
             catch
             {
+                _singleBufferHandleState = SingleBufferHandleState.None;
                 FreeNativeOverlapped(overlapped);
                 _singleBufferHandle.Dispose();
-                _singleBufferHandleState = SingleBufferHandleState.None;
                 throw;
             }
         }
@@ -261,9 +261,9 @@ namespace System.Net.Sockets
             }
             catch
             {
+                _singleBufferHandleState = SingleBufferHandleState.None;
                 FreeNativeOverlapped(overlapped);
                 _singleBufferHandle.Dispose();
-                _singleBufferHandleState = SingleBufferHandleState.None;
                 throw;
             }
         }
@@ -296,13 +296,13 @@ namespace System.Net.Sockets
         {
             fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
             {
-                Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None, $"Expected None, got {_singleBufferHandleState}");
-                _singleBufferHandleState = SingleBufferHandleState.InProcess;
-                var wsaBuffer = new WSABuffer { Length = _count, Pointer = (IntPtr)(bufferPtr + _offset) };
-
                 NativeOverlapped* overlapped = AllocateNativeOverlapped();
                 try
                 {
+                    Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None, $"Expected None, got {_singleBufferHandleState}");
+                    _singleBufferHandleState = SingleBufferHandleState.InProcess;
+                    var wsaBuffer = new WSABuffer { Length = _count, Pointer = (IntPtr)(bufferPtr + _offset) };
+
                     SocketFlags flags = _socketFlags;
                     SocketError socketError = Interop.Winsock.WSARecv(
                         handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
@@ -318,8 +318,8 @@ namespace System.Net.Sockets
                 }
                 catch
                 {
-                    FreeNativeOverlapped(overlapped);
                     _singleBufferHandleState = SingleBufferHandleState.None;
+                    FreeNativeOverlapped(overlapped);
                     throw;
                 }
             }
@@ -368,13 +368,13 @@ namespace System.Net.Sockets
         {
             fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
             {
-                Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
-                _singleBufferHandleState = SingleBufferHandleState.InProcess;
-                var wsaBuffer = new WSABuffer { Length = _count, Pointer = (IntPtr)(bufferPtr + _offset) };
-
                 NativeOverlapped* overlapped = AllocateNativeOverlapped();
                 try
                 {
+                    Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
+                    _singleBufferHandleState = SingleBufferHandleState.InProcess;
+                    var wsaBuffer = new WSABuffer { Length = _count, Pointer = (IntPtr)(bufferPtr + _offset) };
+
                     SocketFlags flags = _socketFlags;
                     SocketError socketError = Interop.Winsock.WSARecvFrom(
                         handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
@@ -392,8 +392,8 @@ namespace System.Net.Sockets
                 }
                 catch
                 {
-                    FreeNativeOverlapped(overlapped);
                     _singleBufferHandleState = SingleBufferHandleState.None;
+                    FreeNativeOverlapped(overlapped);
                     throw;
                 }
             }
@@ -549,9 +549,9 @@ namespace System.Net.Sockets
             }
             catch
             {
+                _singleBufferHandleState = SingleBufferHandleState.None;
                 FreeNativeOverlapped(overlapped);
                 _singleBufferHandle.Dispose();
-                _singleBufferHandleState = SingleBufferHandleState.None;
                 throw;
             }
         }
@@ -564,13 +564,13 @@ namespace System.Net.Sockets
         {
             fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
             {
-                Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
-                _singleBufferHandleState = SingleBufferHandleState.InProcess;
-                var wsaBuffer = new WSABuffer { Length = _count, Pointer = (IntPtr)(bufferPtr + _offset) };
-
                 NativeOverlapped* overlapped = AllocateNativeOverlapped();
                 try
                 {
+                    Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
+                    _singleBufferHandleState = SingleBufferHandleState.InProcess;
+                    var wsaBuffer = new WSABuffer { Length = _count, Pointer = (IntPtr)(bufferPtr + _offset) };
+
                     SocketError socketError = Interop.Winsock.WSASend(
                         handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
                         ref wsaBuffer,
@@ -585,8 +585,8 @@ namespace System.Net.Sockets
                 }
                 catch
                 {
-                    FreeNativeOverlapped(overlapped);
                     _singleBufferHandleState = SingleBufferHandleState.None;
+                    FreeNativeOverlapped(overlapped);
                     throw;
                 }
             }
@@ -738,13 +738,13 @@ namespace System.Net.Sockets
         {
             fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
             {
-                Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
-                _singleBufferHandleState = SingleBufferHandleState.InProcess;
-                var wsaBuffer = new WSABuffer { Length = _count, Pointer = (IntPtr)(bufferPtr + _offset) };
-
                 NativeOverlapped* overlapped = AllocateNativeOverlapped();
                 try
                 {
+                    Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
+                    _singleBufferHandleState = SingleBufferHandleState.InProcess;
+                    var wsaBuffer = new WSABuffer { Length = _count, Pointer = (IntPtr)(bufferPtr + _offset) };
+
                     SocketError socketError = Interop.Winsock.WSASendTo(
                         handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
                         ref wsaBuffer,
@@ -761,8 +761,8 @@ namespace System.Net.Sockets
                 }
                 catch
                 {
-                    FreeNativeOverlapped(overlapped);
                     _singleBufferHandleState = SingleBufferHandleState.None;
+                    FreeNativeOverlapped(overlapped);
                     throw;
                 }
             }
@@ -916,8 +916,8 @@ namespace System.Net.Sockets
 
             if (_singleBufferHandleState != SingleBufferHandleState.None)
             {
-                _singleBufferHandle.Dispose();
                 _singleBufferHandleState = SingleBufferHandleState.None;
+                _singleBufferHandle.Dispose();
             }
 
             if (_multipleBufferGCHandles != null)
@@ -1142,8 +1142,8 @@ namespace System.Net.Sockets
 
                 if (_singleBufferHandleState == SingleBufferHandleState.Set)
                 {
-                    _singleBufferHandle.Dispose();
                     _singleBufferHandleState = SingleBufferHandleState.None;
+                    _singleBufferHandle.Dispose();
                 }
             }
         }
