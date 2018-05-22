@@ -207,7 +207,7 @@ End
 // It's the largest of the debugger locks.
 Crst DebuggerMutex
     AcquiredBefore AvailableParamTypes ConnectionNameTable 
-                   DynamicIL LoaderHeap ModuleLookupTable ThreadStore                   
+                   DynamicIL LoaderHeap ModuleLookupTable
 
     // Disabled per bug 581892
     // AcquiredBefore DebuggerController 
@@ -719,7 +719,7 @@ Crst ThreadStore
                    DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
                    JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilingAPIStatus
                    ProfilerGCRefDataFreeList RWLock SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList
-                   ThreadIdDispenser ThreadStaticDataHashTable
+                   ThreadIdDispenser ThreadStaticDataHashTable DebuggerMutex
 End
 
 Crst TPMethodTable
