@@ -555,8 +555,10 @@ def generateLttngFiles(etwmanifest,eventprovider_directory):
 
         tracepointprovider_Cmake.write("""    )
 
+        find_library(LTTNG NAMES lttng-ust)
+
         target_link_libraries(coreclrtraceptprovider
-                              -llttng-ust
+                              ${LTTNG}
         )
 
         # Install the static coreclrtraceptprovider library
