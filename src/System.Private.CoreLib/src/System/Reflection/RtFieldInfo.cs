@@ -103,7 +103,7 @@ namespace System.Reflection
                     else
                     {
                         throw new ArgumentException(
-                            String.Format(CultureInfo.CurrentUICulture, SR.Arg_FieldDeclTarget,
+                            string.Format(CultureInfo.CurrentUICulture, SR.Arg_FieldDeclTarget,
                                 Name, m_declaringType, target.GetType()));
                     }
                 }
@@ -237,7 +237,7 @@ namespace System.Reflection
         #endregion
 
         #region MemberInfo Overrides
-        public override String Name
+        public override string Name
         {
             get
             {
@@ -248,11 +248,11 @@ namespace System.Reflection
             }
         }
 
-        internal String FullName
+        internal string FullName
         {
             get
             {
-                return String.Format("{0}.{1}", DeclaringType.FullName, Name);
+                return string.Format("{0}.{1}", DeclaringType.FullName, Name);
             }
         }
 

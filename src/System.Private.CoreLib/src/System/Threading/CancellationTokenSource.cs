@@ -543,7 +543,7 @@ namespace System.Threading
 
             // Cancellation already occurred.  Run the callback on this thread and return an empty registration.
             callback(stateForCallback);
-            return default(CancellationTokenRegistration);
+            return default;
         }
 
         private void NotifyCancellation(bool throwOnFirstException)

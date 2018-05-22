@@ -33,14 +33,14 @@ namespace System.Diagnostics
         private Object dynamicMethods; // Field is not used from managed.        
 
         private IntPtr[] rgMethodHandle;
-        private String[] rgAssemblyPath;
+        private string[] rgAssemblyPath;
         private IntPtr[] rgLoadedPeAddress;
         private int[] rgiLoadedPeSize;
         private IntPtr[] rgInMemoryPdbAddress;
         private int[] rgiInMemoryPdbSize;
         // if rgiMethodToken[i] == 0, then don't attempt to get the portable PDB source/info
         private int[] rgiMethodToken;
-        private String[] rgFilename;
+        private string[] rgFilename;
         private int[] rgiLineNumber;
         private int[] rgiColumnNumber;
         private bool[] rgiLastFrameFromForeignExceptionStackTrace;
@@ -172,7 +172,7 @@ namespace System.Diagnostics
 
         public virtual int GetOffset(int i) { return rgiOffset[i]; }
         public virtual int GetILOffset(int i) { return rgiILOffset[i]; }
-        public virtual String GetFilename(int i) { return rgFilename == null ? null : rgFilename[i]; }
+        public virtual string GetFilename(int i) { return rgFilename == null ? null : rgFilename[i]; }
         public virtual int GetLineNumber(int i) { return rgiLineNumber == null ? 0 : rgiLineNumber[i]; }
         public virtual int GetColumnNumber(int i) { return rgiColumnNumber == null ? 0 : rgiColumnNumber[i]; }
 
@@ -320,7 +320,7 @@ namespace System.Diagnostics
         internal static int CalculateFramesToSkip(StackFrameHelper StackF, int iNumFrames)
         {
             int iRetVal = 0;
-            String PackageName = "System.Diagnostics";
+            string PackageName = "System.Diagnostics";
 
             // Check if this method is part of the System.Diagnostics
             // package. If so, increment counter keeping track of 
@@ -333,10 +333,10 @@ namespace System.Diagnostics
                     Type t = mb.DeclaringType;
                     if (t == null)
                         break;
-                    String ns = t.Namespace;
+                    string ns = t.Namespace;
                     if (ns == null)
                         break;
-                    if (String.Compare(ns, PackageName, StringComparison.Ordinal) != 0)
+                    if (string.Compare(ns, PackageName, StringComparison.Ordinal) != 0)
                         break;
                 }
                 iRetVal++;
@@ -444,7 +444,7 @@ namespace System.Diagnostics
 
         // Builds a readable representation of the stack trace
         //
-        public override String ToString()
+        public override string ToString()
         {
             // Include a trailing newline for backwards compatibility
             return ToString(TraceFormat.TrailingNewLine);
@@ -461,11 +461,11 @@ namespace System.Diagnostics
 
         // Builds a readable representation of the stack trace, specifying 
         // the format for backwards compatibility.
-        internal String ToString(TraceFormat traceFormat)
+        internal string ToString(TraceFormat traceFormat)
         {
             bool displayFilenames = true;   // we'll try, but demand may fail
-            String word_At = "at";
-            String inFileLineNum = "in {0}:line {1}";
+            string word_At = "at";
+            string inFileLineNum = "in {0}:line {1}";
 
             if (traceFormat != TraceFormat.NoResourceLookup)
             {
@@ -560,7 +560,7 @@ namespace System.Diagnostics
                             else
                                 fFirstParam = false;
 
-                            String typeName = "<UnknownType>";
+                            string typeName = "<UnknownType>";
                             if (pi[j].ParameterType != null)
                                 typeName = pi[j].ParameterType.Name;
                             sb.Append(typeName);
@@ -583,7 +583,7 @@ namespace System.Diagnostics
                     {
                         // If we don't have a PDB or PDB-reading is disabled for the module,
                         // then the file name will be null.
-                        String fileName = null;
+                        string fileName = null;
 
                         // Getting the filename from a StackFrame is a privileged operation - we won't want
                         // to disclose full path names to arbitrarily untrusted code.  Rather than just omit

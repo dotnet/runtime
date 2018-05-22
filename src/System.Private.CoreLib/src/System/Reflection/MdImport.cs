@@ -237,7 +237,7 @@ namespace System.Reflection
         #endregion
 
         #region Object Overrides
-        public override string ToString() { return String.Format(CultureInfo.InvariantCulture, "0x{0:x8}", Value); }
+        public override string ToString() { return string.Format(CultureInfo.InvariantCulture, "0x{0:x8}", Value); }
         #endregion
     }
 
@@ -376,11 +376,11 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern String _GetDefaultValue(IntPtr scope, int mdToken, out long value, out int length, out int corElementType);
-        public String GetDefaultValue(int mdToken, out long value, out int length, out CorElementType corElementType)
+        private static extern string _GetDefaultValue(IntPtr scope, int mdToken, out long value, out int length, out int corElementType);
+        public string GetDefaultValue(int mdToken, out long value, out int length, out CorElementType corElementType)
         {
             int _corElementType;
-            String stringVal;
+            string stringVal;
             stringVal = _GetDefaultValue(m_metadataImport2, mdToken, out value, out length, out _corElementType);
             corElementType = (CorElementType)_corElementType;
             return stringVal;
@@ -388,7 +388,7 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void _GetUserString(IntPtr scope, int mdToken, void** name, out int length);
-        public unsafe String GetUserString(int mdToken)
+        public unsafe string GetUserString(int mdToken)
         {
             void* name;
             int length;
@@ -407,7 +407,7 @@ namespace System.Reflection
 #endif
             }
 
-            return new String(c);
+            return new string(c);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -634,8 +634,8 @@ namespace System.Reflection
         public unsafe void GetPInvokeMap(
             int token,
             out PInvokeAttributes attributes,
-            out String importName,
-            out String importDll)
+            out string importName,
+            out string importDll)
         {
             int _attributes;
             void* _importName, _importDll;
@@ -663,7 +663,7 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            return String.Format(CultureInfo.CurrentCulture, "MetadataException HResult = {0:x}.", m_hr);
+            return string.Format(CultureInfo.CurrentCulture, "MetadataException HResult = {0:x}.", m_hr);
         }
     }
 }

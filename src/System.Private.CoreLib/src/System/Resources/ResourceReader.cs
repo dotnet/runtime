@@ -82,7 +82,7 @@ namespace System.Resources
         // Used by RuntimeResourceSet and this class's enumerator.  Maps
         // resource name to a value, a ResourceLocator, or a 
         // LooselyLinkedManifestResource.
-        internal Dictionary<String, ResourceLocator> _resCache;
+        internal Dictionary<string, ResourceLocator> _resCache;
         private long _nameSectionOffset;  // Offset to name section of file.
         private long _dataSectionOffset;  // Offset to Data section of file.
 
@@ -107,9 +107,9 @@ namespace System.Resources
         private int _version;
 
 
-        public ResourceReader(String fileName)
+        public ResourceReader(string fileName)
         {
-            _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
+            _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
             _store = new BinaryReader(new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.RandomAccess), Encoding.UTF8);
 
             try
@@ -130,7 +130,7 @@ namespace System.Resources
             if (!stream.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
 
-            _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
+            _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
             _store = new BinaryReader(stream, Encoding.UTF8);
             // We have a faster code path for reading resource files from an assembly.
             _ums = stream as UnmanagedMemoryStream;
@@ -142,7 +142,7 @@ namespace System.Resources
         // passing in the stream to read from and the RuntimeResourceSet's 
         // internal hash table (hash table of names with file offsets
         // and values, coupled to this ResourceReader).
-        internal ResourceReader(Stream stream, Dictionary<String, ResourceLocator> resCache)
+        internal ResourceReader(Stream stream, Dictionary<string, ResourceLocator> resCache)
         {
             Debug.Assert(stream != null, "Need a stream!");
             Debug.Assert(stream.CanRead, "Stream should be readable!");
@@ -257,7 +257,7 @@ namespace System.Resources
         // To read the data, seek to _dataSectionOffset + dataPos, then
         // read the resource type & data.
         // This does a binary search through the names.
-        internal int FindPosForResource(String name)
+        internal int FindPosForResource(string name)
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");
             int hash = FastResourceComparer.HashFunction(name);
@@ -338,7 +338,7 @@ namespace System.Resources
         // with the string you pass in. 
         // Whoever calls this method should make sure that they take a lock
         // so no one else can cause us to seek in the stream.
-        private unsafe bool CompareStringEqualsName(String name)
+        private unsafe bool CompareStringEqualsName(string name)
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");
             int byteLen = _store.Read7BitEncodedInt();
@@ -380,7 +380,7 @@ namespace System.Resources
         // This is used in the enumerator.  The enumerator iterates from 0 to n
         // of our resources and this returns the resource name for a particular
         // index.  The parameter is NOT a virtual offset.
-        private unsafe String AllocateStringForNameIndex(int index, out int dataOffset)
+        private unsafe string AllocateStringForNameIndex(int index, out int dataOffset)
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");
             byte[] bytes;
@@ -401,10 +401,10 @@ namespace System.Resources
                     if (_ums.Position > _ums.Length - byteLen)
                         throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResourcesIndexTooLong, index));
 
-                    String s = null;
+                    string s = null;
                     char* charPtr = (char*)_ums.PositionPointer;
 
-                    s = new String(charPtr, 0, byteLen / 2);
+                    s = new string(charPtr, 0, byteLen / 2);
 
                     _ums.Position += byteLen;
                     dataOffset = _store.ReadInt32();
@@ -466,17 +466,17 @@ namespace System.Resources
         // from that location.
         // Anyone who calls LoadObject should make sure they take a lock so 
         // no one can cause us to do a seek in here.
-        internal String LoadString(int pos)
+        internal string LoadString(int pos)
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");
             _store.BaseStream.Seek(_dataSectionOffset + pos, SeekOrigin.Begin);
-            String s = null;
+            string s = null;
             int typeIndex = _store.Read7BitEncodedInt();
             if (_version == 1)
             {
                 if (typeIndex == -1)
                     return null;
-                if (FindType(typeIndex) != typeof(String))
+                if (FindType(typeIndex) != typeof(string))
                     throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResourceNotString_Type, FindType(typeIndex).FullName));
                 s = _store.ReadString();
             }
@@ -485,7 +485,7 @@ namespace System.Resources
                 ResourceTypeCode typeCode = (ResourceTypeCode)typeIndex;
                 if (typeCode != ResourceTypeCode.String && typeCode != ResourceTypeCode.Null)
                 {
-                    String typeString;
+                    string typeString;
                     if (typeCode < ResourceTypeCode.StartOfUserTypes)
                         typeString = typeCode.ToString();
                     else
@@ -513,7 +513,7 @@ namespace System.Resources
             if (_version == 1)
             {
                 Object o = LoadObjectV1(pos);
-                typeCode = (o is String) ? ResourceTypeCode.String : ResourceTypeCode.StartOfUserTypes;
+                typeCode = (o is string) ? ResourceTypeCode.String : ResourceTypeCode.StartOfUserTypes;
                 return o;
             }
             return LoadObjectV2(pos, out typeCode);
@@ -555,7 +555,7 @@ namespace System.Resources
             // primitive or a value type first, so we can reach the 
             // deserialization code faster for arbitrary objects.
 
-            if (type == typeof(String))
+            if (type == typeof(string))
                 return _store.ReadString();
             else if (type == typeof(Int32))
                 return _store.ReadInt32();
@@ -801,7 +801,7 @@ namespace System.Resources
 
                 // Read in type name for a suitable ResourceReader
                 // Note ResourceWriter & InternalResGen use different Strings.
-                String readerType = _store.ReadString();
+                string readerType = _store.ReadString();
                 readerType = System.CoreLib.FixupCoreLibName(readerType);
                 AssemblyName mscorlib = new AssemblyName(ResourceManager.MscorlibName);
 
@@ -948,7 +948,7 @@ namespace System.Resources
                 try
                 {
                     _store.BaseStream.Position = _typeNamePositions[typeIndex];
-                    String typeName = _store.ReadString();
+                    string typeName = _store.ReadString();
                     _typeTable[typeIndex] = (RuntimeType)Type.GetType(typeName, true);
                 }
                 // If serialization isn't supported, we convert FileNotFoundException to 
@@ -975,7 +975,7 @@ namespace System.Resources
         }
 
 
-        public void GetResourceData(String resourceName, out String resourceType, out byte[] resourceData)
+        public void GetResourceData(string resourceName, out string resourceType, out byte[] resourceData)
         {
             if (resourceName == null)
                 throw new ArgumentNullException(nameof(resourceName));
@@ -1041,12 +1041,12 @@ namespace System.Resources
             }
         }
 
-        private String TypeNameFromTypeCode(ResourceTypeCode typeCode)
+        private string TypeNameFromTypeCode(ResourceTypeCode typeCode)
         {
             Debug.Assert(typeCode >= 0, "can't be negative");
             if (typeCode < ResourceTypeCode.StartOfUserTypes)
             {
-                Debug.Assert(!String.Equals(typeCode.ToString(), "LastPrimitive"), "Change ResourceTypeCode metadata order so LastPrimitive isn't what Enum.ToString prefers.");
+                Debug.Assert(!string.Equals(typeCode.ToString(), "LastPrimitive"), "Change ResourceTypeCode metadata order so LastPrimitive isn't what Enum.ToString prefers.");
                 return "ResourceTypeCode." + typeCode.ToString();
             }
             else
@@ -1135,7 +1135,7 @@ namespace System.Resources
                     if (!_currentIsValid) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
                     if (_reader._resCache == null) throw new InvalidOperationException(SR.ResourceReaderIsClosed);
 
-                    String key;
+                    string key;
                     Object value = null;
                     lock (_reader)
                     { // locks should be taken in the same order as in RuntimeResourceSet.GetObject to avoid deadlock

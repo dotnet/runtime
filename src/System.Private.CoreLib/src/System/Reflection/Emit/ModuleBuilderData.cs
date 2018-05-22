@@ -16,7 +16,7 @@ namespace System.Reflection.Emit
     // this class cannot be accessed from the EE.
     internal class ModuleBuilderData
     {
-        internal ModuleBuilderData(ModuleBuilder module, String strModuleName, String strFileName, int tkFile)
+        internal ModuleBuilderData(ModuleBuilder module, string strModuleName, string strFileName, int tkFile)
         {
             m_globalTypeBuilder = new TypeBuilder(module);
             m_module = module;
@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
         }
 
         // Initialize module and file names.
-        private void InitNames(String strModuleName, String strFileName)
+        private void InitNames(string strModuleName, string strFileName)
         {
             m_strModuleName = strModuleName;
             if (strFileName == null)
@@ -36,8 +36,8 @@ namespace System.Reflection.Emit
             }
             else
             {
-                String strExtension = Path.GetExtension(strFileName);
-                if (strExtension == null || strExtension == String.Empty)
+                string strExtension = Path.GetExtension(strFileName);
+                if (strExtension == null || strExtension == string.Empty)
                 {
                     // This is required by our loader. It cannot load module file that does not have file extension.
                     throw new ArgumentException(SR.Format(SR.Argument_NoModuleFileExtension, strFileName));
@@ -46,8 +46,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal String m_strModuleName;     // scope name (can be different from file name)
-        internal String m_strFileName;
+        internal string m_strModuleName;     // scope name (can be different from file name)
+        internal string m_strFileName;
         internal bool m_fGlobalBeenCreated;
         internal bool m_fHasGlobal;
         internal TypeBuilder m_globalTypeBuilder;
@@ -55,8 +55,8 @@ namespace System.Reflection.Emit
 
         private int m_tkFile;
         internal bool m_isSaved;
-        internal const String MULTI_BYTE_VALUE_CLASS = "$ArrayType$";
-        internal String m_strResourceFileName;
+        internal const string MULTI_BYTE_VALUE_CLASS = "$ArrayType$";
+        internal string m_strResourceFileName;
         internal byte[] m_resourceBytes;
     }
 }

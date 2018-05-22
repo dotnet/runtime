@@ -85,7 +85,7 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory()
-            : this(default(CancellationToken), TaskCreationOptions.None, TaskContinuationOptions.None, null)
+            : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, null)
         {
         }
 
@@ -130,7 +130,7 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(TaskScheduler scheduler) // null means to use TaskScheduler.Current
-            : this(default(CancellationToken), TaskCreationOptions.None, TaskContinuationOptions.None, scheduler)
+            : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, scheduler)
         {
         }
 
@@ -161,7 +161,7 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(TaskCreationOptions creationOptions, TaskContinuationOptions continuationOptions)
-            : this(default(CancellationToken), creationOptions, continuationOptions, null)
+            : this(default, creationOptions, continuationOptions, null)
         {
         }
 
@@ -520,7 +520,7 @@ namespace System.Threading.Tasks
 
             Exception ex = null;
             OperationCanceledException oce = null;
-            TResult result = default(TResult);
+            TResult result = default;
 
             try
             {
@@ -690,7 +690,7 @@ namespace System.Threading.Tasks
                 FromAsyncCoreLogic(asyncResult, endFunction, endAction, promise, requiresSynchronization: true);
             }),
                 (object)null, null,
-                default(CancellationToken), TaskCreationOptions.None, InternalTaskOptions.None, null);
+                default, TaskCreationOptions.None, InternalTaskOptions.None, null);
 
             if (AsyncCausalityTracer.LoggingOn)
                 AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Verbose, t.Id, "TaskFactory.FromAsync Callback", 0);
@@ -827,7 +827,7 @@ namespace System.Threading.Tasks
                 }
 
                 // Make sure we don't leave promise "dangling".
-                promise.TrySetResult(default(TResult));
+                promise.TrySetResult(default);
                 throw;
             }
 
@@ -948,7 +948,7 @@ namespace System.Threading.Tasks
                 }
 
                 // Make sure we don't leave promise "dangling".
-                promise.TrySetResult(default(TResult));
+                promise.TrySetResult(default);
                 throw;
             }
 
@@ -1077,7 +1077,7 @@ namespace System.Threading.Tasks
                 }
 
                 // Make sure we don't leave promise "dangling".
-                promise.TrySetResult(default(TResult));
+                promise.TrySetResult(default);
                 throw;
             }
 
@@ -1214,7 +1214,7 @@ namespace System.Threading.Tasks
                 }
 
                 // Make sure we don't leave the promise "dangling".
-                promise.TrySetResult(default(TResult));
+                promise.TrySetResult(default);
                 throw;
             }
 
@@ -1305,7 +1305,7 @@ namespace System.Threading.Tasks
                 // Grab the relevant state and then null it out so that the task doesn't hold onto the state unnecessarily
                 var thisRef = promise.m_thisRef;
                 var endMethod = promise.m_endMethod;
-                promise.m_thisRef = default(TInstance);
+                promise.m_thisRef = default;
                 promise.m_endMethod = null;
                 if (endMethod == null) ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_WrongAsyncResultOrEndCalledMultiple, ExceptionArgument.asyncResult);
 
@@ -1374,7 +1374,7 @@ namespace System.Threading.Tasks
             TaskCreationOptions tco;
             InternalTaskOptions dontcare;
             Task.CreationOptionsFromContinuationOptions(continuationOptions, out tco, out dontcare);
-            return new Task<TResult>(true, default(TResult), tco, ct);
+            return new Task<TResult>(true, default, tco, ct);
         }
 
         //
@@ -1745,7 +1745,7 @@ namespace System.Threading.Tasks
                    (completedTasks, state) =>
                    {
                        completedTasks.NotifyDebuggerOfWaitCompletionIfNecessary();
-                       ((Action<Task[]>)state)(completedTasks.Result); return default(TResult);
+                       ((Action<Task[]>)state)(completedTasks.Result); return default;
                    },
                    continuationAction, scheduler, cancellationToken, continuationOptions);
             }
@@ -2062,7 +2062,7 @@ namespace System.Threading.Tasks
                 return starter.ContinueWith<TResult>(
                     //the following delegate avoids closure capture as much as possible
                     //completedTask.Result is the winning task; state == continuationAction
-                    (completedTask, state) => { ((Action<Task>)state)(completedTask.Result); return default(TResult); },
+                    (completedTask, state) => { ((Action<Task>)state)(completedTask.Result); return default; },
                     continuationAction, scheduler, cancellationToken, continuationOptions);
             }
         }
@@ -2133,7 +2133,7 @@ namespace System.Threading.Tasks
                 var action = (Action<Task<TAntecedentResult>>)state;
                 var arg = (Task<TAntecedentResult>)wrappedWinner.Result;
                 action(arg);
-                return default(TResult);
+                return default;
             };
 
         // ContinueWith delegate for TaskFactory<TResult>.ContinueWhenAllImpl<TAntecedentResult>(non-null continuationFunction)
@@ -2152,7 +2152,7 @@ namespace System.Threading.Tasks
                 wrappedAntecedents.NotifyDebuggerOfWaitCompletionIfNecessary();
                 var action = (Action<Task<TAntecedentResult>[]>)state;
                 action(wrappedAntecedents.Result);
-                return default(TResult);
+                return default;
             };
     }
 }

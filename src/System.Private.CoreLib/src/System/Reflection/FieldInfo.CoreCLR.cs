@@ -17,7 +17,7 @@ namespace System.Reflection
 
             Type declaringType = f.DeclaringType;
             if (declaringType != null && declaringType.IsGenericType)
-                throw new ArgumentException(String.Format(
+                throw new ArgumentException(string.Format(
                     CultureInfo.CurrentCulture, SR.Argument_FieldDeclaringTypeGeneric,
                     f.Name, declaringType.GetGenericTypeDefinition()));
 

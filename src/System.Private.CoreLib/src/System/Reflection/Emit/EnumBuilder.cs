@@ -31,7 +31,7 @@ namespace System.Reflection.Emit
 
         // Define literal for enum
 
-        public FieldBuilder DefineLiteral(String literalName, Object literalValue)
+        public FieldBuilder DefineLiteral(string literalName, Object literalValue)
         {
             // Define the underlying field for the enum. It will be a non-static, private field with special name bit set. 
             FieldBuilder fieldBuilder = m_typeBuilder.DefineField(
@@ -66,7 +66,7 @@ namespace System.Reflection.Emit
             get { return m_underlyingField; }
         }
 
-        public override String Name
+        public override string Name
         {
             get { return m_typeBuilder.Name; }
         }
@@ -85,14 +85,14 @@ namespace System.Reflection.Emit
         }
 
         public override Object InvokeMember(
-            String name,
+            string name,
             BindingFlags invokeAttr,
             Binder binder,
             Object target,
             Object[] args,
             ParameterModifier[] modifiers,
             CultureInfo culture,
-            String[] namedParameters)
+            string[] namedParameters)
         {
             return m_typeBuilder.InvokeMember(name, invokeAttr, binder, target, args, modifiers, culture, namedParameters);
         }
@@ -112,12 +112,12 @@ namespace System.Reflection.Emit
             get { return m_typeBuilder.TypeHandle; }
         }
 
-        public override String FullName
+        public override string FullName
         {
             get { return m_typeBuilder.FullName; }
         }
 
-        public override String AssemblyQualifiedName
+        public override string AssemblyQualifiedName
         {
             get
             {
@@ -125,7 +125,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override String Namespace
+        public override string Namespace
         {
             get { return m_typeBuilder.Namespace; }
         }
@@ -147,7 +147,7 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetConstructors(bindingAttr);
         }
 
-        protected override MethodInfo GetMethodImpl(String name, BindingFlags bindingAttr, Binder binder,
+        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder,
                 CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             if (types == null)
@@ -161,7 +161,7 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetMethods(bindingAttr);
         }
 
-        public override FieldInfo GetField(String name, BindingFlags bindingAttr)
+        public override FieldInfo GetField(string name, BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetField(name, bindingAttr);
         }
@@ -171,7 +171,7 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetFields(bindingAttr);
         }
 
-        public override Type GetInterface(String name, bool ignoreCase)
+        public override Type GetInterface(string name, bool ignoreCase)
         {
             return m_typeBuilder.GetInterface(name, ignoreCase);
         }
@@ -181,7 +181,7 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetInterfaces();
         }
 
-        public override EventInfo GetEvent(String name, BindingFlags bindingAttr)
+        public override EventInfo GetEvent(string name, BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetEvent(name, bindingAttr);
         }
@@ -191,7 +191,7 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetEvents();
         }
 
-        protected override PropertyInfo GetPropertyImpl(String name, BindingFlags bindingAttr, Binder binder,
+        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder,
                 Type returnType, Type[] types, ParameterModifier[] modifiers)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
@@ -207,12 +207,12 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetNestedTypes(bindingAttr);
         }
 
-        public override Type GetNestedType(String name, BindingFlags bindingAttr)
+        public override Type GetNestedType(string name, BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetNestedType(name, bindingAttr);
         }
 
-        public override MemberInfo[] GetMember(String name, MemberTypes type, BindingFlags bindingAttr)
+        public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetMember(name, type, bindingAttr);
         }
@@ -384,7 +384,7 @@ namespace System.Reflection.Emit
                     szrank += ",";
             }
 
-            string s = String.Format(CultureInfo.InvariantCulture, "[{0}]", szrank); // [,,]
+            string s = string.Format(CultureInfo.InvariantCulture, "[{0}]", szrank); // [,,]
             return SymbolType.FormCompoundType(s, this, 0);
         }
 
@@ -392,7 +392,7 @@ namespace System.Reflection.Emit
         // Constructs a EnumBuilder.
         // EnumBuilder can only be a top-level (not nested) enum type.
         internal EnumBuilder(
-            String name,                       // name of type
+            string name,                       // name of type
             Type underlyingType,             // underlying type for an Enum
             TypeAttributes visibility,              // any bits on TypeAttributes.VisibilityMask)
             ModuleBuilder module)                     // module containing this type

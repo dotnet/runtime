@@ -127,7 +127,7 @@ namespace System
 
             new KeyValuePair<Char, UInt16>('\0', UInt16.MinValue);
             new KeyValuePair<UInt16, Double>(UInt16.MinValue, Double.MinValue);
-            new KeyValuePair<Object, Int32>(String.Empty, Int32.MinValue);
+            new KeyValuePair<Object, Int32>(string.Empty, Int32.MinValue);
             new KeyValuePair<Int32, Int32>(Int32.MinValue, Int32.MinValue);
             SZArrayHelper<Boolean>(null);
             SZArrayHelper<Byte>(null);
@@ -261,20 +261,20 @@ namespace System
 
             // instantiate stubs for commonly used methods on IList<T> and ICollection<T>
             vectorToListAdapter.Indexer_Get<T>(0);
-            vectorToListAdapter.Indexer_Set<T>(0, default(T));
-            vectorToListAdapter.Insert<T>(0, default(T));
+            vectorToListAdapter.Indexer_Set<T>(0, default);
+            vectorToListAdapter.Insert<T>(0, default);
             vectorToListAdapter.RemoveAt<T>(0);
             vectorToCollectionAdapter.Count<T>();
-            vectorToCollectionAdapter.Add<T>(default(T));
+            vectorToCollectionAdapter.Add<T>(default);
             vectorToCollectionAdapter.Clear<T>();
 
             // instantiate stubs for commonly used methods on IVector<T>
             listToVectorAdapter.GetAt<T>(0);
             listToVectorAdapter.Size<T>();
-            listToVectorAdapter.SetAt<T>(0, default(T));
-            listToVectorAdapter.InsertAt<T>(0, default(T));
+            listToVectorAdapter.SetAt<T>(0, default);
+            listToVectorAdapter.InsertAt<T>(0, default);
             listToVectorAdapter.RemoveAt<T>(0);
-            listToVectorAdapter.Append<T>(default(T));
+            listToVectorAdapter.Append<T>(default);
             listToVectorAdapter.RemoveAtEnd<T>();
             listToVectorAdapter.Clear<T>();
         }
@@ -306,22 +306,22 @@ namespace System
 
             // instantiate stubs for commonly used methods on IDictionary<K, V> and ICollection<KeyValuePair<K, V>>
             V dummy;
-            mapToDictionaryAdapter.Indexer_Get<K, V>(default(K));
-            mapToDictionaryAdapter.Indexer_Set<K, V>(default(K), default(V));
-            mapToDictionaryAdapter.ContainsKey<K, V>(default(K));
-            mapToDictionaryAdapter.Add<K, V>(default(K), default(V));
-            mapToDictionaryAdapter.Remove<K, V>(default(K));
-            mapToDictionaryAdapter.TryGetValue<K, V>(default(K), out dummy);
+            mapToDictionaryAdapter.Indexer_Get<K, V>(default);
+            mapToDictionaryAdapter.Indexer_Set<K, V>(default, default);
+            mapToDictionaryAdapter.ContainsKey<K, V>(default);
+            mapToDictionaryAdapter.Add<K, V>(default, default);
+            mapToDictionaryAdapter.Remove<K, V>(default);
+            mapToDictionaryAdapter.TryGetValue<K, V>(default, out dummy);
             mapToCollectionAdapter.Count<K, V>();
-            mapToCollectionAdapter.Add<K, V>(new KeyValuePair<K, V>(default(K), default(V)));
+            mapToCollectionAdapter.Add<K, V>(new KeyValuePair<K, V>(default, default));
             mapToCollectionAdapter.Clear<K, V>();
 
             // instantiate stubs for commonly used methods on IMap<K, V>
-            dictionaryToMapAdapter.Lookup<K, V>(default(K));
+            dictionaryToMapAdapter.Lookup<K, V>(default);
             dictionaryToMapAdapter.Size<K, V>();
-            dictionaryToMapAdapter.HasKey<K, V>(default(K));
-            dictionaryToMapAdapter.Insert<K, V>(default(K), default(V));
-            dictionaryToMapAdapter.Remove<K, V>(default(K));
+            dictionaryToMapAdapter.HasKey<K, V>(default);
+            dictionaryToMapAdapter.Insert<K, V>(default, default);
+            dictionaryToMapAdapter.Remove<K, V>(default);
             dictionaryToMapAdapter.Clear<K, V>();
         }
 
@@ -332,17 +332,17 @@ namespace System
 
             // instantiate stubs for commonly used methods on IReadOnlyDictionary<K, V>
             V dummy;
-            mapToDictionaryAdapter.Indexer_Get<K, V>(default(K));
-            mapToDictionaryAdapter.ContainsKey<K, V>(default(K));
-            mapToDictionaryAdapter.TryGetValue<K, V>(default(K), out dummy);
+            mapToDictionaryAdapter.Indexer_Get<K, V>(default);
+            mapToDictionaryAdapter.ContainsKey<K, V>(default);
+            mapToDictionaryAdapter.TryGetValue<K, V>(default, out dummy);
 
             // instantiate stubs for commonly used methods in IReadOnlyCollection<T>
             mapViewToReadOnlyCollectionAdapter.Count<K, V>();
 
             // instantiate stubs for commonly used methods on IMapView<K, V>
-            dictionaryToMapAdapter.Lookup<K, V>(default(K));
+            dictionaryToMapAdapter.Lookup<K, V>(default);
             dictionaryToMapAdapter.Size<K, V>();
-            dictionaryToMapAdapter.HasKey<K, V>(default(K));
+            dictionaryToMapAdapter.HasKey<K, V>(default);
         }
 
         private static void WinRT_Nullable<T>() where T : struct

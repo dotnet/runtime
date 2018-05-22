@@ -488,7 +488,7 @@ namespace System.IO
         /// </summary>
         /// <param name="buffer">Buffer to read the bytes to.</param>
         /// <param name="cancellationToken">Token that can be used to cancel this operation.</param>
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -783,7 +783,7 @@ namespace System.IO
         /// </summary>
         /// <param name="buffer">Buffer that will be written.</param>
         /// <param name="cancellationToken">Token that can be used to cancel the operation.</param>
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {

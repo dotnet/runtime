@@ -97,7 +97,7 @@ namespace System.Threading
                 {
                     _overlapped._boundHandle = null;
                     _overlapped._completed = false;
-                    *_overlapped._nativeOverlapped = default(NativeOverlapped);
+                    *_overlapped._nativeOverlapped = default;
                 }
             }
         }

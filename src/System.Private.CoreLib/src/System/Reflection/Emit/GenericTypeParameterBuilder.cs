@@ -32,7 +32,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Object Overrides
-        public override String ToString()
+        public override string ToString()
         {
             return m_type.Name;
         }
@@ -53,7 +53,7 @@ namespace System.Reflection.Emit
 
         public override Type ReflectedType { get { return m_type.ReflectedType; } }
 
-        public override String Name { get { return m_type.Name; } }
+        public override string Name { get { return m_type.Name; } }
 
         public override Module Module { get { return m_type.Module; } }
 
@@ -93,24 +93,24 @@ namespace System.Reflection.Emit
                     szrank += ",";
             }
 
-            string s = String.Format(CultureInfo.InvariantCulture, "[{0}]", szrank); // [,,]
+            string s = string.Format(CultureInfo.InvariantCulture, "[{0}]", szrank); // [,,]
             SymbolType st = SymbolType.FormCompoundType(s, this, 0) as SymbolType;
             return st;
         }
 
         public override Guid GUID { get { throw new NotSupportedException(); } }
 
-        public override Object InvokeMember(String name, BindingFlags invokeAttr, Binder binder, Object target, Object[] args, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParameters) { throw new NotSupportedException(); }
+        public override Object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, Object target, Object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { throw new NotSupportedException(); }
 
         public override Assembly Assembly { get { return m_type.Assembly; } }
 
         public override RuntimeTypeHandle TypeHandle { get { throw new NotSupportedException(); } }
 
-        public override String FullName { get { return null; } }
+        public override string FullName { get { return null; } }
 
-        public override String Namespace { get { return null; } }
+        public override string Namespace { get { return null; } }
 
-        public override String AssemblyQualifiedName { get { return null; } }
+        public override string AssemblyQualifiedName { get { return null; } }
 
         public override Type BaseType { get { return m_type.BaseType; } }
 
@@ -118,31 +118,31 @@ namespace System.Reflection.Emit
 
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
-        protected override MethodInfo GetMethodImpl(String name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { throw new NotSupportedException(); }
+        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { throw new NotSupportedException(); }
 
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
-        public override FieldInfo GetField(String name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
+        public override FieldInfo GetField(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         public override FieldInfo[] GetFields(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
-        public override Type GetInterface(String name, bool ignoreCase) { throw new NotSupportedException(); }
+        public override Type GetInterface(string name, bool ignoreCase) { throw new NotSupportedException(); }
 
         public override Type[] GetInterfaces() { throw new NotSupportedException(); }
 
-        public override EventInfo GetEvent(String name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
+        public override EventInfo GetEvent(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         public override EventInfo[] GetEvents() { throw new NotSupportedException(); }
 
-        protected override PropertyInfo GetPropertyImpl(String name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers) { throw new NotSupportedException(); }
+        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers) { throw new NotSupportedException(); }
 
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         public override Type[] GetNestedTypes(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
-        public override Type GetNestedType(String name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
+        public override Type GetNestedType(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
-        public override MemberInfo[] GetMember(String name, MemberTypes type, BindingFlags bindingAttr) { throw new NotSupportedException(); }
+        public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
         public override InterfaceMapping GetInterfaceMap(Type interfaceType) { throw new NotSupportedException(); }
 

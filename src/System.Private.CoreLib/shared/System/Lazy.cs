@@ -119,7 +119,7 @@ namespace System
 
                 default:
                     Debug.Fail("Invalid logic; State should always have a valid value");
-                    return default(LazyThreadSafetyMode);
+                    return default;
             }
         }
 
@@ -454,7 +454,7 @@ namespace System
             {
                 if (!IsValueCreated)
                 {
-                    return default(T);
+                    return default;
                 }
                 return _value;
             }

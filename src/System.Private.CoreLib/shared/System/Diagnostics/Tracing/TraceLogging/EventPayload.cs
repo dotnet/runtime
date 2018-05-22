@@ -144,7 +144,7 @@ namespace System.Diagnostics.Tracing
                 position++;
             }
 
-            value = default(object);
+            value = default;
             return false;
         }
 

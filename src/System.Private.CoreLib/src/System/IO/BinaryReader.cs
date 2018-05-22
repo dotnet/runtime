@@ -263,7 +263,7 @@ namespace System.IO
             }
         }
 
-        public virtual String ReadString()
+        public virtual string ReadString()
         {
             if (_stream == null)
                 throw Error.GetFileNotOpen();
@@ -283,7 +283,7 @@ namespace System.IO
 
             if (stringLength == 0)
             {
-                return String.Empty;
+                return string.Empty;
             }
 
             if (_charBytes == null)
@@ -310,7 +310,7 @@ namespace System.IO
                 charsRead = _decoder.GetChars(_charBytes, 0, n, _charBuffer, 0);
 
                 if (currPos == 0 && n == stringLength)
-                    return new String(_charBuffer, 0, charsRead);
+                    return new string(_charBuffer, 0, charsRead);
 
                 if (sb == null)
                     sb = StringBuilderCache.Acquire(stringLength); // Actual string length in chars may be smaller.

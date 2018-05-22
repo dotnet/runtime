@@ -193,7 +193,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Initializes a new <see cref="AsyncTaskMethodBuilder"/>.</summary>
         /// <returns>The initialized <see cref="AsyncTaskMethodBuilder"/>.</returns>
-        public static AsyncTaskMethodBuilder Create() => default(AsyncTaskMethodBuilder);
+        public static AsyncTaskMethodBuilder Create() => default;
 
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
@@ -304,7 +304,7 @@ namespace System.Runtime.CompilerServices
         /// <returns>The initialized <see cref="AsyncTaskMethodBuilder"/>.</returns>
         public static AsyncTaskMethodBuilder<TResult> Create()
         {
-            return default(AsyncTaskMethodBuilder<TResult>);
+            return default;
             // NOTE: If this method is ever updated to perform more initialization,
             //       other Create methods like AsyncTaskMethodBuilder.Create and
             //       AsyncValueTaskMethodBuilder.Create must be updated to call this.
@@ -682,7 +682,7 @@ namespace System.Runtime.CompilerServices
             else
             {
                 // Otherwise, complete the task that's there.
-                SetExistingTaskResult(default(TResult));
+                SetExistingTaskResult(default);
             }
         }
 
@@ -821,16 +821,16 @@ namespace System.Runtime.CompilerServices
                 }
                 // For other known value types, we only special-case 0 / default(TResult).
                 else if (
-                    (typeof(TResult) == typeof(UInt32) && default(UInt32) == (UInt32)(object)result) ||
+                    (typeof(TResult) == typeof(UInt32) && default == (UInt32)(object)result) ||
                     (typeof(TResult) == typeof(Byte) && default(Byte) == (Byte)(object)result) ||
                     (typeof(TResult) == typeof(SByte) && default(SByte) == (SByte)(object)result) ||
                     (typeof(TResult) == typeof(Char) && default(Char) == (Char)(object)result) ||
-                    (typeof(TResult) == typeof(Int64) && default(Int64) == (Int64)(object)result) ||
-                    (typeof(TResult) == typeof(UInt64) && default(UInt64) == (UInt64)(object)result) ||
+                    (typeof(TResult) == typeof(Int64) && default == (Int64)(object)result) ||
+                    (typeof(TResult) == typeof(UInt64) && default == (UInt64)(object)result) ||
                     (typeof(TResult) == typeof(Int16) && default(Int16) == (Int16)(object)result) ||
                     (typeof(TResult) == typeof(UInt16) && default(UInt16) == (UInt16)(object)result) ||
-                    (typeof(TResult) == typeof(IntPtr) && default(IntPtr) == (IntPtr)(object)result) ||
-                    (typeof(TResult) == typeof(UIntPtr) && default(UIntPtr) == (UIntPtr)(object)result))
+                    (typeof(TResult) == typeof(IntPtr) && default == (IntPtr)(object)result) ||
+                    (typeof(TResult) == typeof(UIntPtr) && default == (UIntPtr)(object)result))
                 {
                     return s_defaultResultTask;
                 }
@@ -878,7 +878,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="result">The result for the task.</param>
         /// <returns>The cacheable task.</returns>
         internal static Task<TResult> CreateCacheableTask<TResult>(TResult result) =>
-            new Task<TResult>(false, result, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
+            new Task<TResult>(false, result, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
     }
 
     /// <summary>

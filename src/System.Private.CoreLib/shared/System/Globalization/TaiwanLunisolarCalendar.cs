@@ -263,7 +263,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             "year",
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
                                 MIN_LUNISOLAR_YEAR,

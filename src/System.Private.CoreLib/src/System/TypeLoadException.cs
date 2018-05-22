@@ -70,7 +70,7 @@ namespace System
 
                     String format = null;
                     GetTypeLoadExceptionMessage(ResourceId, JitHelpers.GetStringHandleOnStack(ref format));
-                    _message = String.Format(CultureInfo.CurrentCulture, format, ClassName, AssemblyName, MessageArg);
+                    _message = string.Format(CultureInfo.CurrentCulture, format, ClassName, AssemblyName, MessageArg);
                 }
             }
         }
@@ -80,7 +80,7 @@ namespace System
             get
             {
                 if (ClassName == null)
-                    return String.Empty;
+                    return string.Empty;
 
                 return ClassName;
             }
