@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Net.Http
 {
     public partial class ByteArrayContent : System.Net.Http.HttpContent
@@ -216,6 +215,7 @@ namespace System.Net.Http
         public MultipartContent(string subtype) { }
         public MultipartContent(string subtype, string boundary) { }
         public virtual void Add(System.Net.Http.HttpContent content) { }
+        protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected override void Dispose(bool disposing) { }
         public System.Collections.Generic.IEnumerator<System.Net.Http.HttpContent> GetEnumerator() { throw null; }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
@@ -233,27 +233,28 @@ namespace System.Net.Http
     public sealed partial class ReadOnlyMemoryContent : System.Net.Http.HttpContent
     {
         public ReadOnlyMemoryContent(System.ReadOnlyMemory<byte> content) { }
-        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context) => throw null;
-        protected internal override bool TryComputeLength(out long length) => throw null;
+        protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
+        protected internal override bool TryComputeLength(out long length) { throw null; }
     }
 #if !uap
-    public sealed class SocketsHttpHandler : HttpMessageHandler
+    public sealed partial class SocketsHttpHandler : System.Net.Http.HttpMessageHandler
     {
         public SocketsHttpHandler() { }
         public bool AllowAutoRedirect { get { throw null; } set { } }
         public System.Net.DecompressionMethods AutomaticDecompression { get { throw null; } set { } }
-        public System.TimeSpan ConnectTimeout { get; set; }
+        public System.TimeSpan ConnectTimeout { get { throw null; } set { } }
         public System.Net.CookieContainer CookieContainer { get { throw null; } set { } }
         public System.Net.ICredentials Credentials { get { throw null; } set { } }
         public System.Net.ICredentials DefaultProxyCredentials { get { throw null; } set { } }
-        public System.TimeSpan Expect100ContinueTimeout { get; set; }
+        public System.TimeSpan Expect100ContinueTimeout { get { throw null; } set { } }
         public int MaxAutomaticRedirections { get { throw null; } set { } }
         public int MaxConnectionsPerServer { get { throw null; } set { } }
         public int MaxResponseDrainSize { get { throw null; } set { } }
         public int MaxResponseHeadersLength { get { throw null; } set { } }
-        public bool PreAuthenticate { get { throw null; } set { } }
         public System.TimeSpan PooledConnectionIdleTimeout { get { throw null; } set { } }
         public System.TimeSpan PooledConnectionLifetime { get { throw null; } set { } }
+        public bool PreAuthenticate { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, object> Properties { get { throw null; } }
         public System.Net.IWebProxy Proxy { get { throw null; } set { } }
         public System.TimeSpan ResponseDrainTimeout { get { throw null; } set { } }

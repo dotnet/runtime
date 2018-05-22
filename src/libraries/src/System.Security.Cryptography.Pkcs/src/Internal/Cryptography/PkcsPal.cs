@@ -97,7 +97,7 @@ namespace Internal.Cryptography
         {
             get
             {
-                // Wondering where "s_instance" is declared? It's declared in Pal\Windows\PkcsPal.cs and Pal\Unix\PkcsPal.cs, since the static initializer
+                // Wondering where "s_instance" is declared? It's declared in Pal\Windows\PkcsPal.Windows.cs and Pal\AnyOS\PkcsPal.AnyOS.cs, since the static initializer
                 // for that field is platform-specific.
                 return s_instance;
             }

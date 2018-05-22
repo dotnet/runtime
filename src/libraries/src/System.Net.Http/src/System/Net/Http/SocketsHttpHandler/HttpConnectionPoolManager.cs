@@ -37,8 +37,6 @@ namespace System.Net.Http
         private readonly Timer _cleaningTimer;
         /// <summary>The maximum number of connections allowed per pool. <see cref="int.MaxValue"/> indicates unlimited.</summary>
         private readonly int _maxConnectionsPerServer;
-        /// <summary>true if either of the connection timeouts is zero such that we'll never pool connections.</summary>
-        private readonly bool _avoidStoringConnections;
         // Temporary
         private readonly HttpConnectionSettings _settings;
         private readonly IWebProxy _proxy;
@@ -57,14 +55,23 @@ namespace System.Net.Http
         {
             _settings = settings;
             _maxConnectionsPerServer = settings._maxConnectionsPerServer;
-            _avoidStoringConnections =
-                settings._pooledConnectionIdleTimeout == TimeSpan.Zero ||
-                settings._pooledConnectionLifetime == TimeSpan.Zero;
             _pools = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
+
+            // As an optimization, we can sometimes avoid the overheads associated with
+            // storing connections.  This is possible when we would immediately terminate
+            // connections anyway due to either the idle timeout or the lifetime being
+            // set to zero, as in that case the timeout effectively immediately expires.
+            // However, we can only do such optimizations if we're not also tracking
+            // connections per server, as we use data in the associated data structures
+            // to do that tracking.
+            bool avoidStoringConnections =
+                settings._maxConnectionsPerServer == int.MaxValue &&
+                (settings._pooledConnectionIdleTimeout == TimeSpan.Zero ||
+                 settings._pooledConnectionLifetime == TimeSpan.Zero);
 
             // Start out with the timer not running, since we have no pools.
             // When it does run, run it with a frequency based on the idle timeout.
-            if (!_avoidStoringConnections)
+            if (!avoidStoringConnections)
             {
                 if (settings._pooledConnectionIdleTimeout == Timeout.InfiniteTimeSpan)
                 {
@@ -114,7 +121,6 @@ namespace System.Net.Http
 
         public HttpConnectionSettings Settings => _settings;
         public ICredentials ProxyCredentials => _proxyCredentials;
-        public bool AvoidStoringConnections => _avoidStoringConnections;
 
         private static string ParseHostNameFromHeader(string hostHeader)
         {
@@ -217,7 +223,6 @@ namespace System.Net.Http
 
                 pool = new HttpConnectionPool(this, key.Kind, isNonNullIPv6address ? "[" + key.Host + "]" : key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
 
-                Debug.Assert((_cleaningTimer == null) == _avoidStoringConnections);
                 if (_cleaningTimer == null)
                 {
                     // There's no cleaning timer, which means we're not adding connections into pools, but we still need

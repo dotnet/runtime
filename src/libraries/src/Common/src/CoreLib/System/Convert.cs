@@ -316,7 +316,7 @@ namespace System
 
         public static Object ChangeType(Object value, Type conversionType, IFormatProvider provider)
         {
-            if (ReferenceEquals(conversionType, null))
+            if (conversionType is null)
             {
                 throw new ArgumentNullException(nameof(conversionType));
             }
@@ -376,31 +376,22 @@ namespace System
             return ic.ToType(conversionType, provider);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowCharOverflowException() { throw new OverflowException(SR.Overflow_Char); }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowByteOverflowException() { throw new OverflowException(SR.Overflow_Byte); }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowSByteOverflowException() { throw new OverflowException(SR.Overflow_SByte); }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowInt16OverflowException() { throw new OverflowException(SR.Overflow_Int16); }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowUInt16OverflowException() { throw new OverflowException(SR.Overflow_UInt16); }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowInt32OverflowException() { throw new OverflowException(SR.Overflow_Int32); }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowUInt32OverflowException() { throw new OverflowException(SR.Overflow_UInt32); }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowInt64OverflowException() { throw new OverflowException(SR.Overflow_Int64); }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowUInt64OverflowException() { throw new OverflowException(SR.Overflow_UInt64); }
 
         // Conversions to Boolean
@@ -2017,7 +2008,7 @@ namespace System
             IFormattable formattable = value as IFormattable;
             if (formattable != null)
                 return formattable.ToString(null, provider);
-            return value == null ? String.Empty : value.ToString();
+            return value == null ? string.Empty : value.ToString();
         }
 
         public static string ToString(bool value)

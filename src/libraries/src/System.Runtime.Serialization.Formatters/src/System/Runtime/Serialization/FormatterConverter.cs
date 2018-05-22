@@ -115,7 +115,6 @@ namespace System.Runtime.Serialization
             return System.Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowValueNullException()
         {
             throw new ArgumentNullException("value");

@@ -241,6 +241,11 @@ namespace System.Security.Cryptography.Asn1
             WriteIntegerCore(Asn1Tag.Integer, value);
         }
 
+        public void WriteInteger(ReadOnlySpan<byte> value)
+        {
+            WriteIntegerCore(Asn1Tag.Integer, value);
+        }
+
         public void WriteInteger(Asn1Tag tag, long value)
         {
             CheckUniversalTag(tag, UniversalTagNumber.Integer);
@@ -366,6 +371,42 @@ namespace System.Security.Cryptography.Asn1
             CheckUniversalTag(tag, UniversalTagNumber.Integer);
 
             WriteIntegerCore(tag.AsPrimitive(), value);
+        }
+
+        public void WriteInteger(Asn1Tag tag, ReadOnlySpan<byte> value)
+        {
+            CheckUniversalTag(tag, UniversalTagNumber.Integer);
+
+            WriteIntegerCore(tag.AsPrimitive(), value);
+        }
+
+        private void WriteIntegerCore(Asn1Tag tag, ReadOnlySpan<byte> value)
+        {
+            if (value.IsEmpty)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            // T-REC-X.690-201508 sec 8.3.2
+            if (value.Length > 1)
+            {
+                ushort bigEndianValue = (ushort)(value[0] << 8 | value[1]);
+                const ushort RedundancyMask = 0b1111_1111_1000_0000;
+                ushort masked = (ushort)(bigEndianValue & RedundancyMask);
+
+                // If the first 9 bits are all 0 or are all 1, the value is invalid.
+                if (masked == 0 || masked == RedundancyMask)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+            }
+
+            Debug.Assert(!tag.IsConstructed);
+            WriteTag(tag);
+            WriteLength(value.Length);
+            // WriteLength ensures the content-space
+            value.CopyTo(_buffer.AsSpan(_offset));
+            _offset += value.Length;
         }
 
         // T-REC-X.690-201508 sec 8.3

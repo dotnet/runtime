@@ -4,14 +4,13 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
 namespace System.IO.Tests
 {
-    public abstract class FileSystemWatcherTest : FileCleanupTestBase
+    public abstract partial class FileSystemWatcherTest : FileCleanupTestBase
     {
         // Events are reported asynchronously by the OS, so allow an amount of time for
         // them to arrive before testing an assertion.  If we expect an event to occur,
@@ -30,11 +29,11 @@ namespace System.IO.Tests
         /// Watches the Changed WatcherChangeType and unblocks the returned AutoResetEvent when a
         /// Changed event is thrown by the watcher.
         /// </summary>
-        public static AutoResetEvent WatchChanged(FileSystemWatcher watcher, string[] expectedPaths = null)
+        public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchChanged(FileSystemWatcher watcher, string[] expectedPaths = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
 
-            watcher.Changed += (o, e) =>
+            FileSystemEventHandler changeHandler = (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Changed, e.ChangeType);
                 if (expectedPaths != null)
@@ -44,18 +43,19 @@ namespace System.IO.Tests
                 eventOccurred.Set();
             };
 
-            return eventOccurred;
+            watcher.Changed += changeHandler;
+            return (eventOccurred, changeHandler);
         }
 
         /// <summary>
         /// Watches the Created WatcherChangeType and unblocks the returned AutoResetEvent when a
         /// Created event is thrown by the watcher.
         /// </summary>
-        public static AutoResetEvent WatchCreated(FileSystemWatcher watcher, string[] expectedPaths = null)
+        public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchCreated(FileSystemWatcher watcher, string[] expectedPaths = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
 
-            watcher.Created += (o, e) =>
+            FileSystemEventHandler handler = (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Created, e.ChangeType);
                 if (expectedPaths != null)
@@ -65,18 +65,18 @@ namespace System.IO.Tests
                 eventOccurred.Set();
             };
 
-            return eventOccurred;
+            watcher.Created += handler;
+            return (eventOccurred, handler);
         }
 
         /// <summary>
         /// Watches the Renamed WatcherChangeType and unblocks the returned AutoResetEvent when a
         /// Renamed event is thrown by the watcher.
         /// </summary>
-        public static AutoResetEvent WatchDeleted(FileSystemWatcher watcher, string[] expectedPaths = null)
+        public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchDeleted(FileSystemWatcher watcher, string[] expectedPaths = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
-
-            watcher.Deleted += (o, e) =>
+            FileSystemEventHandler handler = (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Deleted, e.ChangeType);
                 if (expectedPaths != null)
@@ -86,18 +86,19 @@ namespace System.IO.Tests
                 eventOccurred.Set();
             };
 
-            return eventOccurred;
+            watcher.Deleted += handler;
+            return (eventOccurred, handler);
         }
 
         /// <summary>
         /// Watches the Renamed WatcherChangeType and unblocks the returned AutoResetEvent when a
         /// Renamed event is thrown by the watcher.
         /// </summary>
-        public static AutoResetEvent WatchRenamed(FileSystemWatcher watcher, string[] expectedPaths = null)
+        public static (AutoResetEvent EventOccured, RenamedEventHandler Handler) WatchRenamed(FileSystemWatcher watcher, string[] expectedPaths = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
 
-            watcher.Renamed += (o, e) =>
+            RenamedEventHandler handler = (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Renamed, e.ChangeType);
                 if (expectedPaths != null)
@@ -107,7 +108,8 @@ namespace System.IO.Tests
                 eventOccurred.Set();
             };
 
-            return eventOccurred;
+            watcher.Renamed += handler;
+            return (eventOccurred, handler);
         }
 
         /// <summary>
@@ -161,30 +163,42 @@ namespace System.IO.Tests
         {
             int attemptsCompleted = 0;
             bool result = false;
+            FileSystemWatcher newWatcher = watcher;
             while (!result && attemptsCompleted++ < attempts)
             {
                 if (attemptsCompleted > 1)
                 {
                     // Re-create the watcher to get a clean iteration.
-                    watcher = new FileSystemWatcher()
-                    {
-                        IncludeSubdirectories = watcher.IncludeSubdirectories,
-                        NotifyFilter = watcher.NotifyFilter,
-                        Filter = watcher.Filter,
-                        Path = watcher.Path,
-                        InternalBufferSize = watcher.InternalBufferSize
-                    };
+                    newWatcher = RecreateWatcher(newWatcher);
                     // Most intermittent failures in FSW are caused by either a shortage of resources (e.g. inotify instances)
                     // or by insufficient time to execute (e.g. CI gets bogged down). Immediately re-running a failed test
                     // won't resolve the first issue, so we wait a little while hoping that things clear up for the next run.
-                    Thread.Sleep(500); 
+                    Thread.Sleep(500);
                 }
 
-                result = ExecuteAndVerifyEvents(watcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, timeout);
+                result = ExecuteAndVerifyEvents(newWatcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, timeout);
 
                 if (cleanup != null)
                     cleanup();
             }
+        }
+
+        /// <summary>
+        /// Does verification that the given watcher will not throw exactly/only the events in "expectedEvents" when
+        /// "action" is executed.
+        /// </summary>
+        /// <param name="watcher">The FileSystemWatcher to test</param>
+        /// <param name="unExpectedEvents">All of the events that are expected to be raised by this action</param>
+        /// <param name="action">The Action that will trigger events.</param>
+        /// <param name="cleanup">Optional. Undoes the action and cleans up the watcher so the test may be run again if necessary.</param>
+        /// <param name="expectedPath">Optional. Adds path verification to all expected events.</param>
+        public static void ExpectNoEvent(FileSystemWatcher watcher, WatcherChangeTypes unExpectedEvents, Action action, Action cleanup = null, string expectedPath = null, int timeout = WaitForExpectedEventTimeout)
+        {
+            bool result = ExecuteAndVerifyEvents(watcher, unExpectedEvents, action, false, new string[] { expectedPath }, timeout);
+            Assert.False(result, "Expected Event occured");
+
+            if (cleanup != null)
+                cleanup();
         }
 
         /// <summary>
@@ -199,8 +213,8 @@ namespace System.IO.Tests
         public static bool ExecuteAndVerifyEvents(FileSystemWatcher watcher, WatcherChangeTypes expectedEvents, Action action, bool assertExpected, string[] expectedPaths, int timeout)
         {
             bool result = true, verifyChanged = true, verifyCreated = true, verifyDeleted = true, verifyRenamed = true;
-            AutoResetEvent changed = null, created = null, deleted = null, renamed = null;
-            string[] expectedFullPaths = expectedPaths == null ? null : expectedPaths.Select(e => Path.GetFullPath(e)).ToArray();
+            (AutoResetEvent EventOccured, FileSystemEventHandler Handler) changed = default, created = default, deleted = default;
+            (AutoResetEvent EventOccured, RenamedEventHandler Handler) renamed = default;
 
             if (verifyChanged = ((expectedEvents & WatcherChangeTypes.Changed) > 0))
                 changed = WatchChanged(watcher, expectedPaths);
@@ -218,7 +232,8 @@ namespace System.IO.Tests
             if (verifyChanged)
             {
                 bool Changed_expected = ((expectedEvents & WatcherChangeTypes.Changed) > 0);
-                bool Changed_actual = changed.WaitOne(timeout);
+                bool Changed_actual = changed.EventOccured.WaitOne(timeout);
+                watcher.Changed -= changed.Handler;
                 result = Changed_expected == Changed_actual;
                 if (assertExpected)
                     Assert.True(Changed_expected == Changed_actual, "Changed event did not occur as expected");
@@ -228,7 +243,8 @@ namespace System.IO.Tests
             if (verifyCreated)
             {
                 bool Created_expected = ((expectedEvents & WatcherChangeTypes.Created) > 0);
-                bool Created_actual = created.WaitOne(verifyChanged ? SubsequentExpectedWait : timeout);
+                bool Created_actual = created.EventOccured.WaitOne(verifyChanged ? SubsequentExpectedWait : timeout);
+                watcher.Created -= created.Handler;
                 result = result && Created_expected == Created_actual;
                 if (assertExpected)
                     Assert.True(Created_expected == Created_actual, "Created event did not occur as expected");
@@ -238,7 +254,8 @@ namespace System.IO.Tests
             if (verifyDeleted)
             {
                 bool Deleted_expected = ((expectedEvents & WatcherChangeTypes.Deleted) > 0);
-                bool Deleted_actual = deleted.WaitOne(verifyChanged || verifyCreated ? SubsequentExpectedWait : timeout);
+                bool Deleted_actual = deleted.EventOccured.WaitOne(verifyChanged || verifyCreated ? SubsequentExpectedWait : timeout);
+                watcher.Deleted -= deleted.Handler;
                 result = result && Deleted_expected == Deleted_actual;
                 if (assertExpected)
                     Assert.True(Deleted_expected == Deleted_actual, "Deleted event did not occur as expected");
@@ -248,7 +265,8 @@ namespace System.IO.Tests
             if (verifyRenamed)
             {
                 bool Renamed_expected = ((expectedEvents & WatcherChangeTypes.Renamed) > 0);
-                bool Renamed_actual = renamed.WaitOne(verifyChanged || verifyCreated  || verifyDeleted? SubsequentExpectedWait : timeout);
+                bool Renamed_actual = renamed.EventOccured.WaitOne(verifyChanged || verifyCreated || verifyDeleted ? SubsequentExpectedWait : timeout);
+                watcher.Renamed -= renamed.Handler;
                 result = result && Renamed_expected == Renamed_actual;
                 if (assertExpected)
                     Assert.True(Renamed_expected == Renamed_actual, "Renamed event did not occur as expected");
@@ -409,7 +427,7 @@ namespace System.IO.Tests
             foreach (NotifyFilters filter in Enum.GetValues(typeof(NotifyFilters)))
                 yield return new object[] { filter };
         }
-        
+
         // Linux and OSX systems have less precise filtering systems than Windows, so most
         // metadata filters are effectively equivalent to each other on those systems. For example
         // there isn't a way to filter only LastWrite events on either system; setting

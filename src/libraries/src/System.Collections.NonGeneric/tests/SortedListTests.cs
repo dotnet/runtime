@@ -1300,6 +1300,15 @@ namespace System.Collections.Tests
             Helpers.PerformActionOnAllSortedListWrappers(sortList1, sortList2 =>
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sortList2.Capacity = -1); // Capacity < 0
+            });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotIntMaxValueArrayIndexSupported))]
+        public void Capacity_Excessive()
+        {
+            var sortList1 = new SortedList();
+            Helpers.PerformActionOnAllSortedListWrappers(sortList1, sortList2 =>
+            {
                 Assert.Throws<OutOfMemoryException>(() => sortList2.Capacity = int.MaxValue); // Capacity is too large
             });
         }

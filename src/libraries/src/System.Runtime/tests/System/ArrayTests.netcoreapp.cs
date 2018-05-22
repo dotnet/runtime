@@ -141,6 +141,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Reverse_NonSZArrayWithMinValueLowerBound()
+        {
+            Array array = NonZeroLowerBoundArray(new int[] { 1, 2, 3 }, int.MinValue);
+
+            Reverse(array, int.MinValue, 0, new int[] { 1, 2, 3 });
+            Reverse(array, int.MinValue, 1, new int[] { 1, 2, 3 });
+            Reverse(array, int.MinValue, 2, new int[] { 2, 1, 3 });
+        }
+
+        [Fact]
         public void CreateInstance_TypeNotRuntimeType_ThrowsArgumentException()
         {
             // This cannot be a [Theory] due to https://github.com/xunit/xunit/issues/1325.

@@ -53,6 +53,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not currently supported on UAP")]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task InfiniteSingleHeader_ThrowsException()

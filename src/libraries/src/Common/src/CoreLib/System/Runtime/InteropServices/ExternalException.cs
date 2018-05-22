@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices
 
             string s = className + " (0x" + HResult.ToString("X8", CultureInfo.InvariantCulture) + ")";
 
-            if (!(String.IsNullOrEmpty(message)))
+            if (!(string.IsNullOrEmpty(message)))
             {
                 s = s + ": " + message;
             }

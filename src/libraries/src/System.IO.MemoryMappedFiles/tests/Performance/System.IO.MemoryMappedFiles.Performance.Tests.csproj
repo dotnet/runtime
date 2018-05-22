@@ -14,8 +14,8 @@
     <Compile Include="..\MemoryMappedFilesTestsBase.cs" />
     <Compile Include="..\MemoryMappedFilesTestsBase.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="..\MemoryMappedFilesTestsBase.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
-      <Link>Common\System\IO\StringBuilderCache.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\StringBuilderCache.cs">
+      <Link>Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
