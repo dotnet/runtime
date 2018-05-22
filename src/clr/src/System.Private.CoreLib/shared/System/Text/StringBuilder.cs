@@ -558,6 +558,131 @@ namespace System.Text
         }
 
         /// <summary>
+        /// EnumerateChunks returns ChunkEnumerator that follows the IEnumerable pattern and
+        /// thus can be used in a C# 'foreach' statements to retreive the data in the StringBuilder
+        /// as chunks (ReadOnlyMemory) of characters.  An example use is:
+        /// 
+        ///      foreach (ReadOnlyMemory<char> chunk in sb.EnumerateChunks())
+        ///         foreach(char c in chunk.Span)
+        ///             { /* operation on c }
+        ///      
+        /// Note that creating a ReadOnlySpan from a ReadOnlyMemory is expensive compared to the
+        /// fetching of the character, so create a local variable for the SPAN if you need to use
+        /// a for statement for example 
+        /// 
+        ///    foreach (ReadOnlyMemory<char> chunk in sb.EnumerateChunks())
+        ///    {
+        ///         var span = chunk.Span;
+        ///         for(int i = 0; i < span.Length; i++)
+        ///             { /* operation on span[i] */ }
+        ///    }
+        /// </summary>
+        public ChunkEnumerator EnumerateChunks() => new ChunkEnumerator(this);
+
+        /// <summary>
+        /// ChunkEnumerator supports both the IEnumerable and IEnumerator pattern so foreach 
+        /// works (see EnumerateChunks).  It needs to be public (so the compiler can use it 
+        /// when building a foreach statement) but users typically don't use it explicitly.
+        /// (which is why it is a nested type). 
+        /// </summary>
+        public struct ChunkEnumerator
+        {
+            /// <summary>
+            /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator  
+            /// </summary>
+            [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] // Only here to make foreach work
+            public ChunkEnumerator GetEnumerator() { return this;  }
+
+            /// <summary>
+            /// Implements the IEnumerator pattern.
+            /// </summary>
+            public bool MoveNext()
+            {
+                if (_currentChunk == _firstChunk)
+                    return false;
+
+                if (_manyChunks != null)
+                    return _manyChunks.MoveNext(ref _currentChunk);
+
+                StringBuilder next = _firstChunk;
+                while (next.m_ChunkPrevious != _currentChunk)
+                    next = next.m_ChunkPrevious;
+                _currentChunk = next;
+                return true;
+            }
+
+            /// <summary>
+            /// Implements the IEnumerator pattern.
+            /// </summary>
+            public ReadOnlyMemory<char> Current => new ReadOnlyMemory<char>(_currentChunk.m_ChunkChars, 0, _currentChunk.m_ChunkLength);
+
+            #region private
+            internal ChunkEnumerator(StringBuilder stringBuilder)
+            {
+                Debug.Assert(stringBuilder != null);
+                _firstChunk = stringBuilder;
+                _currentChunk = null;   // MoveNext will find the last chunk if we do this.  
+                _manyChunks = null;
+
+                // There is a performance-vs-allocation tradeoff.   Because the chunks
+                // are a linked list with each chunk pointing to its PREDECESSOR, walking
+                // the list FORWARD is not efficient.   If there are few chunks (< 8) we
+                // simply scan from the start each time, and tolerate the N*N behavior. 
+                // However above this size, we allocate an array to hold pointers to all
+                // the chunks and we can be efficient for large N.    
+                int chunkCount = ChunkCount(stringBuilder);
+                if (8 < chunkCount)
+                    _manyChunks = new ManyChunkInfo(stringBuilder, chunkCount);
+            }
+
+            private static int ChunkCount(StringBuilder stringBuilder)
+            {
+                int ret = 0;
+                while (stringBuilder != null)
+                {
+                    ret++;
+                    stringBuilder = stringBuilder.m_ChunkPrevious;
+                }
+                return ret;
+            }
+
+            /// <summary>
+            /// Used to hold all the chunks indexes when you have many chunks. 
+            /// </summary>
+            private class ManyChunkInfo
+            {
+                public bool MoveNext(ref StringBuilder current)
+                {
+                    int pos = ++_chunkPos;
+                    if (_chunks.Length <= pos)
+                        return false;
+                    current = _chunks[pos];
+                    return true;
+                }
+
+                public ManyChunkInfo(StringBuilder stringBuilder, int chunkCount)
+                {
+                    _chunks = new StringBuilder[chunkCount];
+                    while (0 <= --chunkCount)
+                    {
+                        Debug.Assert(stringBuilder != null);
+                        _chunks[chunkCount] = stringBuilder;
+                        stringBuilder = stringBuilder.m_ChunkPrevious;
+                    }
+                    _chunkPos = -1;
+                }
+
+                readonly StringBuilder[] _chunks;    // These are in normal order (first chunk first) 
+                int _chunkPos;
+            }
+
+            readonly StringBuilder _firstChunk; // The first Stringbuilder chunk (which is the end of the logical string)
+            StringBuilder _currentChunk;        // The chunk that this enumerator is currently returning (Current).  
+            readonly ManyChunkInfo _manyChunks; // Only used for long string builders with many chunks (see constructor)
+#endregion
+        }
+
+        /// <summary>
         /// Appends a character 0 or more times to the end of this builder.
         /// </summary>
         /// <param name="value">The character to append.</param>
