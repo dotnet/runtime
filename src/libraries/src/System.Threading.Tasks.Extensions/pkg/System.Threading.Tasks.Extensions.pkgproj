@@ -13,6 +13,7 @@
 
     <InboxOnTargetFramework Include="netcoreapp2.1" />
     <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
+    <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
 
     <!-- this package is part of the implementation closure of NETStandard.Library
          therefore it cannot reference NETStandard.Library -->
