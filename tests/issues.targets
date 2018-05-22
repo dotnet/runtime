@@ -187,6 +187,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest683\Generated683\*">
             <Issue>6707</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_18056\Bool_And_Op_cs_do\Bool_And_Op_cs_do.cmd">
+            <Issue>18056</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x86 failures -->
