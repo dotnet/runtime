@@ -32,28 +32,29 @@ namespace System.Net.WebSockets.Client.Tests
 
         public SendReceiveTest(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(9296)]
+        [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
         {
-            var sendBuffer = new byte[1024];
+            const int SendBufferSize = 10;
+            var sendBuffer = new byte[SendBufferSize];
             var sendSegment = new ArraySegment<byte>(sendBuffer);
 
-            var receiveBuffer = new byte[1024];
+            var receiveBuffer = new byte[SendBufferSize / 2];
             var receiveSegment = new ArraySegment<byte>(receiveBuffer);
 
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
-                // The server will read buffers and aggregate it up to 64KB before echoing back a complete message.
-                // But since this test uses a receive buffer that is small, we will get back partial message fragments
-                // as we read them until we read the complete message payload.
-                for (int i = 0; i < 63; i++)
+                // The server will read buffers and aggregate it before echoing back a complete message.
+                // But since this test uses a receive buffer that is smaller than the complete message, we will get
+                // back partial message fragments as we read them until we read the complete message payload.
+                for (int i = 0; i < SendBufferSize * 5; i++)
                 {
                     await SendAsync(cws, sendSegment, WebSocketMessageType.Binary, false, ctsDefault.Token);
                 }
+
                 await SendAsync(cws, sendSegment, WebSocketMessageType.Binary, true, ctsDefault.Token);
 
                 WebSocketReceiveResult recvResult = await ReceiveAsync(cws, receiveSegment, ctsDefault.Token);
