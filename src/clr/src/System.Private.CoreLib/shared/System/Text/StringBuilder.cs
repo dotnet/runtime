@@ -579,7 +579,6 @@ namespace System.Text
         /// </summary>
         public ChunkEnumerator EnumerateChunks() => new ChunkEnumerator(this);
 
-
         /// <summary>
         /// ChunkEnumerator supports both the IEnumerable and IEnumerator pattern so foreach 
         /// works (see EnumerateChunks).  It needs to be public (so the compiler can use it 
@@ -588,7 +587,6 @@ namespace System.Text
         /// </summary>
         public struct ChunkEnumerator
         {
-
             /// <summary>
             /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator  
             /// </summary>
