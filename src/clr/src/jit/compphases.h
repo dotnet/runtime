@@ -87,18 +87,13 @@ CompPhaseNameMacro(PHASE_LCLVARLIVENESS_INIT,    "Local var liveness init",     
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS_PERBLOCK,"Per block local var liveness",   "LIV-BLK",  false, PHASE_LCLVARLIVENESS, false)
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS_INTERBLOCK,  "Global local var liveness",  "LIV-GLBL", false, PHASE_LCLVARLIVENESS, false)
 
-#ifdef LEGACY_BACKEND
-CompPhaseNameMacro(PHASE_RA_ASSIGN_VARS,         "RA assign vars",                 "REGALLOC", false, -1, false)
-#endif // LEGACY_BACKEND
 CompPhaseNameMacro(PHASE_LOWERING_DECOMP,        "Lowering decomposition",         "LWR-DEC",  false, -1, false)
 CompPhaseNameMacro(PHASE_LOWERING,               "Lowering nodeinfo",              "LWR-INFO", false, -1, true)
-#ifndef LEGACY_BACKEND
 CompPhaseNameMacro(PHASE_STACK_LEVEL_SETTER,     "Calculate stack level slots",    "STK-SET",  false, -1, false)
 CompPhaseNameMacro(PHASE_LINEAR_SCAN,            "Linear scan register alloc",     "LSRA",     true, -1, true)
 CompPhaseNameMacro(PHASE_LINEAR_SCAN_BUILD,      "LSRA build intervals",           "LSRA-BLD", false, PHASE_LINEAR_SCAN, false)
 CompPhaseNameMacro(PHASE_LINEAR_SCAN_ALLOC,      "LSRA allocate",                  "LSRA-ALL", false, PHASE_LINEAR_SCAN, false)
 CompPhaseNameMacro(PHASE_LINEAR_SCAN_RESOLVE,    "LSRA resolve",                   "LSRA-RES", false, PHASE_LINEAR_SCAN, false)
-#endif // !LEGACY_BACKEND
 CompPhaseNameMacro(PHASE_GENERATE_CODE,          "Generate code",                  "CODEGEN",  false, -1, false)
 CompPhaseNameMacro(PHASE_EMIT_CODE,              "Emit code",                      "EMIT",     false, -1, false)
 CompPhaseNameMacro(PHASE_EMIT_GCEH,              "Emit GC+EH tables",              "EMT-GCEH", false, -1, false)

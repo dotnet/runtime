@@ -4772,9 +4772,6 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Gen
         case GT_RSH:
         case GT_RSZ:
         case GT_NEG:
-#ifdef LEGACY_BACKEND
-        case GT_CHS:
-#endif
         case GT_CAST:
         case GT_INTRINSIC:
             break;

@@ -29,24 +29,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-#ifdef LEGACY_BACKEND
-/*****************************************************************************
-*
-*  Keep track of the current state of each register. This is intended to be
-*  used for things like register reload suppression, but for now the only
-*  thing it does is note which registers we use in each method.
-*/
-
-enum regValKind
-{
-    RV_TRASH,          // random unclassified garbage
-    RV_INT_CNS,        // integer constant
-    RV_LCL_VAR,        // local variable value
-    RV_LCL_VAR_LNG_LO, // lower half of long local variable
-    RV_LCL_VAR_LNG_HI,
-};
-#endif // LEGACY_BACKEND
-
 /*****************************************************************************/
 
 class RegSet
@@ -73,46 +55,17 @@ private:
     struct SpillDsc
     {
         SpillDsc* spillNext; // next spilled value of same reg
-
-        union {
-            GenTree* spillTree; // the value that was spilled
-#ifdef LEGACY_BACKEND
-            LclVarDsc* spillVarDsc; // variable if it's an enregistered variable
-#endif                              // LEGACY_BACKEND
-        };
-
-        TempDsc* spillTemp; // the temp holding the spilled value
-
-#ifdef LEGACY_BACKEND
-        GenTree* spillAddr; // owning complex address mode or nullptr
-
-        union {
-            bool spillMoreMultis;
-            bool bEnregisteredVariable; // For FP. Indicates that what was spilled was
-                                        // an enregistered variable
-        };
-#endif // LEGACY_BACKEND
+        GenTree*  spillTree; // the value that was spilled
+        TempDsc*  spillTemp; // the temp holding the spilled value
 
         static SpillDsc* alloc(Compiler* pComp, RegSet* regSet, var_types type);
         static void freeDsc(RegSet* regSet, SpillDsc* spillDsc);
     };
 
-#ifdef LEGACY_BACKEND
-public:
-    regMaskTP rsUseIfZero(regMaskTP regs, regMaskTP includeHint);
-#endif // LEGACY_BACKEND
-
-//-------------------------------------------------------------------------
-//
-//  Track the status of the registers
-//
-#ifdef LEGACY_BACKEND
-public:                             // TODO-Cleanup: Should be private, but Compiler uses it
-    GenTree* rsUsedTree[REG_COUNT]; // trees currently sitting in the registers
-private:
-    GenTree*  rsUsedAddr[REG_COUNT];  // addr for which rsUsedTree[reg] is a part of the addressing mode
-    SpillDsc* rsMultiDesc[REG_COUNT]; // keeps track of 'multiple-use' registers.
-#endif                                // LEGACY_BACKEND
+    //-------------------------------------------------------------------------
+    //
+    //  Track the status of the registers
+    //
 
 private:
     bool      rsNeededSpillReg;   // true if this method needed to spill any registers
@@ -142,10 +95,6 @@ public:
     }
 
 public: // TODO-Cleanup: Should be private, but GCInfo uses them
-#ifdef LEGACY_BACKEND
-    regMaskTP rsMaskUsed; // currently 'used' registers mask
-#endif                    // LEGACY_BACKEND
-
     __declspec(property(get = GetMaskVars, put = SetMaskVars)) regMaskTP rsMaskVars; // mask of registers currently
                                                                                      // allocated to variables
 
@@ -174,11 +123,6 @@ public: // TODO-Cleanup: Should be private, but GCInfo uses them
 private:
     regMaskTP _rsMaskVars; // backing store for rsMaskVars property
 
-#ifdef LEGACY_BACKEND
-    regMaskTP rsMaskLock; // currently 'locked' registers mask
-    regMaskTP rsMaskMult; // currently 'multiply used' registers mask
-#endif                    // LEGACY_BACKEND
-
 #ifdef _TARGET_ARMARCH_
     regMaskTP rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
 #endif                           // _TARGET_ARM_
@@ -195,126 +139,6 @@ public: // The PreSpill masks are used in LclVars.cpp
                                     // and all enregistered user arguments in a varargs call
 #endif                              // _TARGET_ARM_
 
-#ifdef LEGACY_BACKEND
-
-private:
-    // These getters/setters are ifdef here so that the accesses to these values in sharedfloat.cpp are redirected
-    // to the appropriate value.
-    // With FEATURE_STACK_FP_X87 (x86 FP codegen) we have separate register mask that just handle FP registers.
-    // For all other platforms (and eventually on x86) we use unified register masks that handle both kinds.
-    //
-    regMaskTP rsGetMaskUsed(); // Getter for rsMaskUsed or rsMaskUsedFloat
-    regMaskTP rsGetMaskVars(); // Getter for rsMaskVars or rsMaskRegVarFloat
-    regMaskTP rsGetMaskLock(); // Getter for rsMaskLock or rsMaskLockedFloat
-    regMaskTP rsGetMaskMult(); // Getter for rsMaskMult or 0
-
-    void rsSetMaskUsed(regMaskTP maskUsed); // Setter for rsMaskUsed or rsMaskUsedFloat
-    void rsSetMaskVars(regMaskTP maskVars); // Setter for rsMaskVars or rsMaskRegVarFloat
-    void rsSetMaskLock(regMaskTP maskLock); // Setter for rsMaskLock or rsMaskLockedFloat
-
-    void rsSetUsedTree(regNumber regNum, GenTree* tree);  // Setter for  rsUsedTree[]/genUsedRegsFloat[]
-    void rsFreeUsedTree(regNumber regNum, GenTree* tree); // Free   for  rsUsedTree[]/genUsedRegsFloat[]
-
-public:
-    regPairNo rsFindRegPairNo(regMaskTP regMask);
-
-private:
-    bool rsIsTreeInReg(regNumber reg, GenTree* tree);
-
-    regMaskTP rsExcludeHint(regMaskTP regs, regMaskTP excludeHint);
-    regMaskTP rsNarrowHint(regMaskTP regs, regMaskTP narrowHint);
-    regMaskTP rsMustExclude(regMaskTP regs, regMaskTP exclude);
-    regMaskTP rsRegMaskFree();
-    regMaskTP rsRegMaskCanGrab();
-
-    void rsMarkRegUsed(GenTree* tree, GenTree* addr = 0);
-    // A special case of "rsMarkRegUsed": the register used is an argument register, used to hold part of
-    // the given argument node "promotedStructArg".  (The name suggests that we're likely to use use this
-    // for register holding a promoted struct argument, but the implementation doesn't depend on that.)  The
-    // "isGCRef" argument indicates whether the register contains a GC reference.
-    void rsMarkArgRegUsedByPromotedFieldArg(GenTree* promotedStructArg, regNumber regNum, bool isGCRef);
-
-    void rsMarkRegPairUsed(GenTree* tree);
-
-    void rsMarkRegFree(regMaskTP regMask);
-    void rsMarkRegFree(regNumber reg, GenTree* tree);
-    void rsMultRegFree(regMaskTP regMask);
-    unsigned rsFreeNeededRegCount(regMaskTP needReg);
-
-    void rsLockReg(regMaskTP regMask);
-    void rsUnlockReg(regMaskTP regMask);
-    void rsLockUsedReg(regMaskTP regMask);
-    void rsUnlockUsedReg(regMaskTP regMask);
-    void rsLockReg(regMaskTP regMask, regMaskTP* usedMask);
-    void rsUnlockReg(regMaskTP regMask, regMaskTP usedMask);
-
-    regMaskTP rsRegExclMask(regMaskTP regMask, regMaskTP rmvMask);
-
-    regNumber rsPickRegInTmpOrder(regMaskTP regMask);
-
-public: // used by emitter (!)
-    regNumber rsGrabReg(regMaskTP regMask);
-
-private:
-    regNumber rsPickReg(regMaskTP regMask = RBM_NONE, regMaskTP regBest = RBM_NONE);
-
-public: // used by emitter (!)
-    regNumber rsPickFreeReg(regMaskTP regMaskHint = RBM_ALLINT);
-
-private:
-    regPairNo rsGrabRegPair(regMaskTP regMask);
-    regPairNo rsPickRegPair(regMaskTP regMask);
-
-    class RegisterPreference
-    {
-    public:
-        regMaskTP ok;
-        regMaskTP best;
-        RegisterPreference(regMaskTP _ok, regMaskTP _best)
-        {
-            ok   = _ok;
-            best = _best;
-        }
-    };
-    regNumber PickRegFloat(GenTree*            tree,
-                           var_types           type  = TYP_DOUBLE,
-                           RegisterPreference* pref  = NULL,
-                           bool                bUsed = true);
-    regNumber PickRegFloat(var_types type = TYP_DOUBLE, RegisterPreference* pref = NULL, bool bUsed = true);
-    regNumber PickRegFloatOtherThan(GenTree* tree, var_types type, regNumber reg);
-    regNumber PickRegFloatOtherThan(var_types type, regNumber reg);
-
-    regMaskTP RegFreeFloat();
-
-    void SetUsedRegFloat(GenTree* tree, bool bValue);
-    void SetLockedRegFloat(GenTree* tree, bool bValue);
-    bool IsLockedRegFloat(GenTree* tree);
-
-    var_types rsRmvMultiReg(regNumber reg);
-    void rsRecMultiReg(regNumber reg, var_types type);
-#endif // LEGACY_BACKEND
-
-public:
-#ifdef DEBUG
-    /*****************************************************************************
-        *  Should we stress register tracking logic ?
-        *  This is set via COMPlus_JitStressRegs.
-        *  The following values are ordered, such that any value greater than RS_xx
-        *  implies RS_xx.
-        *  LSRA defines a different set of values, but uses the same COMPlus_JitStressRegs
-        *  value, with the same notion of relative ordering.
-        *  1 = rsPickReg() picks 'bad' registers.
-        *  2 = codegen spills at safe points. This is still flaky
-        */
-    enum rsStressRegsType
-    {
-        RS_STRESS_NONE  = 0,
-        RS_PICK_BAD_REG = 01,
-        RS_SPILL_SAFE   = 02,
-    };
-    rsStressRegsType rsStressRegs();
-#endif // DEBUG
-
 private:
     //-------------------------------------------------------------------------
     //
@@ -325,10 +149,6 @@ private:
     SpillDsc* rsSpillDesc[REG_COUNT];
     SpillDsc* rsSpillFree; // list of unused spill descriptors
 
-#ifdef LEGACY_BACKEND
-    SpillDsc* rsSpillFloat;
-#endif // LEGACY_BACKEND
-
     void rsSpillChk();
     void rsSpillInit();
     void rsSpillDone();
@@ -337,63 +157,17 @@ private:
 
     void rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx = 0);
 
-#if defined(_TARGET_X86_) && !FEATURE_STACK_FP_X87
+#if defined(_TARGET_X86_)
     void rsSpillFPStack(GenTreeCall* call);
-#endif // defined(_TARGET_X86_) && !FEATURE_STACK_FP_X87
+#endif // defined(_TARGET_X86_)
 
-#ifdef LEGACY_BACKEND
-    void rsSpillReg(regNumber reg);
-    void rsSpillRegIfUsed(regNumber reg);
-    void rsSpillRegs(regMaskTP regMask);
-#endif // LEGACY_BACKEND
-
-    SpillDsc* rsGetSpillInfo(GenTree*   tree,
-                             regNumber  reg,
-                             SpillDsc** pPrevDsc = nullptr
-#ifdef LEGACY_BACKEND
-                             ,
-                             SpillDsc** pMultiDsc = NULL
-#endif // LEGACY_BACKEND
-                             );
+    SpillDsc* rsGetSpillInfo(GenTree* tree, regNumber reg, SpillDsc** pPrevDsc = nullptr);
 
     TempDsc* rsGetSpillTempWord(regNumber oldReg, SpillDsc* dsc, SpillDsc* prevDsc);
 
-#ifdef LEGACY_BACKEND
-    enum ExactReg
-    {
-        ANY_REG,
-        EXACT_REG
-    };
-    enum KeepReg
-    {
-        FREE_REG,
-        KEEP_REG
-    };
-
-    regNumber rsUnspillOneReg(GenTree* tree, regNumber oldReg, KeepReg willKeepNewReg, regMaskTP needReg);
-#endif // LEGACY_BACKEND
-
     TempDsc* rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regIdx = 0);
 
-#ifdef LEGACY_BACKEND
-    void rsUnspillReg(GenTree* tree, regMaskTP needReg, KeepReg keepReg);
-
-    void rsUnspillRegPair(GenTree* tree, regMaskTP needReg, KeepReg keepReg);
-#endif // LEGACY_BACKEND
-
     void rsMarkSpill(GenTree* tree, regNumber reg);
-
-#ifdef LEGACY_BACKEND
-    void rsMarkUnspill(GenTree* tree, regNumber reg);
-#endif // LEGACY_BACKEND
-
-#if FEATURE_STACK_FP_X87
-    regMaskTP  rsMaskUsedFloat;
-    regMaskTP  rsMaskRegVarFloat;
-    regMaskTP  rsMaskLockedFloat;
-    GenTree*   genUsedRegsFloat[REG_FPCOUNT];
-    LclVarDsc* genRegVarsFloat[REG_FPCOUNT];
-#endif // FEATURE_STACK_FP_X87
 };
 
 //-------------------------------------------------------------------------
@@ -404,69 +178,22 @@ private:
 //  Only integer registers are tracked.
 //
 
-#ifdef LEGACY_BACKEND
-struct RegValDsc
-{
-    regValKind rvdKind;
-    union {
-        ssize_t  rvdIntCnsVal; // for rvdKind == RV_INT_CNS
-        unsigned rvdLclVarNum; // for rvdKind == RV_LCL_VAR, RV_LCL_VAR_LNG_LO, RV_LCL_VAR_LNG_HI
-    };
-};
-#endif // LEGACY_BACKEND
-
 class RegTracker
 {
     Compiler* compiler;
     RegSet*   regSet;
-#ifdef LEGACY_BACKEND
-    RegValDsc rsRegValues[REG_COUNT];
-#endif
 
 public:
     void rsTrackInit(Compiler* comp, RegSet* rs)
     {
         compiler = comp;
         regSet   = rs;
-#ifdef LEGACY_BACKEND
-        rsTrackRegClr();
-#endif
     }
 
-#ifdef LEGACY_BACKEND
-    void rsTrackRegClr();
-    void rsTrackRegClrPtr();
-#endif // LEGACY_BACKEND
     void rsTrackRegTrash(regNumber reg);
-#ifdef LEGACY_BACKEND
-    void rsTrackRegMaskTrash(regMaskTP regMask);
-    regMaskTP rsTrashRegsForGCInterruptability();
-#endif // LEGACY_BACKEND
     void rsTrackRegIntCns(regNumber reg, ssize_t val);
     void rsTrackRegLclVar(regNumber reg, unsigned var);
-#ifdef LEGACY_BACKEND
-    void rsTrackRegLclVarLng(regNumber reg, unsigned var, bool low);
-    bool rsTrackIsLclVarLng(regValKind rvKind);
-    void rsTrackRegClsVar(regNumber reg, GenTree* clsVar);
-#endif // LEGACY_BACKEND
     void rsTrackRegCopy(regNumber reg1, regNumber reg2);
-#ifdef LEGACY_BACKEND
-    void rsTrackRegSwap(regNumber reg1, regNumber reg2);
-    void rsTrackRegAssign(GenTree* op1, GenTree* op2);
-
-    regNumber rsIconIsInReg(ssize_t val, ssize_t* closeDelta = nullptr);
-    bool rsIconIsInReg(ssize_t val, regNumber reg);
-    regNumber rsLclIsInReg(unsigned var);
-    regPairNo rsLclIsInRegPair(unsigned var);
-
-    //---------------------- Load suppression ---------------------------------
-
-    void rsTrashLclLong(unsigned var);
-    void rsTrashLcl(unsigned var);
-#endif // LEGACY_BACKEND
     void rsTrashRegSet(regMaskTP regMask);
-#ifdef LEGACY_BACKEND
-    regMaskTP rsUselessRegs();
-#endif // LEGACY_BACKEND
 };
 #endif // _REGSET_H

@@ -17,9 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "allocacheck.h" // for alloca
-#ifndef LEGACY_BACKEND
-#include "lower.h" // for LowerRange()
-#endif
+#include "lower.h"       // for LowerRange()
 
 /*****************************************************************************/
 
@@ -3556,21 +3554,6 @@ void Compiler::fgInitBlockVarSets()
         block->InitVarSets(this);
     }
 
-#ifdef LEGACY_BACKEND
-    // QMarks are much like blocks, and need their VarSets initialized.
-    assert(!compIsForInlining());
-    for (unsigned i = 0; i < compQMarks->Size(); i++)
-    {
-        GenTree* qmark = compQMarks->Get(i);
-        // Perhaps the gtOper of a QMark node was changed to something else since it was created and put on this list.
-        // So can't hurt to check.
-        if (qmark->OperGet() == GT_QMARK)
-        {
-            VarSetOps::AssignAllowUninitRhs(this, qmark->gtQmark.gtThenLiveSet, VarSetOps::UninitVal());
-            VarSetOps::AssignAllowUninitRhs(this, qmark->gtQmark.gtElseLiveSet, VarSetOps::UninitVal());
-        }
-    }
-#endif // LEGACY_BACKEND
     fgBBVarSetsInited = true;
 }
 
@@ -3887,9 +3870,6 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
     {
         createdPollBlocks = false;
         GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_POLL_GC, TYP_VOID);
-#ifdef LEGACY_BACKEND
-        call->gtFlags |= GTF_CALL_REG_SAVE;
-#endif // LEGACY_BACKEND
 
         // for BBJ_ALWAYS I don't need to insert it before the condition.  Just append it.
         if (block->bbJumpKind == BBJ_ALWAYS)
@@ -3968,9 +3948,6 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         //  2) Add a GC_CALL node to Poll.
         GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_POLL_GC, TYP_VOID);
-#ifdef LEGACY_BACKEND
-        call->gtFlags |= GTF_CALL_REG_SAVE;
-#endif // LEGACY_BACKEND
         fgInsertStmtAtEnd(poll, call);
 
         //  3) Remove the last statement from Top and add it to Bottom.
@@ -5428,7 +5405,6 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, B
                 jmpKind     = BBJ_SWITCH;
                 fgHasSwitch = true;
 
-#ifndef LEGACY_BACKEND
                 if (opts.compProcedureSplitting)
                 {
                     // TODO-CQ: We might need to create a switch table; we won't know for sure until much later.
@@ -5444,7 +5420,6 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, B
                     JITDUMP("Turning off procedure splitting for this method, as it might need switch tables; "
                             "implementation limitation.\n");
                 }
-#endif // !LEGACY_BACKEND
             }
                 goto GOT_ENDP;
 
@@ -8769,15 +8744,13 @@ void Compiler::fgAddInternal()
 {
     noway_assert(!compIsForInlining());
 
-#ifndef LEGACY_BACKEND
-    // The RyuJIT backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
+    // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
     // required. Create it here.
     if (info.compCallUnmanaged != 0)
     {
         fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
     }
-#endif // !LEGACY_BACKEND
 
     /*
     <BUGNUM> VSW441487 </BUGNUM>
@@ -9568,131 +9541,104 @@ void Compiler::fgSimpleLowering()
         // Walk the statement trees in this basic block.
         compCurBB = block; // Used in fgRngChkTarget.
 
-#ifdef LEGACY_BACKEND
-        for (GenTreeStmt* stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNextStmt)
-        {
-            for (GenTree* tree = stmt->gtStmtList; tree; tree = tree->gtNext)
-            {
-#else
-
         LIR::Range& range = LIR::AsRange(block);
         for (GenTree* tree : range)
         {
+            switch (tree->OperGet())
             {
-#endif
-
-                switch (tree->OperGet())
+                case GT_ARR_LENGTH:
                 {
-                    case GT_ARR_LENGTH:
+                    GenTreeArrLen* arrLen = tree->AsArrLen();
+                    GenTree*       arr    = arrLen->gtArrLen.ArrRef();
+                    GenTree*       add;
+                    GenTree*       con;
+
+                    /* Create the expression "*(array_addr + ArrLenOffs)" */
+
+                    noway_assert(arr->gtNext == tree);
+
+                    noway_assert(arrLen->ArrLenOffset() == offsetof(CORINFO_Array, length) ||
+                                 arrLen->ArrLenOffset() == offsetof(CORINFO_String, stringLen));
+
+                    if ((arr->gtOper == GT_CNS_INT) && (arr->gtIntCon.gtIconVal == 0))
                     {
-                        GenTreeArrLen* arrLen = tree->AsArrLen();
-                        GenTree*       arr    = arrLen->gtArrLen.ArrRef();
-                        GenTree*       add;
-                        GenTree*       con;
+                        // If the array is NULL, then we should get a NULL reference
+                        // exception when computing its length.  We need to maintain
+                        // an invariant where there is no sum of two constants node, so
+                        // let's simply return an indirection of NULL.
 
-                        /* Create the expression "*(array_addr + ArrLenOffs)" */
+                        add = arr;
+                    }
+                    else
+                    {
+                        con             = gtNewIconNode(arrLen->ArrLenOffset(), TYP_I_IMPL);
+                        con->gtRsvdRegs = RBM_NONE;
 
-                        noway_assert(arr->gtNext == tree);
+                        add             = gtNewOperNode(GT_ADD, TYP_REF, arr, con);
+                        add->gtRsvdRegs = arr->gtRsvdRegs;
 
-                        noway_assert(arrLen->ArrLenOffset() == offsetof(CORINFO_Array, length) ||
-                                     arrLen->ArrLenOffset() == offsetof(CORINFO_String, stringLen));
-
-                        if ((arr->gtOper == GT_CNS_INT) && (arr->gtIntCon.gtIconVal == 0))
-                        {
-                            // If the array is NULL, then we should get a NULL reference
-                            // exception when computing its length.  We need to maintain
-                            // an invariant where there is no sum of two constants node, so
-                            // let's simply return an indirection of NULL.
-
-                            add = arr;
-                        }
-                        else
-                        {
-                            con             = gtNewIconNode(arrLen->ArrLenOffset(), TYP_I_IMPL);
-                            con->gtRsvdRegs = RBM_NONE;
-
-                            add             = gtNewOperNode(GT_ADD, TYP_REF, arr, con);
-                            add->gtRsvdRegs = arr->gtRsvdRegs;
-
-#ifdef LEGACY_BACKEND
-                            con->gtCopyFPlvl(arr);
-
-                            add->gtCopyFPlvl(arr);
-                            add->CopyCosts(arr);
-
-                            arr->gtNext = con;
-                            con->gtPrev = arr;
-
-                            con->gtNext = add;
-                            add->gtPrev = con;
-
-                            add->gtNext  = tree;
-                            tree->gtPrev = add;
-#else
-                            range.InsertAfter(arr, con, add);
-#endif
-                        }
-
-                        // Change to a GT_IND.
-                        tree->ChangeOperUnchecked(GT_IND);
-
-                        tree->gtOp.gtOp1 = add;
-                        break;
+                        range.InsertAfter(arr, con, add);
                     }
 
-                    case GT_ARR_BOUNDS_CHECK:
+                    // Change to a GT_IND.
+                    tree->ChangeOperUnchecked(GT_IND);
+
+                    tree->gtOp.gtOp1 = add;
+                    break;
+                }
+
+                case GT_ARR_BOUNDS_CHECK:
 #ifdef FEATURE_SIMD
-                    case GT_SIMD_CHK:
+                case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
-                    case GT_HW_INTRINSIC_CHK:
+                case GT_HW_INTRINSIC_CHK:
 #endif // FEATURE_HW_INTRINSICS
-                    {
-                        // Add in a call to an error routine.
-                        fgSetRngChkTarget(tree, false);
-                        break;
-                    }
+                {
+                    // Add in a call to an error routine.
+                    fgSetRngChkTarget(tree, false);
+                    break;
+                }
 
 #if FEATURE_FIXED_OUT_ARGS
-                    case GT_CALL:
+                case GT_CALL:
+                {
+                    GenTreeCall* call = tree->AsCall();
+                    // Fast tail calls use the caller-supplied scratch
+                    // space so have no impact on this method's outgoing arg size.
+                    if (!call->IsFastTailCall())
                     {
-                        GenTreeCall* call = tree->AsCall();
-                        // Fast tail calls use the caller-supplied scratch
-                        // space so have no impact on this method's outgoing arg size.
-                        if (!call->IsFastTailCall())
-                        {
-                            // Update outgoing arg size to handle this call
-                            const unsigned thisCallOutAreaSize = call->fgArgInfo->GetOutArgSize();
-                            assert(thisCallOutAreaSize >= MIN_ARG_AREA_FOR_CALL);
+                        // Update outgoing arg size to handle this call
+                        const unsigned thisCallOutAreaSize = call->fgArgInfo->GetOutArgSize();
+                        assert(thisCallOutAreaSize >= MIN_ARG_AREA_FOR_CALL);
 
-                            if (thisCallOutAreaSize > outgoingArgSpaceSize)
-                            {
-                                outgoingArgSpaceSize = thisCallOutAreaSize;
-                                JITDUMP("Bumping outgoingArgSpaceSize to %u for call [%06d]\n", outgoingArgSpaceSize,
-                                        dspTreeID(tree));
-                            }
-                            else
-                            {
-                                JITDUMP("outgoingArgSpaceSize %u sufficient for call [%06d], which needs %u\n",
-                                        outgoingArgSpaceSize, dspTreeID(tree), thisCallOutAreaSize);
-                            }
+                        if (thisCallOutAreaSize > outgoingArgSpaceSize)
+                        {
+                            outgoingArgSpaceSize = thisCallOutAreaSize;
+                            JITDUMP("Bumping outgoingArgSpaceSize to %u for call [%06d]\n", outgoingArgSpaceSize,
+                                    dspTreeID(tree));
                         }
                         else
                         {
-                            JITDUMP("outgoingArgSpaceSize not impacted by fast tail call [%06d]\n", dspTreeID(tree));
+                            JITDUMP("outgoingArgSpaceSize %u sufficient for call [%06d], which needs %u\n",
+                                    outgoingArgSpaceSize, dspTreeID(tree), thisCallOutAreaSize);
                         }
-                        break;
                     }
+                    else
+                    {
+                        JITDUMP("outgoingArgSpaceSize not impacted by fast tail call [%06d]\n", dspTreeID(tree));
+                    }
+                    break;
+                }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-                    default:
-                    {
-                        // No other operators need processing.
-                        break;
-                    }
+                default:
+                {
+                    // No other operators need processing.
+                    break;
                 }
-            } // foreach gtNext
-        }     // foreach Stmt
+            } // switch on oper
+        }     // foreach tree
     }         // foreach BB
 
 #if FEATURE_FIXED_OUT_ARGS
@@ -9796,9 +9742,7 @@ VARSET_VALRET_TP Compiler::fgGetVarBits(GenTree* tree)
     // For more details see Compiler::raAssignVars() method.
     else if (tree->gtType == TYP_STRUCT && varDsc->lvPromoted)
     {
-#ifndef LEGACY_BACKEND
         assert(varDsc->lvType == TYP_STRUCT);
-#endif
         for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
         {
             noway_assert(lvaTable[i].lvIsStructField);
@@ -13954,10 +13898,8 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                         if (block->IsLIR())
                         {
                             LIR::AsRange(block).InsertAtEnd(nop);
-#ifndef LEGACY_BACKEND
                             LIR::ReadOnlyRange range(nop, nop);
                             m_pLowering->LowerRange(block, range);
-#endif
                         }
                         else
                         {
@@ -14266,7 +14208,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         GenTree* switchVal = switchTree->gtOp.gtOp1;
         noway_assert(genActualTypeIsIntOrI(switchVal->TypeGet()));
 
-#ifndef LEGACY_BACKEND
         // If we are in LIR, remove the jump table from the block.
         if (block->IsLIR())
         {
@@ -14274,7 +14215,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             assert(jumpTable->OperGet() == GT_JMPTABLE);
             blockRange->Remove(jumpTable);
         }
-#endif
 
         // Change the GT_SWITCH(switchVal) into GT_JTRUE(GT_EQ(switchVal==0)).
         // Also mark the node as GTF_DONT_CSE as further down JIT is not capable of handling it.
@@ -14302,10 +14242,8 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         if (block->IsLIR())
         {
             blockRange->InsertAfter(switchVal, zeroConstNode, condNode);
-#ifndef LEGACY_BACKEND
             LIR::ReadOnlyRange range(zeroConstNode, switchTree);
             m_pLowering->LowerRange(block, range);
-#endif // !LEGACY_BACKEND
         }
         else
         {
@@ -16274,16 +16212,6 @@ void Compiler::fgDetermineFirstColdBlock()
     assert(fgSafeBasicBlockCreation);
 
     fgFirstColdBlock = nullptr;
-
-#if FEATURE_STACK_FP_X87
-    if (compMayHaveTransitionBlocks)
-    {
-        opts.compProcedureSplitting = false;
-
-        // See comment above declaration of compMayHaveTransitionBlocks for comments on this
-        JITDUMP("Turning off procedure splitting for this method, as it may end up having FP transition blocks\n");
-    }
-#endif // FEATURE_STACK_FP_X87
 
     if (!opts.compProcedureSplitting)
     {
@@ -19205,115 +19133,6 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
     }
 }
 
-#ifdef LEGACY_BACKEND
-//------------------------------------------------------------------------
-// fgOrderBlockOps: Get the execution order for a block assignment
-//
-// Arguments:
-//    tree    - The block assignment
-//    reg0    - The register for the destination
-//    reg1    - The register for the source
-//    reg2    - The register for the size
-//    opsPtr  - An array of 3 GenTree*'s, an out argument for the operands, in order
-//    regsPtr - An array of three regMaskTP - an out argument for the registers, in order
-//
-// Return Value:
-//    The return values go into the arrays that are passed in, and provide the
-//    operands and associated registers, in execution order.
-//
-// Notes:
-//    This method is somewhat convoluted in order to preserve old behavior from when
-//    block assignments had their dst and src in a GT_LIST as op1, and their size as op2.
-//    The old tree was like this:
-//                                tree->gtOp
-//                               /        \
-//                           GT_LIST  [size/clsHnd]
-//                           /      \
-//                       [dest]     [val/src]
-//
-//    The new tree looks like this:
-//                                GT_ASG
-//                               /       \
-//                           blk/obj   [val/src]
-//                           /      \
-//                    [destAddr]     [*size/clsHnd] *only for GT_DYN_BLK
-//
-//    For the (usual) case of GT_BLK or GT_OBJ, the size is always "evaluated" (i.e.
-//    instantiated into a register) last. In those cases, the GTF_REVERSE_OPS flag
-//    on the assignment works as usual.
-//    In order to preserve previous possible orderings, the order for evaluating
-//    the size of a GT_DYN_BLK node is controlled by its gtEvalSizeFirst flag. If
-//    that is set, the size is evaluated first, and then the src and dst are evaluated
-//    according to the GTF_REVERSE_OPS flag on the assignment.
-
-void Compiler::fgOrderBlockOps(GenTree*   tree,
-                               regMaskTP  reg0,
-                               regMaskTP  reg1,
-                               regMaskTP  reg2,
-                               GenTree**  opsPtr,  // OUT
-                               regMaskTP* regsPtr) // OUT
-{
-    assert(tree->OperIsBlkOp());
-
-    GenTreeBlk* destBlk     = tree->gtOp.gtOp1->AsBlk();
-    GenTree*    destAddr    = destBlk->Addr();
-    GenTree*    srcPtrOrVal = tree->gtOp.gtOp2;
-    if (tree->OperIsCopyBlkOp())
-    {
-        assert(srcPtrOrVal->OperIsIndir());
-        srcPtrOrVal = srcPtrOrVal->AsIndir()->Addr();
-    }
-
-    assert(destAddr != nullptr);
-    assert(srcPtrOrVal != nullptr);
-
-    GenTree* ops[3] = {
-        destAddr,    // Dest address
-        srcPtrOrVal, // Val / Src address
-        nullptr      // Size of block
-    };
-
-    regMaskTP regs[3] = {reg0, reg1, reg2};
-
-    static int blockOpsOrder[4][3] =
-        //                destBlk->gtEvalSizeFirst |       tree->gtFlags
-        {
-            //            -------------------------+----------------------------
-            {0, 1, 2}, //          false           |              -
-            {2, 0, 1}, //          true            |              -
-            {1, 0, 2}, //          false           |       GTF_REVERSE_OPS
-            {2, 1, 0}  //          true            |       GTF_REVERSE_OPS
-        };
-
-    int orderNum = ((tree->gtFlags & GTF_REVERSE_OPS) == 0) ? 0 : 2;
-    if (destBlk->OperIs(GT_DYN_BLK))
-    {
-        GenTreeDynBlk* const dynBlk = destBlk->AsDynBlk();
-        if (dynBlk->gtEvalSizeFirst)
-        {
-            orderNum++;
-        }
-        ops[2] = dynBlk->gtDynamicSize;
-    }
-
-    assert(orderNum < 4);
-
-    int* order = blockOpsOrder[orderNum];
-
-    PREFIX_ASSUME(order != NULL);
-
-    // Fill in the OUT arrays according to the order we have selected
-
-    opsPtr[0] = ops[order[0]];
-    opsPtr[1] = ops[order[1]];
-    opsPtr[2] = ops[order[2]];
-
-    regsPtr[0] = regs[order[0]];
-    regsPtr[1] = regs[order[1]];
-    regsPtr[2] = regs[order[2]];
-}
-#endif // LEGACY_BACKEND
-
 //------------------------------------------------------------------------
 // fgGetFirstNode: Get the first node in the tree, in execution order
 //
@@ -20862,12 +20681,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
         else if (block->bbJumpKind == BBJ_SWITCH)
         {
-#ifndef LEGACY_BACKEND
             noway_assert(block->lastNode()->gtNext == nullptr &&
                          (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
-#else  // LEGACY_BACKEND
-            noway_assert(block->lastStmt()->gtNext == NULL && block->lastStmt()->gtStmtExpr->gtOper == GT_SWITCH);
-#endif // LEGACY_BACKEND
         }
         else if (!(block->bbJumpKind == BBJ_ALWAYS || block->bbJumpKind == BBJ_RETURN))
         {
@@ -23667,10 +23482,6 @@ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
         case GT_MUL:
         case GT_ADD:
         case GT_SUB:
-#ifdef LEGACY_BACKEND
-        case GT_ASG_ADD:
-        case GT_ASG_SUB:
-#endif
         case GT_CAST:
             if (tree->gtOverflow())
             {

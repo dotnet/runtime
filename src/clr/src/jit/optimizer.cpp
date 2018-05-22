@@ -3197,16 +3197,10 @@ bool Compiler::optComputeLoopRep(int        constInit,
 
             switch (iterOper)
             {
-#ifdef LEGACY_BACKEND
-                case GT_ASG_SUB:
-#endif
                 case GT_SUB:
                     iterInc = -iterInc;
                     __fallthrough;
 
-#ifdef LEGACY_BACKEND
-                case GT_ASG_ADD:
-#endif
                 case GT_ADD:
                     if (constInitX != constLimitX)
                     {
@@ -3235,13 +3229,6 @@ bool Compiler::optComputeLoopRep(int        constInit,
                     *iterCount = loopCount;
                     return true;
 
-#ifdef LEGACY_BACKEND
-                case GT_ASG_MUL:
-                case GT_ASG_DIV:
-                case GT_ASG_RSH:
-                case GT_ASG_LSH:
-                case GT_ASG_UDIV:
-#endif
                 case GT_MUL:
                 case GT_DIV:
                 case GT_RSH:
@@ -3257,16 +3244,10 @@ bool Compiler::optComputeLoopRep(int        constInit,
         case GT_LT:
             switch (iterOper)
             {
-#ifdef LEGACY_BACKEND
-                case GT_ASG_SUB:
-#endif
                 case GT_SUB:
                     iterInc = -iterInc;
                     __fallthrough;
 
-#ifdef LEGACY_BACKEND
-                case GT_ASG_ADD:
-#endif
                 case GT_ADD:
                     if (constInitX < constLimitX)
                     {
@@ -3295,13 +3276,6 @@ bool Compiler::optComputeLoopRep(int        constInit,
                     *iterCount = loopCount;
                     return true;
 
-#ifdef LEGACY_BACKEND
-                case GT_ASG_MUL:
-                case GT_ASG_DIV:
-                case GT_ASG_RSH:
-                case GT_ASG_LSH:
-                case GT_ASG_UDIV:
-#endif
                 case GT_MUL:
                 case GT_DIV:
                 case GT_RSH:
@@ -3317,16 +3291,10 @@ bool Compiler::optComputeLoopRep(int        constInit,
         case GT_LE:
             switch (iterOper)
             {
-#ifdef LEGACY_BACKEND
-                case GT_ASG_SUB:
-#endif
                 case GT_SUB:
                     iterInc = -iterInc;
                     __fallthrough;
 
-#ifdef LEGACY_BACKEND
-                case GT_ASG_ADD:
-#endif
                 case GT_ADD:
                     if (constInitX <= constLimitX)
                     {
@@ -3355,13 +3323,6 @@ bool Compiler::optComputeLoopRep(int        constInit,
                     *iterCount = loopCount;
                     return true;
 
-#ifdef LEGACY_BACKEND
-                case GT_ASG_MUL:
-                case GT_ASG_DIV:
-                case GT_ASG_RSH:
-                case GT_ASG_LSH:
-                case GT_ASG_UDIV:
-#endif
                 case GT_MUL:
                 case GT_DIV:
                 case GT_RSH:
@@ -3377,16 +3338,10 @@ bool Compiler::optComputeLoopRep(int        constInit,
         case GT_GT:
             switch (iterOper)
             {
-#ifdef LEGACY_BACKEND
-                case GT_ASG_SUB:
-#endif
                 case GT_SUB:
                     iterInc = -iterInc;
                     __fallthrough;
 
-#ifdef LEGACY_BACKEND
-                case GT_ASG_ADD:
-#endif
                 case GT_ADD:
                     if (constInitX > constLimitX)
                     {
@@ -3415,13 +3370,6 @@ bool Compiler::optComputeLoopRep(int        constInit,
                     *iterCount = loopCount;
                     return true;
 
-#ifdef LEGACY_BACKEND
-                case GT_ASG_MUL:
-                case GT_ASG_DIV:
-                case GT_ASG_RSH:
-                case GT_ASG_LSH:
-                case GT_ASG_UDIV:
-#endif
                 case GT_MUL:
                 case GT_DIV:
                 case GT_RSH:
@@ -3437,16 +3385,10 @@ bool Compiler::optComputeLoopRep(int        constInit,
         case GT_GE:
             switch (iterOper)
             {
-#ifdef LEGACY_BACKEND
-                case GT_ASG_SUB:
-#endif
                 case GT_SUB:
                     iterInc = -iterInc;
                     __fallthrough;
 
-#ifdef LEGACY_BACKEND
-                case GT_ASG_ADD:
-#endif
                 case GT_ADD:
                     if (constInitX >= constLimitX)
                     {
@@ -3475,13 +3417,6 @@ bool Compiler::optComputeLoopRep(int        constInit,
                     *iterCount = loopCount;
                     return true;
 
-#ifdef LEGACY_BACKEND
-                case GT_ASG_MUL:
-                case GT_ASG_DIV:
-                case GT_ASG_RSH:
-                case GT_ASG_LSH:
-                case GT_ASG_UDIV:
-#endif
                 case GT_MUL:
                 case GT_DIV:
                 case GT_RSH:
@@ -8267,12 +8202,7 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
     }
 
     // TODO-CQ: CLONE: Mark increasing or decreasing loops.
-    if ((
-#ifdef LEGACY_BACKEND
-            pLoop->lpIterOper() != GT_ASG_ADD &&
-#endif
-            pLoop->lpIterOper() != GT_ADD) ||
-        (pLoop->lpIterConst() != 1))
+    if ((pLoop->lpIterOper() != GT_ADD) || (pLoop->lpIterConst() != 1))
     {
         JITDUMP("> Loop iteration operator not matching\n");
         return false;
@@ -8285,16 +8215,8 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
         return false;
     }
 
-    if (!(((pLoop->lpTestOper() == GT_LT || pLoop->lpTestOper() == GT_LE) && (pLoop->lpIterOper() == GT_ADD
-#ifdef LEGACY_BACKEND
-                                                                              || pLoop->lpIterOper() == GT_ASG_ADD
-#endif
-                                                                              )) ||
-          ((pLoop->lpTestOper() == GT_GT || pLoop->lpTestOper() == GT_GE) && (pLoop->lpIterOper() == GT_SUB
-#ifdef LEGACY_BACKEND
-                                                                              || pLoop->lpIterOper() == GT_ASG_SUB
-#endif
-                                                                              ))))
+    if (!(((pLoop->lpTestOper() == GT_LT || pLoop->lpTestOper() == GT_LE) && (pLoop->lpIterOper() == GT_ADD)) ||
+          ((pLoop->lpTestOper() == GT_GT || pLoop->lpTestOper() == GT_GE) && (pLoop->lpIterOper() == GT_SUB))))
     {
         JITDUMP("> Loop test (%s) doesn't agree with the direction (%s) of the pLoop->\n",
                 GenTree::OpName(pLoop->lpTestOper()), GenTree::OpName(pLoop->lpIterOper()));

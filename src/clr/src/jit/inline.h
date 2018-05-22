@@ -77,13 +77,8 @@
 
 // Implementation limits
 
-#ifndef LEGACY_BACKEND
 const unsigned int MAX_INL_ARGS = 32; // does not include obj pointer
 const unsigned int MAX_INL_LCLS = 32;
-#else  // LEGACY_BACKEND
-const unsigned int MAX_INL_ARGS = 10; // does not include obj pointer
-const unsigned int MAX_INL_LCLS = 8;
-#endif // LEGACY_BACKEND
 
 // Forward declarations
 

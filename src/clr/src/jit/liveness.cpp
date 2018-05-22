@@ -14,9 +14,7 @@
 #if !defined(_TARGET_64BIT_)
 #include "decomposelongs.h"
 #endif
-#ifndef LEGACY_BACKEND
 #include "lower.h" // for LowerRange()
-#endif
 
 /*****************************************************************************
  *
@@ -127,12 +125,10 @@ void Compiler::fgLocalVarLiveness()
     {
         printf("*************** In fgLocalVarLiveness()\n");
 
-#ifndef LEGACY_BACKEND
         if (compRationalIRForm)
         {
             lvaTableDump();
         }
-#endif // !LEGACY_BACKEND
     }
 #endif // DEBUG
 
@@ -182,25 +178,6 @@ void Compiler::fgLocalVarLivenessInit()
         assert(lvaSortAgain == false); // Set to false by lvaSortOnly()
     }
 
-#ifdef LEGACY_BACKEND // RyuJIT backend does not use interference info
-
-    for (unsigned i = 0; i < lclMAX_TRACKED; i++)
-    {
-        VarSetOps::AssignNoCopy(this, lvaVarIntf[i], VarSetOps::MakeEmpty(this));
-    }
-
-    /* If we're not optimizing at all, things are simple */
-    if (opts.MinOpts())
-    {
-        VARSET_TP allOnes(VarSetOps::MakeFull(this));
-        for (unsigned i = 0; i < lvaTrackedCount; i++)
-        {
-            VarSetOps::Assign(this, lvaVarIntf[i], allOnes);
-        }
-        return;
-    }
-#endif // LEGACY_BACKEND
-
     // We mark a lcl as must-init in a first pass of local variable
     // liveness (Liveness1), then assertion prop eliminates the
     // uninit-use of a variable Vk, asserting it will be init'ed to
@@ -222,10 +199,6 @@ void Compiler::fgLocalVarLivenessInit()
     }
 }
 
-// Note that for the LEGACY_BACKEND this method is replaced with
-// fgLegacyPerStatementLocalVarLiveness and it lives in codegenlegacy.cpp
-//
-#ifndef LEGACY_BACKEND
 //------------------------------------------------------------------------
 // fgPerNodeLocalVarLiveness:
 //   Set fgCurMemoryUse and fgCurMemoryDef when memory is read or updated
@@ -430,8 +403,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
     }
 }
 
-#endif // !LEGACY_BACKEND
-
 /*****************************************************************************/
 void Compiler::fgPerBlockLocalVarLiveness()
 {
@@ -515,33 +486,23 @@ void Compiler::fgPerBlockLocalVarLiveness()
         fgCurMemoryHavoc = emptyMemoryKindSet;
 
         compCurBB = block;
-        if (!block->IsLIR())
+        if (block->IsLIR())
         {
-            for (GenTreeStmt* stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNextStmt)
-            {
-                compCurStmt = stmt;
-
-#ifdef LEGACY_BACKEND
-                GenTree* tree = fgLegacyPerStatementLocalVarLiveness(stmt->gtStmtList, nullptr);
-                assert(tree == nullptr);
-#else  // !LEGACY_BACKEND
-                for (GenTree* node = stmt->gtStmtList; node != nullptr; node = node->gtNext)
-                {
-                    fgPerNodeLocalVarLiveness(node);
-                }
-#endif // !LEGACY_BACKEND
-            }
-        }
-        else
-        {
-#ifdef LEGACY_BACKEND
-            unreached();
-#else  // !LEGACY_BACKEND
             for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
             {
                 fgPerNodeLocalVarLiveness(node);
             }
-#endif // !LEGACY_BACKEND
+        }
+        else
+        {
+            for (GenTreeStmt* stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNextStmt)
+            {
+                compCurStmt = stmt;
+                for (GenTree* node = stmt->gtStmtList; node != nullptr; node = node->gtNext)
+                {
+                    fgPerNodeLocalVarLiveness(node);
+                }
+            }
         }
 
         /* Get the TCB local and mark it as used */
@@ -1048,12 +1009,10 @@ void Compiler::fgExtendDbgLifetimes()
                     LIR::Range initRange = LIR::EmptyRange();
                     initRange.InsertBefore(nullptr, zero, store);
 
-#ifndef LEGACY_BACKEND
 #if !defined(_TARGET_64BIT_)
                     DecomposeLongs::DecomposeRange(this, blockWeight, initRange);
 #endif // !defined(_TARGET_64BIT_)
                     m_pLowering->LowerRange(block, initRange);
-#endif // !LEGACY_BACKEND
 
                     // Naively inserting the initializer at the end of the block may add code after the block's
                     // terminator, in which case the inserted code will never be executed (and the IR for the
@@ -1362,177 +1321,6 @@ void Compiler::fgLiveVarAnalysis(bool updateInternalOnly)
 #endif // DEBUG
 }
 
-//------------------------------------------------------------------------
-// Compiler::fgMarkIntf:
-//    Mark any variables in varSet1 as interfering with any variables
-//    specified in varSet2.
-//
-//    We ensure that the interference graph is reflective: if T_x
-//    interferes with T_y, then T_y interferes with T_x.
-//
-//    Note that this function is a no-op when targeting the RyuJIT
-//    backend, as it does not require the interference graph.
-//
-// Arguments:
-//    varSet1 - The first set of variables.
-//    varSet2 - The second set of variables.
-//
-// Returns:
-//    True if any new interferences were recorded; false otherwise.
-//
-bool Compiler::fgMarkIntf(VARSET_VALARG_TP varSet1, VARSET_VALARG_TP varSet2)
-{
-#ifdef LEGACY_BACKEND
-    /* If either set has no bits set (or we are not optimizing), take an early out */
-    if (opts.MinOpts() || VarSetOps::IsEmpty(this, varSet2) || VarSetOps::IsEmpty(this, varSet1))
-    {
-        return false;
-    }
-
-    bool addedIntf = false; // This is set to true if we add any new interferences
-
-    VarSetOps::Assign(this, fgMarkIntfUnionVS, varSet1);
-    VarSetOps::UnionD(this, fgMarkIntfUnionVS, varSet2);
-
-    VarSetOps::Iter iter(this, fgMarkIntfUnionVS);
-    unsigned        refIndex = 0;
-    while (iter.NextElem(&refIndex))
-    {
-        // if varSet1 has this bit set then it interferes with varSet2
-        if (VarSetOps::IsMember(this, varSet1, refIndex))
-        {
-            // Calculate the set of new interference to add
-            VARSET_TP newIntf(VarSetOps::Diff(this, varSet2, lvaVarIntf[refIndex]));
-            if (!VarSetOps::IsEmpty(this, newIntf))
-            {
-                addedIntf = true;
-                VarSetOps::UnionD(this, lvaVarIntf[refIndex], newIntf);
-            }
-        }
-
-        // if varSet2 has this bit set then it interferes with varSet1
-        if (VarSetOps::IsMember(this, varSet2, refIndex))
-        {
-            // Calculate the set of new interference to add
-            VARSET_TP newIntf(VarSetOps::Diff(this, varSet1, lvaVarIntf[refIndex]));
-            if (!VarSetOps::IsEmpty(this, newIntf))
-            {
-                addedIntf = true;
-                VarSetOps::UnionD(this, lvaVarIntf[refIndex], newIntf);
-            }
-        }
-    }
-
-    return addedIntf;
-#else
-    return false;
-#endif
-}
-
-//------------------------------------------------------------------------
-// Compiler::fgMarkIntf:
-//    Mark any variables in varSet1 as interfering with the variable
-//    specified by varIndex.
-//
-//    We ensure that the interference graph is reflective: if T_x
-//    interferes with T_y, then T_y interferes with T_x.
-//
-//    Note that this function is a no-op when targeting the RyuJIT
-//    backend, as it does not require the interference graph.
-//
-// Arguments:
-//    varSet1  - The first set of variables.
-//    varIndex - The second variable.
-//
-// Returns:
-//    True if any new interferences were recorded; false otherwise.
-//
-bool Compiler::fgMarkIntf(VARSET_VALARG_TP varSet, unsigned varIndex)
-{
-#ifdef LEGACY_BACKEND
-    // If the input set has no bits set (or we are not optimizing), take an early out
-    if (opts.MinOpts() || VarSetOps::IsEmpty(this, varSet))
-    {
-        return false;
-    }
-
-    bool addedIntf = false; // This is set to true if we add any new interferences
-
-    VarSetOps::Assign(this, fgMarkIntfUnionVS, varSet);
-    VarSetOps::AddElemD(this, fgMarkIntfUnionVS, varIndex);
-
-    VarSetOps::Iter iter(this, fgMarkIntfUnionVS);
-    unsigned        refIndex = 0;
-    while (iter.NextElem(&refIndex))
-    {
-        // if varSet has this bit set then it interferes with varIndex
-        if (VarSetOps::IsMember(this, varSet, refIndex))
-        {
-            // Calculate the set of new interference to add
-            if (!VarSetOps::IsMember(this, lvaVarIntf[refIndex], varIndex))
-            {
-                addedIntf = true;
-                VarSetOps::AddElemD(this, lvaVarIntf[refIndex], varIndex);
-            }
-        }
-
-        // if this bit is the same as varIndex then it interferes with varSet1
-        if (refIndex == varIndex)
-        {
-            // Calculate the set of new interference to add
-            VARSET_TP newIntf(VarSetOps::Diff(this, varSet, lvaVarIntf[refIndex]));
-            if (!VarSetOps::IsEmpty(this, newIntf))
-            {
-                addedIntf = true;
-                VarSetOps::UnionD(this, lvaVarIntf[refIndex], newIntf);
-            }
-        }
-    }
-
-    return addedIntf;
-#else
-    return false;
-#endif
-}
-
-/*****************************************************************************
- *
- *  Mark any variables in varSet as interfering with each other,
- *  This is a specialized version of the above, when both args are the same
- *  We ensure that the interference graph is reflective:
- *  (if T11 interferes with T16, then T16 interferes with T11)
- *  This function returns true if any new interferences were added
- *  and returns false if no new interference were added
- */
-
-bool Compiler::fgMarkIntf(VARSET_VALARG_TP varSet)
-{
-#ifdef LEGACY_BACKEND
-    /* No bits set or we are not optimizing, take an early out */
-    if (VarSetOps::IsEmpty(this, varSet) || opts.MinOpts())
-        return false;
-
-    bool addedIntf = false; // This is set to true if we add any new interferences
-
-    VarSetOps::Iter iter(this, varSet);
-    unsigned        refIndex = 0;
-    while (iter.NextElem(&refIndex))
-    {
-        // Calculate the set of new interference to add
-        VARSET_TP newIntf(VarSetOps::Diff(this, varSet, lvaVarIntf[refIndex]));
-        if (!VarSetOps::IsEmpty(this, newIntf))
-        {
-            addedIntf = true;
-            VarSetOps::UnionD(this, lvaVarIntf[refIndex], newIntf);
-        }
-    }
-
-    return addedIntf;
-#else  // !LEGACY_BACKEND
-    return false;
-#endif // !LEGACY_BACKEND
-}
-
 /*****************************************************************************
  * For updating liveset during traversal AFTER fgComputeLife has completed
  */
@@ -1617,9 +1405,6 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
             if (frameVarDsc->lvTracked)
             {
                 VarSetOps::AddElemD(this, life, frameVarDsc->lvVarIndex);
-
-                // Record interference with other live variables
-                fgMarkIntf(life, frameVarDsc->lvVarIndex);
             }
         }
     }
@@ -1660,49 +1445,8 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
                     VarSetOps::AddElemD(this, life, varIndex);
                     call->gtCallMoreFlags |= GTF_CALL_M_FRAME_VAR_DEATH;
                 }
-
-                // Record an interference with the other live variables
-                fgMarkIntf(life, varIndex);
             }
         }
-
-#ifdef LEGACY_BACKEND
-        /* Do we have any live variables? */
-        if (!VarSetOps::IsEmpty(this, life))
-        {
-            // For each live variable if it is a GC-ref type, mark it volatile to prevent if from being enregistered
-            // across the unmanaged call.
-            //
-            // Note that this is not necessary when targeting the RyuJIT backend, as its RA handles these kills itself.
-
-            unsigned   lclNum;
-            LclVarDsc* varDsc;
-            for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
-            {
-                /* Ignore the variable if it's not tracked */
-
-                if (!varDsc->lvTracked)
-                {
-                    continue;
-                }
-
-                unsigned varNum = varDsc->lvVarIndex;
-
-                /* Ignore the variable if it's not live here */
-
-                if (!VarSetOps::IsMember(this, life, varDsc->lvVarIndex))
-                {
-                    continue;
-                }
-
-                // If it is a GC-ref type then mark it DoNotEnregister.
-                if (varTypeIsGC(varDsc->TypeGet()))
-                {
-                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LiveAcrossUnmanagedCall));
-                }
-            }
-        }
-#endif // LEGACY_BACKEND
     }
 }
 
@@ -1744,9 +1488,6 @@ void Compiler::fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, 
     // So the variable is just coming to life
     node->gtFlags |= GTF_VAR_DEATH;
     VarSetOps::AddElemD(this, life, varIndex);
-
-    // Record interference with other live variables
-    fgMarkIntf(life, varIndex);
 }
 
 //------------------------------------------------------------------------
@@ -1831,14 +1572,13 @@ bool Compiler::fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
 //    life          - The live set that is being computed.
 //    keepAliveVars - The current set of variables to keep alive regardless of their actual lifetime.
 //    varDsc        - The LclVar descriptor for the variable being used or defined.
-//    lclVarNode    - The node that corresponds to the local var def or use. Only differs from `node` when targeting
-//                    the legacy backend.
-//    node          - The actual tree node being processed.
-void Compiler::fgComputeLifeUntrackedLocal(
-    VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, LclVarDsc& varDsc, GenTreeLclVarCommon* lclVarNode, GenTree* node)
+//    lclVarNode    - The node that corresponds to the local var def or use.
+void Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
+                                           VARSET_VALARG_TP     keepAliveVars,
+                                           LclVarDsc&           varDsc,
+                                           GenTreeLclVarCommon* lclVarNode)
 {
     assert(lclVarNode != nullptr);
-    assert(node != nullptr);
 
     if (!varTypeIsStruct(varDsc.lvType) || (lvaGetPromotionType(&varDsc) == PROMOTION_TYPE_NONE))
     {
@@ -1849,9 +1589,9 @@ void Compiler::fgComputeLifeUntrackedLocal(
 
     for (unsigned i = varDsc.lvFieldLclStart; i < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; ++i)
     {
-#if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+#if !defined(_TARGET_64BIT_)
         if (!varTypeIsLong(lvaTable[i].lvType) || !lvaTable[i].lvPromoted)
-#endif // !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+#endif // !defined(_TARGET_64BIT_)
         {
             noway_assert(lvaTable[i].lvIsStructField);
         }
@@ -1862,7 +1602,7 @@ void Compiler::fgComputeLifeUntrackedLocal(
             VarSetOps::AddElemD(this, varBit, varIndex);
         }
     }
-    if (node->gtFlags & GTF_VAR_DEF)
+    if (lclVarNode->gtFlags & GTF_VAR_DEF)
     {
         VarSetOps::DiffD(this, varBit, keepAliveVars);
         VarSetOps::DiffD(this, life, varBit);
@@ -1873,7 +1613,7 @@ void Compiler::fgComputeLifeUntrackedLocal(
     // Are the variables already known to be alive?
     if (VarSetOps::IsSubset(this, varBit, life))
     {
-        node->gtFlags &= ~GTF_VAR_DEATH; // Since we may now call this multiple times, reset if live.
+        lclVarNode->gtFlags &= ~GTF_VAR_DEATH; // Since we may now call this multiple times, reset if live.
         return;
     }
 
@@ -1881,7 +1621,7 @@ void Compiler::fgComputeLifeUntrackedLocal(
     // So they are just coming to life, in the backwards traversal; in a forwards
     // traversal, one or more are dying.  Mark this.
 
-    node->gtFlags |= GTF_VAR_DEATH;
+    lclVarNode->gtFlags |= GTF_VAR_DEATH;
 
     // Are all the variables becoming alive (in the backwards traversal), or just a subset?
     if (!VarSetOps::IsEmptyIntersection(this, varBit, life))
@@ -1896,9 +1636,6 @@ void Compiler::fgComputeLifeUntrackedLocal(
 
     // In any case, all the field vars are now live (in the backwards traversal).
     VarSetOps::UnionD(this, life, varBit);
-
-    // Record interference with other live variables
-    fgMarkIntf(life, varBit);
 }
 
 //------------------------------------------------------------------------
@@ -1909,13 +1646,11 @@ void Compiler::fgComputeLifeUntrackedLocal(
 // Arguments:
 //    life          - The live set that is being computed.
 //    keepAliveVars - The current set of variables to keep alive regardless of their actual lifetime.
-//    lclVarNode    - The node that corresponds to the local var def or use. Only differs from `node` when targeting
-//                    the legacy backend.
-//    node          - The actual tree node being processed.
+//    lclVarNode    - The node that corresponds to the local var def or use.
 //
 // Returns:
 //    `true` if the local var node corresponds to a dead store; `false` otherwise.
-bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode, GenTree* node)
+bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode)
 {
     unsigned lclNum = lclVarNode->gtLclVarCommon.gtLclNum;
 
@@ -1937,7 +1672,7 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
     }
     else
     {
-        fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode->AsLclVarCommon(), node);
+        fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode->AsLclVarCommon());
     }
     return false;
 }
@@ -1948,7 +1683,6 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
  * or subtree of a statement moving backward from startNode to endNode
  */
 
-#ifndef LEGACY_BACKEND
 void Compiler::fgComputeLife(VARSET_TP&       life,
                              GenTree*         startNode,
                              GenTree*         endNode,
@@ -1977,7 +1711,7 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
         }
         else if (tree->OperIsNonPhiLocal() || tree->OperIsLocalAddr())
         {
-            bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, tree, tree);
+            bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, tree);
             if (isDeadStore)
             {
                 LclVarDsc* varDsc = &lvaTable[tree->gtLclVarCommon.gtLclNum];
@@ -2085,7 +1819,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 }
                 else
                 {
-                    fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode, node);
+                    fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode);
                 }
                 break;
             }
@@ -2106,7 +1840,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 }
                 else
                 {
-                    isDeadStore = fgComputeLifeLocal(life, keepAliveVars, node, node);
+                    isDeadStore = fgComputeLifeLocal(life, keepAliveVars, node);
                     if (isDeadStore)
                     {
                         LIR::Use addrUse;
@@ -2174,7 +1908,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 }
                 else
                 {
-                    fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode, node);
+                    fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode);
                 }
                 break;
             }
@@ -2276,350 +2010,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
         }
     }
 }
-
-#else // LEGACY_BACKEND
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
-
-void Compiler::fgComputeLife(VARSET_TP&       life,
-                             GenTree*         startNode,
-                             GenTree*         endNode,
-                             VARSET_VALARG_TP volatileVars,
-                             bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
-{
-    GenTree* tree;
-    unsigned lclNum;
-
-    GenTree* gtQMark       = NULL; // current GT_QMARK node (walking the trees backwards)
-    GenTree* nextColonExit = 0;    // gtQMark->gtOp.gtOp2 while walking the 'else' branch.
-                                   // gtQMark->gtOp.gtOp1 while walking the 'then' branch
-
-    // TBD: This used to be an initialization to VARSET_NOT_ACCEPTABLE.  Try to figure out what's going on here.
-    VARSET_TP entryLiveSet(VarSetOps::MakeFull(this));   // liveness when we see gtQMark
-    VARSET_TP gtColonLiveSet(VarSetOps::MakeFull(this)); // liveness when we see gtColon
-    GenTree*  gtColon = NULL;
-
-    VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope)); /* Dont kill vars in scope */
-
-    noway_assert(VarSetOps::Equal(this, VarSetOps::Intersection(this, keepAliveVars, life), keepAliveVars));
-    noway_assert(compCurStmt->gtOper == GT_STMT);
-    noway_assert(endNode || (startNode == compCurStmt->gtStmt.gtStmtExpr));
-
-    /* NOTE: Live variable analysis will not work if you try
-     * to use the result of an assignment node directly */
-
-    for (tree = startNode; tree != endNode; tree = tree->gtPrev)
-    {
-    AGAIN:
-        /* For ?: nodes if we're done with the then branch, remember
-         * the liveness */
-        if (gtQMark && (tree == gtColon))
-        {
-            VarSetOps::Assign(this, gtColonLiveSet, life);
-            VarSetOps::Assign(this, gtQMark->gtQmark.gtThenLiveSet, gtColonLiveSet);
-        }
-
-        /* For ?: nodes if we're done with the else branch
-         * then set the correct life as the union of the two branches */
-
-        if (gtQMark && (tree == gtQMark->gtOp.gtOp1))
-        {
-            noway_assert(tree->gtFlags & GTF_RELOP_QMARK);
-            noway_assert(gtQMark->gtOp.gtOp2->gtOper == GT_COLON);
-
-            GenTree* thenNode = gtColon->AsColon()->ThenNode();
-            GenTree* elseNode = gtColon->AsColon()->ElseNode();
-
-            noway_assert(thenNode && elseNode);
-
-            VarSetOps::Assign(this, gtQMark->gtQmark.gtElseLiveSet, life);
-
-            /* Check if we optimized away the ?: */
-
-            if (elseNode->IsNothingNode())
-            {
-                if (thenNode->IsNothingNode())
-                {
-                    /* This can only happen for VOID ?: */
-                    noway_assert(gtColon->gtType == TYP_VOID);
-
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("BB%02u - Removing dead QMark - Colon ...\n", compCurBB->bbNum);
-                        gtDispTree(gtQMark);
-                        printf("\n");
-                    }
-#endif // DEBUG
-
-                    /* Remove the '?:' - keep the side effects in the condition */
-
-                    noway_assert(tree->OperKind() & GTK_RELOP);
-
-                    /* Change the node to a NOP */
-
-                    gtQMark->gtBashToNOP();
-#ifdef DEBUG
-                    *treeModf = true;
-#endif // DEBUG
-
-                    /* Extract and keep the side effects */
-
-                    if (tree->gtFlags & GTF_SIDE_EFFECT)
-                    {
-                        GenTree* sideEffList = NULL;
-
-                        gtExtractSideEffList(tree, &sideEffList);
-
-                        if (sideEffList)
-                        {
-                            noway_assert(sideEffList->gtFlags & GTF_SIDE_EFFECT);
-#ifdef DEBUG
-                            if (verbose)
-                            {
-                                printf("Extracted side effects list from condition...\n");
-                                gtDispTree(sideEffList);
-                                printf("\n");
-                            }
-#endif // DEBUG
-                            fgUpdateRefCntForExtract(tree, sideEffList);
-
-                            /* The NOP node becomes a GT_COMMA holding the side effect list */
-
-                            gtQMark->ChangeOper(GT_COMMA);
-                            gtQMark->gtFlags |= sideEffList->gtFlags & GTF_ALL_EFFECT;
-
-                            if (sideEffList->gtOper == GT_COMMA)
-                            {
-                                gtQMark->gtOp.gtOp1 = sideEffList->gtOp.gtOp1;
-                                gtQMark->gtOp.gtOp2 = sideEffList->gtOp.gtOp2;
-                            }
-                            else
-                            {
-                                gtQMark->gtOp.gtOp1 = sideEffList;
-                                gtQMark->gtOp.gtOp2 = gtNewNothingNode();
-                            }
-                        }
-                        else
-                        {
-#ifdef DEBUG
-                            if (verbose)
-                            {
-                                printf("\nRemoving tree ");
-                                printTreeID(tree);
-                                printf(" in BB%02u as useless\n", compCurBB->bbNum);
-                                gtDispTree(tree);
-                                printf("\n");
-                            }
-#endif // DEBUG
-                            fgUpdateRefCntForExtract(tree, NULL);
-                        }
-                    }
-
-                    /* If top node without side effects remove it */
-
-                    if ((gtQMark == compCurStmt->gtStmt.gtStmtExpr) && gtQMark->IsNothingNode())
-                    {
-                        fgRemoveStmt(compCurBB, compCurStmt);
-                        break;
-                    }
-
-                    /* Re-link the nodes for this statement */
-
-                    fgSetStmtSeq(compCurStmt);
-
-                    /* Continue analysis from this node */
-
-                    tree = gtQMark;
-
-                    /* As the 'then' and 'else' branches are emtpy, liveness
-                       should not have changed */
-
-                    noway_assert(VarSetOps::Equal(this, life, entryLiveSet));
-                    goto SKIP_QMARK;
-                }
-                else
-                {
-                    // The 'else' branch is empty and the 'then' branch is non-empty
-                    // so swap the two branches and reverse the condition.  If one is
-                    // non-empty, we want it to be the 'else'
-
-                    GenTree* tmp = thenNode;
-
-                    gtColon->AsColon()->ThenNode() = thenNode = elseNode;
-                    gtColon->AsColon()->ElseNode() = elseNode = tmp;
-                    noway_assert(tree == gtQMark->gtOp.gtOp1);
-                    gtReverseCond(tree);
-
-                    // Remember to also swap the live sets of the two branches.
-                    const VARSET_TP& tmpVS(gtQMark->gtQmark.gtElseLiveSet);
-                    VarSetOps::AssignNoCopy(this, gtQMark->gtQmark.gtElseLiveSet, gtQMark->gtQmark.gtThenLiveSet);
-                    VarSetOps::AssignNoCopy(this, gtQMark->gtQmark.gtThenLiveSet, tmpVS);
-
-                    /* Re-link the nodes for this statement */
-
-                    fgSetStmtSeq(compCurStmt);
-                }
-            }
-
-            /* Variables in the two branches that are live at the split
-             * must interfere with each other */
-
-            fgMarkIntf(life, gtColonLiveSet);
-
-            /* The live set at the split is the union of the two branches */
-
-            VarSetOps::UnionD(this, life, gtColonLiveSet);
-
-        SKIP_QMARK:
-
-            /* We are out of the parallel branches, the rest is sequential */
-
-            gtQMark = NULL;
-        }
-
-        if (tree->gtOper == GT_CALL)
-        {
-            fgComputeLifeCall(life, tree->AsCall());
-            continue;
-        }
-
-        // Is this a use/def of a local variable?
-        // Generally, the last use information is associated with the lclVar node.
-        // However, for LEGACY_BACKEND, the information must be associated
-        // with the OBJ itself for promoted structs.
-        // In that case, the LDOBJ may be require an implementation that might itself allocate registers,
-        // so the variable(s) should stay live until the end of the LDOBJ.
-        // Note that for promoted structs lvTracked is false.
-
-        GenTree* lclVarTree = nullptr;
-        if (tree->gtOper == GT_OBJ)
-        {
-            // fgIsIndirOfAddrOfLocal returns nullptr if the tree is
-            // not an indir(addr(local)), in which case we will set lclVarTree
-            // back to the original tree, and not handle it as a use/def.
-            lclVarTree = fgIsIndirOfAddrOfLocal(tree);
-            if ((lclVarTree != nullptr) && lvaTable[lclVarTree->gtLclVarCommon.gtLclNum].lvTracked)
-            {
-                lclVarTree = nullptr;
-            }
-        }
-        if (lclVarTree == nullptr)
-        {
-            lclVarTree = tree;
-        }
-
-        if (lclVarTree->OperIsNonPhiLocal() || lclVarTree->OperIsLocalAddr())
-        {
-            bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, lclVarTree, tree);
-            if (isDeadStore)
-            {
-                LclVarDsc* varDsc = &lvaTable[lclVarTree->gtLclVarCommon.gtLclNum];
-
-                bool doAgain = false;
-                if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))
-                {
-                    assert(!doAgain);
-                    break;
-                }
-
-                if (doAgain)
-                {
-                    goto AGAIN;
-                }
-            }
-        }
-        else
-        {
-            if (tree->gtOper == GT_QMARK && tree->gtOp.gtOp1)
-            {
-                /* Special cases - "? :" operators.
-
-                   The trees are threaded as shown below with nodes 1 to 11 linked
-                   by gtNext. Both GT_<cond>->gtLiveSet and GT_COLON->gtLiveSet are
-                   the union of the liveness on entry to thenTree and elseTree.
-
-                                  +--------------------+
-                                  |      GT_QMARK    11|
-                                  +----------+---------+
-                                             |
-                                             *
-                                            / \
-                                          /     \
-                                        /         \
-                   +---------------------+       +--------------------+
-                   |      GT_<cond>    3 |       |     GT_COLON     7 |
-                   |  w/ GTF_RELOP_QMARK |       |  w/ GTF_COLON_COND |
-                   +----------+----------+       +---------+----------+
-                              |                            |
-                              *                            *
-                             / \                          / \
-                           /     \                      /     \
-                         /         \                  /         \
-                        2           1          thenTree 6       elseTree 10
-                                   x               |                |
-                                  /                *                *
-      +----------------+        /                 / \              / \
-      |prevExpr->gtNext+------/                 /     \          /     \
-      +----------------+                      /         \      /         \
-                                             5           4    9           8
-
-                 */
-
-                noway_assert(tree->gtOp.gtOp1->OperKind() & GTK_RELOP);
-                noway_assert(tree->gtOp.gtOp1->gtFlags & GTF_RELOP_QMARK);
-                noway_assert(tree->gtOp.gtOp2->gtOper == GT_COLON);
-
-                if (gtQMark)
-                {
-                    /* This is a nested QMARK sequence - we need to use recursion.
-                     * Compute the liveness for each node of the COLON branches
-                     * The new computation starts from the GT_QMARK node and ends
-                     * when the COLON branch of the enclosing QMARK ends */
-
-                    noway_assert(nextColonExit &&
-                                 (nextColonExit == gtQMark->gtOp.gtOp1 || nextColonExit == gtQMark->gtOp.gtOp2));
-
-                    fgComputeLife(life, tree, nextColonExit, volatileVars, pStmtInfoDirty DEBUGARG(treeModf));
-
-                    /* Continue with exit node (the last node in the enclosing colon branch) */
-
-                    tree = nextColonExit;
-                    goto AGAIN;
-                }
-                else
-                {
-                    gtQMark = tree;
-                    VarSetOps::Assign(this, entryLiveSet, life);
-                    gtColon       = gtQMark->gtOp.gtOp2;
-                    nextColonExit = gtColon;
-                }
-            }
-
-            /* If found the GT_COLON, start the new branch with the original life */
-
-            if (gtQMark && tree == gtQMark->gtOp.gtOp2)
-            {
-                /* The node better be a COLON. */
-                noway_assert(tree->gtOper == GT_COLON);
-
-                VarSetOps::Assign(this, life, entryLiveSet);
-                nextColonExit = gtQMark->gtOp.gtOp1;
-            }
-        }
-    }
-
-    /* Return the set of live variables out of this statement */
-}
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
-#endif // !LEGACY_BACKEND
 
 // fgRemoveDeadStore - remove a store to a local which has no exposed uses.
 //
@@ -2732,77 +2122,8 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
         noway_assert(rhsNode);
         noway_assert(tree->gtFlags & GTF_VAR_DEF);
 
-#ifndef LEGACY_BACKEND
         assert(asgNode->OperIs(GT_ASG));
-#else
-        if (asgNode->gtOper != GT_ASG && asgNode->gtOverflowEx())
-        {
-            // asgNode may be <op_ovf>= (with GTF_OVERFLOW). In that case, we need to keep the <op_ovf>
 
-            // Dead <OpOvf>= assignment. We change it to the right operation (taking out the assignment),
-            // update the flags, update order of statement, as we have changed the order of the operation
-            // and we start computing life again from the op_ovf node (we go backwards). Note that we
-            // don't need to update ref counts because we don't change them, we're only changing the
-            // operation.
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nChanging dead <asgop> ovf to <op> ovf...\n");
-            }
-#endif // DEBUG
-
-            switch (asgNode->gtOper)
-            {
-                case GT_ASG_ADD:
-                    asgNode->SetOperRaw(GT_ADD);
-                    break;
-                case GT_ASG_SUB:
-                    asgNode->SetOperRaw(GT_SUB);
-                    break;
-                default:
-                    // Only add and sub allowed, we don't have ASG_MUL and ASG_DIV for ints, and
-                    // floats don't allow OVF forms.
-                    noway_assert(!"Unexpected ASG_OP");
-            }
-
-            asgNode->gtFlags &= ~GTF_REVERSE_OPS;
-            if (!((asgNode->gtOp.gtOp1->gtFlags | rhsNode->gtFlags) & GTF_ASG))
-            {
-                asgNode->gtFlags &= ~GTF_ASG;
-            }
-            asgNode->gtOp.gtOp1->gtFlags &= ~(GTF_VAR_DEF | GTF_VAR_USEASG);
-
-#ifdef DEBUG
-            *treeModf = true;
-#endif // DEBUG
-
-            // Make sure no previous cousin subtree rooted at a common ancestor has
-            // asked to defer the recomputation of costs.
-            if (!*pStmtInfoDirty)
-            {
-                /* Update ordering, costs, FP levels, etc. */
-                gtSetStmtInfo(compCurStmt);
-
-                /* Re-link the nodes for this statement */
-                fgSetStmtSeq(compCurStmt);
-
-                // Start from the old assign node, as we have changed the order of its operands.
-                // No need to update liveness, as nothing has changed (the target of the asgNode
-                // either goes dead here, in which case the whole expression is now dead, or it
-                // was already live).
-
-                // TODO-Throughput: Redo this so that the graph is modified BEFORE traversing it!
-                // We can determine this case when we first see the asgNode
-
-                *pTree = asgNode;
-
-                *doAgain = true;
-            }
-            return false;
-        }
-#endif
         // Do not remove if this local variable represents
         // a promoted struct field of an address exposed local.
         if (varDsc->lvIsStructField && lvaTable[varDsc->lvParentLcl].lvAddrExposed)
@@ -3218,15 +2539,17 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
         /* Mark any interference we might have at the end of the block */
 
-        fgMarkIntf(life);
-
-        if (!block->IsLIR())
+        if (block->IsLIR())
+        {
+            fgComputeLifeLIR(life, block, volatileVars);
+        }
+        else
         {
             /* Get the first statement in the block */
 
             GenTree* firstStmt = block->FirstNonPhiDef();
 
-            if (!firstStmt)
+            if (firstStmt == nullptr)
             {
                 continue;
             }
@@ -3268,14 +2591,6 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 }
 #endif // DEBUG
             } while (compCurStmt != firstStmt);
-        }
-        else
-        {
-#ifdef LEGACY_BACKEND
-            unreached();
-#else  // !LEGACY_BACKEND
-            fgComputeLifeLIR(life, block, volatileVars);
-#endif // !LEGACY_BACKEND
         }
 
         /* Done with the current block - if we removed any statements, some

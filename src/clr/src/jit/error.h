@@ -150,7 +150,7 @@ extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const c
 // limitations (that could be removed in the future)
 #define IMPL_LIMITATION(msg) NO_WAY(msg)
 
-#if !defined(_TARGET_X86_) || !defined(LEGACY_BACKEND)
+#if 1 // All platforms currently enable NYI; this should be a tighter condition to exclude some platforms from NYI
 
 #if defined(ALT_JIT)
 
@@ -209,18 +209,6 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  do { } while (0)
 
 #endif // NYI not available
-
-#if !defined(_TARGET_X86_) && !defined(FEATURE_STACK_FP_X87)
-
-#define NYI_FLAT_FP_X87(msg)    NYI(msg)
-#define NYI_FLAT_FP_X87_NC(msg) NYI(msg)
-
-#else
-
-#define NYI_FLAT_FP_X87(msg)    do { } while (0)
-#define NYI_FLAT_FP_X87_NC(msg) do { } while (0)
-
-#endif // !_TARGET_X86_ && !FEATURE_STACK_FP_X87
 
 // clang-format on
 

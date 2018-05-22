@@ -86,8 +86,6 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 size_t emitter::emitSizeOfInsDsc(instrDesc* id)
 {
-    assert(!emitIsTinyInsDsc(id));
-
     if (emitIsScnsInsDsc(id))
         return SMALL_IDSC_SIZE;
 
@@ -1903,14 +1901,7 @@ void emitter::emitIns_R_I(
             }
             else
             {
-#ifndef LEGACY_BACKEND
                 assert(!"emitIns_R_I: immediate doesn't fit into the instruction");
-#else  // LEGACY_BACKEND
-                // Load val into a register
-                regNumber valReg = codeGen->regSet.rsGrabReg(RBM_ALLINT & ~genRegMask(reg));
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, valReg, (ssize_t)imm);
-                emitIns_R_R(ins, attr, reg, valReg, flags);
-#endif // LEGACY_BACKEND
                 return;
             }
             break;
@@ -3731,11 +3722,8 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
 
     if (isFloatReg(regTmp))
     {
-#ifndef LEGACY_BACKEND
         assert(!"emitIns_R_C() cannot be called with floating point target");
-#else  // LEGACY_BACKEND
-        regTmp = codeGen->regSet.rsPickFreeReg(RBM_ALLINT & ~genRegMask(reg));
-#endif // LEGACY_BACKEND
+        return;
     }
 
     // Load address of CLS_VAR into a register
@@ -3754,46 +3742,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
 
 void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, regNumber reg, int offs)
 {
-#ifndef LEGACY_BACKEND
-    assert(!"emitIns_C_R not supported for RyuJIT backend");
-#else  // LEGACY_BACKEND
-    if (ins == INS_mov)
-    {
-        assert(!"Please use ins_Store() to select the correct instruction");
-    }
-    assert(emitInsIsStore(ins));
-
-    int     doff = Compiler::eeGetJitDataOffs(fldHnd);
-    ssize_t addr = NULL;
-
-    if (doff >= 0)
-    {
-        NYI_ARM("JitDataOffset static fields");
-    }
-    else if (fldHnd == FLD_GLOBAL_FS)
-    {
-        NYI_ARM("Thread-Local-Storage static fields");
-    }
-    else if (fldHnd == FLD_GLOBAL_DS)
-    {
-        addr = (ssize_t)offs;
-        offs = 0;
-    }
-    else
-    {
-        assert(!jitStaticFldIsGlobAddr(fldHnd));
-        addr = (ssize_t)emitComp->info.compCompHnd->getFieldAddress(fldHnd, NULL);
-        if (addr == NULL)
-            NO_WAY("could not obtain address of static field");
-    }
-
-    regNumber regTmp = codeGen->regSet.rsPickFreeReg(RBM_ALLINT & ~genRegMask(reg));
-
-    // Load address of CLS_VAR into a register
-    codeGen->instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regTmp, addr);
-
-    emitIns_R_R_I(ins, attr, reg, regTmp, offs);
-#endif // LEGACY_BACKEND
+    assert(!"emitIns_C_R not supported");
 }
 
 /*****************************************************************************
@@ -3831,14 +3780,7 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
         }
         else
         {
-#ifndef LEGACY_BACKEND
             assert(!"emitIns_R_AR: immediate doesn't fit in the instruction");
-#else  // LEGACY_BACKEND
-            // Load val into a register
-            regNumber immReg = codeGen->regSet.rsGrabReg(RBM_ALLINT & ~genRegMask(ireg) & ~genRegMask(reg));
-            codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, immReg, (ssize_t)offs);
-            emitIns_R_R_R(INS_add, attr, ireg, reg, immReg);
-#endif // LEGACY_BACKEND
         }
         return;
     }
@@ -3872,11 +3814,8 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
 
         if (isFloatReg(regTmp))
         {
-#ifndef LEGACY_BACKEND
             assert(!"emitIns_R_AI with floating point reg");
-#else  // LEGACY_BACKEND
-            regTmp = codeGen->regSet.rsPickFreeReg(RBM_ALLINT & ~genRegMask(ireg));
-#endif // LEGACY_BACKEND
+            return;
         }
 
         codeGen->instGen_Set_Reg_To_Imm(EA_IS_RELOC(attr) ? EA_HANDLE_CNS_RELOC : EA_PTRSIZE, regTmp, disp);
@@ -7557,8 +7496,6 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
 #endif // DEBUG
 
-#ifndef LEGACY_BACKEND
-
 void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir)
 {
     // Handle unaligned floating point loads/stores
@@ -7890,11 +7827,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             jumpKind                = isUnsignedOverflow ? EJ_lo : EJ_vs;
             if (jumpKind == EJ_lo)
             {
-                if ((dst->OperGet() != GT_SUB) &&
-#ifdef LEGACY_BACKEND
-                    (dst->OperGet() != GT_ASG_SUB) &&
-#endif
-                    (dst->OperGet() != GT_SUB_HI))
+                if ((dst->OperGet() != GT_SUB) && (dst->OperGet() != GT_SUB_HI))
                 {
                     jumpKind = EJ_hs;
                 }
@@ -7908,5 +7841,4 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     return dst->gtRegNum;
 }
 
-#endif // !LEGACY_BACKEND
 #endif // defined(_TARGET_ARM_)

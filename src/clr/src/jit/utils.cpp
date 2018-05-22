@@ -138,27 +138,8 @@ const char* getRegName(regNumber reg, bool isFloat)
     {
         return "NA";
     }
-#if defined(_TARGET_X86_) && defined(LEGACY_BACKEND)
-    static const char* const regNames[] = {
-#define REGDEF(name, rnum, mask, sname) sname,
-#include "register.h"
-    };
 
-    static const char* const floatRegNames[] = {
-#define REGDEF(name, rnum, mask, sname) sname,
-#include "registerxmm.h"
-    };
-    if (isFloat)
-    {
-        assert(reg < ArrLen(floatRegNames));
-        return floatRegNames[reg];
-    }
-    else
-    {
-        assert(reg < ArrLen(regNames));
-        return regNames[reg];
-    }
-#elif defined(_TARGET_ARM64_)
+#if defined(_TARGET_ARM64_)
     static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, xname, wname) xname,
 #include "register.h"
@@ -251,16 +232,6 @@ const char* getRegNameFloat(regNumber reg, var_types type)
         }
         return regName;
     }
-
-#elif defined(_TARGET_X86_) && defined(LEGACY_BACKEND)
-
-    static const char* regNamesFloat[] = {
-#define REGDEF(name, rnum, mask, sname) sname,
-#include "registerxmm.h"
-    };
-    assert((unsigned)reg < ArrLen(regNamesFloat));
-
-    return regNamesFloat[reg];
 
 #elif defined(_TARGET_ARM64_)
 
@@ -418,7 +389,6 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
     }
 #endif
 
-#if !FEATURE_STACK_FP_X87
     if (strlen(sep) > 0)
     {
         // We've already printed something.
@@ -465,7 +435,6 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
 
         regPrev = regNum;
     }
-#endif
 
     printf("]");
 

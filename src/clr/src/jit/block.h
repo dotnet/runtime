@@ -77,10 +77,6 @@ struct BasicBlockList;
 struct flowList;
 struct EHblkDsc;
 
-#if FEATURE_STACK_FP_X87
-struct FlatFPStateX87;
-#endif
-
 /*****************************************************************************
  *
  *  The following describes a switch block.
@@ -429,17 +425,7 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_COLD                0x10000000 // BB is cold
 #define BBF_PROF_WEIGHT         0x20000000 // BB weight is computed from profile data
-
-#ifdef LEGACY_BACKEND
-
-#define BBF_FORWARD_SWITCH      0x40000000 // Aux flag used in FP codegen to know if a jmptable entry has been forwarded
-
-#else // !LEGACY_BACKEND
-
 #define BBF_IS_LIR              0x40000000 // Set if the basic block contains LIR (as opposed to HIR)
-
-#endif // LEGACY_BACKEND
-
 #define BBF_KEEP_BBJ_ALWAYS     0x80000000 // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
                                            // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
                                            // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
@@ -473,14 +459,8 @@ struct BasicBlock : private LIR::Range
 
 // Flags a block should not have had before it is split.
 
-#ifdef LEGACY_BACKEND
-#define BBF_SPLIT_NONEXIST                                                                                             \
-    (BBF_CHANGED | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_RETLESS_CALL | BBF_LOOP_PREHEADER |           \
-     BBF_COLD | BBF_FORWARD_SWITCH)
-#else // !LEGACY_BACKEND
 #define BBF_SPLIT_NONEXIST                                                                                             \
     (BBF_CHANGED | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_RETLESS_CALL | BBF_LOOP_PREHEADER | BBF_COLD)
-#endif // LEGACY_BACKEND
 
 // Flags lost by the top block when a block is split.
 // Note, this is a conservative guess.
@@ -998,10 +978,6 @@ struct BasicBlock : private LIR::Range
     verTypeVal* bbTypesIn;  // list of variable types on  input
     verTypeVal* bbTypesOut; // list of variable types on output
 #endif                      // VERIFIER
-
-#if FEATURE_STACK_FP_X87
-    FlatFPStateX87* bbFPStateX87; // State of FP stack on entry to the basic block
-#endif                            // FEATURE_STACK_FP_X87
 
     /* The following fields used for loop detection */
 

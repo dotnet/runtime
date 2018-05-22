@@ -20,8 +20,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifndef LEGACY_BACKEND // This file is ONLY used for the RyuJIT backend that uses the linear scan register allocator
-
 #ifdef _TARGET_ARM_
 
 #include "jit.h"
@@ -802,5 +800,3 @@ void LinearScan::BuildNode(GenTree* tree)
 }
 
 #endif // _TARGET_ARM_
-
-#endif // !LEGACY_BACKEND

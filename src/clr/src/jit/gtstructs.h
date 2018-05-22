@@ -56,23 +56,15 @@ GTSTRUCT_2(Val         , GT_END_LFIN, GT_JMP)
 #else
 GTSTRUCT_1(Val         , GT_JMP)
 #endif
-#ifndef LEGACY_BACKEND
 GTSTRUCT_3_SPECIAL(IntConCommon, GT_CNS_INT, GT_CNS_LNG, GT_JMPTABLE)
 GTSTRUCT_1(JumpTable   , GT_JMPTABLE)
-#else // LEGACY_BACKEND
-GTSTRUCT_2_SPECIAL(IntConCommon, GT_CNS_INT, GT_CNS_LNG)
-#endif// LEGACY_BACKEND
 GTSTRUCT_1(IntCon      , GT_CNS_INT)
 GTSTRUCT_1(LngCon      , GT_CNS_LNG)
 GTSTRUCT_1(DblCon      , GT_CNS_DBL)
 GTSTRUCT_1(StrCon      , GT_CNS_STR)
 GTSTRUCT_N(LclVarCommon, GT_LCL_VAR, GT_LCL_FLD, GT_REG_VAR, GT_PHI_ARG, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR) 
 GTSTRUCT_3(LclVar      , GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_STORE_LCL_VAR) 
-#ifndef LEGACY_BACKEND
 GTSTRUCT_3(LclFld      , GT_LCL_FLD, GT_STORE_LCL_FLD, GT_LCL_FLD_ADDR)
-#else // LEGACY_BACKEND
-GTSTRUCT_1(LclFld      , GT_LCL_FLD)
-#endif // LEGACY_BACKEND
 GTSTRUCT_1(RegVar      , GT_REG_VAR)
 GTSTRUCT_1(Cast        , GT_CAST)
 GTSTRUCT_1(Box         , GT_BOX)
@@ -113,12 +105,12 @@ GTSTRUCT_1(Qmark       , GT_QMARK)
 GTSTRUCT_1(PhiArg      , GT_PHI_ARG)
 GTSTRUCT_1(StoreInd    , GT_STOREIND)
 GTSTRUCT_N(Indir       , GT_STOREIND, GT_IND, GT_NULLCHECK, GT_BLK, GT_STORE_BLK, GT_OBJ, GT_STORE_OBJ, GT_DYN_BLK, GT_STORE_DYN_BLK)
-#if defined(LEGACY_BACKEND) || !defined(_TARGET_ARM_)
-GTSTRUCT_1(PutArgStk   , GT_PUTARG_STK)
-#else // defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_ARM_)
 GTSTRUCT_2_SPECIAL(PutArgStk, GT_PUTARG_STK, GT_PUTARG_SPLIT)
 GTSTRUCT_1(PutArgSplit , GT_PUTARG_SPLIT)
-#endif // defined(LEGACY_BACKEND) || !defined(_TARGET_ARM_)
+#else // !defined(_TARGET_ARM_)
+GTSTRUCT_1(PutArgStk   , GT_PUTARG_STK)
+#endif // !defined(_TARGET_ARM_)
 GTSTRUCT_1(PhysReg     , GT_PHYSREG)
 #ifdef FEATURE_SIMD
 GTSTRUCT_1(SIMD        , GT_SIMD) 
@@ -129,7 +121,7 @@ GTSTRUCT_1(HWIntrinsic , GT_HWIntrinsic)
 GTSTRUCT_1(AllocObj    , GT_ALLOCOBJ)
 GTSTRUCT_1(RuntimeLookup, GT_RUNTIMELOOKUP)
 GTSTRUCT_2(CC          , GT_JCC, GT_SETCC)
-#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+#if defined(_TARGET_ARM_)
 GTSTRUCT_3(MultiRegOp  , GT_MUL_LONG, GT_PUTARG_REG, GT_BITCAST)
 #endif
 /*****************************************************************************/

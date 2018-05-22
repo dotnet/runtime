@@ -49,7 +49,7 @@ public:
                                    bool      nogen = false);
 
 private:
-#if defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
+#if defined(_TARGET_XARCH_)
     // Bit masks used in negating a float or double number.
     // This is to avoid creating more than one data constant for these bitmasks when a
     // method has more than one GT_NEG operation on floating point values.
@@ -68,7 +68,7 @@ private:
 
     // Generates SSE41 code for the given tree as a round operation
     void genSSE41RoundOp(GenTreeOp* treeNode);
-#endif // defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
+#endif // defined(_TARGET_XARCH_)
 
     void genPrepForCompiler();
 
@@ -143,16 +143,6 @@ private:
     }
 #endif // REG_OPT_RSVD
 
-#ifdef LEGACY_BACKEND
-    regNumber findStkLclInReg(unsigned lclNum)
-    {
-#ifdef DEBUG
-        genInterruptibleUsed = true;
-#endif
-        return regTracker.rsLclIsInReg(lclNum);
-    }
-#endif
-
     //-------------------------------------------------------------------------
 
     bool     genUseBlockInit;  // true if we plan to block-initialize the local stack frame
@@ -197,16 +187,6 @@ private:
     bool genNeedPrologStackProbe;
 
     void genGenerateStackProbe();
-#endif
-
-#ifdef LEGACY_BACKEND
-    regMaskTP genNewLiveRegMask(GenTree* first, GenTree* second);
-
-    // During codegen, determine the LiveSet after tree.
-    // Preconditions: must be called during codegen, when compCurLife and
-    // compCurLifeTree are being maintained, and tree must occur in the current
-    // statement.
-    VARSET_VALRET_TP genUpdateLiveSetForward(GenTree* tree);
 #endif
 
     //-------------------------------------------------------------------------
@@ -260,17 +240,10 @@ protected:
     void genCodeForBBlist();
 
 public:
-#ifndef LEGACY_BACKEND
-    // genSpillVar is called by compUpdateLifeVar in the !LEGACY_BACKEND case
     void genSpillVar(GenTree* tree);
-#endif // !LEGACY_BACKEND
 
 protected:
-#ifndef LEGACY_BACKEND
     void genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTarget = REG_NA);
-#else
-    void genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize);
-#endif
 
     void genGCWriteBarrier(GenTree* tgt, GCInfo::WriteBarrierForm wbf);
 
@@ -283,10 +256,6 @@ protected:
     void genAdjustStackLevel(BasicBlock* block);
 
     void genExitCode(BasicBlock* block);
-
-#ifdef LEGACY_BACKEND
-    GenTree* genMakeConst(const void* cnsAddr, var_types cnsType, GenTree* cnsTree, bool dblAlign);
-#endif
 
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, GenTree* failBlk = nullptr);
 
@@ -417,7 +386,7 @@ protected:
 
 #endif // _TARGET_AMD64_
 
-#if defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
+#if defined(_TARGET_XARCH_)
 
     // Save/Restore callee saved float regs to stack
     void genPreserveCalleeSavedFltRegs(unsigned lclFrameSize);
@@ -425,11 +394,9 @@ protected:
     // Generate VZeroupper instruction to avoid AVX/SSE transition penalty
     void genVzeroupperIfNeeded(bool check256bitOnly = true);
 
-#endif // _TARGET_XARCH_ && FEATURE_STACK_FP_X87
+#endif // _TARGET_XARCH_
 
-#if !FEATURE_STACK_FP_X87
     void genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& initDblRegs, const regNumber& initReg);
-#endif // !FEATURE_STACK_FP_X87
 
     regNumber genGetZeroReg(regNumber initReg, bool* pInitRegZeroed);
 
@@ -796,11 +763,7 @@ protected:
     unsigned           genTrnslLocalVarCount;
 #endif
 
-#ifndef LEGACY_BACKEND
 #include "codegenlinear.h"
-#else // LEGACY_BACKEND
-#include "codegenclassic.h"
-#endif // LEGACY_BACKEND
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -818,10 +781,6 @@ protected:
 
 public:
     void instInit();
-
-#ifdef LEGACY_BACKEND
-    regNumber genGetZeroRegister();
-#endif
 
     void instGen(instruction ins);
 #ifdef _TARGET_XARCH_

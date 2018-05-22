@@ -2199,9 +2199,6 @@ bool Compiler::fgNormalizeEHCase1()
             newHndStart->bbCodeOffs    = handlerStart->bbCodeOffs;
             newHndStart->bbCodeOffsEnd = newHndStart->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
             newHndStart->inheritWeight(handlerStart);
-#if FEATURE_STACK_FP_X87
-            newHndStart->bbFPStateX87 = codeGen->FlatFPAllocFPState(handlerStart->bbFPStateX87);
-#endif // FEATURE_STACK_FP_X87
             newHndStart->bbFlags |= (BBF_DONT_REMOVE | BBF_INTERNAL | BBF_HAS_LABEL);
             modified = true;
 
@@ -2360,9 +2357,6 @@ bool Compiler::fgNormalizeEHCase2()
                         newTryStart->bbCodeOffsEnd =
                             newTryStart->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                         newTryStart->inheritWeight(tryStart);
-#if FEATURE_STACK_FP_X87
-                        newTryStart->bbFPStateX87 = codeGen->FlatFPAllocFPState(tryStart->bbFPStateX87);
-#endif // FEATURE_STACK_FP_X87
 
                         // Note that we don't need to clear any flags on the old try start, since it is still a 'try'
                         // start.
@@ -2765,10 +2759,6 @@ bool Compiler::fgNormalizeEHCase3()
                     newLast->bbCodeOffs    = insertAfterBlk->bbCodeOffsEnd;
                     newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                     newLast->inheritWeight(insertAfterBlk);
-#if FEATURE_STACK_FP_X87
-                    newLast->bbFPStateX87 = codeGen->FlatFPAllocFPState(insertAfterBlk->bbFPStateX87);
-#endif // FEATURE_STACK_FP_X87
-
                     newLast->bbFlags |= BBF_INTERNAL;
 
                     // The new block (a fall-through block) is a new predecessor.

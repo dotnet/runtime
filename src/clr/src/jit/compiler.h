@@ -39,7 +39,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "blockset.h"
 #include "arraystack.h"
 #include "hashbv.h"
-#include "fp.h"
 #include "jitexpandarray.h"
 #include "tinyarray.h"
 #include "valuenum.h"
@@ -76,9 +75,6 @@ class emitter;             // defined in emit.h
 struct ShadowParamVarInfo; // defined in GSChecks.cpp
 struct InitVarDscInfo;     // defined in register_arg_convention.h
 class FgStack;             // defined in flowgraph.cpp
-#if FEATURE_STACK_FP_X87
-struct FlatFPStateX87; // defined in fp.h
-#endif
 #if FEATURE_ANYCSE
 class CSE_DataFlow; // defined in OptCSE.cpp
 #endif
@@ -86,9 +82,7 @@ class CSE_DataFlow; // defined in OptCSE.cpp
 struct IndentStack;
 #endif
 
-#ifndef LEGACY_BACKEND
 class Lowering; // defined in lower.h
-#endif
 
 // The following are defined in this file, Compiler.h
 
@@ -215,12 +209,9 @@ public:
     unsigned char lvStructGcCount : 3; // if struct, how many GC pointer (stop counting at 7). The only use of values >1
                                        // is to help determine whether to use block init in the prolog.
     unsigned char lvOnFrame : 1;       // (part of) the variable lives on the frame
-#ifdef LEGACY_BACKEND
-    unsigned char lvDependReg : 1; // did the predictor depend upon this being enregistered
-#endif
-    unsigned char lvRegister : 1; // assigned to live in a register? For RyuJIT backend, this is only set if the
-                                  // variable is in the same register for the entire function.
-    unsigned char lvTracked : 1;  // is this a tracked variable?
+    unsigned char lvRegister : 1;      // assigned to live in a register? For RyuJIT backend, this is only set if the
+                                       // variable is in the same register for the entire function.
+    unsigned char lvTracked : 1;       // is this a tracked variable?
     bool          lvTrackedNonStruct()
     {
         return lvTracked && lvType != TYP_STRUCT;
@@ -249,10 +240,7 @@ public:
     unsigned char lvLclBlockOpAddr : 1;   // The variable was written to via a block operation that took its address.
     unsigned char lvLiveAcrossUCall : 1;  // The variable is live across an unmanaged call.
 #endif
-    unsigned char lvIsCSE : 1; // Indicates if this LclVar is a CSE variable.
-#ifdef LEGACY_BACKEND
-    unsigned char lvRefAssign : 1; // involved in pointer assignment
-#endif
+    unsigned char lvIsCSE : 1;       // Indicates if this LclVar is a CSE variable.
     unsigned char lvHasLdAddrOp : 1; // has ldloca or ldarga opcode on this local.
     unsigned char lvStackByref : 1;  // This is a compiler temporary of TYP_BYREF that is known to point into our local
                                      // stack frame.
@@ -271,9 +259,6 @@ public:
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
 #endif
 
-#ifdef LEGACY_BACKEND
-    unsigned char lvSpilled : 1; // enregistered variable was spilled
-#endif
 #ifndef _TARGET_64BIT_
     unsigned char lvStructDoubleAlign : 1; // Must we double align this struct?
 #endif                                     // !_TARGET_64BIT_
@@ -314,9 +299,8 @@ public:
                                       // I.e. there is no longer any reference to the struct directly.
                                       // In this case we can simply remove this struct local.
 #endif
-#ifndef LEGACY_BACKEND
+
     unsigned char lvLRACandidate : 1; // Tracked for linear scan register allocation purposes
-#endif                                // !LEGACY_BACKEND
 
 #ifdef FEATURE_SIMD
     // Note that both SIMD vector args and locals are marked as lvSIMDType = true, but the
@@ -445,9 +429,8 @@ public:
 
 private:
     regNumberSmall _lvRegNum; // Used to store the register this variable is in (or, the low register of a
-                              // register pair). For LEGACY_BACKEND, this is only set if lvRegister is
-                              // non-zero. For non-LEGACY_BACKEND, it is set during codegen any time the
-                              // variable is enregistered (in non-LEGACY_BACKEND, lvRegister is only set
+                              // register pair). It is set during codegen any time the
+                              // variable is enregistered (lvRegister is only set
                               // to non-zero if the variable gets the same register assignment for its entire
                               // lifetime).
 #if !defined(_TARGET_64BIT_)
@@ -461,12 +444,7 @@ private:
                                    // Note this is defined but not used by ARM32
 #endif                             // FEATURE_MULTIREG_ARGS
 
-#ifndef LEGACY_BACKEND
-    union {
-        regNumberSmall _lvArgInitReg;     // the register      into which the argument is moved at entry
-        regPairNoSmall _lvArgInitRegPair; // the register pair into which the argument is moved at entry
-    };
-#endif // !LEGACY_BACKEND
+    regNumberSmall _lvArgInitReg; // the register into which the argument is moved at entry
 
 public:
     // The register number is stored in a small format (8 bits), but the getters return and the setters take
@@ -573,9 +551,8 @@ public:
     }
 #endif
 
-/////////////////////
+    /////////////////////
 
-#ifndef LEGACY_BACKEND
     __declspec(property(get = GetArgInitReg, put = SetArgInitReg)) regNumber lvArgInitReg;
 
     regNumber GetArgInitReg() const
@@ -591,24 +568,6 @@ public:
 
     /////////////////////
 
-    __declspec(property(get = GetArgInitRegPair, put = SetArgInitRegPair)) regPairNo lvArgInitRegPair;
-
-    regPairNo GetArgInitRegPair() const
-    {
-        regPairNo regPair = (regPairNo)_lvArgInitRegPair;
-        assert(regPair >= REG_PAIR_FIRST && regPair <= REG_PAIR_LAST);
-        return regPair;
-    }
-
-    void SetArgInitRegPair(regPairNo regPair)
-    {
-        assert(regPair >= REG_PAIR_FIRST && regPair <= REG_PAIR_LAST);
-        _lvArgInitRegPair = (regPairNoSmall)regPair;
-        assert(_lvArgInitRegPair == regPair);
-    }
-
-    /////////////////////
-
     bool lvIsRegCandidate() const
     {
         return lvLRACandidate != 0;
@@ -618,20 +577,6 @@ public:
     {
         return lvIsRegCandidate() && (lvRegNum != REG_STK);
     }
-
-#else // LEGACY_BACKEND
-
-    bool lvIsRegCandidate() const
-    {
-        return lvTracked != 0;
-    }
-
-    bool lvIsInReg() const
-    {
-        return lvRegister != 0;
-    }
-
-#endif // LEGACY_BACKEND
 
     regMaskTP lvRegMask() const
     {
@@ -648,12 +593,6 @@ public:
             if (lvRegNum != REG_STK)
             {
                 regMask = genRegMask(lvRegNum);
-            }
-
-            // For longs we may have two regs
-            if (isRegPairType(lvType) && lvOtherReg != REG_STK)
-            {
-                regMask |= genRegMask(lvOtherReg);
             }
         }
         return regMask;
@@ -777,9 +716,7 @@ public:
         lvSetHfaTypeIsFloat(type == TYP_FLOAT);
     }
 
-#ifndef LEGACY_BACKEND
     var_types lvaArgType();
-#endif
 
     PerSsaArray lvPerSsaData;
 
@@ -804,15 +741,7 @@ public:
 public:
     void PrintVarReg() const
     {
-        if (isRegPairType(TypeGet()))
-        {
-            printf("%s:%s", getRegName(lvOtherReg), // hi32
-                   getRegName(lvRegNum));           // lo32
-        }
-        else
-        {
-            printf("%s", getRegName(lvRegNum));
-        }
+        printf("%s", getRegName(lvRegNum));
     }
 #endif // DEBUG
 
@@ -2193,17 +2122,10 @@ public:
     void gtPrepareCost(GenTree* tree);
     bool gtIsLikelyRegVar(GenTree* tree);
 
-    unsigned gtSetEvalOrderAndRestoreFPstkLevel(GenTree* tree);
-
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
 
     unsigned gtSetEvalOrder(GenTree* tree);
-
-#if FEATURE_STACK_FP_X87
-    bool gtFPstLvlRedo;
-    void gtComputeFPlvls(GenTree* tree);
-#endif // FEATURE_STACK_FP_X87
 
     void gtSetStmtInfo(GenTree* stmt);
 
@@ -2458,13 +2380,6 @@ public:
     // reverse map of tracked number to var number
     unsigned lvaTrackedToVarNum[lclMAX_TRACKED];
 
-#ifdef LEGACY_BACKEND
-    // variable interference graph
-    VARSET_TP lvaVarIntf[lclMAX_TRACKED];
-
-    // variable preference graph
-    VARSET_TP lvaVarPref[lclMAX_TRACKED];
-#endif
 #if DOUBLE_ALIGN
 #ifdef DEBUG
     // # of procs compiled a with double-aligned stack
@@ -2491,7 +2406,7 @@ public:
         DNER_DepField,    // It is a field of a dependently promoted struct
         DNER_NoRegVars,   // opts.compFlags & CLFLG_REGVAR is not set
         DNER_MinOptsGC,   // It is a GC Ref and we are compiling MinOpts
-#if !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
+#if !defined(_TARGET_64BIT_)
         DNER_LongParamField, // It is a decomposed field of a long parameter.
 #endif
 #ifdef JIT32_GCENCODER
@@ -2581,11 +2496,7 @@ public:
 #endif // _TARGET_ARM_
     void lvaAssignFrameOffsets(FrameLayoutState curState);
     void lvaFixVirtualFrameOffsets();
-
-#ifndef LEGACY_BACKEND
     void lvaUpdateArgsWithInitialReg();
-#endif // !LEGACY_BACKEND
-
     void lvaAssignVirtualFrameOffsetsToArgs();
 #ifdef UNIX_AMD64_ABI
     int lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs, int* callerArgOffset);
@@ -3836,11 +3747,7 @@ public:
 
     bool fgFoldConditional(BasicBlock* block);
 
-#ifdef LEGACY_BACKEND
-    void fgMorphStmts(BasicBlock* block, bool* mult, bool* lnot, bool* loadw);
-#else
     void fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw);
-#endif
     void fgMorphBlocks();
 
     bool fgMorphBlockStmt(BasicBlock* block, GenTreeStmt* stmt DEBUGARG(const char* msg));
@@ -3879,10 +3786,6 @@ public:
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
     void fgSimpleLowering();
 
-#ifdef LEGACY_BACKEND
-    bool fgShouldCreateAssignOp(GenTree* tree, bool* bReverse);
-#endif
-
     GenTree* fgInitThisClass();
 
     GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper);
@@ -3891,22 +3794,14 @@ public:
 
     inline bool backendRequiresLocalVarLifetimes()
     {
-#if defined(LEGACY_BACKEND)
-        return true;
-#else
         return !opts.MinOpts() || m_pLinearScan->willEnregisterLocalVars();
-#endif
     }
 
     void fgLocalVarLiveness();
 
     void fgLocalVarLivenessInit();
 
-#ifdef LEGACY_BACKEND
-    GenTree* fgLegacyPerStatementLocalVarLiveness(GenTree* startNode, GenTree* relopNode);
-#else
     void fgPerNodeLocalVarLiveness(GenTree* node);
-#endif
     void fgPerBlockLocalVarLiveness();
 
     VARSET_VALRET_TP fgGetHandlerLiveVars(BasicBlock* block);
@@ -3917,12 +3812,6 @@ public:
     // arbitrary-length VarSet representation, it is better not to allocate a new one
     // at each call.
     VARSET_TP fgMarkIntfUnionVS;
-
-    bool fgMarkIntf(VARSET_VALARG_TP varSet);
-
-    bool fgMarkIntf(VARSET_VALARG_TP varSet1, VARSET_VALARG_TP varSet2);
-
-    bool fgMarkIntf(VARSET_VALARG_TP varSet1, unsigned varIndex);
 
     void fgUpdateRefCntForClone(BasicBlock* addedToBlock, GenTree* clonedTree);
 
@@ -3938,9 +3827,8 @@ public:
     void fgComputeLifeUntrackedLocal(VARSET_TP&           life,
                                      VARSET_VALARG_TP     keepAliveVars,
                                      LclVarDsc&           varDsc,
-                                     GenTreeLclVarCommon* lclVarNode,
-                                     GenTree*             node);
-    bool fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode, GenTree* node);
+                                     GenTreeLclVarCommon* lclVarNode);
+    bool fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode);
 
     void fgComputeLife(VARSET_TP&       life,
                        GenTree*         startNode,
@@ -4580,15 +4468,6 @@ public:
     void fgDebugCheckTryFinallyExits();
 #endif
 
-#ifdef LEGACY_BACKEND
-    static void fgOrderBlockOps(GenTree*   tree,
-                                regMaskTP  reg0,
-                                regMaskTP  reg1,
-                                regMaskTP  reg2,
-                                GenTree**  opsPtr,   // OUT
-                                regMaskTP* regsPtr); // OUT
-#endif                                               // LEGACY_BACKEND
-
     static GenTree* fgGetFirstNode(GenTree* tree);
     static bool fgTreeIsInStmt(GenTree* tree, GenTreeStmt* stmt);
     void fgTraverseRPO();
@@ -4817,8 +4696,6 @@ private:
     GenTree* fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeArgList* args);
 
     GenTree* fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType, unsigned lclOffs);
-
-    bool fgMorphRelopToQmark(GenTree* tree);
 
     // A "MorphAddrContext" carries information from the surrounding context.  If we are evaluating a byref address,
     // it is useful to know whether the address will be immediately dereferenced, or whether the address value will
@@ -5094,14 +4971,6 @@ private:
 #endif
 
     bool fgIsBigOffset(size_t offset);
-
-#if defined(LEGACY_BACKEND)
-    // The following are used when morphing special cases of integer div/mod operations and also by codegen
-    bool fgIsSignedDivOptimizable(GenTree* divisor);
-    bool fgIsUnsignedDivOptimizable(GenTree* divisor);
-    bool fgIsSignedModOptimizable(GenTree* divisor);
-    bool fgIsUnsignedModOptimizable(GenTree* divisor);
-#endif // LEGACY_BACKEND
 
     bool fgNeedReturnSpillTemp();
 
@@ -5590,13 +5459,6 @@ protected:
                            bool       unsignedTest,
                            bool       dupCond,
                            unsigned*  iterCount);
-#if FEATURE_STACK_FP_X87
-
-public:
-    VARSET_TP optAllFloatVars; // mask of all tracked      FP variables
-    VARSET_TP optAllFPregVars; // mask of all enregistered FP variables
-    VARSET_TP optAllNonFPvars; // mask of all tracked  non-FP variables
-#endif                         // FEATURE_STACK_FP_X87
 
 private:
     static fgWalkPreFn optIsVarAssgCB;
@@ -6357,25 +6219,6 @@ protected:
     */
 
 public:
-#ifndef LEGACY_BACKEND
-    bool doLSRA() const
-    {
-        return true;
-    }
-#else  // LEGACY_BACKEND
-    bool doLSRA() const
-    {
-        return false;
-    }
-#endif // LEGACY_BACKEND
-
-#ifdef LEGACY_BACKEND
-    void raInit();
-    void raAssignVars(); // register allocation
-#endif                   // LEGACY_BACKEND
-
-    VARSET_TP raRegVarsMask; // Set of all enregistered variables (not including FEATURE_STACK_FP_X87 enregistered
-                             // variables)
     regNumber raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc);
 
     void raMarkStkVars();
@@ -6386,115 +6229,11 @@ protected:
     FrameType rpFrameType;
     bool      rpMustCreateEBPCalled; // Set to true after we have called rpMustCreateEBPFrame once
 
-#ifdef LEGACY_BACKEND
-    regMaskTP rpMaskPInvokeEpilogIntf; // pinvoke epilog trashes esi/edi holding stack args needed to setup tail call's
-                                       // args
-#endif                                 // LEGACY_BACKEND
-
     bool rpMustCreateEBPFrame(INDEBUG(const char** wbReason));
 
-#if FEATURE_FP_REGALLOC
-    enum enumConfigRegisterFP
-    {
-        CONFIG_REGISTER_FP_NONE         = 0x0,
-        CONFIG_REGISTER_FP_CALLEE_TRASH = 0x1,
-        CONFIG_REGISTER_FP_CALLEE_SAVED = 0x2,
-        CONFIG_REGISTER_FP_FULL         = 0x3,
-    };
-    enumConfigRegisterFP raConfigRegisterFP();
-#endif // FEATURE_FP_REGALLOC
-
-public:
-    regMaskTP raConfigRestrictMaskFP();
-
 private:
-#ifndef LEGACY_BACKEND
     Lowering*            m_pLowering;   // Lowering; needed to Lower IR that's added or modified after Lowering.
     LinearScanInterface* m_pLinearScan; // Linear Scan allocator
-#else                                   // LEGACY_BACKEND
-    unsigned  raAvoidArgRegMask;       // Mask of incoming argument registers that we may need to avoid
-    VARSET_TP raLclRegIntf[REG_COUNT]; // variable to register interference graph
-    bool      raNewBlocks;             // True is we added killing blocks for FPU registers
-    unsigned  rpPasses;                // Number of passes made by the register predicter
-    unsigned  rpPassesMax;             // Maximum number of passes made by the register predicter
-    unsigned  rpPassesPessimize;       // Number of passes non-pessimizing made by the register predicter
-    unsigned rpStkPredict; // Weighted count of variables were predicted STK (lower means register allocation is better)
-    unsigned rpPredictSpillCnt;     // Predicted number of integer spill tmps for the current tree
-    regMaskTP rpPredictAssignMask;  // Mask of registers to consider in rpPredictAssignRegVars()
-    VARSET_TP rpLastUseVars;        // Set of last use variables in rpPredictTreeRegUse
-    VARSET_TP rpUseInPlace;         // Set of variables that we used in place
-    int       rpAsgVarNum;          // VarNum for the target of GT_ASG node
-    bool      rpPredictAssignAgain; // Must rerun the rpPredictAssignRegVars()
-    bool      rpAddedVarIntf;       // Set to true if we need to add a new var intf
-    bool      rpLostEnreg;          // Set to true if we lost an enregister var that had lvDependReg set
-    bool      rpReverseEBPenreg;    // Decided to reverse the enregistration of EBP
-public:
-    bool rpRegAllocDone; // Set to true after we have completed register allocation
-private:
-    regMaskTP rpPredictMap[PREDICT_COUNT]; // Holds the regMaskTP for each of the enum values
-
-    void raSetupArgMasks(RegState* r);
-
-    const regNumber* raGetRegVarOrder(var_types regType, unsigned* wbVarOrderSize);
-#ifdef DEBUG
-    void raDumpVarIntf(); // Dump the variable to variable interference graph
-    void raDumpRegIntf(); // Dump the variable to register interference graph
-#endif
-    void raAdjustVarIntf();
-
-    regMaskTP rpPredictRegMask(rpPredictReg predictReg, var_types type);
-
-    bool rpRecordRegIntf(regMaskTP regMask, VARSET_VALARG_TP life DEBUGARG(const char* msg));
-
-    bool rpRecordVarIntf(unsigned varNum, VARSET_VALARG_TP intfVar DEBUGARG(const char* msg));
-    regMaskTP rpPredictRegPick(var_types type, rpPredictReg predictReg, regMaskTP lockedRegs);
-
-    regMaskTP rpPredictGrabReg(var_types type, rpPredictReg predictReg, regMaskTP lockedRegs);
-
-    static fgWalkPreFn rpMarkRegIntf;
-
-    regMaskTP rpPredictAddressMode(
-        GenTree* tree, var_types type, regMaskTP lockedRegs, regMaskTP rsvdRegs, GenTree* lenCSE);
-
-    void rpPredictRefAssign(unsigned lclNum);
-
-    regMaskTP rpPredictBlkAsgRegUse(GenTree* tree, rpPredictReg predictReg, regMaskTP lockedRegs, regMaskTP rsvdRegs);
-
-    regMaskTP rpPredictTreeRegUse(GenTree* tree, rpPredictReg predictReg, regMaskTP lockedRegs, regMaskTP rsvdRegs);
-
-    regMaskTP rpPredictAssignRegVars(regMaskTP regAvail);
-
-    void rpPredictRegUse(); // Entry point
-
-    unsigned raPredictTreeRegUse(GenTree* tree);
-    unsigned raPredictListRegUse(GenTree* list);
-
-    void raSetRegVarOrder(var_types  regType,
-                          regNumber* customVarOrder,
-                          unsigned*  customVarOrderSize,
-                          regMaskTP  prefReg,
-                          regMaskTP  avoidReg);
-
-    // We use (unsigned)-1 as an uninitialized sentinel for rpStkPredict and
-    // also as the maximum value of lvRefCntWtd. Don't allow overflow, and
-    // saturate at UINT_MAX - 1, to avoid using the sentinel.
-    void raAddToStkPredict(unsigned val)
-    {
-        unsigned newStkPredict = rpStkPredict + val;
-        if ((newStkPredict < rpStkPredict) || (newStkPredict == UINT_MAX))
-            rpStkPredict = UINT_MAX - 1;
-        else
-            rpStkPredict = newStkPredict;
-    }
-
-#ifdef DEBUG
-#if !FEATURE_FP_REGALLOC
-    void raDispFPlifeInfo();
-#endif
-#endif
-
-    regMaskTP genReturnRegForTree(GenTree* tree);
-#endif // LEGACY_BACKEND
 
     /* raIsVarargsStackArg is called by raMaskStkVars and by
        lvaSortByRefCount.  It identifies the special case
@@ -6521,23 +6260,6 @@ private:
 
 #endif // _TARGET_X86_
     }
-
-#ifdef LEGACY_BACKEND
-    // Records the current prediction, if it's better than any previous recorded prediction.
-    void rpRecordPrediction();
-    // Applies the best recorded prediction, if one exists and is better than the current prediction.
-    void rpUseRecordedPredictionIfBetter();
-
-    // Data members used in the methods above.
-    unsigned rpBestRecordedStkPredict;
-    struct VarRegPrediction
-    {
-        bool           m_isEnregistered;
-        regNumberSmall m_regNum;
-        regNumberSmall m_otherReg;
-    };
-    VarRegPrediction* rpBestRecordedPrediction;
-#endif // LEGACY_BACKEND
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -6835,16 +6557,6 @@ public:
 #else
 #error Unsupported or unset target architecture
 #endif
-
-#ifdef LEGACY_BACKEND
-#if defined(_TARGET_X86_)
-            predict = PREDICT_REG_EAX;
-#elif defined(_TARGET_ARM_)
-            predict = PREDICT_REG_R4;
-#else
-#error Unsupported or unset target architecture
-#endif
-#endif // LEGACY_BACKEND
         }
 
         regNumber GetReg() const
@@ -6857,20 +6569,9 @@ public:
             return regMask;
         }
 
-#ifdef LEGACY_BACKEND
-        rpPredictReg GetPredict() const
-        {
-            return predict;
-        }
-#endif
-
     private:
         regNumber     reg;
         _regMask_enum regMask;
-
-#ifdef LEGACY_BACKEND
-        rpPredictReg predict;
-#endif
     };
 
     VirtualStubParamInfo* virtualStubParamInfo;
@@ -7033,16 +6734,9 @@ public:
     bool tmpAllFree() const;
 #endif // DEBUG
 
-#ifndef LEGACY_BACKEND
     void tmpPreAllocateTemps(var_types type, unsigned count);
-#endif // !LEGACY_BACKEND
 
 protected:
-#ifdef LEGACY_BACKEND
-    unsigned tmpIntSpillMax;    // number of int-sized spill temps
-    unsigned tmpDoubleSpillMax; // number of double-sized spill temps
-#endif                          // LEGACY_BACKEND
-
     unsigned tmpCount; // Number of temps
     unsigned tmpSize;  // Size of all the temps
 #ifdef DEBUG
@@ -7210,19 +6904,6 @@ public:
     {
         compChangeLife</*ForCodeGen*/ true>(newLife);
     }
-
-#ifdef LEGACY_BACKEND
-
-    template <bool ForCodeGen>
-    void compUpdateLife(GenTree* tree);
-
-    // Updates "compCurLife" to its state after evaluate of "true".  If "pLastUseVars" is
-    // non-null, sets "*pLastUseVars" to the set of tracked variables for which "tree" was a last
-    // use.  (Can be more than one var in the case of dependently promoted struct vars.)
-    template <bool ForCodeGen>
-    void compUpdateLifeVar(GenTree* tree, VARSET_TP* pLastUseVars = nullptr);
-
-#endif // LEGACY_BACKEND
 
     template <bool ForCodeGen>
     inline void compUpdateLife(VARSET_VALARG_TP newLife);
@@ -7406,7 +7087,7 @@ private:
     // Get highest available level for SIMD codegen
     SIMDLevel getSIMDSupportLevel()
     {
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_XARCH_)
         if (compSupports(InstructionSet_AVX2))
         {
             return SIMD_AVX2_Supported;
@@ -7421,7 +7102,6 @@ private:
         }
 
         // min bar is SSE2
-        assert(canUseSSE2());
         return SIMD_SSE2_Supported;
 #else
         assert(!"Available instruction set(s) for SIMD codegen is not defined for target arch");
@@ -7720,7 +7400,8 @@ private:
     // Creates a GT_SIMD tree for Abs intrinsic.
     GenTree* impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, unsigned simdVectorSize, GenTree* op1);
 
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_XARCH_)
+
     // Transforms operands and returns the SIMD intrinsic to be applied on
     // transformed operands to obtain == comparison result.
     SIMDIntrinsicID impSIMDLongRelOpEqual(CORINFO_CLASS_HANDLE typeHnd,
@@ -7747,7 +7428,8 @@ private:
     // and small int base type vectors.
     SIMDIntrinsicID impSIMDIntegralRelOpGreaterThanOrEqual(
         CORINFO_CLASS_HANDLE typeHnd, unsigned simdVectorSize, var_types baseType, GenTree** op1, GenTree** op2);
-#endif // defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+
+#endif // defined(_TARGET_XARCH_)
 
     void setLclRelatedToSIMDIntrinsic(GenTree* tree);
     bool areFieldsContiguous(GenTree* op1, GenTree* op2);
@@ -7784,7 +7466,7 @@ private:
     // This is the maximum SIMD type supported for this target.
     var_types getSIMDVectorType()
     {
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_XARCH_)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
             return TYP_SIMD32;
@@ -7823,7 +7505,7 @@ private:
     // Note - cannot be used for System.Runtime.Intrinsic
     unsigned getSIMDVectorRegisterByteLength()
     {
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_XARCH_)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
             return YMM_REGSIZE_BYTES;
@@ -7977,16 +7659,6 @@ private:
         return false;
     }
 
-    // Whether SSE and SSE2 is available
-    bool canUseSSE2() const
-    {
-#ifdef _TARGET_XARCH_
-        return opts.compCanUseSSE2;
-#else
-        return false;
-#endif
-    }
-
     bool compSupports(InstructionSet isa) const
     {
 #if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
@@ -8038,11 +7710,6 @@ public:
 // NOTE: These values are only reliable after
 //       the importing is completely finished.
 
-#ifdef LEGACY_BACKEND
-    JitExpandArrayStack<GenTree*>* compQMarks; // The set of QMark nodes created in the current compilation, so
-                                               // we can iterate over these efficiently.
-#endif
-
 #if CPU_USES_BLOCK_MOVE
     bool compBlkOpUsed; // Does the method do a COPYBLK or INITBLK
 #endif
@@ -8064,9 +7731,7 @@ public:
 #if STACK_PROBES
     bool compStackProbePrologDone;
 #endif
-#ifndef LEGACY_BACKEND
     bool compLSRADone;
-#endif // !LEGACY_BACKEND
     bool compRationalIRForm;
 
     bool compUsesThrowHelper; // There is a call to a THOROW_HELPER for the compiled method.
@@ -8110,9 +7775,6 @@ public:
 
         bool compUseFCOMI;
         bool compUseCMOV;
-#ifdef _TARGET_XARCH_
-        bool compCanUseSSE2; // Allow CodeGen to use "movq XMM" instructions
-#endif                       // _TARGET_XARCH_
 
 #if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
         uint64_t compSupportsISA;
@@ -8259,7 +7921,7 @@ public:
         bool compReloc; // Generate relocs for pointers in code, true for all ngen/prejit codegen
 
 #ifdef DEBUG
-#if defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_XARCH_)
         bool compEnablePCRelAddr; // Whether absolute addr be encoded as PC-rel offset by RyuJIT where possible
 #endif
 #endif // DEBUG
@@ -8726,7 +8388,7 @@ public:
     // In case of Amd64 this doesn't include float regs saved on stack.
     unsigned compCalleeRegsPushed;
 
-#if defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
+#if defined(_TARGET_XARCH_)
     // Mask of callee saved float regs on stack.
     regMaskTP compCalleeFPRegsSavedMask;
 #endif
@@ -8910,7 +8572,6 @@ public:
     const char* compLocalVarName(unsigned varNum, unsigned offs);
     VarName compVarName(regNumber reg, bool isFloatReg = false);
     const char* compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false);
-    const char* compRegPairName(regPairNo regPair);
     const char* compRegNameForSize(regNumber reg, size_t size);
     const char* compFPregVarName(unsigned fpReg, bool displayVar = false);
     void compDspSrcLinesByNativeIP(UNATIVE_OFFSET curIP);
@@ -9253,82 +8914,8 @@ public:
     void verVerifyThisPtrInitialised();
     BOOL verIsCallToInitThisPtr(CORINFO_CLASS_HANDLE context, CORINFO_CLASS_HANDLE target);
 
-    // Register allocator
-    void raInitStackFP();
-    void raEnregisterVarsPrePassStackFP();
-    void raSetRegLclBirthDeath(GenTree* tree, VARSET_VALARG_TP lastlife, bool fromLDOBJ);
-    void raEnregisterVarsPostPassStackFP();
-    void raGenerateFPRefCounts();
-    void raEnregisterVarsStackFP();
-    void raUpdateHeightsForVarsStackFP(VARSET_VALARG_TP mask);
-
-    regNumber raRegForVarStackFP(unsigned varTrackedIndex);
-    void raAddPayloadStackFP(VARSET_VALARG_TP mask, unsigned weight);
-
-    // returns true if enregistering v1 would save more mem accesses than v2
-    bool raVarIsGreaterValueStackFP(LclVarDsc* lv1, LclVarDsc* lv2);
-
 #ifdef DEBUG
-    void raDumpHeightsStackFP();
-    void raDumpVariableRegIntfFloat();
-#endif
 
-#if FEATURE_STACK_FP_X87
-
-    // Currently, we use FP transition blocks in only 2 situations:
-    //
-    //      -conditional jump on longs where FP stack differs with target: it's not strictly
-    //       necessary, but its low frequency and the code would get complicated if we try to
-    //       inline the FP stack adjustment, as we have a lot of special casing going on to try
-    //       minimize the way we generate the jump code.
-    //      -case statements of switch where the FP stack differs with the one of evaluating the switch () statement
-    //       We do this as we want to codegen switch as a jumptable. Again, this is low frequency.
-    //
-    //      However, transition blocks have 2 problems
-    //
-    //          - Procedure splitting: current implementation of procedure splitting requires all basic blocks to
-    //            be known at codegen time, as it generates all hot blocks first and cold blocks later. This ties
-    //            us up in codegen and is a solvable problem (we could make procedure splitting generate blocks
-    //            in the right place without preordering them), this causes us to have to generate the transition
-    //            blocks in the cold area if we want procedure splitting.
-    //
-    //
-    //          - Thread abort exceptions and transition blocks. Transition blocks were designed under the assumption
-    //            that no exceptions can happen inside them. Unfortunately Thread.Abort can happen in any instruction,
-    //            and if we have handlers we will have to try to call them. Fixing this the right way would imply
-    //            having multiple try native code regions for a single try il region. This is doable and shouldnt be
-    //            a big change in the exception.
-    //
-    //      Given the low frequency of the cases where we have transition blocks, I've decided to dumb down
-    //      optimizations. For these 2 cases:
-    //
-    //          - When there is a chance that we will have FP transition blocks, we won't do procedure splitting.
-    //          - When a method has a handler, it won't enregister any FP variables that go thru a conditional long or
-    //          a switch statement.
-    //
-    //      If at any point we find we need to optimize this, we should throw work at unblocking the restrictions our
-    //      current procedure splitting and exception code have.
-    bool compMayHaveTransitionBlocks;
-
-    VARSET_TP raMaskDontEnregFloat; // mask for additional restrictions
-
-    VARSET_TP raLclRegIntfFloat[REG_FPCOUNT];
-
-    unsigned raCntStkStackFP;
-    unsigned raCntWtdStkDblStackFP;
-    unsigned raCntStkParamDblStackFP;
-
-    // Payload in mem accesses for enregistering a variable (we dont want to mix with refcounts)
-    // TODO: Do we want to put this in LclVarDsc?
-    unsigned raPayloadStackFP[lclMAX_TRACKED];
-    unsigned raHeightsStackFP[lclMAX_TRACKED][FP_VIRTUALREGISTERS + 1];
-#ifdef DEBUG
-    // Useful for debugging
-    unsigned raHeightsNonWeightedStackFP[lclMAX_TRACKED][FP_VIRTUALREGISTERS + 1];
-#endif
-#endif // FEATURE_STACK_FP_X87
-
-#ifdef DEBUG
     // One line log function. Default level is 0. Increasing it gives you
     // more log information
 
@@ -9358,7 +8945,7 @@ public:
 
         static bool mayNeedShadowCopy(LclVarDsc* varDsc)
         {
-#if defined(_TARGET_AMD64_) && !defined(LEGACY_BACKEND)
+#if defined(_TARGET_AMD64_)
             // GS cookie logic to create shadow slots, create trees to copy reg args to shadow
             // slots and update all trees to refer to shadow slots is done immediately after
             // fgMorph().  Lsra could potentially mark a param as DoNotEnregister after JIT determines
@@ -9384,7 +8971,7 @@ public:
             //   - Whenver a parameter passed in an argument register needs to be spilled by LSRA, we
             //     create a new spill temp if the method needs GS cookie check.
             return varDsc->lvIsParam;
-#else // !(defined(_TARGET_AMD64_) && defined(LEGACY_BACKEND))
+#else // !defined(_TARGET_AMD64_)
             return varDsc->lvIsParam && !varDsc->lvIsRegArg;
 #endif
         }
@@ -9896,9 +9483,7 @@ public:
             case GT_END_LFIN:
 #endif // !FEATURE_EH_FUNCLETS
             case GT_PHI_ARG:
-#ifndef LEGACY_BACKEND
             case GT_JMPTABLE:
-#endif // LEGACY_BACKEND
             case GT_REG_VAR:
             case GT_CLS_VAR:
             case GT_CLS_VAR_ADDR:
@@ -10543,7 +10128,6 @@ extern const BYTE genActualTypes[];
 
 #define REG_CORRUPT regNumber(REG_NA + 1)
 #define RBM_CORRUPT (RBM_ILLEGAL | regMaskTP(1))
-#define REG_PAIR_CORRUPT regPairNo(REG_PAIR_NONE + 1)
 
 /*****************************************************************************/
 

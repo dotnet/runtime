@@ -64,7 +64,6 @@ set( JIT_SOURCES
   register_arg_convention.cpp
   regset.cpp
   scopeinfo.cpp
-  sharedfloat.cpp
   sideeffects.cpp
   sm.cpp
   smdata.cpp
@@ -95,7 +94,6 @@ if (WIN32)
     block.h
     blockset.h
     codegen.h
-    codegenclassic.h
     codegeninterface.h
     codegenlinear.h
     compiler.h
@@ -120,7 +118,6 @@ if (WIN32)
     emitpub.h
     emitxarch.h
     error.h
-    fp.h
     gentree.h
     gtlist.h
     gtstructs.h
@@ -166,8 +163,6 @@ if (WIN32)
     register.h
     registerarm.h
     registerarm64.h
-    registerfp.h
-    registerxmm.h
     reglist.h
     regpair.h
     regset.h
@@ -197,20 +192,6 @@ if (WIN32)
   )
 endif(WIN32)
 
-# The following defines all the source files used by the "legacy" back-end (#ifdef LEGACY_BACKEND).
-# It is always safe to include both legacy and non-legacy files in the build, as everything is properly
-# #ifdef'ed, though it makes the build slightly slower to do so. Note there is only a legacy backend for
-# x86 and ARM.
-
-set(JIT_ARM_LEGACY_SOURCES
-    codegenlegacy.cpp
-    registerfp.cpp
-)
-set(JIT_I386_LEGACY_SOURCES
-    codegenlegacy.cpp
-    stackfp.cpp
-)
-
 # Define all the architecture-specific source files
 
 set( JIT_AMD64_SOURCES
@@ -227,13 +208,11 @@ set( JIT_AMD64_SOURCES
 )
 
 set( JIT_ARM_SOURCES
-  ${JIT_ARM_LEGACY_SOURCES}
   codegenarmarch.cpp
   codegenarm.cpp
   decomposelongs.cpp
   emitarm.cpp
   lowerarmarch.cpp
-  lowerarm.cpp
   lsraarmarch.cpp
   lsraarm.cpp
   targetarm.cpp
@@ -241,7 +220,6 @@ set( JIT_ARM_SOURCES
 )
 
 set( JIT_I386_SOURCES
-  ${JIT_I386_LEGACY_SOURCES}
   codegenxarch.cpp
   decomposelongs.cpp
   emitxarch.cpp
@@ -260,7 +238,6 @@ set( JIT_ARM64_SOURCES
   codegenarm64.cpp
   emitarm64.cpp
   lowerarmarch.cpp
-  lowerarm64.cpp
   lsraarmarch.cpp
   lsraarm64.cpp
   simd.cpp
@@ -378,11 +355,6 @@ endif (FEATURE_MERGE_JIT_AND_ENGINE)
 
 add_subdirectory(standalone)
 
-if (CLR_CMAKE_TARGET_ARCH_ARM)
-    # Build arm32 legacy_backend to run on both x86 host (crossgen build) and arm host (native).
-    add_subdirectory(legacyjit)
-endif (CLR_CMAKE_TARGET_ARCH_ARM)
-
 if (CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64)
     # On x86, build RyuJIT/ARM32 cross-compiling altjit.
     # On amd64, build RyuJIT/ARM64 cross-compiling altjit.
@@ -400,9 +372,3 @@ if ((CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64) AND WIN32)
     #   On amd64, build Linux/AMD64 altjit. This enables UNIX_AMD64_ABI.
     add_subdirectory(linuxnonjit)
 endif ()
-
-if (CLR_CMAKE_PLATFORM_ARCH_I386 AND WIN32)
-    # On Windows x86, build altjit generating Windows/ARM32 code using LEGACY_BACKEND.
-    # (Note: we could also create linuxlegacynonjit for generating Linux/ARM32 code using LEGACY_BACKEND, if needed.)
-    add_subdirectory(legacynonjit)
-endif (CLR_CMAKE_PLATFORM_ARCH_I386 AND WIN32)

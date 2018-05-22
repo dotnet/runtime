@@ -15,8 +15,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifndef LEGACY_BACKEND // This file is ONLY used for the RyuJIT backend that uses the linear scan register allocator
-
 #ifdef _TARGET_ARMARCH_ // This file is ONLY used for ARM and ARM64 architectures
 
 #include "codegen.h"
@@ -3897,5 +3895,3 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     } // op1 must be multi-reg GT_CALL
 }
 #endif // _TARGET_ARMARCH_
-
-#endif // !LEGACY_BACKEND
