@@ -4,8 +4,8 @@
  
 #include "test.h"
 
-RESULT
-test_fake()
+static RESULT
+test_fake (void)
 {
 	return OK;
 }
@@ -16,4 +16,3 @@ static Test fake_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(fake_tests_init, fake_tests)
-

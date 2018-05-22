@@ -3,8 +3,8 @@
 /*
  * g_unichar_type
  */
-RESULT
-test_g_unichar_type ()
+static RESULT
+test_g_unichar_type (void)
 {
 	if (g_unichar_type ('A') != G_UNICODE_UPPERCASE_LETTER)
 		return FAILED ("#1");
@@ -20,8 +20,8 @@ test_g_unichar_type ()
 /*
  * g_unichar_toupper
  */
-RESULT
-test_g_unichar_toupper ()
+static RESULT
+test_g_unichar_toupper (void)
 {
 	if (g_unichar_toupper (0) != 0)
 		return FAILED ("#0");
@@ -45,8 +45,8 @@ test_g_unichar_toupper ()
 /*
  * g_unichar_tolower
  */
-RESULT
-test_g_unichar_tolower ()
+static RESULT
+test_g_unichar_tolower (void)
 {
 	if (g_unichar_tolower (0) != 0)
 		return FAILED ("#0");
@@ -68,8 +68,8 @@ test_g_unichar_tolower ()
 /*
  * g_unichar_totitle
  */
-RESULT
-test_g_unichar_totitle ()
+static RESULT
+test_g_unichar_totitle (void)
 {
 	if (g_unichar_toupper (0) != 0)
 		return FAILED ("#0");

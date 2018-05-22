@@ -4,8 +4,8 @@
 #include "test.h"
 
 /* example from glib documentation */
-RESULT
-test_array_big ()
+static RESULT
+test_array_big (void)
 {
 	GArray *garray;
 	gint i;
@@ -25,8 +25,8 @@ test_array_big ()
 	return NULL;
 }
 
-RESULT
-test_array_index ()
+static RESULT
+test_array_index (void)
 {
 	GArray *array = g_array_new (FALSE, FALSE, sizeof (int));
 	int v;
@@ -42,8 +42,8 @@ test_array_index ()
 	return NULL;
 }
 
-RESULT
-test_array_append_zero_terminated ()
+static RESULT
+test_array_append_zero_terminated (void)
 {
 	GArray *array = g_array_new (TRUE, FALSE, sizeof (int));
 	int v;
@@ -62,8 +62,8 @@ test_array_append_zero_terminated ()
 	return NULL;
 }
 
-RESULT
-test_array_append ()
+static RESULT
+test_array_append (void)
 {
 	GArray *array = g_array_new (FALSE, FALSE, sizeof (int));
 	int v;
@@ -83,8 +83,8 @@ test_array_append ()
 	return NULL;
 }
 
-RESULT
-test_array_insert_val ()
+static RESULT
+test_array_insert_val (void)
 {
 	GArray *array = g_array_new (FALSE, FALSE, sizeof (gpointer));
 	gpointer ptr0, ptr1, ptr2, ptr3;
@@ -126,8 +126,8 @@ test_array_insert_val ()
 	return NULL;
 }
 
-RESULT
-test_array_remove ()
+static RESULT
+test_array_remove (void)
 {
 	GArray *array = g_array_new (FALSE, FALSE, sizeof (int));
 	int v[] = {30, 29, 28, 27, 26, 25};

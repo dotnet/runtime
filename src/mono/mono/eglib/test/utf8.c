@@ -6,7 +6,7 @@
  * g_utf16_to_utf8
  */
 
-glong
+static glong
 compare_strings_utf8_pos (const gchar *expected, const gchar *actual, glong size)
 {
 	int i;
@@ -16,7 +16,7 @@ compare_strings_utf8_pos (const gchar *expected, const gchar *actual, glong size
 	return -1;
 }
 
-RESULT
+static RESULT
 compare_strings_utf8_RESULT (const gchar *expected, const gchar *actual, glong size)
 {
 	glong ret;
@@ -27,7 +27,7 @@ compare_strings_utf8_RESULT (const gchar *expected, const gchar *actual, glong s
 	return FAILED ("Incorrect output: expected '%s' but was '%s', differ at %d\n", expected, actual, ret);
 }
 
-void
+static void
 gchar_to_gunichar2 (gunichar2 ret[], const gchar *src)
 {
 	int i;
@@ -37,7 +37,7 @@ gchar_to_gunichar2 (gunichar2 ret[], const gchar *src)
 	ret [i] = 0;
 }
 
-RESULT
+static RESULT
 compare_utf16_to_utf8_explicit (const gchar *expected, const gunichar2 *utf16, glong len_in, glong len_out, glong size_spec)
 {
 	GError *gerror;
@@ -70,7 +70,7 @@ compare_utf16_to_utf8_explicit (const gchar *expected, const gunichar2 *utf16, g
 	return OK;
 }
 
-RESULT
+static RESULT
 compare_utf16_to_utf8 (const gchar *expected, const gunichar2 *utf16, glong len_in, glong len_out)
 {
 	RESULT result;
@@ -81,8 +81,8 @@ compare_utf16_to_utf8 (const gchar *expected, const gunichar2 *utf16, glong len_
 	return compare_utf16_to_utf8_explicit (expected, utf16, len_in, len_out, len_in);
 }
 
-RESULT
-test_utf16_to_utf8 ()
+static RESULT
+test_utf16_to_utf8 (void)
 {
 	const gchar *src0 = "", *src1 = "ABCDE", *src2 = "\xE5\xB9\xB4\x27", *src3 = "\xEF\xBC\xA1", *src4 = "\xEF\xBD\x81", *src5 = "\xF0\x90\x90\x80";
 	gunichar2 str0 [] = {0}, str1 [6], str2 [] = {0x5E74, 39, 0}, str3 [] = {0xFF21, 0}, str4 [] = {0xFF41, 0}, str5 [] = {0xD801, 0xDC00, 0};
@@ -118,7 +118,7 @@ test_utf16_to_utf8 ()
  * g_utf8_to_utf16 
  */
 
-glong
+static glong
 compare_strings_utf16_pos (const gunichar2 *expected, const gunichar2 *actual, glong size)
 {
 	int i;
@@ -128,7 +128,7 @@ compare_strings_utf16_pos (const gunichar2 *expected, const gunichar2 *actual, g
 	return -1;
 }
 
-RESULT
+static RESULT
 compare_strings_utf16_RESULT (const gunichar2 *expected, const gunichar2 *actual, glong size)
 {
 	glong ret;
@@ -143,7 +143,7 @@ compare_strings_utf16_RESULT (const gunichar2 *expected, const gunichar2 *actual
 #define eg_utf8_to_utf16_with_nuls g_utf8_to_utf16
 #endif
 
-RESULT
+static RESULT
 compare_utf8_to_utf16_explicit (const gunichar2 *expected, const gchar *utf8, glong len_in, glong len_out, glong size_spec, gboolean include_nuls)
 {
 	GError *gerror;
@@ -180,7 +180,7 @@ compare_utf8_to_utf16_explicit (const gunichar2 *expected, const gchar *utf8, gl
 	return OK;
 }
 
-RESULT
+static RESULT
 compare_utf8_to_utf16_general (const gunichar2 *expected, const gchar *utf8, glong len_in, glong len_out, gboolean include_nuls)
 {
 	RESULT result;
@@ -191,21 +191,20 @@ compare_utf8_to_utf16_general (const gunichar2 *expected, const gchar *utf8, glo
 	return compare_utf8_to_utf16_explicit (expected, utf8, len_in, len_out, len_in, include_nuls);
 }
 
-RESULT
+static RESULT
 compare_utf8_to_utf16 (const gunichar2 *expected, const gchar *utf8, glong len_in, glong len_out)
 {
 	return compare_utf8_to_utf16_general (expected, utf8, len_in, len_out, FALSE);
 }
 
-RESULT
+static RESULT
 compare_utf8_to_utf16_with_nuls (const gunichar2 *expected, const gchar *utf8, glong len_in, glong len_out)
 {
 	return compare_utf8_to_utf16_explicit (expected, utf8, len_in, len_out, len_in, TRUE);
 }
 
-
-RESULT
-test_utf8_seq ()
+static RESULT
+test_utf8_seq (void)
 {
 	const gchar *src = "\xE5\xB9\xB4\x27";
 	glong in_read, out_read;
@@ -230,8 +229,8 @@ test_utf8_seq ()
 	return OK;
 }
 
-RESULT
-test_utf8_to_utf16 ()
+static RESULT
+test_utf8_to_utf16 (void)
 {
 	const gchar *src0 = "", *src1 = "ABCDE", *src2 = "\xE5\xB9\xB4\x27", *src3 = "\xEF\xBC\xA1", *src4 = "\xEF\xBD\x81";
 	gunichar2 str0 [] = {0}, str1 [6], str2 [] = {0x5E74, 39, 0}, str3 [] = {0xFF21, 0}, str4 [] = {0xFF41, 0};
@@ -260,8 +259,8 @@ test_utf8_to_utf16 ()
 	return OK;
 }
 
-RESULT
-test_utf8_to_utf16_with_nuls ()
+static RESULT
+test_utf8_to_utf16_with_nuls (void)
 {
 	const gchar *src0 = "", *src1 = "AB\0DE", *src2 = "\xE5\xB9\xB4\x27", *src3 = "\xEF\xBC\xA1", *src4 = "\xEF\xBD\x81";
 	gunichar2 str0 [] = {0}, str1 [] = {'A', 'B', 0, 'D', 'E', 0}, str2 [] = {0x5E74, 39, 0}, str3 [] = {0xFF21, 0}, str4 [] = {0xFF41, 0};
@@ -301,8 +300,8 @@ typedef struct {
 	size_t length;
 } convert_result_t;
 
-RESULT
-test_convert ()
+static RESULT
+test_convert (void)
 {
 	static const char *charsets[] = { "UTF-8", "UTF-16LE", "UTF-16BE", "UTF-32LE", "UTF-32BE" };
 	gsize length, converted_length, n;
@@ -404,9 +403,8 @@ test_convert ()
 	return OK;
 }
 
-
-RESULT
-test_xdigit ()
+static RESULT
+test_xdigit (void)
 {
 	static char test_chars[] = {
 		'0', '1', '2', '3', '4', 
@@ -457,8 +455,8 @@ ucs4_to_utf16_check_result (const gunichar2 *result_str, const gunichar2 *expect
 	return OK;
 }
 
-RESULT
-test_ucs4_to_utf16 ()
+static RESULT
+test_ucs4_to_utf16 (void)
 {
 	static gunichar str1[12] = {'H','e','l','l','o',' ','W','o','r','l','d','\0'};
 	static gunichar2 exp1[12] = {'H','e','l','l','o',' ','W','o','r','l','d','\0'};
@@ -567,8 +565,8 @@ utf16_to_ucs4_check_result (const gunichar *result_str, const gunichar *expected
 	return OK;
 }
 
-RESULT
-test_utf16_to_ucs4 ()
+static RESULT
+test_utf16_to_ucs4 (void)
 {
 	static gunichar2 str1[12] = {'H','e','l','l','o',' ','W','o','r','l','d','\0'};
 	static gunichar exp1[12] = {'H','e','l','l','o',' ','W','o','r','l','d','\0'};
@@ -660,8 +658,9 @@ test_utf16_to_ucs4 ()
 
 	return OK;
 }
-RESULT
-test_utf8_strlen ()
+
+static RESULT
+test_utf8_strlen (void)
 {
 	gchar word1 [] = {0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,0xF1, 0x82, 0x82, 0x82,'\0'};//Valid, len = 5
 	gchar word2 [] = {0xF1, 0x82, 0x82, 0x82,0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,'\0'};//Valid, len = 5
@@ -707,8 +706,8 @@ test_utf8_strlen ()
 	return OK;
 }
 
-RESULT
-test_utf8_get_char()
+static RESULT
+test_utf8_get_char (void)
 {
 	gchar word1 [] = {0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,0xF1, 0x82, 0x82, 0x82,'\0'}; //Valid, len = 5
 
@@ -731,8 +730,8 @@ test_utf8_get_char()
 	return OK;
 }
 
-RESULT
-test_utf8_next_char()
+static RESULT
+test_utf8_next_char (void)
 {
 	gchar word1 [] = {0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,0xF1, 0x82, 0x82, 0x82,'\0'}; //Valid, len = 5
 	gchar word2 [] = {0xF1, 0x82, 0x82, 0x82,0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,'\0'}; //Valid, len = 5
@@ -766,8 +765,8 @@ test_utf8_next_char()
 	return OK;
 }
 
-RESULT
-test_utf8_validate()
+static RESULT
+test_utf8_validate (void)
 {
 	gchar invalidWord1 [] = {0xC3, 0x82, 0xC1,0x90,'\0'}; //Invalid, 1nd oct Can't be 0xC0 or 0xC1
 	gchar invalidWord2 [] = {0xC1, 0x89, 0x60, '\0'}; //Invalid, 1st oct can not be 0xC1
@@ -813,7 +812,7 @@ test_utf8_validate()
 	return OK;
 }
 
-glong
+static glong
 utf8_byteslen (const gchar *src)
 {
 	int i = 0;
@@ -824,7 +823,7 @@ utf8_byteslen (const gchar *src)
 	} while (TRUE);
 }
 
-RESULT
+static RESULT
 test_utf8_strcase_each (const gchar *src, const gchar *expected, gboolean strup)
 {
 	gchar *tmp;
@@ -839,13 +838,13 @@ test_utf8_strcase_each (const gchar *src, const gchar *expected, gboolean strup)
 	return r;
 }
 
-RESULT
+static RESULT
 test_utf8_strup_each (const gchar *src, const gchar *expected)
 {
 	return test_utf8_strcase_each (src, expected, TRUE);
 }
 
-RESULT
+static RESULT
 test_utf8_strdown_each (const gchar *src, const gchar *expected)
 {
 	return test_utf8_strcase_each (src, expected, FALSE);
@@ -854,8 +853,8 @@ test_utf8_strdown_each (const gchar *src, const gchar *expected)
 /*
  * g_utf8_strup
  */
-RESULT
-test_utf8_strup ()
+static RESULT
+test_utf8_strup (void)
 {
 	RESULT r;
 
@@ -882,8 +881,8 @@ test_utf8_strup ()
 /*
  * g_utf8_strdown
  */
-RESULT
-test_utf8_strdown ()
+static RESULT
+test_utf8_strdown (void)
 {
 	RESULT r;
 
@@ -931,5 +930,3 @@ static Test utf8_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(utf8_tests_init, utf8_tests)
-
-

@@ -3,19 +3,19 @@
 #include <glib.h>
 #include "test.h"
 
-RESULT
-test_list_length ()
+static RESULT
+test_list_length (void)
 {
-	GList *list = g_list_prepend (NULL, "foo");
+	GList *list = g_list_prepend (NULL, (char*)"foo");
 
 	if (g_list_length (list) != 1)
 		return FAILED ("length failed. #1");
 
-	list = g_list_prepend (list, "bar");
+	list = g_list_prepend (list, (char*)"bar");
 	if (g_list_length (list) != 2)
 		return FAILED ("length failed. #2");
 
-	list = g_list_append (list, "bar");
+	list = g_list_append (list, (char*)"bar");
 	if (g_list_length (list) != 3)
 		return FAILED ("length failed. #3");
 
@@ -23,12 +23,12 @@ test_list_length ()
 	return NULL;
 }
 
-RESULT
-test_list_nth ()
+static RESULT
+test_list_nth (void)
 {
-	char *foo = "foo";
-	char *bar = "bar";
-	char *baz = "baz";
+	char *foo = (char*)"foo";
+	char *bar = (char*)"bar";
+	char *baz = (char*)"baz";
 	GList *nth, *list;
 	list = g_list_prepend (NULL, baz);
 	list = g_list_prepend (list, bar);
@@ -54,13 +54,13 @@ test_list_nth ()
 	return OK;
 }
 
-RESULT
-test_list_index ()
+static RESULT
+test_list_index (void)
 {
 	int i;
-	char *foo = "foo";
-	char *bar = "bar";
-	char *baz = "baz";
+	char *foo = (char*)"foo";
+	char *bar = (char*)"bar";
+	char *baz = (char*)"baz";
 	GList *list;
 	list = g_list_prepend (NULL, baz);
 	list = g_list_prepend (list, bar);
@@ -82,14 +82,14 @@ test_list_index ()
 	return OK;
 }
 
-RESULT
-test_list_append ()
+static RESULT
+test_list_append (void)
 {
-	GList *list = g_list_prepend (NULL, "first");
+	GList *list = g_list_prepend (NULL, (char*)"first");
 	if (g_list_length (list) != 1)
 		return FAILED ("Prepend failed");
 
-	list = g_list_append (list, "second");
+	list = g_list_append (list, (char*)"second");
 
 	if (g_list_length (list) != 2)
 		return FAILED ("Append failed");
@@ -98,11 +98,11 @@ test_list_append ()
 	return OK;
 }
 
-RESULT
-test_list_last ()
+static RESULT
+test_list_last (void)
 {
-	GList *foo = g_list_prepend (NULL, "foo");
-	GList *bar = g_list_prepend (NULL, "bar");
+	GList *foo = g_list_prepend (NULL, (char*)"foo");
+	GList *bar = g_list_prepend (NULL, (char*)"bar");
 	GList *last;
 	
 	foo = g_list_concat (foo, bar);
@@ -111,8 +111,8 @@ test_list_last ()
 	if (last != bar)
 		return FAILED ("last failed. #1");
 
-	foo = g_list_concat (foo, g_list_prepend (NULL, "baz"));
-	foo = g_list_concat (foo, g_list_prepend (NULL, "quux"));
+	foo = g_list_concat (foo, g_list_prepend (NULL, (char*)"baz"));
+	foo = g_list_concat (foo, g_list_prepend (NULL, (char*)"quux"));
 
 	last = g_list_last (foo);	
 	if (strcmp ("quux", last->data))
@@ -123,11 +123,11 @@ test_list_last ()
 	return OK;
 }
 
-RESULT
-test_list_concat ()
+static RESULT
+test_list_concat (void)
 {
-	GList *foo = g_list_prepend (NULL, "foo");
-	GList *bar = g_list_prepend (NULL, "bar");
+	GList *foo = g_list_prepend (NULL, (char*)"foo");
+	GList *bar = g_list_prepend (NULL, (char*)"bar");
 	GList *list = g_list_concat (foo, bar);
 
 	if (g_list_length (list) != 2)
@@ -150,7 +150,6 @@ test_list_concat ()
 	return OK;
 }
 
-
 static gint
 compare (gconstpointer a, gconstpointer b)
 {
@@ -163,24 +162,24 @@ compare (gconstpointer a, gconstpointer b)
 	return 1;
 }
 
-RESULT
-test_list_insert_sorted ()
+static RESULT
+test_list_insert_sorted (void)
 {
-	GList *list = g_list_prepend (NULL, "a");
-	list = g_list_append (list, "aaa");
+	GList *list = g_list_prepend (NULL, (char*)"a");
+	list = g_list_append (list, (char*)"aaa");
 
 	/* insert at the middle */
-	list = g_list_insert_sorted (list, "aa", compare);
+	list = g_list_insert_sorted (list, (char*)"aa", compare);
 	if (strcmp ("aa", list->next->data))
 		return FAILED ("insert_sorted failed. #1");
 
 	/* insert at the beginning */
-	list = g_list_insert_sorted (list, "", compare);
+	list = g_list_insert_sorted (list, (char*)"", compare);
 	if (strcmp ("", list->data))
 		return FAILED ("insert_sorted failed. #2");		
 
 	/* insert at the end */
-	list = g_list_insert_sorted (list, "aaaa", compare);
+	list = g_list_insert_sorted (list, (char*)"aaaa", compare);
 	if (strcmp ("aaaa", g_list_last (list)->data))
 		return FAILED ("insert_sorted failed. #3");
 
@@ -188,15 +187,15 @@ test_list_insert_sorted ()
 	return OK;
 }
 
-RESULT
-test_list_copy ()
+static RESULT
+test_list_copy (void)
 {
 	int i, length;
 	GList *list, *copy;
-	list = g_list_prepend (NULL, "a");
-	list = g_list_append  (list, "aa");
-	list = g_list_append  (list, "aaa");
-	list = g_list_append  (list, "aaaa");
+	list = g_list_prepend (NULL, (char*)"a");
+	list = g_list_append  (list, (char*)"aa");
+	list = g_list_append  (list, (char*)"aaa");
+	list = g_list_append  (list, (char*)"aaaa");
 
 	length = g_list_length (list);
 	copy = g_list_copy (list);
@@ -211,15 +210,15 @@ test_list_copy ()
 	return OK;
 }
 
-RESULT
-test_list_reverse ()
+static RESULT
+test_list_reverse (void)
 {
 	guint i, length;
 	GList *list, *reverse;
-	list = g_list_prepend (NULL, "a");
-	list = g_list_append  (list, "aa");
-	list = g_list_append  (list, "aaa");
-	list = g_list_append  (list, "aaaa");
+	list = g_list_prepend (NULL, (char*)"a");
+	list = g_list_append  (list, (char*)"aa");
+	list = g_list_append  (list, (char*)"aaa");
+	list = g_list_append  (list, (char*)"aaaa");
 
 	length  = g_list_length (list);
 	reverse = g_list_reverse (g_list_copy (list));
@@ -239,12 +238,12 @@ test_list_reverse ()
 	return OK;
 }
 
-RESULT
-test_list_remove ()
+static RESULT
+test_list_remove (void)
 {
-	GList *list = g_list_prepend (NULL, "three");
-	char *one = "one";
-	list = g_list_prepend (list, "two");
+	GList *list = g_list_prepend (NULL, (char*)"three");
+	char *one = (char*)"one";
+	list = g_list_prepend (list, (char*)"two");
 	list = g_list_prepend (list, one);
 
 	list = g_list_remove (list, one);
@@ -259,12 +258,12 @@ test_list_remove ()
 	return OK;
 }
 
-RESULT
-test_list_remove_link ()
+static RESULT
+test_list_remove_link (void)
 {
-	GList *foo = g_list_prepend (NULL, "a");
-	GList *bar = g_list_prepend (NULL, "b");
-	GList *baz = g_list_prepend (NULL, "c");
+	GList *foo = g_list_prepend (NULL, (char*)"a");
+	GList *bar = g_list_prepend (NULL, (char*)"b");
+	GList *baz = g_list_prepend (NULL, (char*)"c");
 	GList *list = foo;
 
 	foo = g_list_concat (foo, bar);
@@ -283,23 +282,23 @@ test_list_remove_link ()
 	return OK;
 }
 
-RESULT
-test_list_insert_before ()
+static RESULT
+test_list_insert_before (void)
 {
 	GList *foo, *bar, *baz;
 
-	foo = g_list_prepend (NULL, "foo");
-	foo = g_list_insert_before (foo, NULL, "bar");
+	foo = g_list_prepend (NULL, (char*)"foo");
+	foo = g_list_insert_before (foo, NULL, (char*)"bar");
 	bar = g_list_last (foo);
 
-	if (strcmp (bar->data, "bar"))
+	if (strcmp (bar->data, (char*)"bar"))
 		return FAILED ("1");
 
-	baz = g_list_insert_before (foo, bar, "baz");
+	baz = g_list_insert_before (foo, bar, (char*)"baz");
 	if (foo != baz)
 		return FAILED ("2");
 
-	if (strcmp (g_list_nth_data (foo, 1), "baz"))
+	if (strcmp (g_list_nth_data (foo, 1), (char*)"baz"))
 		return FAILED ("3: %s", g_list_nth_data (foo, 1));	
 
 	g_list_free (foo);
@@ -338,8 +337,8 @@ static gboolean verify_sort (GList *list, int len)
 	return len == 0;
 }
 
-RESULT
-test_list_sort ()
+static RESULT
+test_list_sort (void)
 {
 	int i, j, mul;
 	GList *list = NULL;
@@ -394,13 +393,13 @@ find_custom (gconstpointer a, gconstpointer b)
 	return(strcmp (a, b));
 }
 
-RESULT
-test_list_find_custom ()
+static RESULT
+test_list_find_custom (void)
 {
 	GList *list = NULL, *found;
-	char *foo = "foo";
-	char *bar = "bar";
-	char *baz = "baz";
+	char *foo = (char*)"foo";
+	char *bar = (char*)"bar";
+	char *baz = (char*)"baz";
 	
 	list = g_list_prepend (list, baz);
 	list = g_list_prepend (list, bar);

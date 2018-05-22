@@ -48,8 +48,8 @@ typedef gchar * RESULT;
 typedef struct _Test Test;
 typedef struct _Group Group;
 
-typedef gchar * (* RunTestHandler)();
-typedef Test * (* LoadGroupHandler)();
+typedef gchar * (* RunTestHandler)(void);
+typedef Test * (* LoadGroupHandler)(void);
 
 struct _Test {
 	const gchar *name;
@@ -65,18 +65,17 @@ gboolean run_group(Group *group, gint iterations, gboolean quiet,
 	gboolean time, gchar *tests);
 #undef FAILED
 RESULT FAILED(const gchar *format, ...);
-gdouble get_timestamp();
+gdouble get_timestamp (void);
 gchar ** eg_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens);
 void eg_strfreev (gchar **str_array);
 
 #define OK NULL
 
 #define DEFINE_TEST_GROUP_INIT(name, table) \
-	Test * (name)() { return table; }
+	Test * (name) (void); \
+	Test * (name) (void) { return table; }
 
 #define DEFINE_TEST_GROUP_INIT_H(name) \
-	Test * (name)();
+	Test * (name) (void);
 
 #endif /* _TEST_H */
-
-

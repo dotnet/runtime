@@ -13,8 +13,8 @@
 #define close _close
 #endif
 
-RESULT
-test_file_get_contents ()
+static RESULT
+test_file_get_contents (void)
 {
 	GError *gerror;
 	gchar *content;
@@ -60,8 +60,8 @@ test_file_get_contents ()
 	return OK;
 }
 
-RESULT
-test_open_tmp ()
+static RESULT
+test_open_tmp (void)
 {
 	GError *gerror;
 	gint fd;
@@ -106,8 +106,8 @@ test_open_tmp ()
 	return OK;
 }
 
-RESULT
-test_file ()
+static RESULT
+test_file (void)
 {
 	gboolean res;
 	const gchar *tmp;
@@ -224,5 +224,3 @@ static Test file_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(file_tests_init, file_tests)
-
-

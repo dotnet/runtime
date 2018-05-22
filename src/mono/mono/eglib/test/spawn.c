@@ -13,8 +13,8 @@
 #define close _close
 #endif
 
-RESULT
-test_spawn_sync ()
+static RESULT
+test_spawn_sync (void)
 {
 	gchar *out;
 	gchar *err;
@@ -35,8 +35,8 @@ test_spawn_sync ()
 	return OK;
 }
 
-RESULT
-test_spawn_async ()
+static RESULT
+test_spawn_async (void)
 {
 	/*
 gboolean
@@ -57,7 +57,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 	pid_t child_pid = 0;
 
 	memset (argv, 0, 15 * sizeof (char *));
-	argv [0] = "ls";
+	argv [0] = (char*)"ls";
 	if (!g_spawn_async_with_pipes (NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, &child_pid, NULL, &stdout_fd, NULL, NULL))
 		return FAILED ("1 Failed to run ls");
 	if (child_pid == 0)
@@ -78,5 +78,3 @@ static Test spawn_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(spawn_tests_init, spawn_tests)
-
-
