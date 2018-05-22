@@ -10,9 +10,6 @@
         <OutputName>jit_crossgen</OutputName>
         <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
         <TargetType>LIBRARY</TargetType>
-
-        <ClDefines Condition="'$(BuildArchitecture)' == 'i386'">$(ClDefines);LEGACY_BACKEND</ClDefines>
-        <ClDefines Condition="'$(BuildArchitecture)' == 'arm'">$(ClDefines);LEGACY_BACKEND</ClDefines>
     </PropertyGroup>
 
     <Import Project="..\jit.settings.targets" />

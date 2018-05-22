@@ -72,14 +72,8 @@ typedef BitSetShortLongRep VARSET_TP;
 // Tested various sizes for max tracked locals. The largest value for which no throughput regression
 // could be measured was 512. Going to 1024 showed the first throughput regressions.
 // We anticipate the larger size will be needed to support better inlining.
-// There were a number of failures when 512 was used for legacy, so we just retain the 128 value
-// for legacy backend.
 
-#if !defined(LEGACY_BACKEND)
 const unsigned       lclMAX_TRACKED = 512;
-#else
-const unsigned lclMAX_TRACKED = 128;
-#endif
 
 #define VARSET_REP_IS_CLASS 0
 

@@ -29,9 +29,7 @@
 /*****************************************************************************/
 // The following are intended to capture only those #defines that cannot be replaced
 // with static const members of Target
-#if defined(_TARGET_X86_) && defined(LEGACY_BACKEND)
-#define REGMASK_BITS 8 // number of bits used to represent register mask
-#elif defined(_TARGET_XARCH_)
+#if defined(_TARGET_XARCH_)
 #define REGMASK_BITS 32
 
 #elif defined(_TARGET_ARM_)
@@ -120,7 +118,6 @@ enum _regMask_enum : unsigned
 
 #elif defined(_TARGET_X86_)
 
-#ifndef LEGACY_BACKEND
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
@@ -141,93 +138,9 @@ enum _regMask_enum : unsigned
 #include "register.h"
 };
 
-#else // LEGACY_BACKEND
-enum _regNumber_enum : unsigned
-{
-#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname) REG_##alias = REG_##realname,
-#include "register.h"
-
-    REG_COUNT,
-    REG_NA           = REG_COUNT,
-    ACTUAL_REG_COUNT = REG_COUNT - 1, // everything but REG_STK (only real regs)
-
-#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#include "registerfp.h"
-
-    REG_FPCOUNT,
-    REG_FPNONE = REG_FPCOUNT,
-
-#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#include "registerxmm.h"
-
-    REG_XMMCOUNT
-};
-
-enum _regMask_enum : unsigned
-{
-    RBM_NONE = 0,
-
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
-#include "register.h"
-
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#include "registerfp.h"
-
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#include "registerxmm.h"
-};
-
-#endif // LEGACY_BACKEND
 #else
 #error Unsupported target architecture
 #endif
-
-/* The following are used to hold 'long' (64-bit integer) operands */
-
-/*
-    The following yield the number of bits and the mask of a register
-    number in a register pair.
- */
-
-#ifdef _TARGET_ARM_
-#define REG_PAIR_NBITS 6
-#else
-#define REG_PAIR_NBITS 4
-#endif
-#define REG_PAIR_NMASK ((1 << REG_PAIR_NBITS) - 1)
-
-#ifdef DEBUG
-// Under DEBUG, we want to make sure that code doesn't accidentally confuse a reg pair value
-// with a simple register number. Thus, we offset the reg pair numbers so they are distinct
-// from all register numbers. Note that this increases the minimum size of a regPairNoSmall
-// type due to the additional bits used for this offset.
-#define REG_PAIR_FIRST (7 << REG_PAIR_NBITS)
-#define REG_PAIR_NBITS_DEBUG                                                                                           \
-    (REG_PAIR_NBITS +                                                                                                  \
-     3) // extra bits needed by the debug shifting (3 instead of 0 because we shift "7", not "1", above).
-C_ASSERT(REG_COUNT < REG_PAIR_FIRST); // make sure the register numbers (including REG_NA, ignoring fp/xmm regs on
-                                      // x86/x64) are distinct from the pair numbers
-#else
-#define REG_PAIR_FIRST 0
-#endif
-
-enum _regPairNo_enum : unsigned
-{
-#define PAIRDEF(rlo, rhi) REG_PAIR_##rlo##rhi = REG_##rlo + (REG_##rhi << REG_PAIR_NBITS) + REG_PAIR_FIRST,
-#include "regpair.h"
-
-    REG_PAIR_LAST = (REG_COUNT - 1) + ((REG_COUNT - 1) << REG_PAIR_NBITS) + REG_PAIR_FIRST,
-
-    REG_PAIR_NONE = REG_PAIR_LAST + 1
-};
-
-enum regPairMask
-{
-#define PAIRDEF(rlo, rhi) RBM_PAIR_##rlo##rhi = (RBM_##rlo | RBM_##rhi),
-#include "regpair.h"
-};
 
 /*****************************************************************************/
 
@@ -265,36 +178,7 @@ typedef unsigned __int64 regMaskSmall;
 #endif
 
 typedef _regNumber_enum regNumber;
-typedef _regPairNo_enum regPairNo;
-
-// LSRA currently converts freely between regNumber and regPairNo, so make sure they are the same size.
-C_ASSERT(sizeof(regPairNo) == sizeof(regNumber));
-
-typedef unsigned char regNumberSmall;
-
-#ifdef DEBUG
-
-// Under DEBUG, we shift the reg pair numbers to be independent of the regNumber range,
-// so we need additional bits. See the definition of REG_PAIR_FIRST for details.
-
-#if ((2 * REG_PAIR_NBITS) + REG_PAIR_NBITS_DEBUG) <= 16
-C_ASSERT(((2 * REG_PAIR_NBITS) + REG_PAIR_NBITS_DEBUG) > 8); // assert that nobody fits in 8 bits
-typedef unsigned short regPairNoSmall;                       // x86/x64: need 15 bits
-#else
-C_ASSERT(((2 * REG_PAIR_NBITS) + REG_PAIR_NBITS_DEBUG) <= 32);
-typedef unsigned regPairNoSmall; // arm: need 21 bits
-#endif
-
-#else // DEBUG
-
-#if (2 * REG_PAIR_NBITS) <= 8
-typedef unsigned char  regPairNoSmall; // x86/x64: need 8 bits
-#else
-C_ASSERT((2 * REG_PAIR_NBITS) <= 16);  // assert that nobody needs more than 16 bits
-typedef unsigned short regPairNoSmall; // arm: need 12 bits
-#endif
-
-#endif // DEBUG
+typedef unsigned char   regNumberSmall;
 
 /*****************************************************************************/
 
@@ -338,25 +222,14 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 #if defined(_TARGET_X86_)
 
   #define CPU_LOAD_STORE_ARCH      0
-
-#ifdef LEGACY_BACKEND
-  #define CPU_LONG_USES_REGPAIR    1
-#else
-  #define CPU_LONG_USES_REGPAIR    0       // RyuJIT x86 doesn't use the regPairNo field to record register pairs for long
-                                           // type tree nodes, and instead either decomposes them (for non-atomic operations)
-                                           // or stores multiple regNumber values for operations such as calls where the
-                                           // register definitions are effectively "atomic".
-#endif // LEGACY_BACKEND
-
   #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              1       // round intermed float expression results
   #define CPU_HAS_BYTE_REGS        1
   #define CPU_USES_BLOCK_MOVE      1 
 
-#ifndef LEGACY_BACKEND
   // TODO-CQ: Fine tune the following xxBlk threshold values:
 
-#define CPBLK_MOVS_LIMIT         16      // When generating code for CpBlk, this is the buffer size 
+  #define CPBLK_MOVS_LIMIT         16      // When generating code for CpBlk, this is the buffer size 
                                            // threshold to stop generating rep movs and switch to the helper call.
                                            // NOTE: Using rep movs is currently disabled since we found it has bad performance
                                            //       on pre-Ivy Bridge hardware.
@@ -375,8 +248,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
                                            // always asks for the unrolling limit first so you can say the JIT 'favors' unrolling.
                                            // Setting the limit to something lower than that makes lower to never consider it.
 
-#endif // !LEGACY_BACKEND
-
 #ifdef FEATURE_SIMD
   #define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
 #endif // FEATURE_SIMD
@@ -388,19 +259,11 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when
                                            // the flags need to be set
-#ifdef LEGACY_BACKEND
-  #define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
-  #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register  
-  #define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register
-  #define MAX_PASS_MULTIREG_BYTES       0  // No multireg arguments 
-  #define MAX_RET_MULTIREG_BYTES        0  // No multireg return values 
-#else
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register  
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
   #define MAX_PASS_MULTIREG_BYTES       0  // No multireg arguments (note this seems wrong as MAX_ARG_REG_COUNT is 2)
   #define MAX_RET_MULTIREG_BYTES        8  // Maximum size of a struct that could be returned in more than one register
-#endif
 
   #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass an argument.
   #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
@@ -418,25 +281,19 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
                                            // target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter,
                                            // filter-handler, fault) and directly execute 'finally' clauses.
-#if defined(FEATURE_PAL) && !defined(LEGACY_BACKEND)
+
+#if defined(FEATURE_PAL)
   #define FEATURE_EH_FUNCLETS      1
-#else  // FEATURE_PAL && !LEGACY_BACKEND
+#else  // !FEATURE_PAL
   #define FEATURE_EH_FUNCLETS      0
-#endif // FEATURE_PAL && !LEGACY_BACKEND
+#endif // !FEATURE_PAL
+
   #define FEATURE_EH_CALLFINALLY_THUNKS 0  // Generate call-to-finally code in "thunks" in the enclosing EH region,
                                            // protected by "cloned finally" clauses.
-#ifndef LEGACY_BACKEND
-  #define FEATURE_STACK_FP_X87     0
-#else // LEGACY_BACKEND
-  #define FEATURE_STACK_FP_X87     1       // Use flat register file model    
-#endif // LEGACY_BACKEND
-  #define FEATURE_X87_DOUBLES      0       // FP tree temps always use x87 doubles (when 1) or can be double or float
-                                           // (when 0).
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based
                                            // frames for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
-#ifndef LEGACY_BACKEND
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
   #define REG_INT_FIRST            REG_EAX
@@ -479,27 +336,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REGNUM_BITS              6       // number of bits in a REG_*
   #define TINY_REGNUM_BITS         6       // number used in a tiny instrdesc (same)
 
-#else // LEGACY_BACKEND
-  #define FEATURE_FP_REGALLOC      0       // Enabled if RegAlloc is used to enregister Floating Point LclVars      
-
-  #define FP_STK_SIZE              8
-  #define RBM_ALLFLOAT            (RBM_FPV0 | RBM_FPV1 | RBM_FPV2 | RBM_FPV3 | RBM_FPV4 | RBM_FPV5 | RBM_FPV6)
-  #define REG_FP_FIRST             REG_FPV0
-  #define REG_FP_LAST              REG_FPV7
-  #define FIRST_FP_ARGREG          REG_NA
-  #define LAST_FP_ARGREG           REG_NA
-
-
-  #define REGNUM_BITS              3       // number of bits in a REG_*
-  #define TINY_REGNUM_BITS         3       
-  #define REGMASK_BITS             8       // number of bits in a REGNUM_MASK
-
-  #define RBM_FLTARG_REGS          0
-  #define RBM_FLT_CALLEE_SAVED     0
-  #define RBM_FLT_CALLEE_TRASH     0
-
-#endif // LEGACY_BACKEND
-
   #define REGSIZE_BYTES            4       // number of bytes in one register
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
@@ -524,13 +360,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
   #define REG_VAR_ORDER            REG_EAX,REG_EDX,REG_ECX,REG_ESI,REG_EDI,REG_EBX
   #define MAX_VAR_ORDER_SIZE       6
-
-#ifdef LEGACY_BACKEND
-  #define REG_TMP_ORDER            REG_EAX,REG_EDX,REG_ECX,REG_EBX,REG_ESI,REG_EDI
-  #define REG_TMP_ORDER_COUNT      6
-
-  #define REG_PREDICT_ORDER        REG_EAX,REG_EDX,REG_ECX,REG_EBX,REG_ESI,REG_EDI
-#endif // LEGACY_BACKEND
 
   // The order here is fixed: it must agree with an order assumed in eetwain...
   #define REG_CALLEE_SAVED_ORDER   REG_EDI,REG_ESI,REG_EBX,REG_EBP
@@ -560,21 +389,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_TMP_1                REG_EDX
   #define RBM_TMP_1                RBM_EDX
 
-  #define REG_PAIR_TMP             REG_PAIR_EAXEDX
-  #define REG_PAIR_TMP_REVERSE     REG_PAIR_EDXEAX
-  #define RBM_PAIR_TMP             (RBM_EAX|RBM_EDX)
-  #define REG_PAIR_TMP_LO          REG_EAX
-  #define RBM_PAIR_TMP_LO          RBM_EAX
-  #define REG_PAIR_TMP_HI          REG_EDX
-  #define RBM_PAIR_TMP_HI          RBM_EDX
-  #define PREDICT_PAIR_TMP         PREDICT_PAIR_EAXEDX
-  #define PREDICT_PAIR_TMP_LO      PREDICT_REG_EAX
-
-  // Used when calling the 64-bit Variable shift helper
-  #define REG_LNGARG_0             REG_PAIR_EAXEDX
-  #define RBM_LNGARG_0            (RBM_EAX|RBM_EDX)
-  #define PREDICT_PAIR_LNGARG_0    PREDICT_PAIR_EAXEDX
-
   #define REG_LNGARG_LO             REG_EAX
   #define RBM_LNGARG_LO             RBM_EAX
   #define REG_LNGARG_HI             REG_EDX
@@ -582,12 +396,10 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   // register to hold shift amount
   #define REG_SHIFT                REG_ECX
   #define RBM_SHIFT                RBM_ECX
-  #define PREDICT_REG_SHIFT        PREDICT_REG_ECX
   
   // register to hold shift amount when shifting 64-bit values
   #define REG_SHIFT_LNG            REG_ECX
   #define RBM_SHIFT_LNG            RBM_ECX
-  #define PREDICT_REG_SHIFT_LNG    PREDICT_REG_ECX
   
   // This is a general scratch register that does not conflict with the argument registers
   #define REG_SCRATCH              REG_EAX
@@ -635,11 +447,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_PINVOKE_SCRATCH      REG_EAX      // EAX is trashed by CORINFO_HELP_INIT_PINVOKE_FRAME helper
   #define RBM_PINVOKE_SCRATCH      RBM_EAX
 
-#ifdef LEGACY_BACKEND
-  #define REG_SPILL_CHOICE         REG_EAX
-  #define RBM_SPILL_CHOICE         RBM_EAX
-#endif // LEGACY_BACKEND
-
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
   #define REG_INT_FIRST            REG_EAX
@@ -654,7 +461,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   // Which register are int and long values returned in ?
   #define REG_INTRET               REG_EAX
   #define RBM_INTRET               RBM_EAX
-  #define REG_LNGRET               REG_PAIR_EAXEDX
   #define RBM_LNGRET              (RBM_EDX|RBM_EAX)
   #define REG_LNGRET_LO            REG_EAX
   #define RBM_LNGRET_LO            RBM_EAX
@@ -692,10 +498,8 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
   SELECTANY const regNumber intArgRegs [] = {REG_ECX, REG_EDX};
   SELECTANY const regMaskTP intArgMasks[] = {RBM_ECX, RBM_EDX};
-#if !FEATURE_STACK_FP_X87
   SELECTANY const regNumber fltArgRegs [] = {REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3};
   SELECTANY const regMaskTP fltArgMasks[] = {RBM_XMM0, RBM_XMM1, RBM_XMM2, RBM_XMM3};
-#endif // FEATURE_STACK_FP_X87
 
   #define RBM_ARG_0                RBM_ECX
   #define RBM_ARG_1                RBM_EDX
@@ -724,7 +528,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   // TODO-AMD64-CQ: Fine tune the following xxBlk threshold values:
  
   #define CPU_LOAD_STORE_ARCH      0
-  #define CPU_LONG_USES_REGPAIR    0
   #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
@@ -792,13 +595,11 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
   #define FEATURE_EH_FUNCLETS      1
   #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
-  #define FEATURE_STACK_FP_X87     0 
 #ifdef    UNIX_AMD64_ABI
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based frames for most methods
 #else // !UNIX_AMD64_ABI
   #define ETW_EBP_FRAMED           0       // if 1 we cannot use EBP as a scratch register and must create EBP based frames for most methods
 #endif // !UNIX_AMD64_ABI
-  #define FEATURE_FP_REGALLOC      0       // Enabled if RegAlloc is used to enregister Floating Point LclVars  
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
   #define RBM_ALLFLOAT            (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5 | RBM_XMM6 | RBM_XMM7 | RBM_XMM8 | RBM_XMM9 | RBM_XMM10 | RBM_XMM11 | RBM_XMM12 | RBM_XMM13 | RBM_XMM14 | RBM_XMM15)
@@ -936,19 +737,10 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_TMP_1                REG_EDX
   #define RBM_TMP_1                RBM_EDX
 #endif // !UNIX_AMD64_ABI
-  #define REG_PAIR_TMP             REG_PAIR_EAXEDX
-  #define RBM_PAIR_TMP             (RBM_EAX|RBM_EDX)
-  #define REG_PAIR_TMP_LO          REG_EAX
-  #define RBM_PAIR_TMP_LO          RBM_EAX
-  #define REG_PAIR_TMP_HI          REG_EDX
-  #define RBM_PAIR_TMP_HI          RBM_EDX
-  #define PREDICT_PAIR_TMP         PREDICT_PAIR_RAXRDX
-  #define PREDICT_PAIR_TMP_LO      PREDICT_REG_EAX
   
   // register to hold shift amount
   #define REG_SHIFT                REG_ECX
   #define RBM_SHIFT                RBM_ECX
-  #define PREDICT_REG_SHIFT        PREDICT_REG_ECX
   
   // This is a general scratch register that does not conflict with the argument registers
   #define REG_SCRATCH              REG_EAX
@@ -1015,7 +807,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_INTRET               REG_EAX
   #define RBM_INTRET               RBM_EAX
 
-  #define REG_LNGRET               REG_EAX
   #define RBM_LNGRET               RBM_EAX
 
 #ifdef UNIX_AMD64_ABI
@@ -1165,11 +956,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   // TODO-ARM-CQ: Check for sdiv/udiv at runtime and generate it if available
   #define USE_HELPERS_FOR_INT_DIV  1       // BeagleBoard (ARMv7A) doesn't support SDIV/UDIV
   #define CPU_LOAD_STORE_ARCH      1
-#ifdef LEGACY_BACKEND
-  #define CPU_LONG_USES_REGPAIR    1
-#else
-  #define CPU_LONG_USES_REGPAIR    0
-#endif
   #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
@@ -1201,9 +987,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
   #define FEATURE_EH_FUNCLETS      1
   #define FEATURE_EH_CALLFINALLY_THUNKS 0  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
-  #define FEATURE_STACK_FP_X87     0 
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
-  #define FEATURE_FP_REGALLOC      1       // Enabled if RegAlloc is used to enregister Floating Point LclVars  
   #define CSE_CONSTS               1       // Enable if we want to CSE constants 
 
   #define REG_FP_FIRST             REG_F0
@@ -1251,28 +1035,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
                                    REG_F24, REG_F25, REG_F26, REG_F27, \
                                    REG_F28, REG_F29, REG_F30, REG_F31,
 
-#ifdef LEGACY_BACKEND
-  #define MAX_VAR_ORDER_SIZE       32
-
-  #define REG_TMP_ORDER            REG_R3,REG_R2,REG_R1,REG_R0, REG_R4,REG_R5,REG_R6,REG_R7,\
-                                   REG_LR,REG_R12,              REG_R8,REG_R9,REG_R10
-  #define REG_TMP_ORDER_COUNT      13
-
-  #define REG_FLT_TMP_ORDER        REG_F14, REG_F15, REG_F12, REG_F13, \
-                                   REG_F10, REG_F11, REG_F8,  REG_F9,  \
-                                   REG_F6,  REG_F7,  REG_F4,  REG_F5,  \
-                                   REG_F2,  REG_F3,  REG_F0,  REG_F1,  \
-                                   REG_F16, REG_F17, REG_F18, REG_F19, \
-                                   REG_F20, REG_F21, REG_F22, REG_F23, \
-                                   REG_F24, REG_F25, REG_F26, REG_F27, \
-                                   REG_F28, REG_F29, REG_F30, REG_F31,
-
-  #define REG_FLT_TMP_ORDER_COUNT  32
-
-  #define REG_PREDICT_ORDER        REG_LR,REG_R12,REG_R3,REG_R2,REG_R1,REG_R0, \
-                                   REG_R7,REG_R6,REG_R5,REG_R4,REG_R8,REG_R9,REG_R10
-#endif // LEGACY_BACKEND
-
   #define RBM_LOW_REGS            (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R4|RBM_R5|RBM_R6|RBM_R7)
   #define RBM_HIGH_REGS           (RBM_R8|RBM_R9|RBM_R10|RBM_R11|RBM_R12|RBM_SP|RBM_LR|RBM_PC)
 
@@ -1304,38 +1066,17 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_TMP_1                REG_R2
   #define RBM_TMP_1                RBM_R2
 
-#ifndef LEGACY_BACKEND
   // Temporary registers used for the GS cookie check.
   #define REG_GSCOOKIE_TMP_0       REG_R12
   #define REG_GSCOOKIE_TMP_1       REG_LR
-#endif // !LEGACY_BACKEND
 
-  //  This is the first register pair in REG_TMP_ORDER
-  #define REG_PAIR_TMP             REG_PAIR_R2R3
-  #define REG_PAIR_TMP_REVERSE     REG_PAIR_R3R2
-  #define RBM_PAIR_TMP             (RBM_R2|RBM_R3)
-  #define REG_PAIR_TMP_LO          REG_R2
-  #define RBM_PAIR_TMP_LO          RBM_R2
-  #define REG_PAIR_TMP_HI          REG_R3
-  #define RBM_PAIR_TMP_HI          RBM_R3
-  #define PREDICT_PAIR_TMP         PREDICT_PAIR_R2R3
-  #define PREDICT_PAIR_TMP_LO      PREDICT_REG_R2
-
-  // Used when calling the 64-bit Variable shift helper
-  #define REG_LNGARG_0             REG_PAIR_R0R1
-  #define RBM_LNGARG_0            (RBM_R0|RBM_R1)
-  #define PREDICT_PAIR_LNGARG_0    PREDICT_PAIR_R0R1
-  
   // register to hold shift amount; no special register is required on the ARM
   #define REG_SHIFT                REG_NA
   #define RBM_SHIFT                RBM_ALLINT
-  #define PREDICT_REG_SHIFT        PREDICT_REG
 
   // register to hold shift amount when shifting 64-bit values (this uses a helper call)
   #define REG_SHIFT_LNG            REG_R2            // REG_ARG_2
   #define RBM_SHIFT_LNG            RBM_R2            // RBM_ARG_2
-  #define PREDICT_REG_SHIFT_LNG    PREDICT_REG_R2
- 
   
   // This is a general scratch register that does not conflict with the argument registers
   #define REG_SCRATCH              REG_LR
@@ -1399,17 +1140,9 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_PINVOKE_COOKIE_PARAM          REG_R4
   #define RBM_PINVOKE_COOKIE_PARAM          RBM_R4
 
-#ifdef LEGACY_BACKEND
-  #define PREDICT_REG_PINVOKE_COOKIE_PARAM  PREDICT_REG_R4
-#endif // LEGACY_BACKEND
-
   // GenericPInvokeCalliHelper unmanaged target Parameter 
   #define REG_PINVOKE_TARGET_PARAM          REG_R12
   #define RBM_PINVOKE_TARGET_PARAM          RBM_R12
-
-#ifdef LEGACY_BACKEND
-  #define PREDICT_REG_PINVOKE_TARGET_PARAM  PREDICT_REG_R12
-#endif // LEGACY_BACKEND
 
   // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM     REG_R12
@@ -1426,13 +1159,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_PINVOKE_TCB          RBM_R5
   #define REG_PINVOKE_SCRATCH      REG_R6
   #define RBM_PINVOKE_SCRATCH      RBM_R6
-
-#ifdef LEGACY_BACKEND
-  #define REG_SPILL_CHOICE         REG_LR
-  #define RBM_SPILL_CHOICE         RBM_LR
-  #define REG_SPILL_CHOICE_FLT     REG_F14
-  #define RBM_SPILL_CHOICE_FLT    (RBM_F14|RBM_F15)
-#endif // LEGACY_BACKEND
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_R0
@@ -1464,7 +1190,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   // Which register are int and long values returned in ?
   #define REG_INTRET               REG_R0
   #define RBM_INTRET               RBM_R0
-  #define REG_LNGRET               REG_PAIR_R0R1
   #define RBM_LNGRET              (RBM_R1|RBM_R0)
   #define REG_LNGRET_LO            REG_R0
   #define REG_LNGRET_HI            REG_R1
@@ -1550,7 +1275,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 #elif defined(_TARGET_ARM64_)
 
   #define CPU_LOAD_STORE_ARCH      1
-  #define CPU_LONG_USES_REGPAIR    0
   #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
@@ -1587,9 +1311,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
   #define FEATURE_EH_FUNCLETS      1
   #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
-  #define FEATURE_STACK_FP_X87     0 
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
-  #define FEATURE_FP_REGALLOC      0       // Enabled if RegAlloc is used to enregister Floating Point LclVars  
   #define CSE_CONSTS               1       // Enable if we want to CSE constants 
 
   #define REG_FP_FIRST             REG_V0
@@ -1672,7 +1394,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   // register to hold shift amount; no special register is required on ARM64.
   #define REG_SHIFT                REG_NA
   #define RBM_SHIFT                RBM_ALLINT
-  #define PREDICT_REG_SHIFT        PREDICT_REG
 
   // This is a general scratch register that does not conflict with the argument registers
   #define REG_SCRATCH              REG_R9
@@ -1790,7 +1511,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   // Which register are int and long values returned in ?
   #define REG_INTRET               REG_R0
   #define RBM_INTRET               RBM_R0
-  #define REG_LNGRET               REG_R0
   #define RBM_LNGRET               RBM_R0
   // second return register for 16-byte structs
   #define REG_INTRET_1             REG_R1 
@@ -1967,19 +1687,6 @@ public:
         ARG_ORDER_L2R
     };
     static const enum ArgOrder g_tgtArgOrder;
-
-#ifdef LEGACY_BACKEND
-#if NOGC_WRITE_BARRIERS
-    static regMaskTP exclude_WriteBarrierReg(regMaskTP mask)
-    {
-        unsigned result = (mask & ~RBM_WRITE_BARRIER);
-        if (result)
-            return result;
-        else
-            return RBM_ALLINT & ~RBM_WRITE_BARRIER;
-    }
-#endif // NOGC_WRITE_BARRIERS
-#endif // LEGACY_BACKEND
 };
 
 #if defined(DEBUG) || defined(LATE_DISASM)
@@ -2004,14 +1711,6 @@ inline BOOL isByteReg(regNumber reg)
     return true;
 }
 #endif
-
-#ifdef LEGACY_BACKEND
-extern const regNumber raRegTmpOrder[REG_TMP_ORDER_COUNT];
-extern const regNumber rpRegTmpOrder[REG_TMP_ORDER_COUNT];
-#if FEATURE_FP_REGALLOC
-extern const regNumber raRegFltTmpOrder[REG_FLT_TMP_ORDER_COUNT];
-#endif
-#endif // LEGACY_BACKEND
 
 inline regMaskTP genRegMask(regNumber reg);
 inline regMaskTP genRegMaskFloat(regNumber reg, var_types type = TYP_DOUBLE);
@@ -2219,21 +1918,13 @@ inline regMaskTP genRegMask(regNumber reg)
  *  Map a register number to a floating-point register mask.
  */
 
-#if defined(_TARGET_X86_) && defined(LEGACY_BACKEND)
-extern const regMaskSmall regFPMasks[REG_FPCOUNT];
-#endif // defined(_TARGET_X86_) && defined(LEGACY_BACKEND)
-
 inline regMaskTP genRegMaskFloat(regNumber reg, var_types type /* = TYP_DOUBLE */)
 {
-#if defined(_TARGET_X86_) && defined(LEGACY_BACKEND)
-    assert(reg >= REG_FPV0 && reg < REG_FPCOUNT);
-    assert((unsigned)reg < ArrLen(regFPMasks));
-    return regFPMasks[reg];
-#elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
     assert(genIsValidFloatReg(reg));
     assert((unsigned)reg < ArrLen(regMasks));
     return regMasks[reg];
-#elif defined _TARGET_ARM_
+#elif defined(_TARGET_ARM_)
     assert(floatRegCanHoldType(reg, type));
     assert(reg >= REG_F0 && reg <= REG_F31);
 
@@ -2301,65 +1992,6 @@ regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short);
 
 /*****************************************************************************
  *
- *  Returns the register that holds the low  32 bits of the long value given
- *  by the register pair 'regPair'.
- */
-inline regNumber genRegPairLo(regPairNo regPair)
-{
-    assert(regPair >= REG_PAIR_FIRST && regPair <= REG_PAIR_LAST);
-
-    return (regNumber)((regPair - REG_PAIR_FIRST) & REG_PAIR_NMASK);
-}
-
-/*****************************************************************************
- *
- *  Returns the register that holds the high 32 bits of the long value given
- *  by the register pair 'regPair'.
- */
-inline regNumber genRegPairHi(regPairNo regPair)
-{
-    assert(regPair >= REG_PAIR_FIRST && regPair <= REG_PAIR_LAST);
-
-    return (regNumber)(((regPair - REG_PAIR_FIRST) >> REG_PAIR_NBITS) & REG_PAIR_NMASK);
-}
-
-/*****************************************************************************
- *
- *  Returns whether regPair is a combination of two "real" registers
- *  or whether it contains a pseudo register.
- *
- *  In debug it also asserts that reg1 and reg2 are not the same.
- */
-bool genIsProperRegPair(regPairNo regPair);
-
-/*****************************************************************************
- *
- *  Returns the register pair number that corresponds to the given two regs.
- */
-inline regPairNo gen2regs2pair(regNumber regLo, regNumber regHi)
-{
-    assert(regLo != regHi || regLo == REG_STK);
-    assert(genIsValidReg(regLo) && genIsValidReg(regHi));
-    assert(regLo != REG_L_STK && regHi != REG_L_STK);
-
-    regPairNo regPair = (regPairNo)(regLo + (regHi << REG_PAIR_NBITS) + REG_PAIR_FIRST);
-
-    assert(regLo == genRegPairLo(regPair));
-    assert(regHi == genRegPairHi(regPair));
-
-    return regPair;
-}
-
-/*****************************************************************************/
-inline regMaskTP genRegPairMask(regPairNo regPair)
-{
-    assert(regPair >= REG_PAIR_FIRST && regPair <= REG_PAIR_LAST);
-
-    return genRegMask(genRegPairLo(regPair)) | genRegMask(genRegPairHi(regPair));
-}
-
-/*****************************************************************************
- *
  *  Assumes that "reg" is of the given "type". Return the next unused reg number after "reg"
  *  of this type, else REG_NA if there are no more.
  */
@@ -2405,21 +2037,6 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
  *
  *  Type checks
  */
-
-inline bool isRegPairType(int /* s/b "var_types" */ type)
-{
-#if !CPU_LONG_USES_REGPAIR
-    return false;
-#else
-#ifdef _TARGET_64BIT_
-    return false;
-#elif CPU_HAS_FP_SUPPORT
-    return type == TYP_LONG;
-#else
-    return type == TYP_LONG || type == TYP_DOUBLE;
-#endif
-#endif // CPU_LONG_USES_REGPAIR
-}
 
 inline bool isFloatRegType(int /* s/b "var_types" */ type)
 {

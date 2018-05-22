@@ -17,10 +17,6 @@ void emitBegFN(bool hasFramePtr
                ,
                bool checkAlign
 #endif
-#ifdef LEGACY_BACKEND
-               ,
-               unsigned lclSize
-#endif // LEGACY_BACKEND
                ,
                unsigned maxTmpSize);
 

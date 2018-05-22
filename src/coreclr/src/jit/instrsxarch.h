@@ -194,7 +194,6 @@ INST3( xorps,       "xorps"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCK
 
 INST3( cvttsd2si,   "cvttsd2si"   , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEDBL(0x2C)) // cvt with trunc scalar double to signed DWORDs
 
-#ifndef LEGACY_BACKEND
 INST3( movntdq,     "movntdq"     , 0, IUM_WR, 0, 0, PCKDBL(0xE7), BAD_CODE, BAD_CODE)
 INST3( movnti,      "movnti"      , 0, IUM_WR, 0, 0, PCKFLT(0xC3), BAD_CODE, BAD_CODE)
 INST3( movntpd,     "movntpd"     , 0, IUM_WR, 0, 0, PCKDBL(0x2B), BAD_CODE, BAD_CODE)
@@ -387,11 +386,11 @@ INST3( unpcklpd,    "unpcklpd"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,    
 INST3( packssdw,    "packssdw"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      PCKDBL(0x6B))   // Pack (narrow) int to short with saturation
 INST3( packsswb,    "packsswb"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      PCKDBL(0x63))   // Pack (narrow) short to byte with saturation
 INST3( packuswb,    "packuswb"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      PCKDBL(0x67))   // Pack (narrow) short to unsigned byte with saturation
-#endif // !LEGACY_BACKEND
+
 INST3(LAST_SSE2_INSTRUCTION, "LAST_SSE2_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
-#ifndef LEGACY_BACKEND
 INST3(FIRST_SSE4_INSTRUCTION, "FIRST_SSE4_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
+
 //    enum           name           FP updmode rf wf    MR            MI        RM
 INST3( dpps,         "dpps"        , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x40))   // Packed dot product of two float vector regs
 INST3( dppd,         "dppd"        , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x41))   // Packed dot product of two double vector regs
@@ -510,7 +509,7 @@ INST3( lzcnt,        "lzcnt"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 
 // POPCNT
 INST3( popcnt,       "popcnt"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEFLT(0xB8))
-#endif // !LEGACY_BACKEND
+
 //    enum     name            FP  updmode rf wf R/M,R/M[reg]  R/M,icon
 
 INST2(ret    , "ret"          , 0, IUM_RD, 0, 0, 0x0000C3, 0x0000C2)
@@ -545,25 +544,25 @@ INST2(sar_N  , "sar"          , 0, IUM_RW, 0, 1, 0x0038C0, 0x0038C0)
 
 INST1(r_movsb, "rep movsb"    , 0, IUM_RD, 0, 0, 0x00A4F3)
 INST1(r_movsd, "rep movsd"    , 0, IUM_RD, 0, 0, 0x00A5F3)
-#if !defined(LEGACY_BACKEND) && defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_)
 INST1(r_movsq, "rep movsq"    , 0, IUM_RD, 0, 0, 0xF3A548)
-#endif // !LEGACY_BACKEND || !defined(_TARGET_AMD64_)
+#endif // defined(_TARGET_AMD64_)
 INST1(movsb  , "movsb"        , 0, IUM_RD, 0, 0, 0x0000A4)
 INST1(movsd  , "movsd"        , 0, IUM_RD, 0, 0, 0x0000A5)
-#if !defined(LEGACY_BACKEND) && defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_)
 INST1(movsq, "movsq"          , 0, IUM_RD, 0, 0, 0x00A548)
-#endif // !LEGACY_BACKEND || !defined(_TARGET_AMD64_)
+#endif // defined(_TARGET_AMD64_)
 
 INST1(r_stosb, "rep stosb"    , 0, IUM_RD, 0, 0, 0x00AAF3)
 INST1(r_stosd, "rep stosd"    , 0, IUM_RD, 0, 0, 0x00ABF3)
-#if !defined(LEGACY_BACKEND) && defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_)
 INST1(r_stosq, "rep stosq"    , 0, IUM_RD, 0, 0, 0xF3AB48)
-#endif // !LEGACY_BACKEND || !defined(_TARGET_AMD64_)
+#endif // defined(_TARGET_AMD64_)
 INST1(stosb,   "stosb"        , 0, IUM_RD, 0, 0, 0x0000AA)
 INST1(stosd,   "stosd"        , 0, IUM_RD, 0, 0, 0x0000AB)
-#if !defined(LEGACY_BACKEND) && defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_)
 INST1(stosq,   "stosq"        , 0, IUM_RD, 0, 0, 0x00AB48)
-#endif // !LEGACY_BACKEND || !defined(_TARGET_AMD64_)
+#endif // defined(_TARGET_AMD64_)
 
 INST1(int3   , "int3"         , 0, IUM_RD, 0, 0, 0x0000CC)
 INST1(nop    , "nop"          , 0, IUM_RD, 0, 0, 0x000090)
@@ -595,53 +594,6 @@ INST1(shrd   , "shrd"         , 0, IUM_RW, 0, 1, 0x0F00AC)
 INST1(fld    , "fld"          , 1, IUM_WR, 0, 0, 0x0000D9)
 INST1(fstp   , "fstp"         , 1, IUM_WR, 0, 0, 0x0018D9)
 #endif // _TARGET_X86
-
-#if FEATURE_STACK_FP_X87
-INST1(fnstsw , "fnstsw"       , 1, IUM_WR, 1, 0, 0x0020DF)
-INST1(fcom   , "fcom"         , 1, IUM_RD, 0, 1, 0x0010D8)
-INST1(fcomp  , "fcomp"        , 1, IUM_RD, 0, 1, 0x0018D8)
-INST1(fcompp , "fcompp"       , 1, IUM_RD, 0, 1, 0x00D9DE)
-INST1(fcomi  , "fcomi"        , 1, IUM_RD, 0, 1, 0x00F0DB)
-INST1(fcomip , "fcomip"       , 1, IUM_RD, 0, 1, 0x00F0DF)
-
-INST1(fchs   , "fchs"         , 1, IUM_RW, 0, 1, 0x00E0D9)
-INST1(fabs   , "fabs"         , 1, IUM_RW, 0, 1, 0x00E1D9)
-INST1(fsin   , "fsin"         , 1, IUM_RW, 0, 1, 0x00FED9)
-INST1(fcos   , "fcos"         , 1, IUM_RW, 0, 1, 0x00FFD9)
-INST1(fsqrt  , "fsqrt"        , 1, IUM_RW, 0, 1, 0x00FAD9)
-INST1(fldl2e , "fldl2e"       , 1, IUM_RW, 0, 1, 0x00EAD9)
-INST1(frndint, "frndint"      , 1, IUM_RW, 0, 1, 0x00FCD9)
-INST1(f2xm1  , "f2xm1"        , 1, IUM_RW, 0, 1, 0x00F0D9)
-INST1(fscale , "fscale"       , 1, IUM_RW, 0, 1, 0x00FDD9)
-
-INST1(fld1   , "fld1"         , 1, IUM_WR, 0, 0, 0x00E8D9)
-INST1(fldz   , "fldz"         , 1, IUM_WR, 0, 0, 0x00EED9)
-INST1(fst    , "fst"          , 1, IUM_WR, 0, 0, 0x0010D9)
-
-INST1(fadd   , "fadd"         , 1, IUM_RW, 0, 0, 0x0000D8)
-INST1(faddp  , "faddp"        , 1, IUM_RW, 0, 0, 0x0000DA)
-INST1(fsub   , "fsub"         , 1, IUM_RW, 0, 0, 0x0020D8)
-INST1(fsubp  , "fsubp"        , 1, IUM_RW, 0, 0, 0x0028DA)
-INST1(fsubr  , "fsubr"        , 1, IUM_RW, 0, 0, 0x0028D8)
-INST1(fsubrp , "fsubrp"       , 1, IUM_RW, 0, 0, 0x0020DA)
-INST1(fmul   , "fmul"         , 1, IUM_RW, 0, 0, 0x0008D8)
-INST1(fmulp  , "fmulp"        , 1, IUM_RW, 0, 0, 0x0008DA)
-INST1(fdiv   , "fdiv"         , 1, IUM_RW, 0, 0, 0x0030D8)
-INST1(fdivp  , "fdivp"        , 1, IUM_RW, 0, 0, 0x0038DA)
-INST1(fdivr  , "fdivr"        , 1, IUM_RW, 0, 0, 0x0038D8)
-INST1(fdivrp , "fdivrp"       , 1, IUM_RW, 0, 0, 0x0030DA)
-
-INST1(fxch   , "fxch"         , 1, IUM_RW, 0, 0, 0x00C8D9)
-INST1(fprem  , "fprem"        , 0, IUM_RW, 0, 1, 0x00F8D9)
-
-INST1(fild   , "fild"         , 1, IUM_RD, 0, 0, 0x0000DB)
-INST1(fildl  , "fild"         , 1, IUM_RD, 0, 0, 0x0028DB)
-INST1(fistp  , "fistp"        , 1, IUM_WR, 0, 0, 0x0018DB)
-INST1(fistpl , "fistp"        , 1, IUM_WR, 0, 0, 0x0038DB)
-
-INST1(fldcw  , "fldcw"        , 1, IUM_RD, 0, 0, 0x0028D9)
-INST1(fnstcw , "fnstcw"       , 1, IUM_WR, 0, 0, 0x0038D9)
-#endif // FEATURE_STACK_FP_X87
 
 INST1(seto   , "seto"         , 0, IUM_WR, 1, 0, 0x0F0090)
 INST1(setno  , "setno"        , 0, IUM_WR, 1, 0, 0x0F0091)

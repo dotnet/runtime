@@ -5,7 +5,7 @@
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
-XX                           Lowering for AMD64                              XX
+XX                           Lowering for AMD64, x86                         XX
 XX                                                                           XX
 XX  This encapsulates all the logic for lowering trees for the AMD64         XX
 XX  architecture.  For a more detailed view of what is lowering, please      XX
@@ -21,9 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifndef LEGACY_BACKEND // This file is ONLY used for the RyuJIT backend that uses the linear scan register allocator
-
-#ifdef _TARGET_XARCH_
+#ifdef _TARGET_XARCH_ // This file is only used for xarch
 
 #include "jit.h"
 #include "sideeffects.h"
@@ -2474,5 +2472,3 @@ void Lowering::ContainCheckFloatBinary(GenTreeOp* node)
 }
 
 #endif // _TARGET_XARCH_
-
-#endif // !LEGACY_BACKEND

@@ -315,9 +315,7 @@ public:
 inline void GenTree::SetUnusedValue()
 {
     gtLIRFlags |= LIR::Flags::UnusedValue;
-#ifndef LEGACY_BACKEND
     ClearContained();
-#endif
 }
 
 inline void GenTree::ClearUnusedValue()

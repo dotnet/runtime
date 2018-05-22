@@ -386,11 +386,9 @@ private:
 #endif // JIT32_GCENCODER
 #endif // DUMP_GC_TABLES
 
-#ifndef LEGACY_BACKEND
-    // This method updates the appropriate reg masks when a variable is moved.
 public:
+    // This method updates the appropriate reg masks when a variable is moved.
     void gcUpdateForRegVarMove(regMaskTP srcMask, regMaskTP dstMask, LclVarDsc* varDsc);
-#endif // !LEGACY_BACKEND
 
 private:
     ReturnKind getReturnKind();

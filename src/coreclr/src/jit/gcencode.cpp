@@ -2217,17 +2217,13 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
                 }
                 else
                 {
-/* Stack-passed arguments which are not enregistered
- * are always reported in this "untracked stack
- * pointers" section of the GC info even if lvTracked==true
- */
+                    /* Stack-passed arguments which are not enregistered
+                     * are always reported in this "untracked stack
+                     * pointers" section of the GC info even if lvTracked==true
+                     */
 
-/* Has this argument been enregistered? */
-#ifndef LEGACY_BACKEND
+                    /* Has this argument been enregistered? */
                     if (!varDsc->lvOnFrame)
-#else  // LEGACY_BACKEND
-                    if (varDsc->lvRegister)
-#endif // LEGACY_BACKEND
                     {
                         /* if a CEE_JMP has been used, then we need to report all the arguments
                            even if they are enregistered, since we will be using this value
@@ -4150,11 +4146,8 @@ void GCInfo::gcMakeRegPtrTable(
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
     const bool noTrackedGCSlots =
-        (compiler->opts.MinOpts() && !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
-#if !defined(JIT32_GCENCODER) || !defined(LEGACY_BACKEND)
-         && !JitConfig.JitMinOptsTrackGCrefs()
-#endif // !defined(JIT32_GCENCODER) || !defined(LEGACY_BACKEND)
-             );
+        (compiler->opts.MinOpts() && !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
+         !JitConfig.JitMinOptsTrackGCrefs());
 
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
@@ -4208,11 +4201,7 @@ void GCInfo::gcMakeRegPtrTable(
                 // Has this argument been fully enregistered?
                 CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifndef LEGACY_BACKEND
                 if (!varDsc->lvOnFrame)
-#else  // LEGACY_BACKEND
-                if (varDsc->lvRegister)
-#endif // LEGACY_BACKEND
                 {
                     // If a CEE_JMP has been used, then we need to report all the arguments
                     // even if they are enregistered, since we will be using this value
