@@ -1351,7 +1351,6 @@ INTERP_DISABLED_TESTS += \
 	handleref.exe \
 	monitor-abort.exe \
 	nullable_boxing.2.exe \
-	pinvoke.exe \
 	pinvoke2.exe \
 	pinvoke3.exe \
 	remoting2.exe \
@@ -1388,7 +1387,6 @@ INTERP_DISABLED_TESTS += \
 	cominterop.exe \
 	delegate-with-null-target.exe \
 	dim-diamondshape.exe \
-	pinvoke.exe \
 	pinvoke3.exe
 endif
 
