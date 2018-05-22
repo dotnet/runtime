@@ -134,8 +134,8 @@ namespace System
             's', 't', 'T', 'u', 'U', 'y', 'Y',
         };
 
-        internal const String RoundtripFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.fffffffK";
-        internal const String RoundtripDateTimeUnfixed = "yyyy'-'MM'-'ddTHH':'mm':'ss zzz";
+        internal const string RoundtripFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.fffffffK";
+        internal const string RoundtripDateTimeUnfixed = "yyyy'-'MM'-'ddTHH':'mm':'ss zzz";
 
         private const int DEFAULT_ALL_DATETIMES_SIZE = 132;
 
@@ -144,7 +144,7 @@ namespace System
         internal static readonly string[] InvariantAbbreviatedDayNames = InvariantFormatInfo.AbbreviatedDayNames;
         internal const string Gmt = "GMT";
 
-        internal static String[] fixedNumberFormats = new String[] {
+        internal static string[] fixedNumberFormats = new string[] {
             "0",
             "00",
             "000",
@@ -223,7 +223,7 @@ namespace System
             return (index - pos);
         }
 
-        private static String FormatDayOfWeek(int dayOfWeek, int repeat, DateTimeFormatInfo dtfi)
+        private static string FormatDayOfWeek(int dayOfWeek, int repeat, DateTimeFormatInfo dtfi)
         {
             Debug.Assert(dayOfWeek >= 0 && dayOfWeek <= 6, "dayOfWeek >= 0 && dayOfWeek <= 6");
             if (repeat == 3)
@@ -235,7 +235,7 @@ namespace System
             return (dtfi.GetDayName((DayOfWeek)dayOfWeek));
         }
 
-        private static String FormatMonth(int month, int repeatCount, DateTimeFormatInfo dtfi)
+        private static string FormatMonth(int month, int repeatCount, DateTimeFormatInfo dtfi)
         {
             Debug.Assert(month >= 1 && month <= 12, "month >=1 && month <= 12");
             if (repeatCount == 3)
@@ -276,7 +276,7 @@ namespace System
 
             Therefore, if we are in a regular year, we have to increment the month name if moth is greater or eqaul to 7.            
         */
-        private static String FormatHebrewMonthName(DateTime time, int month, int repeatCount, DateTimeFormatInfo dtfi)
+        private static string FormatHebrewMonthName(DateTime time, int month, int repeatCount, DateTimeFormatInfo dtfi)
         {
             Debug.Assert(repeatCount != 3 || repeatCount != 4, "repeateCount should be 3 or 4");
             if (dtfi.Calendar.IsLeapYear(dtfi.Calendar.GetYear(time)))
@@ -347,7 +347,7 @@ namespace System
             {
                 // Here we can't find the matching quote.
                 throw new FormatException(
-                        String.Format(
+                        string.Format(
                             CultureInfo.CurrentCulture,
                             SR.Format_BadQuote, quoteChar));
             }
@@ -669,7 +669,7 @@ namespace System
                             }
                             else
                             {
-                                String fmtPattern = "D" + tokenLen.ToString();
+                                string fmtPattern = "D" + tokenLen.ToString();
                                 result.Append(year.ToString(fmtPattern, CultureInfo.InvariantCulture));
                             }
                         }
@@ -864,9 +864,9 @@ namespace System
             result.Append((char)('0' + (val % 10)));
         }
 
-        internal static String GetRealFormat(ReadOnlySpan<char> format, DateTimeFormatInfo dtfi)
+        internal static string GetRealFormat(ReadOnlySpan<char> format, DateTimeFormatInfo dtfi)
         {
-            String realFormat = null;
+            string realFormat = null;
 
             switch (format[0])
             {
@@ -931,7 +931,7 @@ namespace System
         // This method also convert the dateTime if necessary (e.g. when the format is in Universal time),
         // and change dtfi if necessary (e.g. when the format should use invariant culture).
         //
-        private static String ExpandPredefinedFormat(ReadOnlySpan<char> format, ref DateTime dateTime, ref DateTimeFormatInfo dtfi, ref TimeSpan offset)
+        private static string ExpandPredefinedFormat(ReadOnlySpan<char> format, ref DateTime dateTime, ref DateTimeFormatInfo dtfi, ref TimeSpan offset)
         {
             switch (format[0])
             {
@@ -988,12 +988,12 @@ namespace System
             return GetRealFormat(format, dtfi);
         }
 
-        internal static String Format(DateTime dateTime, String format, IFormatProvider provider)
+        internal static string Format(DateTime dateTime, string format, IFormatProvider provider)
         {
             return Format(dateTime, format, provider, NullOffset);
         }
 
-        internal static string Format(DateTime dateTime, String format, IFormatProvider provider, TimeSpan offset)
+        internal static string Format(DateTime dateTime, string format, IFormatProvider provider, TimeSpan offset)
         {
             if (format != null && format.Length == 1)
             {
@@ -1313,11 +1313,11 @@ namespace System
             buffer[0] = (char)('0' + value);
         }
 
-        internal static String[] GetAllDateTimes(DateTime dateTime, char format, DateTimeFormatInfo dtfi)
+        internal static string[] GetAllDateTimes(DateTime dateTime, char format, DateTimeFormatInfo dtfi)
         {
             Debug.Assert(dtfi != null);
-            String[] allFormats = null;
-            String[] results = null;
+            string[] allFormats = null;
+            string[] results = null;
 
             switch (format)
             {
@@ -1334,7 +1334,7 @@ namespace System
                 case 'y':
                 case 'Y':
                     allFormats = dtfi.GetAllDateTimePatterns(format);
-                    results = new String[allFormats.Length];
+                    results = new string[allFormats.Length];
                     for (int i = 0; i < allFormats.Length; i++)
                     {
                         results[i] = Format(dateTime, allFormats[i], dtfi);
@@ -1343,7 +1343,7 @@ namespace System
                 case 'U':
                     DateTime universalTime = dateTime.ToUniversalTime();
                     allFormats = dtfi.GetAllDateTimePatterns(format);
-                    results = new String[allFormats.Length];
+                    results = new string[allFormats.Length];
                     for (int i = 0; i < allFormats.Length; i++)
                     {
                         results[i] = Format(universalTime, allFormats[i], dtfi);
@@ -1359,7 +1359,7 @@ namespace System
                 case 'O':
                 case 's':
                 case 'u':
-                    results = new String[] { Format(dateTime, new String(format, 1), dtfi) };
+                    results = new string[] { Format(dateTime, new string(format, 1), dtfi) };
                     break;
                 default:
                     throw new FormatException(SR.Format_InvalidString);
@@ -1367,19 +1367,19 @@ namespace System
             return (results);
         }
 
-        internal static String[] GetAllDateTimes(DateTime dateTime, DateTimeFormatInfo dtfi)
+        internal static string[] GetAllDateTimes(DateTime dateTime, DateTimeFormatInfo dtfi)
         {
-            List<String> results = new List<String>(DEFAULT_ALL_DATETIMES_SIZE);
+            List<string> results = new List<string>(DEFAULT_ALL_DATETIMES_SIZE);
 
             for (int i = 0; i < allStandardFormats.Length; i++)
             {
-                String[] strings = GetAllDateTimes(dateTime, allStandardFormats[i], dtfi);
+                string[] strings = GetAllDateTimes(dateTime, allStandardFormats[i], dtfi);
                 for (int j = 0; j < strings.Length; j++)
                 {
                     results.Add(strings[j]);
                 }
             }
-            String[] value = new String[results.Count];
+            string[] value = new string[results.Count];
             results.CopyTo(0, value, 0, results.Count);
             return (value);
         }

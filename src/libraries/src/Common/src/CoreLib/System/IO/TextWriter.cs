@@ -548,7 +548,7 @@ namespace System.IO
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        public virtual Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
+        public virtual Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) =>
             MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 WriteAsync(array.Array, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
@@ -600,7 +600,7 @@ namespace System.IO
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        public virtual Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
+        public virtual Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) =>
             MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 WriteLineAsync(array.Array, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>

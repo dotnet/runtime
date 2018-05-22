@@ -96,7 +96,7 @@ namespace System
             return DoStrictParse(s, format, style, dtfi, ref result);
         }
 
-        internal static DateTime ParseExactMultiple(ReadOnlySpan<char> s, String[] formats,
+        internal static DateTime ParseExactMultiple(ReadOnlySpan<char> s, string[] formats,
                                                 DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
@@ -112,7 +112,7 @@ namespace System
         }
 
 
-        internal static DateTime ParseExactMultiple(ReadOnlySpan<char> s, String[] formats,
+        internal static DateTime ParseExactMultiple(ReadOnlySpan<char> s, string[] formats,
                                                 DateTimeFormatInfo dtfi, DateTimeStyles style, out TimeSpan offset)
         {
             DateTimeResult result = new DateTimeResult();       // The buffer to store the parsing result.
@@ -130,7 +130,7 @@ namespace System
             }
         }
 
-        internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, String[] formats,
+        internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, string[] formats,
                                                    DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result, out TimeSpan offset)
         {
             result = DateTime.MinValue;
@@ -148,7 +148,7 @@ namespace System
         }
 
 
-        internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, String[] formats,
+        internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, string[] formats,
                                                    DateTimeFormatInfo dtfi, DateTimeStyles style, out DateTime result)
         {
             result = DateTime.MinValue;
@@ -162,7 +162,7 @@ namespace System
             return false;
         }
 
-        internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, String[] formats,
+        internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, string[] formats,
                                                 DateTimeFormatInfo dtfi, DateTimeStyles style, ref DateTimeResult result)
         {
             if (formats == null)
@@ -395,13 +395,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 };
         //          End       NumEnd      NumAmPm     NumSpace    NumDaySep   NumTimesep  MonthEnd    MonthSpace  MonthDSep   NumDateSuff NumTimeSuff     DayOfWeek     YearSpace   YearDateSep YearEnd     TimeZone    Era        UTCMark
 
-        internal const String GMTName = "GMT";
-        internal const String ZuluName = "Z";
+        internal const string GMTName = "GMT";
+        internal const string ZuluName = "Z";
 
         //
         // Search from the index of str at str.Index to see if the target string exists in the str.
         //
-        private static bool MatchWord(ref __DTString str, String target)
+        private static bool MatchWord(ref __DTString str, string target)
         {
             if (target.Length > (str.Value.Length - str.Index))
             {
@@ -1247,7 +1247,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         // Return 0 for YMD, 1 for MDY, 2 for DMY, otherwise -1.
         //
-        private static Boolean GetYearMonthDayOrder(String datePattern, DateTimeFormatInfo dtfi, out int order)
+        private static Boolean GetYearMonthDayOrder(string datePattern, DateTimeFormatInfo dtfi, out int order)
         {
             int yearOrder = -1;
             int monthOrder = -1;
@@ -1345,7 +1345,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         // Return 0 for YM, 1 for MY, otherwise -1.
         //
-        private static Boolean GetYearMonthOrder(String pattern, DateTimeFormatInfo dtfi, out int order)
+        private static Boolean GetYearMonthOrder(string pattern, DateTimeFormatInfo dtfi, out int order)
         {
             int yearOrder = -1;
             int monthOrder = -1;
@@ -1411,7 +1411,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //
         // Return 0 for MD, 1 for DM, otherwise -1.
         //
-        private static Boolean GetMonthDayOrder(String pattern, DateTimeFormatInfo dtfi, out int order)
+        private static Boolean GetMonthDayOrder(string pattern, DateTimeFormatInfo dtfi, out int order)
         {
             int monthOrder = -1;
             int dayOrder = -1;
@@ -1859,7 +1859,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
             int n1 = raw.GetNumber(0);
             int n2 = raw.GetNumber(1);
-            String pattern = dtfi.ShortDatePattern;
+            string pattern = dtfi.ShortDatePattern;
 
             // For compatibility, don't throw if we can't determine the order, but default to YMD instead
             int order;
@@ -3315,7 +3315,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 int monthsInYear = (dtfi.GetMonthName(13).Length == 0 ? 12 : 13);
                 for (int i = 1; i <= monthsInYear; i++)
                 {
-                    String searchStr = dtfi.GetAbbreviatedMonthName(i);
+                    string searchStr = dtfi.GetAbbreviatedMonthName(i);
                     int matchStrLen = searchStr.Length;
                     if (dtfi.HasSpacesInMonthNames
                             ? str.MatchSpecifiedWords(searchStr, false, ref matchStrLen)
@@ -3373,7 +3373,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 int monthsInYear = (dtfi.GetMonthName(13).Length == 0 ? 12 : 13);
                 for (int i = 1; i <= monthsInYear; i++)
                 {
-                    String searchStr = dtfi.GetMonthName(i);
+                    string searchStr = dtfi.GetMonthName(i);
                     int matchStrLen = searchStr.Length;
                     if (dtfi.HasSpacesInMonthNames
                             ? str.MatchSpecifiedWords(searchStr, false, ref matchStrLen)
@@ -3438,7 +3438,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             {
                 for (DayOfWeek i = DayOfWeek.Sunday; i <= DayOfWeek.Saturday; i++)
                 {
-                    String searchStr = dtfi.GetAbbreviatedDayName(i);
+                    string searchStr = dtfi.GetAbbreviatedDayName(i);
                     int matchStrLen = searchStr.Length;
                     if (dtfi.HasSpacesInDayNames
                             ? str.MatchSpecifiedWords(searchStr, false, ref matchStrLen)
@@ -3477,7 +3477,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             {
                 for (DayOfWeek i = DayOfWeek.Sunday; i <= DayOfWeek.Saturday; i++)
                 {
-                    String searchStr = dtfi.GetDayName(i);
+                    string searchStr = dtfi.GetDayName(i);
                     int matchStrLen = searchStr.Length;
                     if (dtfi.HasSpacesInDayNames
                             ? str.MatchSpecifiedWords(searchStr, false, ref matchStrLen)
@@ -3517,7 +3517,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 {
                     for (int i = 0; i < eras.Length; i++)
                     {
-                        String searchStr = dtfi.GetEraName(eras[i]);
+                        string searchStr = dtfi.GetEraName(eras[i]);
                         if (str.MatchSpecifiedWord(searchStr))
                         {
                             str.Index += (searchStr.Length - 1);
@@ -3560,7 +3560,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
             if (str.GetNext())
             {
-                String searchStr = dtfi.AMDesignator;
+                string searchStr = dtfi.AMDesignator;
                 if (searchStr.Length > 0)
                 {
                     if (str.MatchSpecifiedWord(searchStr))
@@ -3774,7 +3774,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // This method also set the dtfi according/parseInfo to some special pre-defined
         // formats.
         //
-        private static String ExpandPredefinedFormat(ReadOnlySpan<char> format, ref DateTimeFormatInfo dtfi, ref ParsingInfo parseInfo, ref DateTimeResult result)
+        private static string ExpandPredefinedFormat(ReadOnlySpan<char> format, ref DateTimeFormatInfo dtfi, ref ParsingInfo parseInfo, ref DateTimeResult result)
         {
             //
             // Check the format to see if we need to override the dtfi to be InvariantInfo,
@@ -4201,7 +4201,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     // Some cultures uses space in the quoted string.  E.g. Spanish has long date format as:
                     // "dddd, dd' de 'MMMM' de 'yyyy".  When inner spaces flag is set, we should skip whitespaces if there is space
                     // in the quoted string.
-                    String quotedStr = StringBuilderCache.GetStringAndRelease(enquotedString);
+                    string quotedStr = StringBuilderCache.GetStringAndRelease(enquotedString);
 
                     for (int i = 0; i < quotedStr.Length; i++)
                     {
@@ -4700,7 +4700,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         private static string Hex(string[] strs)
         {
             if (strs == null || strs.Length == 0)
-                return String.Empty;
+                return string.Empty;
             if (strs.Length == 1)
                 return Hex(strs[0]);
 
@@ -4713,7 +4713,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             StringBuilder buffer = new StringBuilder();
             buffer.Append(Hex(strs[0]));
             curLineLength = buffer.Length;
-            String s;
+            string s;
 
             for (int i = 1; i < strs.Length - 1; i++)
             {
@@ -4766,7 +4766,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             return buffer.ToString();
         }
         // return an unicode escaped string form of char c
-        private static String Hex(char c)
+        private static string Hex(char c)
         {
             if (c <= '\x007f')
                 return c.ToString(CultureInfo.InvariantCulture);
@@ -5004,13 +5004,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool MatchSpecifiedWord(String target) =>
+        internal bool MatchSpecifiedWord(string target) =>
             Index + target.Length <= Length &&
             m_info.Compare(Value.Slice(Index, target.Length), target, CompareOptions.IgnoreCase) == 0;
 
         private static readonly Char[] WhiteSpaceChecks = new Char[] { ' ', '\u00A0' };
 
-        internal bool MatchSpecifiedWords(String target, bool checkWordBoundary, ref int matchLength)
+        internal bool MatchSpecifiedWords(string target, bool checkWordBoundary, ref int matchLength)
         {
             int valueRemaining = Value.Length - Index;
             matchLength = target.Length;
@@ -5098,7 +5098,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // If a match is found, true value is returned and Index is updated to the next character to be parsed.
         // Otherwise, Index is unchanged.
         //
-        internal bool Match(String str)
+        internal bool Match(string str)
         {
             if (++Index >= Length)
             {
@@ -5147,12 +5147,12 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         //      maxMatchStrLen  [in/out] the initailized maximum length.  This parameter can be used to
         //          find the longest match in two string arrays.
         //
-        internal int MatchLongestWords(String[] words, ref int maxMatchStrLen)
+        internal int MatchLongestWords(string[] words, ref int maxMatchStrLen)
         {
             int result = -1;
             for (int i = 0; i < words.Length; i++)
             {
-                String word = words[i];
+                string word = words[i];
                 int matchLength = word.Length;
                 if (MatchSpecifiedWords(word, false, ref matchLength))
                 {
