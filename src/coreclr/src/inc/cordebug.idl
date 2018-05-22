@@ -1359,6 +1359,8 @@ interface ICorDebugManagedCallback3 : IUnknown
 
 interface ICorDebugManagedCallback4 : IUnknown
 {
+    // TODO, databp, these public APIs need to be commented.
+    // TODO, databp, measure performance to see if these events need to be switched.
     HRESULT BeforeGarbageCollection([in] ICorDebugProcess* pProcess);
     HRESULT AfterGarbageCollection([in] ICorDebugProcess* pProcess);
     HRESULT DataBreakpoint([in] ICorDebugProcess* pProcess, [in] ICorDebugThread* pThread, [in] ULONG64 dataBreakpointMask);
