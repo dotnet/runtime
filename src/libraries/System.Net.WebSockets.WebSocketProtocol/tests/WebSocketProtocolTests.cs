@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,8 +12,6 @@ using Xunit;
 
 namespace System.Net.WebSockets.Tests
 {
-    using Configuration = System.Net.Test.Common.Configuration;
-
     public sealed class WebSocketProtocolTests
     {
         [Fact]
@@ -105,6 +98,35 @@ namespace System.Net.WebSockets.Tests
                         Assert.Equal(expected, Encoding.UTF8.GetString(buffer.Array));
                     }
                 }
+            }
+        }
+
+        [Fact]
+        public static async Task ManagedWebSocket_ReceiveUTF8SplitAcrossMultipleBuffers()
+        {
+            // 1 character - 2 bytes
+            byte[] payload = Encoding.UTF8.GetBytes("\u00E6");
+            var frame = new byte[payload.Length + 2];
+            frame[0] = 0x81; // FIN = true, Opcode = Text
+            frame[1] = (byte)payload.Length;
+            Array.Copy(payload, 0, frame, 2, payload.Length);
+
+            using (var stream = new MemoryStream(frame, writable: true))
+            {
+                WebSocket websocket = WebSocketProtocol.CreateFromStream(stream, false, "null", Timeout.InfiniteTimeSpan);
+
+                // read first half of the multi-byte character
+                var recvBuffer = new byte[1];
+                WebSocketReceiveResult result = await websocket.ReceiveAsync(new ArraySegment<byte>(recvBuffer), CancellationToken.None);
+                Assert.False(result.EndOfMessage);
+                Assert.Equal(1, result.Count);
+                Assert.Equal(0xc3, recvBuffer[0]);
+
+                // read second half of the multi-byte character
+                result = await websocket.ReceiveAsync(new ArraySegment<byte>(recvBuffer), CancellationToken.None);
+                Assert.True(result.EndOfMessage);
+                Assert.Equal(1, result.Count);
+                Assert.Equal(0xa6, recvBuffer[0]);
             }
         }
 
