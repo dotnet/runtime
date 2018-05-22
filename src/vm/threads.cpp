@@ -5349,7 +5349,7 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
 //----------------------------------------------------------------------------
 
 ThreadStore::ThreadStore()
-           : m_Crst(CrstThreadStore, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD)),
+           : m_Crst(CrstThreadStore, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_REENTRANCY | CRST_DEBUGGER_THREAD)),
              m_ThreadCount(0),
              m_MaxThreadCount(0),
              m_UnstartedThreadCount(0),
@@ -5432,6 +5432,18 @@ DEBUG_NOINLINE void ThreadStore::Leave()
     ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Leave();
+}
+
+void ThreadStore::EnterThreadStoreLockOnly()
+{
+    WRAPPER_NO_CONTRACT;
+    s_pThreadStore->Enter();
+}
+
+void ThreadStore::LeaveThreadStoreLockOnly()
+{
+    WRAPPER_NO_CONTRACT;
+    s_pThreadStore->Leave();
 }
 
 void ThreadStore::LockThreadStore()

@@ -11,7 +11,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
-
+#include "threadsuspend.h"
 #ifndef FEATURE_PAL
 #include "securitywrapper.h"
 #endif
@@ -1226,6 +1226,7 @@ void DebuggerRCThread::MainLoop()
 
                 // Let's release the lock here since runtime is resumed.
                 debugLockHolderSuspended.Release();
+                ThreadStore::LeaveThreadStoreLockOnly();
 
                 // This debugger thread shoud not be holding debugger locks anymore
                 _ASSERTE(!g_pDebugger->ThreadHoldsLock());
@@ -1247,7 +1248,8 @@ void DebuggerRCThread::MainLoop()
         else if (dwWaitResult == WAIT_OBJECT_0 + DRCT_CONTROL_EVENT)
         {
             LOG((LF_CORDB, LL_INFO1000, "DRCT::ML:: straggler event set.\n"));
-
+            
+            ThreadStore::EnterThreadStoreLockOnly();
             Debugger::DebuggerLockHolder debugLockHolder(m_debugger);
             // Make sure that we're still synchronizing...
             if (m_debugger->IsSynchronizing())
@@ -1260,12 +1262,14 @@ void DebuggerRCThread::MainLoop()
                 // Skip waiting the first time and just give it a go.  Note: Implicit
                 // release of the lock, because we are leaving its scope.
                 //
+                ThreadStore::LeaveThreadStoreLockOnly();
                 goto LWaitTimedOut;
             }
 #ifdef LOGGING
             else
                 LOG((LF_CORDB, LL_INFO1000, "DRCT::ML:: told to wait, but not syncing anymore.\n"));
 #endif
+            ThreadStore::LeaveThreadStoreLockOnly();
             // dbgLockHolder goes out of scope - implicit Release
          }
         else if (dwWaitResult == WAIT_TIMEOUT)
@@ -1275,6 +1279,7 @@ LWaitTimedOut:
 
             LOG((LF_CORDB, LL_INFO1000, "DRCT::ML:: wait timed out.\n"));
 
+            ThreadStore::EnterThreadStoreLockOnly();
             // Debugger::DebuggerLockHolder debugLockHolder(m_debugger);
             // Explicitly get the lock here since we try to check to see if
             // have suspended.  We will release the lock if we are not suspended yet.
@@ -1329,6 +1334,7 @@ LWaitTimedOut:
                 // And so the sweep should always succeed.
                 STRESS_LOG0(LF_CORDB, LL_INFO1000, "DRCT::ML:: threads still syncing after sweep.\n");
                 debugLockHolderSuspended.Release();
+                ThreadStore::LeaveThreadStoreLockOnly();
             }
             // debugLockHolderSuspended does not go out of scope. It has to be either released explicitly on the line above or
             // we intend to hold the lock till we hit continue event.

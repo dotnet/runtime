@@ -20,20 +20,18 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 
     _ASSERTE(reason == SUSPEND_FOR_GC || reason == SUSPEND_FOR_GC_PREP);
 
-    // TODO, between the time when the debug event is sent and the EE is suspended, there is a small window that the data breakpoint could have already hit
-    g_pDebugInterface->BeforeGarbageCollection();
-
     ThreadSuspend::SuspendEE((ThreadSuspend::SUSPEND_REASON)reason);
+
+    g_pDebugInterface->BeforeGarbageCollection();
 }
 
 void GCToEEInterface::RestartEE(bool bFinishedGC)
 {
     WRAPPER_NO_CONTRACT;
 
-    ThreadSuspend::RestartEE(bFinishedGC, TRUE);
-
-    // TODO, between the time when the debug event is sent and the EE is suspended, there is a small window that the data breakpoint could have already hit
     g_pDebugInterface->AfterGarbageCollection();
+
+    ThreadSuspend::RestartEE(bFinishedGC, TRUE);
 }
 
 VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
