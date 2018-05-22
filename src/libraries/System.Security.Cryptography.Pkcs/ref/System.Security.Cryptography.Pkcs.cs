@@ -255,6 +255,8 @@ namespace System.Security.Cryptography.Pkcs
         public void CheckSignature(bool verifySignatureOnly) => throw null;
         public void CheckSignature(System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraStore, bool verifySignatureOnly) => throw null;
         public void CheckHash() => throw null;
+        public void AddCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) => throw null;
+        public void RemoveCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) => throw null;
     }
     public sealed partial class SignerInfo
     {
@@ -265,6 +267,8 @@ namespace System.Security.Cryptography.Pkcs
         public Oid DigestAlgorithm => throw null;
         public CryptographicAttributeObjectCollection SignedAttributes => throw null;
         public CryptographicAttributeObjectCollection UnsignedAttributes => throw null;
+        public void AddUnsignedAttribute(System.Security.Cryptography.AsnEncodedData asnEncodedData) => throw null;
+        public void RemoveUnsignedAttribute(System.Security.Cryptography.AsnEncodedData asnEncodedData) => throw null;
         public SignerInfoCollection CounterSignerInfos => throw null;
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public void ComputeCounterSignature() => throw null;
