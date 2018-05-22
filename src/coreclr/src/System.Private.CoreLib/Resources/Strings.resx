@@ -640,6 +640,9 @@
   <data name="Arg_OverflowException" xml:space="preserve">
     <value>Arithmetic operation resulted in an overflow.</value>
   </data>
+  <data name="Arg_OutOfMemoryException" xml:space="preserve">
+    <value>Insufficient memory to continue the execution of the program.</value>
+  </data>
   <data name="Arg_ParamName_Name" xml:space="preserve">
     <value>Parameter name: {0}</value>
   </data>
@@ -3579,6 +3582,9 @@
   </data>
   <data name="Threading_SemaphoreFullException" xml:space="preserve">
     <value>Adding the specified count to the semaphore would cause it to exceed its maximum count.</value>
+  </data>
+  <data name="Threading_ThreadInterrupted" xml:space="preserve">
+    <value>Thread was interrupted from a waiting state.</value>
   </data>
   <data name="ThreadLocal_Disposed" xml:space="preserve">
     <value>The ThreadLocal object has been disposed.</value>
