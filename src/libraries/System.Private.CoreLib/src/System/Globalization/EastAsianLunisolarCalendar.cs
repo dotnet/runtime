@@ -162,7 +162,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                                 "time",
-                                String.Format(CultureInfo.InvariantCulture, SR.ArgumentOutOfRange_CalendarRange,
+                                string.Format(CultureInfo.InvariantCulture, SR.ArgumentOutOfRange_CalendarRange,
                                 MinSupportedDateTime, MaxSupportedDateTime));
             }
         }

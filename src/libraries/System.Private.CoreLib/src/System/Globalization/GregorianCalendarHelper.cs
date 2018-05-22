@@ -19,9 +19,9 @@ namespace System.Globalization
                                    // be affected by the DateTime.MinValue;
         internal int maxEraYear;   // Max year value in this era. (== the year length of the era + 1)
 
-        internal String eraName;    // The era name
-        internal String abbrevEraName;  // Abbreviated Era Name
-        internal String englishEraName; // English era name
+        internal string eraName;    // The era name
+        internal string abbrevEraName;  // Abbreviated Era Name
+        internal string englishEraName; // English era name
 
         internal EraInfo(int era, int startYear, int startMonth, int startDay, int yearOffset, int minEraYear, int maxEraYear)
         {
@@ -33,7 +33,7 @@ namespace System.Globalization
         }
 
         internal EraInfo(int era, int startYear, int startMonth, int startDay, int yearOffset, int minEraYear, int maxEraYear,
-                          String eraName, String abbrevEraName, String englishEraName)
+                          string eraName, string abbrevEraName, string englishEraName)
         {
             this.era = era;
             this.yearOffset = yearOffset;
@@ -154,7 +154,7 @@ namespace System.Globalization
                     {
                         throw new ArgumentOutOfRangeException(
                                     nameof(year),
-                                    String.Format(
+                                    string.Format(
                                         CultureInfo.CurrentCulture,
                                         SR.ArgumentOutOfRange_Range,
                                         m_EraInfo[i].minEraYear,
@@ -297,7 +297,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(millisecond),
-                                String.Format(
+                                string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     0,
@@ -315,7 +315,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             "time",
-                            String.Format(
+                            string.Format(
                                 CultureInfo.InvariantCulture,
                                 SR.ArgumentOutOfRange_CalendarRange,
                                 m_Cal.MinSupportedDateTime,
@@ -346,7 +346,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(months),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
                                 -120000,
@@ -544,7 +544,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(day),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
                                 1,
@@ -583,7 +583,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(month),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
                                 1,
@@ -638,7 +638,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(year),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range, m_minYear, m_maxYear));
             }

@@ -571,7 +571,7 @@ namespace System
         int IList.Add(Object value)
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
-            return default(int);
+            return default;
         }
 
         bool IList.Contains(Object value)
@@ -1004,7 +1004,7 @@ namespace System
                     return array[i];
                 }
             }
-            return default(T);
+            return default;
         }
 
         public static T[] FindAll<T>(T[] array, Predicate<T> match)
@@ -1099,7 +1099,7 @@ namespace System
                     return array[i];
                 }
             }
-            return default(T);
+            return default;
         }
 
         public static int FindLastIndex<T>(T[] array, Predicate<T> match)
@@ -2569,7 +2569,7 @@ namespace System
         {
             // Not meaningful for arrays
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
-            return default(bool);
+            return default;
         }
 
         private void RemoveAt<T>(int index)

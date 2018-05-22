@@ -295,7 +295,7 @@ namespace System.Threading.Tasks
                     try
                     {
                         processingTask = new Task(thisPair => ((ConcurrentExclusiveSchedulerPair)thisPair).ProcessExclusiveTasks(), this,
-                            default(CancellationToken), GetCreationOptionsForTask(fairly));
+                            default, GetCreationOptionsForTask(fairly));
                         processingTask.Start(m_underlyingTaskScheduler);
                         // When we call Start, if the underlying scheduler throws in QueueTask, TPL will fault the task and rethrow
                         // the exception.  To deal with that, we need a reference to the task object, so that we can observe its exception.
@@ -322,7 +322,7 @@ namespace System.Threading.Tasks
                             try
                             {
                                 processingTask = new Task(thisPair => ((ConcurrentExclusiveSchedulerPair)thisPair).ProcessConcurrentTasks(), this,
-                                    default(CancellationToken), GetCreationOptionsForTask(fairly));
+                                    default, GetCreationOptionsForTask(fairly));
                                 processingTask.Start(m_underlyingTaskScheduler); // See above logic for why we use new + Start rather than StartNew
                             }
                             catch

@@ -100,10 +100,10 @@ namespace System.Runtime.InteropServices
         // The name, title and description of the assembly that will contain 
         // the dynamically generated interop types. 
         //====================================================================
-        private const String s_strConvertedTypeInfoAssemblyName = "InteropDynamicTypes";
-        private const String s_strConvertedTypeInfoAssemblyTitle = "Interop Dynamic Types";
-        private const String s_strConvertedTypeInfoAssemblyDesc = "Type dynamically generated from ITypeInfo's";
-        private const String s_strConvertedTypeInfoNameSpace = "InteropDynamicTypes";
+        private const string s_strConvertedTypeInfoAssemblyName = "InteropDynamicTypes";
+        private const string s_strConvertedTypeInfoAssemblyTitle = "Interop Dynamic Types";
+        private const string s_strConvertedTypeInfoAssemblyDesc = "Type dynamically generated from ITypeInfo's";
+        private const string s_strConvertedTypeInfoNameSpace = "InteropDynamicTypes";
 
 
         //====================================================================
@@ -112,7 +112,7 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int GetSystemMaxDBCSCharSize();
 
-        public static unsafe String PtrToStringAnsi(IntPtr ptr)
+        public static unsafe string PtrToStringAnsi(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr)
             {
@@ -131,38 +131,38 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    return new String((sbyte*)ptr);
+                    return new string((sbyte*)ptr);
                 }
             }
         }
 
-        public static unsafe String PtrToStringAnsi(IntPtr ptr, int len)
+        public static unsafe string PtrToStringAnsi(IntPtr ptr, int len)
         {
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
             if (len < 0)
                 throw new ArgumentException(null, nameof(len));
 
-            return new String((sbyte*)ptr, 0, len);
+            return new string((sbyte*)ptr, 0, len);
         }
 
-        public static unsafe String PtrToStringUni(IntPtr ptr, int len)
+        public static unsafe string PtrToStringUni(IntPtr ptr, int len)
         {
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
             if (len < 0)
                 throw new ArgumentException(null, nameof(len));
 
-            return new String((char*)ptr, 0, len);
+            return new string((char*)ptr, 0, len);
         }
 
-        public static String PtrToStringAuto(IntPtr ptr, int len)
+        public static string PtrToStringAuto(IntPtr ptr, int len)
         {
             // Ansi platforms are no longer supported
             return PtrToStringUni(ptr, len);
         }
 
-        public static unsafe String PtrToStringUni(IntPtr ptr)
+        public static unsafe string PtrToStringUni(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr)
             {
@@ -174,17 +174,17 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                return new String((char*)ptr);
+                return new string((char*)ptr);
             }
         }
 
-        public static String PtrToStringAuto(IntPtr ptr)
+        public static string PtrToStringAuto(IntPtr ptr)
         {
             // Ansi platforms are no longer supported
             return PtrToStringUni(ptr);
         }
 
-        public static unsafe String PtrToStringUTF8(IntPtr ptr)
+        public static unsafe string PtrToStringUTF8(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr)
             {
@@ -197,7 +197,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static unsafe String PtrToStringUTF8(IntPtr ptr, int byteLen)
+        public static unsafe string PtrToStringUTF8(IntPtr ptr, int byteLen)
         {
             if (byteLen < 0)
             {
@@ -262,7 +262,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // OffsetOf()
         //====================================================================
-        public static IntPtr OffsetOf(Type t, String fieldName)
+        public static IntPtr OffsetOf(Type t, string fieldName)
         {
             if (t == null)
                 throw new ArgumentNullException(nameof(t));
@@ -1071,7 +1071,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // String convertions.
         //====================================================================          
-        public static unsafe IntPtr StringToHGlobalAnsi(String s)
+        public static unsafe IntPtr StringToHGlobalAnsi(string s)
         {
             if (s == null)
             {
@@ -1100,7 +1100,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static unsafe IntPtr StringToHGlobalUni(String s)
+        public static unsafe IntPtr StringToHGlobalUni(string s)
         {
             if (s == null)
             {
@@ -1125,14 +1125,14 @@ namespace System.Runtime.InteropServices
                 {
                     fixed (char* firstChar = s)
                     {
-                        String.wstrcpy((char*)hglobal, firstChar, s.Length + 1);
+                        string.wstrcpy((char*)hglobal, firstChar, s.Length + 1);
                     }
                     return hglobal;
                 }
             }
         }
 
-        public static IntPtr StringToHGlobalAuto(String s)
+        public static IntPtr StringToHGlobalAuto(string s)
         {
             // Ansi platforms are no longer supported
             return StringToHGlobalUni(s);
@@ -1161,15 +1161,15 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // Given a managed object that wraps an ITypeInfo, return its name
         //====================================================================
-        public static String GetTypeInfoName(ITypeInfo typeInfo)
+        public static string GetTypeInfoName(ITypeInfo typeInfo)
         {
             if (typeInfo == null)
                 throw new ArgumentNullException(nameof(typeInfo));
 
-            String strTypeLibName = null;
-            String strDocString = null;
+            string strTypeLibName = null;
+            string strDocString = null;
             int dwHelpContext = 0;
-            String strHelpFile = null;
+            string strHelpFile = null;
 
             typeInfo.GetDocumentation(-1, out strTypeLibName, out strDocString, out dwHelpContext, out strHelpFile);
 
@@ -1300,7 +1300,7 @@ namespace System.Runtime.InteropServices
             return pNewMem;
         }
 
-        public static unsafe IntPtr StringToCoTaskMemUni(String s)
+        public static unsafe IntPtr StringToCoTaskMemUni(string s)
         {
             if (s == null)
             {
@@ -1324,14 +1324,14 @@ namespace System.Runtime.InteropServices
                 {
                     fixed (char* firstChar = s)
                     {
-                        String.wstrcpy((char*)hglobal, firstChar, s.Length + 1);
+                        string.wstrcpy((char*)hglobal, firstChar, s.Length + 1);
                     }
                     return hglobal;
                 }
             }
         }
 
-        public static unsafe IntPtr StringToCoTaskMemUTF8(String s)
+        public static unsafe IntPtr StringToCoTaskMemUTF8(string s)
         {
             if (s == null)
             {
@@ -1360,13 +1360,13 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static IntPtr StringToCoTaskMemAuto(String s)
+        public static IntPtr StringToCoTaskMemAuto(string s)
         {
             // Ansi platforms are no longer supported
             return StringToCoTaskMemUni(s);
         }
 
-        public static unsafe IntPtr StringToCoTaskMemAnsi(String s)
+        public static unsafe IntPtr StringToCoTaskMemAnsi(string s)
         {
             if (s == null)
             {
@@ -1423,7 +1423,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static IntPtr StringToBSTR(String s)
+        public static IntPtr StringToBSTR(string s)
         {
             if (s == null)
                 return IntPtr.Zero;
@@ -1439,7 +1439,7 @@ namespace System.Runtime.InteropServices
             return bstr;
         }
 
-        public static String PtrToStringBSTR(IntPtr ptr)
+        public static string PtrToStringBSTR(IntPtr ptr)
         {
             return PtrToStringUni(ptr, (int)Win32Native.SysStringLen(ptr));
         }
@@ -1650,7 +1650,7 @@ namespace System.Runtime.InteropServices
         // PROGID is generated based on the fully qualified name of the 
         // type.
         //====================================================================
-        public static String GenerateProgIdForType(Type type)
+        public static string GenerateProgIdForType(Type type)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
@@ -1669,12 +1669,12 @@ namespace System.Runtime.InteropServices
                     Debug.Assert(caConstructorArgs.Count == 1, "caConstructorArgs.Count == 1");
 
                     CustomAttributeTypedArgument progIdConstructorArg = caConstructorArgs[0];
-                    Debug.Assert(progIdConstructorArg.ArgumentType == typeof(String), "progIdConstructorArg.ArgumentType == typeof(String)");
+                    Debug.Assert(progIdConstructorArg.ArgumentType == typeof(string), "progIdConstructorArg.ArgumentType == typeof(String)");
 
-                    String strProgId = (String)progIdConstructorArg.Value;
+                    string strProgId = (string)progIdConstructorArg.Value;
 
                     if (strProgId == null)
-                        strProgId = String.Empty;
+                        strProgId = string.Empty;
 
                     return strProgId;
                 }
@@ -1688,7 +1688,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // This method binds to the specified moniker.
         //====================================================================
-        public static Object BindToMoniker(String monikerName)
+        public static Object BindToMoniker(string monikerName)
         {
             Object obj = null;
             IBindCtx bindctx = null;
@@ -1706,7 +1706,7 @@ namespace System.Runtime.InteropServices
         private static extern void CreateBindCtx(UInt32 reserved, out IBindCtx ppbc);
 
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
-        private static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] String szUserName, out UInt32 pchEaten, out IMoniker ppmk);
+        private static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] string szUserName, out UInt32 pchEaten, out IMoniker ppmk);
 
         [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         private static extern void BindMoniker(IMoniker pmk, UInt32 grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out Object ppvResult);

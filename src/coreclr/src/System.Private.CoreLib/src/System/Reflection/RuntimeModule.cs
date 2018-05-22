@@ -17,7 +17,7 @@ namespace System.Reflection
 
         #region FCalls
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetType(RuntimeModule module, String className, bool throwOnError, bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
+        private static extern void GetType(RuntimeModule module, string className, bool throwOnError, bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
 
         [DllImport(JitHelpers.QCall)]
         private static extern bool nIsTransientInternal(RuntimeModule module);
@@ -145,7 +145,7 @@ namespace System.Reflection
 
             if (!MetadataImport.IsValidToken(tk) || !tk.IsFieldDef)
                 throw new ArgumentOutOfRangeException(nameof(metadataToken),
-                    String.Format(CultureInfo.CurrentUICulture, SR.Format(SR.Argument_InvalidToken, tk, this)));
+                    string.Format(CultureInfo.CurrentUICulture, SR.Format(SR.Argument_InvalidToken, tk, this)));
 
             int tkDeclaringType;
             string fieldName;
@@ -305,17 +305,17 @@ namespace System.Reflection
             MetadataToken tk = new MetadataToken(metadataToken);
             if (!tk.IsString)
                 throw new ArgumentException(
-                    String.Format(CultureInfo.CurrentUICulture, SR.Argument_ResolveString, metadataToken, ToString()));
+                    string.Format(CultureInfo.CurrentUICulture, SR.Argument_ResolveString, metadataToken, ToString()));
 
             if (!MetadataImport.IsValidToken(tk))
                 throw new ArgumentOutOfRangeException(nameof(metadataToken),
-                    String.Format(CultureInfo.CurrentUICulture, SR.Format(SR.Argument_InvalidToken, tk, this)));
+                    string.Format(CultureInfo.CurrentUICulture, SR.Format(SR.Argument_InvalidToken, tk, this)));
 
             string str = MetadataImport.GetUserString(metadataToken);
 
             if (str == null)
                 throw new ArgumentException(
-                    String.Format(CultureInfo.CurrentUICulture, SR.Argument_ResolveString, metadataToken, ToString()));
+                    string.Format(CultureInfo.CurrentUICulture, SR.Argument_ResolveString, metadataToken, ToString()));
 
             return str;
         }
@@ -347,13 +347,13 @@ namespace System.Reflection
         #endregion
 
         #region Protected Virtuals
-        protected override MethodInfo GetMethodImpl(String name, BindingFlags bindingAttr, Binder binder,
+        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder,
             CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             return GetMethodInternal(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
-        internal MethodInfo GetMethodInternal(String name, BindingFlags bindingAttr, Binder binder,
+        internal MethodInfo GetMethodInternal(string name, BindingFlags bindingAttr, Binder binder,
             CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             if (RuntimeType == null)
@@ -443,7 +443,7 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
-        public override Type GetType(String className, bool throwOnError, bool ignoreCase)
+        public override Type GetType(string className, bool throwOnError, bool ignoreCase)
         {
             // throw on null strings regardless of the value of "throwOnError"
             if (className == null)
@@ -458,12 +458,12 @@ namespace System.Reflection
 
         internal string GetFullyQualifiedName()
         {
-            String fullyQualifiedName = null;
+            string fullyQualifiedName = null;
             GetFullyQualifiedName(GetNativeHandle(), JitHelpers.GetStringHandleOnStack(ref fullyQualifiedName));
             return fullyQualifiedName;
         }
 
-        public override String FullyQualifiedName
+        public override string FullyQualifiedName
         {
             get
             {
@@ -514,7 +514,7 @@ namespace System.Reflection
             return RuntimeType.GetFields(bindingFlags);
         }
 
-        public override FieldInfo GetField(String name, BindingFlags bindingAttr)
+        public override FieldInfo GetField(string name, BindingFlags bindingAttr)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -533,7 +533,7 @@ namespace System.Reflection
             return RuntimeType.GetMethods(bindingFlags);
         }
 
-        public override String ScopeName
+        public override string ScopeName
         {
             get
             {
@@ -543,11 +543,11 @@ namespace System.Reflection
             }
         }
 
-        public override String Name
+        public override string Name
         {
             get
             {
-                String s = GetFullyQualifiedName();
+                string s = GetFullyQualifiedName();
 
 #if !FEATURE_PAL
                 int i = s.LastIndexOf('\\');

@@ -46,14 +46,14 @@ namespace System
         //  - The identifier and version is required, profile is optional
         //  - Only three components are allowed.
         //  - The version string must be in the System.Version format; an optional "v" or "V" prefix is allowed
-        private static bool TryParseFrameworkName(String frameworkName, out String identifier, out int version, out String profile)
+        private static bool TryParseFrameworkName(string frameworkName, out string identifier, out int version, out string profile)
         {
             // For parsing a target Framework moniker, from the FrameworkName class
             const char c_componentSeparator = ',';
             const char c_keyValueSeparator = '=';
             const char c_versionValuePrefix = 'v';
-            const String c_versionKey = "Version";
-            const String c_profileKey = "Profile";
+            const string c_versionKey = "Version";
+            const string c_profileKey = "Profile";
 
             identifier = profile = string.Empty;
             version = 0;
@@ -63,7 +63,7 @@ namespace System
                 return false;
             }
 
-            String[] components = frameworkName.Split(c_componentSeparator);
+            string[] components = frameworkName.Split(c_componentSeparator);
             version = 0;
 
             // Identifer and Version are required, Profile is optional.
@@ -125,7 +125,7 @@ namespace System
                 //
                 else if (key.Equals(c_profileKey, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!String.IsNullOrEmpty(value))
+                    if (!string.IsNullOrEmpty(value))
                     {
                         profile = value;
                     }

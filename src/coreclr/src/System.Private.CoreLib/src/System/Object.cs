@@ -46,7 +46,7 @@ namespace System
         // Returns a String which represents the object instance.  The default
         // for an object is to return the fully qualified name of the class.
         // 
-        public virtual String ToString()
+        public virtual string ToString()
         {
             return GetType().ToString();
         }
@@ -118,7 +118,7 @@ namespace System
 
         // Sets the value specified in the variant on the field
         // 
-        private void FieldSetter(String typeName, String fieldName, Object val)
+        private void FieldSetter(string typeName, string fieldName, Object val)
         {
             Debug.Assert(typeName != null);
             Debug.Assert(fieldName != null);
@@ -148,7 +148,7 @@ namespace System
 
         // Gets the value specified in the variant on the field
         // 
-        private void FieldGetter(String typeName, String fieldName, ref Object val)
+        private void FieldGetter(string typeName, string fieldName, ref Object val)
         {
             Debug.Assert(typeName != null);
             Debug.Assert(fieldName != null);
@@ -162,7 +162,7 @@ namespace System
 
         // Gets the field info object given the type name and field name.
         // 
-        private FieldInfo GetFieldInfo(String typeName, String fieldName)
+        private FieldInfo GetFieldInfo(string typeName, string fieldName)
         {
             Debug.Assert(typeName != null);
             Debug.Assert(fieldName != null);
@@ -213,7 +213,7 @@ namespace System
 
         public static string FixupCoreLibName(string strToFixup)
         {
-            if (!String.IsNullOrEmpty(strToFixup))
+            if (!string.IsNullOrEmpty(strToFixup))
             {
                 strToFixup = strToFixup.Replace("mscorlib", System.CoreLib.Name);
             }

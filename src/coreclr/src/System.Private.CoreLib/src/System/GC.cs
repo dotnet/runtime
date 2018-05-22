@@ -364,7 +364,7 @@ namespace System
             if ((maxGenerationThreshold <= 0) || (maxGenerationThreshold >= 100))
             {
                 throw new ArgumentOutOfRangeException(nameof(maxGenerationThreshold),
-                                                      String.Format(
+                                                      string.Format(
                                                           CultureInfo.CurrentCulture,
                                                           SR.ArgumentOutOfRange_Bounds_Lower_Upper,
                                                           1,
@@ -374,7 +374,7 @@ namespace System
             if ((largeObjectHeapThreshold <= 0) || (largeObjectHeapThreshold >= 100))
             {
                 throw new ArgumentOutOfRangeException(nameof(largeObjectHeapThreshold),
-                                                      String.Format(
+                                                      string.Format(
                                                           CultureInfo.CurrentCulture,
                                                           SR.ArgumentOutOfRange_Bounds_Lower_Upper,
                                                           1,
