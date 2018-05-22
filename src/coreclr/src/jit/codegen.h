@@ -92,12 +92,6 @@ private:
         }
     }
 
-#ifdef LEGACY_BACKEND
-    enum CompareKind{CK_SIGNED, CK_UNSIGNED, CK_LOGICAL};
-
-    static emitJumpKind genJumpKindForOper(genTreeOps cmp, CompareKind compareKind);
-#endif // LEGACY_BACKEND
-
     static bool genShouldRoundFP();
 
     GenTreeIndir indirForm(var_types type, GenTree* base);

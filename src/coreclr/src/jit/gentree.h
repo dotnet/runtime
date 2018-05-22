@@ -5797,9 +5797,7 @@ public:
     static_assert((GT_LE - GT_EQ) == SLE, "bad relop");
     static_assert((GT_GE - GT_EQ) == SGE, "bad relop");
     static_assert((GT_GT - GT_EQ) == SGT, "bad relop");
-#ifndef LEGACY_BACKEND
     static_assert((GT_TEST_NE - GT_TEST_EQ) == (NE & ~Unsigned), "bad relop");
-#endif
 
     static GenCondition FromRelop(GenTree* relop)
     {
@@ -5849,12 +5847,8 @@ public:
     {
         assert(GenTree::OperIsCompare(oper));
 
-#ifndef LEGACY_BACKEND
         // GT_TEST_EQ/NE are special, they need to be mapped as GT_EQ/NE
         unsigned code = oper - ((oper >= GT_TEST_EQ) ? GT_TEST_EQ : GT_EQ);
-#else
-        unsigned code = oper - GT_EQ;
-#endif
 
         if (isUnsigned || (code <= 1)) // EQ/NE are treated as unsigned
         {
