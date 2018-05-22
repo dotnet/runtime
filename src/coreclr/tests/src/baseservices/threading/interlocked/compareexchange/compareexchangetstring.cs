@@ -11,15 +11,15 @@ class Class1
     {
         int rValue = 0;
         Thread[] threads = new Thread[100];
-        ThreadSafe tsi = new ThreadSafe();
-
         string strIn = args[0];
+        ThreadSafe tsi = new ThreadSafe(100, strIn);
+
 
         Console.WriteLine("Creating threads");
         for (int i = 0; i < threads.Length; i++)
         {
             threads[i] = new Thread(new ParameterizedThreadStart(tsi.ThreadWorker));
-            threads[i].Start(strIn);
+            threads[i].Start();
         }
 			
         tsi.Signal();
@@ -48,20 +48,10 @@ public class ThreadSafe
     public string Val = string.Empty;		
     private int numberOfIterations;
     private string strIn = string.Empty;
-    public ThreadSafe(): this(100) { }
-    public ThreadSafe(int loops)
+    public ThreadSafe(int loops, object obj)
     {
         signal = new ManualResetEvent(false);
         numberOfIterations = loops;
-    }
-
-    public void Signal()
-    {
-        signal.Set();
-    }
-
-    public void ThreadWorker(object obj)
-    {
         strIn = obj.ToString();
 
         if(0 < strIn.Length)
@@ -71,7 +61,15 @@ public class ThreadSafe
             else if("empty" == strIn)
                 strIn = string.Empty;
         }
+    }
 
+    public void Signal()
+    {
+        signal.Set();
+    }
+
+    public void ThreadWorker(object obj)
+    {
         signal.WaitOne();
         for(int i=0;i<numberOfIterations;i++)
             AddToTotal(strIn);
