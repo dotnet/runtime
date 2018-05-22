@@ -588,11 +588,10 @@ namespace System.Text
         /// </summary>
         public struct ChunkEnumerator
         {
-            [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] // Only here to make foreach work
-
             /// <summary>
             /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator  
             /// </summary>
+            [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] // Only here to make foreach work
             public ChunkEnumerator GetEnumerator() { return this;  }
 
             /// <summary>
