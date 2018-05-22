@@ -588,6 +588,7 @@ namespace System.Text
         /// </summary>
         public struct ChunkEnumerator
         {
+
             /// <summary>
             /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator  
             /// </summary>
@@ -1205,7 +1206,7 @@ namespace System.Text
             return this;
         }
 
-#region AppendJoin
+        #region AppendJoin
 
         public unsafe StringBuilder AppendJoin(string separator, params object[] values)
         {
@@ -1313,7 +1314,7 @@ namespace System.Text
             return this;
         }
 
-#endregion
+        #endregion
 
         public StringBuilder Insert(int index, String value)
         {
