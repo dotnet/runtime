@@ -14,6 +14,18 @@ if ENABLE_LLVM
 	LLVM_CFLAGS=-DLLVM_API_VERSION=$(llvm_api_version)
 endif
 
+if ENABLE_LLVM
+if INTERNAL_LLVM
+llvm_config=$(monodir)/llvm/usr/bin/llvm-config
+else
+llvm_config=$(EXTERNAL_LLVM_CONFIG)
+endif
+
+llvm_api_version_from_config=$(shell $(llvm_config) --mono-api-version 2>/dev/null)
+llvm_api_version=$(shell if [  -z "$(llvm_api_version_from_config)" ]; then echo "0"; else echo "$(llvm_api_version_from_config)"; fi)
+LLVM_CFLAGS=-DLLVM_API_VERSION=$(llvm_api_version)
+endif
+
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) $(SHARED_CFLAGS) $(LLVM_CFLAGS)
 
 if ENABLE_DTRACE

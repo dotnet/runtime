@@ -342,7 +342,7 @@ mono_native_state_add_version (JsonWriter *writer)
 	mono_json_writer_object_key(writer, "llvm_support");
 #ifdef MONO_ARCH_LLVM_SUPPORTED
 #ifdef ENABLE_LLVM
-	mono_json_writer_printf (writer, "\"%s\"\n", LLVM_VERSION);
+	mono_json_writer_printf (writer, "\"%d\"\n", LLVM_API_VERSION);
 #else
 	mono_json_writer_printf (writer, "\"disabled\"\n");
 #endif
