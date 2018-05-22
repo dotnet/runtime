@@ -78,6 +78,49 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
         protected override bool UseSocketsHttpHandler => true;
+
+        [OuterLoop("Incurs a small delay")]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        public async Task SmallConnectionLifetimeWithMaxConnections_PendingRequestUsesDifferentConnection(int lifetimeMilliseconds)
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(lifetimeMilliseconds);
+                handler.MaxConnectionsPerServer = 1;
+
+                using (HttpClient client = new HttpClient(handler))
+                {
+                    await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                    {
+                        Task<string> request1 = client.GetStringAsync(uri);
+                        Task<string> request2 = client.GetStringAsync(uri);
+
+                        await server.AcceptConnectionAsync(async connection =>
+                        {
+                            Task secondResponse = server.AcceptConnectionAsync(connection2 =>
+                                connection2.ReadRequestHeaderAndSendCustomResponseAsync(LoopbackServer.GetConnectionCloseResponse()));
+
+                            // Wait a small amount of time before sending the first response, so the connection lifetime will expire.
+                            Debug.Assert(lifetimeMilliseconds < 100);
+                            await Task.Delay(100);
+
+                            // Second request should not have completed yet, as we haven't completed the first yet.
+                            Assert.False(request2.IsCompleted);
+                            Assert.False(secondResponse.IsCompleted);
+
+                            // Send the first response and wait for the first request to complete.
+                            await connection.ReadRequestHeaderAndSendResponseAsync();
+                            await request1;
+
+                            // Now the second request should complete.
+                            await secondResponse.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+                        });
+                    });
+                }
+            }
+        }
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
