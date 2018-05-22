@@ -3965,12 +3965,11 @@ emit_synchronized_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_stloc (mb, this_local);
 
+	clause->try_offset = mono_mb_get_label (mb);
 	/* Call Monitor::Enter() */
 	mono_mb_emit_ldloc (mb, this_local);
 	mono_mb_emit_ldloc_addr (mb, taken_local);
 	mono_mb_emit_managed_call (mb, enter_method, NULL);
-
-	clause->try_offset = mono_mb_get_label (mb);
 
 	/* Call the method */
 	if (sig->hasthis)
