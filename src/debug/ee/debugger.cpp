@@ -6040,6 +6040,7 @@ void Debugger::AfterGarbageCollection()
     }
     CONTRACTL_END;
 
+    // TODO, databp, ideally, remove this.
     CONTRACT_VIOLATION(GCViolation);
 
     if (!CORDebuggerAttached())
