@@ -235,7 +235,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 // Fill in rest of the array with String.Empty to avoid marshaling failure
                 for (uint i = itemCount; i < items.Length; ++i)
-                    stringItems[i] = String.Empty;
+                    stringItems[i] = string.Empty;
             }
 
             return itemCount;

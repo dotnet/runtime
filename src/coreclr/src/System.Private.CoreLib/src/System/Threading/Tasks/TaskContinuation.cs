@@ -29,7 +29,7 @@ namespace System.Threading.Tasks
 
         public ContinuationTaskFromTask(
             Task antecedent, Delegate action, object state, TaskCreationOptions creationOptions, InternalTaskOptions internalOptions) :
-            base(action, state, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, internalOptions, null)
+            base(action, state, Task.InternalCurrentIfAttached(creationOptions), default, creationOptions, internalOptions, null)
         {
             Debug.Assert(action is Action<Task> || action is Action<Task, object>,
                 "Invalid delegate type in ContinuationTaskFromTask");
@@ -76,7 +76,7 @@ namespace System.Threading.Tasks
 
         public ContinuationResultTaskFromTask(
             Task antecedent, Delegate function, object state, TaskCreationOptions creationOptions, InternalTaskOptions internalOptions) :
-            base(function, state, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, internalOptions, null)
+            base(function, state, Task.InternalCurrentIfAttached(creationOptions), default, creationOptions, internalOptions, null)
         {
             Debug.Assert(function is Func<Task, TResult> || function is Func<Task, object, TResult>,
                 "Invalid delegate type in ContinuationResultTaskFromTask");
@@ -123,7 +123,7 @@ namespace System.Threading.Tasks
 
         public ContinuationTaskFromResultTask(
             Task<TAntecedentResult> antecedent, Delegate action, object state, TaskCreationOptions creationOptions, InternalTaskOptions internalOptions) :
-            base(action, state, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, internalOptions, null)
+            base(action, state, Task.InternalCurrentIfAttached(creationOptions), default, creationOptions, internalOptions, null)
         {
             Debug.Assert(action is Action<Task<TAntecedentResult>> || action is Action<Task<TAntecedentResult>, object>,
                 "Invalid delegate type in ContinuationTaskFromResultTask");
@@ -170,7 +170,7 @@ namespace System.Threading.Tasks
 
         public ContinuationResultTaskFromResultTask(
             Task<TAntecedentResult> antecedent, Delegate function, object state, TaskCreationOptions creationOptions, InternalTaskOptions internalOptions) :
-            base(function, state, Task.InternalCurrentIfAttached(creationOptions), default(CancellationToken), creationOptions, internalOptions, null)
+            base(function, state, Task.InternalCurrentIfAttached(creationOptions), default, creationOptions, internalOptions, null)
         {
             Debug.Assert(function is Func<Task<TAntecedentResult>, TResult> || function is Func<Task<TAntecedentResult>, object, TResult>,
                 "Invalid delegate type in ContinuationResultTaskFromResultTask");
@@ -557,7 +557,7 @@ namespace System.Threading.Tasks
             Debug.Assert(scheduler != null);
 
             return new Task(
-                action, state, null, default(CancellationToken),
+                action, state, null, default,
                 TaskCreationOptions.None, InternalTaskOptions.QueuedByRuntime, scheduler)
             {
                 CapturedContext = m_capturedContext

@@ -355,7 +355,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             "time",
-                            String.Format(
+                            string.Format(
                                 CultureInfo.InvariantCulture,
                                 SR.ArgumentOutOfRange_CalendarRange,
                                 minDate,
@@ -378,7 +378,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(year),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
                                 MinCalendarYear,
@@ -510,7 +510,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(months),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Range,
                                 -120000,
@@ -710,7 +710,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(day),
-                            String.Format(
+                            string.Format(
                                 CultureInfo.CurrentCulture,
                                 SR.ArgumentOutOfRange_Day,
                                 daysInMonth,
@@ -774,7 +774,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                            nameof(day),
-                           String.Format(
+                           string.Format(
                                CultureInfo.CurrentCulture,
                                SR.ArgumentOutOfRange_Day,
                                daysInMonth,
@@ -814,7 +814,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(value),
-                                String.Format(
+                                string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     MinCalendarYear,
@@ -845,7 +845,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(year),
-                            String.Format(
+                            string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     MinCalendarYear,

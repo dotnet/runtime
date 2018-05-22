@@ -315,7 +315,7 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public bool TrySetCanceled()
         {
-            return TrySetCanceled(default(CancellationToken));
+            return TrySetCanceled(default);
         }
 
         // Enables a token to be stored into the canceled task

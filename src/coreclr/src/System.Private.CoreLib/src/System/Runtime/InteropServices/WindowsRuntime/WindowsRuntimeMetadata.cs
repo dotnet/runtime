@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         int retIndex = 0;
                         foreach (string assemblyFile in assemblyFilesCollection)
                         {
-                            if (String.IsNullOrEmpty(assemblyFile))
+                            if (string.IsNullOrEmpty(assemblyFile))
                             {   // DesignerNamespaceResolve event returned null or empty file name - that is not allowed
                                 throw new ArgumentException(SR.Arg_EmptyOrNullString, "DesignerNamespaceResolveEventArgs.ResolvedAssemblyFiles");
                             }

@@ -289,7 +289,7 @@ namespace System
         bool ICollection<T>.Remove(T item)
         {
             ThrowHelper.ThrowNotSupportedException();
-            return default(bool);
+            return default;
         }
         #endregion
 

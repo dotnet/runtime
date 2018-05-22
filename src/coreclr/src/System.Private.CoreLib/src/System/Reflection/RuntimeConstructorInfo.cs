@@ -138,7 +138,7 @@ namespace System.Reflection
         #endregion
 
         #region Object Overrides
-        public override String ToString()
+        public override string ToString()
         {
             // "Void" really doesn't make sense here. But we'll keep it for compat reasons.
             if (m_toString == null)
@@ -188,7 +188,7 @@ namespace System.Reflection
 
 
         #region MemberInfo Overrides
-        public override String Name
+        public override string Name
         {
             get { return RuntimeMethodHandle.GetName(this); }
         }
@@ -295,12 +295,12 @@ namespace System.Reflection
             // ctor is declared on interface class
             else if (declaringType.IsInterface)
                 throw new MemberAccessException(
-                    String.Format(CultureInfo.CurrentUICulture, SR.Acc_CreateInterfaceEx, declaringType));
+                    string.Format(CultureInfo.CurrentUICulture, SR.Acc_CreateInterfaceEx, declaringType));
 
             // ctor is on an abstract class
             else if (declaringType.IsAbstract)
                 throw new MemberAccessException(
-                    String.Format(CultureInfo.CurrentUICulture, SR.Acc_CreateAbstEx, declaringType));
+                    string.Format(CultureInfo.CurrentUICulture, SR.Acc_CreateAbstEx, declaringType));
 
             // ctor is on a class that contains stack pointers
             else if (declaringType.GetRootElementType() == typeof(ArgIterator))
@@ -314,7 +314,7 @@ namespace System.Reflection
             else if (declaringType.ContainsGenericParameters)
             {
                 throw new MemberAccessException(
-                    String.Format(CultureInfo.CurrentUICulture, SR.Acc_CreateGenericEx, declaringType));
+                    string.Format(CultureInfo.CurrentUICulture, SR.Acc_CreateGenericEx, declaringType));
             }
 
             // ctor is declared on System.Void

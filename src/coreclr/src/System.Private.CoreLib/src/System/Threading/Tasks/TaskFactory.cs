@@ -75,7 +75,7 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory()
-            : this(default(CancellationToken), TaskCreationOptions.None, TaskContinuationOptions.None, null)
+            : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, null)
         {
         }
 
@@ -120,7 +120,7 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(TaskScheduler scheduler) // null means to use TaskScheduler.Current
-            : this(default(CancellationToken), TaskCreationOptions.None, TaskContinuationOptions.None, scheduler)
+            : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, scheduler)
         {
         }
 
@@ -151,7 +151,7 @@ namespace System.Threading.Tasks
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
         public TaskFactory(TaskCreationOptions creationOptions, TaskContinuationOptions continuationOptions)
-            : this(default(CancellationToken), creationOptions, continuationOptions, null)
+            : this(default, creationOptions, continuationOptions, null)
         {
         }
 

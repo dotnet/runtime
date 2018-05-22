@@ -158,7 +158,7 @@ namespace System.Threading
 
                 // it is possible for the max number of waiters to be exceeded via user-code, hence we use a real exception here.
                 if (value >= NumWaitersState_MaxValue)
-                    throw new InvalidOperationException(String.Format(SR.ManualResetEventSlim_ctor_TooManyWaiters, NumWaitersState_MaxValue));
+                    throw new InvalidOperationException(string.Format(SR.ManualResetEventSlim_ctor_TooManyWaiters, NumWaitersState_MaxValue));
 
                 UpdateStateAtomically(value << NumWaitersState_ShiftCount, NumWaitersState_BitMask);
             }
@@ -213,7 +213,7 @@ namespace System.Threading
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(spinCount),
-                    String.Format(SR.ManualResetEventSlim_ctor_SpinCountOutOfRange, SpinCountState_MaxValue));
+                    string.Format(SR.ManualResetEventSlim_ctor_SpinCountOutOfRange, SpinCountState_MaxValue));
             }
 
             // We will suppress default spin  because the user specified a count.

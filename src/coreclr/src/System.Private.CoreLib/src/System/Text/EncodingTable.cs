@@ -93,7 +93,7 @@ namespace System.Text
             }
             // The encoding name is not valid.
             throw new ArgumentException(
-                String.Format(
+                string.Format(
                     CultureInfo.CurrentCulture,
                     SR.Argument_EncodingNotSupported, name), nameof(name));
         }

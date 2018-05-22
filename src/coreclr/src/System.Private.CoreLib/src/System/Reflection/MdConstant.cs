@@ -15,7 +15,7 @@ namespace System.Reflection
             CorElementType corElementType = 0;
             long buffer = 0;
             int length;
-            String stringVal;
+            string stringVal;
 
             stringVal = scope.GetDefaultValue(token, out buffer, out length, out corElementType);
 
@@ -164,7 +164,7 @@ namespace System.Reflection
                     case CorElementType.String:
                         // A string constant can be empty but never null.
                         // A nullref constant can only be type CorElementType.Class.
-                        return stringVal == null ? String.Empty : stringVal;
+                        return stringVal == null ? string.Empty : stringVal;
 
                     case CorElementType.Class:
                         return null;

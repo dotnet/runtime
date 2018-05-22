@@ -369,7 +369,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        public override unsafe String GetString(byte[] bytes, int index, int count)
+        public override unsafe string GetString(byte[] bytes, int index, int count)
         {
             // Validate Parameters
             if (bytes == null)
@@ -382,10 +382,10 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
 
             // Avoid problems with empty input buffer
-            if (count == 0) return String.Empty;
+            if (count == 0) return string.Empty;
 
             fixed (byte* pBytes = bytes)
-                return String.CreateStringFromEncoding(
+                return string.CreateStringFromEncoding(
                     pBytes + index, count, this);
         }
 

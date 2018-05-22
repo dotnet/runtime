@@ -374,7 +374,7 @@ namespace System.IO
                         : BeginEndReadAsync(buffer, offset, count);
         }
 
-        public virtual ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))
             {
@@ -513,7 +513,7 @@ namespace System.IO
                     Debug.Assert(t.IsCompletedSuccessfully, "The semaphore wait should always complete successfully.");
                     var rwt = (ReadWriteTask)state;
                     rwt._stream.RunReadWriteTask(rwt); // RunReadWriteTask(readWriteTask);
-                }, readWriteTask, default(CancellationToken), TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                }, readWriteTask, default, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }
 
@@ -683,7 +683,7 @@ namespace System.IO
                         : BeginEndWriteAsync(buffer, offset, count);
         }
 
-        public virtual ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))
             {
@@ -728,7 +728,7 @@ namespace System.IO
                         (stream, asyncResult) => // cached by compiler
                         {
                             stream.EndWrite(asyncResult);
-                            return default(VoidTaskResult);
+                            return default;
                         });
         }
 
@@ -982,7 +982,7 @@ namespace System.IO
                 return AsyncTaskMethodBuilder<int>.s_defaultResultTask;
             }
 
-            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 return new ValueTask<int>(0);
             }
@@ -1007,7 +1007,7 @@ namespace System.IO
                     Task.CompletedTask;
             }
 
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 return cancellationToken.IsCancellationRequested ?
                     new ValueTask(Task.FromCanceled(cancellationToken)) :

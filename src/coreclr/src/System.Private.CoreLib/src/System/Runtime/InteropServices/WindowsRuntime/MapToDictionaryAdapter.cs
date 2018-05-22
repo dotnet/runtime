@@ -125,7 +125,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             if (!_this.HasKey(key))
             {
-                value = default(V);
+                value = default;
                 return false;
             }
 
@@ -136,7 +136,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             catch (KeyNotFoundException)
             {
-                value = default(V);
+                value = default;
                 return false;
             }
         }

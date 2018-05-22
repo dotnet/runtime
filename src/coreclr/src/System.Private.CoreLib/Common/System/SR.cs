@@ -30,7 +30,7 @@ namespace System
         // Needed for debugger integration
         internal static string GetResourceString(string resourceKey)
         {
-            return GetResourceString(resourceKey, String.Empty);
+            return GetResourceString(resourceKey, string.Empty);
         }
 
         internal static string GetResourceString(string resourceKey, string defaultString)
@@ -155,10 +155,10 @@ namespace System
             {
                 if (UsingResourceKeys())
                 {
-                    return resourceFormat + String.Join(", ", args);
+                    return resourceFormat + string.Join(", ", args);
                 }
 
-                return String.Format(resourceFormat, args);
+                return string.Format(resourceFormat, args);
             }
 
             return resourceFormat;
@@ -168,29 +168,29 @@ namespace System
         {
             if (UsingResourceKeys())
             {
-                return String.Join(", ", resourceFormat, p1);
+                return string.Join(", ", resourceFormat, p1);
             }
 
-            return String.Format(resourceFormat, p1);
+            return string.Format(resourceFormat, p1);
         }
 
         internal static string Format(string resourceFormat, object p1, object p2)
         {
             if (UsingResourceKeys())
             {
-                return String.Join(", ", resourceFormat, p1, p2);
+                return string.Join(", ", resourceFormat, p1, p2);
             }
 
-            return String.Format(resourceFormat, p1, p2);
+            return string.Format(resourceFormat, p1, p2);
         }
 
         internal static string Format(string resourceFormat, object p1, object p2, object p3)
         {
             if (UsingResourceKeys())
             {
-                return String.Join(", ", resourceFormat, p1, p2, p3);
+                return string.Join(", ", resourceFormat, p1, p2, p3);
             }
-            return String.Format(resourceFormat, p1, p2, p3);
+            return string.Format(resourceFormat, p1, p2, p3);
         }
     }
 }

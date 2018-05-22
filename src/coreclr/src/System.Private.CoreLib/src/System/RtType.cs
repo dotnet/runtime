@@ -1128,8 +1128,8 @@ namespace System
                     Debug.Assert(ReflectedType != null);
 
                     // Do not create the dictionary if we are filtering the properties by name already
-                    Dictionary<String, RuntimeEventInfo> csEventInfos = filter.CaseSensitive() ? null :
-                        new Dictionary<String, RuntimeEventInfo>();
+                    Dictionary<string, RuntimeEventInfo> csEventInfos = filter.CaseSensitive() ? null :
+                        new Dictionary<string, RuntimeEventInfo>();
 
                     RuntimeType declaringType = ReflectedType;
                     ListBuilder<RuntimeEventInfo> list = new ListBuilder<RuntimeEventInfo>();
@@ -1156,7 +1156,7 @@ namespace System
                 }
 
                 private unsafe void PopulateEvents(
-                    Filter filter, RuntimeType declaringType, Dictionary<String, RuntimeEventInfo> csEventInfos, ref ListBuilder<RuntimeEventInfo> list)
+                    Filter filter, RuntimeType declaringType, Dictionary<string, RuntimeEventInfo> csEventInfos, ref ListBuilder<RuntimeEventInfo> list)
                 {
                     int tkDeclaringType = RuntimeTypeHandle.GetToken(declaringType);
 
@@ -1233,8 +1233,8 @@ namespace System
                             declaringType = declaringType.GetBaseType();
 
                         // Do not create the dictionary if we are filtering the properties by name already
-                        Dictionary<String, List<RuntimePropertyInfo>> csPropertyInfos = filter.CaseSensitive() ? null :
-                            new Dictionary<String, List<RuntimePropertyInfo>>();
+                        Dictionary<string, List<RuntimePropertyInfo>> csPropertyInfos = filter.CaseSensitive() ? null :
+                            new Dictionary<string, List<RuntimePropertyInfo>>();
 
                         // All elements automatically initialized to false.
                         bool[] usedSlots = new bool[RuntimeTypeHandle.GetNumVirtuals(declaringType)];
@@ -1258,7 +1258,7 @@ namespace System
                 private unsafe void PopulateProperties(
                     Filter filter,
                     RuntimeType declaringType,
-                    Dictionary<String, List<RuntimePropertyInfo>> csPropertyInfos,
+                    Dictionary<string, List<RuntimePropertyInfo>> csPropertyInfos,
                     bool[] usedSlots,
                     ref ListBuilder<RuntimePropertyInfo> list)
                 {
@@ -1754,7 +1754,7 @@ namespace System
         #region Static Members
 
         #region Internal
-        internal static RuntimeType GetType(String typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly,
+        internal static RuntimeType GetType(string typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly,
             ref StackCrawlMark stackMark)
         {
             if (typeName == null)
@@ -1827,7 +1827,7 @@ namespace System
                     }
 
                     if (!loaderAssuredCompatible)
-                        throw new ArgumentException(String.Format(
+                        throw new ArgumentException(string.Format(
                             CultureInfo.CurrentCulture, SR.Argument_ResolveMethodHandle,
                             reflectedType.ToString(), declaredType.ToString()));
                 }
@@ -1855,7 +1855,7 @@ namespace System
                     if (baseType == null)
                     {
                         // ignoring instantiation is the ReflectedType is not a subtype of the DeclaringType
-                        throw new ArgumentException(String.Format(
+                        throw new ArgumentException(string.Format(
                             CultureInfo.CurrentCulture, SR.Argument_ResolveMethodHandle,
                             reflectedType.ToString(), declaredType.ToString()));
                     }
@@ -1877,7 +1877,7 @@ namespace System
                 else if (!declaredType.IsAssignableFrom(reflectedType))
                 {
                     // declaredType is not Array, not generic, and not assignable from reflectedType
-                    throw new ArgumentException(String.Format(
+                    throw new ArgumentException(string.Format(
                         CultureInfo.CurrentCulture, SR.Argument_ResolveMethodHandle,
                         reflectedType.ToString(), declaredType.ToString()));
                 }
@@ -1945,7 +1945,7 @@ namespace System
                     if (!RuntimeFieldHandle.AcquiresContextFromThis(fieldHandle) ||
                         !RuntimeTypeHandle.CompareCanonicalHandles(declaredType, reflectedType))
                     {
-                        throw new ArgumentException(String.Format(
+                        throw new ArgumentException(string.Format(
                             CultureInfo.CurrentCulture, SR.Argument_ResolveFieldHandle,
                             reflectedType.ToString(),
                             declaredType.ToString()));
@@ -2482,7 +2482,7 @@ namespace System
         private const int GenericParameterCountAny = -1;
 
         private ListBuilder<MethodInfo> GetMethodCandidates(
-            String name, int genericParameterCount, BindingFlags bindingAttr, CallingConventions callConv,
+            string name, int genericParameterCount, BindingFlags bindingAttr, CallingConventions callConv,
             Type[] types, bool allowPrefixLookup)
         {
             bool prefixLookup, ignoreCase;
@@ -2534,7 +2534,7 @@ namespace System
 
 
         private ListBuilder<PropertyInfo> GetPropertyCandidates(
-            String name, BindingFlags bindingAttr, Type[] types, bool allowPrefixLookup)
+            string name, BindingFlags bindingAttr, Type[] types, bool allowPrefixLookup)
         {
             bool prefixLookup, ignoreCase;
             MemberListType listType;
@@ -2559,7 +2559,7 @@ namespace System
             return candidates;
         }
 
-        private ListBuilder<EventInfo> GetEventCandidates(String name, BindingFlags bindingAttr, bool allowPrefixLookup)
+        private ListBuilder<EventInfo> GetEventCandidates(string name, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
             bool prefixLookup, ignoreCase;
             MemberListType listType;
@@ -2583,7 +2583,7 @@ namespace System
             return candidates;
         }
 
-        private ListBuilder<FieldInfo> GetFieldCandidates(String name, BindingFlags bindingAttr, bool allowPrefixLookup)
+        private ListBuilder<FieldInfo> GetFieldCandidates(string name, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
             bool prefixLookup, ignoreCase;
             MemberListType listType;
@@ -2607,7 +2607,7 @@ namespace System
             return candidates;
         }
 
-        private ListBuilder<Type> GetNestedTypeCandidates(String fullname, BindingFlags bindingAttr, bool allowPrefixLookup)
+        private ListBuilder<Type> GetNestedTypeCandidates(string fullname, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
             bool prefixLookup, ignoreCase;
             bindingAttr &= ~BindingFlags.Static;
@@ -2769,21 +2769,21 @@ namespace System
         #region Find XXXInfo
 
         protected override MethodInfo GetMethodImpl(
-            String name, BindingFlags bindingAttr, Binder binder, CallingConventions callConv,
+            string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConv,
             Type[] types, ParameterModifier[] modifiers)
         {
             return GetMethodImplCommon(name, GenericParameterCountAny, bindingAttr, binder, callConv, types, modifiers);
         }
 
         protected override MethodInfo GetMethodImpl(
-            String name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConv,
+            string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConv,
             Type[] types, ParameterModifier[] modifiers)
         {
             return GetMethodImplCommon(name, genericParameterCount, bindingAttr, binder, callConv, types, modifiers);
         }
 
         private MethodInfo GetMethodImplCommon(
-            String name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConv,
+            string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConv,
             Type[] types, ParameterModifier[] modifiers)
         {
             ListBuilder<MethodInfo> candidates = GetMethodCandidates(name, genericParameterCount, bindingAttr, callConv, types, false);
@@ -2853,7 +2853,7 @@ namespace System
 
 
         protected override PropertyInfo GetPropertyImpl(
-            String name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
+            string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
         {
             if (name == null) throw new ArgumentNullException();
 
@@ -2892,7 +2892,7 @@ namespace System
         }
 
 
-        public override EventInfo GetEvent(String name, BindingFlags bindingAttr)
+        public override EventInfo GetEvent(string name, BindingFlags bindingAttr)
         {
             if (name == null) throw new ArgumentNullException();
 
@@ -2920,7 +2920,7 @@ namespace System
             return match;
         }
 
-        public override FieldInfo GetField(String name, BindingFlags bindingAttr)
+        public override FieldInfo GetField(string name, BindingFlags bindingAttr)
         {
             if (name == null) throw new ArgumentNullException();
 
@@ -2959,7 +2959,7 @@ namespace System
             return match;
         }
 
-        public override Type GetInterface(String fullname, bool ignoreCase)
+        public override Type GetInterface(string fullname, bool ignoreCase)
         {
             if (fullname == null) throw new ArgumentNullException();
 
@@ -2994,7 +2994,7 @@ namespace System
             return match;
         }
 
-        public override Type GetNestedType(String fullname, BindingFlags bindingAttr)
+        public override Type GetNestedType(string fullname, BindingFlags bindingAttr)
         {
             if (fullname == null) throw new ArgumentNullException();
 
@@ -3024,7 +3024,7 @@ namespace System
             return match;
         }
 
-        public override MemberInfo[] GetMember(String name, MemberTypes type, BindingFlags bindingAttr)
+        public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             if (name == null) throw new ArgumentNullException();
 
@@ -3372,7 +3372,7 @@ namespace System
         #endregion
 
         #region Name
-        public override String FullName
+        public override string FullName
         {
             get
             {
@@ -3380,7 +3380,7 @@ namespace System
             }
         }
 
-        public override String AssemblyQualifiedName
+        public override string AssemblyQualifiedName
         {
             get
             {
@@ -3394,7 +3394,7 @@ namespace System
             }
         }
 
-        public override String Namespace
+        public override string Namespace
         {
             get
             {
@@ -3557,10 +3557,10 @@ namespace System
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            String[] ret = Enum.InternalGetNames(this);
+            string[] ret = Enum.InternalGetNames(this);
 
             // Make a copy since we can't hand out the same array since users can modify them
-            String[] retVal = new String[ret.Length];
+            string[] retVal = new string[ret.Length];
 
             Array.Copy(ret, retVal, ret.Length);
 
@@ -3903,7 +3903,7 @@ namespace System
             }
 
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
-                throw new ArgumentException(String.Format(CultureInfo.CurrentUICulture, SR.Arg_ObjObjEx, value.GetType(), this));
+                throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, SR.Arg_ObjObjEx, value.GetType(), this));
 
             return TryChangeType(value, binder, culture, needsSpecialCast);
         }
@@ -3944,7 +3944,7 @@ namespace System
                 }
             }
 
-            throw new ArgumentException(String.Format(CultureInfo.CurrentUICulture, SR.Arg_ObjObjEx, value.GetType(), this));
+            throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, SR.Arg_ObjObjEx, value.GetType(), this));
         }
 
         // GetDefaultMembers
@@ -3954,7 +3954,7 @@ namespace System
             // See if we have cached the default member name
             MemberInfo[] members = null;
 
-            String defaultMemberName = GetDefaultMemberName();
+            string defaultMemberName = GetDefaultMemberName();
             if (defaultMemberName != null)
             {
                 members = GetMember(defaultMemberName);
@@ -3971,8 +3971,8 @@ namespace System
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         public override Object InvokeMember(
-            String name, BindingFlags bindingFlags, Binder binder, Object target,
-            Object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParams)
+            string name, BindingFlags bindingFlags, Binder binder, Object target,
+            Object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParams)
         {
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
@@ -4434,7 +4434,7 @@ namespace System
             return RuntimeHelpers.GetHashCode(this);
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             return GetCachedName(TypeNameKind.ToString);
         }
@@ -4486,7 +4486,7 @@ namespace System
         #endregion
 
         #region MemberInfo Overrides
-        public override String Name
+        public override string Name
         {
             get
             {
@@ -4668,7 +4668,7 @@ namespace System
                     {
                         Debug.Assert((invokeMethod.CallingConvention & CallingConventions.VarArgs) ==
                                             CallingConventions.VarArgs);
-                        throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture,
+                        throw new NotSupportedException(string.Format(CultureInfo.CurrentCulture,
                             SR.NotSupported_CallToVarArg));
                     }
 
@@ -4769,7 +4769,7 @@ namespace System
         // the slow path of CreateInstanceDefaultCtor
         internal Object CreateInstanceSlow(bool publicOnly, bool wrapExceptions, bool skipCheckThis, bool fillCache)
         {
-            RuntimeMethodHandleInternal runtime_ctor = default(RuntimeMethodHandleInternal);
+            RuntimeMethodHandleInternal runtime_ctor = default;
             bool bCanBeCached = false;
 
             if (!skipCheckThis)
@@ -4865,16 +4865,16 @@ namespace System
 #if FEATURE_COMINTEROP       
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Object InvokeDispMethod(
-            String name, BindingFlags invokeAttr, Object target, Object[] args,
-            bool[] byrefModifiers, int culture, String[] namedParameters);
+            string name, BindingFlags invokeAttr, Object target, Object[] args,
+            bool[] byrefModifiers, int culture, string[] namedParameters);
 #endif // FEATURE_COMINTEROP        
 
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Type GetTypeFromProgIDImpl(String progID, String server, bool throwOnError);
+        internal static extern Type GetTypeFromProgIDImpl(string progID, string server, bool throwOnError);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Type GetTypeFromCLSIDImpl(Guid clsid, String server, bool throwOnError);
+        internal static extern Type GetTypeFromCLSIDImpl(Guid clsid, string server, bool throwOnError);
 #else // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
         internal static Type GetTypeFromProgIDImpl(String progID, String server, bool throwOnError)
         {
@@ -5152,7 +5152,7 @@ namespace System.Reflection
             {
                 Table table = Volatile.Read(ref m_Table);
                 if (table == null)
-                    return default(V);
+                    return default;
 
                 int hashcode = GetHashCodeHelper(key);
                 if (hashcode < 0)
@@ -5177,7 +5177,7 @@ namespace System.Reflection
                     }
                     else
                     {
-                        return default(V);
+                        return default;
                     }
                 }
             }

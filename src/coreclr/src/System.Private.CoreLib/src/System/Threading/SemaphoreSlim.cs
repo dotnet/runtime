@@ -78,10 +78,10 @@ namespace System.Threading
 
         // A pre-completed task with Result==true
         private readonly static Task<bool> s_trueTask =
-            new Task<bool>(false, true, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
+            new Task<bool>(false, true, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
         // A pre-completed task with Result==false
         private readonly static Task<bool> s_falseTask =
-            new Task<bool>(false, false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken));
+            new Task<bool>(false, false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
 
         // No maximum constant
         private const int NO_MAXIMUM = Int32.MaxValue;
@@ -517,7 +517,7 @@ namespace System.Threading
         /// <returns>A task that will complete when the semaphore has been entered.</returns>
         public Task WaitAsync()
         {
-            return WaitAsync(Timeout.Infinite, default(CancellationToken));
+            return WaitAsync(Timeout.Infinite, default);
         }
 
         /// <summary>
@@ -554,7 +554,7 @@ namespace System.Threading
         /// </exception>
         public Task<bool> WaitAsync(int millisecondsTimeout)
         {
-            return WaitAsync(millisecondsTimeout, default(CancellationToken));
+            return WaitAsync(millisecondsTimeout, default);
         }
 
         /// <summary>
@@ -582,7 +582,7 @@ namespace System.Threading
         /// </exception>
         public Task<bool> WaitAsync(TimeSpan timeout)
         {
-            return WaitAsync(timeout, default(CancellationToken));
+            return WaitAsync(timeout, default);
         }
 
         /// <summary>
@@ -743,7 +743,7 @@ namespace System.Threading
             // completes due to the asyncWaiter completing, so we use our own token that we can explicitly
             // cancel, and we chain the caller's supplied token into it.
             using (var cts = cancellationToken.CanBeCanceled ?
-                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, default(CancellationToken)) :
+                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, default) :
                 new CancellationTokenSource())
             {
                 var waitCompleted = Task.WhenAny(asyncWaiter, Task.Delay(millisecondsTimeout, cts.Token));

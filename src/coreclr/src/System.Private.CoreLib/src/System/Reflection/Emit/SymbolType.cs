@@ -304,7 +304,7 @@ namespace System.Reflection.Emit
                     szrank += ",";
             }
 
-            string s = String.Format(CultureInfo.InvariantCulture, "[{0}]", szrank); // [,,]
+            string s = string.Format(CultureInfo.InvariantCulture, "[{0}]", szrank); // [,,]
             SymbolType st = SymbolType.FormCompoundType(m_format + s, m_baseType, 0) as SymbolType;
             return st;
         }
@@ -322,8 +322,8 @@ namespace System.Reflection.Emit
             get { throw new NotSupportedException(SR.NotSupported_NonReflectedType); }
         }
 
-        public override Object InvokeMember(String name, BindingFlags invokeAttr, Binder binder, Object target,
-            Object[] args, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParameters)
+        public override Object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, Object target,
+            Object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
@@ -356,12 +356,12 @@ namespace System.Reflection.Emit
             get { throw new NotSupportedException(SR.NotSupported_NonReflectedType); }
         }
 
-        public override String Name
+        public override string Name
         {
             get
             {
                 Type baseType;
-                String sFormat = m_format;
+                string sFormat = m_format;
 
                 for (baseType = m_baseType; baseType is SymbolType; baseType = ((SymbolType)baseType).m_baseType)
                     sFormat = ((SymbolType)baseType).m_format + sFormat;
@@ -370,7 +370,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override String FullName
+        public override string FullName
         {
             get
             {
@@ -378,7 +378,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override String AssemblyQualifiedName
+        public override string AssemblyQualifiedName
         {
             get
             {
@@ -386,12 +386,12 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.ToString);
         }
 
-        public override String Namespace
+        public override string Namespace
         {
             get { return m_baseType.Namespace; }
         }
@@ -412,7 +412,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        protected override MethodInfo GetMethodImpl(String name, BindingFlags bindingAttr, Binder binder,
+        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder,
                 CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
@@ -423,7 +423,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        public override FieldInfo GetField(String name, BindingFlags bindingAttr)
+        public override FieldInfo GetField(string name, BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
@@ -433,7 +433,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        public override Type GetInterface(String name, bool ignoreCase)
+        public override Type GetInterface(string name, bool ignoreCase)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
@@ -443,7 +443,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        public override EventInfo GetEvent(String name, BindingFlags bindingAttr)
+        public override EventInfo GetEvent(string name, BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
@@ -453,7 +453,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        protected override PropertyInfo GetPropertyImpl(String name, BindingFlags bindingAttr, Binder binder,
+        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder,
                 Type returnType, Type[] types, ParameterModifier[] modifiers)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
@@ -469,12 +469,12 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        public override Type GetNestedType(String name, BindingFlags bindingAttr)
+        public override Type GetNestedType(string name, BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        public override MemberInfo[] GetMember(String name, MemberTypes type, BindingFlags bindingAttr)
+        public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }

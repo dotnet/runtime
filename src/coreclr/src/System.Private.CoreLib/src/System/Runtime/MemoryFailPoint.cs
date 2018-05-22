@@ -443,7 +443,7 @@ namespace System.Runtime
             private ulong _totalFreeAddressSpace;
             private long _lastKnownFreeAddressSpace;
             private ulong _reservedMem;
-            private String _stackTrace;  // Where did we fail, for additional debugging.
+            private string _stackTrace;  // Where did we fail, for additional debugging.
 
             internal MemoryFailPointState(int allocationSizeInMB, ulong segmentSize, bool needPageFile, bool needAddressSpace, bool needContiguousVASpace, ulong availPageFile, ulong totalFreeAddressSpace, long lastKnownFreeAddressSpace, ulong reservedMem)
             {
@@ -470,9 +470,9 @@ namespace System.Runtime
                 }
             }
 
-            public override String ToString()
+            public override string ToString()
             {
-                return String.Format(System.Globalization.CultureInfo.InvariantCulture, "MemoryFailPoint detected insufficient memory to guarantee an operation could complete.  Checked for {0} MB, for allocation size of {1} MB.  Need page file? {2}  Need Address Space? {3}  Need Contiguous address space? {4}  Avail page file: {5} MB  Total free VA space: {6} MB  Contiguous free address space (found): {7} MB  Space reserved by process's MemoryFailPoints: {8} MB",
+                return string.Format(System.Globalization.CultureInfo.InvariantCulture, "MemoryFailPoint detected insufficient memory to guarantee an operation could complete.  Checked for {0} MB, for allocation size of {1} MB.  Need page file? {2}  Need Address Space? {3}  Need Contiguous address space? {4}  Avail page file: {5} MB  Total free VA space: {6} MB  Contiguous free address space (found): {7} MB  Space reserved by process's MemoryFailPoints: {8} MB",
                     _segmentSize >> 20, _allocationSizeInMB, _needPageFile,
                     _needAddressSpace, _needContiguousVASpace,
                     _availPageFile >> 20, _totalFreeAddressSpace >> 20,

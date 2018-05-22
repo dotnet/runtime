@@ -481,13 +481,13 @@ namespace System.Reflection
         {
             string ctorArgs = "";
             for (int i = 0; i < ConstructorArguments.Count; i++)
-                ctorArgs += String.Format(CultureInfo.CurrentCulture, i == 0 ? "{0}" : ", {0}", ConstructorArguments[i]);
+                ctorArgs += string.Format(CultureInfo.CurrentCulture, i == 0 ? "{0}" : ", {0}", ConstructorArguments[i]);
 
             string namedArgs = "";
             for (int i = 0; i < NamedArguments.Count; i++)
-                namedArgs += String.Format(CultureInfo.CurrentCulture, i == 0 && ctorArgs.Length == 0 ? "{0}" : ", {0}", NamedArguments[i]);
+                namedArgs += string.Format(CultureInfo.CurrentCulture, i == 0 && ctorArgs.Length == 0 ? "{0}" : ", {0}", NamedArguments[i]);
 
-            return String.Format(CultureInfo.CurrentCulture, "[{0}({1}{2})]", Constructor.DeclaringType.FullName, ctorArgs, namedArgs);
+            return string.Format(CultureInfo.CurrentCulture, "[{0}({1}{2})]", Constructor.DeclaringType.FullName, ctorArgs, namedArgs);
         }
         public override int GetHashCode()
         {
@@ -615,7 +615,7 @@ namespace System.Reflection
             if (m_memberInfo == null)
                 return base.ToString();
 
-            return String.Format(CultureInfo.CurrentCulture, "{0} = {1}", MemberInfo.Name, TypedValue.ToString(ArgumentType != typeof(object)));
+            return string.Format(CultureInfo.CurrentCulture, "{0} = {1}", MemberInfo.Name, TypedValue.ToString(ArgumentType != typeof(object)));
         }
         public override int GetHashCode()
         {
@@ -772,7 +772,7 @@ namespace System.Reflection
 
             if (type == null)
                 throw new InvalidOperationException(
-                    String.Format(CultureInfo.CurrentUICulture, SR.Arg_CATypeResolutionFailed, typeName));
+                    string.Format(CultureInfo.CurrentUICulture, SR.Arg_CATypeResolutionFailed, typeName));
 
             return type;
         }
@@ -887,19 +887,19 @@ namespace System.Reflection
                 return base.ToString();
 
             if (ArgumentType.IsEnum)
-                return String.Format(CultureInfo.CurrentCulture, typed ? "{0}" : "({1}){0}", Value, ArgumentType.FullName);
+                return string.Format(CultureInfo.CurrentCulture, typed ? "{0}" : "({1}){0}", Value, ArgumentType.FullName);
 
             else if (Value == null)
-                return String.Format(CultureInfo.CurrentCulture, typed ? "null" : "({0})null", ArgumentType.Name);
+                return string.Format(CultureInfo.CurrentCulture, typed ? "null" : "({0})null", ArgumentType.Name);
 
             else if (ArgumentType == typeof(string))
-                return String.Format(CultureInfo.CurrentCulture, "\"{0}\"", Value);
+                return string.Format(CultureInfo.CurrentCulture, "\"{0}\"", Value);
 
             else if (ArgumentType == typeof(char))
-                return String.Format(CultureInfo.CurrentCulture, "'{0}'", Value);
+                return string.Format(CultureInfo.CurrentCulture, "'{0}'", Value);
 
             else if (ArgumentType == typeof(Type))
-                return String.Format(CultureInfo.CurrentCulture, "typeof({0})", ((Type)Value).FullName);
+                return string.Format(CultureInfo.CurrentCulture, "typeof({0})", ((Type)Value).FullName);
 
             else if (ArgumentType.IsArray)
             {
@@ -907,15 +907,15 @@ namespace System.Reflection
                 IList<CustomAttributeTypedArgument> array = Value as IList<CustomAttributeTypedArgument>;
 
                 Type elementType = ArgumentType.GetElementType();
-                result = String.Format(CultureInfo.CurrentCulture, @"new {0}[{1}] {{ ", elementType.IsEnum ? elementType.FullName : elementType.Name, array.Count);
+                result = string.Format(CultureInfo.CurrentCulture, @"new {0}[{1}] {{ ", elementType.IsEnum ? elementType.FullName : elementType.Name, array.Count);
 
                 for (int i = 0; i < array.Count; i++)
-                    result += String.Format(CultureInfo.CurrentCulture, i == 0 ? "{0}" : ", {0}", array[i].ToString(elementType != typeof(object)));
+                    result += string.Format(CultureInfo.CurrentCulture, i == 0 ? "{0}" : ", {0}", array[i].ToString(elementType != typeof(object)));
 
                 return result += " }";
             }
 
-            return String.Format(CultureInfo.CurrentCulture, typed ? "{0}" : "({1}){0}", Value, ArgumentType.Name);
+            return string.Format(CultureInfo.CurrentCulture, typed ? "{0}" : "({1}){0}", Value, ArgumentType.Name);
         }
 
         public override int GetHashCode()
@@ -1600,7 +1600,7 @@ namespace System.Reflection
                             if (property == null)
                             {
                                 throw new CustomAttributeFormatException(
-                                    String.Format(CultureInfo.CurrentUICulture, 
+                                    string.Format(CultureInfo.CurrentUICulture, 
                                         isProperty ? SR.RFLCT_InvalidPropFail : SR.RFLCT_InvalidFieldFail, name));
                             }
 
@@ -1624,7 +1624,7 @@ namespace System.Reflection
                     catch (Exception e)
                     {
                         throw new CustomAttributeFormatException(
-                            String.Format(CultureInfo.CurrentUICulture,
+                            string.Format(CultureInfo.CurrentUICulture,
                                 isProperty ? SR.RFLCT_InvalidPropFail : SR.RFLCT_InvalidFieldFail, name), e);
                     }
                     #endregion
@@ -1797,7 +1797,7 @@ namespace System.Reflection
                     continue;
 
                 if (attributeUsageAttribute != null)
-                    throw new FormatException(String.Format(
+                    throw new FormatException(string.Format(
                         CultureInfo.CurrentUICulture, SR.Format_AttributeUsage, attributeType));
 
                 AttributeTargets targets;

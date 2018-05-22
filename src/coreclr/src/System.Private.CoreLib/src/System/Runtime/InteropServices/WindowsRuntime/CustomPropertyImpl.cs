@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (!accessor.IsPublic)
                 throw new MethodAccessException(
-                    String.Format(
+                    string.Format(
                         CultureInfo.CurrentCulture,
                         SR.Arg_MethodAccessException_WithMethodName,
                         accessor.ToString(),

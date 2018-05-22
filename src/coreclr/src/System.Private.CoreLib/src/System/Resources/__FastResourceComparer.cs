@@ -21,18 +21,18 @@ using System.Diagnostics;
 
 namespace System.Resources
 {
-    internal sealed class FastResourceComparer : IComparer, IEqualityComparer, IComparer<String>, IEqualityComparer<String>
+    internal sealed class FastResourceComparer : IComparer, IEqualityComparer, IComparer<string>, IEqualityComparer<string>
     {
         internal static readonly FastResourceComparer Default = new FastResourceComparer();
 
         // Implements IHashCodeProvider too, due to Hashtable requirements.
         public int GetHashCode(Object key)
         {
-            String s = (String)key;
+            string s = (string)key;
             return FastResourceComparer.HashFunction(s);
         }
 
-        public int GetHashCode(String key)
+        public int GetHashCode(string key)
         {
             return FastResourceComparer.HashFunction(key);
         }
@@ -40,7 +40,7 @@ namespace System.Resources
         // This hash function MUST be publically documented with the resource
         // file format, AND we may NEVER change this hash function's return 
         // value (without changing the file format).
-        internal static int HashFunction(String key)
+        internal static int HashFunction(string key)
         {
             // Never change this hash function.  We must standardize it so that 
             // others can read & write our .resources files.  Additionally, we
@@ -55,32 +55,32 @@ namespace System.Resources
         public int Compare(Object a, Object b)
         {
             if (a == b) return 0;
-            String sa = (String)a;
-            String sb = (String)b;
-            return String.CompareOrdinal(sa, sb);
+            string sa = (string)a;
+            string sb = (string)b;
+            return string.CompareOrdinal(sa, sb);
         }
 
-        public int Compare(String a, String b)
+        public int Compare(string a, string b)
         {
-            return String.CompareOrdinal(a, b);
+            return string.CompareOrdinal(a, b);
         }
 
-        public bool Equals(String a, String b)
+        public bool Equals(string a, string b)
         {
-            return String.Equals(a, b);
+            return string.Equals(a, b);
         }
 
         public new bool Equals(Object a, Object b)
         {
             if (a == b) return true;
-            String sa = (String)a;
-            String sb = (String)b;
-            return String.Equals(sa, sb);
+            string sa = (string)a;
+            string sb = (string)b;
+            return string.Equals(sa, sb);
         }
 
         // Input is one string to compare with, and a byte[] containing chars in 
         // little endian unicode.  Pass in the number of valid chars.
-        public static unsafe int CompareOrdinal(String a, byte[] bytes, int bCharLength)
+        public static unsafe int CompareOrdinal(string a, byte[] bytes, int bCharLength)
         {
             Debug.Assert(a != null && bytes != null, "FastResourceComparer::CompareOrdinal must have non-null params");
             Debug.Assert(bCharLength * 2 <= bytes.Length, "FastResourceComparer::CompareOrdinal - numChars is too big!");
@@ -109,14 +109,14 @@ namespace System.Resources
             return a.Length - bCharLength;
         }
 
-        public static int CompareOrdinal(byte[] bytes, int aCharLength, String b)
+        public static int CompareOrdinal(byte[] bytes, int aCharLength, string b)
         {
             return -CompareOrdinal(b, bytes, aCharLength);
         }
 
         // This method is to handle potentially misaligned data accesses.
         // The byte* must point to little endian Unicode characters.
-        internal static unsafe int CompareOrdinal(byte* a, int byteLen, String b)
+        internal static unsafe int CompareOrdinal(byte* a, int byteLen, string b)
         {
             Debug.Assert((byteLen & 1) == 0, "CompareOrdinal is expecting a UTF-16 string length, which must be even!");
             Debug.Assert(a != null && b != null, "Null args not allowed.");

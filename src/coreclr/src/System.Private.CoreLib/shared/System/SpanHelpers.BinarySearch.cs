@@ -26,7 +26,7 @@ namespace System
         }
 
         public static int BinarySearch<T, TComparable>(
-            ref T spanStart, int length, TComparable comparable) 
+            ref T spanStart, int length, TComparable comparable)
             where TComparable : IComparable<T>
         {
             int lo = 0;

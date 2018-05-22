@@ -211,7 +211,7 @@ namespace System.Threading
 
                     // And clear the references from the slot table to the linked slot and the value so that
                     // both can get garbage collected.
-                    slotArray[id].Value.Value = default(T);
+                    slotArray[id].Value.Value = default;
                     slotArray[id].Value = null;
                 }
             }
@@ -331,7 +331,7 @@ namespace System.Threading
             T value;
             if (m_valueFactory == null)
             {
-                value = default(T);
+                value = default;
             }
             else
             {
@@ -530,7 +530,7 @@ namespace System.Threading
 
                 LinkedSlot slot;
                 if (slotArray == null || id >= slotArray.Length || (slot = slotArray[id].Value) == null || !m_initialized)
-                    return default(T);
+                    return default;
                 return slot.Value;
             }
         }

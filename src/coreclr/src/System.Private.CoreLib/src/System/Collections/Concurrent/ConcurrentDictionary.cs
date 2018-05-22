@@ -211,7 +211,7 @@ namespace System.Collections.Concurrent
         {
             if (key == null) ThrowKeyNullException();
 
-            return TryRemoveInternal(key, out value, false, default(TValue));
+            return TryRemoveInternal(key, out value, false, default);
         }
 
         /// <summary>
@@ -256,7 +256,7 @@ namespace System.Collections.Concurrent
                                 bool valuesMatch = EqualityComparer<TValue>.Default.Equals(oldValue, curr._value);
                                 if (!valuesMatch)
                                 {
-                                    value = default(TValue);
+                                    value = default;
                                     return false;
                                 }
                             }
@@ -278,7 +278,7 @@ namespace System.Collections.Concurrent
                     }
                 }
 
-                value = default(TValue);
+                value = default;
                 return false;
             }
         }
@@ -327,7 +327,7 @@ namespace System.Collections.Concurrent
                 n = n._next;
             }
 
-            value = default(TValue);
+            value = default;
             return false;
         }
 
@@ -1224,7 +1224,7 @@ namespace System.Collections.Concurrent
             get
             {
                 ThrowHelper.ThrowNotSupportedException(ExceptionResource.ConcurrentCollection_SyncRoot_NotSupported);
-                return default(object);
+                return default;
             }
         }
 

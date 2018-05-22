@@ -422,7 +422,7 @@ namespace System
 
             if (!supportsDst)
             {
-                transitionTime = default(TransitionTime);
+                transitionTime = default;
                 return false;
             }
 

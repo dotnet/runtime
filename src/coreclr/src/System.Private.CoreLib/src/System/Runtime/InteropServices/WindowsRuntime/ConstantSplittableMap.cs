@@ -150,12 +150,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         public bool TryGetValue(TKey key, out TValue value)
         {
-            KeyValuePair<TKey, TValue> searchKey = new KeyValuePair<TKey, TValue>(key, default(TValue));
+            KeyValuePair<TKey, TValue> searchKey = new KeyValuePair<TKey, TValue>(key, default);
             int index = Array.BinarySearch(items, firstItemIndex, Count, searchKey, keyValuePairComparator);
 
             if (index < 0)
             {
-                value = default(TValue);
+                value = default;
                 return false;
             }
 

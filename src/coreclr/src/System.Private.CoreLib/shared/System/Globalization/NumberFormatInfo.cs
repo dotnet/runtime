@@ -52,23 +52,23 @@ namespace System.Globalization
         internal int[] numberGroupSizes = new int[] { 3 };
         internal int[] currencyGroupSizes = new int[] { 3 };
         internal int[] percentGroupSizes = new int[] { 3 };
-        internal String positiveSign = "+";
-        internal String negativeSign = "-";
-        internal String numberDecimalSeparator = ".";
-        internal String numberGroupSeparator = ",";
-        internal String currencyGroupSeparator = ",";
-        internal String currencyDecimalSeparator = ".";
-        internal String currencySymbol = "\x00a4";  // U+00a4 is the symbol for International Monetary Fund.
-        internal String nanSymbol = "NaN";
-        internal String positiveInfinitySymbol = "Infinity";
-        internal String negativeInfinitySymbol = "-Infinity";
-        internal String percentDecimalSeparator = ".";
-        internal String percentGroupSeparator = ",";
-        internal String percentSymbol = "%";
-        internal String perMilleSymbol = "\u2030";
+        internal string positiveSign = "+";
+        internal string negativeSign = "-";
+        internal string numberDecimalSeparator = ".";
+        internal string numberGroupSeparator = ",";
+        internal string currencyGroupSeparator = ",";
+        internal string currencyDecimalSeparator = ".";
+        internal string currencySymbol = "\x00a4";  // U+00a4 is the symbol for International Monetary Fund.
+        internal string nanSymbol = "NaN";
+        internal string positiveInfinitySymbol = "Infinity";
+        internal string negativeInfinitySymbol = "-Infinity";
+        internal string percentDecimalSeparator = ".";
+        internal string percentGroupSeparator = ",";
+        internal string percentSymbol = "%";
+        internal string perMilleSymbol = "\u2030";
 
 
-        internal String[] nativeDigits = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+        internal string[] nativeDigits = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
         internal int numberDecimalDigits = 2;
         internal int currencyDecimalDigits = 2;
@@ -90,7 +90,7 @@ namespace System.Globalization
         {
         }
 
-        private static void VerifyDecimalSeparator(String decSep, String propertyName)
+        private static void VerifyDecimalSeparator(string decSep, string propertyName)
         {
             if (decSep == null)
             {
@@ -104,7 +104,7 @@ namespace System.Globalization
             }
         }
 
-        private static void VerifyGroupSeparator(String groupSep, String propertyName)
+        private static void VerifyGroupSeparator(string groupSep, string propertyName)
         {
             if (groupSep == null)
             {
@@ -254,7 +254,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(CurrencyDecimalDigits),
-                                String.Format(
+                                string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     0,
@@ -266,7 +266,7 @@ namespace System.Globalization
         }
 
 
-        public String CurrencyDecimalSeparator
+        public string CurrencyDecimalSeparator
         {
             get { return currencyDecimalSeparator; }
             set
@@ -292,7 +292,7 @@ namespace System.Globalization
         // Every element in the groupSize array should be between 1 and 9
         // excpet the last element could be zero.
         //
-        internal static void CheckGroupSize(String propName, int[] groupSize)
+        internal static void CheckGroupSize(string propName, int[] groupSize)
         {
             for (int i = 0; i < groupSize.Length; i++)
             {
@@ -376,7 +376,7 @@ namespace System.Globalization
         }
 
 
-        public String CurrencyGroupSeparator
+        public string CurrencyGroupSeparator
         {
             get { return currencyGroupSeparator; }
             set
@@ -388,7 +388,7 @@ namespace System.Globalization
         }
 
 
-        public String CurrencySymbol
+        public string CurrencySymbol
         {
             get { return currencySymbol; }
             set
@@ -424,7 +424,7 @@ namespace System.Globalization
         }
 
 
-        public String NaNSymbol
+        public string NaNSymbol
         {
             get
             {
@@ -453,7 +453,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(CurrencyNegativePattern),
-                                String.Format(
+                                string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     0,
@@ -477,7 +477,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(NumberNegativePattern),
-                                String.Format(
+                                string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     0,
@@ -501,7 +501,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(PercentPositivePattern),
-                                String.Format(
+                                string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     0,
@@ -525,7 +525,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(PercentNegativePattern),
-                                String.Format(
+                                string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     0,
@@ -537,7 +537,7 @@ namespace System.Globalization
         }
 
 
-        public String NegativeInfinitySymbol
+        public string NegativeInfinitySymbol
         {
             get
             {
@@ -556,7 +556,7 @@ namespace System.Globalization
         }
 
 
-        public String NegativeSign
+        public string NegativeSign
         {
             get { return negativeSign; }
             set
@@ -581,7 +581,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(NumberDecimalDigits),
-                                String.Format(
+                                string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     0,
@@ -593,7 +593,7 @@ namespace System.Globalization
         }
 
 
-        public String NumberDecimalSeparator
+        public string NumberDecimalSeparator
         {
             get { return numberDecimalSeparator; }
             set
@@ -605,7 +605,7 @@ namespace System.Globalization
         }
 
 
-        public String NumberGroupSeparator
+        public string NumberGroupSeparator
         {
             get { return numberGroupSeparator; }
             set
@@ -626,7 +626,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(CurrencyPositivePattern),
-                                String.Format(
+                                string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     0,
@@ -638,7 +638,7 @@ namespace System.Globalization
         }
 
 
-        public String PositiveInfinitySymbol
+        public string PositiveInfinitySymbol
         {
             get
             {
@@ -657,7 +657,7 @@ namespace System.Globalization
         }
 
 
-        public String PositiveSign
+        public string PositiveSign
         {
             get { return positiveSign; }
             set
@@ -682,7 +682,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(PercentDecimalDigits),
-                                String.Format(
+                                string.Format(
                                     CultureInfo.CurrentCulture,
                                     SR.ArgumentOutOfRange_Range,
                                     0,
@@ -694,7 +694,7 @@ namespace System.Globalization
         }
 
 
-        public String PercentDecimalSeparator
+        public string PercentDecimalSeparator
         {
             get { return percentDecimalSeparator; }
             set
@@ -706,7 +706,7 @@ namespace System.Globalization
         }
 
 
-        public String PercentGroupSeparator
+        public string PercentGroupSeparator
         {
             get { return percentGroupSeparator; }
             set
@@ -718,7 +718,7 @@ namespace System.Globalization
         }
 
 
-        public String PercentSymbol
+        public string PercentSymbol
         {
             get
             {
@@ -737,7 +737,7 @@ namespace System.Globalization
         }
 
 
-        public String PerMilleSymbol
+        public string PerMilleSymbol
         {
             get { return perMilleSymbol; }
             set
@@ -754,7 +754,7 @@ namespace System.Globalization
 
         public string[] NativeDigits
         {
-            get { return (String[])nativeDigits.Clone(); }
+            get { return (string[])nativeDigits.Clone(); }
             set
             {
                 VerifyWritable();

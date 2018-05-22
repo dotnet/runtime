@@ -28,7 +28,7 @@ namespace System.Diagnostics.Contracts
         /// This method is used internally to trigger a failure indicating to the "programmer" that he is using the interface incorrectly.
         /// It is NEVER used to indicate failure of actual contracts at runtime.
         /// </summary>
-        static void AssertMustUseRewriter(ContractFailureKind kind, String contractKind)
+        static void AssertMustUseRewriter(ContractFailureKind kind, string contractKind)
         {
             // For better diagnostics, report which assembly is at fault.  Walk up stack and
             // find the first non-mscorlib assembly.
@@ -47,7 +47,7 @@ namespace System.Diagnostics.Contracts
 
             if (probablyNotRewritten == null)
                 probablyNotRewritten = thisAssembly;
-            String simpleName = probablyNotRewritten.GetName().Name;
+            string simpleName = probablyNotRewritten.GetName().Name;
             System.Runtime.CompilerServices.ContractHelper.TriggerFailure(kind, SR.Format(SR.MustUseCCRewrite, contractKind, simpleName), null, null, null);
         }
 
@@ -62,7 +62,7 @@ namespace System.Diagnostics.Contracts
         /// System.Runtime.CompilerServices.ContractHelper.TriggerFailure.
         /// </summary>
         [System.Diagnostics.DebuggerNonUserCode]
-        static void ReportFailure(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException)
+        static void ReportFailure(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException)
         {
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, failureKind), nameof(failureKind));
@@ -101,15 +101,15 @@ namespace System.Diagnostics.Contracts
     public sealed class ContractFailedEventArgs : EventArgs
     {
         private ContractFailureKind _failureKind;
-        private String _message;
-        private String _condition;
+        private string _message;
+        private string _condition;
         private Exception _originalException;
         private bool _handled;
         private bool _unwind;
 
         internal Exception thrownDuringHandler;
 
-        public ContractFailedEventArgs(ContractFailureKind failureKind, String message, String condition, Exception originalException)
+        public ContractFailedEventArgs(ContractFailureKind failureKind, string message, string condition, Exception originalException)
         {
             Debug.Assert(originalException == null || failureKind == ContractFailureKind.PostconditionOnException);
             _failureKind = failureKind;
@@ -118,8 +118,8 @@ namespace System.Diagnostics.Contracts
             _originalException = originalException;
         }
 
-        public String Message { get { return _message; } }
-        public String Condition { get { return _condition; } }
+        public string Message { get { return _message; } }
+        public string Condition { get { return _condition; } }
         public ContractFailureKind FailureKind { get { return _failureKind; } }
         public Exception OriginalException { get { return _originalException; } }
 
@@ -252,13 +252,13 @@ namespace System.Runtime.CompilerServices
         /// On exit: null if the event was handled and should not trigger a failure.
         ///          Otherwise, returns the localized failure message</param>
         [System.Diagnostics.DebuggerNonUserCode]
-        public static string RaiseContractFailedEvent(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException)
+        public static string RaiseContractFailedEvent(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException)
         {
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, failureKind), nameof(failureKind));
 
             string returnValue;
-            String displayMessage = "contract failed.";  // Incomplete, but in case of OOM during resource lookup...
+            string displayMessage = "contract failed.";  // Incomplete, but in case of OOM during resource lookup...
             ContractFailedEventArgs eventArgs = null;  // In case of OOM.
 
             try
@@ -306,7 +306,7 @@ namespace System.Runtime.CompilerServices
         /// Rewriter calls this method to get the default failure behavior.
         /// </summary>
         [System.Diagnostics.DebuggerNonUserCode]
-        public static void TriggerFailure(ContractFailureKind kind, String displayMessage, String userMessage, String conditionText, Exception innerException)
+        public static void TriggerFailure(ContractFailureKind kind, string displayMessage, string userMessage, string conditionText, Exception innerException)
         {
             if (string.IsNullOrEmpty(displayMessage))
             {
@@ -316,9 +316,9 @@ namespace System.Runtime.CompilerServices
             System.Diagnostics.Debug.ContractFailure(false, displayMessage, string.Empty, GetResourceNameForFailure(kind));
         }
 
-        private static String GetResourceNameForFailure(ContractFailureKind failureKind)
+        private static string GetResourceNameForFailure(ContractFailureKind failureKind)
         {
-            String resourceName = null;
+            string resourceName = null;
             switch (failureKind)
             {
                 case ContractFailureKind.Assert:
@@ -353,18 +353,18 @@ namespace System.Runtime.CompilerServices
             return resourceName;
         }
 
-        private static String GetDisplayMessage(ContractFailureKind failureKind, String userMessage, String conditionText)
+        private static string GetDisplayMessage(ContractFailureKind failureKind, string userMessage, string conditionText)
         {
-            String failureMessage;
+            string failureMessage;
             // Well-formatted English messages will take one of four forms.  A sentence ending in
             // either a period or a colon, the condition string, then the message tacked 
             // on to the end with two spaces in front.
             // Note that both the conditionText and userMessage may be null.  Also, 
             // on Silverlight we may not be able to look up a friendly string for the
             // error message.  Let's leverage Silverlight's default error message there. 
-            if (!String.IsNullOrEmpty(conditionText))
+            if (!string.IsNullOrEmpty(conditionText))
             {
-                String resourceName = GetResourceNameForFailure(failureKind); 
+                string resourceName = GetResourceNameForFailure(failureKind); 
                 resourceName += "_Cnd";
                 failureMessage = SR.Format(SR.GetResourceString(resourceName), conditionText);
             }
@@ -374,7 +374,7 @@ namespace System.Runtime.CompilerServices
             }
 
             // Now add in the user message, if present.
-            if (!String.IsNullOrEmpty(userMessage))
+            if (!string.IsNullOrEmpty(userMessage))
             {
                 return failureMessage + "  " + userMessage;
             }
