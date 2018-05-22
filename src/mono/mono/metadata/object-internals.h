@@ -1987,4 +1987,7 @@ mono_runtime_object_init_handle (MonoObjectHandle this_obj, MonoError *error);
 void
 mono_gc_wbarrier_object_copy_handle (MonoObjectHandle obj, MonoObjectHandle src);
 
+MonoMethod*
+mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is_proxy, MonoError *error);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

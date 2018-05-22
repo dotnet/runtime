@@ -985,8 +985,8 @@ static int ccount = 0;
 			ins->inst_imm = MONO_STRUCT_OFFSET (array_type, array_length_field); \
 			ins->flags |= MONO_INST_FAULT; \
 			MONO_ADD_INS ((cfg)->cbb, ins);								\
-			(cfg)->flags |= MONO_CFG_HAS_ARRAY_ACCESS;					\
-			(cfg)->cbb->has_array_access = TRUE;						\
+			(cfg)->flags |= MONO_CFG_NEEDS_DECOMPOSE;					\
+			(cfg)->cbb->needs_decompose = TRUE;						\
 		}																\
 		}																\
     } while (0)

@@ -215,8 +215,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			EMIT_NEW_UNALU (cfg, ins, OP_STRLEN, dreg, args [0]->dreg);
 			ins->type = STACK_I4;
 			ins->flags |= MONO_INST_FAULT;
-			cfg->cbb->has_array_access = TRUE;
-			cfg->flags |= MONO_CFG_HAS_ARRAY_ACCESS;
+			cfg->cbb->needs_decompose = TRUE;
+			cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
 
 			return ins;
 		} else 

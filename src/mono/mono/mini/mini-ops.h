@@ -45,6 +45,8 @@ MINI_OP(OP_IMPLICIT_EXCEPTION, "implicit_exception", NONE, NONE, NONE)
 MINI_OP(OP_BOX, "box", IREG, IREG, NONE)
 /* A box of the int value in inst_c0 */
 MINI_OP(OP_BOX_ICONST, "box_iconst", IREG, NONE, NONE)
+/* Same as OP_MOVE, ins->dreg is an objref of type ins->klass */
+MINI_OP(OP_TYPED_OBJREF, "typed_objref", IREG, IREG, NONE)
 
 /* CALL opcodes need to stay together, see MONO_IS_CALL macro */
 MINI_OP(OP_VOIDCALL,	"voidcall", NONE, NONE, NONE)

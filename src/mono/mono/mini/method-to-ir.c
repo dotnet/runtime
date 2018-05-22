@@ -190,6 +190,8 @@ static MonoMethodSignature *helper_sig_set_tls_tramp;
 
 /* type loading helpers */
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (debuggable_attribute, "System.Diagnostics", "DebuggableAttribute")
+static GENERATE_GET_CLASS_WITH_CACHE (iequatable, "System", "IEquatable`1")
+static GENERATE_GET_CLASS_WITH_CACHE (geqcomparer, "System.Collections.Generic", "GenericEqualityComparer`1");
 
 /*
  * Instruction metadata
@@ -5941,6 +5943,67 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	return emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
 }
 
+static MonoInst*
+handle_call_res_devirt (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *call_res)
+{
+	/*
+	 * Devirt EqualityComparer.Default.Equals () calls for some types.
+	 * The corefx code excepts these calls to be devirtualized.
+	 * This depends on the implementation of EqualityComparer.Default, which is
+	 * in mcs/class/referencesource/mscorlib/system/collections/generic/equalitycomparer.cs
+	 */
+	if (m_class_get_image (cmethod->klass) == mono_defaults.corlib &&
+		!strcmp (m_class_get_name (cmethod->klass), "EqualityComparer`1") &&
+		!strcmp (cmethod->name, "get_Default")) {
+		MonoType *param_type = mono_class_get_generic_class (cmethod->klass)->context.class_inst->type_argv [0];
+		MonoClass *inst;
+		MonoGenericContext ctx;
+		MonoType *args [16];
+		ERROR_DECL (error);
+
+		memset (&ctx, 0, sizeof (ctx));
+
+		args [0] = param_type;
+		ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+
+		inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
+		mono_error_assert_ok (error);
+
+		/* EqualityComparer<T>.Default returns specific types depending on T */
+		// FIXME: Add more
+		/* 1. Implements IEquatable<T> */
+		if (mono_class_is_assignable_from (inst, mono_class_from_mono_type (param_type))) {
+			MonoInst *typed_objref;
+			MonoClass *gcomparer_inst;
+
+			memset (&ctx, 0, sizeof (ctx));
+
+			args [0] = param_type;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+
+			MonoClass *gcomparer = mono_class_get_geqcomparer_class ();
+			g_assert (gcomparer);
+			gcomparer_inst = mono_class_inflate_generic_class_checked (gcomparer, &ctx, error);
+			mono_error_assert_ok (error);
+
+			MONO_INST_NEW (cfg, typed_objref, OP_TYPED_OBJREF);
+			typed_objref->type = STACK_OBJ;
+			typed_objref->dreg = alloc_ireg_ref (cfg);
+			typed_objref->sreg1 = call_res->dreg;
+			typed_objref->klass = gcomparer_inst;
+			MONO_ADD_INS (cfg->cbb, typed_objref);
+
+			call_res = typed_objref;
+
+			/* Force decompose */
+			cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+			cfg->cbb->needs_decompose = TRUE;
+		}
+	}
+
+	return call_res;
+}
+
 static gboolean
 is_exception_class (MonoClass *klass)
 {
@@ -7835,6 +7898,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			check_method_sharing (cfg, cmethod, &pass_vtable, &pass_mrgctx);
 
+			if (virtual_ && cmethod && sp [0]->opcode == OP_TYPED_OBJREF) {
+				ERROR_DECL (error);
+
+				MonoMethod *new_cmethod = mono_class_get_virtual_method (sp [0]->klass, cmethod, FALSE, error);
+				mono_error_assert_ok (error);
+				cmethod = new_cmethod;
+				virtual_ = FALSE;
+			}
+
 			if (cfg->gshared) {
 				MonoGenericContext *cmethod_context = mono_method_get_context (cmethod);
 
@@ -8095,11 +8167,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (costs) {
 					cfg->real_offset += 5;
 
- 					if (!MONO_TYPE_IS_VOID (fsig->ret)) {
+					if (!MONO_TYPE_IS_VOID (fsig->ret))
 						/* *sp is already set by inline_method */
- 						sp++;
-						push_res = FALSE;
-					}
+						ins = *sp;
 
 					inline_costs += costs;
 					// FIXME This is missed if the inlinee contains tail calls that
@@ -8291,11 +8361,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				g_assert (costs > 0);
 				cfg->real_offset += 5;
 
-				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
+				if (!MONO_TYPE_IS_VOID (fsig->ret))
 					/* *sp is already set by inline_method */
-					sp++;
-					push_res = FALSE;
-				}
+					ins = *sp;
 
 				inline_costs += costs;
 
@@ -8389,6 +8457,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (common_call) // FIXME goto call_end && !common_call often skips tailcall processing.
 				ins = mono_emit_method_call_full (cfg, cmethod, fsig, tailcall, sp, virtual_ ? sp [0] : NULL,
 												  imt_arg, vtable_arg);
+
+			/*
+			 * Handle devirt of some A.B.C calls by replacing the result of A.B with a OP_TYPED_OBJREF instruction, so the .C
+			 * call can be devirtualized above.
+			 */
+			if (cmethod)
+				ins = handle_call_res_devirt (cfg, cmethod, ins);
 
 calli_end:
 			if ((tailcall_remove_ret || (common_call && tailcall)) && !cfg->llvm_only) {
@@ -9946,7 +10021,7 @@ calli_end:
 							/* .cctors: too many apps depend on them */
 							/* running with a specific order... */
 							g_assert (vtable);
-							if (! vtable->initialized)
+							if (!vtable->initialized && m_class_has_cctor (vtable->klass))
 								INLINE_FAILURE ("class init");
 							if (!mono_runtime_class_init_full (vtable, &cfg->error)) {
 								mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
@@ -10168,8 +10243,8 @@ field_access_end:
 					ins->type = STACK_OBJ;
 					ins->klass = array_type;
 					MONO_ADD_INS (cfg->cbb, ins);
-					cfg->flags |= MONO_CFG_HAS_ARRAY_ACCESS;
-					cfg->cbb->has_array_access = TRUE;
+					cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+					cfg->cbb->needs_decompose = TRUE;
 
 					/* Needed so mono_emit_load_get_addr () gets called */
 					mono_get_got_var (cfg);
@@ -10222,8 +10297,8 @@ field_access_end:
 			/* This flag will be inherited by the decomposition */
 			ins->flags |= MONO_INST_FAULT;
 			MONO_ADD_INS (cfg->cbb, ins);
-			cfg->flags |= MONO_CFG_HAS_ARRAY_ACCESS;
-			cfg->cbb->has_array_access = TRUE;
+			cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+			cfg->cbb->needs_decompose = TRUE;
 			*sp++ = ins;
 			break;
 		case CEE_LDELEMA:

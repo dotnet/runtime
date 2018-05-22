@@ -3698,7 +3698,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		mono_decompose_soft_float (cfg);
 #endif
 	MONO_TIME_TRACK (mono_jit_stats.jit_decompose_vtype_opts, mono_decompose_vtype_opts (cfg));
-	if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS) {
+	if (cfg->flags & MONO_CFG_NEEDS_DECOMPOSE) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_decompose_array_access_opts, mono_decompose_array_access_opts (cfg));
 		mono_cfg_dump_ir (cfg, "decompose_array_access_opts");
 	}
@@ -3801,7 +3801,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			cfg->disable_llvm = TRUE;
 		}
 
-		if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS)
+		if (cfg->flags & MONO_CFG_NEEDS_DECOMPOSE)
 			mono_decompose_array_access_opts (cfg);
 
 		if (!cfg->disable_llvm)

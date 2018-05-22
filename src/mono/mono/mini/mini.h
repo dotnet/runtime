@@ -488,7 +488,7 @@ struct MonoBasicBlock {
 	/* Caches the result of uselessness calculation during optimize_branches */
 	guint not_useless : 1;
 	/* Whenever the decompose_array_access_opts () pass needs to process this bblock */
-	guint has_array_access : 1;
+	guint needs_decompose : 1;
 	/* Whenever this bblock is extended, ie. it has branches inside it */
 	guint extended : 1;
 	/* Whenever this bblock contains a OP_JUMP_TABLE instruction */
@@ -1532,7 +1532,7 @@ typedef enum {
 	MONO_CFG_HAS_FPOUT    = 1 << 5, /* there are fp values passed in int registers */
 	MONO_CFG_HAS_SPILLUP  = 1 << 6, /* spill var slots are allocated from bottom to top */
 	MONO_CFG_HAS_CHECK_THIS  = 1 << 7,
-	MONO_CFG_HAS_ARRAY_ACCESS = 1 << 8,
+	MONO_CFG_NEEDS_DECOMPOSE = 1 << 8,
 	MONO_CFG_HAS_TYPE_CHECK = 1 << 9
 } MonoCompileFlags;
 

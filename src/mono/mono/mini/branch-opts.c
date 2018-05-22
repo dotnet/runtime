@@ -205,7 +205,7 @@ mono_replace_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst 
 		else
 			bb->last_ins = last_bb->last_ins;
 		*prev = last_bb->last_ins;
-		bb->has_array_access |= first_bb->has_array_access;
+		bb->needs_decompose |= first_bb->needs_decompose;
 	} else {
 		int i, count;
 		MonoBasicBlock **tmp_bblocks, *tmp;
@@ -233,7 +233,7 @@ mono_replace_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst 
 		} else {
 			last_bb->code = next;
 		}
-		last_bb->has_array_access |= bb->has_array_access;
+		last_bb->needs_decompose |= bb->needs_decompose;
 
 		if (next) {
 			for (last = next; last->next != NULL; last = last->next)
@@ -252,7 +252,7 @@ mono_replace_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst 
 			bb->code = first_bb->code;
 		}
 		bb->last_ins = first_bb->last_ins;
-		bb->has_array_access |= first_bb->has_array_access;
+		bb->needs_decompose |= first_bb->needs_decompose;
 
 		/* Delete the links between the original bb and its successors */
 		tmp_bblocks = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoBasicBlock*) * bb->out_count);
@@ -970,7 +970,7 @@ mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *b
 	/* There may be only one control flow edge between two BBs that we merge, and it should connect these BBs together. */
 	g_assert (bb->out_count == 1 && bbn->in_count == 1 && bb->out_bb [0] == bbn && bbn->in_bb [0] == bb);
 
-	bb->has_array_access |= bbn->has_array_access;
+	bb->needs_decompose |= bbn->needs_decompose;
 	bb->extended |= bbn->extended;
 
 	mono_unlink_bblock (cfg, bb, bbn);

@@ -1493,7 +1493,7 @@ mono_get_domainvar (MonoCompile *cfg)
 /**
  * mono_decompose_array_access_opts:
  *
- *  Decompose array access opcodes.
+ *  Decompose array access and other misc opcodes.
  */
 void
 mono_decompose_array_access_opts (MonoCompile *cfg)
@@ -1519,7 +1519,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 		MonoInst *iargs [3];
 		gboolean restart;
 
-		if (!bb->has_array_access)
+		if (!bb->needs_decompose)
 			continue;
 
 		if (cfg->verbose_level > 3) mono_print_bb (bb, "BEFORE DECOMPOSE-ARRAY-ACCESS-OPTS ");
@@ -1532,6 +1532,9 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 
 			for (ins = bb->code; ins; ins = ins->next) {
 				switch (ins->opcode) {
+				case OP_TYPED_OBJREF:
+					ins->opcode = OP_MOVE;
+					break;
 				case OP_LDLEN:
 					NEW_LOAD_MEMBASE_FLAGS (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg, ins->sreg1,
 											MONO_STRUCT_OFFSET (MonoArray, max_length), ins->flags | MONO_INST_INVARIANT_LOAD);
