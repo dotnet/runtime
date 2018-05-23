@@ -3827,6 +3827,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_stw (code, ins->sreg1, -4, ppc_r1);
 			ppc_lfs (code, ins->dreg, -4, ppc_r1);
 			break;
+#ifdef __mono_ppc64__
+		case OP_MOVE_F_TO_I8:
+			ppc_stfd (code, ins->sreg1, -8, ppc_r1);
+			ppc_ldptr (code, ins->dreg, -8, ppc_r1);
+			break;
+		case OP_MOVE_I8_TO_F:
+			ppc_stptr (code, ins->sreg1, -8, ppc_r1);
+			ppc_lfd (code, ins->dreg, -8, ppc_r1);
+			break;
+#endif
 		case OP_FCONV_TO_R4:
 			ppc_frsp (code, ins->dreg, ins->sreg1);
 			break;
