@@ -200,8 +200,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
-        [ActiveIssue(9543)] // consistently fails with errors about client credentials being invalid
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(6, false)]
@@ -234,7 +233,14 @@ namespace System.Net.Http.Functional.Tests
                     server.AcceptConnectionAsync(async connection =>
                     {
                         SslStream sslStream = Assert.IsType<SslStream>(connection.Stream);
-                        Assert.Equal(cert, sslStream.RemoteCertificate);
+
+                        // We can't do Assert.Equal(cert, sslStream.RemoteCertificate) because
+                        // on .NET Framework sslStream.RemoteCertificate is always an X509Certificate
+                        // object which is not equal to the X509Certificate2 object we use in the tests.
+                        // So, we'll just compare a few properties to make sure it's the right certificate.
+                        Assert.Equal(cert.Subject, sslStream.RemoteCertificate.Subject);
+                        Assert.Equal(cert.Issuer, sslStream.RemoteCertificate.Issuer);
+
                         await connection.ReadRequestHeaderAndSendResponseAsync(additionalHeaders: "Connection: close\r\n");
                     }));
             };
@@ -273,6 +279,7 @@ namespace System.Net.Http.Functional.Tests
             }, options);
         }
 
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(ClientCertificateOption.Manual)]

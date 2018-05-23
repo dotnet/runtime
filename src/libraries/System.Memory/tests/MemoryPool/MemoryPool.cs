@@ -237,12 +237,12 @@ namespace System.MemoryTests
             block.Dispose();
         }
 
-       [Fact]
-       public static void NoMemoryAfterDispose()
-       {
-           IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
-           block.Dispose();
-           Assert.Throws<ObjectDisposedException>(() => block.Memory);
-       }
+        [Fact]
+        public static void NoMemoryAfterDispose()
+        {
+            IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
+            block.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => block.Memory);
+        }
     }
 }

@@ -206,7 +206,7 @@ namespace System.SpanTests
             value = new char[] { '\u0049', '\u0073', '\u0073', '\u0049' }; // IssI
             Assert.False(span.EndsWith(value, StringComparison.OrdinalIgnoreCase));
             Assert.False(span.EndsWith(value, StringComparison.InvariantCulture));
-             // Different behavior depending on OS - True on Windows, False on Unix
+            // Different behavior depending on OS - True on Windows, False on Unix
             Assert.Equal(
                 span.ToString().EndsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
                 span.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
@@ -247,83 +247,6 @@ namespace System.SpanTests
             Assert.False(span.EndsWith(value, StringComparison.OrdinalIgnoreCase));
             Assert.False(span.EndsWith(value, StringComparison.InvariantCulture));
             Assert.False(span.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));
-        }
-
-        [Theory]
-        // CurrentCulture
-        [InlineData("", "Foo", StringComparison.CurrentCulture, false)]
-        [InlineData("Hello", "llo", StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", "Hello", StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", "", StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", "HELLO", StringComparison.CurrentCulture, false)]
-        [InlineData("Hello", "Abc", StringComparison.CurrentCulture, false)]
-        [InlineData("Hello", "llo" + SoftHyphen, StringComparison.CurrentCulture, true)]
-        [InlineData("", "", StringComparison.CurrentCulture, true)]
-        [InlineData("", "a", StringComparison.CurrentCulture, false)]
-        // CurrentCultureIgnoreCase
-        [InlineData("Hello", "llo", StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", "Hello", StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", "", StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", "LLO", StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", "Abc", StringComparison.CurrentCultureIgnoreCase, false)]
-        [InlineData("Hello", "llo" + SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("", "", StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("", "a", StringComparison.CurrentCultureIgnoreCase, false)]
-        // InvariantCulture
-        [InlineData("", "Foo", StringComparison.InvariantCulture, false)]
-        [InlineData("Hello", "llo", StringComparison.InvariantCulture, true)]
-        [InlineData("Hello", "Hello", StringComparison.InvariantCulture, true)]
-        [InlineData("Hello", "", StringComparison.InvariantCulture, true)]
-        [InlineData("Hello", "HELLO", StringComparison.InvariantCulture, false)]
-        [InlineData("Hello", "Abc", StringComparison.InvariantCulture, false)]
-        [InlineData("Hello", "llo" + SoftHyphen, StringComparison.InvariantCulture, true)]
-        [InlineData("", "", StringComparison.InvariantCulture, true)]
-        [InlineData("", "a", StringComparison.InvariantCulture, false)]
-        // InvariantCultureIgnoreCase
-        [InlineData("Hello", "llo", StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", "Hello", StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", "", StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", "LLO", StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", "Abc", StringComparison.InvariantCultureIgnoreCase, false)]
-        [InlineData("Hello", "llo" + SoftHyphen, StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("", "", StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("", "a", StringComparison.InvariantCultureIgnoreCase, false)]
-        // Ordinal
-        [InlineData("Hello", "o", StringComparison.Ordinal, true)]
-        [InlineData("Hello", "llo", StringComparison.Ordinal, true)]
-        [InlineData("Hello", "Hello", StringComparison.Ordinal, true)]
-        [InlineData("Hello", "Larger Hello", StringComparison.Ordinal, false)]
-        [InlineData("Hello", "", StringComparison.Ordinal, true)]
-        [InlineData("Hello", "LLO", StringComparison.Ordinal, false)]
-        [InlineData("Hello", "Abc", StringComparison.Ordinal, false)]
-        [InlineData("Hello", "llo" + SoftHyphen, StringComparison.Ordinal, false)]
-        [InlineData("", "", StringComparison.Ordinal, true)]
-        [InlineData("", "a", StringComparison.Ordinal, false)]
-        // OrdinalIgnoreCase
-        [InlineData("Hello", "llo", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("Hello", "Hello", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("Hello", "Larger Hello", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("Hello", "", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("Hello", "LLO", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("Hello", "Abc", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("Hello", "llo" + SoftHyphen, StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("", "a", StringComparison.OrdinalIgnoreCase, false)]
-        public static void EndsWith(string s, string value, StringComparison comparisonType, bool expected)
-        {
-            Assert.Equal(expected, s.AsSpan().EndsWith(value.AsSpan(), comparisonType));
-        }
-
-        [Theory]
-        [InlineData(StringComparison.Ordinal)]
-        [InlineData(StringComparison.OrdinalIgnoreCase)]
-        public static void EndsWith_NullInStrings(StringComparison comparison)
-        {
-            Assert.True("\0test".AsSpan().EndsWith("test".AsSpan(), comparison));
-            Assert.True("te\0st".AsSpan().EndsWith("e\0st".AsSpan(), comparison));
-            Assert.False("te\0st".AsSpan().EndsWith("test".AsSpan(), comparison));
-            Assert.False("test\0".AsSpan().EndsWith("test".AsSpan(), comparison));
-            Assert.False("test".AsSpan().EndsWith("\0st".AsSpan(), comparison));
         }
 
         // NOTE: This is by design. Unix ignores the null characters (i.e. null characters have no weights for the string comparison).

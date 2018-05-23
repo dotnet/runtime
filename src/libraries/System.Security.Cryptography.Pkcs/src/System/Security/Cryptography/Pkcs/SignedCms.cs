@@ -470,5 +470,64 @@ namespace System.Security.Cryptography.Pkcs
         {
             return ref _signedData;
         }
+
+        public void AddCertificate(X509Certificate2 certificate)
+        {
+            int existingLength = _signedData.CertificateSet?.Length ?? 0;
+
+            byte[] rawData = certificate.RawData;
+
+            if (existingLength > 0)
+            {
+                foreach (CertificateChoiceAsn cert in _signedData.CertificateSet)
+                {
+                    if (cert.Certificate.Value.Span.SequenceEqual(rawData))
+                    {
+                        throw new CryptographicException(SR.Cryptography_Cms_CertificateAlreadyInCollection);
+                    }
+                }
+            }
+
+            if (_signedData.CertificateSet == null)
+            {
+                _signedData.CertificateSet = new CertificateChoiceAsn[1];
+            }
+            else
+            {
+                Array.Resize(ref _signedData.CertificateSet, existingLength + 1);
+            }
+
+            _signedData.CertificateSet[existingLength] = new CertificateChoiceAsn
+            {
+                Certificate = rawData
+            };
+
+            Reencode();
+        }
+
+        public void RemoveCertificate(X509Certificate2 certificate)
+        {
+            int existingLength = _signedData.CertificateSet?.Length ?? 0;
+
+            if (existingLength != 0)
+            {
+                int idx = 0;
+                byte[] rawData = certificate.RawData;
+
+                foreach (CertificateChoiceAsn cert in _signedData.CertificateSet)
+                {
+                    if (cert.Certificate.Value.Span.SequenceEqual(rawData))
+                    {
+                        Helpers.RemoveAt(ref _signedData.CertificateSet, idx);
+                        Reencode();
+                        return;
+                    }
+
+                    idx++;
+                }
+            }
+
+            throw new CryptographicException(SR.Cryptography_Cms_NoCertificateFound);
+        }
     }
 }

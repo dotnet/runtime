@@ -42,6 +42,7 @@
     <Compile Include="XmlDocumentTests\CreateXmlDeclarationTests.cs" />
     <Compile Include="XmlDocumentTests\GetElementsByTagNameTests.cs" />
     <Compile Include="XmlDocumentTests\ImportNodeTests.cs" />
+    <Compile Include="XmlDocumentTests\NameTableTests.cs" />
     <Compile Include="XmlDocumentTests\NodeChangedTests.cs" />
     <Compile Include="XmlDocumentTests\NodeChangingTests.cs" />
     <Compile Include="XmlDocumentTests\NodeInsertedTests.cs" />

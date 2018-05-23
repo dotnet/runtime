@@ -14,7 +14,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
+    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
     public abstract class HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientTestBase
     {
         [Fact]

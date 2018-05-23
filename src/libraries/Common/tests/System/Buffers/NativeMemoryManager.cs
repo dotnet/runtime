@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -55,7 +54,8 @@ namespace System.Buffers
 
         public override unsafe MemoryHandle Pin(int elementIndex = 0)
         {
-            if (elementIndex < 0 || elementIndex > _length) throw new ArgumentOutOfRangeException(nameof(elementIndex));
+            if (elementIndex < 0 || elementIndex > _length)
+                throw new ArgumentOutOfRangeException(nameof(elementIndex));
 
             lock (this)
             {

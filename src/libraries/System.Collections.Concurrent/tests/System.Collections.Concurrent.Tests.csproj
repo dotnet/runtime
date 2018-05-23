@@ -12,6 +12,9 @@
     <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs" Condition="'$(TargetGroup)'!='netcoreapp'">
       <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs">
+      <Link>Common\CoreLib\System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs</Link>
+    </Compile>
     <!-- Common Collections tests -->
     <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
       <Link>Common\System\Collections\CollectionAsserts.cs</Link>

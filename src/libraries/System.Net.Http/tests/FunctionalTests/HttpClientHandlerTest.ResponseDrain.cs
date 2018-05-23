@@ -11,7 +11,8 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class HttpClientHandler_ResponseDrain_Test : HttpClientTestBase
+   [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+   public abstract class HttpClientHandler_ResponseDrain_Test : HttpClientTestBase
     {
         protected virtual void SetResponseDrainTimeout(HttpClientHandler handler, TimeSpan time) { }
 

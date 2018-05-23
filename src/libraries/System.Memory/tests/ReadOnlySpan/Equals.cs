@@ -117,7 +117,7 @@ namespace System.SpanTests
                     Assert.False(firstSpan.Equals(secondSpan, StringComparison.Ordinal));
 
                     Assert.False(firstSpan.Equals(secondSpan, StringComparison.OrdinalIgnoreCase));
-                    
+
                     // Different behavior depending on OS
                     Assert.Equal(
                         firstSpan.ToString().Equals(secondSpan.ToString(), StringComparison.CurrentCulture),
@@ -167,96 +167,6 @@ namespace System.SpanTests
             TestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Equals(_span, StringComparison.OrdinalIgnoreCase + 1));
             TestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Equals(_span, (StringComparison)6));
         }
-
-        [Theory]
-        // CurrentCulture
-        [InlineData("Hello", "Hello", StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", "hello", StringComparison.CurrentCulture, false)]
-        [InlineData("Hello", "Helloo", StringComparison.CurrentCulture, false)]
-        [InlineData("Hello", "Hell", StringComparison.CurrentCulture, false)]
-        [InlineData("Hello", SoftHyphen + "Hello" + SoftHyphen, StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", "", StringComparison.CurrentCulture, false)]
-        [InlineData("", "Hello", StringComparison.CurrentCulture, false)]
-        [InlineData("", "", StringComparison.CurrentCulture, true)]
-        // CurrentCultureIgnoreCase
-        [InlineData("Hello", "Hello", StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", "hello", StringComparison.CurrentCultureIgnoreCase, true)]
-        [InlineData("Hello", "helloo", StringComparison.CurrentCultureIgnoreCase, false)]
-        [InlineData("Hello", "hell", StringComparison.CurrentCultureIgnoreCase, false)]
-        [InlineData("Hello", SoftHyphen + "Hello" + SoftHyphen, StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", "", StringComparison.CurrentCultureIgnoreCase, false)]
-        [InlineData("", "Hello", StringComparison.CurrentCultureIgnoreCase, false)]
-        [InlineData("", "", StringComparison.CurrentCultureIgnoreCase, true)]
-        // InvariantCulture
-        [InlineData("Hello", "Hello", StringComparison.InvariantCulture, true)]
-        [InlineData("Hello", "hello", StringComparison.InvariantCulture, false)]
-        [InlineData("Hello", "Helloo", StringComparison.InvariantCulture, false)]
-        [InlineData("Hello", "Hell", StringComparison.InvariantCulture, false)]
-        [InlineData("Hello", SoftHyphen + "Hello" + SoftHyphen, StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", "", StringComparison.InvariantCulture, false)]
-        [InlineData("", "Hello", StringComparison.InvariantCulture, false)]
-        [InlineData("", "", StringComparison.InvariantCulture, true)]
-        // InvariantCultureIgnoreCase
-        [InlineData("Hello", "Hello", StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", "hello", StringComparison.InvariantCultureIgnoreCase, true)]
-        [InlineData("Hello", "Helloo", StringComparison.InvariantCultureIgnoreCase, false)]
-        [InlineData("Hello", "Hell", StringComparison.InvariantCultureIgnoreCase, false)]
-        [InlineData("Hello", SoftHyphen + "Hello" + SoftHyphen, StringComparison.CurrentCulture, true)]
-        [InlineData("Hello", "", StringComparison.InvariantCultureIgnoreCase, false)]
-        [InlineData("", "Hello", StringComparison.InvariantCultureIgnoreCase, false)]
-        [InlineData("", "", StringComparison.InvariantCultureIgnoreCase, true)]
-        // Ordinal
-        [InlineData("Hello", "Hello", StringComparison.Ordinal, true)]
-        [InlineData("Hello", "hello", StringComparison.Ordinal, false)]
-        [InlineData("Hello", "Helloo", StringComparison.Ordinal, false)]
-        [InlineData("Hello", "Hell", StringComparison.Ordinal, false)]
-        [InlineData("Hello", SoftHyphen + "Hello" + SoftHyphen, StringComparison.Ordinal, false)]
-        [InlineData("Hello", "", StringComparison.Ordinal, false)]
-        [InlineData("", "Hello", StringComparison.Ordinal, false)]
-        [InlineData("", "", StringComparison.Ordinal, true)]
-        // OridinalIgnoreCase
-        [InlineData("Hello", "Hello", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("HELLO", "hello", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("Hello", "Helloo", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("Hello", "Hell", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("Hello", SoftHyphen + "Hello" + SoftHyphen, StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("\u1234\u5678", "\u1234\u5678", StringComparison.OrdinalIgnoreCase, true)]
-        [InlineData("\u1234\u5678", "\u1234\u5679", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("\u1234\u5678", "\u1235\u5678", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("\u1234\u5678", "\u1234", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("\u1234\u5678", "\u1234\u56789\u1234", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("Hello", "", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("", "Hello", StringComparison.OrdinalIgnoreCase, false)]
-        [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
-        public static void Equals(string s1, string s2, StringComparison comparisonType, bool expected)
-        {
-            Assert.Equal(expected, s1.AsSpan().Equals(s2.AsSpan(), comparisonType));
-        }
-
-        public static IEnumerable<object[]> Equals_EncyclopaediaData()
-        {
-            yield return new object[] { StringComparison.CurrentCulture, false };
-            yield return new object[] { StringComparison.CurrentCultureIgnoreCase, false };
-            yield return new object[] { StringComparison.Ordinal, false };
-            yield return new object[] { StringComparison.OrdinalIgnoreCase, false };
-
-            // Windows and ICU disagree about how these strings compare in the default locale.
-            yield return new object[] { StringComparison.InvariantCulture, PlatformDetection.IsWindows };
-            yield return new object[] { StringComparison.InvariantCultureIgnoreCase, PlatformDetection.IsWindows };
-        }
-
-        [Theory]
-        [MemberData(nameof(Equals_EncyclopaediaData))]
-        public static void Equals_Encyclopaedia_ReturnsExpected(StringComparison comparison, bool expected)
-        {
-            string source = "encyclop\u00e6dia";
-            string target = "encyclopaedia";
-            CultureInfo backupCulture = CultureInfo.CurrentCulture;
-
-            Thread.CurrentThread.CurrentCulture = new CultureInfo("se-SE");
-            Assert.Equal(expected, source.AsSpan().Equals(target.AsSpan(), comparison));
-
-            Thread.CurrentThread.CurrentCulture = backupCulture;
-        }
+      
     }
 }

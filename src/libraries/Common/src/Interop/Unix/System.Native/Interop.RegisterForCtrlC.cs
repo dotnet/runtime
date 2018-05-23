@@ -14,7 +14,7 @@ internal partial class Interop
             Break = 1
         }
 
-        internal delegate bool CtrlCallback(CtrlCode ctrlCode);
+        internal delegate void CtrlCallback(CtrlCode ctrlCode);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_RegisterForCtrl")]
         internal static extern void RegisterForCtrl(CtrlCallback handler);

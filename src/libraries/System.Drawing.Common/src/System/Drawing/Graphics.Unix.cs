@@ -50,7 +50,6 @@ namespace System.Drawing
         private bool disposed = false;
         private static float defDpiX = 0;
         private static float defDpiY = 0;
-        private IntPtr deviceContextHdc;
 
         public delegate bool EnumerateMetafileProc(EmfPlusRecordType recordType,
                                 int flags,
@@ -116,7 +115,6 @@ namespace System.Drawing
             }
         }
 
-        [MonoTODO("Metafiles, both WMF and EMF formats, aren't supported.")]
         public void AddMetafileComment(byte[] data)
         {
             throw new NotImplementedException();
@@ -131,7 +129,6 @@ namespace System.Drawing
             return new GraphicsContainer(state);
         }
 
-        [MonoTODO("The rectangles and unit parameters aren't supported in libgdiplus")]
         public GraphicsContainer BeginContainer(Rectangle dstrect, Rectangle srcrect, GraphicsUnit unit)
         {
             int state;
@@ -145,7 +142,6 @@ namespace System.Drawing
             return new GraphicsContainer(state);
         }
 
-        [MonoTODO("The rectangles and unit parameters aren't supported in libgdiplus")]
         public GraphicsContainer BeginContainer(RectangleF dstrect, RectangleF srcrect, GraphicsUnit unit)
         {
             int state;
@@ -166,28 +162,25 @@ namespace System.Drawing
             status = SafeNativeMethods.Gdip.GdipGraphicsClear(nativeObject, color.ToArgb());
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
-        [MonoLimitation("Works on Win32 and on X11 (but not on Cocoa and Quartz)")]
+
         public void CopyFromScreen(Point upperLeftSource, Point upperLeftDestination, Size blockRegionSize)
         {
             CopyFromScreen(upperLeftSource.X, upperLeftSource.Y, upperLeftDestination.X, upperLeftDestination.Y,
                 blockRegionSize, CopyPixelOperation.SourceCopy);
         }
 
-        [MonoLimitation("Works on Win32 and (for CopyPixelOperation.SourceCopy only) on X11 but not on Cocoa and Quartz")]
         public void CopyFromScreen(Point upperLeftSource, Point upperLeftDestination, Size blockRegionSize, CopyPixelOperation copyPixelOperation)
         {
             CopyFromScreen(upperLeftSource.X, upperLeftSource.Y, upperLeftDestination.X, upperLeftDestination.Y,
                 blockRegionSize, copyPixelOperation);
         }
 
-        [MonoLimitation("Works on Win32 and on X11 (but not on Cocoa and Quartz)")]
         public void CopyFromScreen(int sourceX, int sourceY, int destinationX, int destinationY, Size blockRegionSize)
         {
             CopyFromScreen(sourceX, sourceY, destinationX, destinationY, blockRegionSize,
                 CopyPixelOperation.SourceCopy);
         }
 
-        [MonoLimitation("Works on Win32 and (for CopyPixelOperation.SourceCopy only) on X11 but not on Cocoa and Quartz")]
         public void CopyFromScreen(int sourceX, int sourceY, int destinationX, int destinationY, Size blockRegionSize, CopyPixelOperation copyPixelOperation)
         {
             if (!Enum.IsDefined(typeof(CopyPixelOperation), copyPixelOperation))
@@ -277,6 +270,11 @@ namespace System.Drawing
             int status;
             if (!disposed)
             {
+                if (_nativeHdc != IntPtr.Zero) // avoid a handle leak.
+                {
+                    ReleaseHdc();
+                }
+
                 if (!SafeNativeMethods.Gdip.UseX11Drawable)
                 {
                     Flush();
@@ -1194,219 +1192,181 @@ namespace System.Drawing
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
-        private const string MetafileEnumeration = "Metafiles enumeration, for both WMF and EMF formats, isn't supported.";
-
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Point[] destPoints, EnumerateMetafileProc callback)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, RectangleF destRect, EnumerateMetafileProc callback)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, PointF[] destPoints, EnumerateMetafileProc callback)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Rectangle destRect, EnumerateMetafileProc callback)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Point destPoint, EnumerateMetafileProc callback)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, PointF destPoint, EnumerateMetafileProc callback)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, PointF destPoint, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Rectangle destRect, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, PointF[] destPoints, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Point destPoint, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Point[] destPoints, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, RectangleF destRect, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, PointF destPoint, RectangleF srcRect, GraphicsUnit srcUnit, EnumerateMetafileProc callback)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Point destPoint, Rectangle srcRect, GraphicsUnit srcUnit, EnumerateMetafileProc callback)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit, EnumerateMetafileProc callback)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Point[] destPoints, Rectangle srcRect, GraphicsUnit srcUnit, EnumerateMetafileProc callback)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, RectangleF destRect, RectangleF srcRect, GraphicsUnit srcUnit, EnumerateMetafileProc callback)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Rectangle destRect, Rectangle srcRect, GraphicsUnit srcUnit, EnumerateMetafileProc callback)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, RectangleF destRect, EnumerateMetafileProc callback, IntPtr callbackData, ImageAttributes imageAttr)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Point destPoint, EnumerateMetafileProc callback, IntPtr callbackData, ImageAttributes imageAttr)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, PointF destPoint, EnumerateMetafileProc callback, IntPtr callbackData, ImageAttributes imageAttr)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Point[] destPoints, EnumerateMetafileProc callback, IntPtr callbackData, ImageAttributes imageAttr)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, PointF[] destPoints, EnumerateMetafileProc callback, IntPtr callbackData, ImageAttributes imageAttr)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Rectangle destRect, EnumerateMetafileProc callback, IntPtr callbackData, ImageAttributes imageAttr)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Rectangle destRect, Rectangle srcRect, GraphicsUnit srcUnit, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, RectangleF destRect, RectangleF srcRect, GraphicsUnit srcUnit, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, PointF destPoint, RectangleF srcRect, GraphicsUnit srcUnit, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Point destPoint, Rectangle srcRect, GraphicsUnit srcUnit, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Point[] destPoints, Rectangle srcRect, GraphicsUnit srcUnit, EnumerateMetafileProc callback, IntPtr callbackData)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Point[] destPoints, Rectangle srcRect, GraphicsUnit unit, EnumerateMetafileProc callback, IntPtr callbackData, ImageAttributes imageAttr)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Rectangle destRect, Rectangle srcRect, GraphicsUnit unit, EnumerateMetafileProc callback, IntPtr callbackData, ImageAttributes imageAttr)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, Point destPoint, Rectangle srcRect, GraphicsUnit unit, EnumerateMetafileProc callback, IntPtr callbackData, ImageAttributes imageAttr)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, RectangleF destRect, RectangleF srcRect, GraphicsUnit unit, EnumerateMetafileProc callback, IntPtr callbackData, ImageAttributes imageAttr)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, PointF[] destPoints, RectangleF srcRect, GraphicsUnit unit, EnumerateMetafileProc callback, IntPtr callbackData, ImageAttributes imageAttr)
         {
             throw new NotImplementedException();
         }
 
-        [MonoTODO(MetafileEnumeration)]
         public void EnumerateMetafile(Metafile metafile, PointF destPoint, RectangleF srcRect, GraphicsUnit unit, EnumerateMetafileProc callback, IntPtr callbackData, ImageAttributes imageAttr)
         {
             throw new NotImplementedException();
@@ -1641,26 +1601,7 @@ namespace System.Drawing
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
-
-        public void Flush()
-        {
-            Flush(FlushIntention.Flush);
-        }
-
-
-        public void Flush(FlushIntention intention)
-        {
-            if (nativeObject == IntPtr.Zero)
-            {
-                return;
-            }
-
-            int status = SafeNativeMethods.Gdip.GdipFlush(nativeObject, intention);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-
-            if (maccontext != null)
-                maccontext.Synchronize();
-        }
+        private void FlushCore() => maccontext?.Synchronize();
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Graphics FromHdc(IntPtr hdc)
@@ -1671,7 +1612,6 @@ namespace System.Drawing
             return new Graphics(graphics);
         }
 
-        [MonoTODO]
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Graphics FromHdc(IntPtr hdc, IntPtr hdevice)
         {
@@ -1752,16 +1692,9 @@ namespace System.Drawing
             return new Graphics(graphics);
         }
 
-        [MonoTODO]
         public static IntPtr GetHalftonePalette()
         {
             throw new NotImplementedException();
-        }
-
-        public IntPtr GetHdc()
-        {
-            SafeNativeMethods.Gdip.CheckStatus(SafeNativeMethods.Gdip.GdipGetDC(this.nativeObject, out deviceContextHdc));
-            return deviceContextHdc;
         }
 
         public Color GetNearestColor(Color color)
@@ -1890,26 +1823,14 @@ namespace System.Drawing
             return new SizeF(boundingBox.Width, boundingBox.Height);
         }
 
-        [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public void ReleaseHdc(IntPtr hdc)
-        {
-            ReleaseHdcInternal(hdc);
-        }
-
-        public void ReleaseHdc()
-        {
-            ReleaseHdcInternal(deviceContextHdc);
-        }
-
-        [MonoLimitation("Can only be used when hdc was provided by Graphics.GetHdc() method")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void ReleaseHdcInternal(IntPtr hdc)
         {
             int status = SafeNativeMethods.Gdip.InvalidParameter;
-            if (hdc == deviceContextHdc)
+            if (hdc == _nativeHdc)
             {
-                status = SafeNativeMethods.Gdip.GdipReleaseDC(nativeObject, deviceContextHdc);
-                deviceContextHdc = IntPtr.Zero;
+                status = SafeNativeMethods.Gdip.GdipReleaseDC(nativeObject, _nativeHdc);
+                _nativeHdc = IntPtr.Zero;
             }
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -2067,7 +1988,6 @@ namespace System.Drawing
             }
         }
 
-        [MonoTODO("This property does not do anything when used with libgdiplus.")]
         public PixelOffsetMode PixelOffsetMode
         {
             get
@@ -2120,7 +2040,6 @@ namespace System.Drawing
             }
         }
 
-        [MonoTODO("This property does not do anything when used with libgdiplus.")]
         public int TextContrast
         {
             get
@@ -2169,7 +2088,6 @@ namespace System.Drawing
             }
         }
 
-        [MonoTODO]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public object GetContextInfo()
         {

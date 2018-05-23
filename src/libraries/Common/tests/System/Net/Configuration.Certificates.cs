@@ -19,83 +19,47 @@ namespace System.Net.Test.Common
             private const string CertificatePassword = "testcertificate";
             private const string TestDataFolder = "TestData";
 
-            private static readonly Mutex m;
-            private const int MutexTimeout = 120 * 1000;
+            public static X509Certificate2 GetServerCertificate() => GetCertificate("testservereku.contoso.com.pfx");
 
-            static Certificates()
+            public static X509Certificate2 GetClientCertificate() => GetCertificate("testclienteku.contoso.com.pfx");
+
+            public static X509Certificate2 GetNoEKUCertificate() => GetCertificate("testnoeku.contoso.com.pfx");
+
+            public static X509Certificate2 GetSelfSignedServerCertificate() => GetCertificate("testselfsignedservereku.contoso.com.pfx");
+
+            public static X509Certificate2 GetSelfSignedClientCertificate() => GetCertificate("testselfsignedclienteku.contoso.com.pfx");
+
+            public static X509Certificate2Collection GetServerCertificateCollection()
             {
-                if (PlatformDetection.IsUap)
-                {
-                    // UWP doesn't support Global mutexes.
-                    m = new Mutex(false, "Local\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate");
-                }
-                else
-                {
-                    m = new Mutex(false, "Global\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate");
-                }
+                var certs = new X509Certificate2Collection();
+                certs.Add(GetServerCertificate());
+
+                return certs;
             }
 
-            public static X509Certificate2 GetServerCertificate() => GetCertWithPrivateKey(GetServerCertificateCollection());
-
-            public static X509Certificate2 GetClientCertificate() => GetCertWithPrivateKey(GetClientCertificateCollection());
-
-            public static X509Certificate2 GetNoEKUCertificate() => GetCertWithPrivateKey(GetNoEKUCertificateCollection());
-
-            public static X509Certificate2 GetSelfSignedServerCertificate() => GetCertWithPrivateKey(GetSelfSignedServerCertificateCollection());
-
-            public static X509Certificate2 GetSelfSignedClientCertificate() => GetCertWithPrivateKey(GetSelfSignedClientCertificateCollection());
-
-            public static X509Certificate2Collection GetServerCertificateCollection() => GetCertificateCollection("testservereku.contoso.com.pfx");
-
-            public static X509Certificate2Collection GetClientCertificateCollection() => GetCertificateCollection("testclienteku.contoso.com.pfx");
-
-            public static X509Certificate2Collection GetNoEKUCertificateCollection() => GetCertificateCollection("testnoeku.contoso.com.pfx");
-
-            public static X509Certificate2Collection GetSelfSignedServerCertificateCollection() => GetCertificateCollection("testselfsignedservereku.contoso.com.pfx");
-
-            public static X509Certificate2Collection GetSelfSignedClientCertificateCollection() => GetCertificateCollection("testselfsignedclienteku.contoso.com.pfx");
-
-            private static X509Certificate2Collection GetCertificateCollection(string certificateFileName)
+            public static X509Certificate2Collection GetClientCertificateCollection()
             {
-                // On Windows, .NET Core applications should not import PFX files in parallel to avoid a known system-level race condition.
-                // This bug results in corrupting the X509Certificate2 certificate state.
-                Assert.True(m.WaitOne(MutexTimeout), "Cannot acquire the global certificate mutex.");
+                var certs = new X509Certificate2Collection();
+                certs.Add(GetClientCertificate());
+
+                return certs;
+            }
+
+            private static X509Certificate2 GetCertificate(string certificateFileName)
+            {
                 try
                 {
-                    var certCollection = new X509Certificate2Collection();
-                    certCollection.Import(Path.Combine(TestDataFolder, certificateFileName), CertificatePassword, X509KeyStorageFlags.DefaultKeySet);
-
-                    return certCollection;
+                    var cert = new X509Certificate2(
+                        Path.Combine(TestDataFolder, certificateFileName),
+                        CertificatePassword,
+                        X509KeyStorageFlags.DefaultKeySet);
+                    return cert;
                 }
                 catch (Exception ex)
                 {
-                    Debug.Fail(nameof(Configuration.Certificates.GetCertificateCollection) + " threw " + ex.ToString());
+                    Debug.Fail(nameof(Configuration.Certificates.GetCertificate) + " threw " + ex.ToString());
                     throw;
                 }
-                finally
-                {
-                    m.ReleaseMutex();
-                }
-            }
-
-            private static X509Certificate2 GetCertWithPrivateKey(X509Certificate2Collection certCollection)
-            {
-                X509Certificate2 certificate = null;
-
-                foreach (X509Certificate2 c in certCollection)
-                {
-                    if (certificate == null && c.HasPrivateKey)
-                    {
-                        certificate = c;
-                    }
-                    else
-                    {
-                        c.Dispose();
-                    }
-                }
-
-                Assert.NotNull(certificate);
-                return certificate;
             }
         }
     }

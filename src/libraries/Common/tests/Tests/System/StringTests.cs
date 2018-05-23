@@ -15,6 +15,7 @@ using Xunit;
 
 namespace System.Tests
 {
+    //When add new tests make sure to add checks for both string and span APIs where relevant.
     public partial class StringTests : RemoteExecutorTestBase
     {
         private const string SoftHyphen = "\u00AD";
@@ -769,6 +770,245 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void ZeroLengthCompareTo_StringComparison()
+        {
+            string value = "456";
+            string s = value.Substring(2, 0);
+
+            Assert.True(0 < string.Compare(value, s, StringComparison.Ordinal));
+
+            Assert.True(0 < string.Compare(value, s, StringComparison.CurrentCulture));
+            Assert.True(0 < string.Compare(value, s, StringComparison.CurrentCultureIgnoreCase));
+            Assert.True(0 < string.Compare(value, s, StringComparison.InvariantCulture));
+            Assert.True(0 < string.Compare(value, s, StringComparison.InvariantCultureIgnoreCase));
+            Assert.True(0 < string.Compare(value, s, StringComparison.OrdinalIgnoreCase));
+
+            string emptyValue = value.Substring(1, 0);
+            Assert.Equal(0, string.Compare(emptyValue, s, StringComparison.Ordinal));
+
+            Assert.Equal(0, string.Compare(emptyValue, s, StringComparison.CurrentCulture));
+            Assert.Equal(0, string.Compare(emptyValue, s, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(0, string.Compare(emptyValue, s, StringComparison.InvariantCulture));
+            Assert.Equal(0, string.Compare(emptyValue, s, StringComparison.InvariantCultureIgnoreCase));
+            Assert.Equal(0, string.Compare(emptyValue, s, StringComparison.OrdinalIgnoreCase));
+            
+            var span = value.AsSpan();
+            var emptySlice = value.AsSpan(2, 0);           
+            Assert.True(0 < span.CompareTo(emptySlice, StringComparison.Ordinal));
+
+            Assert.True(0 < span.CompareTo(emptySlice, StringComparison.CurrentCulture));
+            Assert.True(0 < span.CompareTo(emptySlice, StringComparison.CurrentCultureIgnoreCase));
+            Assert.True(0 < span.CompareTo(emptySlice, StringComparison.InvariantCulture));
+            Assert.True(0 < span.CompareTo(emptySlice, StringComparison.InvariantCultureIgnoreCase));
+            Assert.True(0 < span.CompareTo(emptySlice, StringComparison.OrdinalIgnoreCase));
+
+            span = value.AsSpan(1, 0);            
+            Assert.Equal(0, span.CompareTo(emptySlice, StringComparison.Ordinal));
+
+            Assert.Equal(0, span.CompareTo(emptySlice, StringComparison.CurrentCulture));
+            Assert.Equal(0, span.CompareTo(emptySlice, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(0, span.CompareTo(emptySlice, StringComparison.InvariantCulture));
+            Assert.Equal(0, span.CompareTo(emptySlice, StringComparison.InvariantCultureIgnoreCase));
+            Assert.Equal(0, span.CompareTo(emptySlice, StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public static void SameValueCompareTo_StringComparison()
+        {
+            string value = "456";
+            Assert.Equal(0, string.Compare(value, value, StringComparison.Ordinal));
+
+            Assert.Equal(0, string.Compare(value, value, StringComparison.CurrentCulture));
+            Assert.Equal(0, string.Compare(value, value, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(0, string.Compare(value, value, StringComparison.InvariantCulture));
+            Assert.Equal(0, string.Compare(value, value, StringComparison.InvariantCultureIgnoreCase));
+            Assert.Equal(0, string.Compare(value, value, StringComparison.OrdinalIgnoreCase));
+            
+            var span = value.AsSpan();
+            Assert.Equal(0, span.CompareTo(span, StringComparison.Ordinal));
+
+            Assert.Equal(0, span.CompareTo(span, StringComparison.CurrentCulture));
+            Assert.Equal(0, span.CompareTo(span, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(0, span.CompareTo(span, StringComparison.InvariantCulture));
+            Assert.Equal(0, span.CompareTo(span, StringComparison.InvariantCultureIgnoreCase));
+            Assert.Equal(0, span.CompareTo(span, StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public static void LengthMismatchCompareTo_StringComparison()
+        {
+            string value = "456";
+
+            string s1 = value.Substring(0, 2);
+            string s2 = value.Substring(0, 3);
+            Assert.True(0 > string.Compare(s1, s2, StringComparison.Ordinal));
+
+            Assert.True(0 > string.Compare(s1, s2, StringComparison.CurrentCulture));
+            Assert.True(0 > string.Compare(s1, s2, StringComparison.CurrentCultureIgnoreCase));
+            Assert.True(0 > string.Compare(s1, s2, StringComparison.InvariantCulture));
+            Assert.True(0 > string.Compare(s1, s2, StringComparison.InvariantCultureIgnoreCase));
+            Assert.True(0 > string.Compare(s1, s2, StringComparison.OrdinalIgnoreCase));
+            
+            var span = value.AsSpan(0, 2);
+            var slice = value.AsSpan(0, 3);
+            Assert.True(0 > span.CompareTo(slice, StringComparison.Ordinal));
+
+            Assert.True(0 > span.CompareTo(slice, StringComparison.CurrentCulture));
+            Assert.True(0 > span.CompareTo(slice, StringComparison.CurrentCultureIgnoreCase));
+            Assert.True(0 > span.CompareTo(slice, StringComparison.InvariantCulture));
+            Assert.True(0 > span.CompareTo(slice, StringComparison.InvariantCultureIgnoreCase));
+            Assert.True(0 > span.CompareTo(slice, StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public static void CompareToOverlappingMatch_StringComparison()
+        {
+            string value = "456565";
+
+            string s1 = value.Substring(1, 3);
+            string s2 = value.Substring(3, 3);
+            Assert.Equal(0, string.Compare(s1, s2, StringComparison.Ordinal));
+
+            Assert.Equal(0, string.Compare(s1, s2, StringComparison.CurrentCulture));
+            Assert.Equal(0, string.Compare(s1, s2, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(0, string.Compare(s1, s2, StringComparison.InvariantCulture));
+            Assert.Equal(0, string.Compare(s1, s2, StringComparison.InvariantCultureIgnoreCase));
+            Assert.Equal(0, string.Compare(s1, s2, StringComparison.OrdinalIgnoreCase));
+            
+            var span = value.AsSpan(1, 3);
+            var slice = value.AsSpan(3, 3);            
+            Assert.Equal(0, span.CompareTo(slice, StringComparison.Ordinal));
+
+            Assert.Equal(0, span.CompareTo(slice, StringComparison.CurrentCulture));
+            Assert.Equal(0, span.CompareTo(slice, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(0, span.CompareTo(slice, StringComparison.InvariantCulture));
+            Assert.Equal(0, span.CompareTo(slice, StringComparison.InvariantCultureIgnoreCase));
+            Assert.Equal(0, span.CompareTo(slice, StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public static void CompareToMatchDifferentInstances_StringComparison()
+        {
+            string sa = "4567";
+            string sb = "456";
+
+            string s1 = sa.Substring(0, 3);
+            string s2 = sb.Substring(0, 3);
+
+            Assert.Equal(0, string.Compare(s1, s2, StringComparison.Ordinal));
+
+            Assert.Equal(0, string.Compare(s1, s2, StringComparison.CurrentCulture));
+            Assert.Equal(0, string.Compare(s1, s2, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(0, string.Compare(s1, s2, StringComparison.InvariantCulture));
+            Assert.Equal(0, string.Compare(s1, s2, StringComparison.InvariantCultureIgnoreCase));
+            Assert.Equal(0, string.Compare(s1, s2, StringComparison.OrdinalIgnoreCase));
+            
+            var span = sa.AsSpan(0, 3);
+            var slice = sb.AsSpan(0, 3);            
+            Assert.Equal(0, span.CompareTo(slice, StringComparison.Ordinal));
+
+            Assert.Equal(0, span.CompareTo(slice, StringComparison.CurrentCulture));
+            Assert.Equal(0, span.CompareTo(slice, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(0, span.CompareTo(slice, StringComparison.InvariantCulture));
+            Assert.Equal(0, span.CompareTo(slice, StringComparison.InvariantCultureIgnoreCase));
+            Assert.Equal(0, span.CompareTo(slice, StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public static void MakeSureNoCompareToChecksGoOutOfRange_StringComparison()
+        {
+            for (int length = 0; length < 100; length++)
+            {
+                var first = new char[length + 2];
+                first[0] = (char)99;
+                first[length + 1] = (char)99;
+                var second = new char[length + 2];
+                second[0] = (char)100;
+                second[length + 1] = (char)100;
+
+                var s1 = new string(first, 1, length);
+                var s2 = new string(second, 1, length);
+                Assert.Equal(0, string.Compare(s1, s2, StringComparison.Ordinal));
+
+                Assert.Equal(0, string.Compare(s1, s2, StringComparison.CurrentCulture));
+                Assert.Equal(0, string.Compare(s1, s2, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(0, string.Compare(s1, s2, StringComparison.InvariantCulture));
+                Assert.Equal(0, string.Compare(s1, s2, StringComparison.InvariantCultureIgnoreCase));
+                Assert.Equal(0, string.Compare(s1, s2, StringComparison.OrdinalIgnoreCase));
+
+                var span1 = new ReadOnlySpan<char>(first, 1, length);
+                var span2 = new ReadOnlySpan<char>(second, 1, length);
+                Assert.Equal(0, span1.CompareTo(span2, StringComparison.Ordinal));
+
+                Assert.Equal(0, span1.CompareTo(span2, StringComparison.CurrentCulture));
+                Assert.Equal(0, span1.CompareTo(span2, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(0, span1.CompareTo(span2, StringComparison.InvariantCulture));
+                Assert.Equal(0, span1.CompareTo(span2, StringComparison.InvariantCultureIgnoreCase));
+                Assert.Equal(0, span1.CompareTo(span2, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
+        [Fact]
+        public static void CompareToNoMatch_StringComparison()
+        {
+            for (int length = 1; length < 150; length++)
+            {
+                for (int mismatchIndex = 0; mismatchIndex < length; mismatchIndex++)
+                {
+                    var first = new char[length];
+                    var second = new char[length];
+                    for (int i = 0; i < length; i++)
+                    {
+                        first[i] = second[i] = (char)(i + 1);
+                    }
+
+                    second[mismatchIndex] = (char)(second[mismatchIndex] + 1);
+
+                    string s1 = new string(first);
+                    string s2 = new string(second);
+                    Assert.True(0 >  string.Compare(s1, s2, StringComparison.Ordinal));
+
+                    var firstSpan = new ReadOnlySpan<char>(first);
+                    var secondSpan = new ReadOnlySpan<char>(second);
+                    Assert.True(0 > firstSpan.CompareTo(secondSpan, StringComparison.Ordinal));
+
+                    // Due to differences in the implementation, the exact result of CompareTo will not necessarily match with string.Compare.
+                    // However, the sign will match, which is what defines correctness.
+                    Assert.Equal(
+                        Math.Sign(string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase)),
+                        Math.Sign(firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase)));
+
+                    Assert.Equal(
+                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCulture),
+                        firstSpan.CompareTo(secondSpan, StringComparison.CurrentCulture));
+                    Assert.Equal(
+                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                        firstSpan.CompareTo(secondSpan, StringComparison.CurrentCultureIgnoreCase));
+                    Assert.Equal(
+                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCulture),
+                        firstSpan.CompareTo(secondSpan, StringComparison.InvariantCulture));
+                    Assert.Equal(
+                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                        firstSpan.CompareTo(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                }
+            }
+        }
+
+        [Fact]
+        public static void CompareToUnknownComparisonType_StringComparison()
+        {
+            string value = "456";
+            Assert.Throws<ArgumentException>(() => string.Compare(value, value, StringComparison.CurrentCulture - 1));
+            Assert.Throws<ArgumentException>(() => string.Compare(value, value, StringComparison.OrdinalIgnoreCase + 1));
+            Assert.Throws<ArgumentException>(() => string.Compare(value, value, (StringComparison)6));
+            
+            var span = value.AsSpan();
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.CompareTo(_span, StringComparison.CurrentCulture - 1));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.CompareTo(_span, StringComparison.OrdinalIgnoreCase + 1));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.CompareTo(_span, (StringComparison)6));
+        }
+        
+        [Fact]
         public static void Compare_Invalid()
         {
             // Invalid comparison type
@@ -865,6 +1105,7 @@ namespace System.Tests
         public static void Contains(string s, string value, bool expected)
         {
             Assert.Equal(expected, s.Contains(value));
+            Assert.Equal(expected, s.AsSpan().Contains(value.AsSpan(), StringComparison.Ordinal));
         }
 
         [Fact]

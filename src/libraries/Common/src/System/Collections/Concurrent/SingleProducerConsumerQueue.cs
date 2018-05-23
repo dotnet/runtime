@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Internal;
 
 namespace System.Collections.Concurrent
 {
@@ -300,16 +301,4 @@ namespace System.Collections.Concurrent
             public T[] Items => new List<T>(_queue).ToArray();
         }
     }
-
-
-    /// <summary>A placeholder class for common padding constants and eventually routines.</summary>
-    internal static class PaddingHelpers
-    {
-        /// <summary>A size greater than or equal to the size of the most common CPU cache lines.</summary>
-        internal const int CACHE_LINE_SIZE = 128;
-    }
-
-    /// <summary>Padding structure used to minimize false sharing in SingleProducerSingleConsumerQueue{T}.</summary>
-    [StructLayout(LayoutKind.Explicit, Size = PaddingHelpers.CACHE_LINE_SIZE - sizeof(int))] // Based on common case of 64-byte cache lines
-    internal struct PaddingFor32 { }
 }

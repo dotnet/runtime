@@ -112,16 +112,14 @@ static void* SignalHandlerLoop(void* arg)
         {
             // We're now handling SIGQUIT and SIGINT. Invoke the callback, if we have one.
             CtrlCallback callback = g_ctrlCallback;
-            int rv = callback != NULL ? callback(signalCode == SIGQUIT ? Break : Interrupt) : 0;
-            if (rv == 0) // callback removed or was invoked and didn't handle the signal
+            enum CtrlCode ctrlCode = signalCode == SIGQUIT ? Break : Interrupt;
+            if (callback != NULL)
             {
-                // In general, we now want to remove our handler and reissue the signal to
-                // be picked up by the previously registered handler.  In the most common case,
-                // this will be the default handler, causing the process to be torn down.
-                // It could also be a custom handler registered by other code before us.
-                UninitializeConsole();
-                sigaction(signalCode, OrigActionFor(signalCode), NULL);
-                kill(getpid(), signalCode);
+                callback(ctrlCode);
+            }
+            else
+            {
+                SystemNative_RestoreAndHandleCtrl(ctrlCode);
             }
         }
         else if (signalCode == SIGCHLD)
@@ -148,6 +146,7 @@ static void* SignalHandlerLoop(void* arg)
                         } while (pid > 0);
                     }
                 }
+                pthread_mutex_unlock(&lock);
             }
 
             if (callback != NULL)
@@ -183,6 +182,14 @@ void SystemNative_UnregisterForCtrl()
 {
     assert(g_ctrlCallback != NULL);
     g_ctrlCallback = NULL;
+}
+
+void SystemNative_RestoreAndHandleCtrl(enum CtrlCode ctrlCode)
+{
+    int signalCode = ctrlCode == Break ? SIGQUIT : SIGINT;
+    UninitializeConsole();
+    sigaction(signalCode, OrigActionFor(signalCode), NULL);
+    kill(getpid(), signalCode);
 }
 
 uint32_t SystemNative_RegisterForSigChld(SigChldCallback callback)

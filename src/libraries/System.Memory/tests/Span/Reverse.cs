@@ -190,8 +190,8 @@ namespace System.SpanTests
         [Fact]
         public static void ReverseEnumType()
         {
-            TestEnum[] actual = { TestEnum.e0, TestEnum.e1, TestEnum.e2 };
-            TestEnum[] expected = { TestEnum.e2, TestEnum.e1, TestEnum.e0 };
+            TestEnum[] actual = { TestEnum.E0, TestEnum.E1, TestEnum.E2 };
+            TestEnum[] expected = { TestEnum.E2, TestEnum.E1, TestEnum.E0 };
 
             var span = new Span<TestEnum>(actual);
             span.Reverse();
