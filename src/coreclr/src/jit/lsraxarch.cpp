@@ -2297,224 +2297,253 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     HWIntrinsicFlag     flags       = Compiler::flagsOfHWIntrinsic(intrinsicID);
     int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicTree);
 
-    if (isa == InstructionSet_AVX || isa == InstructionSet_AVX2)
+    if ((isa == InstructionSet_AVX) || (isa == InstructionSet_AVX2))
     {
         SetContainsAVXFlags(true, 32);
     }
-    GenTree* op1      = intrinsicTree->gtGetOp1();
-    GenTree* op2      = intrinsicTree->gtGetOp2();
-    GenTree* op3      = nullptr;
-    int      srcCount = 0;
 
-    if ((op1 != nullptr) && op1->OperIsList())
+    GenTree* op1    = intrinsicTree->gtGetOp1();
+    GenTree* op2    = intrinsicTree->gtGetOp2();
+    GenTree* op3    = nullptr;
+    GenTree* lastOp = nullptr;
+
+    int srcCount = 0;
+    int dstCount = intrinsicTree->IsValue() ? 1 : 0;
+
+    regMaskTP dstCandidates = RBM_NONE;
+
+    if (op1 == nullptr)
     {
-        // op2 must be null, and there must be at least two more arguments.
         assert(op2 == nullptr);
-        noway_assert(op1->AsArgList()->Rest() != nullptr);
-        noway_assert(op1->AsArgList()->Rest()->Rest() != nullptr);
-        assert(op1->AsArgList()->Rest()->Rest()->Rest() == nullptr);
-        op2 = op1->AsArgList()->Rest()->Current();
-        op3 = op1->AsArgList()->Rest()->Rest()->Current();
-        op1 = op1->AsArgList()->Current();
-        assert(numArgs >= 3);
+        assert(numArgs == 0);
     }
     else
     {
-        assert(numArgs == (op2 == nullptr) ? 1 : 2);
-    }
-
-    int       dstCount      = intrinsicTree->IsValue() ? 1 : 0;
-    bool      buildUses     = true;
-    regMaskTP dstCandidates = RBM_NONE;
-
-    if ((category == HW_Category_IMM) && ((flags & HW_Flag_NoJmpTableIMM) == 0))
-    {
-        GenTree* lastOp = Compiler::lastOpOfHWIntrinsic(intrinsicTree, numArgs);
-        assert(lastOp != nullptr);
-        if (Compiler::isImmHWIntrinsic(intrinsicID, lastOp) && !lastOp->isContainedIntOrIImmed())
+        if (op1->OperIsList())
         {
-            assert(!lastOp->IsCnsIntOrI());
+            assert(op2 == nullptr);
+            assert(numArgs == 3);
 
-            // We need two extra reg when lastOp isn't a constant so
-            // the offset into the jump table for the fallback path
-            // can be computed.
-            buildInternalIntRegisterDefForNode(intrinsicTree);
-            buildInternalIntRegisterDefForNode(intrinsicTree);
+            GenTreeArgList* argList = op1->AsArgList();
+
+            op1     = argList->Current();
+            argList = argList->Rest();
+
+            op2     = argList->Current();
+            argList = argList->Rest();
+
+            op3     = argList->Current();
+            argList = argList->Rest();
+
+            lastOp = op3;
+            assert(argList == nullptr);
         }
-    }
-
-    // Determine whether this is an RMW operation where op2 must be marked delayFree so that it
-    // is not allocated the same register as the target.
-    bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
-
-    // Create internal temps, and handle any other special requirements.
-    // Note that the default case for building uses will handle the RMW flag, but if the uses
-    // are built in the individual cases, buildUses is set to false, and any RMW handling (delayFree)
-    // must be handled within the case.
-    switch (intrinsicID)
-    {
-        case NI_SSE_CompareEqualOrderedScalar:
-        case NI_SSE_CompareEqualUnorderedScalar:
-        case NI_SSE_CompareNotEqualOrderedScalar:
-        case NI_SSE_CompareNotEqualUnorderedScalar:
-        case NI_SSE2_CompareEqualOrderedScalar:
-        case NI_SSE2_CompareEqualUnorderedScalar:
-        case NI_SSE2_CompareNotEqualOrderedScalar:
-        case NI_SSE2_CompareNotEqualUnorderedScalar:
-            buildInternalIntRegisterDefForNode(intrinsicTree, allByteRegs());
-            setInternalRegsDelayFree = true;
-            break;
-
-        case NI_SSE_SetScalarVector128:
-        case NI_SSE2_SetScalarVector128:
-            buildInternalFloatRegisterDefForNode(intrinsicTree);
-            setInternalRegsDelayFree = true;
-            break;
-
-        case NI_SSE_ConvertToSingle:
-        case NI_SSE_StaticCast:
-        case NI_SSE2_ConvertToDouble:
-        case NI_AVX_ExtendToVector256:
-        case NI_AVX_GetLowerHalf:
-        case NI_AVX_StaticCast:
+        else if (op2 != nullptr)
         {
-            srcCount = 1;
-            assert(dstCount == 1);
-            tgtPrefUse = BuildUse(op1);
-            buildUses  = false;
-            break;
-        }
-
-        case NI_AVX_SetAllVector256:
-        {
-            if (varTypeIsIntegral(baseType))
-            {
-                buildInternalFloatRegisterDefForNode(intrinsicTree, allSIMDRegs());
-                if (!compiler->compSupports(InstructionSet_AVX2) && varTypeIsByte(baseType))
-                {
-                    buildInternalFloatRegisterDefForNode(intrinsicTree, allSIMDRegs());
-                }
-            }
-            break;
-        }
-
-        case NI_SSE2_MaskMove:
-        {
-            // SSE2 MaskMove hardcodes the destination (op3) in DI/EDI/RDI
-            assert(!intrinsicTree->isRMWHWIntrinsic(compiler));
-            // MaskMove doesn't have RMW semantics.
-            assert(!isRMW);
-            BuildUse(op1);
-            BuildUse(op2);
-            BuildUse(op3, RBM_EDI);
-            buildUses = false;
-            break;
-        }
-
-        case NI_SSE41_BlendVariable:
-            if (!compiler->canUseVexEncoding())
-            {
-                assert(numArgs == 3);
-                assert(intrinsicTree->isRMWHWIntrinsic(compiler));
-                assert(isRMW);
-                // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
-                BuildUse(op1);
-                RefPosition* op2Use = BuildUse(op2);
-                setDelayFree(op2Use);
-                RefPosition* op3Use = BuildUse(op3, RBM_XMM0);
-                setDelayFree(op3Use);
-                buildUses = false;
-                srcCount  = 3;
-            }
-            break;
-
-        case NI_SSE41_TestAllOnes:
-        {
-            buildInternalFloatRegisterDefForNode(intrinsicTree);
-            break;
-        }
-
-        case NI_SSE41_Extract:
-            if (baseType == TYP_FLOAT)
-            {
-                buildInternalIntRegisterDefForNode(intrinsicTree);
-            }
-#ifdef _TARGET_X86_
-            else if (varTypeIsByte(baseType))
-            {
-                dstCandidates = allByteRegs();
-            }
-#endif
-            break;
-
-#ifdef _TARGET_X86_
-        case NI_SSE42_Crc32:
-        {
-            // CRC32 may operate over "byte" but on x86 only RBM_BYTE_REGS can be used as byte registers.
-            //
-            // TODO - currently we use the BaseType to bring the type of the second argument
-            // to the code generator. May encode the overload info in other way.
-            var_types srcType       = intrinsicTree->gtSIMDBaseType;
-            regMaskTP op2Candidates = RBM_NONE;
-            BuildUse(op1);
-            if (varTypeIsByte(srcType))
-            {
-                op2Candidates = allByteRegs();
-            }
-            RefPosition* op2Use = BuildUse(op2, op2Candidates);
-            assert(isRMW);
-            setDelayFree(op2Use);
-            srcCount  = 2;
-            buildUses = false;
-            break;
-        }
-#endif // _TARGET_X86_
-
-        default:
-            assert((intrinsicID > NI_HW_INTRINSIC_START) && (intrinsicID < NI_HW_INTRINSIC_END));
-            break;
-    }
-
-    if (buildUses)
-    {
-        if (numArgs > 3)
-        {
-            srcCount = 0;
-            assert(!intrinsicTree->isRMWHWIntrinsic(compiler));
-            assert(op1->OperIs(GT_LIST));
-            {
-                for (GenTreeArgList* list = op1->AsArgList(); list != nullptr; list = list->Rest())
-                {
-                    srcCount += BuildOperandUses(list->Current());
-                }
-            }
-            assert(srcCount == numArgs);
+            assert(numArgs == 2);
+            lastOp = op2;
         }
         else
         {
-            if (op1 != nullptr)
+            assert(numArgs == 1);
+            lastOp = op1;
+        }
+
+        assert(lastOp != nullptr);
+
+        bool buildUses = true;
+
+        if ((category == HW_Category_IMM) && ((flags & HW_Flag_NoJmpTableIMM) == 0))
+        {
+            if (Compiler::isImmHWIntrinsic(intrinsicID, lastOp) && !lastOp->isContainedIntOrIImmed())
             {
-                srcCount += BuildOperandUses(op1);
-                if (op2 != nullptr)
+                assert(!lastOp->IsCnsIntOrI());
+
+                // We need two extra reg when lastOp isn't a constant so
+                // the offset into the jump table for the fallback path
+                // can be computed.
+                buildInternalIntRegisterDefForNode(intrinsicTree);
+                buildInternalIntRegisterDefForNode(intrinsicTree);
+            }
+        }
+
+        // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
+        // is not allocated the same register as the target.
+        bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
+
+        // Create internal temps, and handle any other special requirements.
+        // Note that the default case for building uses will handle the RMW flag, but if the uses
+        // are built in the individual cases, buildUses is set to false, and any RMW handling (delayFree)
+        // must be handled within the case.
+        switch (intrinsicID)
+        {
+            case NI_SSE_CompareEqualOrderedScalar:
+            case NI_SSE_CompareEqualUnorderedScalar:
+            case NI_SSE_CompareNotEqualOrderedScalar:
+            case NI_SSE_CompareNotEqualUnorderedScalar:
+            case NI_SSE2_CompareEqualOrderedScalar:
+            case NI_SSE2_CompareEqualUnorderedScalar:
+            case NI_SSE2_CompareNotEqualOrderedScalar:
+            case NI_SSE2_CompareNotEqualUnorderedScalar:
+            {
+                buildInternalIntRegisterDefForNode(intrinsicTree, allByteRegs());
+                setInternalRegsDelayFree = true;
+                break;
+            }
+
+            case NI_SSE_SetScalarVector128:
+            case NI_SSE2_SetScalarVector128:
+            {
+                buildInternalFloatRegisterDefForNode(intrinsicTree);
+                setInternalRegsDelayFree = true;
+                break;
+            }
+
+            case NI_SSE_ConvertToSingle:
+            case NI_SSE_StaticCast:
+            case NI_SSE2_ConvertToDouble:
+            case NI_AVX_ExtendToVector256:
+            case NI_AVX_GetLowerHalf:
+            case NI_AVX_StaticCast:
+            {
+                assert(numArgs == 1);
+                assert(!isRMW);
+                assert(dstCount == 1);
+
+                if (!op1->isContained())
                 {
-                    srcCount += (isRMW) ? BuildDelayFreeUses(op2) : BuildOperandUses(op2);
-                    if (op3 != nullptr)
+                    tgtPrefUse = BuildUse(op1);
+                    srcCount   = 1;
+                }
+                else
+                {
+                    srcCount += BuildOperandUses(op1);
+                }
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_AVX_SetAllVector256:
+            {
+                if (varTypeIsIntegral(baseType))
+                {
+                    buildInternalFloatRegisterDefForNode(intrinsicTree, allSIMDRegs());
+                    if (!compiler->compSupports(InstructionSet_AVX2) && varTypeIsByte(baseType))
                     {
-                        srcCount += (isRMW) ? BuildDelayFreeUses(op3) : BuildOperandUses(op3);
+                        buildInternalFloatRegisterDefForNode(intrinsicTree, allSIMDRegs());
                     }
+                }
+                break;
+            }
+
+            case NI_SSE2_MaskMove:
+            {
+                assert(numArgs == 3);
+                assert(!isRMW);
+
+                // MaskMove hardcodes the destination (op3) in DI/EDI/RDI
+                srcCount += BuildOperandUses(op1);
+                srcCount += BuildOperandUses(op2);
+                srcCount += BuildOperandUses(op3, RBM_EDI);
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_SSE41_BlendVariable:
+            {
+                assert(numArgs == 3);
+
+                if (!compiler->canUseVexEncoding())
+                {
+                    assert(isRMW);
+
+                    // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
+                    srcCount += BuildOperandUses(op1);
+                    srcCount += BuildDelayFreeUses(op2);
+                    srcCount += BuildDelayFreeUses(op3, RBM_XMM0);
+
+                    buildUses = false;
+                }
+                break;
+            }
+
+            case NI_SSE41_TestAllOnes:
+            {
+                buildInternalFloatRegisterDefForNode(intrinsicTree);
+                break;
+            }
+
+            case NI_SSE41_Extract:
+            {
+                if (baseType == TYP_FLOAT)
+                {
+                    buildInternalIntRegisterDefForNode(intrinsicTree);
+                }
+#ifdef _TARGET_X86_
+                else if (varTypeIsByte(baseType))
+                {
+                    dstCandidates = allByteRegs();
+                }
+#endif
+                break;
+            }
+
+#ifdef _TARGET_X86_
+            case NI_SSE42_Crc32:
+            {
+                // TODO-XArch-Cleanup: Currently we use the BaseType to bring the type of the second argument
+                // to the code generator. We may want to encode the overload info in another way.
+
+                assert(numArgs == 2);
+                assert(isRMW);
+
+                // CRC32 may operate over "byte" but on x86 only RBM_BYTE_REGS can be used as byte registers.
+                srcCount += BuildOperandUses(op1);
+                srcCount += BuildDelayFreeUses(op2, varTypeIsByte(baseType) ? allByteRegs() : RBM_NONE);
+
+                buildUses = false;
+                break;
+            }
+#endif // _TARGET_X86_
+
+            default:
+            {
+                assert((intrinsicID > NI_HW_INTRINSIC_START) && (intrinsicID < NI_HW_INTRINSIC_END));
+                break;
+            }
+        }
+
+        if (buildUses)
+        {
+            assert((numArgs > 0) && (numArgs < 4));
+
+            srcCount += BuildOperandUses(op1);
+
+            if (op2 != nullptr)
+            {
+                srcCount += (isRMW) ? BuildDelayFreeUses(op2) : BuildOperandUses(op2);
+
+                if (op3 != nullptr)
+                {
+                    srcCount += (isRMW) ? BuildDelayFreeUses(op3) : BuildOperandUses(op3);
                 }
             }
         }
+
+        buildInternalRegisterUses();
     }
-    buildInternalRegisterUses();
+
     if (dstCount == 1)
     {
-        RefPosition* def = BuildDef(intrinsicTree, dstCandidates);
+        BuildDef(intrinsicTree, dstCandidates);
     }
     else
     {
         assert(dstCount == 0);
     }
+
     return srcCount;
 }
 #endif
