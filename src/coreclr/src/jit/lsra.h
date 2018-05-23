@@ -8,7 +8,6 @@
 
 #include "arraylist.h"
 #include "smallhash.h"
-#include "nodeinfo.h"
 
 // Minor and forward-reference types
 class Interval;
@@ -80,79 +79,78 @@ inline regMaskTP calleeSaveRegs(RegisterType rt)
 }
 
 //------------------------------------------------------------------------
-// LocationInfo: Captures the necessary information for a node that is "in-flight"
-//               during `buildIntervals` (i.e. its definition has been encountered,
-//               but not its use).
+// RefInfo: Captures the necessary information for a definition that is "in-flight"
+//          during `buildIntervals` (i.e. a tree-node definition has been encountered,
+//          but not its use). This includes the RefPosition and its associated
+//          GenTree node.
 //
-struct LocationInfo
+struct RefInfo
 {
-    Interval*    interval;
+    RefPosition* ref;
     GenTree*     treeNode;
-    LsraLocation loc;
-    TreeNodeInfo info;
 
-    LocationInfo(LsraLocation l, Interval* i, GenTree* t, unsigned regIdx = 0) : interval(i), treeNode(t), loc(l)
+    RefInfo(RefPosition* r, GenTree* t) : ref(r), treeNode(t)
     {
     }
 
     // default constructor for data structures
-    LocationInfo()
+    RefInfo()
     {
     }
 };
 
 //------------------------------------------------------------------------
-// LocationInfoListNode: used to store a single `LocationInfo` value for a
-//                       node during `buildIntervals`.
+// RefInfoListNode: used to store a single `RefInfo` value for a
+//                  node during `buildIntervals`.
 //
-// This is the node type for `LocationInfoList` below.
+// This is the node type for `RefInfoList` below.
 //
-class LocationInfoListNode final : public LocationInfo
+class RefInfoListNode final : public RefInfo
 {
-    friend class LocationInfoList;
-    friend class LocationInfoListNodePool;
+    friend class RefInfoList;
+    friend class RefInfoListNodePool;
 
-    LocationInfoListNode* m_next; // The next node in the list
+    RefInfoListNode* m_next; // The next node in the list
 
 public:
-    LocationInfoListNode(LsraLocation l, Interval* i, GenTree* t, unsigned regIdx = 0) : LocationInfo(l, i, t, regIdx)
+    RefInfoListNode(RefPosition* r, GenTree* t) : RefInfo(r, t)
     {
     }
 
     //------------------------------------------------------------------------
-    // LocationInfoListNode::Next: Returns the next node in the list.
-    LocationInfoListNode* Next() const
+    // RefInfoListNode::Next: Returns the next node in the list.
+    RefInfoListNode* Next() const
     {
         return m_next;
     }
 };
 
 //------------------------------------------------------------------------
-// LocationInfoList: used to store a list of `LocationInfo` values for a
+// RefInfoList: used to store a list of `RefInfo` values for a
 //                   node during `buildIntervals`.
 //
-// This list of 'LocationInfoListNode's contains the source nodes consumed by
+// This list of 'RefInfoListNode's contains the source nodes consumed by
 // a node, and is created by 'BuildNode'.
 //
-class LocationInfoList final
+class RefInfoList final
 {
-    friend class LocationInfoListNodePool;
+    friend class RefInfoListNodePool;
 
-    LocationInfoListNode* m_head; // The head of the list
-    LocationInfoListNode* m_tail; // The tail of the list
+    RefInfoListNode* m_head; // The head of the list
+    RefInfoListNode* m_tail; // The tail of the list
 
 public:
-    LocationInfoList() : m_head(nullptr), m_tail(nullptr)
+    RefInfoList() : m_head(nullptr), m_tail(nullptr)
     {
     }
 
-    LocationInfoList(LocationInfoListNode* node) : m_head(node), m_tail(node)
+    RefInfoList(RefInfoListNode* node) : m_head(node), m_tail(node)
     {
         assert(m_head->m_next == nullptr);
     }
 
     //------------------------------------------------------------------------
-    // LocationInfoList::IsEmpty: Returns true if the list is empty.
+    // RefInfoList::IsEmpty: Returns true if the list is empty.
     //
     bool IsEmpty() const
     {
@@ -160,40 +158,40 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // LocationInfoList::Begin: Returns the first node in the list.
+    // RefInfoList::Begin: Returns the first node in the list.
     //
-    LocationInfoListNode* Begin() const
+    RefInfoListNode* Begin() const
     {
         return m_head;
     }
 
     //------------------------------------------------------------------------
-    // LocationInfoList::End: Returns the position after the last node in the
+    // RefInfoList::End: Returns the position after the last node in the
     //                        list. The returned value is suitable for use as
     //                        a sentinel for iteration.
     //
-    LocationInfoListNode* End() const
+    RefInfoListNode* End() const
     {
         return nullptr;
     }
 
     //------------------------------------------------------------------------
-    // LocationInfoList::End: Returns the position after the last node in the
+    // RefInfoList::End: Returns the position after the last node in the
     //                        list. The returned value is suitable for use as
     //                        a sentinel for iteration.
     //
-    LocationInfoListNode* Last() const
+    RefInfoListNode* Last() const
     {
         return m_tail;
     }
 
     //------------------------------------------------------------------------
-    // LocationInfoList::Append: Appends a node to the list.
+    // RefInfoList::Append: Appends a node to the list.
     //
     // Arguments:
     //    node - The node to append. Must not be part of an existing list.
     //
-    void Append(LocationInfoListNode* node)
+    void Append(RefInfoListNode* node)
     {
         assert(node->m_next == nullptr);
 
@@ -210,12 +208,12 @@ public:
         m_tail = node;
     }
     //------------------------------------------------------------------------
-    // LocationInfoList::Append: Appends another list to this list.
+    // RefInfoList::Append: Appends another list to this list.
     //
     // Arguments:
     //    other - The list to append.
     //
-    void Append(LocationInfoList other)
+    void Append(RefInfoList other)
     {
         if (m_tail == nullptr)
         {
@@ -231,12 +229,12 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // LocationInfoList::Prepend: Prepends a node to the list.
+    // RefInfoList::Prepend: Prepends a node to the list.
     //
     // Arguments:
     //    node - The node to prepend. Must not be part of an existing list.
     //
-    void Prepend(LocationInfoListNode* node)
+    void Prepend(RefInfoListNode* node)
     {
         assert(node->m_next == nullptr);
 
@@ -254,13 +252,13 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // LocationInfoList::Add: Adds a node to the list.
+    // RefInfoList::Add: Adds a node to the list.
     //
     // Arguments:
     //    node    - The node to add. Must not be part of an existing list.
     //    prepend - True if it should be prepended (otherwise is appended)
     //
-    void Add(LocationInfoListNode* node, bool prepend)
+    void Add(RefInfoListNode* node, bool prepend)
     {
         if (prepend)
         {
@@ -273,105 +271,108 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // removeListNode - retrieve the TreeNodeInfo for the given node
+    // removeListNode - retrieve the RefInfo for the given node
     //
     // Notes:
-    //     The BuildNode methods use this helper to retrieve the TreeNodeInfo for child nodes
+    //     The BuildNode methods use this helper to retrieve the RefInfo for child nodes
+    //     from the useList being constructed.
+    //
+    RefInfoListNode* removeListNode(RefInfoListNode* listNode, RefInfoListNode* prevListNode)
+    {
+        RefInfoListNode* nextNode = listNode->Next();
+        if (prevListNode == nullptr)
+        {
+            m_head = nextNode;
+        }
+        else
+        {
+            prevListNode->m_next = nextNode;
+        }
+        if (nextNode == nullptr)
+        {
+            m_tail = prevListNode;
+        }
+        listNode->m_next = nullptr;
+        return listNode;
+    }
+
+    // removeListNode - remove the RefInfoListNode for the given GenTree node from the defList
+    RefInfoListNode* removeListNode(GenTree* node);
+    // Same as above but takes a multiRegIdx to support multi-reg nodes.
+    RefInfoListNode* removeListNode(GenTree* node, unsigned multiRegIdx);
+
+    //------------------------------------------------------------------------
+    // GetRefPosition - retrieve the RefPosition for the given node
+    //
+    // Notes:
+    //     The Build methods use this helper to retrieve the RefPosition for child nodes
     //     from the useList being constructed. Note that, if the user knows the order of the operands,
     //     it is expected that they should just retrieve them directly.
 
-    LocationInfoListNode* removeListNode(GenTree* node)
+    RefPosition* GetRefPosition(GenTree* node)
     {
-        LocationInfoListNode* prevListNode = nullptr;
-        for (LocationInfoListNode *listNode = Begin(), *end = End(); listNode != end; listNode = listNode->Next())
+        for (RefInfoListNode *listNode = Begin(), *end = End(); listNode != end; listNode = listNode->Next())
         {
             if (listNode->treeNode == node)
             {
-                LocationInfoListNode* nextNode = listNode->Next();
-                if (prevListNode == nullptr)
-                {
-                    m_head = nextNode;
-                }
-                else
-                {
-                    prevListNode->m_next = nextNode;
-                }
-                if (nextNode == nullptr)
-                {
-                    m_tail = prevListNode;
-                }
-                listNode->m_next = nullptr;
-                return listNode;
+                return listNode->ref;
             }
-            prevListNode = listNode;
         }
-        assert(!"removeListNode didn't find the node");
+        assert(!"GetRefPosition didn't find the node");
         unreached();
     }
 
     //------------------------------------------------------------------------
-    // GetTreeNodeInfo - retrieve the TreeNodeInfo for the given node
-    //
-    // Notes:
-    //     The Build methods use this helper to retrieve the TreeNodeInfo for child nodes
-    //     from the useList being constructed. Note that, if the user knows the order of the operands,
-    //     it is expected that they should just retrieve them directly.
-
-    TreeNodeInfo& GetTreeNodeInfo(GenTree* node)
-    {
-        for (LocationInfoListNode *listNode = Begin(), *end = End(); listNode != end; listNode = listNode->Next())
-        {
-            if (listNode->treeNode == node)
-            {
-                return listNode->info;
-            }
-        }
-        assert(!"GetTreeNodeInfo didn't find the node");
-        unreached();
-    }
-
-    //------------------------------------------------------------------------
-    // LocationInfoList::GetSecond: Gets the second node in the list.
+    // RefInfoList::GetSecond: Gets the second node in the list.
     //
     // Arguments:
     //    (DEBUG ONLY) treeNode - The GenTree* we expect to be in the second node.
     //
-    LocationInfoListNode* GetSecond(INDEBUG(GenTree* treeNode))
+    RefInfoListNode* GetSecond(INDEBUG(GenTree* treeNode))
     {
         noway_assert((Begin() != nullptr) && (Begin()->Next() != nullptr));
-        LocationInfoListNode* second = Begin()->Next();
+        RefInfoListNode* second = Begin()->Next();
         assert(second->treeNode == treeNode);
         return second;
     }
+
+#ifdef DEBUG
+    // Count - return the number of nodes in the list (DEBUG only)
+    int Count()
+    {
+        int count = 0;
+        for (RefInfoListNode *listNode = Begin(), *end = End(); listNode != end; listNode = listNode->Next())
+        {
+            count++;
+        }
+        return count;
+    }
+#endif // DEBUG
 };
 
 //------------------------------------------------------------------------
-// LocationInfoListNodePool: manages a pool of `LocationInfoListNode`
-//                           values to decrease overall memory usage
-//                           during `buildIntervals`.
+// RefInfoListNodePool: manages a pool of `RefInfoListNode`
+//                      values to decrease overall memory usage
+//                      during `buildIntervals`.
 //
-// `buildIntervals` involves creating a list of location info values per
+// `buildIntervals` involves creating a list of RefInfo items per
 // node that either directly produces a set of registers or that is a
 // contained node with register-producing sources. However, these lists
 // are short-lived: they are destroyed once the use of the corresponding
 // node is processed. As such, there is typically only a small number of
-// `LocationInfoListNode` values in use at any given time. Pooling these
+// `RefInfoListNode` values in use at any given time. Pooling these
 // values avoids otherwise frequent allocations.
-class LocationInfoListNodePool final
+class RefInfoListNodePool final
 {
-    LocationInfoListNode* m_freeList;
+    RefInfoListNode*      m_freeList;
     Compiler*             m_compiler;
     static const unsigned defaultPreallocation = 8;
 
 public:
-    // Creates a pool of `LocationInfoListNode` values.
-    LocationInfoListNodePool(Compiler* compiler, unsigned preallocate = defaultPreallocation);
-
-    // Fetches an unused node from the pool.
-    LocationInfoListNode* GetNode(LsraLocation l, Interval* i, GenTree* t, unsigned regIdx = 0);
-
-    // Returns a list of nodes to the pool.
-    void ReturnNodes(LocationInfoList& list);
+    RefInfoListNodePool(Compiler* compiler, unsigned preallocate = defaultPreallocation);
+    RefInfoListNode* GetNode(RefPosition* r, GenTree* t, unsigned regIdx = 0);
+    void ReturnNodes(RefInfoList& list);
+    void ReturnNode(RefInfoListNode* listNode);
 };
 
 struct LsraBlockInfo
@@ -614,7 +615,7 @@ inline bool leafAddInRange(GenTree* leaf, int lower, int upper, int multiple = 1
     {
         return false;
     }
-    return leafInRange(leaf->gtOp.gtOp2, lower, upper, multiple);
+    return leafInRange(leaf->gtGetOp2(), lower, upper, multiple);
 }
 
 inline bool isCandidateVar(LclVarDsc* varDsc)
@@ -643,15 +644,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // to the next RefPosition in code order
 // THIS IS THE OPTION CURRENTLY BEING PURSUED
 
-class LocationInfoList;
-class LocationInfoListNodePool;
-
 class LinearScan : public LinearScanInterface
 {
     friend class RefPosition;
     friend class Interval;
     friend class Lowering;
-    friend class TreeNodeInfo;
 
 public:
     // This could use further abstraction.  From Compiler we need the tree,
@@ -661,50 +658,10 @@ public:
     // This is the main driver
     virtual void doLinearScan();
 
-    // TreeNodeInfo contains three register masks: src candidates, dst candidates, and internal condidates.
-    // Instead of storing actual register masks, however, which are large, we store a small index into a table
-    // of register masks, stored in this class. We create only as many distinct register masks as are needed.
-    // All identical register masks get the same index. The register mask table contains:
-    // 1. A mask containing all eligible integer registers.
-    // 2. A mask containing all elibible floating-point registers.
-    // 3. A mask for each of single register.
-    // 4. A mask for each combination of registers, created dynamically as required.
-    //
-    // Currently, the maximum number of masks allowed is a constant defined by 'numMasks'. The register mask
-    // table is never resized. It is also limited by the size of the index, currently an unsigned char.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if defined(_TARGET_ARM64_)
-    static const int numMasks = 128;
-#else
-    static const int numMasks = 64;
-#endif
-
-    regMaskTP* regMaskTable;
-    int        nextFreeMask;
-
-    typedef int RegMaskIndex;
-
-    // allint is 0, allfloat is 1, all the single-bit masks start at 2
-    enum KnownRegIndex
-    {
-        ALLINT_IDX           = 0,
-        ALLFLOAT_IDX         = 1,
-        FIRST_SINGLE_REG_IDX = 2
-    };
-
-    RegMaskIndex GetIndexForRegMask(regMaskTP mask);
-    regMaskTP GetRegMaskForIndex(RegMaskIndex index);
-    void RemoveRegistersFromMasks(regMaskTP removeMask);
-
     static bool isSingleRegister(regMaskTP regMask)
     {
         return (genExactlyOneBit(regMask));
     }
-
-#ifdef DEBUG
-    void dspRegisterMaskTable();
-#endif // DEBUG
 
     // Initialize the block traversal for LSRA.
     // This resets the bbVisitedSet, and on the first invocation sets the blockSequence array,
@@ -810,11 +767,6 @@ private:
     // This controls the registers available for allocation
     enum LsraStressLimitRegs{LSRA_LIMIT_NONE = 0, LSRA_LIMIT_CALLEE = 0x1, LSRA_LIMIT_CALLER = 0x2,
                              LSRA_LIMIT_SMALL_SET = 0x3, LSRA_LIMIT_MASK = 0x3};
-
-    // When we limit the number of candidate registers, we have to take into account any
-    // "specialPutArg" references that are in flight, as that increases the number of live
-    // registers between it and the next call.
-    int specialPutArgCount;
 
     // When LSRA_LIMIT_SMALL_SET is specified, it is desirable to select a "mixed" set of caller- and callee-save
     // registers, so as to get different coverage than limiting to callee or caller.
@@ -964,6 +916,7 @@ private:
     }
 
     // Dump support
+    void dumpNodeInfo(GenTree* node, regMaskTP dstCandidates, int srcCount, int dstCount);
     void dumpDefList();
     void lsraDumpIntervals(const char* msg);
     void dumpRefPositions(const char* msg);
@@ -984,7 +937,7 @@ private:
     void verifyFinalAllocation();
     void verifyResolutionMove(GenTree* resolutionNode, LsraLocation currentLocation);
 #else  // !DEBUG
-    bool             doSelectNearest()
+    bool doSelectNearest()
     {
         return false;
     }
@@ -1080,7 +1033,9 @@ private:
     void buildRefPositionsForNode(GenTree* tree, BasicBlock* block, LsraLocation loc);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    VARSET_VALRET_TP buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc);
+    VARSET_VALRET_TP buildUpperVectorSaveRefPositions(GenTree*     tree,
+                                                      LsraLocation currentLoc,
+                                                      regMaskTP    fpCalleeKillSet);
     void buildUpperVectorRestoreRefPositions(GenTree* tree, LsraLocation currentLoc, VARSET_VALARG_TP liveLargeVectors);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
@@ -1112,19 +1067,28 @@ private:
 
     // Helpers for getKillSetForNode().
     regMaskTP getKillSetForStoreInd(GenTreeStoreInd* tree);
+    regMaskTP getKillSetForMul(GenTreeOp* tree);
+    regMaskTP getKillSetForCall(GenTreeCall* call);
+    regMaskTP getKillSetForModDiv(GenTreeOp* tree);
+    regMaskTP getKillSetForBlockStore(GenTreeBlk* blkNode);
+    regMaskTP getKillSetForReturn();
+    regMaskTP getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS
     regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
 
-    // Return the registers killed by the given tree node.
+// Return the registers killed by the given tree node.
+// This is used only for an assert, and for stress, so it is only defined under DEBUG.
+// Otherwise, the Build methods should obtain the killMask from the appropriate method above.
+#ifdef DEBUG
     regMaskTP getKillSetForNode(GenTree* tree);
+#endif
 
     // Given some tree node add refpositions for all the registers this node kills
-    bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc);
+    bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskTP killMask);
 
     regMaskTP allRegs(RegisterType rt);
-    regMaskTP allRegs(GenTree* tree);
-    regMaskTP allMultiRegCallNodeRegs(GenTreeCall* tree);
+    regMaskTP allByteRegs();
     regMaskTP allSIMDRegs();
     regMaskTP internalFloatRegCandidates();
 
@@ -1143,11 +1107,11 @@ private:
         return tree->TypeGet();
     }
 
-    RefPosition* defineNewInternalTemp(GenTree* tree, RegisterType regType, regMaskTP regMask);
-
-    int buildInternalRegisterDefsForNode(GenTree* tree, TreeNodeInfo* info, RefPosition* defs[]);
-
-    void buildInternalRegisterUsesForNode(GenTree* tree, TreeNodeInfo* info, RefPosition* defs[], int total);
+    // Managing internal registers during the BuildNode process.
+    RefPosition* defineNewInternalTemp(GenTree* tree, RegisterType regType, regMaskTP candidates);
+    RefPosition* buildInternalIntRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
+    RefPosition* buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
+    void buildInternalRegisterUses();
 
     void resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPosition* currentRefPosition);
 
@@ -1205,6 +1169,13 @@ private:
                                 GenTree*     theTreeNode,
                                 regMaskTP    mask,
                                 unsigned     multiRegIdx = 0);
+
+    // This creates a RefTypeUse at currentLoc. It sets the treeNode to nullptr if it is not a
+    // lclVar interval.
+    RefPosition* newUseRefPosition(Interval* theInterval,
+                                   GenTree*  theTreeNode,
+                                   regMaskTP mask,
+                                   unsigned  multiRegIdx = 0);
 
     RefPosition* newRefPosition(
         regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, regMaskTP mask);
@@ -1570,119 +1541,97 @@ private:
     // Build methods
     //-----------------------------------------------------------------------
 
-    // The listNodePool is used to maintain the TreeNodeInfo for nodes that are "in flight"
+    // The listNodePool is used to maintain the RefInfo for nodes that are "in flight"
     // i.e. whose consuming node has not yet been handled.
-    LocationInfoListNodePool listNodePool;
+    RefInfoListNodePool listNodePool;
 
-    // The defList is used for the transient TreeNodeInfo that is computed by
+    // The defList is used for the transient RefInfo that is computed by
     // the Build methods, and used in building RefPositions.
     // When Def RefPositions are built for a node, their NodeInfo is placed
     // in the defList. As the consuming node is handled, it moves the NodeInfo
     // into an ordered useList corresponding to the uses for that node.
-    LocationInfoList defList;
+    RefInfoList defList;
 
-    // The useList is constructed for each node by the Build methods.
-    // It contains the TreeNodeInfo for its operands, in their order of use.
-    LocationInfoList useList;
+    // As we build uses, we may want to preference the next definition (i.e. the register produced
+    // by the current node) to the same register as one of its uses. This is done by setting
+    // 'tgtPrefUse' to that RefPosition.
+    RefPosition* tgtPrefUse = nullptr;
 
-    // During the build phase, this is the NodeInfo for the current node.
-    TreeNodeInfo* currentNodeInfo;
+    // The following keep track of information about internal (temporary register) intervals
+    // during the building of a single node.
+    static const int MaxInternalCount = 4;
+    RefPosition*     internalDefs[MaxInternalCount];
+    int              internalCount = 0;
+    bool             setInternalRegsDelayFree;
 
-    // Remove the LocationInfoListNode for the given node from the defList, and put it into the useList.
-    // The node must not be contained, and must have been processed by buildRefPositionsForNode().
-    void appendLocationInfoToList(GenTree* node)
+    // When a RefTypeUse is marked as 'delayRegFree', we also want to mark the RefTypeDef
+    // in the next Location as 'hasInterferingUses'. This is accomplished by setting this
+    // 'pendingDelayFree' to true as they are created, and clearing it as a new node is
+    // handled in 'BuildNode'.
+    bool pendingDelayFree;
+
+    // This method clears the "build state" before starting to handle a new node.
+    void clearBuildState()
     {
-        LocationInfoListNode* locationInfo = defList.removeListNode(node);
-        useList.Append(locationInfo);
-    }
-    // Get the LocationInfoListNodes for the given node, and return it, but don't put it into the useList.
-    // The node must not be contained, and must have been processed by buildRefPositionsForNode().
-    LocationInfoListNode* getLocationInfo(GenTree* node)
-    {
-        LocationInfoListNode* locationInfo = defList.removeListNode(node);
-        return locationInfo;
-    }
-    //------------------------------------------------------------------------
-    // appendBinaryLocationInfoToList: Get the LocationInfoListNodes for the operands of the
-    //    given node, and put them into the useList.
-    //
-    // Arguments:
-    //    node - a GenTreeOp
-    //
-    // Return Value:
-    //    The number of actual register operands.
-    //
-    // Notes:
-    //    The operands must already have been processed by buildRefPositionsForNode, and their
-    //    LocationInfoListNodes placed in the defList.
-    //
-    int appendBinaryLocationInfoToList(GenTreeOp* node)
-    {
-        bool                  found;
-        LocationInfoListNode* op1LocationInfo = nullptr;
-        LocationInfoListNode* op2LocationInfo = nullptr;
-        int                   srcCount        = 0;
-        GenTree*              op1             = node->gtOp1;
-        GenTree*              op2             = node->gtGetOp2IfPresent();
-        if (node->IsReverseOp() && op2 != nullptr)
-        {
-            srcCount += GetOperandInfo(op2);
-            op2 = nullptr;
-        }
-        if (op1 != nullptr)
-        {
-            srcCount += GetOperandInfo(op1);
-        }
-        if (op2 != nullptr)
-        {
-            srcCount += GetOperandInfo(op2);
-        }
-        return srcCount;
+        tgtPrefUse               = nullptr;
+        internalCount            = 0;
+        setInternalRegsDelayFree = false;
+        pendingDelayFree         = false;
     }
 
-    // This is the main entry point for computing the TreeNodeInfo for a node.
-    void BuildNode(GenTree* stmt);
+    RefInfoListNode* getRefInfo(GenTree* node);
+    RefInfoListNode* getRefInfo(GenTree* node, int multiRegIdx);
+
+    RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
+
+    void setDelayFree(RefPosition* use);
+    int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
+#ifdef _TARGET_XARCH_
+    int LinearScan::BuildRMWUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
+#endif // !_TARGET_XARCH_
+    // This is the main entry point for building the RefPositions for a node.
+    // These methods return the number of sources.
+    int BuildNode(GenTree* stmt);
 
     void BuildCheckByteable(GenTree* tree);
-
+    GenTree* getTgtPrefOperand(GenTreeOp* tree);
     bool CheckAndSetDelayFree(GenTree* delayUseSrc);
+    bool supportsSpecialPutArg();
 
-    void BuildSimple(GenTree* tree);
-    int GetOperandInfo(GenTree* node);
-    int GetOperandInfo(GenTree* node, LocationInfoListNode** pFirstInfo);
-    int GetIndirInfo(GenTreeIndir* indirTree);
+    int BuildSimple(GenTree* tree);
+    int BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
+    int BuildDelayFreeUses(GenTree* node, regMaskTP candidates = RBM_NONE);
+    int BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates = RBM_NONE);
     void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
+    RefPosition* BuildDef(GenTree* tree, regMaskTP dstCandidates = RBM_NONE, int multiRegIdx = 0);
+    void BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates = RBM_NONE);
+    void BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask);
 
-    void BuildStoreLoc(GenTree* tree);
-    void BuildReturn(GenTree* tree);
+    int BuildStoreLoc(GenTree* tree);
+    int BuildReturn(GenTree* tree);
 #ifdef _TARGET_XARCH_
     // This method, unlike the others, returns the number of sources, since it may be called when
     // 'tree' is contained.
     int BuildShiftRotate(GenTree* tree);
 #endif // _TARGET_XARCH_
 #ifdef _TARGET_ARM_
-    void BuildShiftLongCarry(GenTree* tree);
+    int BuildShiftLongCarry(GenTree* tree);
 #endif
-    void BuildPutArgReg(GenTreeUnOp* node);
-    void BuildCall(GenTreeCall* call);
-    void BuildCmp(GenTree* tree);
-    void BuildStructArg(GenTree* structArg);
-    void BuildBlockStore(GenTreeBlk* blkNode);
-    void BuildModDiv(GenTree* tree);
-    void BuildIntrinsic(GenTree* tree);
-    void BuildStoreLoc(GenTreeLclVarCommon* tree);
-    void BuildIndir(GenTreeIndir* indirTree);
-    void BuildGCWriteBarrier(GenTree* tree);
-    void BuildCast(GenTree* tree);
-
-#ifdef _TARGET_X86_
-    bool ExcludeNonByteableRegisters(GenTree* tree);
-#endif
+    int BuildPutArgReg(GenTreeUnOp* node);
+    int BuildCall(GenTreeCall* call);
+    int BuildCmp(GenTree* tree);
+    int BuildBlockStore(GenTreeBlk* blkNode);
+    int BuildModDiv(GenTree* tree);
+    int BuildIntrinsic(GenTree* tree);
+    int BuildStoreLoc(GenTreeLclVarCommon* tree);
+    int BuildIndir(GenTreeIndir* indirTree);
+    int BuildGCWriteBarrier(GenTree* tree);
+    int BuildCast(GenTree* tree);
 
 #if defined(_TARGET_XARCH_)
     // returns true if the tree can use the read-modify-write memory instruction form
     bool isRMWRegOper(GenTree* tree);
-    void BuildMul(GenTree* tree);
+    int BuildMul(GenTree* tree);
     void SetContainsAVXFlags(bool isFloatingPointType = true, unsigned sizeOfSIMDVector = 0);
     // Move the last use bit, if any, from 'fromTree' to 'toTree'; 'fromTree' must be contained.
     void CheckAndMoveRMWLastUse(GenTree* fromTree, GenTree* toTree)
@@ -1709,18 +1658,18 @@ private:
 #endif // defined(_TARGET_XARCH_)
 
 #ifdef FEATURE_SIMD
-    void BuildSIMD(GenTreeSIMD* tree);
+    int BuildSIMD(GenTreeSIMD* tree);
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-    void BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree);
+    int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree);
 #endif // FEATURE_HW_INTRINSICS
 
-    void BuildPutArgStk(GenTreePutArgStk* argNode);
+    int BuildPutArgStk(GenTreePutArgStk* argNode);
 #ifdef _TARGET_ARM_
-    void BuildPutArgSplit(GenTreePutArgSplit* tree);
+    int BuildPutArgSplit(GenTreePutArgSplit* tree);
 #endif
-    void BuildLclHeap(GenTree* tree);
+    int BuildLclHeap(GenTree* tree);
 };
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
