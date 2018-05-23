@@ -27,6 +27,6 @@ private:
     VARSET_TP gcTrkStkDeltaSet; // // a set of gc tracked stack variables that changed their liveness..
 #ifdef DEBUG
     VARSET_TP gcVarPtrSetNew; // a set to print changes to live part of tracked stack ptr lcls (gcVarPtrSetCur).
-    int       epoch;          // VarSets epoch when the class was created, must stay the same during its using.
+    unsigned  epoch;          // VarSets epoch when the class was created, must stay the same during its using.
 #endif                        // DEBUG
 };
