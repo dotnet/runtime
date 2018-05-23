@@ -2444,7 +2444,7 @@
     "System.Memory": {
       "InboxOn": {
         "netcoreapp2.1": "4.1.0.0",
-		"netcoreapp2.2": "4.1.0.0",
+        "netcoreapp2.2": "4.1.0.0",
         "monoandroid10": "Any",
         "monotouch10": "Any",
         "uap10.0.16300": "4.1.0.0",
