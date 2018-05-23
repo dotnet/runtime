@@ -11,6 +11,8 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestKind>BuildAndRun</CLRTestKind>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <IsLongRunningGCTest>true</IsLongRunningGCTest>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
