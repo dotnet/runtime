@@ -4858,26 +4858,9 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 		return;
 	}
 
-	// FIXME: Speed this up
-
 	ip = (guint8 *)MONO_CONTEXT_GET_IP (ctx);
-	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, NULL);
 
-	if (!ji) {
-		/* Interpreter */
-		// FIXME: Pass a flag instead to detect this
-		MonoLMF *lmf = mono_get_lmf ();
-		MonoInterpFrameHandle *frame;
-
-		g_assert (((gsize)lmf->previous_lmf) & 2);
-		MonoLMFExt *ext = (MonoLMFExt*)lmf;
-
-		g_assert (ext->interp_exit);
-		frame = ext->interp_exit_data;
-		ji = mini_get_interp_callbacks ()->frame_get_jit_info (frame);
-		ip = mini_get_interp_callbacks ()->frame_get_ip (frame);
-	}
-
+	ji = get_top_method_ji (ip, NULL, (gpointer*)&ip);
 	g_assert (ji && !ji->is_trampoline);
 	method = jinfo_get_method (ji);
 
