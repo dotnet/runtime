@@ -32,8 +32,13 @@
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
+#ifdef __mono_ppc64__
+#define THUNK_SIZE ((2 + 5) * 4)
+#else
+#define THUNK_SIZE ((2 + 2) * 4)
+#endif
+
 void ppc_patch (guchar *code, const guchar *target);
-void ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd);
 
 struct MonoLMF {
 	/*
@@ -54,6 +59,8 @@ struct MonoLMF {
 
 typedef struct MonoCompileArch {
 	int fp_conv_var_offset;
+	guint8 *thunks;
+	int thunks_size;
 } MonoCompileArch;
 
 /*
