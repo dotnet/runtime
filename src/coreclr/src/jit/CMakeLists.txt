@@ -152,7 +152,6 @@ if (WIN32)
     lsra_reftypes.h
     lsra.h
     namedintrinsiclist.h
-    nodeinfo.h
     objectalloc.h
     opcode.h
     phase.h
