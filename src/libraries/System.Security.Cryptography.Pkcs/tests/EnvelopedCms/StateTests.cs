@@ -274,9 +274,13 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         //
         // State 4: Called Decode() + Decrypt()
         //
-        [ConditionalFact(nameof(SupportsCngCertificates))]
+        [ConditionalTheory(nameof(SupportsCngCertificates))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
-        public static void PostDecrypt_Encode()
+        [InlineData(false)]
+#if netcoreapp // API not supported on netfx
+        [InlineData(true)]
+#endif
+        public static void PostDecrypt_Encode(bool useExplicitPrivateKey)
         {
             byte[] expectedContent = { 6, 3, 128, 33, 44 };
             EnvelopedCms ecms = new EnvelopedCms(new ContentInfo(expectedContent));
@@ -294,9 +298,22 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             {
                 if (cer == null)
                     return; // Sorry - CertLoader is not configured to load certs with private keys - we've tested as much as we can.
-                X509Certificate2Collection extraStore = new X509Certificate2Collection(cer);
+
                 RecipientInfoCollection r = ecms.RecipientInfos;
-                ecms.Decrypt(r[0], extraStore);
+
+                if (useExplicitPrivateKey)
+                {
+#if netcoreapp
+                    ecms.Decrypt(r[0], cer.GetRSAPrivateKey());
+#else
+                    Assert.True(false, "Should not run on this platform");
+#endif
+                }
+                else
+                {
+                    X509Certificate2Collection extraStore = new X509Certificate2Collection(cer);
+                    ecms.Decrypt(r[0], extraStore);
+                }
 
                 // Desktop compat: Calling Encode() at this point should have thrown an InvalidOperationException. Instead, it returns
                 // the decrypted inner content (same as ecms.ContentInfo.Content). This is easy for someone to take a reliance on
@@ -345,9 +362,13 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsCngCertificates))]
+        [ConditionalTheory(nameof(SupportsCngCertificates))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
-        public static void PostDecrypt_Decrypt()
+        [InlineData(false)]
+#if netcoreapp // API not supported on netfx
+        [InlineData(true)]
+#endif
+        public static void PostDecrypt_Decrypt(bool useExplicitPrivateKey)
         {
             byte[] expectedContent = { 6, 3, 128, 33, 44 };
 
@@ -381,13 +402,31 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 extraStore.Add(cert2);
                 extraStore.Add(cert3);
                 RecipientInfoCollection r = ecms.RecipientInfos;
-                ecms.Decrypt(r[0], extraStore);
+
+                Action decrypt = () =>
+                {
+                    if (useExplicitPrivateKey)
+                    {
+#if netcoreapp
+                        ecms.Decrypt(r[0], cert1.GetRSAPrivateKey());
+#else
+                        Assert.True(false, "Should not run on this platform");
+#endif
+                    }
+                    else
+                    {
+                        ecms.Decrypt(r[0], extraStore);
+                    }
+                };
+
+                decrypt();
+
                 ContentInfo contentInfo = ecms.ContentInfo;
                 Assert.Equal<byte>(expectedContent, contentInfo.Content);
 
                 // Though this doesn't seem like a terribly unreasonable thing to attempt, attempting to call Decrypt() again
                 // after a successful Decrypt() throws a CryptographicException saying "Already decrypted."
-                Assert.ThrowsAny<CryptographicException>(() => ecms.Decrypt(r[1], extraStore));
+                Assert.ThrowsAny<CryptographicException>(() => decrypt());
             }
         }
 
