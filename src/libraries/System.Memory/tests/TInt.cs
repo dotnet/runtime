@@ -5,8 +5,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-#pragma warning disable 0809  //warning CS0809: Obsolete member overrides non-obsolete member
-
 namespace System
 {
     // A wrapped integer that invokes a custom delegate every time IEquatable<TInt>.Equals() is invoked.
@@ -32,27 +30,23 @@ namespace System
 
         public bool Equals(TInt other)
         {
-            if (_onCompare != null)
-            {
-                _onCompare(Value, other.Value);
-            }
+            _onCompare?.Invoke(Value, other.Value);
             return Value == other.Value;
         }
 
         public int CompareTo(TInt other)
         {
-            if (_onCompare != null)
-            {
-                _onCompare(Value, other.Value);
-            }
+            _onCompare?.Invoke(Value, other.Value);
             return Value.CompareTo(other.Value);
         }
 
+#pragma warning disable 0809  // Obsolete member 'TInt.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
         [Obsolete("Don't call this. Call IEquatable<T>.Equals(T)")]
         public override bool Equals(object obj)
         {
             throw new NotSupportedException("Unexpected use of boxing Equals().");
         }
+#pragma warning restore 0809
 
         public override int GetHashCode() => Value.GetHashCode();
 

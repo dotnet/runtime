@@ -94,11 +94,11 @@ namespace System.Buffers.Text
                 return true;
             }
 
-BufferTooSmall:
+        BufferTooSmall:
             bytesWritten = 0;
             return false;
 
-BadFormat:
+        BadFormat:
             return ThrowHelper.TryFormatThrowFormatException(out bytesWritten);
         }
     }

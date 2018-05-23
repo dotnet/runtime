@@ -227,7 +227,7 @@ namespace System.SpanTests
         [Fact]
         public static void ClearEnumType()
         {
-            TestEnum[] actual = { TestEnum.e0, TestEnum.e1, TestEnum.e2 };
+            TestEnum[] actual = { TestEnum.E0, TestEnum.E1, TestEnum.E2 };
             TestEnum[] expected = { default, default, default };
 
             var span = new Span<TestEnum>(actual);

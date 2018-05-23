@@ -117,7 +117,7 @@ namespace System.SpanTests
                     Assert.False(firstSpan.Equals(secondSpan, StringComparison.Ordinal));
 
                     Assert.False(firstSpan.Equals(secondSpan, StringComparison.OrdinalIgnoreCase));
-                    
+
                     // Different behavior depending on OS
                     Assert.Equal(
                         firstSpan.ToString().Equals(secondSpan.ToString(), StringComparison.CurrentCulture),
