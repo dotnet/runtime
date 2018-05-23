@@ -499,6 +499,71 @@ INST3(vbroadcastf128,"broadcastf128",0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3(vbroadcasti128,"broadcasti128",0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x5A))   // Broadcast packed integer values read from memory to entire ymm register
 INST3(vmaskmovps,    "maskmovps"    ,0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x2C))   // Conditional SIMD Packed Loads Float
 INST3(vmaskmovpd,    "maskmovpd"    ,0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x2D))   // Conditional SIMD Packed Loads Double
+
+INST3(FIRST_FMA_INSTRUCTION, "FIRST_FMA_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
+//    enum            name             FP updmode rf wf MR            MI        RM
+INST3(vfmadd132pd,    "fmadd132pd",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x98))   // Fused Multiply-Add of Packed Double-Precision Floating-Point Values
+INST3(vfmadd213pd,    "fmadd213pd",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xA8))   //
+INST3(vfmadd231pd,    "fmadd231pd",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xB8))   //
+INST3(vfmadd132ps,    "fmadd132ps",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x98))   // Fused Multiply-Add of Packed Single-Precision Floating-Point Values
+INST3(vfmadd213ps,    "fmadd213ps",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xA8))   //
+INST3(vfmadd231ps,    "fmadd231ps",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xB8))   //
+INST3(vfmadd132sd,    "fmadd132sd",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x99))   // Fused Multiply-Add of Scalar Double-Precision Floating-Point Values
+INST3(vfmadd213sd,    "fmadd213sd",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xA9))   //
+INST3(vfmadd231sd,    "fmadd231sd",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xB9))   //
+INST3(vfmadd132ss,    "fmadd132ss",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x99))   // Fused Multiply-Add of Scalar Single-Precision Floating-Point Values
+INST3(vfmadd213ss,    "fmadd213ss",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xA9))   //
+INST3(vfmadd231ss,    "fmadd231ss",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xB9))   //
+INST3(vfmaddsub132pd, "fmaddsub132pd", 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x96))   // Fused Multiply-Alternating Add/Subtract of Packed Double-Precision Floating-Point Values
+INST3(vfmaddsub213pd, "fmaddsub213pd", 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xA6))   //
+INST3(vfmaddsub231pd, "fmaddsub231pd", 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xB6))   //
+INST3(vfmaddsub132ps, "fmaddsub132ps", 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x96))   // Fused Multiply-Alternating Add/Subtract of Packed Single-Precision Floating-Point Values
+INST3(vfmaddsub213ps, "fmaddsub213ps", 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xA6))   //
+INST3(vfmaddsub231ps, "fmaddsub231ps", 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xB6))   //
+INST3(vfmsubadd132pd, "fmsubadd132pd", 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x97))   // Fused Multiply-Alternating Subtract/Add of Packed Double-Precision Floating-Point Values
+INST3(vfmsubadd213pd, "fmsubadd213pd", 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xA7))   //
+INST3(vfmsubadd231pd, "fmsubadd231pd", 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xB7))   //
+INST3(vfmsubadd132ps, "fmsubadd132ps", 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x97))   // Fused Multiply-Alternating Subtract/Add of Packed Single-Precision Floating-Point Values
+INST3(vfmsubadd213ps, "fmsubadd213ps", 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xA7))   //
+INST3(vfmsubadd231ps, "fmsubadd231ps", 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xB7))   //
+INST3(vfmsub132pd,    "fmsub132pd",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x9A))   // Fused Multiply-Subtract of Packed Double-Precision Floating-Point Values
+INST3(vfmsub213pd,    "fmsub213pd",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xAA))   //
+INST3(vfmsub231pd,    "fmsub231pd",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBA))   //
+INST3(vfmsub132ps,    "fmsub132ps",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x9A))   // Fused Multiply-Subtract of Packed Single-Precision Floating-Point Values
+INST3(vfmsub213ps,    "fmsub213ps",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xAA))   //
+INST3(vfmsub231ps,    "fmsub231ps",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBA))   //
+INST3(vfmsub132sd,    "fmsub132sd",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x9B))   // Fused Multiply-Subtract of Scalar Double-Precision Floating-Point Values
+INST3(vfmsub213sd,    "fmsub213sd",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xAB))   //
+INST3(vfmsub231sd,    "fmsub231sd",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBB))   //
+INST3(vfmsub132ss,    "fmsub132ss",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x9B))   // Fused Multiply-Subtract of Scalar Single-Precision Floating-Point Values
+INST3(vfmsub213ss,    "fmsub213ss",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xAB))   //
+INST3(vfmsub231ss,    "fmsub231ss",    0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBB))   //
+INST3(vfnmadd132pd,   "fmnadd132pd",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x9C))   // Fused Negative Multiply-Add of Packed Double-Precision Floating-Point Values
+INST3(vfnmadd213pd,   "fmnadd213pd",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xAC))   //
+INST3(vfnmadd231pd,   "fmnadd231pd",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBC))   //
+INST3(vfnmadd132ps,   "fmnadd132ps",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x9C))   // Fused Negative Multiply-Add of Packed Single-Precision Floating-Point Values
+INST3(vfnmadd213ps,   "fmnadd213ps",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xAC))   //
+INST3(vfnmadd231ps,   "fmnadd231ps",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBC))   //
+INST3(vfnmadd132sd,   "fmnadd132sd",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x9D))   // Fused Negative Multiply-Add of Scalar Double-Precision Floating-Point Values
+INST3(vfnmadd213sd,   "fmnadd213sd",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xAD))   //
+INST3(vfnmadd231sd,   "fmnadd231sd",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBD))   //
+INST3(vfnmadd132ss,   "fmnadd132ss",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x9D))   // Fused Negative Multiply-Add of Scalar Single-Precision Floating-Point Values
+INST3(vfnmadd213ss,   "fmnadd213ss",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xAD))   //
+INST3(vfnmadd231ss,   "fmnadd231ss",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBD))   //
+INST3(vfnmsub132pd,   "fmnsub132pd",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x9E))   // Fused Negative Multiply-Subtract of Packed Double-Precision Floating-Point Values
+INST3(vfnmsub213pd,   "fmnsub213pd",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xAE))   //
+INST3(vfnmsub231pd,   "fmnsub231pd",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBE))   //
+INST3(vfnmsub132ps,   "fmnsub132ps",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x9E))   // Fused Negative Multiply-Subtract of Packed Single-Precision Floating-Point Values
+INST3(vfnmsub213ps,   "fmnsub213ps",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xAE))   //
+INST3(vfnmsub231ps,   "fmnsub231ps",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBE))   //
+INST3(vfnmsub132sd,   "fmnsub132sd",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x9F))   // Fused Negative Multiply-Subtract of Scalar Double-Precision Floating-Point Values
+INST3(vfnmsub213sd,   "fmnsub213sd",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xAF))   //
+INST3(vfnmsub231sd,   "fmnsub231sd",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBF))   //
+INST3(vfnmsub132ss,   "fmnsub132ss",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x9F))   // Fused Negative Multiply-Subtract of Scalar Single-Precision Floating-Point Values
+INST3(vfnmsub213ss,   "fmnsub213ss",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xAF))   //
+INST3(vfnmsub231ss,   "fmnsub231ss",   0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0xBF))   //
+INST3(LAST_FMA_INSTRUCTION, "LAST_FMA_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
+
 INST3(LAST_AVX_INSTRUCTION, "LAST_AVX_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
 // Scalar instructions in SSE4.2

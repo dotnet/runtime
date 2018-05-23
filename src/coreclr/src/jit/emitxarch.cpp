@@ -45,6 +45,11 @@ bool IsAVXOnlyInstruction(instruction ins)
     return (ins >= INS_FIRST_AVX_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
 }
 
+bool IsFMAInstruction(instruction ins)
+{
+    return (ins >= INS_FIRST_FMA_INSTRUCTION) && (ins <= INS_LAST_FMA_INSTRUCTION);
+}
+
 bool emitter::IsAVXInstruction(instruction ins)
 {
     return UseVEXEncoding() && IsSSEOrAVXInstruction(ins);
@@ -206,6 +211,66 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_unpcklps:
         case INS_unpckhpd:
         case INS_unpcklpd:
+        case INS_vfmadd132pd:
+        case INS_vfmadd213pd:
+        case INS_vfmadd231pd:
+        case INS_vfmadd132ps:
+        case INS_vfmadd213ps:
+        case INS_vfmadd231ps:
+        case INS_vfmadd132sd:
+        case INS_vfmadd213sd:
+        case INS_vfmadd231sd:
+        case INS_vfmadd132ss:
+        case INS_vfmadd213ss:
+        case INS_vfmadd231ss:
+        case INS_vfmaddsub132pd:
+        case INS_vfmaddsub213pd:
+        case INS_vfmaddsub231pd:
+        case INS_vfmaddsub132ps:
+        case INS_vfmaddsub213ps:
+        case INS_vfmaddsub231ps:
+        case INS_vfmsubadd132pd:
+        case INS_vfmsubadd213pd:
+        case INS_vfmsubadd231pd:
+        case INS_vfmsubadd132ps:
+        case INS_vfmsubadd213ps:
+        case INS_vfmsubadd231ps:
+        case INS_vfmsub132pd:
+        case INS_vfmsub213pd:
+        case INS_vfmsub231pd:
+        case INS_vfmsub132ps:
+        case INS_vfmsub213ps:
+        case INS_vfmsub231ps:
+        case INS_vfmsub132sd:
+        case INS_vfmsub213sd:
+        case INS_vfmsub231sd:
+        case INS_vfmsub132ss:
+        case INS_vfmsub213ss:
+        case INS_vfmsub231ss:
+        case INS_vfnmadd132pd:
+        case INS_vfnmadd213pd:
+        case INS_vfnmadd231pd:
+        case INS_vfnmadd132ps:
+        case INS_vfnmadd213ps:
+        case INS_vfnmadd231ps:
+        case INS_vfnmadd132sd:
+        case INS_vfnmadd213sd:
+        case INS_vfnmadd231sd:
+        case INS_vfnmadd132ss:
+        case INS_vfnmadd213ss:
+        case INS_vfnmadd231ss:
+        case INS_vfnmsub132pd:
+        case INS_vfnmsub213pd:
+        case INS_vfnmsub231pd:
+        case INS_vfnmsub132ps:
+        case INS_vfnmsub213ps:
+        case INS_vfnmsub231ps:
+        case INS_vfnmsub132sd:
+        case INS_vfnmsub213sd:
+        case INS_vfnmsub231sd:
+        case INS_vfnmsub132ss:
+        case INS_vfnmsub213ss:
+        case INS_vfnmsub231ss:
         case INS_vinsertf128:
         case INS_vinserti128:
         case INS_vmaskmovps:
@@ -368,6 +433,36 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
         case INS_vpsllvq:
         case INS_pinsrq:
         case INS_pextrq:
+        case INS_vfmadd132pd:
+        case INS_vfmadd213pd:
+        case INS_vfmadd231pd:
+        case INS_vfmadd132sd:
+        case INS_vfmadd213sd:
+        case INS_vfmadd231sd:
+        case INS_vfmaddsub132pd:
+        case INS_vfmaddsub213pd:
+        case INS_vfmaddsub231pd:
+        case INS_vfmsubadd132pd:
+        case INS_vfmsubadd213pd:
+        case INS_vfmsubadd231pd:
+        case INS_vfmsub132pd:
+        case INS_vfmsub213pd:
+        case INS_vfmsub231pd:
+        case INS_vfmsub132sd:
+        case INS_vfmsub213sd:
+        case INS_vfmsub231sd:
+        case INS_vfnmadd132pd:
+        case INS_vfnmadd213pd:
+        case INS_vfnmadd231pd:
+        case INS_vfnmadd132sd:
+        case INS_vfnmadd213sd:
+        case INS_vfnmadd231sd:
+        case INS_vfnmsub132pd:
+        case INS_vfnmsub213pd:
+        case INS_vfnmsub231pd:
+        case INS_vfnmsub132sd:
+        case INS_vfnmsub213sd:
+        case INS_vfnmsub231sd:
             return true;
         default:
             break;
@@ -5360,12 +5455,85 @@ void emitter::emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber reg, 
     }
 }
 
+void emitter::emitIns_SIMD_R_R_R_A(
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, GenTreeIndir* indir)
+{
+    assert(IsFMAInstruction(ins));
+    assert(UseVEXEncoding());
+
+    if (reg != reg1)
+    {
+        // Ensure we aren't overwriting op2
+        assert(reg != reg2);
+
+        emitIns_R_R(INS_movaps, attr, reg, reg1);
+    }
+
+    emitIns_R_R_A(ins, attr, reg, reg2, indir, IF_RWR_RRD_ARD);
+}
+
+void emitter::emitIns_SIMD_R_R_R_AR(
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, regNumber base)
+{
+    assert(IsFMAInstruction(ins));
+    assert(UseVEXEncoding());
+
+    if (reg != reg1)
+    {
+        // Ensure we aren't overwriting op2
+        assert(reg != reg2);
+
+        emitIns_R_R(INS_movaps, attr, reg, reg1);
+    }
+
+    emitIns_R_R_AR(ins, attr, reg, reg2, base, 0);
+}
+
+void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
+                                   emitAttr             attr,
+                                   regNumber            reg,
+                                   regNumber            reg1,
+                                   regNumber            reg2,
+                                   CORINFO_FIELD_HANDLE fldHnd,
+                                   int                  offs)
+{
+    assert(IsFMAInstruction(ins));
+    assert(UseVEXEncoding());
+
+    if (reg != reg1)
+    {
+        // Ensure we aren't overwriting op2
+        assert(reg != reg2);
+
+        emitIns_R_R(INS_movaps, attr, reg, reg1);
+    }
+
+    emitIns_R_R_C(ins, attr, reg, reg2, fldHnd, offs);
+}
+
 void emitter::emitIns_SIMD_R_R_R_R(
     instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, regNumber reg3)
 {
-    assert(isAvxBlendv(ins) || isSse41Blendv(ins));
-    if (UseVEXEncoding())
+    if (IsFMAInstruction(ins))
     {
+        assert(UseVEXEncoding());
+
+        if (reg != reg1)
+        {
+            // Ensure we aren't overwriting op2 or op3
+
+            assert(reg != reg2);
+            assert(reg != reg3);
+
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
+        }
+
+        emitIns_R_R_R(ins, attr, reg, reg2, reg3);
+    }
+    else if (UseVEXEncoding())
+    {
+        assert(isAvxBlendv(ins) || isSse41Blendv(ins));
+
         // convert SSE encoding of SSE4.1 instructions to VEX encoding
         switch (ins)
         {
@@ -5405,6 +5573,23 @@ void emitter::emitIns_SIMD_R_R_R_R(
         }
         emitIns_R_R(ins, attr, reg, reg2);
     }
+}
+
+void emitter::emitIns_SIMD_R_R_R_S(
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, int varx, int offs)
+{
+    assert(IsFMAInstruction(ins));
+    assert(UseVEXEncoding());
+
+    if (reg != reg1)
+    {
+        // Ensure we aren't overwriting op2
+        assert(reg != reg2);
+
+        emitIns_R_R(INS_movaps, attr, reg, reg1);
+    }
+
+    emitIns_R_R_S(ins, attr, reg, reg2, varx, offs);
 }
 
 void emitter::emitIns_SIMD_R_R_S(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, int varx, int offs)
