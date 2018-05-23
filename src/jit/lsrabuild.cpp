@@ -2393,7 +2393,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
 void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates)
 {
     bool fixedReg = false;
-    if ((dstCount > 1) && (dstCandidates != RBM_NONE) && (genCountBits(dstCandidates) == dstCount))
+    if ((dstCount > 1) && (dstCandidates != RBM_NONE) && ((int)genCountBits(dstCandidates) == dstCount))
     {
         fixedReg = true;
     }
