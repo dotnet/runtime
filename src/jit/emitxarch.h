@@ -422,8 +422,21 @@ void emitIns_SIMD_R_R_C(
 void emitIns_SIMD_R_R_S(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, int varx, int offs);
 void emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2);
 void emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, int ival);
+void emitIns_SIMD_R_R_R_A(
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, GenTreeIndir* indir);
+void emitIns_SIMD_R_R_R_AR(
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, regNumber base);
+void emitIns_SIMD_R_R_R_C(instruction          ins,
+                          emitAttr             attr,
+                          regNumber            reg,
+                          regNumber            reg1,
+                          regNumber            reg2,
+                          CORINFO_FIELD_HANDLE fldHnd,
+                          int                  offs);
 void emitIns_SIMD_R_R_R_R(
     instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, regNumber reg3);
+void emitIns_SIMD_R_R_R_S(
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber reg2, int varx, int offs);
 #endif // FEATURE_HW_INTRINSICS
 
 enum EmitCallType
