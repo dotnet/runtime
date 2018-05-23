@@ -88,6 +88,7 @@
         <CppCompile Include="..\objectalloc.cpp" />
         <CppCompile Include="..\sideeffects.cpp" />
         <CppCompile Include="..\stacklevelsetter.cpp" />
+        <CppCompile Include="..\treelifeupdater.cpp" />
         <CppCompile Include="..\Lower.cpp" />
         <CppCompile Include="..\LSRA.cpp" />
         <CppCompile Include="..\lsrabuild.cpp" />
