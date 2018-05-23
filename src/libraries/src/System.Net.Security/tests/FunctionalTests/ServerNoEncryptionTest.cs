@@ -50,7 +50,6 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(SupportsNullEncryption))]
-        [ActiveIssue(16534, TestPlatforms.Windows)]
         public async Task ServerNoEncryption_ClientAllowNoEncryption_ConnectWithNoEncryption()
         {
             using (var serverNoEncryption = new DummyTcpServer(
@@ -74,7 +73,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue(16534, TestPlatforms.Windows)]
         public async Task ServerNoEncryption_ClientNoEncryption_ConnectWithNoEncryption()
         {
             using (var serverNoEncryption = new DummyTcpServer(

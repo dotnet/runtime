@@ -27,6 +27,7 @@
     <Compile Include="EnvelopedCms\CertificateTests.cs" />
     <Compile Include="EnvelopedCms\ContentEncryptionAlgorithmTests.cs" />
     <Compile Include="EnvelopedCms\DecryptTests.cs" />
+    <Compile Include="EnvelopedCms\DecryptTestsUsingCertWithPrivateKey.cs" />
     <Compile Include="EnvelopedCms\EdgeCasesTests.cs" />
     <Compile Include="EnvelopedCms\GeneralTests.cs" />
     <Compile Include="EnvelopedCms\KeyAgreeRecipientInfoTests.cs" />
@@ -43,6 +44,8 @@
     <Compile Include="SignedCms\SignerInfoTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="EnvelopedCms\DecryptTestsUsingExplicitPrivateKey.cs" />
+    <Compile Include="EnvelopedCms\SubjectIdentifierTests.cs" />
     <Compile Include="Rfc3161\TimestampRequestTests.cs" />
     <Compile Include="Rfc3161\TimestampTokenInfoTests.cs" />
     <Compile Include="Rfc3161\TimestampTokenTestData.cs" />
