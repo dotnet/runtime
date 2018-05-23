@@ -164,7 +164,6 @@ if (WIN32)
     registerarm.h
     registerarm64.h
     reglist.h
-    regpair.h
     regset.h
     sideeffects.h
     simd.h
