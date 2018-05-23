@@ -135,6 +135,17 @@ if /i "%1" == "release"             (set __BuildTypeRelease=1&set processedArgs=
 
 if /i "%1" == "-priority"           (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
 
+REM Explicitly block -Rebuild.
+if /i "%1" == "Rebuild" (
+    echo "ERROR: 'Rebuild' is not supported.  Please remove it."
+    goto Usage
+)
+if /i "%1" == "-Rebuild" (
+    echo "ERROR: 'Rebuild' is not supported.  Please remove it."
+    goto Usage
+)
+
+
 REM All arguments after this point will be passed through directly to build.cmd on nested invocations
 REM using the "all" argument, and must be added to the __PassThroughArgs variable.
 if [!__PassThroughArgs!]==[] (
@@ -890,7 +901,6 @@ echo -skiprestore: skip restoring packages ^(default: packages are restored duri
 echo -disableoss: Disable Open Source Signing for System.Private.CoreLib.
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.
 echo -officialbuildid=^<ID^>: specify the official build ID to be used by this build.
-echo -Rebuild: passes /t:rebuild to the build projects.
 echo -crossgenaltjit ^<JIT dll^>: run crossgen using specified altjit ^(used for JIT testing^).
 echo portable : build for portable RID.
 echo.
