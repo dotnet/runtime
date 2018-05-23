@@ -86,10 +86,5 @@ namespace System.Drawing
             nativeImage = InitFromStream(s);
         }
         #endregion
-
-        private void ValidateBitmap(IntPtr bitmap)
-        {
-            // No validation is performed on Unix.
-        }
     }
 }

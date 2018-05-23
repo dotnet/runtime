@@ -63,7 +63,7 @@
     <Compile Include="WebSocketHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.net.testdata\1.0.0-prerelease\content\**\*.*" />
+    <SupplementalTestData Include="$(PackagesDir)system.net.testdata\1.0.1-prerelease\content\**\*.*" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

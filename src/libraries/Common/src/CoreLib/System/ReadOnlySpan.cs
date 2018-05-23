@@ -94,7 +94,7 @@ namespace System
         /// <summary>
         /// Returns a 0-length read-only span whose base is the null pointer.
         /// </summary>
-        public static ReadOnlySpan<T> Empty => default(ReadOnlySpan<T>);
+        public static ReadOnlySpan<T> Empty => default;
 
         /// <summary>Gets an enumerator for this span.</summary>
         public Enumerator GetEnumerator() => new Enumerator(this);

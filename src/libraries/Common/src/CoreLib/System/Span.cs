@@ -95,7 +95,7 @@ namespace System
         /// <summary>
         /// Returns an empty <see cref="Span{T}"/>
         /// </summary>
-        public static Span<T> Empty => default(Span<T>);
+        public static Span<T> Empty => default;
 
         /// <summary>Gets an enumerator for this span.</summary>
         public Enumerator GetEnumerator() => new Enumerator(this);

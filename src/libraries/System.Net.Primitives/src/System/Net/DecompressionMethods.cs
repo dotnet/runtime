@@ -8,7 +8,8 @@ namespace System.Net
     public enum DecompressionMethods
     {
         None = 0,
-        GZip = 1,
-        Deflate = 2
+        GZip = 0x1,
+        Deflate = 0x2,
+        Brotli = 0x4
     }
 }

@@ -14,17 +14,17 @@ namespace System.Text
 {
     public class UTF7Encoding : Encoding
     {
-        private const String base64Chars =
+        private const string base64Chars =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         //   0123456789111111111122222222223333333333444444444455555555556666
         //             012345678901234567890123456789012345678901234567890123
 
         // These are the characters that can be directly encoded in UTF7.
-        private const String directChars =
+        private const string directChars =
             "\t\n\r '(),-./0123456789:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
         // These are the characters that can be optionally directly encoded in UTF7.
-        private const String optionalChars =
+        private const string optionalChars =
             "!\"#$%&*;<=>@[]^_`{|}";
 
         // Used by Encoding.UTF7 for lazy initialization
@@ -93,7 +93,7 @@ namespace System.Text
             // UTF7 had an odd decoderFallback behavior, and the Encoder fallback
             // is irrelevant because we encode surrogates individually and never check for unmatched ones
             // (so nothing can fallback during encoding)
-            this.encoderFallback = new EncoderReplacementFallback(String.Empty);
+            this.encoderFallback = new EncoderReplacementFallback(string.Empty);
             this.decoderFallback = new DecoderUTF7Fallback();
         }
 
@@ -372,7 +372,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        public override unsafe String GetString(byte[] bytes, int index, int count)
+        public override unsafe string GetString(byte[] bytes, int index, int count)
         {
             // Validate Parameters
             if (bytes == null)
@@ -385,10 +385,10 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
 
             // Avoid problems with empty input buffer
-            if (count == 0) return String.Empty;
+            if (count == 0) return string.Empty;
 
             fixed (byte* pBytes = bytes)
-                return String.CreateStringFromEncoding(
+                return string.CreateStringFromEncoding(
                     pBytes + index, count, this);
         }
 

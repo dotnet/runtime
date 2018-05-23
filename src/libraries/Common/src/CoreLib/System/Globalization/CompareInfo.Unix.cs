@@ -178,13 +178,15 @@ namespace System.Globalization
             return -1;
         }
 
-        private static unsafe int CompareStringOrdinalIgnoreCase(char* string1, int count1, char* string2, int count2)
+        private static unsafe int CompareStringOrdinalIgnoreCase(ref char string1, int count1, ref char string2, int count2)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(string1 != null);
-            Debug.Assert(string2 != null);
 
-            return Interop.Globalization.CompareStringOrdinalIgnoreCase(string1, count1, string2, count2);
+            fixed (char* char1 = &string1)
+            fixed (char* char2 = &string2)
+            {
+                return Interop.Globalization.CompareStringOrdinalIgnoreCase(char1, count1, char2, count2);
+            }
         }
 
         // TODO https://github.com/dotnet/coreclr/issues/13827:

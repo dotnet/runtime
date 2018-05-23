@@ -558,6 +558,11 @@ namespace System.Drawing
             {
                 if (_color == Color.Empty)
                 {
+                    if (PenType != PenType.SolidColor)
+                    {
+                        throw new ArgumentException(SR.GdiplusInvalidParameter);
+                    }
+
                     int colorARGB = 0;
                     int status = SafeNativeMethods.Gdip.GdipGetPenColor(new HandleRef(this, NativePen), out colorARGB);
                     SafeNativeMethods.Gdip.CheckStatus(status);

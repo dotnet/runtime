@@ -56,7 +56,6 @@ namespace System.Drawing
             return graphics;
         }
 
-        [MonoTODO("The targetDC parameter has no equivalent in libgdiplus.")]
         public BufferedGraphics Allocate(IntPtr targetDC, Rectangle targetRectangle)
         {
             throw new NotImplementedException();

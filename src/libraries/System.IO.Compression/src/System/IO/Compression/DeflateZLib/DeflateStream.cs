@@ -313,7 +313,6 @@ namespace System.IO.Compression
                 ThrowStreamClosedException();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowStreamClosedException()
         {
             throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
@@ -325,7 +324,6 @@ namespace System.IO.Compression
                 ThrowCannotReadFromDeflateStreamException();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowCannotReadFromDeflateStreamException()
         {
             throw new InvalidOperationException(SR.CannotReadFromDeflateStream);
@@ -337,7 +335,6 @@ namespace System.IO.Compression
                 ThrowCannotWriteToDeflateStreamException();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowCannotWriteToDeflateStreamException()
         {
             throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
@@ -706,6 +703,16 @@ namespace System.IO.Compression
             }
         }
 
+        public override void CopyTo(Stream destination, int bufferSize)
+        {
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+
+            EnsureDecompressionMode();
+            EnsureNotDisposed();
+
+            new CopyToStream(this, destination, bufferSize).CopyFromSourceToDestination();
+        }
+
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             // Validation as base CopyToAsync would do
@@ -723,17 +730,22 @@ namespace System.IO.Compression
             }
 
             // Do the copy
-            return new CopyToAsyncStream(this, destination, bufferSize, cancellationToken).CopyFromSourceToDestination();
+            return new CopyToStream(this, destination, bufferSize, cancellationToken).CopyFromSourceToDestinationAsync();
         }
 
-        private sealed class CopyToAsyncStream : Stream
+        private sealed class CopyToStream : Stream
         {
             private readonly DeflateStream _deflateStream;
             private readonly Stream _destination;
             private readonly CancellationToken _cancellationToken;
             private byte[] _arrayPoolBuffer;
 
-            public CopyToAsyncStream(DeflateStream deflateStream, Stream destination, int bufferSize, CancellationToken cancellationToken)
+            public CopyToStream(DeflateStream deflateStream, Stream destination, int bufferSize) :
+                this(deflateStream, destination, bufferSize, CancellationToken.None)
+            {
+            }
+
+            public CopyToStream(DeflateStream deflateStream, Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
                 Debug.Assert(deflateStream != null);
                 Debug.Assert(destination != null);
@@ -745,7 +757,7 @@ namespace System.IO.Compression
                 _arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             }
 
-            public async Task CopyFromSourceToDestination()
+            public async Task CopyFromSourceToDestinationAsync()
             {
                 _deflateStream.AsyncOperationStarting();
                 try
@@ -758,7 +770,10 @@ namespace System.IO.Compression
                         {
                             await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), _cancellationToken).ConfigureAwait(false);
                         }
-                        else break;
+                        else
+                        {
+                            break;
+                        }
                     }
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
@@ -768,6 +783,34 @@ namespace System.IO.Compression
                 {
                     _deflateStream.AsyncOperationCompleting();
 
+                    ArrayPool<byte>.Shared.Return(_arrayPoolBuffer);
+                    _arrayPoolBuffer = null;
+                }
+            }
+
+            public void CopyFromSourceToDestination()
+            {
+                try
+                {
+                    // Flush any existing data in the inflater to the destination stream.
+                    while (true)
+                    {
+                        int bytesRead = _deflateStream._inflater.Inflate(_arrayPoolBuffer, 0, _arrayPoolBuffer.Length);
+                        if (bytesRead > 0)
+                        {
+                            _destination.Write(_arrayPoolBuffer, 0, bytesRead);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
+                    _deflateStream._stream.CopyTo(this, _arrayPoolBuffer.Length);
+                }
+                finally
+                {
                     ArrayPool<byte>.Shared.Return(_arrayPoolBuffer);
                     _arrayPoolBuffer = null;
                 }
@@ -800,14 +843,50 @@ namespace System.IO.Compression
                     {
                         await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
                     }
-                    else break;
+                    else
+                    {
+                        break;
+                    }
                 }
             }
 
-            public override void Write(byte[] buffer, int offset, int count) => WriteAsync(buffer, offset, count, default(CancellationToken)).GetAwaiter().GetResult();
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                // Validate inputs
+                Debug.Assert(buffer != _arrayPoolBuffer);
+                _deflateStream.EnsureNotDisposed();
+
+                if (count <= 0)
+                {
+                    return;
+                }
+                else if (count > buffer.Length - offset)
+                {
+                    // The buffer stream is either malicious or poorly implemented and returned a number of
+                    // bytes larger than the buffer supplied to it.
+                    throw new InvalidDataException(SR.GenericInvalidData);
+                }
+
+                // Feed the data from base stream into the decompression engine.
+                _deflateStream._inflater.SetInput(buffer, offset, count);
+
+                // While there's more decompressed data available, forward it to the buffer stream.
+                while (true)
+                {
+                    int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
+                    if (bytesRead > 0)
+                    {
+                        _destination.Write(_arrayPoolBuffer, 0, bytesRead);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
             public override bool CanWrite => true;
             public override void Flush() { }
-
             public override bool CanRead => false;
             public override bool CanSeek => false;
             public override long Length { get { throw new NotSupportedException(); } }

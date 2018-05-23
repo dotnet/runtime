@@ -137,7 +137,7 @@ namespace System.Buffers.Text.Tests
                 yield return -1234L;
                 yield return 12345L;
                 yield return -12345L;
-                
+
                 yield return 4294967294999999999L; // uint.MaxValue * Billion - 1
                 yield return 4294967295000000000L; // uint.MaxValue * Billion
                 yield return 4294967295000000001L; // uint.MaxValue * Billion + 1

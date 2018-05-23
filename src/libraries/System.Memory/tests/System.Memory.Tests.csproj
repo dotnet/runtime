@@ -98,7 +98,6 @@
   <ItemGroup>
     <Compile Include="ReadOnlySpan\AsSpan.cs" />
     <Compile Include="ReadOnlySpan\BinarySearch.cs" />
-    <Compile Include="ReadOnlySpan\CompareTo.cs" />
     <Compile Include="ReadOnlySpan\Contains.cs" />
     <Compile Include="ReadOnlySpan\CopyTo.cs" />
     <Compile Include="ReadOnlySpan\CtorArray.cs" />
@@ -118,7 +117,6 @@
     <Compile Include="ReadOnlySpan\ImplicitConversion.cs" />
     <Compile Include="ReadOnlySpan\IndexOf.byte.cs" />
     <Compile Include="ReadOnlySpan\IndexOf.char.cs" />
-    <Compile Include="ReadOnlySpan\IndexOf.charSpan.cs" />
     <Compile Include="ReadOnlySpan\IndexOf.T.cs" />
     <Compile Include="ReadOnlySpan\IndexOfAny.byte.cs" />
     <Compile Include="ReadOnlySpan\IndexOfAny.T.cs" />
@@ -159,6 +157,12 @@
     <Compile Include="ReadOnlySpan\TrimAnyCharacter.cs" />
     <Compile Include="ReadOnlySpan\TrimManyCharacters.cs" />
     <Compile Include="ReadOnlySpan\TrimWhiteSpace.cs" />
+    <Compile Include="$(CommonTestPath)\Tests\System\SpanTestHelpers.cs">
+      <Link>ReadOnlySpan\SpanTestHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Tests\System\StringTests.cs">
+      <Link>ReadOnlySpan\StringTests.cs</Link>
+    </Compile>    
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Memory\AsMemory.cs" />
@@ -255,6 +259,12 @@
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

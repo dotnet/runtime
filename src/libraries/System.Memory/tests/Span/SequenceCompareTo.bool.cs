@@ -40,7 +40,7 @@ namespace System.SpanTests
         [Fact]
         public static void SequenceCompareToArraySegmentImplicit_Bool()
         {
-            bool[] src = { true, true, true};
+            bool[] src = { true, true, true };
             bool[] dst = { false, true, true, true, false };
             var segment = new ArraySegment<bool>(dst, 1, 3);
 

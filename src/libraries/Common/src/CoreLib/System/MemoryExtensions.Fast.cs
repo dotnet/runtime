@@ -80,7 +80,7 @@ namespace System
                 return false;
             if (value.Length == 0)  // span.Length == value.Length == 0
                 return true;
-            return (CompareInfo.CompareOrdinalIgnoreCase(span, value) == 0);
+            return CompareInfo.EqualsOrdinalIgnoreCase(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), span.Length);
         }
 
         // TODO https://github.com/dotnet/corefx/issues/27526

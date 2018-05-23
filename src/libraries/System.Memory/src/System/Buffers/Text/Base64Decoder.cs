@@ -147,7 +147,7 @@ namespace System.Buffers.Text
             if (srcLength != utf8.Length)
                 goto InvalidExit;
 
-        DoneExit:
+            DoneExit:
             bytesConsumed = sourceIndex;
             bytesWritten = destIndex;
             return OperationStatus.Done;

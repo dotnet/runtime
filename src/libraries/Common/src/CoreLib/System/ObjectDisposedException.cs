@@ -15,7 +15,7 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ObjectDisposedException : InvalidOperationException
     {
-        private String _objectName;
+        private string _objectName;
 
         // This constructor should only be called by the EE (COMPlusThrow)
         private ObjectDisposedException() :
@@ -23,18 +23,18 @@ namespace System
         {
         }
 
-        public ObjectDisposedException(String objectName) :
+        public ObjectDisposedException(string objectName) :
             this(objectName, SR.ObjectDisposed_Generic)
         {
         }
 
-        public ObjectDisposedException(String objectName, String message) : base(message)
+        public ObjectDisposedException(string objectName, string message) : base(message)
         {
             HResult = HResults.COR_E_OBJECTDISPOSED;
             _objectName = objectName;
         }
 
-        public ObjectDisposedException(String message, Exception innerException)
+        public ObjectDisposedException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_OBJECTDISPOSED;
@@ -55,26 +55,26 @@ namespace System
         /// <devdoc>
         ///    <para>Gets the text for the message for this exception.</para>
         /// </devdoc>
-        public override String Message
+        public override string Message
         {
             get
             {
-                String name = ObjectName;
+                string name = ObjectName;
                 if (name == null || name.Length == 0)
                     return base.Message;
 
-                String objectDisposed = SR.Format(SR.ObjectDisposed_ObjectName_Name, name);
+                string objectDisposed = SR.Format(SR.ObjectDisposed_ObjectName_Name, name);
                 return base.Message + Environment.NewLine + objectDisposed;
             }
         }
 
-        public String ObjectName
+        public string ObjectName
         {
             get
             {
                 if (_objectName == null)
                 {
-                    return String.Empty;
+                    return string.Empty;
                 }
                 return _objectName;
             }

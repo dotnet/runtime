@@ -48,12 +48,6 @@ namespace System.Drawing
         /// </summary>
         private IntPtr _nativeGraphics;
 
-        /// <summary>
-        /// Handle to native DC - obtained from the GDI+ graphics object. We need to cache it to implement
-        /// IDeviceContext interface.
-        /// </summary>
-        private IntPtr _nativeHdc;
-
         // Object reference used for printing; it could point to a PrintPreviewGraphics to obtain the VisibleClipBounds, or 
         // a DeviceContext holding a printer DC.
         private object _printingHelper;
@@ -175,21 +169,6 @@ namespace System.Drawing
 
         internal IntPtr NativeGraphics => _nativeGraphics;
 
-        public IntPtr GetHdc()
-        {
-            IntPtr hdc = IntPtr.Zero;
-            int status = SafeNativeMethods.Gdip.GdipGetDC(new HandleRef(this, NativeGraphics), out hdc);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-
-            _nativeHdc = hdc; // need to cache the hdc to be able to release with a call to IDeviceContext.ReleaseHdc().
-            return _nativeHdc;
-        }
-
-        [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public void ReleaseHdc(IntPtr hdc) => ReleaseHdcInternal(hdc);
-
-        public void ReleaseHdc() => ReleaseHdcInternal(_nativeHdc);
-
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void ReleaseHdcInternal(IntPtr hdc)
         {
@@ -261,18 +240,9 @@ namespace System.Drawing
 
         ~Graphics() => Dispose(false);
 
-        /// <summary>
-        /// Forces immediate execution of all operations currently on the stack.
-        /// </summary>
-        public void Flush() => Flush(FlushIntention.Flush);
-
-        /// <summary>
-        /// Forces execution of all operations currently on the stack.
-        /// </summary>
-        public void Flush(FlushIntention intention)
+        private void FlushCore()
         {
-            int status = SafeNativeMethods.Gdip.GdipFlush(new HandleRef(this, NativeGraphics), intention);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            // Libgdiplus needs to synchronize a macOS context. Windows does not do anything.
         }
 
         /// <summary>

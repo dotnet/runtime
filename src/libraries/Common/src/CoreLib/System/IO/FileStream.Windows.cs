@@ -868,7 +868,7 @@ namespace System.IO
                     }
                     else
                     {
-                        destination = default(Memory<byte>);
+                        destination = default;
                     }
                 }
 

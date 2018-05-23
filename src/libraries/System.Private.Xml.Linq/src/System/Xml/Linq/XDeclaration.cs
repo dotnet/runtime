@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Text;
 using StringBuilder = System.Text.StringBuilder;
 
 namespace System.Xml.Linq

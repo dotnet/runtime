@@ -98,8 +98,8 @@
     <Compile Include="$(CommonPath)\System\Marvin.cs">
       <Link>Common\System\Marvin.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
-      <Link>Common\System\IO\StringBuilderCache.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\StringBuilderCache.cs">
+      <Link>Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
     <!-- Logging -->
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
