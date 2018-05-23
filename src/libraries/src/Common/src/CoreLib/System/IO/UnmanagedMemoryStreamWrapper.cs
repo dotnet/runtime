@@ -71,7 +71,7 @@ namespace System.IO
 
         public override bool TryGetBuffer(out ArraySegment<byte> buffer)
         {
-            buffer = default(ArraySegment<byte>);
+            buffer = default;
             return false;
         }
 
@@ -206,7 +206,7 @@ namespace System.IO
             return _unmanagedStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             return _unmanagedStream.ReadAsync(buffer, cancellationToken);
         }
@@ -217,7 +217,7 @@ namespace System.IO
             return _unmanagedStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             return _unmanagedStream.WriteAsync(buffer, cancellationToken);
         }

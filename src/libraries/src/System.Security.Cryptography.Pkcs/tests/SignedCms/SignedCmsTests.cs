@@ -4,6 +4,7 @@
 
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.Xml;
 using Test.Cryptography;
 using Xunit;
 
@@ -423,6 +424,38 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 cms.Decode(encoded);
             }
 
+            cms.CheckSignature(true);
+        }
+
+        [Fact]
+        public static void AddSignerWithNegativeSerial()
+        {
+            const string expectedSerial = "FD319CB1514B06AF49E00522277E43C8";
+
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, false);
+
+            using (X509Certificate2 cert = Certificates.NegativeSerialNumber.TryGetCertificateWithPrivateKey())
+            {
+                Assert.Equal(expectedSerial, cert.SerialNumber);
+
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                signer.IncludeOption = X509IncludeOption.EndCertOnly;
+
+                cms.ComputeSignature(signer);
+            }
+
+            SignerInfoCollection signers = cms.SignerInfos;
+            Assert.Equal(1, signers.Count);
+
+            SignerInfo signerInfo = signers[0];
+            Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, signerInfo.SignerIdentifier.Type);
+
+            X509IssuerSerial issuerSerial = (X509IssuerSerial)signerInfo.SignerIdentifier.Value;
+            Assert.Equal(expectedSerial, issuerSerial.SerialNumber);
+
+            Assert.NotNull(signerInfo.Certificate);
+            // Assert.NoThrow
             cms.CheckSignature(true);
         }
 

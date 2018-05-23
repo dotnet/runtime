@@ -135,7 +135,46 @@ namespace System.IO.Pipelines
 
             lock (_sync)
             {
-                BufferSegment segment = _writingHead ?? AllocateWriteHeadUnsynchronized(sizeHint);
+                AllocateWriteHeadUnsynchronized(sizeHint);
+            }
+
+            // Slice the AvailableMemory to the WritableBytes size
+            int end = _writingHead.End;
+            Memory<byte> availableMemory = _writingHead.AvailableMemory;
+            availableMemory = availableMemory.Slice(end);
+            return availableMemory;
+        }
+
+        internal Span<byte> GetSpan(int sizeHint)
+        {
+            if (_writerCompletion.IsCompleted)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed();
+            }
+
+            if (sizeHint < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumSize);
+            }
+
+            lock (_sync)
+            {
+                AllocateWriteHeadUnsynchronized(sizeHint);
+            }
+
+            // Slice the AvailableMemory to the WritableBytes size
+            int end = _writingHead.End;
+            Span<byte> availableSpan = _writingHead.AvailableMemory.Span;
+            availableSpan = availableSpan.Slice(end);
+            return availableSpan;
+        }
+
+        private void AllocateWriteHeadUnsynchronized(int sizeHint)
+        {
+            BufferSegment segment = null;
+            if (_writingHead != null)
+            {
+                segment = _writingHead;
 
                 int bytesLeftInBuffer = segment.WritableBytes;
 
@@ -150,57 +189,51 @@ namespace System.IO.Pipelines
                     _writingHead = nextSegment;
                 }
             }
-
-            return _writingHead.AvailableMemory.Slice(_writingHead.End, _writingHead.WritableBytes);
-        }
-
-        private BufferSegment AllocateWriteHeadUnsynchronized(int sizeHint)
-        {
-            BufferSegment segment = null;
-
-            if (_commitHead != null && !_commitHead.ReadOnly)
+            else
             {
-                // Try to return the tail so the calling code can append to it
-                int remaining = _commitHead.WritableBytes;
-
-                if (sizeHint <= remaining && remaining > 0)
+                if (_commitHead != null && !_commitHead.ReadOnly)
                 {
-                    // Free tail space of the right amount, use that
-                    segment = _commitHead;
-                }
-            }
+                    // Try to return the tail so the calling code can append to it
+                    int remaining = _commitHead.WritableBytes;
 
-            if (segment == null)
-            {
+                    if (sizeHint <= remaining && remaining > 0)
+                    {
+                        // Free tail space of the right amount, use that
+                        segment = _commitHead;
+
+                        // Set write head to assigned segment
+                        _writingHead = segment;
+                        return;
+                    }
+                }
+
                 // No free tail space, allocate a new segment
                 segment = CreateSegmentUnsynchronized();
                 segment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint)));
-            }
 
-            if (_commitHead == null)
-            {
-                // No previous writes have occurred
-                _commitHead = segment;
-            }
-            else if (segment != _commitHead && _commitHead.Next == null)
-            {
-                // Append the segment to the commit head if writes have been committed
-                // and it isn't the same segment (unused tail space)
-                _commitHead.SetNext(segment);
-            }
+                if (_commitHead == null)
+                {
+                    // No previous writes have occurred
+                    _commitHead = segment;
+                }
+                else if (segment != _commitHead && _commitHead.Next == null)
+                {
+                    // Append the segment to the commit head if writes have been committed
+                    // and it isn't the same segment (unused tail space)
+                    _commitHead.SetNext(segment);
+                }
 
-            // Set write head to assigned segment
-            _writingHead = segment;
-
-            return segment;
+                // Set write head to assigned segment
+                _writingHead = segment;
+            }
         }
 
         private int GetSegmentSize(int sizeHint)
         {
             // First we need to handle case where hint is smaller than minimum segment size
-            var adjustedToMinimumSize = Math.Max(_minimumSegmentSize, sizeHint);
+            sizeHint = Math.Max(_minimumSegmentSize, sizeHint);
             // After that adjust it to fit into pools max buffer size
-            var adjustedToMaximumSize = Math.Min(_pool.MaxBufferSize, adjustedToMinimumSize);
+            var adjustedToMaximumSize = Math.Min(_pool.MaxBufferSize, sizeHint);
             return adjustedToMaximumSize;
         }
 
@@ -269,7 +302,7 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_NotWritingNoAlloc();
             }
 
-            if (bytesWritten > 0)
+            if (bytesWritten >= 0)
             {
                 Debug.Assert(!_writingHead.ReadOnly);
                 Debug.Assert(_writingHead.Next == null);
@@ -281,15 +314,14 @@ namespace System.IO.Pipelines
                     ThrowHelper.ThrowInvalidOperationException_AdvancingPastBufferSize();
                 }
 
+                // if bytesWritten is zero, these do nothing
                 _writingHead.End += bytesWritten;
                 _currentWriteLength += bytesWritten;
             }
-            else if (bytesWritten < 0)
+            else
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytesWritten);
             }
-
-            // and if zero, just do nothing; don't need to validate tail etc
         }
 
         internal ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken)

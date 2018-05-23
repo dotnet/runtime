@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Pkcs.Tests
 {
-    public static class SignerInfoTests
+    public static partial class SignerInfoTests
     {
         [Fact]
         public static void SignerInfo_SignedAttributes_Cached_WhenEmpty()
@@ -341,6 +341,23 @@ namespace System.Security.Cryptography.Pkcs.Tests
             // is SubjectKeyIdentifier, and we're IssuerAndSerialNumber, so no match.
             Assert.Throws<CryptographicException>(
                 () => signerInfo.RemoveCounterSignature(signerInfo));
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug")]
+        [InlineData(0)]
+        [InlineData(1)]
+        public static void RemoveCounterSignature_EncodedInSingleAttribute(int indexToRemove)
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.RsaPkcs1TwoCounterSignaturesInSingleAttribute);
+            SignerInfo signerInfo = cms.SignerInfos[0];
+
+            Assert.Equal(2, signerInfo.CounterSignerInfos.Count);
+            signerInfo.RemoveCounterSignature(indexToRemove);
+            Assert.Equal(1, signerInfo.CounterSignerInfos.Count);
+
+            cms.CheckSignature(true);
         }
 
         [Fact]

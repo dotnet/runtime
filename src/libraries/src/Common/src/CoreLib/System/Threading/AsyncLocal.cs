@@ -61,7 +61,7 @@ namespace System.Threading
             get
             {
                 object obj = ExecutionContext.GetLocalValue(this);
-                return (obj == null) ? default(T) : (T)obj;
+                return (obj == null) ? default : (T)obj;
             }
             set
             {
@@ -72,8 +72,8 @@ namespace System.Threading
         void IAsyncLocal.OnValueChanged(object previousValueObj, object currentValueObj, bool contextChanged)
         {
             Debug.Assert(m_valueChangedHandler != null);
-            T previousValue = previousValueObj == null ? default(T) : (T)previousValueObj;
-            T currentValue = currentValueObj == null ? default(T) : (T)currentValueObj;
+            T previousValue = previousValueObj == null ? default : (T)previousValueObj;
+            T currentValue = currentValueObj == null ? default : (T)currentValueObj;
             m_valueChangedHandler(new AsyncLocalValueChangedArgs<T>(previousValue, currentValue, contextChanged));
         }
     }

@@ -19,7 +19,7 @@ namespace System.IO.Ports.Tests
         /// <summary>
         /// Check that all ports either open correctly or fail with UnauthorizedAccessException (which implies they're already open)
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         private void OpenEveryPortName()
         {
             foreach (string portName in SerialPort.GetPortNames())
@@ -40,7 +40,7 @@ namespace System.IO.Ports.Tests
         /// Test that SerialPort.GetPortNames finds every port that the test helpers have found. 
         /// (On Windows, the latter uses a different technique to SerialPort to find ports).
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         private void AllHelperPortsAreInGetPortNames()
         {
             string[] serialPortNames = SerialPort.GetPortNames();
@@ -55,7 +55,7 @@ namespace System.IO.Ports.Tests
         /// Test that the test helpers have found every port that SerialPort.GetPortNames has found
         /// This catches regressions in the test helpers, eg GH #18928 / #20668
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         private void AllGetPortNamesAreInHelperPorts()
         {
             string[] helperPortNames = PortHelper.GetPorts();

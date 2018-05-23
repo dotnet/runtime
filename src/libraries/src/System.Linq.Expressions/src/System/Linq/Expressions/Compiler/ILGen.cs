@@ -671,9 +671,8 @@ namespace System.Linq.Expressions.Compiler
             {
                 il.EmitCastToType(typeFrom, typeTo);
             }
-            else if (typeFrom.IsArray && typeTo.IsArray)
+            else if (typeFrom.IsArray && typeTo.IsArray) // reference conversion from one array type to another via castclass
             {
-                // See DevDiv Bugs #94657.
                 il.EmitCastToType(typeFrom, typeTo);
             }
             else

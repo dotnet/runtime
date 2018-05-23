@@ -10,7 +10,10 @@
     <AssemblyName>System.Linq.Expressions</AssemblyName>
     <RootNamespace>System.Linq.Expressions</RootNamespace>
     <IsInterpreting Condition="'$(TargetGroup)' == 'uapaot'">true</IsInterpreting>
-    <DefineConstants> $(DefineConstants);FEATURE_DLG_INVOKE;FEATURE_FAST_CREATE</DefineConstants>
+    
+    <!-- These defines are disabled on UapAot due to https://github.com/dotnet/corefx/issues/29745 -->
+    <DefineConstants Condition="'$(TargetGroup)' != 'uapaot'"> $(DefineConstants);FEATURE_DLG_INVOKE;FEATURE_FAST_CREATE</DefineConstants>
+    
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
   </PropertyGroup>

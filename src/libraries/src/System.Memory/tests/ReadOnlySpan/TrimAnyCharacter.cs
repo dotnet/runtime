@@ -86,7 +86,7 @@ namespace System.SpanTests
                 Assert.True(span.Slice(0, length - 1).SequenceEqual(span.TrimEnd('a')));
             }
         }
-        
+
         [Fact]
         public static void TrimCharacterAtStartAndEnd()
         {

@@ -286,4 +286,13 @@
   <data name="Cryptography_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
     <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
   </data>
+  <data name="Cryptography_Cms_NoAttributeFound" xml:space="preserve">
+    <value>Attribute not found.</value>
+  </data>
+  <data name="Cryptography_Cms_NoCertificateFound" xml:space="preserve">
+    <value>Certificate not found.</value>
+  </data>
+  <data name="Cryptography_Cms_CertificateAlreadyInCollection" xml:space="preserve">
+    <value>Certificate already present in the collection.</value>
+  </data>
 </root>

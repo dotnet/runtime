@@ -2444,6 +2444,7 @@
     "System.Memory": {
       "InboxOn": {
         "netcoreapp2.1": "4.1.0.0",
+		"netcoreapp2.2": "4.1.0.0",
         "monoandroid10": "Any",
         "monotouch10": "Any",
         "uap10.0.16300": "4.1.0.0",
@@ -4977,9 +4978,16 @@
       ],
       "BaselineVersion": "4.4.0",
       "InboxOn": {
+        "monoandroid10": "Any",
+        "monotouch10": "Any",
         "netcoreapp2.0": "4.1.1.0",
         "netcoreapp2.1": "4.3.0.0",
-        "uap10.0.16300": "4.3.0.0"
+        "netcoreapp2.2": "4.3.0.0",
+        "uap10.0.16300": "4.3.0.0",
+        "xamarinios10": "Any",
+        "xamarinmac20": "Any",
+        "xamarintvos10": "Any",
+        "xamarinwatchos10": "Any"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",

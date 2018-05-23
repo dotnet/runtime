@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -23,9 +24,6 @@ namespace System.IO
         // Directory being monitored
         private string _directory;
 
-        // Filter for name matching
-        private string _filter;
-
         // The watch filter for the API call.
         private const NotifyFilters c_defaultNotifyFilters = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
         private NotifyFilters _notifyFilters = c_defaultNotifyFilters;
@@ -44,7 +42,6 @@ namespace System.IO
 
         // Used for synchronization
         private bool _disposed;
-        private ISynchronizeInvoke _synchronizingObject;
 
         // Event handlers
         private FileSystemEventHandler _onChangedHandler = null;
@@ -81,15 +78,16 @@ namespace System.IO
         public FileSystemWatcher()
         {
             _directory = string.Empty;
-            _filter = "*";
         }
 
         /// <devdoc>
         ///    Initializes a new instance of the <see cref='System.IO.FileSystemWatcher'/> class,
         ///    given the specified directory to monitor.
         /// </devdoc>
-        public FileSystemWatcher(string path) : this(path, "*")
+        public FileSystemWatcher(string path)
         {
+            CheckPathValidity(path);
+            _directory = path;
         }
 
         /// <devdoc>
@@ -98,21 +96,9 @@ namespace System.IO
         /// </devdoc>
         public FileSystemWatcher(string path, string filter)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            // Early check for directory parameter so that an exception can be thrown as early as possible.
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Format(SR.InvalidDirName, path), nameof(path));
-
-            if (!Directory.Exists(path))
-                throw new ArgumentException(SR.Format(SR.InvalidDirName_NotExists, path), nameof(path));
-
+            CheckPathValidity(path);
             _directory = path;
-            _filter = filter ?? throw new ArgumentNullException(nameof(filter));
-
-            if (_filter == "*.*")
-                _filter = "*";
+            Filter = filter ?? throw new ArgumentNullException(nameof(filter));
         }
 
         /// <devdoc>
@@ -137,6 +123,8 @@ namespace System.IO
                 }
             }
         }
+
+        public Collection<string> Filters { get; } = new NormalizedFilterCollection();
 
         /// <devdoc>
         ///    Gets or sets a value indicating whether the component is enabled.
@@ -179,20 +167,12 @@ namespace System.IO
         {
             get
             {
-                return _filter;
+                return Filters.Count == 0 ? "*" : Filters[0];
             }
             set
             {
-                if (string.IsNullOrEmpty(value))
-                {
-                    // Skip the string compare for "*" since it has no case-insensitive representation that differs from
-                    // the case-sensitive representation.
-                    _filter = "*";
-                }
-                else if (!string.Equals(_filter, value, PathInternal.StringComparison))
-                {
-                    _filter = value == "*.*" ? "*" : value;
-                }
+                Filters.Clear();
+                Filters.Add(value);
             }
         }
 
@@ -276,7 +256,7 @@ namespace System.IO
 
                     if (!Directory.Exists(value))
                         throw new ArgumentException(SR.Format(SR.InvalidDirName_NotExists, value), nameof(Path));
-      
+
                     _directory = value;
                     Restart();
                 }
@@ -388,15 +368,38 @@ namespace System.IO
             }
         }
 
+        private static void CheckPathValidity(string path)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+
+            // Early check for directory parameter so that an exception can be thrown as early as possible.
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Format(SR.InvalidDirName, path), nameof(path));
+
+            if (!Directory.Exists(path))
+                throw new ArgumentException(SR.Format(SR.InvalidDirName_NotExists, path), nameof(path));
+        }
+
         /// <summary>
         /// Sees if the name given matches the name filter we have.
         /// </summary>
         private bool MatchPattern(ReadOnlySpan<char> relativePath)
         {
             ReadOnlySpan<char> name = IO.Path.GetFileName(relativePath);
-            return name.Length > 0
-                ? FileSystemName.MatchesSimpleExpression(_filter, name, ignoreCase: !PathInternal.IsCaseSensitive)
-                : false;
+            if (name.Length == 0)
+                return false;
+
+            if (Filters.Count == 0)
+                return true;
+
+            foreach (string filter in Filters)
+            {
+                if (FileSystemName.MatchesSimpleExpression(filter, name, ignoreCase: !PathInternal.IsCaseSensitive))
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -574,9 +577,12 @@ namespace System.IO
                         tcs.TrySetResult(new WaitForChangedResult(e.ChangeType, e.Name, oldName: null, timedOut: false));
                     }
                 };
-                if ((changeType & WatcherChangeTypes.Created) != 0) Created += fseh;
-                if ((changeType & WatcherChangeTypes.Deleted) != 0) Deleted += fseh;
-                if ((changeType & WatcherChangeTypes.Changed) != 0) Changed += fseh;
+                if ((changeType & WatcherChangeTypes.Created) != 0)
+                    Created += fseh;
+                if ((changeType & WatcherChangeTypes.Deleted) != 0)
+                    Deleted += fseh;
+                if ((changeType & WatcherChangeTypes.Changed) != 0)
+                    Changed += fseh;
             }
             if ((changeType & WatcherChangeTypes.Renamed) != 0)
             {
@@ -614,9 +620,12 @@ namespace System.IO
                 }
                 if (fseh != null)
                 {
-                    if ((changeType & WatcherChangeTypes.Changed) != 0) Changed -= fseh;
-                    if ((changeType & WatcherChangeTypes.Deleted) != 0) Deleted -= fseh;
-                    if ((changeType & WatcherChangeTypes.Created) != 0) Created -= fseh;
+                    if ((changeType & WatcherChangeTypes.Changed) != 0)
+                        Changed -= fseh;
+                    if ((changeType & WatcherChangeTypes.Deleted) != 0)
+                        Deleted -= fseh;
+                    if ((changeType & WatcherChangeTypes.Created) != 0)
+                        Created -= fseh;
                 }
             }
 
@@ -664,17 +673,7 @@ namespace System.IO
             }
         }
 
-        public ISynchronizeInvoke SynchronizingObject
-        {
-            get
-            {
-                return _synchronizingObject;
-            }
-            set
-            {
-                _synchronizingObject = value;
-            }
-        }
+        public ISynchronizeInvoke SynchronizingObject { get; set; }
 
         public void BeginInit()
         {
@@ -695,6 +694,19 @@ namespace System.IO
         private bool IsSuspended()
         {
             return _initializing || DesignMode;
+        }
+
+        private class NormalizedFilterCollection : Collection<string>
+        {
+            protected override void InsertItem(int index, string item)
+            {
+                base.InsertItem(index, string.IsNullOrEmpty(item) || item == "*.*" ? "*" : item);
+            }
+
+            protected override void SetItem(int index, string item)
+            {
+                base.SetItem(index, string.IsNullOrEmpty(item) || item == "*.*" ? "*" : item);
+            }
         }
     }
 }

@@ -455,6 +455,7 @@ namespace System.Net.Http.Functional.Tests
         
         public static TheoryData InvalidStatusLine = GetInvalidStatusLine().ToTheoryData();
 
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [Theory]
         [MemberData(nameof(InvalidStatusLine))]
         public async Task GetAsync_InvalidStatusLine_ThrowsException(string responseString)
@@ -542,6 +543,7 @@ namespace System.Net.Http.Functional.Tests
                         yield return new object[] { maxChunkSize, lineEnding, useCopyToAsync };
         }
 
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [OuterLoop]
         [Theory]
         [MemberData(nameof(GetAsync_Chunked_VaryingSizeChunks_ReceivedCorrectly_MemberData))]
@@ -610,6 +612,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
     public abstract class HttpProtocolTests_Dribble : HttpProtocolTests
     {
         protected override Stream GetStream(Stream s) => new DribbleStream(s);

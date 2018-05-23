@@ -111,8 +111,8 @@
 
     <RuntimeGroup Include="tizen">
       <Parent>linux</Parent>
-      <Architectures>armel</Architectures>
-      <Versions>4.0.0</Versions>
+      <Architectures>x86;armel</Architectures>
+      <Versions>4.0.0;5.0.0</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="ubuntu">

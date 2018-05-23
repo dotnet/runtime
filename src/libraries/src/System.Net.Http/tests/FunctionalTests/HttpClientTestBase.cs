@@ -28,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
 
         protected static HttpClientHandler CreateHttpClientHandler(bool useSocketsHttpHandler)
         {
-            if (!PlatformDetection.IsNetCore || useSocketsHttpHandler)
+            if (PlatformDetection.IsUap || PlatformDetection.IsFullFramework || useSocketsHttpHandler)
             {
                 return new HttpClientHandler();
             }

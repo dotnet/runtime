@@ -498,6 +498,25 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal("020100", parsed.OctetString.ByteArrayToHex());
             Assert.Equal("010203", parsed.BitString.ByteArrayToHex());
         }
+
+        [Theory]
+        [InlineData(PublicEncodingRules.BER)]
+        // Not CER since it uses a definite encoding for the sequence.
+        [InlineData(PublicEncodingRules.DER)]
+        public static void ReadNegativeIntegers(PublicEncodingRules ruleSet)
+        {
+            byte[] inputData = (
+                "3007" +
+                  "0201FE" +
+                  "0202FEEF").HexToByteArray();
+
+            BigIntegers bigIntegers = AsnSerializer.Deserialize<BigIntegers>(
+                inputData,
+                (AsnEncodingRules)ruleSet);
+
+            Assert.Equal(-2, (int)bigIntegers.First);
+            Assert.Equal("FEEF", bigIntegers.Second.ByteArrayToHex());
+        }
     }
 
     // RFC 3280 / ITU-T X.509
@@ -880,5 +899,14 @@ namespace System.Security.Cryptography.Tests.Asn1
         [BitString]
         [ExpectedTag(1)]
         public ReadOnlyMemory<byte> BitString;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BigIntegers
+    {
+        public BigInteger First;
+
+        [Integer]
+        public ReadOnlyMemory<byte> Second;
     }
 }

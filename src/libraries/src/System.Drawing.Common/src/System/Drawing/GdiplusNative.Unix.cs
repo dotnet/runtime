@@ -121,7 +121,6 @@ namespace System.Drawing
                 GdipFillRectangles_ptr = FunctionWrapper.Load<GdipFillRectangles_delegate>(s_gdipModule, "GdipFillRectangles", LibraryName);
                 GdipFillRectanglesI_ptr = FunctionWrapper.Load<GdipFillRectanglesI_delegate>(s_gdipModule, "GdipFillRectanglesI", LibraryName);
                 GdipDrawString_ptr = FunctionWrapper.Load<GdipDrawString_delegate>(s_gdipModule, "GdipDrawString", LibraryName);
-                GdipGetDC_ptr = FunctionWrapper.Load<GdipGetDC_delegate>(s_gdipModule, "GdipGetDC", LibraryName);
                 GdipReleaseDC_ptr = FunctionWrapper.Load<GdipReleaseDC_delegate>(s_gdipModule, "GdipReleaseDC", LibraryName);
                 GdipDrawImageRectI_ptr = FunctionWrapper.Load<GdipDrawImageRectI_delegate>(s_gdipModule, "GdipDrawImageRectI", LibraryName);
                 GdipGetRenderingOrigin_ptr = FunctionWrapper.Load<GdipGetRenderingOrigin_delegate>(s_gdipModule, "GdipGetRenderingOrigin", LibraryName);
@@ -167,7 +166,6 @@ namespace System.Drawing
                 GdipGetTextContrast_ptr = FunctionWrapper.Load<GdipGetTextContrast_delegate>(s_gdipModule, "GdipGetTextContrast", LibraryName);
                 GdipSetTextRenderingHint_ptr = FunctionWrapper.Load<GdipSetTextRenderingHint_delegate>(s_gdipModule, "GdipSetTextRenderingHint", LibraryName);
                 GdipGetTextRenderingHint_ptr = FunctionWrapper.Load<GdipGetTextRenderingHint_delegate>(s_gdipModule, "GdipGetTextRenderingHint", LibraryName);
-                GdipFlush_ptr = FunctionWrapper.Load<GdipFlush_delegate>(s_gdipModule, "GdipFlush", LibraryName);
                 GdipAddPathString_ptr = FunctionWrapper.Load<GdipAddPathString_delegate>(s_gdipModule, "GdipAddPathString", LibraryName);
                 GdipAddPathStringI_ptr = FunctionWrapper.Load<GdipAddPathStringI_delegate>(s_gdipModule, "GdipAddPathStringI", LibraryName);
                 GdipCreateFromHWND_ptr = FunctionWrapper.Load<GdipCreateFromHWND_delegate>(s_gdipModule, "GdipCreateFromHWND", LibraryName);
@@ -178,24 +176,16 @@ namespace System.Drawing
                 GdipLoadImageFromFileICM_ptr = FunctionWrapper.Load<GdipLoadImageFromFileICM_delegate>(s_gdipModule, "GdipLoadImageFromFileICM", LibraryName);
                 GdipCreateBitmapFromHBITMAP_ptr = FunctionWrapper.Load<GdipCreateBitmapFromHBITMAP_delegate>(s_gdipModule, "GdipCreateBitmapFromHBITMAP", LibraryName);
                 GdipDisposeImage_ptr = FunctionWrapper.Load<GdipDisposeImage_delegate>(s_gdipModule, "GdipDisposeImage", LibraryName);
-                GdipGetImageFlags_ptr = FunctionWrapper.Load<GdipGetImageFlags_delegate>(s_gdipModule, "GdipGetImageFlags", LibraryName);
                 GdipGetImageType_ptr = FunctionWrapper.Load<GdipGetImageType_delegate>(s_gdipModule, "GdipGetImageType", LibraryName);
                 GdipImageGetFrameDimensionsCount_ptr = FunctionWrapper.Load<GdipImageGetFrameDimensionsCount_delegate>(s_gdipModule, "GdipImageGetFrameDimensionsCount", LibraryName);
                 GdipImageGetFrameDimensionsList_ptr = FunctionWrapper.Load<GdipImageGetFrameDimensionsList_delegate>(s_gdipModule, "GdipImageGetFrameDimensionsList", LibraryName);
-                GdipGetImageHeight_ptr = FunctionWrapper.Load<GdipGetImageHeight_delegate>(s_gdipModule, "GdipGetImageHeight", LibraryName);
-                GdipGetImageHorizontalResolution_ptr = FunctionWrapper.Load<GdipGetImageHorizontalResolution_delegate>(s_gdipModule, "GdipGetImageHorizontalResolution", LibraryName);
                 GdipGetImagePaletteSize_ptr = FunctionWrapper.Load<GdipGetImagePaletteSize_delegate>(s_gdipModule, "GdipGetImagePaletteSize", LibraryName);
                 GdipGetImagePalette_ptr = FunctionWrapper.Load<GdipGetImagePalette_delegate>(s_gdipModule, "GdipGetImagePalette", LibraryName);
                 GdipSetImagePalette_ptr = FunctionWrapper.Load<GdipSetImagePalette_delegate>(s_gdipModule, "GdipSetImagePalette", LibraryName);
-                GdipGetImageDimension_ptr = FunctionWrapper.Load<GdipGetImageDimension_delegate>(s_gdipModule, "GdipGetImageDimension", LibraryName);
-                GdipGetImagePixelFormat_ptr = FunctionWrapper.Load<GdipGetImagePixelFormat_delegate>(s_gdipModule, "GdipGetImagePixelFormat", LibraryName);
                 GdipGetPropertyCount_ptr = FunctionWrapper.Load<GdipGetPropertyCount_delegate>(s_gdipModule, "GdipGetPropertyCount", LibraryName);
                 GdipGetPropertyIdList_ptr = FunctionWrapper.Load<GdipGetPropertyIdList_delegate>(s_gdipModule, "GdipGetPropertyIdList", LibraryName);
                 GdipGetPropertySize_ptr = FunctionWrapper.Load<GdipGetPropertySize_delegate>(s_gdipModule, "GdipGetPropertySize", LibraryName);
                 GdipGetAllPropertyItems_ptr = FunctionWrapper.Load<GdipGetAllPropertyItems_delegate>(s_gdipModule, "GdipGetAllPropertyItems", LibraryName);
-                GdipGetImageRawFormat_ptr = FunctionWrapper.Load<GdipGetImageRawFormat_delegate>(s_gdipModule, "GdipGetImageRawFormat", LibraryName);
-                GdipGetImageVerticalResolution_ptr = FunctionWrapper.Load<GdipGetImageVerticalResolution_delegate>(s_gdipModule, "GdipGetImageVerticalResolution", LibraryName);
-                GdipGetImageWidth_ptr = FunctionWrapper.Load<GdipGetImageWidth_delegate>(s_gdipModule, "GdipGetImageWidth", LibraryName);
                 GdipGetImageBounds_ptr = FunctionWrapper.Load<GdipGetImageBounds_delegate>(s_gdipModule, "GdipGetImageBounds", LibraryName);
                 GdipGetEncoderParameterListSize_ptr = FunctionWrapper.Load<GdipGetEncoderParameterListSize_delegate>(s_gdipModule, "GdipGetEncoderParameterListSize", LibraryName);
                 GdipGetEncoderParameterList_ptr = FunctionWrapper.Load<GdipGetEncoderParameterList_delegate>(s_gdipModule, "GdipGetEncoderParameterList", LibraryName);
@@ -203,7 +193,6 @@ namespace System.Drawing
                 GdipImageSelectActiveFrame_ptr = FunctionWrapper.Load<GdipImageSelectActiveFrame_delegate>(s_gdipModule, "GdipImageSelectActiveFrame", LibraryName);
                 GdipGetPropertyItemSize_ptr = FunctionWrapper.Load<GdipGetPropertyItemSize_delegate>(s_gdipModule, "GdipGetPropertyItemSize", LibraryName);
                 GdipGetPropertyItem_ptr = FunctionWrapper.Load<GdipGetPropertyItem_delegate>(s_gdipModule, "GdipGetPropertyItem", LibraryName);
-                GdipRemovePropertyItem_ptr = FunctionWrapper.Load<GdipRemovePropertyItem_delegate>(s_gdipModule, "GdipRemovePropertyItem", LibraryName);
                 GdipSetPropertyItem_ptr = FunctionWrapper.Load<GdipSetPropertyItem_delegate>(s_gdipModule, "GdipSetPropertyItem", LibraryName);
                 GdipGetImageThumbnail_ptr = FunctionWrapper.Load<GdipGetImageThumbnail_delegate>(s_gdipModule, "GdipGetImageThumbnail", LibraryName);
                 GdipImageRotateFlip_ptr = FunctionWrapper.Load<GdipImageRotateFlip_delegate>(s_gdipModule, "GdipImageRotateFlip", LibraryName);
@@ -483,10 +472,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipDrawString_delegate> GdipDrawString_ptr;
             internal static int GdipDrawString(IntPtr graphics, string text, int len, IntPtr font, ref RectangleF rc, IntPtr format, IntPtr brush) => GdipDrawString_ptr.Delegate(graphics, text, len, font, ref rc, format, brush);
 
-            private delegate int GdipGetDC_delegate(IntPtr graphics, out IntPtr hdc);
-            private static FunctionWrapper<GdipGetDC_delegate> GdipGetDC_ptr;
-            internal static int GdipGetDC(IntPtr graphics, out IntPtr hdc) => GdipGetDC_ptr.Delegate(graphics, out hdc);
-
             private delegate int GdipReleaseDC_delegate(IntPtr graphics, IntPtr hdc);
             private static FunctionWrapper<GdipReleaseDC_delegate> GdipReleaseDC_ptr;
             internal static int GdipReleaseDC(IntPtr graphics, IntPtr hdc) => GdipReleaseDC_ptr.Delegate(graphics, hdc);
@@ -668,10 +653,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipGetTextRenderingHint_delegate> GdipGetTextRenderingHint_ptr;
             internal static int GdipGetTextRenderingHint(IntPtr graphics, out TextRenderingHint mode) => GdipGetTextRenderingHint_ptr.Delegate(graphics, out mode);
 
-            private delegate int GdipFlush_delegate(IntPtr graphics, FlushIntention intention);
-            private static FunctionWrapper<GdipFlush_delegate> GdipFlush_ptr;
-            internal static int GdipFlush(IntPtr graphics, FlushIntention intention) => GdipFlush_ptr.Delegate(graphics, intention);
-
             private delegate int GdipAddPathString_delegate(IntPtr path, [MarshalAs(UnmanagedType.LPWStr)]string s, int lenght, IntPtr family, int style, float emSize, ref RectangleF layoutRect, IntPtr format);
             private static FunctionWrapper<GdipAddPathString_delegate> GdipAddPathString_ptr;
             internal static int GdipAddPathString(IntPtr path, string s, int lenght, IntPtr family, int style, float emSize, ref RectangleF layoutRect, IntPtr format) => GdipAddPathString_ptr.Delegate(path, s, lenght, family, style, emSize, ref layoutRect, format);
@@ -709,10 +690,6 @@ namespace System.Drawing
             internal static int GdipDisposeImage(IntPtr image) => GdipDisposeImage_ptr.Delegate(image);
             internal static int IntGdipDisposeImage(HandleRef image) => (int)GdipDisposeImage_ptr.Delegate(image.Handle);
 
-            private delegate int GdipGetImageFlags_delegate(IntPtr image, out int flag);
-            private static FunctionWrapper<GdipGetImageFlags_delegate> GdipGetImageFlags_ptr;
-            internal static int GdipGetImageFlags(IntPtr image, out int flag) => GdipGetImageFlags_ptr.Delegate(image, out flag);
-
             private delegate int GdipGetImageType_delegate(IntPtr image, out ImageType type);
             private static FunctionWrapper<GdipGetImageType_delegate> GdipGetImageType_ptr;
             internal static int GdipGetImageType(IntPtr image, out ImageType type) => GdipGetImageType_ptr.Delegate(image, out type);
@@ -725,14 +702,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipImageGetFrameDimensionsList_delegate> GdipImageGetFrameDimensionsList_ptr;
             internal static int GdipImageGetFrameDimensionsList(IntPtr image, [Out] Guid[] dimensionIDs, uint count) => GdipImageGetFrameDimensionsList_ptr.Delegate(image, dimensionIDs, count);
 
-            private delegate int GdipGetImageHeight_delegate(IntPtr image, out uint height);
-            private static FunctionWrapper<GdipGetImageHeight_delegate> GdipGetImageHeight_ptr;
-            internal static int GdipGetImageHeight(IntPtr image, out uint height) => GdipGetImageHeight_ptr.Delegate(image, out height);
-
-            private delegate int GdipGetImageHorizontalResolution_delegate(IntPtr image, out float resolution);
-            private static FunctionWrapper<GdipGetImageHorizontalResolution_delegate> GdipGetImageHorizontalResolution_ptr;
-            internal static int GdipGetImageHorizontalResolution(IntPtr image, out float resolution) => GdipGetImageHorizontalResolution_ptr.Delegate(image, out resolution);
-
             private delegate int GdipGetImagePaletteSize_delegate(IntPtr image, out int size);
             private static FunctionWrapper<GdipGetImagePaletteSize_delegate> GdipGetImagePaletteSize_ptr;
             internal static int GdipGetImagePaletteSize(IntPtr image, out int size) => GdipGetImagePaletteSize_ptr.Delegate(image, out size);
@@ -744,14 +713,6 @@ namespace System.Drawing
             private delegate int GdipSetImagePalette_delegate(IntPtr image, IntPtr palette);
             private static FunctionWrapper<GdipSetImagePalette_delegate> GdipSetImagePalette_ptr;
             internal static int GdipSetImagePalette(IntPtr image, IntPtr palette) => GdipSetImagePalette_ptr.Delegate(image, palette);
-
-            private delegate int GdipGetImageDimension_delegate(IntPtr image, out float width, out float height);
-            private static FunctionWrapper<GdipGetImageDimension_delegate> GdipGetImageDimension_ptr;
-            internal static int GdipGetImageDimension(IntPtr image, out float width, out float height) => GdipGetImageDimension_ptr.Delegate(image, out width, out height);
-
-            private delegate int GdipGetImagePixelFormat_delegate(IntPtr image, out PixelFormat format);
-            private static FunctionWrapper<GdipGetImagePixelFormat_delegate> GdipGetImagePixelFormat_ptr;
-            internal static int GdipGetImagePixelFormat(IntPtr image, out PixelFormat format) => GdipGetImagePixelFormat_ptr.Delegate(image, out format);
 
             private delegate int GdipGetPropertyCount_delegate(IntPtr image, out uint propNumbers);
             private static FunctionWrapper<GdipGetPropertyCount_delegate> GdipGetPropertyCount_ptr;
@@ -769,18 +730,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipGetAllPropertyItems_delegate> GdipGetAllPropertyItems_ptr;
             internal static int GdipGetAllPropertyItems(IntPtr image, int bufferSize, int propNumbers, IntPtr items) => GdipGetAllPropertyItems_ptr.Delegate(image, bufferSize, propNumbers, items);
 
-            private delegate int GdipGetImageRawFormat_delegate(IntPtr image, out Guid format);
-            private static FunctionWrapper<GdipGetImageRawFormat_delegate> GdipGetImageRawFormat_ptr;
-            internal static int GdipGetImageRawFormat(IntPtr image, out Guid format) => GdipGetImageRawFormat_ptr.Delegate(image, out format);
-
-            private delegate int GdipGetImageVerticalResolution_delegate(IntPtr image, out float resolution);
-            private static FunctionWrapper<GdipGetImageVerticalResolution_delegate> GdipGetImageVerticalResolution_ptr;
-            internal static int GdipGetImageVerticalResolution(IntPtr image, out float resolution) => GdipGetImageVerticalResolution_ptr.Delegate(image, out resolution);
-
-            private delegate int GdipGetImageWidth_delegate(IntPtr image, out uint width);
-            private static FunctionWrapper<GdipGetImageWidth_delegate> GdipGetImageWidth_ptr;
-            internal static int GdipGetImageWidth(IntPtr image, out uint width) => GdipGetImageWidth_ptr.Delegate(image, out width);
-
             private delegate int GdipGetImageBounds_delegate(IntPtr image, out RectangleF source, ref GraphicsUnit unit);
             private static FunctionWrapper<GdipGetImageBounds_delegate> GdipGetImageBounds_ptr;
             internal static int GdipGetImageBounds(IntPtr image, out RectangleF source, ref GraphicsUnit unit) => GdipGetImageBounds_ptr.Delegate(image, out source, ref unit);
@@ -793,14 +742,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipGetEncoderParameterList_delegate> GdipGetEncoderParameterList_ptr;
             internal static int GdipGetEncoderParameterList(IntPtr image, ref Guid encoder, uint size, IntPtr buffer) => GdipGetEncoderParameterList_ptr.Delegate(image, ref encoder, size, buffer);
 
-            private delegate int GdipImageGetFrameCount_delegate(IntPtr image, ref Guid guidDimension, out uint count);
-            private static FunctionWrapper<GdipImageGetFrameCount_delegate> GdipImageGetFrameCount_ptr;
-            internal static int GdipImageGetFrameCount(IntPtr image, ref Guid guidDimension, out uint count) => GdipImageGetFrameCount_ptr.Delegate(image, ref guidDimension, out count);
-
-            private delegate int GdipImageSelectActiveFrame_delegate(IntPtr image, ref Guid guidDimension, int frameIndex);
-            private static FunctionWrapper<GdipImageSelectActiveFrame_delegate> GdipImageSelectActiveFrame_ptr;
-            internal static int GdipImageSelectActiveFrame(IntPtr image, ref Guid guidDimension, int frameIndex) => GdipImageSelectActiveFrame_ptr.Delegate(image, ref guidDimension, frameIndex);
-
             private delegate int GdipGetPropertyItemSize_delegate(IntPtr image, int propertyID, out int propertySize);
             private static FunctionWrapper<GdipGetPropertyItemSize_delegate> GdipGetPropertyItemSize_ptr;
             internal static int GdipGetPropertyItemSize(IntPtr image, int propertyID, out int propertySize) => GdipGetPropertyItemSize_ptr.Delegate(image, propertyID, out propertySize);
@@ -809,10 +750,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipGetPropertyItem_delegate> GdipGetPropertyItem_ptr;
             internal static int GdipGetPropertyItem(IntPtr image, int propertyID, int propertySize, IntPtr buffer) => GdipGetPropertyItem_ptr.Delegate(image, propertyID, propertySize, buffer);
 
-            private delegate int GdipRemovePropertyItem_delegate(IntPtr image, int propertyId);
-            private static FunctionWrapper<GdipRemovePropertyItem_delegate> GdipRemovePropertyItem_ptr;
-            internal static int GdipRemovePropertyItem(IntPtr image, int propertyId) => GdipRemovePropertyItem_ptr.Delegate(image, propertyId);
-
             private delegate int GdipSetPropertyItem_delegate(IntPtr image, GdipPropertyItem* propertyItem);
             private static FunctionWrapper<GdipSetPropertyItem_delegate> GdipSetPropertyItem_ptr;
             internal static int GdipSetPropertyItem(IntPtr image, GdipPropertyItem* propertyItem) => GdipSetPropertyItem_ptr.Delegate(image, propertyItem);
@@ -820,10 +757,6 @@ namespace System.Drawing
             private delegate int GdipGetImageThumbnail_delegate(IntPtr image, uint width, uint height, out IntPtr thumbImage, IntPtr callback, IntPtr callBackData);
             private static FunctionWrapper<GdipGetImageThumbnail_delegate> GdipGetImageThumbnail_ptr;
             internal static int GdipGetImageThumbnail(IntPtr image, uint width, uint height, out IntPtr thumbImage, IntPtr callback, IntPtr callBackData) => GdipGetImageThumbnail_ptr.Delegate(image, width, height, out thumbImage, callback, callBackData);
-
-            private delegate int GdipImageRotateFlip_delegate(IntPtr image, RotateFlipType rotateFlipType);
-            private static FunctionWrapper<GdipImageRotateFlip_delegate> GdipImageRotateFlip_ptr;
-            internal static int GdipImageRotateFlip(IntPtr image, RotateFlipType rotateFlipType) => GdipImageRotateFlip_ptr.Delegate(image, rotateFlipType);
 
             private delegate int GdipSaveImageToFile_delegate(IntPtr image, [MarshalAs(UnmanagedType.LPWStr)]string filename, ref Guid encoderClsID, IntPtr encoderParameters);
             private static FunctionWrapper<GdipSaveImageToFile_delegate> GdipSaveImageToFile_ptr;

@@ -66,6 +66,7 @@
     <Compile Include="Enumeration\AttributeTests.netcoreapp.cs" />
     <Compile Include="Enumeration\MatchTypesTests.netcoreapp.cs" />
     <Compile Include="Enumeration\ExampleTests.netcoreapp.cs" />
+    <Compile Include="Enumeration\RemovedDirectoryTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->

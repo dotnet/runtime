@@ -38,6 +38,11 @@ namespace System.Net.Http
             //from DiagnosticListener right after the check. So some requests happening right after subscription starts
             //might not be instrumented. Similarly, when consumer unsubscribes, extra requests might be instumented
 
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
+            }
+
             Activity activity = null;
             Guid loggingRequestId = Guid.Empty;
 

@@ -84,10 +84,10 @@ namespace System.SpanTests
                 a[length - 1] = ' ';
 
                 // character in the middle is not a white-space character
-                a[length/2] = 'a';
+                a[length / 2] = 'a';
                 result = ((ReadOnlySpan<char>)span).IsWhiteSpace();
                 Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), result);
-                a[length/2] = ' ';
+                a[length / 2] = ' ';
 
                 // no character is a white-space character
                 span.Fill('a');

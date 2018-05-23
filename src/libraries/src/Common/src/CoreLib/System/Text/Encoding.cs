@@ -325,7 +325,7 @@ namespace System.Text
 
         // Returns an Encoding object for a given name or a given code page value.
         //
-        public static Encoding GetEncoding(String name)
+        public static Encoding GetEncoding(string name)
         {
             Encoding baseEncoding = EncodingProvider.GetEncodingFromProvider(name);
             if (baseEncoding != null)
@@ -342,7 +342,7 @@ namespace System.Text
 
         // Returns an Encoding object for a given name or a given code page value.
         //
-        public static Encoding GetEncoding(String name,
+        public static Encoding GetEncoding(string name,
             EncoderFallback encoderFallback, DecoderFallback decoderFallback)
         {
             Encoding baseEncoding = EncodingProvider.GetEncodingFromProvider(name, encoderFallback, decoderFallback);
@@ -386,7 +386,7 @@ namespace System.Text
         // Returns the name for this encoding that can be used with mail agent body tags.
         // If the encoding may not be used, the string is empty.
 
-        public virtual String BodyName
+        public virtual string BodyName
         {
             get
             {
@@ -443,7 +443,7 @@ namespace System.Text
             }
         }
 #else
-        public virtual String EncodingName
+        public virtual string EncodingName
         {
             get
             {
@@ -454,7 +454,7 @@ namespace System.Text
         // Returns the name for this encoding that can be used with mail agent header
         // tags.  If the encoding may not be used, the string is empty.
 
-        public virtual String HeaderName
+        public virtual string HeaderName
         {
             get
             {
@@ -467,7 +467,7 @@ namespace System.Text
         }
 
         // Returns the IANA preferred name for this encoding.
-        public virtual String WebName
+        public virtual string WebName
         {
             get
             {
@@ -646,7 +646,7 @@ namespace System.Text
             return GetByteCount(chars, 0, chars.Length);
         }
 
-        public virtual int GetByteCount(String s)
+        public virtual int GetByteCount(string s)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
@@ -767,7 +767,7 @@ namespace System.Text
         // Returns a byte array containing the encoded representation of the given
         // string.
         //
-        public virtual byte[] GetBytes(String s)
+        public virtual byte[] GetBytes(string s)
         {
             if (s == null)
                 throw new ArgumentNullException(nameof(s),
@@ -817,7 +817,7 @@ namespace System.Text
             }
         }
 
-        public virtual int GetBytes(String s, int charIndex, int charCount,
+        public virtual int GetBytes(string s, int charIndex, int charCount,
                                        byte[] bytes, int byteIndex)
         {
             if (s == null)
@@ -1082,7 +1082,7 @@ namespace System.Text
             if (byteCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            return String.CreateStringFromEncoding(bytes, byteCount, this);
+            return string.CreateStringFromEncoding(bytes, byteCount, this);
         }
 
         public unsafe string GetString(ReadOnlySpan<byte> bytes)
@@ -1184,7 +1184,7 @@ namespace System.Text
         // Returns a string containing the decoded representation of a given byte
         // array.
         //
-        public virtual String GetString(byte[] bytes)
+        public virtual string GetString(byte[] bytes)
         {
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes),
@@ -1198,9 +1198,9 @@ namespace System.Text
         //
         // Internally we override this for performance
         //
-        public virtual String GetString(byte[] bytes, int index, int count)
+        public virtual string GetString(byte[] bytes, int index, int count)
         {
-            return new String(GetChars(bytes, index, count));
+            return new string(GetChars(bytes, index, count));
         }
 
         // Returns an encoding for Unicode format. The returned encoding will be
