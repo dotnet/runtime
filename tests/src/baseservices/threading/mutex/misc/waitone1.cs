@@ -100,7 +100,7 @@ public class MutexWaitOne1
                 thread = new Thread(new ThreadStart(NeverReleaseMutex));
                 thread.Start();
 
-                Thread.Sleep(100);
+                thread.Join();
                 m_Mutex.WaitOne();
 
                 TestLibrary.TestFramework.LogError("101", "AbandonedMutexException is not thrown if a thread exited without releasing a mutex");
@@ -114,13 +114,6 @@ public class MutexWaitOne1
                 TestLibrary.TestFramework.LogError("102", "Unexpected exception: " + e);
                 TestLibrary.TestFramework.LogInformation(e.StackTrace);
                 retVal = false;
-            }
-            finally
-            {
-                if (null != thread)
-                {
-                    thread.Join();
-                }
             }
         }
 
@@ -141,7 +134,7 @@ public class MutexWaitOne1
             thread = new Thread(new ThreadStart(DisposeMutex));
             thread.Start();
 
-            Thread.Sleep(c_DEFAULT_SLEEP_TIME);
+            thread.Join();
             m_Mutex.WaitOne();
 
             TestLibrary.TestFramework.LogError("103", "ObjectDisposedException is not thrown if current instance has already been disposed");
@@ -158,11 +151,6 @@ public class MutexWaitOne1
         }
         finally
         {
-            if (null != thread)
-            {
-                thread.Join();
-            }
-
             if (null != m_Mutex)
             {
                 ((IDisposable)m_Mutex).Dispose();
