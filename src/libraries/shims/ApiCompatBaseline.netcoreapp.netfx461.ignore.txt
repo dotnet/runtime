@@ -204,6 +204,10 @@ TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyRights' does not e
 TypesMustExist : Type 'System.Security.AccessControl.CryptoKeySecurity' does not exist in the implementation but it does exist in the contract.
 
 // Interfaces were intentional removals
+CannotRemoveBaseTypeOrInterface : Type 'System.Windows.Markup.ValueSerializerAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.DirectoryServicesCOMException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ServiceProcess.ServiceControllerPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ServiceProcess.ServiceProcessDescriptionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlMethodAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlUserDefinedAggregateAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlUserDefinedTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
@@ -2700,6 +2704,11 @@ TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionAttribut
 TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionEntry' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionEntryCollection' does not exist in the implementation but it does exist in the contract.
 
+// CAS
+TypesMustExist : Type 'System.Security.Policy.ApplicationSecurityInfo' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.ApplicationSecurityManager' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.IApplicationTrustManager' does not exist in the implementation but it does exist in the contract.
+
 // Undesirable dependencies
 TypesMustExist : Type 'System.ServiceProcess.Design.ServiceInstallerDialog' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ServiceProcess.Design.ServiceInstallerDialogResult' does not exist in the implementation but it does exist in the contract.
@@ -2712,3 +2721,7 @@ TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation 
 MembersMustExist : Member 'System.Console.Write(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Console.WriteLine(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
+
+// Intentional change in Core
+TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
