@@ -188,7 +188,71 @@ namespace System.Security.Cryptography.Pkcs
             DecryptContent(RecipientInfos, extraStore);
         }
 
+        public void Decrypt(RecipientInfo recipientInfo, AsymmetricAlgorithm privateKey)
+        {
+            if (recipientInfo == null)
+                throw new ArgumentNullException(nameof(recipientInfo));
+
+            CheckStateForDecryption();
+
+            X509Certificate2Collection extraStore = new X509Certificate2Collection();
+            ContentInfo contentInfo = _decryptorPal.TryDecrypt(
+                recipientInfo,
+                null,
+                privateKey,
+                Certificates,
+                extraStore,
+                out Exception exception);
+
+            if (exception != null)
+                throw exception;
+
+            SetContentInfo(contentInfo);
+        }
+
         private void DecryptContent(RecipientInfoCollection recipientInfos, X509Certificate2Collection extraStore)
+        {
+            CheckStateForDecryption();
+            extraStore = extraStore ?? new X509Certificate2Collection();
+
+            X509Certificate2Collection certs = new X509Certificate2Collection();
+            PkcsPal.Instance.AddCertsFromStoreForDecryption(certs);
+            certs.AddRange(extraStore);
+
+            X509Certificate2Collection originatorCerts = Certificates;
+
+            ContentInfo newContentInfo = null;
+            Exception exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
+            foreach (RecipientInfo recipientInfo in recipientInfos)
+            {
+                X509Certificate2 cert = certs.TryFindMatchingCertificate(recipientInfo.RecipientIdentifier);
+                if (cert == null)
+                {
+                    exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
+                    continue;
+                }
+
+                newContentInfo = _decryptorPal.TryDecrypt(
+                    recipientInfo,
+                    cert,
+                    null,
+                    originatorCerts,
+                    extraStore,
+                    out exception);
+
+                if (exception != null)
+                    continue;
+
+                break;
+            }
+
+            if (exception != null)
+                throw exception;
+
+            SetContentInfo(newContentInfo);
+        }
+
+        private void CheckStateForDecryption()
         {
             switch (_lastCall)
             {
@@ -208,39 +272,14 @@ namespace System.Security.Cryptography.Pkcs
                     Debug.Fail($"Unexpected _lastCall value: {_lastCall}");
                     throw new InvalidOperationException();
             }
+        }
 
-            extraStore = extraStore ?? new X509Certificate2Collection();
-
-            X509Certificate2Collection certs = new X509Certificate2Collection();
-            PkcsPal.Instance.AddCertsFromStoreForDecryption(certs);
-            certs.AddRange(extraStore);
-
-            X509Certificate2Collection originatorCerts = Certificates;
-
-            ContentInfo newContentInfo = null;
-            Exception exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
-            foreach (RecipientInfo recipientInfo in recipientInfos)
-            {
-                X509Certificate2 cert = certs.TryFindMatchingCertificate(recipientInfo.RecipientIdentifier);
-                if (cert == null)
-                {
-                    exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
-                    continue;
-                }
-                newContentInfo = _decryptorPal.TryDecrypt(recipientInfo, cert, originatorCerts, extraStore, out exception);
-                if (exception != null)
-                    continue;
-
-                break;
-            }
-
-            if (exception != null)
-                throw exception;
-
-            ContentInfo = newContentInfo;
+        private void SetContentInfo(ContentInfo contentInfo)
+        {
+            ContentInfo = contentInfo;
 
             // Desktop compat: Encode() after a Decrypt() returns you the same thing that ContentInfo.Content does.
-            _encodedMessage = newContentInfo.Content.CloneByteArray();
+            _encodedMessage = contentInfo.Content.CloneByteArray();
 
             _lastCall = LastCall.Decrypt;
         }
