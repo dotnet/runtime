@@ -66,7 +66,6 @@
         <CppCompile Include="..\register_arg_convention.cpp" />
         <CppCompile Include="..\emit.cpp" />
         <CppCompile Include="..\ScopeInfo.cpp" />
-        <CppCompile Include="..\SharedFloat.cpp" />
         <CppCompile Include="..\SM.cpp" />
         <CppCompile Include="..\SMData.cpp" />
         <CppCompile Include="..\SMWeights.cpp" />
@@ -126,7 +125,6 @@
         <CppCompile Include="..\LowerArmArch.cpp" />
         <CppCompile Include="..\lsraarmarch.cpp" />
         <CppCompile Include="..\CodeGenArmArch.cpp" />
-        <CppCompile Include="..\LowerArm.cpp" />
         <CppCompile Include="..\lsraarm.cpp" />
         <CppCompile Include="..\CodeGenArm.cpp" />
         <CppCompile Include="..\unwindArm.cpp" />
@@ -137,7 +135,6 @@
         <CppCompile Include="..\LowerArmArch.cpp" />
         <CppCompile Include="..\lsraarmarch.cpp" />
         <CppCompile Include="..\CodeGenArmArch.cpp" />
-        <CppCompile Include="..\LowerArm64.cpp" />
         <CppCompile Include="..\lsraarm64.cpp" />
         <CppCompile Include="..\CodeGenArm64.cpp" />
         <CppCompile Include="..\unwindArm.cpp" />
