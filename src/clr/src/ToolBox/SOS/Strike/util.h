@@ -82,6 +82,19 @@ struct IMDInternalImport;
         do { if (!(expr) ) { ExtOut(reason); ExtOut(msg); ExtOut(#expr); DebugBreak(); } } while (0)
 #endif
 
+// The native symbol reader dll name
+#if defined(_AMD64_)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.amd64.dll")
+#elif defined(_X86_)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.x86.dll")
+#elif defined(_ARM_)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
+#elif defined(_ARM64_)
+// Use diasymreader until the package has an arm64 version - issue #7360
+//#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
+#define NATIVE_SYMBOL_READER_DLL W("diasymreader.dll")
+#endif
+
 // PREFIX macros - Begin
 
 // SOS does not have support for Contracts.  Therefore we needed to duplicate
