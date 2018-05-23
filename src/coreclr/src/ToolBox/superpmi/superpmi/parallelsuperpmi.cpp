@@ -566,19 +566,39 @@ int doParallelSuperPMI(CommandLine::Options& o)
         CloseHandle(hStdError[i]);
     }
 
-    DWORD exitCode = 0; // 0 == assume success
+    SpmiResult result = SpmiResult::Success;
 
     if (!closeRequested)
     {
-        // Figure out the error code to use. We use the largest magnitude error code of the children.
+        // Figure out the error code to use.
         // Mainly, if any child returns non-zero, we want to return non-zero, to indicate failure.
         for (int i = 0; i < o.workerCount; i++)
         {
-            DWORD exitCodeTmp;
-            BOOL  ok = GetExitCodeProcess(hProcesses[i], &exitCodeTmp);
-            if (ok && (exitCodeTmp > exitCode))
+            DWORD      exitCodeTmp;
+            BOOL       ok          = GetExitCodeProcess(hProcesses[i], &exitCodeTmp);
+            SpmiResult childResult = (SpmiResult)exitCodeTmp;
+            if (ok && (childResult != result))
             {
-                exitCode = exitCodeTmp;
+                if (result == SpmiResult::Error || childResult == SpmiResult::Error)
+                {
+                    result = SpmiResult::Error;
+                }
+                else if (result == SpmiResult::Diffs || childResult == SpmiResult::Diffs)
+                {
+                    result = SpmiResult::Diffs;
+                }
+                else if (result == SpmiResult::Misses || childResult == SpmiResult::Misses)
+                {
+                    result = SpmiResult::Misses;
+                }
+                else if (result == SpmiResult::JitFailedToInit || childResult == SpmiResult::JitFailedToInit)
+                {
+                    result = SpmiResult::JitFailedToInit;
+                }
+                else
+                {
+                    result = SpmiResult::GeneralFailure;
+                }
             }
         }
 
@@ -642,5 +662,5 @@ int doParallelSuperPMI(CommandLine::Options& o)
         }
     }
 
-    return (int)exitCode;
+    return (int)result;
 }
