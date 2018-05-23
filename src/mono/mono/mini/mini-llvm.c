@@ -8734,6 +8734,7 @@ AddJitGlobal (MonoLLVMModule *module, LLVMTypeRef type, const char *name)
 
 	s = g_strdup_printf ("%s%s", module->global_prefix, name);
 	v = LLVMAddGlobal (module->lmodule, LLVMInt8Type (), s);
+	LLVMSetVisibility (v, LLVMHiddenVisibility);
 	g_free (s);
 	return v;
 }
