@@ -11821,9 +11821,9 @@ public:
         InternalFrameManager internalFrameManager;
         IfFailRet(internalFrameManager.Init(pThread3));
         
-    #if defined(_AMD64_)
+    #if defined(_AMD64_) || defined(_ARM64_)
         ExtOut("%-16s %-16s %s\n", "Child SP", "IP", "Call Site");
-    #elif defined(_X86_)
+    #elif defined(_X86_) || defined(_ARM_)
         ExtOut("%-8s %-8s %s\n", "Child SP", "IP", "Call Site");
     #endif
 
