@@ -122,6 +122,7 @@ namespace System.Security.Cryptography.Pkcs
         public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo) { }
         public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo, System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraStore) { }
         public void Decrypt(System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraStore) { }
+        public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo, System.Security.Cryptography.AsymmetricAlgorithm privateKey) { }
         public byte[] Encode() { throw null; }
         public void Encrypt(System.Security.Cryptography.Pkcs.CmsRecipient recipient) { }
         public void Encrypt(System.Security.Cryptography.Pkcs.CmsRecipientCollection recipients) { }
@@ -304,6 +305,7 @@ namespace System.Security.Cryptography.Pkcs
         internal SubjectIdentifier() { }
         public System.Security.Cryptography.Pkcs.SubjectIdentifierType Type { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
         public object Value { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool MatchesCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { throw null; }
     }
     public sealed partial class SubjectIdentifierOrKey
     {
