@@ -737,16 +737,9 @@ int GenTree::GetRegisterDstCount() const
         GenTree* temp = const_cast<GenTree*>(this);
         return temp->AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
     }
-    else if (IsCopyOrReloadOfMultiRegCall())
+    else if (IsCopyOrReload())
     {
-        // A multi-reg copy or reload, will have valid regs for only those
-        // positions that need to be copied or reloaded.  Hence we need
-        // to consider only those registers for computing reg mask.
-
-        GenTree*             tree         = const_cast<GenTree*>(this);
-        GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-        GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
-        return call->GetReturnTypeDesc()->GetReturnRegCount();
+        return gtGetOp1()->GetRegisterDstCount();
     }
 #if defined(_TARGET_ARM_)
     else if (OperIsPutArgSplit())
@@ -7019,6 +7012,10 @@ GenTree* Compiler::gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg
 #if defined(_TARGET_ARM_)
     // A PUTARG_REG could be a MultiRegOp on arm since we could move a double register to two int registers.
     node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_PUTARG_REG, type, arg, nullptr);
+    if (type == TYP_LONG)
+    {
+        node->AsMultiRegOp()->gtOtherReg = REG_NEXT(argReg);
+    }
 #else
     node          = gtNewOperNode(GT_PUTARG_REG, type, arg);
 #endif

@@ -13,11 +13,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   Preconditions
     - All register requirements are expressed in the code stream, either as destination
       registers of tree nodes, or as internal registers.  These requirements are
-      expressed in the TreeNodeInfo computed for each node, which includes:
-      - The number of register sources and destinations.
+      expressed in the RefPositions built for each node by BuildNode(), which includes:
+      - The register uses and definitions.
       - The register restrictions (candidates) of the target register, both from itself,
         as producer of the value (dstCandidates), and from its consuming node (srcCandidates).
-        Note that the srcCandidates field of TreeNodeInfo refers to the destination register
+        Note that when we talk about srcCandidates we are referring to the destination register
         (not any of its sources).
       - The number (internalCount) of registers required, and their register restrictions (internalCandidates).
         These are neither inputs nor outputs of the node, but used in the sequence of code generated for the tree.
@@ -53,7 +53,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       tree node (an "implicit" definition), this is the register to put the result.
       For an expression use, this is the place to find the value that has previously
       been computed.
-      - In most cases, this register must satisfy the constraints specified by the TreeNodeInfo.
+      - In most cases, this register must satisfy the constraints specified for the RefPosition.
       - In some cases, this is difficult:
         - If a lclVar node currently lives in some register, it may not be desirable to move it
           (i.e. its current location may be desirable for future uses, e.g. if it's a callee save register,
@@ -236,66 +236,13 @@ regMaskTP LinearScan::allRegs(RegisterType rt)
     }
 }
 
-//--------------------------------------------------------------------------
-// allMultiRegCallNodeRegs: represents a set of registers that can be used
-// to allocate a multi-reg call node.
-//
-// Arguments:
-//    call   -  Multi-reg call node
-//
-// Return Value:
-//    Mask representing the set of available registers for multi-reg call
-//    node.
-//
-// Note:
-// Multi-reg call node available regs = Bitwise-OR(allregs(GetReturnRegType(i)))
-// for all i=0..RetRegCount-1.
-regMaskTP LinearScan::allMultiRegCallNodeRegs(GenTreeCall* call)
+regMaskTP LinearScan::allByteRegs()
 {
-    assert(call->HasMultiRegRetVal());
-
-    ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-    regMaskTP       resultMask  = allRegs(retTypeDesc->GetReturnRegType(0));
-
-    unsigned count = retTypeDesc->GetReturnRegCount();
-    for (unsigned i = 1; i < count; ++i)
-    {
-        resultMask |= allRegs(retTypeDesc->GetReturnRegType(i));
-    }
-
-    return resultMask;
-}
-
-//--------------------------------------------------------------------------
-// allRegs: returns the set of registers that can accomodate the type of
-// given node.
-//
-// Arguments:
-//    tree   -  GenTree node
-//
-// Return Value:
-//    Mask representing the set of available registers for given tree
-//
-// Note: In case of multi-reg call node, the full set of registers must be
-// determined by looking at types of individual return register types.
-// In this case, the registers may include registers from different register
-// sets and will not be limited to the actual ABI return registers.
-regMaskTP LinearScan::allRegs(GenTree* tree)
-{
-    regMaskTP resultMask;
-
-    // In case of multi-reg calls, allRegs is defined as
-    // Bitwise-Or(allRegs(GetReturnRegType(i)) for i=0..ReturnRegCount-1
-    if (tree->IsMultiRegCall())
-    {
-        resultMask = allMultiRegCallNodeRegs(tree->AsCall());
-    }
-    else
-    {
-        resultMask = allRegs(tree->TypeGet());
-    }
-
-    return resultMask;
+#ifdef _TARGET_X86_
+    return availableIntRegs & RBM_BYTE_REGS;
+#else
+    return availableIntRegs;
+#endif
 }
 
 regMaskTP LinearScan::allSIMDRegs()
@@ -664,9 +611,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , listNodePool(theCompiler)
 {
 #ifdef DEBUG
-    maxNodeLocation    = 0;
-    activeRefPosition  = nullptr;
-    specialPutArgCount = 0;
+    maxNodeLocation   = 0;
+    activeRefPosition = nullptr;
 
     // Get the value of the environment variable that controls stress for register allocation
     lsraStressMask = JitConfig.JitStressRegs();
@@ -698,7 +644,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
         else if (dump == true)
         {
             printf("JitStressRegs = %x for method %s, hash = 0x%x.\n",
-                   lsraStressMask, compiler->info.compFullName, compiler->info.compMethodHash());
+                lsraStressMask, compiler->info.compFullName, compiler->info.compMethodHash());
             printf("");         // in our logic this causes a flush
         }
     }
@@ -743,8 +689,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     // Block sequencing (the order in which we schedule).
     // Note that we don't initialize the bbVisitedSet until we do the first traversal
-    // (currently during Lowering's second phase, where it sets the TreeNodeInfo).
-    // This is so that any blocks that are added during the first phase of Lowering
+    // This is so that any blocks that are added during the first traversal
     // are accounted for (and we don't have BasicBlockEpoch issues).
     blockSequencingDone   = false;
     blockSequence         = nullptr;
@@ -755,105 +700,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Information about each block, including predecessor blocks used for variable locations at block entry.
     blockInfo = nullptr;
 
-    // Populate the register mask table.
-    // The first two masks in the table are allint/allfloat
-    // The next N are the masks for each single register.
-    // After that are the dynamically added ones.
-    regMaskTable               = new (compiler, CMK_LSRA) regMaskTP[numMasks];
-    regMaskTable[ALLINT_IDX]   = allRegs(TYP_INT);
-    regMaskTable[ALLFLOAT_IDX] = allRegs(TYP_DOUBLE);
-
-    regNumber reg;
-    for (reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
-    {
-        regMaskTable[FIRST_SINGLE_REG_IDX + reg - REG_FIRST] = (reg == REG_STK) ? RBM_NONE : genRegMask(reg);
-    }
-    nextFreeMask = FIRST_SINGLE_REG_IDX + REG_COUNT;
-    noway_assert(nextFreeMask <= numMasks);
+    pendingDelayFree = false;
+    tgtPrefUse       = nullptr;
 }
-
-// Return the reg mask corresponding to the given index.
-regMaskTP LinearScan::GetRegMaskForIndex(RegMaskIndex index)
-{
-    assert(index < numMasks);
-    assert(index < nextFreeMask);
-    return regMaskTable[index];
-}
-
-// Given a reg mask, return the index it corresponds to. If it is not a 'well known' reg mask,
-// add it at the end. This method has linear behavior in the worst cases but that is fairly rare.
-// Most methods never use any but the well-known masks, and when they do use more
-// it is only one or two more.
-LinearScan::RegMaskIndex LinearScan::GetIndexForRegMask(regMaskTP mask)
-{
-    RegMaskIndex result;
-    if (isSingleRegister(mask))
-    {
-        result = genRegNumFromMask(mask) + FIRST_SINGLE_REG_IDX;
-    }
-    else if (mask == allRegs(TYP_INT))
-    {
-        result = ALLINT_IDX;
-    }
-    else if (mask == allRegs(TYP_DOUBLE))
-    {
-        result = ALLFLOAT_IDX;
-    }
-    else
-    {
-        for (int i = FIRST_SINGLE_REG_IDX + REG_COUNT; i < nextFreeMask; i++)
-        {
-            if (regMaskTable[i] == mask)
-            {
-                return i;
-            }
-        }
-
-        // We only allocate a fixed number of masks. Since we don't reallocate, we will throw a
-        // noway_assert if we exceed this limit.
-        noway_assert(nextFreeMask < numMasks);
-
-        regMaskTable[nextFreeMask] = mask;
-        result                     = nextFreeMask;
-        nextFreeMask++;
-    }
-    assert(mask == regMaskTable[result]);
-    return result;
-}
-
-// We've decided that we can't use one or more registers during register allocation (probably FPBASE),
-// but we've already added it to the register masks. Go through the masks and remove it.
-void LinearScan::RemoveRegistersFromMasks(regMaskTP removeMask)
-{
-    if (VERBOSE)
-    {
-        JITDUMP("Removing registers from LSRA register masks: ");
-        INDEBUG(dumpRegMask(removeMask));
-        JITDUMP("\n");
-    }
-
-    regMaskTP mask = ~removeMask;
-    for (int i = 0; i < nextFreeMask; i++)
-    {
-        regMaskTable[i] &= mask;
-    }
-
-    JITDUMP("After removing registers:\n");
-    DBEXEC(VERBOSE, dspRegisterMaskTable());
-}
-
-#ifdef DEBUG
-void LinearScan::dspRegisterMaskTable()
-{
-    printf("LSRA register masks. Total allocated: %d, total used: %d\n", numMasks, nextFreeMask);
-    for (int i = 0; i < nextFreeMask; i++)
-    {
-        printf("%2u: ", i);
-        dspRegMask(regMaskTable[i]);
-        printf("\n");
-    }
-}
-#endif // DEBUG
 
 //------------------------------------------------------------------------
 // getNextCandidateFromWorkList: Get the next candidate for block sequencing
@@ -902,9 +751,6 @@ BasicBlock* LinearScan::getNextCandidateFromWorkList()
 //    will be allocated.
 //    This method clears the bbVisitedSet on LinearScan, and when it returns the set
 //    contains all the bbNums for the block.
-//    This requires a traversal of the BasicBlocks, and could potentially be
-//    combined with the first traversal (currently the one in Lowering that sets the
-//    TreeNodeInfo).
 
 void LinearScan::setBlockSequence()
 {
@@ -2490,11 +2336,7 @@ void LinearScan::setFrameType()
     }
 
     // If we are using FPBASE as the frame register, we cannot also use it for
-    // a local var. Note that we may have already added it to the register masks,
-    // which are computed when the LinearScan class constructor is created, and
-    // used during lowering. Luckily, the TreeNodeInfo only stores an index to
-    // the masks stored in the LinearScan class, so we only need to walk the
-    // unique masks and remove FPBASE.
+    // a local var.
     regMaskTP removeMask = RBM_NONE;
     if (frameType == FT_EBP_FRAME)
     {
@@ -2517,7 +2359,6 @@ void LinearScan::setFrameType()
 
     if ((removeMask != RBM_NONE) && ((availableIntRegs & removeMask) != 0))
     {
-        RemoveRegistersFromMasks(removeMask);
         // We know that we're already in "read mode" for availableIntRegs. However,
         // we need to remove these registers, so subsequent users (like callers
         // to allRegs()) get the right thing. The RemoveRegistersFromMasks() code
@@ -5459,7 +5300,7 @@ void LinearScan::allocateRegisters()
             {
                 assert(!currentInterval->isLocalVar);
                 Interval* srcInterval = currentInterval->relatedInterval;
-                assert(srcInterval->isLocalVar);
+                assert(srcInterval != nullptr && srcInterval->isLocalVar);
                 if (refType == RefTypeDef)
                 {
                     assert(srcInterval->recentRefPosition->nodeLocation == currentLocation - 1);
@@ -8656,11 +8497,6 @@ void RefPosition::dump()
 {
     printf("<RefPosition #%-3u @%-3u", rpNum, nodeLocation);
 
-    if (nextRefPosition)
-    {
-        printf(" ->#%-3u", nextRefPosition->rpNum);
-    }
-
     printf(" %s ", getRefTypeName(refType));
 
     if (this->isPhysRegRef)
@@ -8847,43 +8683,67 @@ void RegRecord::tinyDump()
     printf("<Reg:%-3s> ", getRegName(regNum));
 }
 
-void TreeNodeInfo::dump(LinearScan* lsra)
+void LinearScan::dumpNodeInfo(GenTree* node, regMaskTP dstCandidates, int srcCount, int dstCount)
 {
-    printf("<TreeNodeInfo %d=%d %di %df", dstCount, srcCount, internalIntCount, internalFloatCount);
+    if (!VERBOSE)
+    {
+        return;
+    }
+    // This is formatted like the old dump to make diffs easier. TODO-Cleanup: improve.
+    int       internalIntCount   = 0;
+    int       internalFloatCount = 0;
+    regMaskTP internalCandidates = RBM_NONE;
+    for (int i = 0; i < internalCount; i++)
+    {
+        RefPosition* def = internalDefs[i];
+        if (def->getInterval()->registerType == TYP_INT)
+        {
+            internalIntCount++;
+        }
+        else
+        {
+            internalFloatCount++;
+        }
+        internalCandidates |= def->registerAssignment;
+    }
+    if (dstCandidates == RBM_NONE)
+    {
+        dstCandidates = varTypeIsFloating(node) ? allRegs(TYP_FLOAT) : allRegs(TYP_INT);
+    }
+    if (internalCandidates == RBM_NONE)
+    {
+        internalCandidates = allRegs(TYP_INT);
+    }
+    printf("    +<TreeNodeInfo %d=%d %di %df", dstCount, srcCount, internalIntCount, internalFloatCount);
     printf(" src=");
-    dumpRegMask(getSrcCandidates(lsra));
+    dumpRegMask(varTypeIsFloating(node) ? allRegs(TYP_FLOAT) : allRegs(TYP_INT));
     printf(" int=");
-    dumpRegMask(getInternalCandidates(lsra));
+    dumpRegMask(internalCandidates);
     printf(" dst=");
-    dumpRegMask(getDstCandidates(lsra));
-    if (isLocalDefUse)
+    dumpRegMask(dstCandidates);
+    if (node->IsUnusedValue())
     {
         printf(" L");
     }
-    if (isInitialized)
-    {
-        printf(" I");
-    }
-    if (isDelayFree)
+    printf(" I");
+    if (pendingDelayFree)
     {
         printf(" D");
     }
-    if (isTgtPref)
-    {
-        printf(" P");
-    }
-    if (isInternalRegDelayFree)
+    if (setInternalRegsDelayFree)
     {
         printf(" ID");
     }
     printf(">");
+    node->dumpLIRFlags();
+    printf("\n  consume= %d produce=%d\n", srcCount, dstCount);
 }
 
 void LinearScan::dumpDefList()
 {
     JITDUMP("DefList: { ");
     bool first = true;
-    for (LocationInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
+    for (RefInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
          listNode = listNode->Next())
     {
         GenTree* node = listNode->treeNode;

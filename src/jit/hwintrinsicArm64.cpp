@@ -134,6 +134,57 @@ bool Compiler::impCheckImmediate(GenTree* immediateOp, unsigned int max)
 }
 
 //------------------------------------------------------------------------
+// numArgsOfHWIntrinsic: gets the number of arguments for the hardware intrinsic.
+// This attempts to do a table based lookup but will fallback to the number
+// of operands in 'node' if the table entry is -1.
+//
+// Arguments:
+//    node      -- GenTreeHWIntrinsic* node with nullptr default value
+//
+// Return Value:
+//     number of arguments
+//
+int Compiler::numArgsOfHWIntrinsic(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsic = node->gtHWIntrinsicId;
+
+    assert(intrinsic != NI_Illegal);
+    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
+
+    GenTree* op1     = node->gtGetOp1();
+    GenTree* op2     = node->gtGetOp2();
+    int      numArgs = 0;
+
+    if (op1 == nullptr)
+    {
+        return 0;
+    }
+
+    if (op1->OperIsList())
+    {
+        numArgs              = 0;
+        GenTreeArgList* list = op1->AsArgList();
+
+        while (list != nullptr)
+        {
+            numArgs++;
+            list = list->Rest();
+        }
+
+        // We should only use a list if we have 3 operands.
+        assert(numArgs >= 3);
+        return numArgs;
+    }
+
+    if (op2 == nullptr)
+    {
+        return 1;
+    }
+
+    return 2;
+}
+
+//------------------------------------------------------------------------
 // impHWIntrinsic: dispatch hardware intrinsics to their own implementation
 // function
 //
