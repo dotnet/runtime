@@ -227,13 +227,16 @@ __cmake_defines="${__cmake_defines} -DVERSION_FILE_PATH:STRING=${__versionSource
 echo "Building Corehost from $DIR to $(pwd)"
 set -x # turn on trace
 if [ $__CrossBuild == 1 ]; then
-    # clang-3.9 is default compiler for cross compilation
+    # clang-3.9 or clang-4.0 are default compilers for cross compilation
     if command -v "clang-3.9" > /dev/null 2>&1; then
         export CC="$(command -v clang-3.9)"
         export CXX="$(command -v clang++-3.9)"
+    elif command -v "clang-4.0" > /dev/null 2>&1; then
+        export CC="$(command -v clang-4.0)"
+        export CXX="$(command -v clang++-4.0)"
     else
-        echo "Unable to find Clang 3.9 Compiler"
-        echo "Install clang-3.9 for cross compilation"
+        echo "Unable to find Clang 3.9 or Clang 4.0 Compiler"
+        echo "Install clang-3.9 or clang-4.0 for cross compilation"
         exit 1
     fi
     cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_APPHOST_VER:STRING=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash -DCMAKE_TOOLCHAIN_FILE=$DIR/../../cross/$__build_arch_lowcase/toolchain.cmake
