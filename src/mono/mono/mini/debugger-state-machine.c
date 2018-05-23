@@ -347,7 +347,11 @@ mono_debugger_state (JsonWriter *writer)
 
 	debugger_log_iter_destroy (&diter);
 
-	// FIXME: Log client/connection state
+	// Log client/connection state
+	gboolean disconnected = mono_debugger_is_disconnected ();
+	mono_json_writer_indent (writer);
+	mono_json_writer_object_key(writer, "client_state");
+	mono_json_writer_printf (writer, "\"%s\",\n", disconnected ? "disconnected" : "connected");
 
 	mono_json_writer_indent_pop (writer);
 	mono_json_writer_indent (writer);
