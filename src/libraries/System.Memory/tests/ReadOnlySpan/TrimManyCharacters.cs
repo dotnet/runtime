@@ -101,7 +101,7 @@ namespace System.SpanTests
                 char[] a = new char[length];
                 for (int i = 0; i < length; i++)
                 {
-                     a[i] = 'f';
+                    a[i] = 'f';
                 }
                 a[0] = 'c';
                 ReadOnlySpan<char> span = new ReadOnlySpan<char>(a);

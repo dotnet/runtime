@@ -206,7 +206,7 @@ namespace System.SpanTests
             value = new char[] { '\u0049', '\u0073', '\u0073', '\u0049' }; // IssI
             Assert.False(span.EndsWith(value, StringComparison.OrdinalIgnoreCase));
             Assert.False(span.EndsWith(value, StringComparison.InvariantCulture));
-             // Different behavior depending on OS - True on Windows, False on Unix
+            // Different behavior depending on OS - True on Windows, False on Unix
             Assert.Equal(
                 span.ToString().EndsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
                 span.EndsWith(value, StringComparison.InvariantCultureIgnoreCase));

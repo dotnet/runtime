@@ -6,8 +6,6 @@ using Xunit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 0649 //Field 'SpanTests.InnerStruct.J' is never assigned to, and will always have its default value 0
-
 namespace System.SpanTests
 {
     public static partial class SpanTests
@@ -18,7 +16,7 @@ namespace System.SpanTests
             unsafe
             {
                 int[] a = { 90, 91, 92 };
-                fixed (int *pa = a)
+                fixed (int* pa = a)
                 {
                     Span<int> span = new Span<int>(pa, 3);
                     span.Validate(90, 91, 92);
