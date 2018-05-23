@@ -2957,6 +2957,11 @@ protected:
                                        CORINFO_METHOD_HANDLE method,
                                        CORINFO_SIG_INFO*     sig,
                                        bool                  mustExpand);
+
+public:
+    static int numArgsOfHWIntrinsic(GenTreeHWIntrinsic* node);
+
+protected:
 #ifdef _TARGET_XARCH_
     static InstructionSet lookupHWIntrinsicISA(const char* className);
     static NamedIntrinsic lookupHWIntrinsic(const char* methodName, InstructionSet isa);
@@ -3016,7 +3021,6 @@ protected:
 
 public:
     static HWIntrinsicCategory categoryOfHWIntrinsic(NamedIntrinsic intrinsic);
-    static int numArgsOfHWIntrinsic(GenTreeHWIntrinsic* node);
 
 protected:
     static HWIntrinsicFlag flagsOfHWIntrinsic(NamedIntrinsic intrinsic);
