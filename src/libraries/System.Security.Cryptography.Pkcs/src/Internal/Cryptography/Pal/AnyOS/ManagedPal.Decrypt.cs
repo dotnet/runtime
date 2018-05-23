@@ -15,7 +15,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 {
     internal sealed partial class ManagedPkcsPal : PkcsPal
     {
-        private sealed class ManagedDecryptorPal : DecryptorPal
+        internal sealed class ManagedDecryptorPal : DecryptorPal
         {
             private byte[] _dataCopy;
             private EnvelopedDataAsn _envelopedData;
@@ -33,6 +33,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             public override unsafe ContentInfo TryDecrypt(
                 RecipientInfo recipientInfo,
                 X509Certificate2 cert,
+                AsymmetricAlgorithm privateKey,
                 X509Certificate2Collection originatorCerts,
                 X509Certificate2Collection extraStore,
                 out Exception exception)
@@ -40,11 +41,44 @@ namespace Internal.Cryptography.Pal.AnyOS
                 // When encryptedContent is null Windows seems to decrypt the CEK first,
                 // then return a 0 byte answer.
 
-                byte[] cek;
+                Debug.Assert((cert != null) ^ (privateKey != null));
 
                 if (recipientInfo.Pal is ManagedKeyTransPal ktri)
                 {
-                    cek = ktri.DecryptCek(cert, out exception);
+                    RSA key = privateKey as RSA;
+
+                    if (privateKey != null && key == null)
+                    {
+                        exception = new CryptographicException(SR.Cryptography_Cms_Ktri_RSARequired);
+                        return null;
+                    }
+
+                    byte[] cek = ktri.DecryptCek(cert, key, out exception);
+                    // Pin CEK to prevent it from getting copied during heap compaction.
+                    fixed (byte* pinnedCek = cek)
+                    {
+                        try
+                        {
+                            if (exception != null)
+                            {
+                                return null;
+                            }
+
+                            return TryDecryptCore(
+                                cek,
+                                _envelopedData.EncryptedContentInfo.ContentType,
+                                _envelopedData.EncryptedContentInfo.EncryptedContent,
+                                _envelopedData.EncryptedContentInfo.ContentEncryptionAlgorithm,
+                                out exception);
+                        }
+                        finally
+                        {
+                            if (cek != null)
+                            {
+                                Array.Clear(cek, 0, cek.Length);
+                            }
+                        }
+                    }
                 }
                 else
                 {
@@ -54,47 +88,32 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                     return null;
                 }
+            }
 
-                byte[] decrypted;
-
-                // Pin CEK to prevent it from getting copied during heap compaction.
-                fixed (byte* pinnedCek = cek)
+            public static unsafe ContentInfo TryDecryptCore(
+                byte[] cek,
+                string contentType,
+                ReadOnlyMemory<byte>? content,
+                AlgorithmIdentifierAsn contentEncryptionAlgorithm,
+                out Exception exception)
+            {
+                if (content == null)
                 {
-                    try
-                    {
-                        if (exception != null)
-                        {
-                            return null;
-                        }
+                    exception = null;
 
-                        ReadOnlyMemory<byte>? encryptedContent = _envelopedData.EncryptedContentInfo.EncryptedContent;
-
-                        if (encryptedContent == null)
-                        {
-                            exception = null;
-
-                            return new ContentInfo(
-                                new Oid(_envelopedData.EncryptedContentInfo.ContentType),
-                                Array.Empty<byte>());
-                        }
-
-                        decrypted = DecryptContent(encryptedContent.Value, cek, out exception);
-                    }
-                    finally
-                    {
-                        if (cek != null)
-                        {
-                            Array.Clear(cek, 0, cek.Length);
-                        }
-                    }
+                    return new ContentInfo(
+                        new Oid(contentType),
+                        Array.Empty<byte>());
                 }
+
+                byte[] decrypted = DecryptContent(content.Value, cek, contentEncryptionAlgorithm, out exception);
 
                 if (exception != null)
                 {
                     return null;
                 }
 
-                if (_envelopedData.EncryptedContentInfo.ContentType == Oids.Pkcs7Data)
+                if (contentType == Oids.Pkcs7Data)
                 {
                     byte[] tmp = null;
 
@@ -139,11 +158,15 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                 exception = null;
                 return new ContentInfo(
-                    new Oid(_envelopedData.EncryptedContentInfo.ContentType),
+                    new Oid(contentType),
                     decrypted);
             }
 
-            private byte[] DecryptContent(ReadOnlyMemory<byte> encryptedContent, byte[] cek, out Exception exception)
+            private static byte[] DecryptContent(
+                ReadOnlyMemory<byte> encryptedContent,
+                byte[] cek,
+                AlgorithmIdentifierAsn contentEncryptionAlgorithm,
+                out Exception exception)
             {
                 exception = null;
                 int encryptedContentLength = encryptedContent.Length;
@@ -152,9 +175,6 @@ namespace Internal.Cryptography.Pal.AnyOS
                 try
                 {
                     encryptedContent.CopyTo(encryptedContentArray);
-
-                    AlgorithmIdentifierAsn contentEncryptionAlgorithm =
-                        _envelopedData.EncryptedContentInfo.ContentEncryptionAlgorithm;
 
                     using (SymmetricAlgorithm alg = OpenAlgorithm(contentEncryptionAlgorithm))
                     using (ICryptoTransform decryptor = alg.CreateDecryptor(cek, alg.IV))
