@@ -19,7 +19,7 @@ namespace System.Buffers.Text
             {
                 return TryFormatUInt32SingleDigit((uint)value, destination, out bytesWritten);
             }
-            
+
             if (IntPtr.Size == 8)    // x64
             {
                 return TryFormatInt64MultipleDigits(value, destination, out bytesWritten);
@@ -34,13 +34,13 @@ namespace System.Buffers.Text
                 {
                     if (value <= (long)Utf8Constants.BillionMaxUIntValue && value >= -(long)Utf8Constants.BillionMaxUIntValue)
                     {
-                        return value < 0 ? 
+                        return value < 0 ?
                         TryFormatInt64MoreThanNegativeBillionMaxUInt(-value, destination, out bytesWritten) :
-                        TryFormatUInt64LessThanBillionMaxUInt((ulong)value, destination, out bytesWritten); 
+                        TryFormatUInt64LessThanBillionMaxUInt((ulong)value, destination, out bytesWritten);
                     }
                     else
                     {
-                        return value < 0 ? 
+                        return value < 0 ?
                         TryFormatInt64LessThanNegativeBillionMaxUInt(-value, destination, out bytesWritten) :
                         TryFormatUInt64MoreThanBillionMaxUInt((ulong)value, destination, out bytesWritten);
                     }

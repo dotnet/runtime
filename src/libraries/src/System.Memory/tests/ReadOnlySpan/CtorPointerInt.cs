@@ -6,8 +6,6 @@ using Xunit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 0649 //Field 'SpanTests.InnerStruct.J' is never assigned to, and will always have its default value 0
-
 namespace System.SpanTests
 {
     public static partial class ReadOnlySpanTests

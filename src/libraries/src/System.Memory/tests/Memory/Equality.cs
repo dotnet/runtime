@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-#pragma warning disable 1718 //Comparison made to same variable; did you mean to compare something else?
-
 namespace System.MemoryTests
 {
     public static partial class MemoryTests

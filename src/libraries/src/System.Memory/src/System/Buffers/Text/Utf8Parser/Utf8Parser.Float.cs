@@ -40,7 +40,7 @@ namespace System.Buffers.Text
                 return true;
             }
 
-            return TryParseAsSpecialFloatingPoint<float>(source, float.PositiveInfinity, float.NegativeInfinity, float.NaN, out value, out bytesConsumed);
+            return TryParseAsSpecialFloatingPoint(source, float.PositiveInfinity, float.NegativeInfinity, float.NaN, out value, out bytesConsumed);
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace System.Buffers.Text
             if (TryParseNormalAsFloatingPoint(source, out value, out bytesConsumed, standardFormat))
                 return true;
 
-            return TryParseAsSpecialFloatingPoint<double>(source, double.PositiveInfinity, double.NegativeInfinity, double.NaN, out value, out bytesConsumed);
+            return TryParseAsSpecialFloatingPoint(source, double.PositiveInfinity, double.NegativeInfinity, double.NaN, out value, out bytesConsumed);
         }
 
         //
