@@ -2713,6 +2713,21 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 	suspend_current ();
 }
 
+
+/* Conditionally call process_suspend depending oh the current state */
+static gboolean
+try_process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
+{
+	if (suspend_count > 0) {
+		/* Fastpath during invokes, see in process_suspend () */
+		if (suspend_count - tls->resume_count == 0)
+			return FALSE;
+		process_suspend (tls, ctx);
+		return TRUE;
+	}
+	return FALSE;
+}
+
 /*
  * suspend_vm:
  *
@@ -4852,11 +4867,8 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 	SeqPoint sp;
 	gboolean found_sp;
 
-	if (suspend_count > 0) {
-		/* Could be hit if we were suspended in native code */
-		process_suspend (tls, ctx);
+	if (try_process_suspend (tls, ctx))
 		return;
-	}
 
 	ip = (guint8 *)MONO_CONTEXT_GET_IP (ctx);
 
@@ -5151,13 +5163,8 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 	if (from_signal)
 		mono_arch_skip_single_step (ctx);
 
-	if (suspend_count > 0) {
-		/* Fastpath during invokes, see in process_suspend () */
-		if (suspend_count - tls->resume_count == 0)
-			return;
-		process_suspend (tls, ctx);
+	if (try_process_suspend (tls, ctx))
 		return;
-	}
 
 	/*
 	 * This can run concurrently with a clear_event_request () call, so needs locking/reference counts.
