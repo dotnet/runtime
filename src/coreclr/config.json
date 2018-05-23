@@ -282,12 +282,6 @@
       "values": [ "false", "true"],
       "defaultValue": "true"
     },
-    "Rebuild": {
-      "description": "Specifies rebuild target.",
-      "valueType": "target",
-      "values": [],
-      "defaultValue": ""
-    },
     "MsBuildLog": {
       "description": "Specifies build logs for build alias.",
       "valueType": "passThrough",

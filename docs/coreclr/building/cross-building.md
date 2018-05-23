@@ -79,11 +79,11 @@ Once the rootfs has been generated, it will be possible to cross compile CoreCLR
 
 So, without `ROOTFS_DIR`:
 
-    ben@ubuntu ~/git/coreclr/ $ ./build.sh arm debug verbose cross -rebuild
+    ben@ubuntu ~/git/coreclr/ $ ./build.sh arm debug verbose cross
 
 And with:
 
-    ben@ubuntu ~/git/coreclr/ $ ROOTFS_DIR=/home/ben/coreclr-cross/arm ./build.sh arm debug verbose cross -rebuild
+    ben@ubuntu ~/git/coreclr/ $ ROOTFS_DIR=/home/ben/coreclr-cross/arm ./build.sh arm debug verbose cross
 
 As usual the resulting binaries will be found in `bin/Product/BuildOS.BuildArch.BuildType/`
 
@@ -115,7 +115,7 @@ The following instructions assume you are on a Linux machine such as Ubuntu 14.0
 To build System.Private.CoreLib for Linux, run the following command:
 
 ```
-    lgs@ubuntu ~/git/coreclr/ $ build.sh arm debug verbose -rebuild
+    lgs@ubuntu ~/git/coreclr/ $ build.sh arm debug verbose
 ```
 
 The output is at bin/Product/<BuildOS>.arm.Debug/System.Private.CoreLib.dll.
