@@ -248,7 +248,7 @@ namespace Internal.Cryptography
             return null;
         }
 
-        private static bool AreByteArraysEqual(byte[] ba1, byte[] ba2)
+        internal static bool AreByteArraysEqual(byte[] ba1, byte[] ba2)
         {
             if (ba1.Length != ba2.Length)
                 return false;
@@ -266,7 +266,7 @@ namespace Internal.Cryptography
         /// 
         /// Subject Key Identifier is string-ized as an upper case hex string. This format is part of the public api behavior and cannot be changed.
         /// </summary>
-        private static byte[] ToSkiBytes(this string skiString)
+        internal static byte[] ToSkiBytes(this string skiString)
         {
             return skiString.UpperHexStringToByteArray();
         }
@@ -286,7 +286,7 @@ namespace Internal.Cryptography
         /// 
         /// Serial number is string-ized as a reversed upper case hex string. This format is part of the public api behavior and cannot be changed.
         /// </summary>
-        private static byte[] ToSerialBytes(this string serialString)
+        internal static byte[] ToSerialBytes(this string serialString)
         {
             byte[] ba = serialString.UpperHexStringToByteArray();
             Array.Reverse(ba);

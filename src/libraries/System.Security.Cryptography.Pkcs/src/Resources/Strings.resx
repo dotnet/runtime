@@ -214,6 +214,9 @@
   <data name="Cryptography_Cms_Signing_RequiresPrivateKey" xml:space="preserve">
     <value>A certificate with a private key is required.</value>
   </data>
+  <data name="Cryptography_Cms_Ktri_RSARequired" xml:space="preserve">
+    <value>An RSA key is required to decrypt for a RecipientInfo with a KeyTransport recipient type.</value>
+  </data>
   <data name="Cryptography_Cms_TrustFailure" xml:space="preserve">
     <value>Certificate trust could not be established. The first reported error is: {0}</value>
   </data>
