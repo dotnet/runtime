@@ -1,9 +1,5 @@
 project(ClrJit)
 
-if(CLR_CMAKE_TARGET_ARCH_ARM)
-    add_definitions(-DLEGACY_BACKEND)
-endif(CLR_CMAKE_TARGET_ARCH_ARM)
-
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
 
