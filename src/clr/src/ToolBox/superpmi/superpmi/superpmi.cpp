@@ -129,7 +129,7 @@ int __cdecl main(int argc, char* argv[])
     if (0 != PAL_Initialize(argc, argv))
     {
         fprintf(stderr, "Error: Fail to PAL_Initialize\n");
-        return -1;
+        return (int)SpmiResult::GeneralFailure;
     }
 #endif // FEATURE_PAL
 
@@ -165,7 +165,7 @@ int __cdecl main(int argc, char* argv[])
     CommandLine::Options o;
     if (!CommandLine::Parse(argc, argv, &o))
     {
-        return -1;
+        return (int)SpmiResult::GeneralFailure;
     }
 
     if (o.parallel)
@@ -228,7 +228,7 @@ int __cdecl main(int argc, char* argv[])
         new MethodContextReader(o.nameOfInputMethodContextFile, o.indexes, o.indexCount, o.hash, o.offset, o.increment);
     if (!reader->isValid())
     {
-        return -1;
+        return (int)SpmiResult::GeneralFailure;
     }
 
     int loadedCount       = 0;
@@ -246,7 +246,7 @@ int __cdecl main(int argc, char* argv[])
     {
         if (!nearDiffer.InitAsmDiff())
         {
-            return -1;
+            return (int)SpmiResult::GeneralFailure;
         }
     }
 
@@ -255,7 +255,7 @@ int __cdecl main(int argc, char* argv[])
         MethodContextBuffer mcb = reader->GetNextMethodContext();
         if (mcb.Error())
         {
-            return -1;
+            return (int)SpmiResult::GeneralFailure;
         }
         else if (mcb.allDone())
         {
@@ -284,7 +284,7 @@ int __cdecl main(int argc, char* argv[])
 
         loadedCount++;
         if (!MethodContext::Initialize(loadedCount, mcb.buff, mcb.size, &mc))
-            return -1;
+            return (int)SpmiResult::GeneralFailure;
 
         if (jit == nullptr)
         {
@@ -294,7 +294,7 @@ int __cdecl main(int argc, char* argv[])
             if (jit == nullptr)
             {
                 // InitJit already printed a failure message
-                return -2;
+                return (int)SpmiResult::JitFailedToInit;
             }
 
             if (o.nameOfJit2 != nullptr)
@@ -304,7 +304,7 @@ int __cdecl main(int argc, char* argv[])
                 if (jit2 == nullptr)
                 {
                     // InitJit already printed a failure message
-                    return -2;
+                    return (int)SpmiResult::JitFailedToInit;
                 }
             }
         }
@@ -520,13 +520,13 @@ int __cdecl main(int argc, char* argv[])
                     if (hFileOut == INVALID_HANDLE_VALUE)
                     {
                         LogError("Failed to open output '%s'. GetLastError()=%u", buff, GetLastError());
-                        return -1;
+                        return (int)SpmiResult::GeneralFailure;
                     }
                     mc->saveToFile(hFileOut);
                     if (CloseHandle(hFileOut) == 0)
                     {
                         LogError("CloseHandle for output file failed. GetLastError()=%u", GetLastError());
-                        return -1;
+                        return (int)SpmiResult::GeneralFailure;
                     }
                     LogInfo("Wrote out repro to '%s'", buff);
                 }
@@ -578,28 +578,20 @@ int __cdecl main(int argc, char* argv[])
     }
     Logger::Shutdown();
 
-    enum Result
-    {
-        Success,
-        Error,
-        Diffs,
-        Misses
-    };
-
-    Result result = Success;
+    SpmiResult result = SpmiResult::Success;
 
     if (errorCount > 0)
     {
-        result = Error;
+        result = SpmiResult::Error;
     }
     else if (o.applyDiff && matchCount != jittedCount)
     {
-        result = Diffs;
+        result = SpmiResult::Diffs;
     }
     else if (missingCount > 0)
     {
-        result = Misses;
+        result = SpmiResult::Misses;
     }
 
-    return result;
+    return (int)result;
 }

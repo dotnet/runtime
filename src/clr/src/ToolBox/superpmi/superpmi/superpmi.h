@@ -25,4 +25,14 @@ extern const char* const g_AllFormatStringFixedPrefix;
 extern const char* const g_SummaryFormatString;
 extern const char* const g_AsmDiffsSummaryFormatString;
 
+enum class SpmiResult
+{
+    JitFailedToInit = -2,
+    GeneralFailure  = -1,
+    Success         = 0,
+    Error           = 1,
+    Diffs           = 2,
+    Misses          = 3
+};
+
 #endif
