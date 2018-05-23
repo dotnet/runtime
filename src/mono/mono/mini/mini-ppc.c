@@ -734,6 +734,9 @@ void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
 #ifdef MONO_CROSS_COMPILE
+	/* do nothing */
+#elif defined (__GNUC__)
+	__builtin___clear_cache (code, code + size);
 #else
 	register guint8 *p;
 	guint8 *endp, *start;
