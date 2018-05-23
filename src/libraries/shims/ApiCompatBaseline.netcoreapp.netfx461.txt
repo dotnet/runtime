@@ -3,8 +3,6 @@ ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Web.Applic
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.ServiceModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Xml.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=WindowsBase, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35)'.
 Compat issues with assembly mscorlib:
-TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
-TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 TypesMustExist : Type 'System.Configuration.Assemblies.AssemblyHash' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.IsolatedStorage.IsolatedStorageSecurityOptions' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.IsolatedStorage.IsolatedStorageSecurityState' does not exist in the implementation but it does exist in the contract.
@@ -28,9 +26,6 @@ TypesMustExist : Type 'System.Runtime.Serialization.Formatters.ISoapMessage' doe
 TypesMustExist : Type 'System.Runtime.Serialization.Formatters.ServerFault' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Serialization.Formatters.SoapFault' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Serialization.Formatters.SoapMessage' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Policy.ApplicationSecurityInfo' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Policy.ApplicationSecurityManager' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Policy.IApplicationTrustManager' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Principal.WindowsAccountType' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Principal.WindowsImpersonationContext' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System:
@@ -90,7 +85,6 @@ TypesMustExist : Type 'System.Security.Claims.DynamicRoleClaimProvider' does not
 TypesMustExist : Type 'System.Web.AspNetHostingPermission' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Web.AspNetHostingPermissionAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Web.AspNetHostingPermissionLevel' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Windows.Markup.ValueSerializerAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 Compat issues with assembly System.ComponentModel.DataAnnotations:
 TypesMustExist : Type 'System.ComponentModel.DataAnnotations.AssociatedMetadataTypeTypeDescriptionProvider' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ComponentModel.DataAnnotations.BindableTypeAttribute' does not exist in the implementation but it does exist in the contract.
@@ -295,7 +289,6 @@ TypesMustExist : Type 'System.Data.SqlTypes.TypeVarCharSchemaImporterExtension' 
 TypesMustExist : Type 'System.Data.SqlTypes.TypeVarImageSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.XmlDataDocument' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.DirectoryServices:
-CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.DirectoryServicesCOMException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermission' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionAccess' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionAttribute' does not exist in the implementation but it does exist in the contract.
@@ -490,8 +483,6 @@ TypesMustExist : Type 'System.ServiceModel.Web.WebOperationContext' does not exi
 TypesMustExist : Type 'System.ServiceModel.Web.WebServiceHost' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.ServiceProcess:
 TypesMustExist : Type 'System.ServiceProcess.ServiceAccount' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.ServiceProcess.ServiceControllerPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.ServiceProcess.ServiceProcessDescriptionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 Compat issues with assembly System.Transactions:
 TypesMustExist : Type 'System.Transactions.Configuration.DefaultSettingsSection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Transactions.Configuration.MachineSettingsSection' does not exist in the implementation but it does exist in the contract.
@@ -638,7 +629,6 @@ TypesMustExist : Type 'System.Windows.Markup.DesignerSerializationOptionsAttribu
 TypesMustExist : Type 'System.Windows.Markup.InternalTypeHelper' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Markup.IReceiveMarkupExtension' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Markup.ServiceProviders' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Windows.Markup.ValueSerializerAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Windows.Markup.Primitives.MarkupObject' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Markup.Primitives.MarkupProperty' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Media.DisableDpiAwarenessAttribute' does not exist in the implementation but it does exist in the contract.
@@ -666,4 +656,4 @@ TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEven
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventHandler' does not exist in the implementation but it does exist in the contract.
-Total Issues: 647
+Total Issues: 637
