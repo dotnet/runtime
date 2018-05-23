@@ -897,7 +897,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
 
-        /* This test will be added once the SDK write the assemblyVersion and fileVersion properties. Verified manually.
         [Fact]
         public void Multiple_SharedFxLookup_NetCoreApp_MinorRollForward_Wins_Over_UberFx()
         {
@@ -938,7 +937,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
             SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
-        */
+
         [Fact]
         public void Multiple_SharedFxLookup_Uber_Wins_Over_NetCoreApp_On_PatchRollForward()
         {
