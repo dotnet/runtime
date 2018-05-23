@@ -2508,6 +2508,94 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             }
 #endif // _TARGET_X86_
 
+            case NI_FMA_MultiplyAdd:
+            case NI_FMA_MultiplyAddNegated:
+            case NI_FMA_MultiplyAddNegatedScalar:
+            case NI_FMA_MultiplyAddScalar:
+            case NI_FMA_MultiplyAddSubtract:
+            case NI_FMA_MultiplySubtract:
+            case NI_FMA_MultiplySubtractAdd:
+            case NI_FMA_MultiplySubtractNegated:
+            case NI_FMA_MultiplySubtractNegatedScalar:
+            case NI_FMA_MultiplySubtractScalar:
+            {
+                assert(numArgs == 3);
+                assert(isRMW);
+
+                bool copyUpperBits = (flags & HW_Flag_CopyUpperBits) != 0;
+
+                // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
+                assert(!copyUpperBits || !op1->isContained());
+
+                if (op3->isContained())
+                {
+                    // 213 form: op1 = (op2 * op1) + [op3]
+
+                    if (copyUpperBits)
+                    {
+                        tgtPrefUse = BuildUse(op1);
+
+                        srcCount += 1;
+                        srcCount += BuildDelayFreeUses(op2);
+                    }
+                    else
+                    {
+                        // op1 and op2 are commutative, so don't
+                        // set either to be tgtPref or delayFree
+
+                        srcCount += BuildOperandUses(op1);
+                        srcCount += BuildOperandUses(op2);
+                    }
+
+                    srcCount += BuildOperandUses(op3);
+                }
+                else if (op2->isContained())
+                {
+                    // 132 form: op1 = (op1 * op3) + [op2]
+
+                    tgtPrefUse = BuildUse(op1);
+
+                    srcCount += 1;
+                    srcCount += BuildOperandUses(op2);
+                    srcCount += BuildDelayFreeUses(op3);
+                }
+                else if (op1->isContained())
+                {
+                    // 231 form: op3 = (op2 * op3) + [op1]
+
+                    tgtPrefUse = BuildUse(op3);
+
+                    srcCount += BuildOperandUses(op1);
+                    srcCount += BuildDelayFreeUses(op2);
+                    srcCount += 1;
+                }
+                else
+                {
+                    // 213 form: op1 = (op2 * op1) + op3
+
+                    if (copyUpperBits)
+                    {
+                        tgtPrefUse = BuildUse(op1);
+
+                        srcCount += 1;
+                        srcCount += BuildDelayFreeUses(op2);
+                    }
+                    else
+                    {
+                        // op1 and op2 are commutative, so don't
+                        // set either to be tgtPref or delayFree
+
+                        srcCount += BuildOperandUses(op1);
+                        srcCount += BuildOperandUses(op2);
+                    }
+
+                    srcCount += BuildDelayFreeUses(op3);
+                }
+
+                buildUses = false;
+                break;
+            }
+
             default:
             {
                 assert((intrinsicID > NI_HW_INTRINSIC_START) && (intrinsicID < NI_HW_INTRINSIC_END));

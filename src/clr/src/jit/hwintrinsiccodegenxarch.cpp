@@ -569,6 +569,124 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
     }
 }
 
+//------------------------------------------------------------------------
+// genHWIntrinsic_R_R_R_RM: Generates the code for a hardware intrinsic node that takes two register operands,
+//                          a register/memory operand, and that returns a value in register
+//
+// Arguments:
+//    ins       - The instruction being generated
+//    attr      - The emit attribute
+//    targetReg - The target register
+//    op1Reg    - The register of the first operand
+//    op2Reg    - The register of the second operand
+//    op3       - The third operand
+//
+void CodeGen::genHWIntrinsic_R_R_R_RM(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3)
+{
+    assert(targetReg != REG_NA);
+    assert(op1Reg != REG_NA);
+    assert(op2Reg != REG_NA);
+
+    emitter* emit = getEmitter();
+
+    if (op3->isContained() || op3->isUsedFromSpillTemp())
+    {
+        TempDsc* tmpDsc = nullptr;
+        unsigned varNum = BAD_VAR_NUM;
+        unsigned offset = (unsigned)-1;
+
+        if (op3->isUsedFromSpillTemp())
+        {
+            assert(op3->IsRegOptional());
+
+            // TODO-XArch-Cleanup: The getSpillTempDsc...tempRlsTemp code is a fairly common
+            //                     pattern. It could probably be extracted to its own method.
+            tmpDsc = getSpillTempDsc(op3);
+            varNum = tmpDsc->tdTempNum();
+            offset = 0;
+
+            compiler->tmpRlsTemp(tmpDsc);
+        }
+        else if (op3->OperIsHWIntrinsic())
+        {
+            emit->emitIns_SIMD_R_R_R_AR(ins, attr, targetReg, op1Reg, op2Reg, op3->gtGetOp1()->gtRegNum);
+            return;
+        }
+        else if (op3->isIndir())
+        {
+            GenTreeIndir* memIndir = op3->AsIndir();
+            GenTree*      memBase  = memIndir->gtOp1;
+
+            switch (memBase->OperGet())
+            {
+                case GT_LCL_VAR_ADDR:
+                {
+                    varNum = memBase->AsLclVarCommon()->GetLclNum();
+                    offset = 0;
+
+                    // Ensure that all the GenTreeIndir values are set to their defaults.
+                    assert(!memIndir->HasIndex());
+                    assert(memIndir->Scale() == 1);
+                    assert(memIndir->Offset() == 0);
+
+                    break;
+                }
+
+                case GT_CLS_VAR_ADDR:
+                {
+                    emit->emitIns_SIMD_R_R_R_C(ins, attr, targetReg, op1Reg, op2Reg, memBase->gtClsVar.gtClsVarHnd, 0);
+                    return;
+                }
+
+                default:
+                {
+                    emit->emitIns_SIMD_R_R_R_A(ins, attr, targetReg, op1Reg, op2Reg, memIndir);
+                    return;
+                }
+            }
+        }
+        else
+        {
+            switch (op3->OperGet())
+            {
+                case GT_LCL_FLD:
+                {
+                    GenTreeLclFld* lclField = op3->AsLclFld();
+
+                    varNum = lclField->GetLclNum();
+                    offset = lclField->gtLclFld.gtLclOffs;
+                    break;
+                }
+
+                case GT_LCL_VAR:
+                {
+                    assert(op3->IsRegOptional() || !compiler->lvaTable[op3->gtLclVar.gtLclNum].lvIsRegCandidate());
+                    varNum = op3->AsLclVar()->GetLclNum();
+                    offset = 0;
+                    break;
+                }
+
+                default:
+                    unreached();
+                    break;
+            }
+        }
+
+        // Ensure we got a good varNum and offset.
+        // We also need to check for `tmpDsc != nullptr` since spill temp numbers
+        // are negative and start with -1, which also happens to be BAD_VAR_NUM.
+        assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
+        assert(offset != (unsigned)-1);
+
+        emit->emitIns_SIMD_R_R_R_S(ins, attr, targetReg, op1Reg, op2Reg, varNum, offset);
+    }
+    else
+    {
+        emit->emitIns_SIMD_R_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, op3->gtRegNum);
+    }
+}
+
 // genHWIntrinsicJumpTableFallback : generate the jump-table fallback for imm-intrinsics
 //                       with non-constant argument
 //
@@ -1560,7 +1678,95 @@ void CodeGen::genBMI2Intrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI("Implement FMA intrinsic code generation");
+    NamedIntrinsic  intrinsicID = node->gtHWIntrinsicId;
+    var_types       baseType    = node->gtSIMDBaseType;
+    HWIntrinsicFlag flags       = Compiler::flagsOfHWIntrinsic(intrinsicID);
+    emitAttr        attr        = EA_ATTR(node->gtSIMDSize);
+    instruction     ins         = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
+    GenTree*        op1         = node->gtGetOp1();
+    regNumber       targetReg   = node->gtRegNum;
+
+    assert(Compiler::numArgsOfHWIntrinsic(node) == 3);
+    assert(op1 != nullptr);
+    assert(op1->OperIsList());
+    assert(op1->gtGetOp2()->OperIsList());
+    assert(op1->gtGetOp2()->gtGetOp2()->OperIsList());
+
+    GenTreeArgList* argList = op1->AsArgList();
+    op1                     = argList->Current();
+    genConsumeRegs(op1);
+
+    argList      = argList->Rest();
+    GenTree* op2 = argList->Current();
+    genConsumeRegs(op2);
+
+    argList      = argList->Rest();
+    GenTree* op3 = argList->Current();
+    genConsumeRegs(op3);
+
+    regNumber op1Reg;
+    regNumber op2Reg;
+
+    bool isCommutative = false;
+    bool copyUpperBits = (flags & HW_Flag_CopyUpperBits) != 0;
+
+    // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
+    assert(!copyUpperBits || !op1->isContained());
+
+    if (op3->isContained() || op3->isUsedFromSpillTemp())
+    {
+        // 213 form: op1 = (op2 * op1) + [op3]
+
+        op1Reg = op1->gtRegNum;
+        op2Reg = op2->gtRegNum;
+
+        isCommutative = !copyUpperBits;
+    }
+    else if (op2->isContained() || op2->isUsedFromSpillTemp())
+    {
+        // 132 form: op1 = (op1 * op3) + [op2]
+
+        ins    = (instruction)(ins - 1);
+        op1Reg = op1->gtRegNum;
+        op2Reg = op3->gtRegNum;
+        op3    = op2;
+    }
+    else if (op1->isContained() || op1->isUsedFromSpillTemp())
+    {
+        // 231 form: op3 = (op2 * op3) + [op1]
+
+        ins    = (instruction)(ins + 1);
+        op1Reg = op3->gtRegNum;
+        op2Reg = op2->gtRegNum;
+        op3    = op1;
+    }
+    else
+    {
+        // 213 form: op1 = (op2 * op1) + op3
+
+        op1Reg = op1->gtRegNum;
+        op2Reg = op2->gtRegNum;
+
+        isCommutative = !copyUpperBits;
+    }
+
+    if (isCommutative && (op1Reg != targetReg) && (op2Reg == targetReg))
+    {
+        assert(node->isRMWHWIntrinsic(compiler));
+
+        // We have "reg2 = (reg1 * reg2) +/- op3" where "reg1 != reg2" on a RMW intrinsic.
+        //
+        // For non-commutative intrinsics, we should have ensured that op2 was marked
+        // delay free in order to prevent it from getting assigned the same register
+        // as target. However, for commutative intrinsics, we can just swap the operands
+        // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
+
+        op2Reg = op1Reg;
+        op1Reg = targetReg;
+    }
+
+    genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3);
+    genProduceReg(node);
 }
 
 //------------------------------------------------------------------------
