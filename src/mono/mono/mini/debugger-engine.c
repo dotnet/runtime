@@ -18,7 +18,7 @@
 #include "seq-points.h"
 #include "aot-runtime.h"
 #include "debugger-engine.h"
-#include "mono-debugger-state-machine.h"
+#include "debugger-state-machine.h"
 
 /*
  * Logging support
