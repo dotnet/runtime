@@ -8937,12 +8937,6 @@ void Compiler::fgAddInternal()
         dbgHandle = info.compCompHnd->getJustMyCodeHandle(info.compMethodHnd, &pDbgHandle);
     }
 
-#ifdef _TARGET_ARM64_
-    // TODO-ARM64-NYI: don't do just-my-code
-    dbgHandle  = nullptr;
-    pDbgHandle = nullptr;
-#endif // _TARGET_ARM64_
-
     noway_assert(!dbgHandle || !pDbgHandle);
 
     if (dbgHandle || pDbgHandle)

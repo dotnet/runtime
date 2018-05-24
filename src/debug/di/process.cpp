@@ -8963,7 +8963,13 @@ bool CordbProcess::IsBreakOpcodeAtAddress(const void * address)
 {
     // There should have been an int3 there already. Since we already put it in there,
     // we should be able to safely read it out.
+#if defined(DBG_TARGET_ARM) || defined(DBG_TARGET_ARM64)
+    PRD_TYPE opcodeTest = 0;
+#elif defined(DBG_TARGET_AMD64) || defined(DBG_TARGET_X86)
     BYTE opcodeTest = 0;
+#else
+    PORTABILITY_ASSERT("NYI: Architecture specific opcode type to read");
+#endif
 
     HRESULT hr = SafeReadStruct(PTR_TO_CORDB_ADDRESS(address), &opcodeTest);
     SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr); 
@@ -9025,6 +9031,14 @@ CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufs
 #if defined(DBG_TARGET_X86) || defined(DBG_TARGET_AMD64)
     const BYTE patch = CORDbg_BREAK_INSTRUCTION;
     BYTE opcode;
+#elif defined(DBG_TARGET_ARM64)
+    const PRD_TYPE patch = CORDbg_BREAK_INSTRUCTION;
+    PRD_TYPE opcode;
+#else
+    PORTABILITY_ASSERT("NYI: CordbProcess::SetUnmanagedBreakpoint, interop debugging NYI on this platform");
+    hr = E_NOTIMPL;
+    goto ErrExit;
+#endif
 
     // Make sure args are good
     if ((buffer == NULL) || (bufsize < sizeof(patch)) || (bufLen == NULL))
@@ -9056,23 +9070,21 @@ CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufs
         goto ErrExit;
 
     // It's all successful, so now update our out-params & internal bookkeaping.
-    opcode = (BYTE) p->opcode;
+#if defined(DBG_TARGET_X86) || defined(DBG_TARGET_AMD64)
+    opcode = (BYTE)p->opcode;
     buffer[0] = opcode;
+#elif defined(DBG_TARGET_ARM64)
+    opcode = p->opcode;
+    memcpy_s(buffer, bufsize, &opcode, sizeof(opcode));
+#else
+    PORTABILITY_ASSERT("NYI: CordbProcess::SetUnmanagedBreakpoint, interop debugging NYI on this platform");
+#endif
     *bufLen = sizeof(opcode);
 
     p->pAddress = CORDB_ADDRESS_TO_PTR(address);
     p->opcode = opcode;
 
     _ASSERTE(SUCCEEDED(hr));
-#elif defined(DBG_TARGET_WIN64)
-    PORTABILITY_ASSERT("NYI: CordbProcess::SetUnmanagedBreakpoint, interop debugging NYI on this platform");
-    hr =  E_NOTIMPL;
-    goto ErrExit;
-#else
-    hr =  E_NOTIMPL;
-    goto ErrExit;
-#endif // DBG_TARGET_X8_
-
 
 ErrExit:
     // If we failed, then free the patch
@@ -12705,8 +12717,16 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         tempDebugContext.ContextFlags = DT_CONTEXT_FULL;
         DbiGetThreadContext(pUnmanagedThread->m_handle, &tempDebugContext);
         CordbUnmanagedThread::LogContext(&tempDebugContext);
+#if defined(DBG_TARGET_X86) || defined(DBG_TARGET_AMD64)
+        const ULONG_PTR breakpointOpcodeSize = 1;
+#elif defined(DBG_TARGET_ARM64)
+        const ULONG_PTR breakpointOpcodeSize = 4;
+#else
+        const ULONG_PTR breakpointOpcodeSize = 1;
+        PORTABILITY_ASSERT("NYI: Breakpoint size offset for this platform");
+#endif
         _ASSERTE(CORDbgGetIP(&tempDebugContext) == pEvent->u.Exception.ExceptionRecord.ExceptionAddress ||
-            (DWORD)CORDbgGetIP(&tempDebugContext) == ((DWORD)pEvent->u.Exception.ExceptionRecord.ExceptionAddress)+1);
+            (DWORD)CORDbgGetIP(&tempDebugContext) == ((DWORD)pEvent->u.Exception.ExceptionRecord.ExceptionAddress)+breakpointOpcodeSize);
     }
 #endif
 
