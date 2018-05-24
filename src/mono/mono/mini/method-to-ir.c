@@ -5952,7 +5952,8 @@ handle_call_res_devirt (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *call_re
 	 * This depends on the implementation of EqualityComparer.Default, which is
 	 * in mcs/class/referencesource/mscorlib/system/collections/generic/equalitycomparer.cs
 	 */
-	if (m_class_get_image (cmethod->klass) == mono_defaults.corlib &&
+	if (FALSE &&
+		m_class_get_image (cmethod->klass) == mono_defaults.corlib &&
 		!strcmp (m_class_get_name (cmethod->klass), "EqualityComparer`1") &&
 		!strcmp (cmethod->name, "get_Default")) {
 		MonoType *param_type = mono_class_get_generic_class (cmethod->klass)->context.class_inst->type_argv [0];
