@@ -40,6 +40,18 @@ public:
         tosIndex++;
     }
 
+    template <typename... Args>
+    void Emplace(Args&&... args)
+    {
+        if (tosIndex == maxIndex)
+        {
+            Realloc();
+        }
+
+        new (&data[tosIndex], jitstd::placement_t()) T(jitstd::forward<Args>(args)...);
+        tosIndex++;
+    }
+
     void Realloc()
     {
         // get a new chunk 2x the size of the old one
