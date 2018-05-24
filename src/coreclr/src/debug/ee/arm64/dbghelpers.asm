@@ -49,6 +49,54 @@
 ExceptionHijackEnd
     NESTED_END ExceptionHijack
 
+;
+; Flares for interop debugging.
+; Flares are exceptions (breakpoints) at well known addresses which the RS
+; listens for when interop debugging.
+;
+
+    LEAF_ENTRY SignalHijackStartedFlare
+    EMIT_BREAKPOINT
+    ; make sure that the basic block is unique
+    add     x0, x1, x1
+    ret     lr
+    LEAF_END
+
+    LEAF_ENTRY ExceptionForRuntimeHandoffStartFlare
+    EMIT_BREAKPOINT
+    ; make sure that the basic block is unique
+    add     x0, x2, x2
+    ret     lr
+    LEAF_END
+
+    LEAF_ENTRY ExceptionForRuntimeHandoffCompleteFlare
+    EMIT_BREAKPOINT
+    ; make sure that the basic block is unique
+    add     x0, x3, x3
+    ret     lr
+    LEAF_END
+
+    LEAF_ENTRY SignalHijackCompleteFlare
+    EMIT_BREAKPOINT
+    ; make sure that the basic block is unique
+    add     x0, x4, x4
+    ret     lr
+    LEAF_END
+
+    LEAF_ENTRY ExceptionNotForRuntimeFlare
+    EMIT_BREAKPOINT
+    ; make sure that the basic block is unique
+    add     x0, x5, x5
+    ret     lr
+    LEAF_END
+
+    LEAF_ENTRY NotifyRightSideOfSyncCompleteFlare
+    EMIT_BREAKPOINT
+    ; make sure that the basic block is unique
+    add     x0, x6, x6
+    ret     lr
+    LEAF_END
+
     ; must be at end of file
     END
     
