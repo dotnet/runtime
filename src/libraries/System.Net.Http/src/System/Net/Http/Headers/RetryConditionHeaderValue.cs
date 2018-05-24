@@ -56,7 +56,7 @@ namespace System.Net.Http.Headers
             {
                 return ((int)_delta.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
             }
-            return HttpRuleParser.DateToString(_date.Value);
+            return HttpDateParser.DateToString(_date.Value);
         }
 
         public override bool Equals(object obj)
@@ -155,7 +155,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                if (!HttpRuleParser.TryStringToDate(input.Substring(current), out date))
+                if (!HttpDateParser.TryStringToDate(input.Substring(current), out date))
                 {
                     return 0;
                 }
