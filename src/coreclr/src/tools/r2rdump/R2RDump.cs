@@ -39,10 +39,10 @@ namespace R2RDump
                         Console.WriteLine(section.Value.ToString());
                     }
 
-                    Console.WriteLine("============== Native Code ==============");
+                    Console.WriteLine("============== Native Code ==============\n");
                     foreach (R2RMethod method in r2r.R2RMethods)
                     {
-                        Console.WriteLine(method.ToString());
+                        Console.Write(method.ToString());
                         Console.WriteLine("------------------\n");
                     }
                 }
