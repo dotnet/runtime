@@ -2836,9 +2836,11 @@ CordbUnmanagedThread::~CordbUnmanagedThread()
 #define WINNT_TLS_OFFSET_X86    0xe10     // TLS[0] at fs:[WINNT_TLS_OFFSET]
 #define WINNT_TLS_OFFSET_AMD64  0x1480
 #define WINNT_TLS_OFFSET_ARM    0xe10
+#define WINNT_TLS_OFFSET_ARM64  0x1480
 #define WINNT5_TLSEXPANSIONPTR_OFFSET_X86   0xf94 // TLS[64] at [fs:[WINNT5_TLSEXPANSIONPTR_OFFSET]]
 #define WINNT5_TLSEXPANSIONPTR_OFFSET_AMD64 0x1780
 #define WINNT5_TLSEXPANSIONPTR_OFFSET_ARM   0xf94
+#define WINNT5_TLSEXPANSIONPTR_OFFSET_ARM64 0x1780
 
 HRESULT CordbUnmanagedThread::LoadTLSArrayPtr(void)
 {
@@ -3771,6 +3773,13 @@ VOID CordbUnmanagedThread::LogContext(DT_CONTEXT* pContext)
         DBG_ADDR(pContext->Rip),
         DBG_ADDR(pContext->Rsp),
         pContext->EFlags));    // EFlags is still 32bits on AMD64
+#elif defined(DBG_TARGET_ARM64)
+    LOG((LF_CORDB, LL_INFO10000,
+        "CUT::LC: Pc=" FMT_ADDR ", Sp=" FMT_ADDR ", Lr=" FMT_ADDR ", Cpsr=" FMT_ADDR "\n",
+        DBG_ADDR(pContext->Pc),
+        DBG_ADDR(pContext->Sp),
+        DBG_ADDR(pContext->Lr),
+        DBG_ADDR(pContext->Cpsr)));
 #else   // DBG_TARGET_X86
     PORTABILITY_ASSERT("LogContext needs a PC and stack pointer.");
 #endif  // DBG_TARGET_X86
@@ -3914,8 +3923,8 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijack(EHijackReason::EHijackReaso
         GetProcess()->GetDAC()->Hijack(VMPTR_Thread::NullPtr(),
                                        GetOSTid(),
                                        pExceptionRecord,
-                                       (CONTEXT*) GetHijackCtx(),
-                                       sizeof(CONTEXT),
+                                       (T_CONTEXT*) GetHijackCtx(),
+                                       sizeof(T_CONTEXT),
                                        reason,
                                        NULL,
                                        &LSContextAddr);
@@ -3961,7 +3970,7 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-#if defined(DBG_TARGET_AMD64)
+#if defined(DBG_TARGET_AMD64) || defined(DBG_TARGET_ARM64)
 
     // On X86 Debugger::GenericHijackFunc() ensures the stack is walkable
     // by simply using the EBP chain, therefore we can execute the hijack
@@ -3988,8 +3997,8 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
                     pThread->m_vmThreadToken,
                     dwThreadId,
                     pRecord, 
-                    (CONTEXT*) GetHijackCtx(),
-                    sizeof(CONTEXT),
+                    (T_CONTEXT*) GetHijackCtx(),
+                    sizeof(T_CONTEXT),
                     EHijackReason::kGenericHijack, 
                     NULL,
                     NULL);
@@ -4009,7 +4018,7 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
     }
     // else (non-threadstore threads) fallthrough
 
-#endif // DBG_TARGET_AMD64
+#endif // DBG_TARGET_AMD64 || defined(DBG_TARGET_ARM64)
 
     // Remember that we've hijacked the guy.
     SetState(CUTS_GenericHijacked);
@@ -4379,6 +4388,11 @@ void CordbUnmanagedThread::SaveRaiseExceptionEntryContext()
     m_raiseExceptionExceptionFlags = (DWORD)m_raiseExceptionEntryContext.Rdx;
     m_raiseExceptionNumberParameters = (DWORD)m_raiseExceptionEntryContext.R8;
     pExceptionInformation = (REMOTE_PTR)m_raiseExceptionEntryContext.R9;
+#elif defined(DBG_TARGET_ARM64)
+    m_raiseExceptionExceptionCode = (DWORD)m_raiseExceptionEntryContext.X0;
+    m_raiseExceptionExceptionFlags = (DWORD)m_raiseExceptionEntryContext.X1;
+    m_raiseExceptionNumberParameters = (DWORD)m_raiseExceptionEntryContext.X2;
+    pExceptionInformation = (REMOTE_PTR)m_raiseExceptionEntryContext.X3;
 #elif defined(DBG_TARGET_X86)
     hr = m_pProcess->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)m_raiseExceptionEntryContext.Esp+4), &m_raiseExceptionExceptionCode);
     if(FAILED(hr))
@@ -4501,11 +4515,14 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress)
 {
 #if defined(DBG_TARGET_X86) || defined(DBG_TARGET_AMD64)
     const BYTE patch = CORDbg_BREAK_INSTRUCTION;
-    HRESULT hr = pProcess->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &patch);
-    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
+#elif defined(DBG_TARGET_ARM64)
+    const PRD_TYPE patch = CORDbg_BREAK_INSTRUCTION;
 #else
+    const BYTE patch = 0;
     PORTABILITY_ASSERT("NYI: ApplyRemotePatch for this platform");
 #endif
+    HRESULT hr = pProcess->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &patch);
+    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
     return S_OK;
 }
 
@@ -4516,6 +4533,13 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, P
 #if defined(DBG_TARGET_X86) || defined(DBG_TARGET_AMD64)
     // Read out opcode. 1 byte on x86
     BYTE opcode;
+#elif defined(DBG_TARGET_ARM64)
+    // Read out opcode. 4 bytes on arm64
+    PRD_TYPE opcode;
+#else
+    BYTE opcode;
+    PORTABILITY_ASSERT("NYI: ApplyRemotePatch for this platform");
+#endif
 
     HRESULT hr = pProcess->SafeReadStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &opcode);
     if (FAILED(hr))
@@ -4524,9 +4548,6 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, P
     }
     
     *pOpcode = (PRD_TYPE) opcode;
-#else
-    PORTABILITY_ASSERT("NYI: ApplyRemotePatch for this platform");
-#endif
     ApplyRemotePatch(pProcess, pRemoteAddress);
     return S_OK;
 }
@@ -4539,14 +4560,18 @@ HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, 
 #if defined(DBG_TARGET_X86) || defined(DBG_TARGET_AMD64)
     // Replace the BP w/ the opcode.
     BYTE opcode2 = (BYTE) opcode;
+#elif defined(DBG_TARGET_ARM64)
+    // 4 bytes on arm64
+    PRD_TYPE opcode2 = opcode;
+#else
+    PRD_TYPE opcode2 = opcode;
+    PORTABILITY_ASSERT("NYI: RemoveRemotePatch for this platform");
+#endif
 
     pProcess->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &opcode2);
 
     // This may fail because the module has been unloaded.  In which case, the patch is also 
     // gone so it makes sense to return success.
-#else
-    PORTABILITY_ASSERT("NYI: RemoveRemotePatch for this platform");
-#endif
     return S_OK;
 }
 #endif // FEATURE_INTEROP_DEBUGGING
