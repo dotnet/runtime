@@ -558,35 +558,46 @@ namespace System.Text
         }
 
         /// <summary>
-        /// EnumerateChunks returns ChunkEnumerator that follows the IEnumerable pattern and
+        /// GetChunks returns ChunkEnumerator that follows the IEnumerable pattern and
         /// thus can be used in a C# 'foreach' statements to retreive the data in the StringBuilder
         /// as chunks (ReadOnlyMemory) of characters.  An example use is:
         /// 
-        ///      foreach (ReadOnlyMemory<char> chunk in sb.EnumerateChunks())
+        ///      foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
         ///         foreach(char c in chunk.Span)
         ///             { /* operation on c }
-        ///      
-        /// Note that creating a ReadOnlySpan from a ReadOnlyMemory is expensive compared to the
-        /// fetching of the character, so create a local variable for the SPAN if you need to use
-        /// a for statement for example 
+        ///
+        /// It is undefined what happens if the StringBuilder is modified while the chunk
+        /// enumeration is incomplete.  StringBuilder is also not thread-safe, so operating
+        /// on it with concurrent threads is illegal.  Finally the ReadOnlyMemory chunks returned 
+        /// are NOT guarenteed to remain unchanged if the StringBuilder is modified, so do 
+        /// not cache them for later use either.  This API's purpose is efficiently extracting
+        /// the data of a CONSTANT StringBuilder.  
         /// 
-        ///    foreach (ReadOnlyMemory<char> chunk in sb.EnumerateChunks())
+        /// Creating a ReadOnlySpan from a ReadOnlyMemory  (the .Span property) is expensive 
+        /// compared to the fetching of the character, so create a local variable for the SPAN 
+        /// if you need to use it in a nested for statement.  For example 
+        /// 
+        ///    foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
         ///    {
         ///         var span = chunk.Span;
         ///         for(int i = 0; i < span.Length; i++)
         ///             { /* operation on span[i] */ }
         ///    }
         /// </summary>
-        public ChunkEnumerator EnumerateChunks() => new ChunkEnumerator(this);
+        public ChunkEnumerator GetChunks() => new ChunkEnumerator(this);
 
         /// <summary>
         /// ChunkEnumerator supports both the IEnumerable and IEnumerator pattern so foreach 
-        /// works (see EnumerateChunks).  It needs to be public (so the compiler can use it 
+        /// works (see GetChunks).  It needs to be public (so the compiler can use it 
         /// when building a foreach statement) but users typically don't use it explicitly.
         /// (which is why it is a nested type). 
         /// </summary>
         public struct ChunkEnumerator
         {
+            private readonly StringBuilder _firstChunk; // The first Stringbuilder chunk (which is the end of the logical string)
+            private StringBuilder _currentChunk;        // The chunk that this enumerator is currently returning (Current).  
+            private readonly ManyChunkInfo _manyChunks; // Only used for long string builders with many chunks (see constructor)
+
             /// <summary>
             /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator  
             /// </summary>
@@ -651,6 +662,9 @@ namespace System.Text
             /// </summary>
             private class ManyChunkInfo
             {
+                private readonly StringBuilder[] _chunks;    // These are in normal order (first chunk first) 
+                private int _chunkPos;
+
                 public bool MoveNext(ref StringBuilder current)
                 {
                     int pos = ++_chunkPos;
@@ -671,14 +685,7 @@ namespace System.Text
                     }
                     _chunkPos = -1;
                 }
-
-                readonly StringBuilder[] _chunks;    // These are in normal order (first chunk first) 
-                int _chunkPos;
             }
-
-            readonly StringBuilder _firstChunk; // The first Stringbuilder chunk (which is the end of the logical string)
-            StringBuilder _currentChunk;        // The chunk that this enumerator is currently returning (Current).  
-            readonly ManyChunkInfo _manyChunks; // Only used for long string builders with many chunks (see constructor)
 #endregion
         }
 
