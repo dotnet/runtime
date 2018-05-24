@@ -5684,7 +5684,7 @@ void CEEInfo::getCallInfo(
 
                 MethodTable* pTypeParamMT = typeParam.GetMethodTable();
 
-                // No accees check is need for Var, MVar, or FnPtr.
+                // No access check is need for Var, MVar, or FnPtr.
                 if (pTypeParamMT != NULL)
                     canAccessMethod = ClassLoader::CanAccessClass(&accessContext,
                                                                   pTypeParamMT,

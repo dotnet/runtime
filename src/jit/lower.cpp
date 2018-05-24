@@ -4189,7 +4189,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         noway_assert(call->IsVirtualStubRelativeIndir());
 
         // Direct stub calls, though the stubAddr itself may still need to be
-        // accesed via an indirection.
+        // accessed via an indirection.
         GenTree* addr = AddrGen(stubAddr);
 
 #ifdef _TARGET_X86_
