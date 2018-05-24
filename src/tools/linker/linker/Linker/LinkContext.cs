@@ -212,15 +212,21 @@ namespace Mono.Linker {
 			try {
 				AssemblyDefinition assembly = _resolver.Resolve (reference, _readerParameters);
 
-				if (assembly != null && SeenFirstTime (assembly)) {
-					SafeReadSymbols (assembly);
-					SetAction (assembly);
-				}
+				if (assembly != null)
+					RegisterAssembly (assembly);
 
 				return assembly;
 			}
 			catch (Exception e) {
 				throw new AssemblyResolutionException (reference, e);
+			}
+		}
+
+		public void RegisterAssembly (AssemblyDefinition assembly)
+		{
+			if (SeenFirstTime (assembly)) {
+				SafeReadSymbols (assembly);
+				SetAction (assembly);
 			}
 		}
 
