@@ -422,14 +422,10 @@ TypesMustExist : Type 'System.Security.Cryptography.MemoryProtectionScope' does 
 TypesMustExist : Type 'System.Security.Cryptography.ProtectedMemory' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.AlgorithmIdentifier.Parameters.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.AlgorithmIdentifier.Parameters.set(System.Byte[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsRecipientCollection.IsSynchronized.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsRecipientCollection.SyncRoot.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.EnvelopedCms..ctor(System.Security.Cryptography.Pkcs.SubjectIdentifierType, System.Security.Cryptography.Pkcs.ContentInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.EnvelopedCms..ctor(System.Security.Cryptography.Pkcs.SubjectIdentifierType, System.Security.Cryptography.Pkcs.ContentInfo, System.Security.Cryptography.Pkcs.AlgorithmIdentifier)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.EnvelopedCms.Encrypt()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.Pkcs.KeyAgreeKeyChoice' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Pkcs.RecipientInfoCollection.IsSynchronized.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Pkcs.RecipientInfoCollection.SyncRoot.get()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.X509Certificate2UI' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.X509SelectionFlag' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Permissions.DataProtectionPermission' does not exist in the implementation but it does exist in the contract.
@@ -656,4 +652,4 @@ TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEven
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventHandler' does not exist in the implementation but it does exist in the contract.
-Total Issues: 637
+Total Issues: 633
