@@ -3775,6 +3775,10 @@ collect_threads (MonoInternalThread **thread_array, int max_threads)
 {
 	CollectThreadsUserData ud;
 
+	mono_memory_barrier ();
+	if (!threads)
+		return 0;
+
 	memset (&ud, 0, sizeof (ud));
 	/* This array contains refs, but its on the stack, so its ok */
 	ud.threads = thread_array;
@@ -5959,6 +5963,9 @@ mono_threads_summarize (MonoContext *ctx, gchar **out)
 		// FIXME: The sgen thread never shows up here
 		MonoInternalThread *thread_array [128];
 		int nthreads = collect_threads (thread_array, 128);
+
+		if (nthreads == 0)
+			MOSTLY_ASYNC_SAFE_PRINTF("No managed threads detected, error occured before thread init\n");
 
 		sigset_t sigset, old_sigset;
 		sigemptyset(&sigset);
