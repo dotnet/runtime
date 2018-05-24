@@ -103,10 +103,10 @@ PAL_GetLogicalCpuCountFromOS()
     int nrcpus = 0;
 
 #if HAVE_SYSCONF
-    nrcpus = sysconf(_SC_NPROCESSORS_ONLN);
+    nrcpus = sysconf(_SC_NPROCESSORS_CONF);
     if (nrcpus < 1)
     {
-        ASSERT("sysconf failed for _SC_NPROCESSORS_ONLN (%d)\n", errno);
+        ASSERT("sysconf failed for _SC_NPROCESSORS_CONF (%d)\n", errno);
     }
 #elif HAVE_SYSCTL
     int rc;
