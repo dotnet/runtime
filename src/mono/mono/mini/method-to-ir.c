@@ -5481,7 +5481,7 @@ il_read_branch_and_target (guchar *ip, guchar *end, guchar first_byte, MonoOpcod
 #define il_read_brtrue(ip, end, target) 	(il_read_branch_and_target (ip, end, CEE_BRTRUE,    MONO_CEE_BRTRUE,    4, target))
 #define il_read_brtrue_s(ip, end, target) 	(il_read_branch_and_target (ip, end, CEE_BRTRUE_S,  MONO_CEE_BRTRUE_S,  1, target))
 #define il_read_brfalse(ip, end, target) 	(il_read_branch_and_target (ip, end, CEE_BRFALSE,   MONO_CEE_BRFALSE,   4, target))
-#define il_read_brfalse_s(ip, end, target) 	(il_read_branch_and_target (ip, end, CEE_BRFALSE_s, MONO_CEE_BRFALSE_s, 1, target))
+#define il_read_brfalse_s(ip, end, target) 	(il_read_branch_and_target (ip, end, CEE_BRFALSE_S, MONO_CEE_BRFALSE_S, 1, target))
 #define il_read_dup(ip, end) 			(il_read_op 		   (ip, end, CEE_DUP, MONO_CEE_DUP))
 #define il_read_newobj(ip, end, token) 		(il_read_op_and_token 	   (ip, end, CEE_NEW_OBJ, MONO_CEE_NEWOBJ, token))
 #define il_read_ldtoken(ip, end, token) 	(il_read_op_and_token 	   (ip, end, CEE_LDTOKEN, MONO_CEE_LDTOKEN, token))
@@ -9507,7 +9507,7 @@ calli_end:
 				( (is_true = !!(ip = il_read_brtrue   (next_ip, end, &target))) ||
 				  (is_true = !!(ip = il_read_brtrue_s (next_ip, end, &target))) ||
 					       (ip = il_read_brfalse  (next_ip, end, &target))  ||
-					       (ip = il_read_brtrue_s (next_ip, end, &target)))) {
+					       (ip = il_read_brfalse_s (next_ip, end, &target)))) {
 
 				int dreg;
 				MonoBasicBlock *true_bb, *false_bb;
