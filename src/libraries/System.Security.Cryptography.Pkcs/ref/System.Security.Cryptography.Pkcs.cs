@@ -63,8 +63,8 @@ namespace System.Security.Cryptography.Pkcs
         public CmsRecipientCollection(System.Security.Cryptography.Pkcs.SubjectIdentifierType recipientIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates) { }
         public int Count { get { throw null; } }
         public System.Security.Cryptography.Pkcs.CmsRecipient this[int index] { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        public bool IsSynchronized { get { throw null; } }
+        public object SyncRoot { get { throw null; } }
         public int Add(System.Security.Cryptography.Pkcs.CmsRecipient recipient) { throw null; }
         public void CopyTo(System.Array array, int index) { }
         public void CopyTo(System.Security.Cryptography.Pkcs.CmsRecipient[] array, int index) { }
@@ -211,8 +211,8 @@ namespace System.Security.Cryptography.Pkcs
         internal RecipientInfoCollection() { }
         public int Count { get { throw null; } }
         public System.Security.Cryptography.Pkcs.RecipientInfo this[int index] { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        public bool IsSynchronized { get { throw null; } }
+        public object SyncRoot { get { throw null; } }
         public void CopyTo(System.Array array, int index) { }
         public void CopyTo(System.Security.Cryptography.Pkcs.RecipientInfo[] array, int index) { }
         public System.Security.Cryptography.Pkcs.RecipientInfoEnumerator GetEnumerator() { throw null; }
