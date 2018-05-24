@@ -2867,7 +2867,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 
     CONTRACT_VIOLATION(ThrowsViolation);
 
-    LOG((LF_CORDB|LF_ENC,LL_INFO1000,"DC:DPOSS at 0x%x trigger:0x%x\n", address, which));
+    LOG((LF_CORDB|LF_ENC,LL_INFO1000,"DC:DPOSS at 0x%p trigger:0x%x\n", address, which));
 
     // We should only have an exception if some managed thread was running.
     // Thus we should never be here when we're stopped.

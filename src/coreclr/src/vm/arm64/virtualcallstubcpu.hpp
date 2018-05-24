@@ -412,7 +412,6 @@ VirtualCallStubManager::StubKind VirtualCallStubManager::predictStubKind(PCODE s
     SUPPORTS_DAC;
 #ifdef DACCESS_COMPILE
 
-    _ASSERTE(!"ARM64:NYI");
     return SK_BREAKPOINT;  // Dac always uses the slower lookup
 
 #else

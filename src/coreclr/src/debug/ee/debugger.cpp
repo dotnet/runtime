@@ -13720,6 +13720,10 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Eip=0x%08x, Esp=0x%08x, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Eip, pContext->Esp,
         pContext->EFlags));
+#elif defined(_TARGET_ARM64_)
+    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p, EFlags=0x%08x\n",
+        tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp,
+        pContext->EFlags));
 #endif
 
     // This memory is used as IPC during the hijack. We will place a pointer to this in
@@ -13829,7 +13833,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     }
 } 
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
 void GenericHijackFuncHelper()
 {
 #if DOSPEW
@@ -13970,7 +13974,7 @@ void Debugger::SignalHijackStarted(void)
 {
     WRAPPER_NO_CONTRACT;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(FEATURE_INTEROP_DEBUGGING)
     SignalHijackStartedFlare();
 #else
     _ASSERTE(!"@todo - port the flares to the platform your running on.");
@@ -13987,7 +13991,7 @@ void Debugger::ExceptionForRuntimeHandoffStart(void)
 {
     WRAPPER_NO_CONTRACT;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(FEATURE_INTEROP_DEBUGGING)
     ExceptionForRuntimeHandoffStartFlare();
 #else
     _ASSERTE(!"@todo - port the flares to the platform your running on.");
@@ -14005,7 +14009,7 @@ void Debugger::ExceptionForRuntimeHandoffComplete(void)
 {
     WRAPPER_NO_CONTRACT;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(FEATURE_INTEROP_DEBUGGING)
     ExceptionForRuntimeHandoffCompleteFlare();
 #else
     _ASSERTE(!"@todo - port the flares to the platform your running on.");
@@ -14021,7 +14025,7 @@ void Debugger::SignalHijackComplete(void)
 {
     WRAPPER_NO_CONTRACT;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(FEATURE_INTEROP_DEBUGGING)
     SignalHijackCompleteFlare();
 #else
     _ASSERTE(!"@todo - port the flares to the platform your running on.");
@@ -14037,7 +14041,7 @@ void Debugger::ExceptionNotForRuntime(void)
 {
     WRAPPER_NO_CONTRACT;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(FEATURE_INTEROP_DEBUGGING)
     ExceptionNotForRuntimeFlare();
 #else
     _ASSERTE(!"@todo - port the flares to the platform your running on.");
@@ -14053,7 +14057,7 @@ void Debugger::NotifyRightSideOfSyncComplete(void)
 {
     WRAPPER_NO_CONTRACT;
     STRESS_LOG0(LF_CORDB, LL_INFO100000, "D::NRSOSC: Sending flare...\n");
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(FEATURE_INTEROP_DEBUGGING)
     NotifyRightSideOfSyncCompleteFlare();
 #else
     _ASSERTE(!"@todo - port the flares to the platform your running on.");

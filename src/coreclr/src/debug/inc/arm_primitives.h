@@ -71,8 +71,12 @@ inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
+#if defined(DBG_TARGET_ARM64)
+    pContext->Pc -= CORDbg_BREAK_INSTRUCTION_SIZE;
+#else
     // @ARMTODO: ARM appears to leave the PC at the start of the breakpoint (at least according to Windbg,
     // which may be adjusting the view).
+#endif
     return;
 }
 
