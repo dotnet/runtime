@@ -13,6 +13,7 @@
 #include "stdafx.h"
 #include "threadsuspend.h"
 #ifndef FEATURE_PAL
+
 #include "securitywrapper.h"
 #endif
 #include <aclapi.h>
@@ -1794,6 +1795,7 @@ HRESULT DebuggerRCThread::SendIPCEvent()
                 MODE_PREEMPTIVE;
             }
         }
+
 
         PRECONDITION(ThisMaybeHelperThread());
     }

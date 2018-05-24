@@ -99,6 +99,7 @@ UINT_PTR FindMostRecentUserCodeOnStack(void)
     return address;
 }
 
+
 // This does a user break, triggered by System.Diagnostics.Debugger.Break, or the IL opcode for break.
 //
 // Notes:

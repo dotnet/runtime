@@ -46,6 +46,7 @@ DebuggerControllerPage         *DebuggerController::g_protections = NULL;
 CrstStatic                      DebuggerController::g_criticalSection;
 int                             DebuggerController::g_cTotalMethodEnter = 0;
 
+
 // Is this patch at a position at which it's safe to take a stack?
 bool DebuggerControllerPatch::IsSafeForStackTrace()
 {
@@ -3025,26 +3026,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         context->Dr1 = c.Dr1;
         context->Dr2 = c.Dr2;
         context->Dr3 = c.Dr3;
-
-        //if (context->Dr0 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 0)
-        //{
-        //    DebuggerDataBreakpoint::CreateDebuggerDataBreakpoint(thread, thread->GetDomain(), context);
-        //}
-
-        //if (context->Dr1 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 1)
-        //{
-        //    DebuggerDataBreakpoint::CreateDebuggerDataBreakpoint(thread, thread->GetDomain(), context);
-        //}
-
-        //if (context->Dr2 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 2)
-        //{
-        //    DebuggerDataBreakpoint::CreateDebuggerDataBreakpoint(thread, thread->GetDomain(), context);
-        //}
-
-        //if (context->Dr3 != NULL && DebuggerDataBreakpoint::g_DataBreakpointCount == 3)
-        //{
-        //    DebuggerDataBreakpoint::CreateDebuggerDataBreakpoint(thread, thread->GetDomain(), context);
-        //}
 
         if (!atSafePlace)
             g_pDebugger->DecThreadsAtUnsafePlaces();
