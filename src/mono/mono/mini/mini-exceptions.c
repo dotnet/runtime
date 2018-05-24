@@ -1251,6 +1251,7 @@ typedef struct {
 	MonoFrameSummary *frames;
 	int num_frames;
 	int max_frames;
+	MonoStackHash *hashes;
 } MonoSummarizeUserData;
 
 static void
@@ -1301,6 +1302,38 @@ mono_get_portable_ip (intptr_t in_ip, intptr_t *out_ip, char *out_name)
 	return TRUE;
 }
 
+static intptr_t
+summarize_offset_free_hash (intptr_t accum, MonoFrameSummary *frame)
+{
+	if (!frame->is_managed)
+		return accum;
+
+	// See: mono_ptrarray_hash
+	intptr_t hash_accum = accum;
+
+	// The assembly and the method token, no offsets
+	hash_accum += mono_metadata_str_hash (frame->str_descr);
+	hash_accum += frame->managed_data.token;
+
+	return hash_accum;
+}
+
+static intptr_t
+summarize_offset_rich_hash (intptr_t accum, MonoFrameSummary *frame)
+{
+	// See: mono_ptrarray_hash
+	intptr_t hash_accum = accum;
+
+	if (!frame->is_managed) {
+		hash_accum += frame->unmanaged_data.ip;
+	} else {
+		hash_accum += mono_metadata_str_hash (frame->str_descr);
+		hash_accum += frame->managed_data.token;
+		hash_accum += frame->managed_data.native_offset;
+	}
+
+	return hash_accum;
+}
 
 static gboolean
 summarize_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
@@ -1341,6 +1374,9 @@ summarize_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 		mono_debug_free_source_location (location);
 	}
 
+	ud->hashes->offset_free_hash = summarize_offset_free_hash (ud->hashes->offset_free_hash, dest);
+	ud->hashes->offset_rich_hash = summarize_offset_rich_hash (ud->hashes->offset_rich_hash, dest);
+
 	return FALSE;
 }
 
@@ -1353,6 +1389,7 @@ mono_summarize_stack (MonoDomain *domain, MonoThreadSummary *out, MonoContext *c
 	data.max_frames = MONO_MAX_SUMMARY_FRAMES;
 	data.num_frames = 0;
 	data.frames = out->managed_frames;
+	data.hashes = &out->hashes;
 
 	// FIXME: collect stack pointer for both and sort frames by SP
 	// so people can see relative ordering of both managed and unmanaged frames.
@@ -2978,6 +3015,9 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 		int status;
 		pid_t crashed_pid = getpid ();
 
+#if defined(TARGET_OSX)
+		MonoStackHash hashes;
+#endif
 		gchar *output = NULL;
 		MonoContext mctx;
 		if (ctx) {
@@ -2999,7 +3039,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 			if (!leave) {
 				mono_sigctx_to_monoctx (ctx, &mctx);
 				// Do before forking
-				if (!mono_threads_summarize (&mctx, &output))
+				if (!mono_threads_summarize (&mctx, &output, &hashes))
 					g_assert_not_reached ();
 			}
 
@@ -3043,9 +3083,9 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 					exit (1);
 				}
 
-				intptr_t thread_pointer = (intptr_t) MONO_CONTEXT_GET_SP (&mctx);
+				char *full_version = mono_get_runtime_build_info ();
 
-				mono_merp_invoke (crashed_pid, thread_pointer, signal, output);
+				mono_merp_invoke (crashed_pid, signal, output, &hashes, full_version);
 
 				exit (1);
 			}

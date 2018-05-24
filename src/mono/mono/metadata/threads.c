@@ -5946,7 +5946,7 @@ mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx)
 static gint32 summary_started;
 
 gboolean
-mono_threads_summarize (MonoContext *ctx, gchar **out)
+mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 {
 	MonoBoolean not_started = FALSE;
 	ves_icall_System_Threading_Interlocked_CompareExchange_Int_Success (&summary_started, 0x1 /* set */, 0x0 /* compare */, &not_started);
@@ -6014,6 +6014,8 @@ mono_threads_summarize (MonoContext *ctx, gchar **out)
 	if (not_started) {
 		// We are the dumper
 		*out = mono_summarize_native_state_end ();
+		if (hashes)
+			*hashes = this_thread.hashes;
 		return TRUE;
 	}
 

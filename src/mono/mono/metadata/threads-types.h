@@ -359,6 +359,11 @@ typedef struct {
 } MonoFrameSummary;
 
 typedef struct {
+	intptr_t offset_free_hash;
+	intptr_t offset_rich_hash;
+} MonoStackHash;
+
+typedef struct {
 	gboolean is_managed;
 
 	const char *name;
@@ -371,10 +376,12 @@ typedef struct {
 
 	int num_unmanaged_frames;
 	MonoFrameSummary unmanaged_frames [MONO_MAX_SUMMARY_FRAMES];
+
+	MonoStackHash hashes;
 } MonoThreadSummary;
 
 gboolean
-mono_threads_summarize (MonoContext *ctx, gchar **out);
+mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes);
 #endif
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

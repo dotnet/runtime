@@ -13,6 +13,7 @@
 
 #include <config.h>
 #include <glib.h>
+#include <mono/metadata/threads-types.h>
 
 #ifdef TARGET_OSX
 
@@ -45,7 +46,8 @@ gboolean mono_merp_enabled (void);
  * crash dump (leaving the caller to call exit), or terminates the runtime
  * when the registered telemetry application does not respond.
  */
-void mono_merp_invoke (pid_t crashed_pid, intptr_t thread_pointer, const char *signal, const char *dump_file);
+void
+mono_merp_invoke (const intptr_t crashed_pid, const char *signal, const char *dump_file, MonoStackHash *hashes, char *version);
 
 
 #endif // TARGET_OSX

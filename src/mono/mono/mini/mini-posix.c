@@ -225,7 +225,7 @@ MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 	MonoContext mctx;
 	gchar *output = NULL;
 	mono_sigctx_to_monoctx (ctx, &mctx);
-	if (!mono_threads_summarize (&mctx, &output))
+	if (!mono_threads_summarize (&mctx, &output, NULL))
 		g_assert_not_reached ();
 
 	// Only the dumping-supervisor thread exits mono_thread_summarize
