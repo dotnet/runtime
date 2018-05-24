@@ -73,6 +73,7 @@ mono_debug_log_thread_state_to_string (MonoDebuggerThreadState state)
 	case MONO_DEBUGGER_SUSPENDED: return "suspended";
 	case MONO_DEBUGGER_RESUMED: return "resumed";
 	case MONO_DEBUGGER_TERMINATED: return "terminated";
+	case MONO_DEBUGGER_STARTED: return "started";
 	default:
 		g_assert_not_reached ();
 	}
@@ -235,46 +236,59 @@ mono_debugger_log_bp_hit (DebuggerTlsData *tls, MonoMethod *method, long il_offs
 void
 mono_debugger_log_resume (DebuggerTlsData *tls)
 {
-	mono_debugger_set_thread_state (tls, MONO_DEBUGGER_SUSPENDED, MONO_DEBUGGER_RESUMED);
-
 	intptr_t tid = mono_debugger_tls_thread_id (tls);
-	char *msg = g_strdup_printf ("Resuming 0x%x", tid);
+	MonoDebuggerThreadState prev_state = mono_debugger_get_thread_state (tls);
+	g_assert (prev_state == MONO_DEBUGGER_SUSPENDED || prev_state == MONO_DEBUGGER_STARTED);
+	mono_debugger_set_thread_state (tls, prev_state, MONO_DEBUGGER_RESUMED);
+
+	char *msg = g_strdup_printf ("Resuming 0x%x from state %s", tid, mono_debug_log_thread_state_to_string (prev_state));
 	debugger_log_append (DEBUG_LOG_STATE_CHANGE, tid, msg);
 }
 
 void
 mono_debugger_log_suspend (DebuggerTlsData *tls)
 {
-	mono_debugger_set_thread_state (tls, MONO_DEBUGGER_RESUMED, MONO_DEBUGGER_SUSPENDED);
-
 	intptr_t tid = mono_debugger_tls_thread_id (tls);
-	char *msg = g_strdup_printf ("Suspending 0x%x", tid);
+	MonoDebuggerThreadState prev_state = mono_debugger_get_thread_state (tls);
+	g_assert (prev_state == MONO_DEBUGGER_RESUMED || prev_state == MONO_DEBUGGER_STARTED);
+	mono_debugger_set_thread_state (tls, prev_state, MONO_DEBUGGER_SUSPENDED);
 
+	char *msg = g_strdup_printf ("Suspending 0x%x from state %s", tid, tid, mono_debug_log_thread_state_to_string (prev_state));
 	debugger_log_append (DEBUG_LOG_STATE_CHANGE, tid, msg);
 }
+
+typedef struct {
+	JsonWriter *writer;
+	gboolean not_first;
+} DebuggerThreadIterState;
 
 // FIXME: log TCP handshake / connection state
 static void
 dump_thread_state (gpointer key, gpointer value, gpointer user_data)
 {
-	JsonWriter *writer = (JsonWriter *) user_data;
 	DebuggerTlsData *debugger_tls = (DebuggerTlsData *) value;
+	DebuggerThreadIterState *data = (DebuggerThreadIterState *) user_data;
 
-	mono_json_writer_indent (writer);
-	mono_json_writer_object_begin(writer);
+	if (data->not_first)
+		mono_json_writer_printf (data->writer, ",\n");
+	else
+		data->not_first = TRUE;
 
-	mono_json_writer_indent (writer);
-	mono_json_writer_object_key(writer, "thread_id");
-	mono_json_writer_printf (writer, "\"0x%x\",\n", mono_debugger_tls_thread_id (debugger_tls));
+	mono_json_writer_indent (data->writer);
+	mono_json_writer_object_begin (data->writer);
 
-	mono_json_writer_indent (writer);
-	mono_json_writer_object_key(writer, "thread_state");
+	mono_json_writer_indent (data->writer);
+	mono_json_writer_object_key(data->writer, "thread_id");
+	mono_json_writer_printf (data->writer, "\"0x%x\",\n", mono_debugger_tls_thread_id (debugger_tls));
+
+	mono_json_writer_indent (data->writer);
+	mono_json_writer_object_key (data->writer, "thread_state");
 	const char *state = mono_debug_log_thread_state_to_string (mono_debugger_get_thread_state (debugger_tls));
-	mono_json_writer_printf (writer, "\"%s\",\n", state);
+	mono_json_writer_printf (data->writer, "\"%s\"\n", state);
 
-	mono_json_writer_indent_pop (writer);
-	mono_json_writer_indent (writer);
-	mono_json_writer_object_end (writer);
+	mono_json_writer_indent_pop (data->writer);
+	mono_json_writer_indent (data->writer);
+	mono_json_writer_object_end (data->writer);
 }
 
 void
@@ -285,6 +299,7 @@ mono_debugger_state (JsonWriter *writer)
 	}
 
 	mono_loader_lock ();
+	mono_json_writer_object_begin(writer);
 
 	mono_json_writer_indent (writer);
 	mono_json_writer_object_key(writer, "debugger_state");
@@ -293,17 +308,56 @@ mono_debugger_state (JsonWriter *writer)
 	mono_json_writer_indent (writer);
 	mono_json_writer_object_key(writer, "thread_states");
 	mono_json_writer_array_begin (writer);
+	mono_json_writer_indent_push (writer);
 
+	DebuggerThreadIterState iterState;
+	iterState.writer = writer;
+	iterState.not_first = FALSE;
 	MonoGHashTable *thread_to_tls = mono_debugger_get_thread_states ();
-	mono_g_hash_table_foreach (thread_to_tls, dump_thread_state, writer);
-
+	mono_g_hash_table_foreach (thread_to_tls, dump_thread_state, &iterState);
 	mono_json_writer_printf (writer, "\n");
 
 	mono_json_writer_indent_pop (writer);
 	mono_json_writer_indent (writer);
 	mono_json_writer_array_end (writer);
 
+	mono_json_writer_printf (writer, ",\n");
+
 	// FIXME: Log breakpoint state
+	MonoBreakpoint *bps;
+	int num_bps = mono_de_current_breakpoints (&bps);
+	if (num_bps) {
+		mono_json_writer_indent (writer);
+		mono_json_writer_object_key(writer, "breakpoints");
+		mono_json_writer_array_begin (writer);
+
+		for (int i=0; i < num_bps; i++) {
+			mono_json_writer_indent (writer);
+			mono_json_writer_object_begin(writer);
+
+			mono_json_writer_indent (writer);
+			mono_json_writer_object_key(writer, "method");
+			mono_json_writer_printf (writer, "\"%s\",\n", bps [i].method ? mono_method_full_name (bps [i].method, TRUE) : "No method");
+
+			mono_json_writer_indent (writer);
+			mono_json_writer_object_key(writer, "il_offset");
+			mono_json_writer_printf (writer, "\"0x%x\",\n", bps [i].il_offset);
+
+			mono_json_writer_indent_pop (writer);
+			mono_json_writer_indent (writer);
+			mono_json_writer_object_end (writer);
+			mono_json_writer_printf (writer, ",\n");
+		}
+
+		mono_json_writer_printf (writer, ",\n");
+
+		mono_json_writer_indent_pop (writer);
+		mono_json_writer_indent (writer);
+		mono_json_writer_array_end (writer);
+		mono_json_writer_printf (writer, ",\n");
+	}
+
+	g_free (bps);
 
 	// Log history
 	MonoDebuggerLogIter diter;

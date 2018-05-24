@@ -3792,6 +3792,11 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 
 	send_success = send_packet (CMD_SET_EVENT, CMD_COMPOSITE, &buf);
 
+	if (send_success) {
+		DebuggerTlsData *tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
+		mono_debugger_log_event (tls, event_to_string (event), buf.buf, buffer_len (&buf));
+	}
+
 	buffer_free (&buf);
 
 	g_slist_free (events);
@@ -4614,6 +4619,8 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 	g_assert (found_sp);
 
 	DEBUG_PRINTF (1, "[%p] Breakpoint hit, method=%s, ip=%p, [il=0x%x,native=0x%x].\n", (gpointer) (gsize) mono_native_thread_id_get (), method->name, ip, sp.il_offset, native_offset);
+
+	mono_debugger_log_bp_hit (tls, method, sp.il_offset);
 
 	bp = NULL;
 	mono_de_collect_breakpoints_by_sp (&sp, ji, ss_reqs_orig, bp_reqs);
@@ -10283,17 +10290,16 @@ debugger_thread (void *arg)
 		}
 
 		g_assert (flags == 0);
+		const char *cmd_str;
+		char cmd_num [256];
+
+		cmd_str = cmd_to_string (command_set, command);
+		if (!cmd_str) {
+			sprintf (cmd_num, "%d", command);
+			cmd_str = cmd_num;
+		}
 
 		if (log_level) {
-			const char *cmd_str;
-			char cmd_num [256];
-
-			cmd_str = cmd_to_string (command_set, command);
-			if (!cmd_str) {
-				sprintf (cmd_num, "%d", command);
-				cmd_str = cmd_num;
-			}
-			
 			DEBUG_PRINTF (1, "[dbg] Command %s(%s) [%d][at=%lx].\n", command_set_to_string (command_set), cmd_str, id, (long)mono_100ns_ticks () / 10000);
 		}
 
@@ -10378,6 +10384,8 @@ debugger_thread (void *arg)
 				//DEBUG_PRINTF (1, "[dbg] Sent reply to %d [at=%lx].\n", id, (long)mono_100ns_ticks () / 10000);
 			}
 		}
+
+		mono_debugger_log_command (command_set_to_string (command_set), cmd_str, buf.buf, buffer_len (&buf));
 
 		if (err == ERR_NONE && command_set == CMD_SET_VM && command == CMD_VM_STOP_BUFFERING) {
 			send_buffered_reply_packets ();
