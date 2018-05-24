@@ -11461,7 +11461,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
              Object * pObject = (Object*)pEvent->CreateHandle.objectToken;
              OBJECTREF objref = ObjectToOBJECTREF(pObject);
              AppDomain * pAppDomain = pEvent->vmAppDomain.GetRawPtr();
-             int fStrong = (int) pEvent->CreateHandle.fStrong;
+             BOOL fStrong = pEvent->CreateHandle.fStrong;
              OBJECTHANDLE objectHandle;
 
              // This is a synchronous event (reply required)
@@ -11481,10 +11481,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                      {
                          // create strong handle
                          objectHandle = pAppDomain->CreateStrongHandle(objref);
-                     }
-                     else if (fStrong == 2)
-                     {
-                         objectHandle = pAppDomain->CreatePinningHandle(objref);
                      }
                      else
                      {
@@ -11754,12 +11750,8 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     case DB_IPCE_GET_CONTAINER:
         {
             DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
-            // TODO, databp, replace with the right find_object call
-            pResult->GetContainerResult.answer = ((void*)(((long long)pEvent->GetContainer.interiorPointer) - sizeof(void*)));
-
-            // This is the right code for calling the method in GC, but that code has a bug such that it does not work in this scenario
-            // Object *pObject = GCHeapUtilities::GetGCHeap()->GetContainingObject(pEvent->GetContainer.interiorPointer, false);
-            // pResult->GetContainerResult.answer = pObject;
+            Object *pObject = GCHeapUtilities::GetGCHeap()->GetContainingObject(pEvent->GetContainer.interiorPointer, false);
+            pResult->GetContainerResult.answer = pObject;
             InitIPCEvent(pResult, DB_IPCE_GET_CONTAINER_RESULT, NULL, NULL);
             pResult->hr = S_OK;
             m_pRCThread->SendIPCReply();

@@ -78,7 +78,7 @@ ICorDebugManagedCallback3 * ManagedEvent::DispatchArgs::GetCallback3()
     return m_pCallback3;
 }
 
-// trivial accessor to get callback 3
+// trivial accessor to get callback 4
 ICorDebugManagedCallback4 * ManagedEvent::DispatchArgs::GetCallback4()
 {
     return m_pCallback4;

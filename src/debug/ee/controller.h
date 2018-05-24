@@ -991,7 +991,7 @@ inline void VerifyExecutableAddress(const BYTE* address)
 
 // DebuggerController:   DebuggerController serves
 // both as a static class that dispatches exceptions coming from the
-// EE, and as an abstract base class for the five classes that derive
+// EE, and as an abstract base class for the five classes that derrive
 // from it.
 class DebuggerController 
 {
