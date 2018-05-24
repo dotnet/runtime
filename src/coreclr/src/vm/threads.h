@@ -5321,8 +5321,6 @@ public:
     static void InitThreadStore();
     static void LockThreadStore();
     static void UnlockThreadStore();
-    static void EnterThreadStoreLockOnly();
-    static void LeaveThreadStoreLockOnly();
 
     // Add a Thread to the ThreadStore
     // WARNING : only GC calls this with bRequiresTSL set to FALSE.
