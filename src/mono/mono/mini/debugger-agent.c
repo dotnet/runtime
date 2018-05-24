@@ -10395,6 +10395,14 @@ debugger_thread (void *arg)
 		g_free (data);
 		buffer_free (&buf);
 
+#if 0
+		char *debugger_log = mono_debugger_state_str ();
+		if (debugger_log) {
+			fprintf (stderr, "Debugger state: %s\n", debugger_log);
+			g_free (debugger_log);
+		}
+#endif
+
 		if (command_set == CMD_SET_VM && (command == CMD_VM_DISPOSE || command == CMD_VM_EXIT))
 			break;
 	}

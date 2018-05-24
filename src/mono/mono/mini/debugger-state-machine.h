@@ -64,4 +64,7 @@ mono_debugger_log_suspend (DebuggerTlsData *tls);
 void
 mono_debugger_state (JsonWriter *writer);
 
+char *
+mono_debugger_state_str (void);
+
 #endif // __MONO_DEBUGGER_STATE_MACHINE__ 
