@@ -25,6 +25,8 @@
     <Compile Include="System\Data\Common\DbDataReaderMock.cs" />
     <Compile Include="System\Data\Common\DbDataReaderTest.cs" />
     <Compile Include="System\Data\Common\DbTransactionTest.cs" />
+    <Compile Include="System\Data\Common\RowUpdatedEventArgsTest.cs" />
+    <Compile Include="System\Data\Common\RowUpdatingEventArgsTest.cs" />
     <Compile Include="System\Data\ConstraintCollectionTest.cs" />
     <Compile Include="System\Data\ConstraintCollectionTest2.cs" />
     <Compile Include="System\Data\ConstraintExceptionTest.cs" />
