@@ -707,8 +707,6 @@ HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface)
 //-----------------------------------------------------------------------------
 void Debugger::SendSimpleIPCEventAndBlock()
 {
-    // TODO, databp, enable these contracts
-    /*
     CONTRACTL
     {
         SO_NOT_MAINLINE;
@@ -716,7 +714,6 @@ void Debugger::SendSimpleIPCEventAndBlock()
         MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
     }
     CONTRACTL_END;
-    */
 
     // BEGIN will acquire the lock (END will release it). While blocking, the
     // debugger may have detached though, so we need to check for that.
@@ -954,7 +951,8 @@ Debugger::Debugger()
     m_pIDbgThreadControl(NULL),
     m_forceNonInterceptable(FALSE),
     m_pLazyData(NULL),
-    m_defines(_defines)
+    m_defines(_defines),
+    m_isBlockedOnGarbageCollectionEvent(FALSE)
 {
     CONTRACTL
     {
@@ -2377,7 +2375,8 @@ DebuggerLazyInit::DebuggerLazyInit() :
     m_CtrlCMutex(NULL),
     m_exAttachEvent(NULL),
     m_exUnmanagedAttachEvent(NULL),
-    m_DebuggerHandlingCtrlC(NULL)
+    m_DebuggerHandlingCtrlC(NULL),
+    m_garbageCollectionBlockerEvent(NULL)
 {
 }
 
@@ -2415,6 +2414,8 @@ void DebuggerLazyInit::Init()
     m_CtrlCMutex             = CreateWin32EventOrThrow(NULL, kAutoResetEvent, FALSE);
     m_DebuggerHandlingCtrlC  = FALSE;
 
+    m_garbageCollectionBlockerEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+
     // Let the helper thread lazy init stuff too.
     m_RCThread.Init();
 }
@@ -2451,6 +2452,11 @@ DebuggerLazyInit::~DebuggerLazyInit()
     if (m_exUnmanagedAttachEvent != NULL)
     {
         CloseHandle(m_exUnmanagedAttachEvent);
+    }
+
+    if (m_garbageCollectionBlockerEvent != NULL)
+    {
+        CloseHandle(m_garbageCollectionBlockerEvent);
     }
 }
 
@@ -5451,8 +5457,6 @@ DebuggerModule* Debugger::AddDebuggerModule(DomainFile * pDomainFile)
 // Neither pDbgLockHolder nor pAppDomain are used.
 void Debugger::TrapAllRuntimeThreads()
 {
-    // TODO, databp, enable these contracts
-    /*
     CONTRACTL
     {
         SO_NOT_MAINLINE;
@@ -5468,8 +5472,7 @@ void Debugger::TrapAllRuntimeThreads()
                      !g_pEEInterface->IsPreemptiveGCDisabled());
     }
     CONTRACTL_END;
-    */
-
+ 
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
     // Only sync if RS requested it.
     if (!m_RSRequestedSync)
@@ -5503,9 +5506,13 @@ void Debugger::TrapAllRuntimeThreads()
         m_trappingRuntimeThreads = TRUE;
 
         // Take the thread store lock.
-        STRESS_LOG0(LF_CORDB,LL_INFO1000, "About to lock thread Store\n");
-        ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_FOR_DEBUGGER);
-        STRESS_LOG0(LF_CORDB,LL_INFO1000, "Locked thread store\n");
+        bool alreadyHeldThreadStoreLock = ThreadStore::HoldingThreadStore();
+        if (!alreadyHeldThreadStoreLock)
+        {
+            STRESS_LOG0(LF_CORDB, LL_INFO1000, "About to lock thread Store\n");
+            ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_FOR_DEBUGGER);
+            STRESS_LOG0(LF_CORDB, LL_INFO1000, "Locked thread store\n");
+        }
 
         // We start the suspension here, and let the helper thread finish it.
         // If there's no helper thread, then we need to do helper duty.
@@ -5554,9 +5561,12 @@ void Debugger::TrapAllRuntimeThreads()
             // from the RS now that we're stopped.
             // We need to release the TSL which we acquired above. (The helper will
             // likely take this lock while doing stuff).
-            STRESS_LOG0(LF_CORDB,LL_INFO1000, "About to unlock thread store!\n");
-            ThreadSuspend::UnlockThreadStore(FALSE, ThreadSuspend::SUSPEND_FOR_DEBUGGER);
-            STRESS_LOG0(LF_CORDB,LL_INFO1000, "TART: Unlocked thread store!\n");
+            if (!alreadyHeldThreadStoreLock)
+            {
+                STRESS_LOG0(LF_CORDB, LL_INFO1000, "About to unlock thread store!\n");
+                ThreadSuspend::UnlockThreadStore(FALSE, ThreadSuspend::SUSPEND_FOR_DEBUGGER);
+                STRESS_LOG0(LF_CORDB, LL_INFO1000, "TART: Unlocked thread store!\n");
+            }
         }
         _ASSERTE(ThreadHoldsLock()); // still hold the lock. (though it may have been toggled)
     }
@@ -6014,21 +6024,31 @@ void Debugger::BeforeGarbageCollection()
 
     Thread* pThread = GetThread();
 
-    SENDIPCEVENT_BEGIN(this, pThread)
-
     if (CORDBUnrecoverableError(this))
         return;
 
-    // Send an event to the Right Side
-    DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-    InitIPCEvent(ipce,
-        DB_IPCE_BEFORE_GARBAGE_COLLECTION,
-        pThread,
-        pThread->GetDomain());
+    {
+        Debugger::DebuggerLockHolder dbgLockHolder(this);
 
-    SendSimpleIPCEventAndBlock();
+        this->m_stopped = true;
+        this->m_isBlockedOnGarbageCollectionEvent = true;
 
-    SENDIPCEVENT_END;
+        DebuggerIPCEvent* ipce1 = m_pRCThread->GetIPCEventSendBuffer();
+        InitIPCEvent(ipce1,
+            DB_IPCE_BEFORE_GARBAGE_COLLECTION,
+            pThread,
+            pThread->GetDomain());
+
+        m_pRCThread->SendIPCEvent();
+
+        DebuggerIPCEvent* ipce2 = m_pRCThread->GetIPCEventSendBuffer();
+        InitIPCEvent(ipce2, DB_IPCE_SYNC_COMPLETE);
+
+        m_pRCThread->SendIPCEvent();
+    }
+
+    WaitForSingleObject(this->GetGarbageCollectionBlockerEvent(), INFINITE);
+    ResetEvent(this->GetGarbageCollectionBlockerEvent());
 }
 
 void Debugger::AfterGarbageCollection()
@@ -6040,9 +6060,6 @@ void Debugger::AfterGarbageCollection()
     }
     CONTRACTL_END;
 
-    // TODO, databp, ideally, remove this.
-    CONTRACT_VIOLATION(GCViolation);
-
     if (!CORDebuggerAttached())
     {
         return;
@@ -6050,21 +6067,31 @@ void Debugger::AfterGarbageCollection()
 
     Thread* pThread = GetThread();
 
-    SENDIPCEVENT_BEGIN(this, pThread)
-
     if (CORDBUnrecoverableError(this))
         return;
 
-    // Send an event to the Right Side
-    DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-    InitIPCEvent(ipce,
-        DB_IPCE_AFTER_GARBAGE_COLLECTION,
-        pThread,
-        pThread->GetDomain());
+    {
+        Debugger::DebuggerLockHolder dbgLockHolder(this);
 
-    SendSimpleIPCEventAndBlock();
+        this->m_stopped = true;
+        this->m_isBlockedOnGarbageCollectionEvent = true;
 
-    SENDIPCEVENT_END;
+        DebuggerIPCEvent* ipce1 = m_pRCThread->GetIPCEventSendBuffer();
+        InitIPCEvent(ipce1,
+            DB_IPCE_AFTER_GARBAGE_COLLECTION,
+            pThread,
+            pThread->GetDomain());
+
+        m_pRCThread->SendIPCEvent();
+
+        DebuggerIPCEvent* ipce2 = m_pRCThread->GetIPCEventSendBuffer();
+        InitIPCEvent(ipce2, DB_IPCE_SYNC_COMPLETE);
+
+        m_pRCThread->SendIPCEvent();
+    }
+
+    WaitForSingleObject(this->GetGarbageCollectionBlockerEvent(), INFINITE);
+    ResetEvent(this->GetGarbageCollectionBlockerEvent());
 }
 
 void Debugger::SendDataBreakpoint(Thread *thread, CONTEXT *context,
@@ -10733,7 +10760,8 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     DebuggerLockHolder dbgLockHolder(this, FALSE);
 
     if ((pEvent->type & DB_IPCE_TYPE_MASK) == DB_IPCE_ASYNC_BREAK ||
-        (pEvent->type & DB_IPCE_TYPE_MASK) == DB_IPCE_ATTACHING)
+        (pEvent->type & DB_IPCE_TYPE_MASK) == DB_IPCE_ATTACHING ||
+        this->m_isBlockedOnGarbageCollectionEvent)
     {
         dbgLockHolder.Acquire();
     }
@@ -10809,18 +10837,26 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
     case DB_IPCE_CONTINUE:
         {
-            GetCanary()->ClearCache();
+            if (this->m_isBlockedOnGarbageCollectionEvent)
+            {
+                this->m_isBlockedOnGarbageCollectionEvent = false;
+                this->m_stopped = false;
+                SetEvent(this->GetGarbageCollectionBlockerEvent());
+            }
+            else
+            {
+                GetCanary()->ClearCache();
 
-            fContinue = ResumeThreads(pEvent->vmAppDomain.GetRawPtr());
+                fContinue = ResumeThreads(pEvent->vmAppDomain.GetRawPtr());
 
                 //
                 // Go ahead and release the TSL now that we're continuing. This ensures that we've held
                 // the thread store lock the entire time the Runtime was just stopped.
                 //
                 ThreadSuspend::UnlockThreadStore(FALSE, ThreadSuspend::SUSPEND_FOR_DEBUGGER);
-
-            break;
             }
+            break;
+        }
 
     case DB_IPCE_BREAKPOINT_ADD:
         {
