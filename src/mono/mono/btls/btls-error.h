@@ -32,4 +32,7 @@ mono_btls_error_get_error_line (const char **file, int *line);
 void
 mono_btls_error_get_error_string_n (int error, char *buf, int len);
 
+int
+mono_btls_error_get_reason (int error);
+
 #endif /* __btls__btls_error__ */

@@ -150,12 +150,43 @@ static int
 cert_select_callback (SSL *ssl, void *arg)
 {
 	MonoBtlsSslCtx *ptr = (MonoBtlsSslCtx*)arg;
+	STACK_OF(X509_NAME) *ca_list;
+	int *sizes = NULL;
+	void **cadata = NULL;
+	int count = 0;
 	int ret = 1;
+	int i;
 
 	debug_printf (ptr, "cert_select_callback(): %p\n", ptr->select_func);
+
+	// SSL_get_client_CA_list() may only be called during this callback.
+	ca_list = SSL_get_client_CA_list (ssl);
+	if (ca_list) {
+		count = sk_X509_NAME_num (ca_list);
+		cadata = OPENSSL_malloc (sizeof (void *) * (count + 1));
+		sizes = OPENSSL_malloc (sizeof (int) * (count + 1));
+		if (!cadata || !sizes) {
+			ret = 0;
+			goto out;
+		}
+		for (i = 0; i < count; i++) {
+			X509_NAME *name = sk_X509_NAME_value (ca_list, i);
+			cadata[i] = name->bytes->data;
+			sizes[i] = name->bytes->length;
+		}
+	}
+
+	debug_printf (ptr, "cert_select_callback() #1: %p\n", ca_list);
+
 	if (ptr->select_func)
-		ret = ptr->select_func (ptr->instance);
+		ret = ptr->select_func (ptr->instance, count, sizes, cadata);
 	debug_printf (ptr, "cert_select_callback() #1: %d\n", ret);
+
+out:
+	if (cadata)
+		OPENSSL_free (cadata);
+	if (sizes)
+		OPENSSL_free (sizes);
 
 	return ret;
 }
@@ -238,3 +269,29 @@ mono_btls_ssl_ctx_set_verify_param (MonoBtlsSslCtx *ctx, const MonoBtlsX509Verif
 	return SSL_CTX_set1_param (ctx->ctx, mono_btls_x509_verify_param_peek_param (param));
 }
 
+MONO_API int
+mono_btls_ssl_ctx_set_client_ca_list (MonoBtlsSslCtx *ctx, int count, int *sizes, const void **data)
+{
+	STACK_OF(X509_NAME) *name_list;
+	int i;
+
+	name_list = sk_X509_NAME_new_null ();
+	if (!name_list)
+		return 0;
+
+	for (i = 0; i < count; i++) {
+		X509_NAME *name;
+		const unsigned char *ptr = (const unsigned char*)data[i];
+
+		name = d2i_X509_NAME (NULL, &ptr, sizes[i]);
+		if (!name) {
+			sk_X509_NAME_pop_free (name_list, X509_NAME_free);
+			return 0;
+		}
+		sk_X509_NAME_push (name_list, name);
+	}
+
+	// Takes ownership of the list.
+	SSL_CTX_set_client_CA_list (ctx->ctx, name_list);
+	return 1;
+}
