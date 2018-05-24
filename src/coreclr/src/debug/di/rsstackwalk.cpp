@@ -741,7 +741,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
             _ASSERTE(pCode != NULL);
 
             // We populate the code for ReJit eagerly to make sure we still have it if the profiler removes the
-            // instrumentation later. Of course the only way it will still be accesible to our caller is if he
+            // instrumentation later. Of course the only way it will still be accessible to our caller is if he
             // saves a pointer to the ILCode. 
             // I'm not sure if ignoring rejit for mini-dumps is the right call long term, but we aren't doing
             // anything special to collect the memory at dump time so we better be prepared to not fetch it here.

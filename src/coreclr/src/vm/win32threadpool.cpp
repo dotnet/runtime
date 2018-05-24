@@ -3450,7 +3450,7 @@ Top:
         // or in CompletionPortDispatchWorkWithinAppDomain, and passed here through StoreOverlappedInfoInThread)
 
         // For the purposes of activity correlation we only fire ETW events here, if needed OR if not fired at a higher
-        // abstration level (e.g. ThreadpoolMgr::RegisterWaitForSingleObject)
+        // abstraction level (e.g. ThreadpoolMgr::RegisterWaitForSingleObject)
         // Note: we still fire the event for managed async IO, despite the fact we don't have a paired IOEnqueue event
         // for this case. We do this to "mark" the end of the previous workitem. When we provide full support at the higher
         // abstraction level for managed IO we can remove the IODequeues fired here

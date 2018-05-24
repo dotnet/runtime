@@ -3901,7 +3901,7 @@ void Compiler::optUnrollLoops()
 
             /* Make sure to update loop table */
 
-            /* Use the LPFLG_REMOVED flag and update the bbLoopMask acordingly
+            /* Use the LPFLG_REMOVED flag and update the bbLoopMask accordingly
                 * (also make head and bottom NULL - to hit an assert or GPF) */
 
             optLoopTable[lnum].lpFlags |= LPFLG_REMOVED;
