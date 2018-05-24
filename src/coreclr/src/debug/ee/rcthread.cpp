@@ -1226,7 +1226,6 @@ void DebuggerRCThread::MainLoop()
 
                 // Let's release the lock here since runtime is resumed.
                 debugLockHolderSuspended.Release();
-                ThreadStore::LeaveThreadStoreLockOnly();
 
                 // This debugger thread shoud not be holding debugger locks anymore
                 _ASSERTE(!g_pDebugger->ThreadHoldsLock());
@@ -1249,7 +1248,7 @@ void DebuggerRCThread::MainLoop()
         {
             LOG((LF_CORDB, LL_INFO1000, "DRCT::ML:: straggler event set.\n"));
             
-            ThreadStore::EnterThreadStoreLockOnly();
+            ThreadStore::LockThreadStore();
             Debugger::DebuggerLockHolder debugLockHolder(m_debugger);
             // Make sure that we're still synchronizing...
             if (m_debugger->IsSynchronizing())
@@ -1262,14 +1261,14 @@ void DebuggerRCThread::MainLoop()
                 // Skip waiting the first time and just give it a go.  Note: Implicit
                 // release of the lock, because we are leaving its scope.
                 //
-                ThreadStore::LeaveThreadStoreLockOnly();
+                ThreadStore::UnlockThreadStore();
                 goto LWaitTimedOut;
             }
 #ifdef LOGGING
             else
                 LOG((LF_CORDB, LL_INFO1000, "DRCT::ML:: told to wait, but not syncing anymore.\n"));
 #endif
-            ThreadStore::LeaveThreadStoreLockOnly();
+            ThreadStore::UnlockThreadStore();
             // dbgLockHolder goes out of scope - implicit Release
          }
         else if (dwWaitResult == WAIT_TIMEOUT)
@@ -1279,7 +1278,7 @@ LWaitTimedOut:
 
             LOG((LF_CORDB, LL_INFO1000, "DRCT::ML:: wait timed out.\n"));
 
-            ThreadStore::EnterThreadStoreLockOnly();
+            ThreadStore::LockThreadStore();
             // Debugger::DebuggerLockHolder debugLockHolder(m_debugger);
             // Explicitly get the lock here since we try to check to see if
             // have suspended.  We will release the lock if we are not suspended yet.
@@ -1334,7 +1333,7 @@ LWaitTimedOut:
                 // And so the sweep should always succeed.
                 STRESS_LOG0(LF_CORDB, LL_INFO1000, "DRCT::ML:: threads still syncing after sweep.\n");
                 debugLockHolderSuspended.Release();
-                ThreadStore::LeaveThreadStoreLockOnly();
+                ThreadStore::UnlockThreadStore();
             }
             // debugLockHolderSuspended does not go out of scope. It has to be either released explicitly on the line above or
             // we intend to hold the lock till we hit continue event.
@@ -1778,21 +1777,23 @@ HRESULT DebuggerRCThread::SendIPCEvent()
         NOTHROW;
         GC_NOTRIGGER; // duh, we're in preemptive..
 
-        if (ThisIsHelperThreadWorker())
+        if (!m_debugger->m_isBlockedOnGarbageCollectionEvent)
         {
-            // When we're stopped, the helper could actually be contracted as either mode-cooperative
-            // or mode-preemptive!
-            // If we're the helper thread, we're only sending events while we're stopped.
-            // Our callers will be mode-cooperative, so call this mode_cooperative to avoid a bunch
-            // of unncessary contract violations.
-            MODE_COOPERATIVE;
+            if (ThisIsHelperThreadWorker())
+            {
+                // When we're stopped, the helper could actually be contracted as either mode-cooperative
+                // or mode-preemptive!
+                // If we're the helper thread, we're only sending events while we're stopped.
+                // Our callers will be mode-cooperative, so call this mode_cooperative to avoid a bunch
+                // of unncessary contract violations.
+                MODE_COOPERATIVE;
+            }
+            else
+            {
+                // Managed threads sending debug events should always be in preemptive mode.
+                MODE_PREEMPTIVE;
+            }
         }
-        else
-        {
-            // Managed threads sending debug events should always be in preemptive mode.
-            MODE_PREEMPTIVE;
-        }
-
 
         PRECONDITION(ThisMaybeHelperThread());
     }
