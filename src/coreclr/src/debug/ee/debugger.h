@@ -418,7 +418,7 @@ HRESULT ValidateObject(Object *objPtr);
 
 //-----------------------------------------------------------------------------
 // Execution control needs several ways to get at the context of a thread
-// stopped in managed code (stepping, setip, func-eval).
+// stopped in mangaged code (stepping, setip, func-eval).
 // We want to abstract away a few things:
 // - active: this thread is stopped at a patch
 // - inactive: this threads was managed suspended somewhere in jitted code
