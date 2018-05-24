@@ -869,7 +869,7 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
     // simplifies identifying a host record a lot.
     // 
     // 1. Prolog only: The host record. Epilog Count and E bit are all 0.
-    // 2. Prolog and some epilogs: The host record with acompannying epilog-only records
+    // 2. Prolog and some epilogs: The host record with accompanying epilog-only records
     // 3. Epilogs only: First unwind code is Phantom prolog (Starting with an end_c, indicating an empty prolog)
     // 4. No prologs or epilogs: First unwind code is Phantom prolog  (Starting with an end_c, indicating an empty prolog)
     //

@@ -11691,7 +11691,7 @@ check_other_factors:
     dprintf (2, ("FGN: we estimate gen%d will be collected", n));
 
 #ifdef BACKGROUND_GC
-    // When background GC is enabled it decreases the accurancy of our predictability -
+    // When background GC is enabled it decreases the accuracy of our predictability -
     // by the time the GC happens, we may not be under BGC anymore. If we try to 
     // predict often enough it should be ok.
     if ((n == max_generation) &&
@@ -21104,7 +21104,7 @@ void gc_heap::compact_loh()
             {
                 if (!heap_segment_read_only_p (seg))
                 {
-                    // We grew the segment to accommondate allocations.
+                    // We grew the segment to accommodate allocations.
                     if (heap_segment_plan_allocated (seg) > heap_segment_allocated (seg))
                     {
                         if ((heap_segment_plan_allocated (seg) - plug_skew)  > heap_segment_used (seg))

@@ -508,7 +508,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
             // metadata content that is readable and we'll 'succeed'.
             // For now, this is by-design.  A debugger should be allowed to decide if it wants
             // to take a risk by returning 'mostly matching' metadata to see if debugging is
-            // possible in the absense of a true match.
+            // possible in the absence of a true match.
             pMDII = pModule->GetInternalMD();
         }
     }

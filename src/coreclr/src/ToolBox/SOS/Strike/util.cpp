@@ -4824,7 +4824,7 @@ HRESULT InitCorDebugInterface()
     if(g_pCorDebugProcess != NULL)
     {
         // ICorDebugProcess4 is currently considered a private experimental interface on ICorDebug, it might go away so
-        // we need to be sure to handle its absense gracefully
+        // we need to be sure to handle its absence gracefully
         ToRelease<ICorDebugProcess4> pProcess4 = NULL;
         if(SUCCEEDED(g_pCorDebugProcess->QueryInterface(__uuidof(ICorDebugProcess4), (void**)&pProcess4)))
         {

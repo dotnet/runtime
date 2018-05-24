@@ -690,7 +690,7 @@ CorUnix::InternalOpenMutex(
     _ASSERTE(NULL != lpName);
     _ASSERTE(NULL != phMutex);
 
-    ENTRY("InternalOpenMutex(pthr=%p, dwDesiredAcces=%d, bInheritHandle=%d, "
+    ENTRY("InternalOpenMutex(pthr=%p, dwDesiredAccess=%d, bInheritHandle=%d, "
         "lpName=%p, phMutex=%p)\n",
         pthr,
         dwDesiredAccess,
