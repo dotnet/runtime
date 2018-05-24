@@ -10,8 +10,10 @@ namespace R2RDump
 {
     class R2RHeader
     {
+        [Flags]
         public enum ReadyToRunFlag
         {
+            NONE = 0x00000000,
             READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE = 0x00000001,
             READYTORUN_FLAG_SKIP_TYPE_VALIDATION = 0x00000002
         }
@@ -69,29 +71,29 @@ namespace R2RDump
             byte[] signature = new byte[sizeof(uint)];
             Array.Copy(image, curOffset, signature, 0, sizeof(uint));
             SignatureString = System.Text.Encoding.UTF8.GetString(signature);
-            Signature = R2RReader.ReadUInt32(image, ref curOffset);
+            Signature = NativeReader.ReadUInt32(image, ref curOffset);
             if (Signature != READYTORUN_SIGNATURE)
             {
                 throw new System.BadImageFormatException("Incorrect R2R header signature");
             }
 
-            MajorVersion = R2RReader.ReadUInt16(image, ref curOffset);
-            MinorVersion = R2RReader.ReadUInt16(image, ref curOffset);
-            Flags = R2RReader.ReadUInt32(image, ref curOffset);
-            int nSections = R2RReader.ReadInt32(image, ref curOffset);
+            MajorVersion = NativeReader.ReadUInt16(image, ref curOffset);
+            MinorVersion = NativeReader.ReadUInt16(image, ref curOffset);
+            Flags = NativeReader.ReadUInt32(image, ref curOffset);
+            int nSections = NativeReader.ReadInt32(image, ref curOffset);
             Sections = new Dictionary<R2RSection.SectionType, R2RSection>();
 
             for (int i = 0; i < nSections; i++)
             {
-                int type = R2RReader.ReadInt32(image, ref curOffset);
+                int type = NativeReader.ReadInt32(image, ref curOffset);
                 var sectionType = (R2RSection.SectionType)type;
                 if (!Enum.IsDefined(typeof(R2RSection.SectionType), type))
                 {
                     R2RDump.OutputWarning("Invalid ReadyToRun section type");
                 }
                 Sections[sectionType] = new R2RSection(sectionType,
-                    R2RReader.ReadInt32(image, ref curOffset),
-                    R2RReader.ReadInt32(image, ref curOffset));
+                    NativeReader.ReadInt32(image, ref curOffset),
+                    NativeReader.ReadInt32(image, ref curOffset));
             }
 
             Size = curOffset - startOffset;
