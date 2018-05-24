@@ -2421,9 +2421,10 @@ static bool configEnableISA(InstructionSet isa)
             return JitConfig.EnableSSE42() != 0;
         case InstructionSet_AVX:
             return JitConfig.EnableAVX() != 0;
+        case InstructionSet_FMA:
+            return JitConfig.EnableFMA() != 0;
         case InstructionSet_AVX2:
-            // Don't enable AVX2 when AVX is disabled
-            return (JitConfig.EnableAVX() != 0) && (JitConfig.EnableAVX2() != 0);
+            return JitConfig.EnableAVX2() != 0;
 
         case InstructionSet_AES:
             return JitConfig.EnableAES() != 0;
@@ -2431,8 +2432,6 @@ static bool configEnableISA(InstructionSet isa)
             return JitConfig.EnableBMI1() != 0;
         case InstructionSet_BMI2:
             return JitConfig.EnableBMI2() != 0;
-        case InstructionSet_FMA:
-            return JitConfig.EnableFMA() != 0;
         case InstructionSet_LZCNT:
             return JitConfig.EnableLZCNT() != 0;
         case InstructionSet_PCLMULQDQ:
@@ -2443,8 +2442,8 @@ static bool configEnableISA(InstructionSet isa)
             return false;
     }
 #else
-    // We have a retail config switch that can disable AVX/AVX2 instructions
-    if ((isa == InstructionSet_AVX) || (isa == InstructionSet_AVX2))
+    // We have a retail config switch that can disable AVX/FMA/AVX2 instructions
+    if ((isa == InstructionSet_AVX) || (isa == InstructionSet_FMA) || (isa == InstructionSet_AVX2))
     {
         return JitConfig.EnableAVX() != 0;
     }
@@ -2513,22 +2512,6 @@ void Compiler::compSetProcessor()
                 opts.setSupportedISA(InstructionSet_AES);
             }
         }
-        if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX))
-        {
-            if (configEnableISA(InstructionSet_AVX))
-            {
-                opts.setSupportedISA(InstructionSet_AVX);
-            }
-        }
-        if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
-        {
-            // COMPlus_EnableAVX is also used to control the code generation of
-            // System.Numerics.Vectors and floating-point arithmetics
-            if (configEnableISA(InstructionSet_AVX) && configEnableISA(InstructionSet_AVX2))
-            {
-                opts.setSupportedISA(InstructionSet_AVX2);
-            }
-        }
         if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI1))
         {
             if (configEnableISA(InstructionSet_BMI1))
@@ -2541,13 +2524,6 @@ void Compiler::compSetProcessor()
             if (configEnableISA(InstructionSet_BMI2))
             {
                 opts.setSupportedISA(InstructionSet_BMI2);
-            }
-        }
-        if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FMA))
-        {
-            if (configEnableISA(InstructionSet_FMA))
-            {
-                opts.setSupportedISA(InstructionSet_FMA);
             }
         }
         if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_LZCNT))
@@ -2572,8 +2548,8 @@ void Compiler::compSetProcessor()
             }
         }
 
-        // There are currently two sets of flags that control SSE3 through SSE4.2 support
-        // This is the general EnableSSE3_4 flag and the individual ISA flags. We need to
+        // There are currently two sets of flags that control SSE3 through SSE4.2 support:
+        // These are the general EnableSSE3_4 flag and the individual ISA flags. We need to
         // check both for any given ISA.
         if (JitConfig.EnableSSE3_4())
         {
@@ -2603,6 +2579,34 @@ void Compiler::compSetProcessor()
                 if (configEnableISA(InstructionSet_SSSE3))
                 {
                     opts.setSupportedISA(InstructionSet_SSSE3);
+                }
+            }
+        }
+
+        // There are currently two sets of flags that control AVX, FMA, and AVX2 support:
+        // These are the general EnableAVX flag and the individual ISA flags. We need to
+        // check both for any given isa.
+        if (JitConfig.EnableAVX())
+        {
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX))
+            {
+                if (configEnableISA(InstructionSet_AVX))
+                {
+                    opts.setSupportedISA(InstructionSet_AVX);
+                }
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FMA))
+            {
+                if (configEnableISA(InstructionSet_FMA))
+                {
+                    opts.setSupportedISA(InstructionSet_FMA);
+                }
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
+            {
+                if (configEnableISA(InstructionSet_AVX2))
+                {
+                    opts.setSupportedISA(InstructionSet_AVX2);
                 }
             }
         }
