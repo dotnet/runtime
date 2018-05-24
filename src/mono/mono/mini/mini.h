@@ -1562,6 +1562,7 @@ typedef struct {
 	gint32 optimized_divisions;
 	gint32 methods_with_llvm;
 	gint32 methods_without_llvm;
+	gint32 methods_with_interp;
 	char *max_ratio_method;
 	char *biggest_method;
 	gdouble jit_method_to_ir;
