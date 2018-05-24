@@ -2645,7 +2645,13 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, regMaskTP candidates)
         setDelayFree(use);
         return 1;
     }
-    else if (!node->OperIsIndir())
+    if (node->OperIsHWIntrinsic())
+    {
+        use = BuildUse(node->gtGetOp1(), candidates);
+        setDelayFree(use);
+        return 1;
+    }
+    if (!node->OperIsIndir())
     {
         return 0;
     }
