@@ -159,13 +159,13 @@ namespace BINDER_SPACE
                                       { W("MSIL"), peMSIL } };
 
         BOOL ValidateAndConvertProcessorArchitecture(SString &processorArchitecture,
-                                                     PEKIND *pkProcessorAchitecture)
+                                                     PEKIND *pkProcessorArchitecture)
         {
             for (int i = LENGTH_OF(wszKnownArchitectures); i--;)
             {
                 if (EqualsCaseInsensitive(processorArchitecture, wszKnownArchitectures[i].strValue))
                 {
-                    *pkProcessorAchitecture = wszKnownArchitectures[i].enumValue;
+                    *pkProcessorArchitecture = wszKnownArchitectures[i].enumValue;
                     return TRUE;
                 }
             }

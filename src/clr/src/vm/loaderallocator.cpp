@@ -524,7 +524,7 @@ void LoaderAllocator::GCLoaderAllocators(AppDomain * pAppDomain)
         
         delete pDomainLoaderAllocatorDestroyIterator->m_pDomainAssemblyToDelete;
         // We really don't have to set it to NULL as the assembly is not reachable anymore, but just in case ...
-        // (Also debugging NULL AVs if someone uses it accidentaly is so much easier)
+        // (Also debugging NULL AVs if someone uses it accidentally is so much easier)
         pDomainLoaderAllocatorDestroyIterator->m_pDomainAssemblyToDelete = NULL;
         
         pDomainLoaderAllocatorDestroyIterator = pDomainLoaderAllocatorDestroyIterator->m_pLoaderAllocatorDestroyNext;

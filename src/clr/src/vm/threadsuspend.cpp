@@ -1537,7 +1537,7 @@ Thread::UserAbort(ThreadAbortRequester requester,
 
     Thread *pCurThread = GetThread();
 
-    // If aboring self
+    // If aborting self
     if (this == pCurThread)
     {
         SetAbortInitiated();

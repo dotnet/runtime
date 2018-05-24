@@ -1461,7 +1461,7 @@ void InvokeUtil::CanAccessField(RefSecContext*  pCtx,
 }
 
 //
-// Ensure that a type is accessable, throwing a TypeLoadException if not
+// Ensure that a type is accessible, throwing a TypeLoadException if not
 //
 // Arguments:
 //    pCtx                  - current reflection context
@@ -1513,7 +1513,7 @@ void InvokeUtil::CheckAccessClass(RefSecContext *pCtx,
 }
 
 //
-// Ensure that a method is accessable, throwing a MethodAccessException if not
+// Ensure that a method is accessible, throwing a MethodAccessException if not
 //
 // Arguments:
 //    pCtx                  - current reflection context
@@ -1554,7 +1554,7 @@ void InvokeUtil::CheckAccessMethod(RefSecContext       *pCtx,
 }
 
 //
-// Ensure that a field is accessable, throwing a FieldAccessException if not
+// Ensure that a field is accessible, throwing a FieldAccessException if not
 //
 // Arguments:
 //    pCtx                  - current reflection context
@@ -1597,7 +1597,7 @@ void InvokeUtil::CheckAccessField(RefSecContext       *pCtx,
 
 
 //
-// Check accessability of a field or method.
+// Check accessibility of a field or method.
 //
 // Arguments:
 //    pCtx                  - current reflection context

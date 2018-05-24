@@ -159,7 +159,7 @@ void DebuggerModuleTable::RemoveModules(AppDomain *pAppDomain)
         {
             LOG((LF_CORDB, LL_INFO1000, "DMT::RM removing DebuggerModule 0x%08x\n", pDM));
 
-            // Defer to the normal logic in RemoveModule for the actual removal. This accuratley simulates what
+            // Defer to the normal logic in RemoveModule for the actual removal. This accurately simulates what
             // happens when we process an UnloadModule event.
             RemoveModule(pDM->GetRuntimeModule(), pAppDomain);
 
