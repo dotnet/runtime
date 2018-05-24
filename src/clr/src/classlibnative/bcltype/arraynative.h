@@ -35,7 +35,8 @@ public:
     static FCDECL1(void, Initialize, ArrayBase* pArray);
 
     static FCDECL6(void, ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, ArrayBase* m_pDst, INT32 m_iDstIndex, INT32 m_iLength, CLR_BOOL reliable);
-    static FCDECL3(void, ArrayClear, ArrayBase* pArrayUNSAFE, INT32 iIndex, INT32 iLength);
+
+    static FCDECL5(void*, GetRawArrayGeometry, ArrayBase* pArray, UINT32* pNumComponents, UINT32* pElementSize, INT32* pLowerBound, CLR_BOOL* pContainsGCPointers);
 
     // This method will create a new array of type type, with zero lower
     // bounds and rank.
