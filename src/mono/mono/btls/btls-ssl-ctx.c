@@ -8,6 +8,8 @@
 
 #include "btls-ssl-ctx.h"
 #include "btls-x509-verify-param.h"
+#include <openssl/bytestring.h>
+#include <string.h>
 
 struct MonoBtlsSslCtx {
 	CRYPTO_refcount_t references;
@@ -28,8 +30,6 @@ mono_btls_ssl_ctx_debug_printf (ptr, "%s:%d:%s(): " message, __FILE__, __LINE__,
 do { if (mono_btls_ssl_ctx_is_debug_enabled(ptr)) \
 mono_btls_ssl_ctx_debug_printf (ptr, "%s:%d:%s(): " fmt, __FILE__, __LINE__, \
 	__func__, __VA_ARGS__); } while (0)
-
-void ssl_cipher_preference_list_free (struct ssl_cipher_preference_list_st *cipher_list);
 
 MONO_API int
 mono_btls_ssl_ctx_is_debug_enabled (MonoBtlsSslCtx *ctx)
@@ -198,16 +198,15 @@ MONO_API int
 mono_btls_ssl_ctx_set_ciphers (MonoBtlsSslCtx *ctx, int count, const uint16_t *data,
 				   int allow_unsupported)
 {
-	STACK_OF(SSL_CIPHER) *ciphers = NULL;
-	struct ssl_cipher_preference_list_st *pref_list = NULL;
-	uint8_t *in_group_flags = NULL;
-	int i;
+	CBB cbb;
+	int i, ret = 0;
 
-	ciphers = sk_SSL_CIPHER_new_null ();
-	if (!ciphers)
+	if (!CBB_init (&cbb, 64))
 		goto err;
 
+	/* Assemble a cipher string with the specified ciphers' names. */
 	for (i = 0; i < count; i++) {
+		const char *name;
 		const SSL_CIPHER *cipher = SSL_get_cipher_by_value (data [i]);
 		if (!cipher) {
 			debug_printf (ctx, "mono_btls_ssl_ctx_set_ciphers(): unknown cipher %02x", data [i]);
@@ -215,45 +214,22 @@ mono_btls_ssl_ctx_set_ciphers (MonoBtlsSslCtx *ctx, int count, const uint16_t *d
 				goto err;
 			continue;
 		}
-		if (!sk_SSL_CIPHER_push (ciphers, cipher))
-			 goto err;
+		name = SSL_CIPHER_get_name (cipher);
+		if (i > 0 && !CBB_add_u8 (&cbb, ':'))
+			goto err;
+		if (!CBB_add_bytes (&cbb, (const uint8_t *)name, strlen(name)))
+			goto err;
 	}
 
-	pref_list = OPENSSL_malloc (sizeof (struct ssl_cipher_preference_list_st));
-	if (!pref_list)
+	/* NUL-terminate the string. */
+	if (!CBB_add_u8 (&cbb, 0))
 		goto err;
 
-	memset (pref_list, 0, sizeof (struct ssl_cipher_preference_list_st));
-	pref_list->ciphers = sk_SSL_CIPHER_dup (ciphers);
-	if (!pref_list->ciphers)
-		goto err;
-	pref_list->in_group_flags = OPENSSL_malloc (sk_SSL_CIPHER_num (ciphers));
-	if (!pref_list->in_group_flags)
-		goto err;
-
-	if (ctx->ctx->cipher_list)
-		ssl_cipher_preference_list_free (ctx->ctx->cipher_list);
-	if (ctx->ctx->cipher_list_by_id)
-		sk_SSL_CIPHER_free (ctx->ctx->cipher_list_by_id);
-	if (ctx->ctx->cipher_list_tls10) {
-		ssl_cipher_preference_list_free (ctx->ctx->cipher_list_tls10);
-		ctx->ctx->cipher_list_tls10 = NULL;
-	}
-	if (ctx->ctx->cipher_list_tls11) {
-		ssl_cipher_preference_list_free (ctx->ctx->cipher_list_tls11);
-		ctx->ctx->cipher_list_tls11 = NULL;
-	}
-
-	ctx->ctx->cipher_list = pref_list;
-	ctx->ctx->cipher_list_by_id = ciphers;
-
-	return (int)sk_SSL_CIPHER_num (ciphers);
+	ret = SSL_CTX_set_cipher_list (ctx->ctx, (const char *)CBB_data (&cbb));
 
 err:
-	sk_SSL_CIPHER_free (ciphers);
-	OPENSSL_free (pref_list);
-	OPENSSL_free (in_group_flags);
-	return 0;
+	CBB_cleanup (&cbb);
+	return ret;
 }
 
 MONO_API int
