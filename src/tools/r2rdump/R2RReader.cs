@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
 namespace R2RDump
@@ -88,7 +87,7 @@ namespace R2RDump
                 // initialize R2RMethods
                 if (peReader.HasMetadata)
                 {
-                    var mdReader = peReader.GetMetadataReader();
+                    MetadataReader mdReader = peReader.GetMetadataReader();
 
                     int runtimeFunctionSize = 2;
                     if (Machine == Machine.Amd64)
@@ -113,35 +112,77 @@ namespace R2RDump
                     R2RMethods = new List<R2RMethod>();
                     for (uint rid = 1; rid <= nMethodEntryPoints; rid++)
                     {
-                        uint offset = 0;
+                        int offset = 0;
                         if (methodEntryPoints.TryGetAt(_image, rid - 1, ref offset))
                         {
-                            R2RMethod method = new R2RMethod(_image, mdReader, methodEntryPoints, offset, rid);
-                            if (method.EntryPointRuntimeFunctionId >= nRuntimeFunctions)
+                            R2RMethod method = new R2RMethod(_image, mdReader, rid, GetEntryPointIdFromOffset(offset), null, null);
+
+                            if (method.EntryPointRuntimeFunctionId < 0 || method.EntryPointRuntimeFunctionId >= nRuntimeFunctions)
                             {
-                                throw new BadImageFormatException("Runtime function id out of bounds");
+                                throw new BadImageFormatException("EntryPointRuntimeFunctionId out of bounds");
                             }
                             isEntryPoint[method.EntryPointRuntimeFunctionId] = true;
                             R2RMethods.Add(method);
                         }
                     }
 
+                    // instance method table
+                    R2RSection instMethodEntryPointSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS];
+                    int instMethodEntryPointsOffset = GetOffset(instMethodEntryPointSection.RelativeVirtualAddress);
+                    NativeParser parser = new NativeParser(_image, (uint)instMethodEntryPointsOffset);
+                    NativeHashtable instMethodEntryPoints = new NativeHashtable(_image, parser);
+                    NativeHashtable.AllEntriesEnumerator allEntriesEnum = instMethodEntryPoints.EnumerateAllEntries();
+                    NativeParser curParser = allEntriesEnum.GetNext();
+                    while (!curParser.IsNull())
+                    {
+                        byte methodFlags = curParser.GetByte();
+                        byte rid = curParser.GetByte();
+                        if ((methodFlags & (byte)R2RMethod.EncodeMethodSigFlags.ENCODE_METHOD_SIG_MethodInstantiation) != 0)
+                        {
+                            byte nArgs = curParser.GetByte();
+                            R2RMethod.GenericElementTypes[] args = new R2RMethod.GenericElementTypes[nArgs];
+                            uint[] tokens = new uint[nArgs];
+                            for (int i = 0; i < nArgs; i++)
+                            {
+                                args[i] = (R2RMethod.GenericElementTypes)curParser.GetByte();
+                                if (args[i] == R2RMethod.GenericElementTypes.ValueType)
+                                {
+                                    tokens[i] = curParser.GetByte();
+                                    tokens[i] = (tokens[i] >> 2);
+                                }
+                            }
+
+                            uint id = curParser.GetUnsigned();
+                            id = id >> 1;
+                            R2RMethod method = new R2RMethod(_image, mdReader, rid, (int)id, args, tokens);
+                            if (method.EntryPointRuntimeFunctionId >= 0 && method.EntryPointRuntimeFunctionId < nRuntimeFunctions)
+                            {
+                                isEntryPoint[method.EntryPointRuntimeFunctionId] = true;
+                            }
+                            R2RMethods.Add(method);
+                        }
+                        curParser = allEntriesEnum.GetNext();
+                    }
+
                     // get the RVAs of the runtime functions for each method
-                    int runtimeFunctionId = 0;
+                    int curOffset = 0;
                     foreach (R2RMethod method in R2RMethods)
                     {
-                        int curOffset = (int)(runtimeFunctionOffset + method.EntryPointRuntimeFunctionId * runtimeFunctionSize);
+                        int runtimeFunctionId = method.EntryPointRuntimeFunctionId;
+                        if (runtimeFunctionId == -1)
+                            continue;
+                        curOffset = runtimeFunctionOffset + runtimeFunctionId * runtimeFunctionSize;
                         do
                         {
-                            int startRva = ReadInt32(_image, ref curOffset);
+                            int startRva = NativeReader.ReadInt32(_image, ref curOffset);
                             int endRva = -1;
                             if (Machine == Machine.Amd64)
                             {
-                                endRva = ReadInt32(_image, ref curOffset);
+                                endRva = NativeReader.ReadInt32(_image, ref curOffset);
                             }
-                            int unwindRva = ReadInt32(_image, ref curOffset);
+                            int unwindRva = NativeReader.ReadInt32(_image, ref curOffset);
 
-                            method.NativeCode.Add(new RuntimeFunction(startRva, endRva, unwindRva));
+                            method.RuntimeFunctions.Add(new RuntimeFunction(runtimeFunctionId, startRva, endRva, unwindRva));
                             runtimeFunctionId++;
                         }
                         while (runtimeFunctionId < nRuntimeFunctions && !isEntryPoint[runtimeFunctionId]);
@@ -161,87 +202,29 @@ namespace R2RDump
             return rva - containingSection.VirtualAddress + containingSection.PointerToRawData;
         }
 
-        /// <summary>
-        /// Extracts a 64bit value from the image byte array
-        /// </summary>
-        /// <param name="image">PE image</param>
-        /// <param name="start">Starting index of the value</param>
-        /// <remarks>
-        /// The <paramref name="start"/> gets incremented by the size of the value
-        /// </remarks>
-        public static long ReadInt64(byte[] image, ref int start)
+        private int GetEntryPointIdFromOffset(int offset)
         {
-            int size = sizeof(long);
-            byte[] bytes = new byte[size];
-            Array.Copy(image, start, bytes, 0, size);
-            start += size;
-            return BitConverter.ToInt64(bytes, 0);
-        }
+            // get the id of the entry point runtime function from the MethodEntryPoints NativeArray
+            uint id = 0; // the RUNTIME_FUNCTIONS index
+            offset = (int)NativeReader.DecodeUnsigned(_image, (uint)offset, ref id);
+            if ((id & 1) != 0)
+            {
+                if ((id & 2) != 0)
+                {
+                    uint val = 0;
+                    NativeReader.DecodeUnsigned(_image, (uint)offset, ref val);
+                    offset -= (int)val;
+                }
+                // TODO: Dump fixups
 
-        // <summary>
-        /// Extracts a 32bit value from the image byte array
-        /// </summary>
-        /// <param name="image">PE image</param>
-        /// <param name="start">Starting index of the value</param>
-        /// <remarks>
-        /// The <paramref name="start"/> gets incremented by the size of the value
-        /// </remarks>
-        public static int ReadInt32(byte[] image, ref int start)
-        {
-            int size = sizeof(int);
-            byte[] bytes = new byte[size];
-            Array.Copy(image, start, bytes, 0, size);
-            start += size;
-            return BitConverter.ToInt32(bytes, 0);
-        }
+                id >>= 2;
+            }
+            else
+            {
+                id >>= 1;
+            }
 
-        // <summary>
-        /// Extracts an unsigned 32bit value from the image byte array
-        /// </summary>
-        /// <param name="image">PE image</param>
-        /// <param name="start">Starting index of the value</param>
-        /// <remarks>
-        /// The <paramref name="start"/> gets incremented by the size of the value
-        /// </remarks>
-        public static uint ReadUInt32(byte[] image, ref int start)
-        {
-            int size = sizeof(int);
-            byte[] bytes = new byte[size];
-            Array.Copy(image, start, bytes, 0, size);
-            start += size;
-            return (uint)BitConverter.ToInt32(bytes, 0);
-        }
-
-        // <summary>
-        /// Extracts an unsigned 16bit value from the image byte array
-        /// </summary>
-        /// <param name="image">PE image</param>
-        /// <param name="start">Starting index of the value</param>
-        /// <remarks>
-        /// The <paramref name="start"/> gets incremented by the size of the value
-        /// </remarks>
-        public static ushort ReadUInt16(byte[] image, ref int start)
-        {
-            int size = sizeof(short);
-            byte[] bytes = new byte[size];
-            Array.Copy(image, start, bytes, 0, size);
-            start += size;
-            return (ushort)BitConverter.ToInt16(bytes, 0);
-        }
-
-        // <summary>
-        /// Extracts byte from the image byte array
-        /// </summary>
-        /// <param name="image">PE image</param>
-        /// <param name="start">Start index of the value</param>
-        /// /// <remarks>
-        /// The <paramref name="start"/> gets incremented by the size of the value
-        /// </remarks>
-        public static byte ReadByte(byte[] image, ref int start)
-        {
-            byte val = image[start];
-            start += sizeof(byte);
-            return val;
+            return (int)id;
         }
     }
 }
