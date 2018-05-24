@@ -480,6 +480,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\OptionalFieldAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SafeSerializationEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\StreamingContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\NonVersionableAttribute.cs" />
