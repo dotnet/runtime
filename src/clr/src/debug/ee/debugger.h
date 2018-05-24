@@ -666,6 +666,7 @@ protected:
     HANDLE                m_CtrlCMutex;
     HANDLE                m_exAttachEvent;
     HANDLE                m_exUnmanagedAttachEvent;
+    HANDLE                m_garbageCollectionBlockerEvent;
 
     BOOL                  m_DebuggerHandlingCtrlC;
 
@@ -2954,7 +2955,11 @@ public:
 #ifndef DACCESS_COMPILE
     virtual void BeforeGarbageCollection();
     virtual void AfterGarbageCollection();
+    BOOL m_isBlockedOnGarbageCollectionEvent;
 #endif
+private:
+    HANDLE GetGarbageCollectionBlockerEvent() { return  GetLazyData()->m_garbageCollectionBlockerEvent; }
+    
 };
 
 
@@ -3791,14 +3796,14 @@ HANDLE OpenWin32EventOrThrow(
 
 #define SENDIPCEVENT_RAW_BEGIN_EX(pDbgLockHolder, gcxStmt)      \
   {                                                             \
-    ThreadStore::EnterThreadStoreLockOnly();                             \
+    ThreadStore::LockThreadStore();                             \
     Debugger::DebuggerLockHolder *__pDbgLockHolder = pDbgLockHolder; \
     gcxStmt;                                                    \
     g_pDebugger->LockForEventSending(__pDbgLockHolder);
 
 #define SENDIPCEVENT_RAW_END_EX                                 \
     g_pDebugger->UnlockFromEventSending(__pDbgLockHolder);      \
-    ThreadStore::LeaveThreadStoreLockOnly();                             \
+    ThreadStore::UnlockThreadStore();                             \
   }
 
 #define SENDIPCEVENT_RAW_BEGIN(pDbgLockHolder)                  \
@@ -3823,7 +3828,7 @@ HANDLE OpenWin32EventOrThrow(
         Debugger::DebuggerLockHolder __dbgLockHolder(pDebugger, FALSE);                   \
         Debugger::DebuggerLockHolder *__pDbgLockHolder = &__dbgLockHolder;                \
         gcxStmt;                                                                          \
-        ThreadStore::EnterThreadStoreLockOnly();                                          \
+        ThreadStore::LockThreadStore();                                                   \
         g_pDebugger->LockForEventSending(__pDbgLockHolder);                               \
         /* Check if the thread has been suspended by the debugger via SetDebugState(). */ \
         if (thread != NULL && thread->HasThreadStateNC(Thread::TSNC_DebuggerUserSuspend)) \
@@ -3838,7 +3843,7 @@ HANDLE OpenWin32EventOrThrow(
             ;                                                   \
         }                                                       \
         g_pDebugger->UnlockFromEventSending(__pDbgLockHolder);  \
-        ThreadStore::LeaveThreadStoreLockOnly();                \
+        ThreadStore::UnlockThreadStore();                       \
       } /* ~gcxStmt & ~DebuggerLockHolder */                    \
     } while (__fRetry);                                         \
     FireEtwDebugIPCEventEnd();                                  \
