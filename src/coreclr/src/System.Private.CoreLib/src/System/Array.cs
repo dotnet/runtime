@@ -21,6 +21,12 @@ using System.Runtime.Versioning;
 using System.Security;
 using Internal.Runtime.CompilerServices;
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System
 {
     // Note that we make a T[] (single-dimensional w/ zero as the lower bound) implement both 
@@ -265,8 +271,29 @@ namespace System
         // Sets length elements in array to 0 (or null for Object arrays), starting
         // at index.
         //
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void Clear(Array array, int index, int length);
+        public static unsafe void Clear(Array array, int index, int length)
+        {
+            if (array == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+
+            ref byte p = ref GetRawArrayGeometry(array, out uint numComponents, out uint elementSize, out int lowerBound, out bool containsGCPointers);
+
+            int offset = index - lowerBound;
+
+            if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > numComponents)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
+            ref byte ptr = ref Unsafe.AddByteOffset(ref p, (uint)offset * (nuint)elementSize);
+            nuint byteLength = (uint)length * (nuint)elementSize;
+
+            if (containsGCPointers)
+                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));
+            else
+                SpanHelpers.ClearWithoutReferences(ref ptr, byteLength);
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern ref byte GetRawArrayGeometry(Array array, out uint numComponents, out uint elementSize, out int lowerBound, out bool containsGCPointers);
 
         // The various Get values...
         public unsafe Object GetValue(params int[] indices)
