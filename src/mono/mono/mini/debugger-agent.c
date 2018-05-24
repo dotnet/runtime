@@ -10243,6 +10243,8 @@ debugger_thread (void *arg)
 
 	DEBUG_PRINTF (1, "[dbg] Agent thread started, pid=%p\n", (gpointer) (gsize) mono_native_thread_id_get ());
 
+	gboolean log_each_step = g_hasenv ("MONO_DEBUGGER_LOG_AFTER_COMMAND");
+
 	debugger_thread_id = mono_native_thread_id_get ();
 
 	MonoInternalThread *internal = mono_thread_internal_current ();
@@ -10395,13 +10397,13 @@ debugger_thread (void *arg)
 		g_free (data);
 		buffer_free (&buf);
 
-#if 0
-		char *debugger_log = mono_debugger_state_str ();
-		if (debugger_log) {
-			fprintf (stderr, "Debugger state: %s\n", debugger_log);
-			g_free (debugger_log);
+		if (log_each_step) {
+			char *debugger_log = mono_debugger_state_str ();
+			if (debugger_log) {
+				fprintf (stderr, "Debugger state: %s\n", debugger_log);
+				g_free (debugger_log);
+			}
 		}
-#endif
 
 		if (command_set == CMD_SET_VM && (command == CMD_VM_DISPOSE || command == CMD_VM_EXIT))
 			break;
