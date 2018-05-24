@@ -220,6 +220,10 @@ typedef struct MonoDebugOptions {
 	 * identify the stack on some platforms
 	 */
 	gboolean disable_omit_fp;
+	/*
+	 * Make gdb output on native crashes more verbose.
+	 */
+	gboolean verbose_gdb;
 
 	// Internal testing feature.
 	gboolean test_tailcall_require;
