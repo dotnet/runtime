@@ -938,7 +938,6 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_syncCompleteReceived(false),
     m_pShim(pShim),
     m_userThreads(11),
-    m_dataBreakpoints(4),
     m_oddSync(false),
 #ifdef FEATURE_INTEROP_DEBUGGING
     m_unmanagedThreads(11),
@@ -1304,7 +1303,6 @@ void CordbProcess::NeuterChildren()
     // Sweep neuter lists.
     m_ExitNeuterList.NeuterAndClear(this);
     m_ContinueNeuterList.NeuterAndClear(this);
-    m_dataBreakpoints.NeuterAndClear(GetProcessLock());
 
     m_userThreads.NeuterAndClear(GetProcessLock());
 

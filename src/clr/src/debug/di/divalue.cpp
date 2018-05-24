@@ -427,11 +427,7 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
 
     *ppHandle = NULL;        
 
-    if (handleType == 3)
-    {
-        fStrong = 2;
-    }
-    else if (handleType == HANDLE_STRONG)
+    if (handleType == HANDLE_STRONG)
     {
         fStrong = TRUE;
     }
