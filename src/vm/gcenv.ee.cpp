@@ -879,10 +879,17 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_lowest_address = args->lowest_address;
         VolatileStore(&g_highest_address, args->highest_address);
 
-#if defined(_ARM64_)
+#if defined(_ARM64_) || defined(_ARM_)
         // Need to reupdate for changes to g_highest_address g_lowest_address
         is_runtime_suspended = (stompWBCompleteActions & SWB_EE_RESTART) || args->is_runtime_suspended;
         stompWBCompleteActions |= ::StompWriteBarrierResize(is_runtime_suspended, args->requires_upper_bounds_check);
+
+#ifdef _ARM_
+        if (stompWBCompleteActions & SWB_ICACHE_FLUSH)
+        {
+            ::FlushWriteBarrierInstructionCache();
+        }
+#endif
 
         is_runtime_suspended = (stompWBCompleteActions & SWB_EE_RESTART) || args->is_runtime_suspended;
         if(!is_runtime_suspended)
