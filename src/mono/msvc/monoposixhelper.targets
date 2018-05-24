@@ -13,8 +13,6 @@
     <ClCompile Include="$(MonoSourceLocation)\support\inftrees.c" />
     <ClCompile Include="$(MonoSourceLocation)\support\map.c" />
     <ClCompile Include="$(MonoSourceLocation)\support\minizip\ioapi.c" />
-    <ClCompile Include="$(MonoSourceLocation)\support\minizip\iowin32.c" />
-    <ClCompile Include="$(MonoSourceLocation)\support\minizip\minizip.c" />
     <ClCompile Include="$(MonoSourceLocation)\support\minizip\unzip.c" />
     <ClCompile Include="$(MonoSourceLocation)\support\minizip\zip.c" />
     <ClCompile Include="$(MonoSourceLocation)\support\signal.c" />

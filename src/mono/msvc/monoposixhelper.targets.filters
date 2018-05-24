@@ -55,12 +55,6 @@
     <ClCompile Include="$(MonoSourceLocation)\support\zutil.c">
       <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\support\minizip\iowin32.c">
-      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\support\minizip\minizip.c">
-      <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
-    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\support\minizip\unzip.c">
       <Filter>Source Files$(MonoPosixHelperFilterSubFolder)</Filter>
     </ClCompile>
