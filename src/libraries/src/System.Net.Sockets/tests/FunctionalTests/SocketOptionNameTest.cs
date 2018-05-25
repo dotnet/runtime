@@ -163,6 +163,34 @@ namespace System.Net.Sockets.Tests
             await MulticastInterface_Set_IPv6_Helper(0);
         }
 
+        [Fact]
+        public void MulticastTTL_Set_IPv4_Succeeds()
+        {
+            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                // This should not throw. We currently do not have good mechanism how to verify that the TTL/Hops is actually set.
+
+                int ttl = (int)socket.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive);
+                ttl += 1;
+                socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive, ttl);
+                Assert.Equal(ttl, (int)socket.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastTimeToLive));
+            }
+        }
+
+        [Fact]
+        public void MulticastTTL_Set_IPv6_Succeeds()
+        {
+            using (Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
+            {
+                // This should not throw. We currently do not have good mechanism how to verify that the TTL/Hops is actually set.
+
+                int ttl = (int)socket.GetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastTimeToLive);
+                ttl += 1;
+                socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastTimeToLive, ttl);
+                Assert.Equal(ttl, (int)socket.GetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastTimeToLive));
+            }
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
