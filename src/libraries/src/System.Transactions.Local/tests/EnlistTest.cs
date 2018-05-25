@@ -10,6 +10,12 @@ namespace System.Transactions.Tests
 
     public class EnlistTest
     {
+        public EnlistTest()
+        {
+            // Make sure we start with Transaction.Current = null.
+            Transaction.Current = null;
+        }
+
         #region Vol1_Dur0
 
         /* Single volatile resource, SPC happens */

@@ -16,6 +16,8 @@ namespace System.Transactions.Tests
 
         public LTMEnlistmentTests()
         {
+            // Make sure we start with Transaction.Current = null.
+            Transaction.Current = null;
         }
 
         [Theory]
