@@ -178,8 +178,9 @@ namespace Mono.Linker.Steps {
 				if (!AreSameReference (r.Name, target.Name))
 					continue;
 
-				ReferenceRemoved (assembly, references [i]);
-				references.RemoveAt (i);
+				ReferenceRemoved (assembly, reference);
+				// removal from `references` requires an adjustment to `i`
+				references.RemoveAt (i--);
 				// Removing the reference does not mean it will be saved back to disk!
 				// That depends on the AssemblyAction set for the `assembly`
 				switch (Annotations.GetAction (assembly)) {
@@ -208,7 +209,6 @@ namespace Mono.Linker.Steps {
 					}
 					break;
 				}
-				return;
 			}
 		}
 
