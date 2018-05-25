@@ -59,7 +59,7 @@ DWORD Compiler::getCanDoubleAlign()
 //    - We pay one extra memory reference for each variable that could have been enregistered in EBP (refCntWtdEBP).
 //
 //    If the misalignment penalty is estimated to be less than the bytes used, we don't double align.
-//    Otherwise, we compare the weighted ref count of ebp-enregistered variables aginst double the
+//    Otherwise, we compare the weighted ref count of ebp-enregistered variables against double the
 //    ref count for double-aligned values.
 //
 bool Compiler::shouldDoubleAlign(

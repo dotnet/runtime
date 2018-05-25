@@ -5361,7 +5361,7 @@ VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pH
 /**********************************************************/
 /* This is called by the runtime when helpers with stubs are initialized */
 /**********************************************************/
-VOID ETW::MethodLog::StubsInitialized(PVOID *pHelperStartAddresss, PVOID *pHelperNames, LONG lNoOfHelpers)
+VOID ETW::MethodLog::StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG lNoOfHelpers)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -5371,9 +5371,9 @@ VOID ETW::MethodLog::StubsInitialized(PVOID *pHelperStartAddresss, PVOID *pHelpe
     {
         for(int i=0; i<lNoOfHelpers; i++)
         {
-            if(pHelperStartAddresss[i])
+            if(pHelperStartAddress[i])
             {
-                StubInitialized((ULONGLONG)pHelperStartAddresss[i], (LPCWSTR)pHelperNames[i]);
+                StubInitialized((ULONGLONG)pHelperStartAddress[i], (LPCWSTR)pHelperNames[i]);
             }
         }
     }

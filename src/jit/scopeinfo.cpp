@@ -1194,7 +1194,7 @@ void CodeGen::psiMoveToReg(unsigned varNum, regNumber reg, regNumber otherReg)
  *                      CodeGen::psiMoveToStack
  *
  * A incoming register-argument is being moved to its final home on the stack
- * (ie. all adjustements to {F/S}PBASE have been made
+ * (ie. all adjustments to {F/S}PBASE have been made
  */
 
 void CodeGen::psiMoveToStack(unsigned varNum)

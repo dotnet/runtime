@@ -666,7 +666,7 @@ void TerminateStackProbes()
 
 //-----------------------------------------------------------------------------
 // Error handling when we go past a stack guard.
-// We have different messages to more aggresively diagnose the problem
+// We have different messages to more aggressively diagnose the problem
 //-----------------------------------------------------------------------------
 
 // Called by Check_Stack when we overwrite the cookie

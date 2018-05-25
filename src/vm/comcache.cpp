@@ -803,7 +803,7 @@ void IUnkEntry::ReleaseStream()
     }
 }
 
-// Indicates if the COM component being wrapped by the IUnkEntry aggreates the FTM
+// Indicates if the COM component being wrapped by the IUnkEntry aggregates the FTM
 bool IUnkEntry::IsFreeThreaded()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1063,7 +1063,7 @@ bool IUnkEntry::IsComponentFreeThreaded(IUnknown *pUnk)
     {
         SafeComHolderPreemp<IMarshal> pMarshal = NULL;
 
-        // If not, then we can try to determine if the component agregates the FTM via IMarshal.
+        // If not, then we can try to determine if the component aggregates the FTM via IMarshal.
         hr = SafeQueryInterfacePreemp(pUnk, IID_IMarshal, (IUnknown **)&pMarshal);
         LogInteropQI(pUnk, IID_IMarshal, hr, "IUnkEntry::IsComponentFreeThreaded: QI for IMarshal");
         if (SUCCEEDED(hr))
@@ -1226,7 +1226,7 @@ DWORD WINAPI MDAContextSwitchDeadlockThreadProc(LPVOID lpParameter)
 
     if (retval == WAIT_TIMEOUT)
     {
-        // We didn't transition into the context within the alloted timeout period.
+        // We didn't transition into the context within the allotted timeout period.
         // We'll fire the mda and close the event, but we can't delete is as the
         //  thread may still complete the transition and attempt to signal the event.
         //  So we'll just leak it and let the transition thread recognize that the

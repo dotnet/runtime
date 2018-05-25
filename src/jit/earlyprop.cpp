@@ -362,7 +362,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree)
         }
 
         DecLclVarRefCountsVisitor::WalkTree(this, tree);
-        // acutalValClone has small tree node size, it is safe to use CopyFrom here.
+        // actualValClone has small tree node size, it is safe to use CopyFrom here.
         tree->ReplaceWith(actualValClone, this);
         IncLclVarRefCountsVisitor::WalkTree(this, tree);
 

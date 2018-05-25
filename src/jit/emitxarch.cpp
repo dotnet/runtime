@@ -5971,7 +5971,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 #if STACK_PROBES
     if (emitComp->opts.compNeedStackProbes)
     {
-        // If we've pushed more than JIT_RESERVED_STACK allows, do an aditional stack probe
+        // If we've pushed more than JIT_RESERVED_STACK allows, do an additional stack probe
         // Else, just make sure the prolog does a probe for us. Invariant we're trying
         // to get is that at any point we go out to unmanaged code, there is at least
         // CORINFO_STACKPROBE_DEPTH bytes of stack available.
@@ -5991,7 +5991,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
              // localloc and on the prolog (invariant is that
              // genStackLevel is 0 on basic block entry and exit and
              // after any alloca). genStackLevel will include any arguments
-             // to the call, so we will insert an aditional probe if
+             // to the call, so we will insert an additional probe if
              // we've consumed more than JIT_RESERVED_STACK bytes
              // of stack, which is what the prolog probe covers (in
              // addition to the EE requested size)

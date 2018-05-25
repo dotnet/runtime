@@ -9035,7 +9035,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 //
                 // Case 2: localloc used
                 // genSPToFPDelta = Min(240, (int)compiler->lvaOutgoingArgSpaceSize)
-                // Offset = Amount to be aded to RBP to point at callee saved int regs.
+                // Offset = Amount to be added to RBP to point at callee saved int regs.
                 offset = genSPtoFPdelta() - compiler->compLclFrameSize;
 
                 // Offset should fit within a byte if localloc is not used.

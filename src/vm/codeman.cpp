@@ -5092,7 +5092,7 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
     }
 
     // allocJumpStubBlock will allocate from the LoaderCodeHeap for normal methods
-    // and will alocate from a HostCodeHeap for LCG methods.
+    // and will allocate from a HostCodeHeap for LCG methods.
     //
     // note that this can throw an OOM exception
 

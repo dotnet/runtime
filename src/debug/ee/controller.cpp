@@ -5820,12 +5820,12 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
     // What if the thread is stopped at a managed debug event outside of a filter ctx? Eg, stopped
     // somewhere directly in mscorwks (like sending a LogMsg or ClsLoad event) or even at WaitForSingleObject.
     // ActiveFrame is either the stepper's initial frame or the frame of a filterctx.
-    bool fIsActivFrameLive = (info->m_activeFrame.fp == info->m_bottomFP);
+    bool fIsActiveFrameLive = (info->m_activeFrame.fp == info->m_bottomFP);
 
     // If this thread isn't stopped in managed code, it can't be at the active frame.
     if (GetManagedStoppedCtx(this->GetThread()) == NULL)
     {
-        fIsActivFrameLive = false;
+        fIsActiveFrameLive = false;
     }
 
     bool fIsJump             = false;
@@ -5834,7 +5834,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
     // If m_activeFrame is not the actual active frame,
     // we should skip this first switch - never single step, and
     // assume our context is bogus.
-    if (fIsActivFrameLive)
+    if (fIsActiveFrameLive)
     {
         LOG((LF_CORDB,LL_INFO10000, "DC::TS: immediate?\n"));
 
@@ -5974,7 +5974,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                 walker.Next();
             }
         }
-    } // if (fIsActivFrameLive)
+    } // if (fIsActiveFrameLive)
 
     //
     // Use our range, if we're in the original
