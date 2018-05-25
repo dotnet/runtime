@@ -42,6 +42,12 @@ namespace System.Net.Http.Functional.Tests
     }
 
 #if netcoreapp
+    public sealed class PlatformHandler_HttpClientHandler_Decompression_Tests : HttpClientHandler_Decompression_Test
+    {
+        public PlatformHandler_HttpClientHandler_Decompression_Tests(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => false;
+    }
+
     public sealed class PlatformHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
     {
         protected override bool UseSocketsHttpHandler => false;
