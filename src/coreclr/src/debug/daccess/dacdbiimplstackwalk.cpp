@@ -54,7 +54,7 @@ public:
 };
 
 // Helper to allocate stackwalk datastructures for given parameters.
-// This is allocated on the local heap (and not via the forDbi allocatoror on the dac-cache), and then 
+// This is allocated on the local heap (and not via the forDbi allocator on the dac-cache), and then 
 // freed via code:DacDbiInterfaceImpl::DeleteStackWalk
 // 
 // Throws on error (mainly OOM).

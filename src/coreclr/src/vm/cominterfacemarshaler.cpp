@@ -1125,7 +1125,7 @@ OBJECTREF COMInterfaceMarshaler::WrapWithComObject()
             &oref,      // pComObj
             NULL,       // ppIncomingIP
             NULL,       // pIncomingItfMT
-            false       // bIncomingIPAdddefed
+            false       // bIncomingIPAddRefed
             );
     }
     GCPROTECT_END();

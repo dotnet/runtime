@@ -88,7 +88,7 @@ char * CBlobFetcher::CPillar::MakeNewBlock(unsigned len, unsigned pad) {
 
     _ASSERTE(pad < maxAlign);
 
-    // Make sure we have memory in this block to allocatate
+    // Make sure we have memory in this block to allocate
     if (m_dataStart == NULL) {
 
         // make sure allocate at least as big as length

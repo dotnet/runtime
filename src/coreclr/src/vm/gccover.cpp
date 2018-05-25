@@ -1611,7 +1611,7 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
 
                     // @Todo: possible race here, might need to be fixed  if it become a problem.
                     // It could become a problem if 64bit does partially interrupt work.
-                    // OK, we have the MD, mark the instruction afer the CALL
+                    // OK, we have the MD, mark the instruction after the CALL
                     // appropriately
 #ifdef _TARGET_ARM_
                     size_t instrLen = GetARMInstructionLength(nextInstr);

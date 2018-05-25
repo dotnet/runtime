@@ -525,7 +525,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     //
     // Setup an expected number of items to commit and reserve
     //
-    // The commit number is not that important as we alwasy commit at least one page worth of items
+    // The commit number is not that important as we always commit at least one page worth of items
     // The reserve number shoudl be high enough to cover a typical lare application,
     // in order to minimize the fragmentation of our rangelists
     //

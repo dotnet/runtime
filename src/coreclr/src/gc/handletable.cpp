@@ -80,7 +80,7 @@ __inline PTR_HandleTable Table(HHANDLETABLE hTable)
 /*
  * HndCreateHandleTable
  *
- * Alocates and initializes a handle table.
+ * Allocates and initializes a handle table.
  *
  */
 HHANDLETABLE HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCount, ADIndex uADIndex)

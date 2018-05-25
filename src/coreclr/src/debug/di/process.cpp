@@ -12800,7 +12800,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         // of the queue or if the process is currently synchronized. Of course, we only do this if the
         // process is initialized.
         //
-        // Note: we also hijack these left over in-band events if we're activley trying to send the
+        // Note: we also hijack these left over in-band events if we're actively trying to send the
         // managed continue message to the Left Side. This is controlled by m_specialDeferment below.
 
         // Only exceptions can be IB events - everything else is OOB.

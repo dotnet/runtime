@@ -472,7 +472,7 @@ var_types Compiler::getJitGCType(BYTE gcType)
 // Return Value:
 //     Two [or more] values are written into the gcPtrs array
 //
-// Note that for ARM64 there will alwys be exactly two pointer sized fields
+// Note that for ARM64 there will always be exactly two pointer sized fields
 
 void Compiler::getStructGcPtrsFromOp(GenTree* op, BYTE* gcPtrsOut)
 {
@@ -5811,7 +5811,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 
 #endif
 
-    // Check for COMPlus_AgressiveInlining
+    // Check for COMPlus_AggressiveInlining
     if (JitConfig.JitAggressiveInlining())
     {
         compDoAggressiveInlining = true;

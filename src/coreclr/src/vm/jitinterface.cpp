@@ -2789,7 +2789,7 @@ void CEEInfo::ScanInstantiation(Module * pModule, Instantiation inst)
 // is not "active". And we don't want to intercept every call during runtime, so during compile time we track static calls and 
 // everything that can result in new virtual calls.
 //
-// The current algoritm (scan the parent type chain and instantiation variables) is more than enough to maintain this invariant.
+// The current algorithm (scan the parent type chain and instantiation variables) is more than enough to maintain this invariant.
 // One could come up with a more efficient algorithm that still maintains the invariant, but it may introduce backward compatibility
 // issues.
 //

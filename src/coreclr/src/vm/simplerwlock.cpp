@@ -241,7 +241,7 @@ void SimpleRWLock::CheckGCNoTrigger()
 
 #ifdef _DEBUG
 //=====================================================================        
-// GC mode assertions before acquringing a lock based on its mode.
+// GC mode assertions before acquiring a lock based on its mode.
 //=====================================================================        
 void SimpleRWLock::PreEnter()
 {
