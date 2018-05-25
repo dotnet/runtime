@@ -1814,3 +1814,24 @@ mono_threads_join_unlock (void)
 	mono_os_mutex_unlock (&join_mutex);
 #endif
 }
+
+
+gboolean
+mono_thread_info_set_tools_data (void *data)
+{
+	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	if (!info)
+		return FALSE;
+	if (info->tools_data)
+		return FALSE;
+	info->tools_data = data;
+	return TRUE;
+}
+
+void*
+mono_thread_info_get_tools_data (void)
+{
+	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+
+	return info ? info->tools_data : NULL;
+}
