@@ -174,7 +174,7 @@ namespace System.Drawing.Printing.Tests
             Assert.True(printerSettings.IsDefaultPrinter);
         }
 
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
         public void IsPlotter_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
@@ -461,7 +461,7 @@ namespace System.Drawing.Printing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => printerSettings.ToPage = toPage);
         }
 
-        [Fact]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
         public void Clone_Success()
         {
             var printerSettings = new PrinterSettings();
@@ -470,7 +470,7 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
         public void CreateMeasurementGraphics_Default_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
@@ -485,7 +485,7 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
         public void CreateMeasurementGraphics_Bool_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
@@ -498,7 +498,7 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
         public void CreateMeasurementGraphics_PageSettings_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
@@ -514,7 +514,7 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
         public void CreateMeasurementGraphics_PageSettingsBool_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
@@ -528,7 +528,7 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
         public void CreateMeasurementGraphics_Null_ThrowsNullReferenceException()
         {
             var printerSettings = new PrinterSettings();
