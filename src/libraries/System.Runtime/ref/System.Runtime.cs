@@ -7584,6 +7584,12 @@ namespace System.Text
         public System.Text.StringBuilder AppendJoin<T>(string separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public System.Text.StringBuilder AppendLine() { throw null; }
         public System.Text.StringBuilder AppendLine(string value) { throw null; }
+        public struct ChunkEnumerator
+        {
+            public ChunkEnumerator GetEnumerator() { throw null; }
+            public bool MoveNext() { throw null; }
+            public ReadOnlyMemory<char> Current { get { throw null; } }
+        }
         public System.Text.StringBuilder Clear() { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public void CopyTo(int sourceIndex, System.Span<char> destination, int count) { }
@@ -7613,6 +7619,7 @@ namespace System.Text
         public System.Text.StringBuilder Insert(int index, uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public System.Text.StringBuilder Insert(int index, ulong value) { throw null; }
+        public ChunkEnumerator GetChunks() { throw null; }
         public System.Text.StringBuilder Remove(int startIndex, int length) { throw null; }
         public System.Text.StringBuilder Replace(char oldChar, char newChar) { throw null; }
         public System.Text.StringBuilder Replace(char oldChar, char newChar, int startIndex, int count) { throw null; }
