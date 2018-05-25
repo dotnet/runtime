@@ -14,7 +14,7 @@ set(NATIVE_SOURCES
     pal_networking.c
     pal_networkstatistics.c
     pal_process.cpp
-    pal_random.cpp
+    pal_random.c
     pal_runtimeinformation.cpp
     pal_runtimeextensions.cpp
     pal_signal.c
