@@ -987,26 +987,26 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 {
 	switch (ins->opcode) {
 	/* binops */
-	case CEE_ADD:
-	case CEE_SUB:
-	case CEE_MUL:
-	case CEE_DIV:
-	case CEE_REM:
+	case MONO_CEE_ADD:
+	case MONO_CEE_SUB:
+	case MONO_CEE_MUL:
+	case MONO_CEE_DIV:
+	case MONO_CEE_REM:
 		/* FIXME: check unverifiable args for STACK_MP */
 		ins->type = bin_num_table [src1->type] [src2->type];
 		ins->opcode += binops_op_map [ins->type];
 		break;
-	case CEE_DIV_UN:
-	case CEE_REM_UN:
-	case CEE_AND:
-	case CEE_OR:
-	case CEE_XOR:
+	case MONO_CEE_DIV_UN:
+	case MONO_CEE_REM_UN:
+	case MONO_CEE_AND:
+	case MONO_CEE_OR:
+	case MONO_CEE_XOR:
 		ins->type = bin_int_table [src1->type] [src2->type];
 		ins->opcode += binops_op_map [ins->type];
 		break;
-	case CEE_SHL:
-	case CEE_SHR:
-	case CEE_SHR_UN:
+	case MONO_CEE_SHL:
+	case MONO_CEE_SHR:
+	case MONO_CEE_SHR_UN:
 		ins->type = shift_table [src1->type] [src2->type];
 		ins->opcode += binops_op_map [ins->type];
 		break;
@@ -1028,16 +1028,16 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		if ((src1->type == STACK_I8) || ((SIZEOF_VOID_P == 8) && ((src1->type == STACK_PTR) || (src1->type == STACK_OBJ) || (src1->type == STACK_MP))))
 			ins->opcode = OP_LCOMPARE_IMM;		
 		break;
-	case CEE_BEQ:
-	case CEE_BGE:
-	case CEE_BGT:
-	case CEE_BLE:
-	case CEE_BLT:
-	case CEE_BNE_UN:
-	case CEE_BGE_UN:
-	case CEE_BGT_UN:
-	case CEE_BLE_UN:
-	case CEE_BLT_UN:
+	case MONO_CEE_BEQ:
+	case MONO_CEE_BGE:
+	case MONO_CEE_BGT:
+	case MONO_CEE_BLE:
+	case MONO_CEE_BLT:
+	case MONO_CEE_BNE_UN:
+	case MONO_CEE_BGE_UN:
+	case MONO_CEE_BGT_UN:
+	case MONO_CEE_BLE_UN:
+	case MONO_CEE_BLT_UN:
 		ins->opcode += beqops_op_map [src1->type];
 		break;
 	case OP_CEQ:
@@ -1052,25 +1052,25 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		ins->opcode += ceqops_op_map [src1->type];
 		break;
 	/* unops */
-	case CEE_NEG:
+	case MONO_CEE_NEG:
 		ins->type = neg_table [src1->type];
 		ins->opcode += unops_op_map [ins->type];
 		break;
-	case CEE_NOT:
+	case MONO_CEE_NOT:
 		if (src1->type >= STACK_I4 && src1->type <= STACK_PTR)
 			ins->type = src1->type;
 		else
 			ins->type = STACK_INV;
 		ins->opcode += unops_op_map [ins->type];
 		break;
-	case CEE_CONV_I1:
-	case CEE_CONV_I2:
-	case CEE_CONV_I4:
-	case CEE_CONV_U4:
+	case MONO_CEE_CONV_I1:
+	case MONO_CEE_CONV_I2:
+	case MONO_CEE_CONV_I4:
+	case MONO_CEE_CONV_U4:
 		ins->type = STACK_I4;
 		ins->opcode += unops_op_map [src1->type];
 		break;
-	case CEE_CONV_R_UN:
+	case MONO_CEE_CONV_R_UN:
 		ins->type = STACK_R8;
 		switch (src1->type) {
 		case STACK_I4:
@@ -1082,30 +1082,30 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 			break;
 		}
 		break;
-	case CEE_CONV_OVF_I1:
-	case CEE_CONV_OVF_U1:
-	case CEE_CONV_OVF_I2:
-	case CEE_CONV_OVF_U2:
-	case CEE_CONV_OVF_I4:
-	case CEE_CONV_OVF_U4:
+	case MONO_CEE_CONV_OVF_I1:
+	case MONO_CEE_CONV_OVF_U1:
+	case MONO_CEE_CONV_OVF_I2:
+	case MONO_CEE_CONV_OVF_U2:
+	case MONO_CEE_CONV_OVF_I4:
+	case MONO_CEE_CONV_OVF_U4:
 		ins->type = STACK_I4;
 		ins->opcode += ovf3ops_op_map [src1->type];
 		break;
-	case CEE_CONV_OVF_I_UN:
-	case CEE_CONV_OVF_U_UN:
+	case MONO_CEE_CONV_OVF_I_UN:
+	case MONO_CEE_CONV_OVF_U_UN:
 		ins->type = STACK_PTR;
 		ins->opcode += ovf2ops_op_map [src1->type];
 		break;
-	case CEE_CONV_OVF_I1_UN:
-	case CEE_CONV_OVF_I2_UN:
-	case CEE_CONV_OVF_I4_UN:
-	case CEE_CONV_OVF_U1_UN:
-	case CEE_CONV_OVF_U2_UN:
-	case CEE_CONV_OVF_U4_UN:
+	case MONO_CEE_CONV_OVF_I1_UN:
+	case MONO_CEE_CONV_OVF_I2_UN:
+	case MONO_CEE_CONV_OVF_I4_UN:
+	case MONO_CEE_CONV_OVF_U1_UN:
+	case MONO_CEE_CONV_OVF_U2_UN:
+	case MONO_CEE_CONV_OVF_U4_UN:
 		ins->type = STACK_I4;
 		ins->opcode += ovf2ops_op_map [src1->type];
 		break;
-	case CEE_CONV_U:
+	case MONO_CEE_CONV_U:
 		ins->type = STACK_PTR;
 		switch (src1->type) {
 		case STACK_I4:
@@ -1134,49 +1134,49 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 			break;
 		}
 		break;
-	case CEE_CONV_I8:
-	case CEE_CONV_U8:
+	case MONO_CEE_CONV_I8:
+	case MONO_CEE_CONV_U8:
 		ins->type = STACK_I8;
 		ins->opcode += unops_op_map [src1->type];
 		break;
-	case CEE_CONV_OVF_I8:
-	case CEE_CONV_OVF_U8:
+	case MONO_CEE_CONV_OVF_I8:
+	case MONO_CEE_CONV_OVF_U8:
 		ins->type = STACK_I8;
 		ins->opcode += ovf3ops_op_map [src1->type];
 		break;
-	case CEE_CONV_OVF_U8_UN:
-	case CEE_CONV_OVF_I8_UN:
+	case MONO_CEE_CONV_OVF_U8_UN:
+	case MONO_CEE_CONV_OVF_I8_UN:
 		ins->type = STACK_I8;
 		ins->opcode += ovf2ops_op_map [src1->type];
 		break;
-	case CEE_CONV_R4:
+	case MONO_CEE_CONV_R4:
 		ins->type = cfg->r4_stack_type;
 		ins->opcode += unops_op_map [src1->type];
 		break;
-	case CEE_CONV_R8:
+	case MONO_CEE_CONV_R8:
 		ins->type = STACK_R8;
 		ins->opcode += unops_op_map [src1->type];
 		break;
 	case OP_CKFINITE:
 		ins->type = STACK_R8;		
 		break;
-	case CEE_CONV_U2:
-	case CEE_CONV_U1:
+	case MONO_CEE_CONV_U2:
+	case MONO_CEE_CONV_U1:
 		ins->type = STACK_I4;
 		ins->opcode += ovfops_op_map [src1->type];
 		break;
-	case CEE_CONV_I:
-	case CEE_CONV_OVF_I:
-	case CEE_CONV_OVF_U:
+	case MONO_CEE_CONV_I:
+	case MONO_CEE_CONV_OVF_I:
+	case MONO_CEE_CONV_OVF_U:
 		ins->type = STACK_PTR;
 		ins->opcode += ovfops_op_map [src1->type];
 		break;
-	case CEE_ADD_OVF:
-	case CEE_ADD_OVF_UN:
-	case CEE_MUL_OVF:
-	case CEE_MUL_OVF_UN:
-	case CEE_SUB_OVF:
-	case CEE_SUB_OVF_UN:
+	case MONO_CEE_ADD_OVF:
+	case MONO_CEE_ADD_OVF_UN:
+	case MONO_CEE_MUL_OVF:
+	case MONO_CEE_MUL_OVF_UN:
+	case MONO_CEE_SUB_OVF:
+	case MONO_CEE_SUB_OVF_UN:
 		ins->type = bin_num_table [src1->type] [src2->type];
 		ins->opcode += ovfops_op_map [src1->type];
 		if (ins->type == STACK_R8)
@@ -1221,17 +1221,17 @@ static MonoClass*
 ldind_to_type (int op)
 {
 	switch (op) {
-	case CEE_LDIND_I1: return mono_defaults.sbyte_class;
-	case CEE_LDIND_U1: return mono_defaults.byte_class;
-	case CEE_LDIND_I2: return mono_defaults.int16_class;
-	case CEE_LDIND_U2: return mono_defaults.uint16_class;
-	case CEE_LDIND_I4: return mono_defaults.int32_class;
-	case CEE_LDIND_U4: return mono_defaults.uint32_class;
-	case CEE_LDIND_I8: return mono_defaults.int64_class;
-	case CEE_LDIND_I: return mono_defaults.int_class;
-	case CEE_LDIND_R4: return mono_defaults.single_class;
-	case CEE_LDIND_R8: return mono_defaults.double_class;
-	case CEE_LDIND_REF:return mono_defaults.object_class; //FIXME we should try to return a more specific type
+	case MONO_CEE_LDIND_I1: return mono_defaults.sbyte_class;
+	case MONO_CEE_LDIND_U1: return mono_defaults.byte_class;
+	case MONO_CEE_LDIND_I2: return mono_defaults.int16_class;
+	case MONO_CEE_LDIND_U2: return mono_defaults.uint16_class;
+	case MONO_CEE_LDIND_I4: return mono_defaults.int32_class;
+	case MONO_CEE_LDIND_U4: return mono_defaults.uint32_class;
+	case MONO_CEE_LDIND_I8: return mono_defaults.int64_class;
+	case MONO_CEE_LDIND_I: return mono_defaults.int_class;
+	case MONO_CEE_LDIND_R4: return mono_defaults.single_class;
+	case MONO_CEE_LDIND_R8: return mono_defaults.double_class;
+	case MONO_CEE_LDIND_REF:return mono_defaults.object_class; //FIXME we should try to return a more specific type
 	default: g_error ("Unknown ldind type %d", op);
 	}
 }
@@ -1421,35 +1421,35 @@ static MonoClass*
 array_access_to_klass (int opcode)
 {
 	switch (opcode) {
-	case CEE_LDELEM_U1:
+	case MONO_CEE_LDELEM_U1:
 		return mono_defaults.byte_class;
-	case CEE_LDELEM_U2:
+	case MONO_CEE_LDELEM_U2:
 		return mono_defaults.uint16_class;
-	case CEE_LDELEM_I:
-	case CEE_STELEM_I:
+	case MONO_CEE_LDELEM_I:
+	case MONO_CEE_STELEM_I:
 		return mono_defaults.int_class;
-	case CEE_LDELEM_I1:
-	case CEE_STELEM_I1:
+	case MONO_CEE_LDELEM_I1:
+	case MONO_CEE_STELEM_I1:
 		return mono_defaults.sbyte_class;
-	case CEE_LDELEM_I2:
-	case CEE_STELEM_I2:
+	case MONO_CEE_LDELEM_I2:
+	case MONO_CEE_STELEM_I2:
 		return mono_defaults.int16_class;
-	case CEE_LDELEM_I4:
-	case CEE_STELEM_I4:
+	case MONO_CEE_LDELEM_I4:
+	case MONO_CEE_STELEM_I4:
 		return mono_defaults.int32_class;
-	case CEE_LDELEM_U4:
+	case MONO_CEE_LDELEM_U4:
 		return mono_defaults.uint32_class;
-	case CEE_LDELEM_I8:
-	case CEE_STELEM_I8:
+	case MONO_CEE_LDELEM_I8:
+	case MONO_CEE_STELEM_I8:
 		return mono_defaults.int64_class;
-	case CEE_LDELEM_R4:
-	case CEE_STELEM_R4:
+	case MONO_CEE_LDELEM_R4:
+	case MONO_CEE_STELEM_R4:
 		return mono_defaults.single_class;
-	case CEE_LDELEM_R8:
-	case CEE_STELEM_R8:
+	case MONO_CEE_LDELEM_R8:
+	case MONO_CEE_STELEM_R8:
 		return mono_defaults.double_class;
-	case CEE_LDELEM_REF:
-	case CEE_STELEM_REF:
+	case MONO_CEE_LDELEM_REF:
+	case MONO_CEE_STELEM_REF:
 		return mono_defaults.object_class;
 	default:
 		g_assert_not_reached ();
@@ -7131,7 +7131,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (pops);
 
 		switch (il_op) {
-		case CEE_NOP:
+		case MONO_CEE_NOP:
 			if (seq_points && !sym_seq_points && sp != stack_start) {
 				/*
 				 * The C# compiler uses these nops to notify the JIT that it should
@@ -7146,7 +7146,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_INST_NEW (cfg, ins, OP_NOP);
 			MONO_ADD_INS (cfg->cbb, ins);
 			break;
-		case CEE_BREAK:
+		case MONO_CEE_BREAK:
 			if (mini_should_insert_breakpoint (cfg->method)) {
 				ins = mono_emit_jit_icall (cfg, mini_get_dbg_callbacks ()->user_break, NULL);
 			} else {
@@ -7154,11 +7154,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			MONO_ADD_INS (cfg->cbb, ins);
 			break;
-		case CEE_LDARG_0:
-		case CEE_LDARG_1:
-		case CEE_LDARG_2:
-		case CEE_LDARG_3:
-		case CEE_LDARG_S:
+		case MONO_CEE_LDARG_0:
+		case MONO_CEE_LDARG_1:
+		case MONO_CEE_LDARG_2:
+		case MONO_CEE_LDARG_3:
+		case MONO_CEE_LDARG_S:
 		case MONO_CEE_LDARG:
 			CHECK_ARG (n);
 			if (next_ip < end && is_addressable_valuetype_load (cfg, next_ip, cfg->arg_types[n])) {
@@ -7169,11 +7169,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;
 			break;
 
-		case CEE_LDLOC_0:
-		case CEE_LDLOC_1:
-		case CEE_LDLOC_2:
-		case CEE_LDLOC_3:
-		case CEE_LDLOC_S:
+		case MONO_CEE_LDLOC_0:
+		case MONO_CEE_LDLOC_1:
+		case MONO_CEE_LDLOC_2:
+		case MONO_CEE_LDLOC_3:
+		case MONO_CEE_LDLOC_S:
 		case MONO_CEE_LDLOC:
 			CHECK_LOCAL (n);
 			if (next_ip < end && is_addressable_valuetype_load (cfg, next_ip, header->locals[n])) {
@@ -7184,11 +7184,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;
 			break;
 
-		case CEE_STLOC_0:
-		case CEE_STLOC_1:
-		case CEE_STLOC_2:
-		case CEE_STLOC_3:
-		case CEE_STLOC_S:
+		case MONO_CEE_STLOC_0:
+		case MONO_CEE_STLOC_1:
+		case MONO_CEE_STLOC_2:
+		case MONO_CEE_STLOC_3:
+		case MONO_CEE_STLOC_S:
 		case MONO_CEE_STLOC:
 			CHECK_LOCAL (n);
 			--sp;
@@ -7198,14 +7198,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			emit_stloc_ir (cfg, sp, header, n);
 			inline_costs += 1;
 			break;
-		case CEE_LDARGA_S:
+		case MONO_CEE_LDARGA_S:
 		case MONO_CEE_LDARGA:
 			CHECK_ARG (n);
 			NEW_ARGLOADA (cfg, ins, n);
 			MONO_ADD_INS (cfg->cbb, ins);
 			*sp++ = ins;
 			break;
-		case CEE_STARG_S:
+		case MONO_CEE_STARG_S:
 		case MONO_CEE_STARG:
 			--sp;
 			CHECK_ARG (n);
@@ -7215,13 +7215,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			emit_starg_ir (cfg, sp, n);
 			break;
 		case MONO_CEE_LDLOCA:
-		case CEE_LDLOCA_S: {
+		case MONO_CEE_LDLOCA_S: {
 			guchar *tmp_ip;
 			CHECK_LOCAL (n);
 
 			if ((tmp_ip = emit_optimized_ldloca_ir (cfg, next_ip, end, n))) {
 				next_ip = tmp_ip;
-				il_op = CEE_INITOBJ;
+				il_op = MONO_CEE_INITOBJ;
 				inline_costs += 1;
 				break;
 			}
@@ -7230,27 +7230,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;
 			break;
 		}
-		case CEE_LDNULL:
+		case MONO_CEE_LDNULL:
 			EMIT_NEW_PCONST (cfg, ins, NULL);
 			ins->type = STACK_OBJ;
 			*sp++ = ins;
 			break;
-		case CEE_LDC_I4_M1:
-		case CEE_LDC_I4_0:
-		case CEE_LDC_I4_1:
-		case CEE_LDC_I4_2:
-		case CEE_LDC_I4_3:
-		case CEE_LDC_I4_4:
-		case CEE_LDC_I4_5:
-		case CEE_LDC_I4_6:
-		case CEE_LDC_I4_7:
-		case CEE_LDC_I4_8:
-		case CEE_LDC_I4_S:
-		case CEE_LDC_I4:
+		case MONO_CEE_LDC_I4_M1:
+		case MONO_CEE_LDC_I4_0:
+		case MONO_CEE_LDC_I4_1:
+		case MONO_CEE_LDC_I4_2:
+		case MONO_CEE_LDC_I4_3:
+		case MONO_CEE_LDC_I4_4:
+		case MONO_CEE_LDC_I4_5:
+		case MONO_CEE_LDC_I4_6:
+		case MONO_CEE_LDC_I4_7:
+		case MONO_CEE_LDC_I4_8:
+		case MONO_CEE_LDC_I4_S:
+		case MONO_CEE_LDC_I4:
 			EMIT_NEW_ICONST (cfg, ins, n);
 			*sp++ = ins;
 			break;
-		case CEE_LDC_I8:
+		case MONO_CEE_LDC_I8:
 			MONO_INST_NEW (cfg, ins, OP_I8CONST);
 			ins->type = STACK_I8;
 			ins->dreg = alloc_dreg (cfg, STACK_I8);
@@ -7258,7 +7258,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_ADD_INS (cfg->cbb, ins);
 			*sp++ = ins;
 			break;
-		case CEE_LDC_R4: {
+		case MONO_CEE_LDC_R4: {
 			float *f;
 			gboolean use_aotconst = FALSE;
 
@@ -7290,7 +7290,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;			
 			break;
 		}
-		case CEE_LDC_R8: {
+		case MONO_CEE_LDC_R8: {
 			double *d;
 			gboolean use_aotconst = FALSE;
 
@@ -7323,7 +7323,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;
 			break;
 		}
-		case CEE_DUP: {
+		case MONO_CEE_DUP: {
 			MonoInst *temp, *store;
 			sp--;
 			ins = *sp;
@@ -7340,7 +7340,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 2;
 			break;
 		}
-		case CEE_POP:
+		case MONO_CEE_POP:
 			--sp;
 
 #ifdef TARGET_X86
@@ -7349,7 +7349,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_EMIT_NEW_UNALU (cfg, OP_X86_FPOP, -1, sp [0]->dreg);
 #endif
 			break;
-		case CEE_JMP: {
+		case MONO_CEE_JMP: {
 			MonoCallInst *call;
 			int i, n;
 
@@ -7414,7 +7414,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			start_new_bblock = 1;
 			break;
 		}
-		case CEE_CALLI: {
+		case MONO_CEE_CALLI: {
 			// FIXME tail.calli is problemetic because the this pointer's type
 			// is not in the signature, and we cannot check for a byref valuetype.
 			MonoInst *addr;
@@ -7533,11 +7533,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins = (MonoInst*)mini_emit_calli_full (cfg, fsig, sp, addr, NULL, NULL, tailcall);
 			goto calli_end;
 		}
-		case CEE_CALL:
-		case CEE_CALLVIRT: {
+		case MONO_CEE_CALL:
+		case MONO_CEE_CALLVIRT: {
 			MonoInst *addr = NULL;
 			int array_rank = 0;
-			gboolean virtual_ = il_op == CEE_CALLVIRT;
+			gboolean virtual_ = il_op == MONO_CEE_CALLVIRT;
 			gboolean pass_imt_from_rgctx = FALSE;
 			MonoInst *imt_arg = NULL;
 			gboolean pass_vtable = FALSE;
@@ -8200,7 +8200,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Tail recursion elimination */
-			if ((cfg->opt & MONO_OPT_TAILCALL) && il_op == CEE_CALL && cmethod == method && next_ip < end && next_ip [0] == CEE_RET && !vtable_arg) {
+			if ((cfg->opt & MONO_OPT_TAILCALL) && il_op == MONO_CEE_CALL && cmethod == method && next_ip < end && next_ip [0] == CEE_RET && !vtable_arg) {
 				gboolean has_vtargs = FALSE;
 				int i;
 
@@ -8537,7 +8537,7 @@ calli_end:
 				emit_seq_point (cfg, method, next_ip, FALSE, TRUE);
 			break;
 		}
-		case CEE_RET:
+		case MONO_CEE_RET:
 			mini_profiler_emit_leave (cfg, sig->ret->type != MONO_TYPE_VOID ? sp [-1] : NULL);
 
 			if (cfg->method != method) {
@@ -8601,7 +8601,7 @@ calli_end:
 			link_bblock (cfg, cfg->cbb, end_bblock);
 			start_new_bblock = 1;
 			break;
-		case CEE_BR_S:
+		case MONO_CEE_BR_S:
 			MONO_INST_NEW (cfg, ins, OP_BR);
 			GET_BBLOCK (cfg, tblock, target);
 			link_bblock (cfg, cfg->cbb, tblock);
@@ -8615,16 +8615,16 @@ calli_end:
 			start_new_bblock = 1;
 			inline_costs += BRANCH_COST;
 			break;
-		case CEE_BEQ_S:
-		case CEE_BGE_S:
-		case CEE_BGT_S:
-		case CEE_BLE_S:
-		case CEE_BLT_S:
-		case CEE_BNE_UN_S:
-		case CEE_BGE_UN_S:
-		case CEE_BGT_UN_S:
-		case CEE_BLE_UN_S:
-		case CEE_BLT_UN_S:
+		case MONO_CEE_BEQ_S:
+		case MONO_CEE_BGE_S:
+		case MONO_CEE_BGT_S:
+		case MONO_CEE_BLE_S:
+		case MONO_CEE_BLT_S:
+		case MONO_CEE_BNE_UN_S:
+		case MONO_CEE_BGE_UN_S:
+		case MONO_CEE_BGT_UN_S:
+		case MONO_CEE_BLE_UN_S:
+		case MONO_CEE_BLT_UN_S:
 			MONO_INST_NEW (cfg, ins, il_op + BIG_BRANCH_OFFSET);
 
 			ADD_BINCOND (NULL);
@@ -8632,7 +8632,7 @@ calli_end:
 			sp = stack_start;
 			inline_costs += BRANCH_COST;
 			break;
-		case CEE_BR:
+		case MONO_CEE_BR:
 			MONO_INST_NEW (cfg, ins, OP_BR);
 
 			GET_BBLOCK (cfg, tblock, target);
@@ -8649,12 +8649,12 @@ calli_end:
 			start_new_bblock = 1;
 			inline_costs += BRANCH_COST;
 			break;
-		case CEE_BRFALSE_S:
-		case CEE_BRTRUE_S:
-		case CEE_BRFALSE:
-		case CEE_BRTRUE: {
+		case MONO_CEE_BRFALSE_S:
+		case MONO_CEE_BRTRUE_S:
+		case MONO_CEE_BRFALSE:
+		case MONO_CEE_BRTRUE: {
 			MonoInst *cmp;
-			gboolean is_true = il_op == CEE_BRTRUE_S || il_op == CEE_BRTRUE;
+			gboolean is_true = il_op == MONO_CEE_BRTRUE_S || il_op == MONO_CEE_BRTRUE;
 
 			if (sp [-1]->type == STACK_VTYPE || sp [-1]->type == STACK_R8)
 				UNVERIFIED;
@@ -8704,16 +8704,16 @@ calli_end:
 			inline_costs += BRANCH_COST;
 			break;
 		}
-		case CEE_BEQ:
-		case CEE_BGE:
-		case CEE_BGT:
-		case CEE_BLE:
-		case CEE_BLT:
-		case CEE_BNE_UN:
-		case CEE_BGE_UN:
-		case CEE_BGT_UN:
-		case CEE_BLE_UN:
-		case CEE_BLT_UN:
+		case MONO_CEE_BEQ:
+		case MONO_CEE_BGE:
+		case MONO_CEE_BGT:
+		case MONO_CEE_BLE:
+		case MONO_CEE_BLT:
+		case MONO_CEE_BNE_UN:
+		case MONO_CEE_BGE_UN:
+		case MONO_CEE_BGT_UN:
+		case MONO_CEE_BLE_UN:
+		case MONO_CEE_BLT_UN:
 			MONO_INST_NEW (cfg, ins, il_op);
 
 			ADD_BINCOND (NULL);
@@ -8721,7 +8721,7 @@ calli_end:
 			sp = stack_start;
 			inline_costs += BRANCH_COST;
 			break;
-		case CEE_SWITCH: {
+		case MONO_CEE_SWITCH: {
 			MonoInst *src1;
 			MonoBasicBlock **targets;
 			MonoBasicBlock *default_bblock;
@@ -8830,31 +8830,31 @@ calli_end:
 			inline_costs += BRANCH_COST * 2;
 			break;
 		}
-		case CEE_LDIND_I1:
-		case CEE_LDIND_U1:
-		case CEE_LDIND_I2:
-		case CEE_LDIND_U2:
-		case CEE_LDIND_I4:
-		case CEE_LDIND_U4:
-		case CEE_LDIND_I8:
-		case CEE_LDIND_I:
-		case CEE_LDIND_R4:
-		case CEE_LDIND_R8:
-		case CEE_LDIND_REF:
+		case MONO_CEE_LDIND_I1:
+		case MONO_CEE_LDIND_U1:
+		case MONO_CEE_LDIND_I2:
+		case MONO_CEE_LDIND_U2:
+		case MONO_CEE_LDIND_I4:
+		case MONO_CEE_LDIND_U4:
+		case MONO_CEE_LDIND_I8:
+		case MONO_CEE_LDIND_I:
+		case MONO_CEE_LDIND_R4:
+		case MONO_CEE_LDIND_R8:
+		case MONO_CEE_LDIND_REF:
 			--sp;
 
 			ins = mini_emit_memory_load (cfg, m_class_get_byval_arg (ldind_to_type (il_op)), sp [0], 0, ins_flag);
 			*sp++ = ins;
 			ins_flag = 0;
 			break;
-		case CEE_STIND_REF:
-		case CEE_STIND_I1:
-		case CEE_STIND_I2:
-		case CEE_STIND_I4:
-		case CEE_STIND_I8:
-		case CEE_STIND_R4:
-		case CEE_STIND_R8:
-		case CEE_STIND_I: {
+		case MONO_CEE_STIND_REF:
+		case MONO_CEE_STIND_I1:
+		case MONO_CEE_STIND_I2:
+		case MONO_CEE_STIND_I4:
+		case MONO_CEE_STIND_I8:
+		case MONO_CEE_STIND_R4:
+		case MONO_CEE_STIND_R8:
+		case MONO_CEE_STIND_I: {
 			sp -= 2;
 
 			if (ins_flag & MONO_INST_VOLATILE) {
@@ -8862,7 +8862,7 @@ calli_end:
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 			}
 
-			if (il_op == CEE_STIND_R4 && sp [1]->type == STACK_R8)
+			if (il_op == MONO_CEE_STIND_R4 && sp [1]->type == STACK_R8)
 				sp [1] = convert_value (cfg, m_class_get_byval_arg (mono_defaults.single_class), sp [1]);
 			NEW_STORE_MEMBASE (cfg, ins, stind_to_store_membase (il_op), sp [0]->dreg, 0, sp [1]->dreg);
 			ins->flags |= ins_flag;
@@ -8870,7 +8870,7 @@ calli_end:
 
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			if (il_op == CEE_STIND_REF) {
+			if (il_op == MONO_CEE_STIND_REF) {
 				/* stind.ref must only be used with object references. */
 				if (sp [1]->type != STACK_OBJ)
 					UNVERIFIED;
@@ -8881,7 +8881,7 @@ calli_end:
 			inline_costs += 1;
 			break;
 		}
-		case CEE_MUL:
+		case MONO_CEE_MUL:
 			MONO_INST_NEW (cfg, ins, il_op);
 			sp -= 2;
 			ins->sreg1 = sp [0]->dreg;
@@ -8907,18 +8907,18 @@ calli_end:
 
 			*sp++ = mono_decompose_opcode (cfg, ins);
 			break;
-		case CEE_ADD:
-		case CEE_SUB:
-		case CEE_DIV:
-		case CEE_DIV_UN:
-		case CEE_REM:
-		case CEE_REM_UN:
-		case CEE_AND:
-		case CEE_OR:
-		case CEE_XOR:
-		case CEE_SHL:
-		case CEE_SHR:
-		case CEE_SHR_UN: {
+		case MONO_CEE_ADD:
+		case MONO_CEE_SUB:
+		case MONO_CEE_DIV:
+		case MONO_CEE_DIV_UN:
+		case MONO_CEE_REM:
+		case MONO_CEE_REM_UN:
+		case MONO_CEE_AND:
+		case MONO_CEE_OR:
+		case MONO_CEE_XOR:
+		case MONO_CEE_SHL:
+		case MONO_CEE_SHR:
+		case MONO_CEE_SHR_UN: {
 			MONO_INST_NEW (cfg, ins, il_op);
 			sp -= 2;
 			ins->sreg1 = sp [0]->dreg;
@@ -8957,32 +8957,32 @@ calli_end:
 			*sp++ = mono_decompose_opcode (cfg, ins);
 			break;
 		}
-		case CEE_NEG:
-		case CEE_NOT:
-		case CEE_CONV_I1:
-		case CEE_CONV_I2:
-		case CEE_CONV_I4:
-		case CEE_CONV_R4:
-		case CEE_CONV_R8:
-		case CEE_CONV_U4:
-		case CEE_CONV_I8:
-		case CEE_CONV_U8:
-		case CEE_CONV_OVF_I8:
-		case CEE_CONV_OVF_U8:
-		case CEE_CONV_R_UN:
+		case MONO_CEE_NEG:
+		case MONO_CEE_NOT:
+		case MONO_CEE_CONV_I1:
+		case MONO_CEE_CONV_I2:
+		case MONO_CEE_CONV_I4:
+		case MONO_CEE_CONV_R4:
+		case MONO_CEE_CONV_R8:
+		case MONO_CEE_CONV_U4:
+		case MONO_CEE_CONV_I8:
+		case MONO_CEE_CONV_U8:
+		case MONO_CEE_CONV_OVF_I8:
+		case MONO_CEE_CONV_OVF_U8:
+		case MONO_CEE_CONV_R_UN:
 			/* Special case this earlier so we have long constants in the IR */
-			if ((il_op == CEE_CONV_I8 || il_op == CEE_CONV_U8) && (sp [-1]->opcode == OP_ICONST)) {
+			if ((il_op == MONO_CEE_CONV_I8 || il_op == MONO_CEE_CONV_U8) && (sp [-1]->opcode == OP_ICONST)) {
 				int data = sp [-1]->inst_c0;
 				sp [-1]->opcode = OP_I8CONST;
 				sp [-1]->type = STACK_I8;
 #if SIZEOF_REGISTER == 8
-				if (il_op == CEE_CONV_U8)
+				if (il_op == MONO_CEE_CONV_U8)
 					sp [-1]->inst_c0 = (guint32)data;
 				else
 					sp [-1]->inst_c0 = data;
 #else
 				sp [-1]->inst_ls_word = data;
-				if (il_op == CEE_CONV_U8)
+				if (il_op == MONO_CEE_CONV_U8)
 					sp [-1]->inst_ms_word = 0;
 				else
 					sp [-1]->inst_ms_word = (data < 0) ? -1 : 0;
@@ -8993,11 +8993,11 @@ calli_end:
 				ADD_UNOP (il_op);
 			}
 			break;
-		case CEE_CONV_OVF_I4:
-		case CEE_CONV_OVF_I1:
-		case CEE_CONV_OVF_I2:
-		case CEE_CONV_OVF_I:
-		case CEE_CONV_OVF_U:
+		case MONO_CEE_CONV_OVF_I4:
+		case MONO_CEE_CONV_OVF_I1:
+		case MONO_CEE_CONV_OVF_I2:
+		case MONO_CEE_CONV_OVF_I:
+		case MONO_CEE_CONV_OVF_U:
 			if (sp [-1]->type == STACK_R8 || sp [-1]->type == STACK_R4) {
 				ADD_UNOP (CEE_CONV_OVF_I8);
 				ADD_UNOP (il_op);
@@ -9005,9 +9005,9 @@ calli_end:
 				ADD_UNOP (il_op);
 			}
 			break;
-		case CEE_CONV_OVF_U1:
-		case CEE_CONV_OVF_U2:
-		case CEE_CONV_OVF_U4:
+		case MONO_CEE_CONV_OVF_U1:
+		case MONO_CEE_CONV_OVF_U2:
+		case MONO_CEE_CONV_OVF_U4:
 			if (sp [-1]->type == STACK_R8 || sp [-1]->type == STACK_R4) {
 				ADD_UNOP (CEE_CONV_OVF_U8);
 				ADD_UNOP (il_op);
@@ -9015,32 +9015,32 @@ calli_end:
 				ADD_UNOP (il_op);
 			}
 			break;
-		case CEE_CONV_OVF_I1_UN:
-		case CEE_CONV_OVF_I2_UN:
-		case CEE_CONV_OVF_I4_UN:
-		case CEE_CONV_OVF_I8_UN:
-		case CEE_CONV_OVF_U1_UN:
-		case CEE_CONV_OVF_U2_UN:
-		case CEE_CONV_OVF_U4_UN:
-		case CEE_CONV_OVF_U8_UN:
-		case CEE_CONV_OVF_I_UN:
-		case CEE_CONV_OVF_U_UN:
-		case CEE_CONV_U2:
-		case CEE_CONV_U1:
-		case CEE_CONV_I:
-		case CEE_CONV_U:
+		case MONO_CEE_CONV_OVF_I1_UN:
+		case MONO_CEE_CONV_OVF_I2_UN:
+		case MONO_CEE_CONV_OVF_I4_UN:
+		case MONO_CEE_CONV_OVF_I8_UN:
+		case MONO_CEE_CONV_OVF_U1_UN:
+		case MONO_CEE_CONV_OVF_U2_UN:
+		case MONO_CEE_CONV_OVF_U4_UN:
+		case MONO_CEE_CONV_OVF_U8_UN:
+		case MONO_CEE_CONV_OVF_I_UN:
+		case MONO_CEE_CONV_OVF_U_UN:
+		case MONO_CEE_CONV_U2:
+		case MONO_CEE_CONV_U1:
+		case MONO_CEE_CONV_I:
+		case MONO_CEE_CONV_U:
 			ADD_UNOP (il_op);
 			CHECK_CFG_EXCEPTION;
 			break;
-		case CEE_ADD_OVF:
-		case CEE_ADD_OVF_UN:
-		case CEE_MUL_OVF:
-		case CEE_MUL_OVF_UN:
-		case CEE_SUB_OVF:
-		case CEE_SUB_OVF_UN:
+		case MONO_CEE_ADD_OVF:
+		case MONO_CEE_ADD_OVF_UN:
+		case MONO_CEE_MUL_OVF:
+		case MONO_CEE_MUL_OVF_UN:
+		case MONO_CEE_SUB_OVF:
+		case MONO_CEE_SUB_OVF_UN:
 			ADD_BINOP (il_op);
 			break;
-		case CEE_CPOBJ:
+		case MONO_CEE_CPOBJ:
 			GSHAREDVT_FAILURE (il_op);
 			GSHAREDVT_FAILURE (*ip);
 			klass = mini_get_class (method, token, generic_context);
@@ -9049,7 +9049,7 @@ calli_end:
 			mini_emit_memory_copy (cfg, sp [0], sp [1], klass, FALSE, ins_flag);
 			ins_flag = 0;
 			break;
-		case CEE_LDOBJ: {
+		case MONO_CEE_LDOBJ: {
 			int loc_index = -1;
 			int stloc_len = 0;
 
@@ -9060,15 +9060,15 @@ calli_end:
 			/* Optimize the common ldobj+stloc combination */
 			if (next_ip < end) {
 				switch (next_ip [0]) {
-				case CEE_STLOC_S:
+				case MONO_CEE_STLOC_S:
 					CHECK_OPSIZE (7);
 					loc_index = next_ip [1];
 					stloc_len = 2;
 					break;
-				case CEE_STLOC_0:
-				case CEE_STLOC_1:
-				case CEE_STLOC_2:
-				case CEE_STLOC_3:
+				case MONO_CEE_STLOC_0:
+				case MONO_CEE_STLOC_1:
+				case MONO_CEE_STLOC_2:
+				case MONO_CEE_STLOC_3:
 					loc_index = next_ip [0] - CEE_STLOC_0;
 					stloc_len = 1;
 					break;
@@ -9114,7 +9114,7 @@ calli_end:
 			inline_costs += 1;
 			break;
 		}
-		case CEE_LDSTR:
+		case MONO_CEE_LDSTR:
 			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
 				EMIT_NEW_PCONST (cfg, ins, mono_method_get_wrapper_data (method, n));
 				ins->type = STACK_OBJ;
@@ -9183,7 +9183,7 @@ calli_end:
 
 			sp++;
 			break;
-		case CEE_NEWOBJ: {
+		case MONO_CEE_NEWOBJ: {
 			MonoInst *iargs [2];
 			MonoMethodSignature *fsig;
 			MonoInst this_ins;
@@ -9371,15 +9371,15 @@ calli_end:
 				emit_seq_point (cfg, method, next_ip, FALSE, TRUE);
 			break;
 		}
-		case CEE_CASTCLASS:
-		case CEE_ISINST: {
+		case MONO_CEE_CASTCLASS:
+		case MONO_CEE_ISINST: {
 			--sp;
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
-			MONO_INST_NEW (cfg, ins, (il_op == CEE_ISINST) ? OP_ISINST : OP_CASTCLASS);
+			MONO_INST_NEW (cfg, ins, (il_op == MONO_CEE_ISINST) ? OP_ISINST : OP_CASTCLASS);
 			ins->dreg = alloc_preg (cfg);
 			ins->sreg1 = (*sp)->dreg;
 			ins->klass = klass;
@@ -9392,7 +9392,7 @@ calli_end:
 			cfg->flags |= MONO_CFG_HAS_TYPE_CHECK;
 			break;
 		}
-		case CEE_UNBOX_ANY: {
+		case MONO_CEE_UNBOX_ANY: {
 			MonoInst *res, *addr;
 
 			--sp;
@@ -9432,7 +9432,7 @@ calli_end:
 			*sp ++ = res;
 			break;
 		}
-		case CEE_BOX: {
+		case MONO_CEE_BOX: {
 			MonoInst *val;
 			MonoClass *enum_class;
 			MonoMethod *has_flag;
@@ -9592,7 +9592,7 @@ calli_end:
 			inline_costs += 1;
 			break;
 		}
-		case CEE_UNBOX: {
+		case MONO_CEE_UNBOX: {
 			--sp;
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
@@ -9615,12 +9615,12 @@ calli_end:
 			inline_costs += 2;
 			break;
 		}
-		case CEE_LDFLD:
-		case CEE_LDFLDA:
-		case CEE_STFLD:
-		case CEE_LDSFLD:
-		case CEE_LDSFLDA:
-		case CEE_STSFLD: {
+		case MONO_CEE_LDFLD:
+		case MONO_CEE_LDFLDA:
+		case MONO_CEE_STFLD:
+		case MONO_CEE_LDSFLD:
+		case MONO_CEE_LDSFLDA:
+		case MONO_CEE_STSFLD: {
 			MonoClassField *field;
 #ifndef DISABLE_REMOTING
 			int costs;
@@ -9633,9 +9633,9 @@ calli_end:
 			MonoInst *store_val = NULL;
 			MonoInst *thread_ins;
 
-			is_instance = (il_op == CEE_LDFLD || il_op == CEE_LDFLDA || il_op == CEE_STFLD);
+			is_instance = (il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDFLDA || il_op == MONO_CEE_STFLD);
 			if (is_instance) {
-				if (il_op == CEE_STFLD) {
+				if (il_op == MONO_CEE_STFLD) {
 					sp -= 2;
 					store_val = sp [1];
 				} else {
@@ -9646,7 +9646,7 @@ calli_end:
 				if (il_op != CEE_LDFLD && sp [0]->type == STACK_VTYPE)
 					UNVERIFIED;
 			} else {
-				if (il_op == CEE_STSFLD) {
+				if (il_op == MONO_CEE_STSFLD) {
 					sp--;
 					store_val = sp [0];
 				}
@@ -9682,13 +9682,13 @@ calli_end:
 			 */
 			if (is_instance && ftype->attrs & FIELD_ATTRIBUTE_STATIC) {
 				switch (il_op) {
-				case CEE_LDFLD:
+				case MONO_CEE_LDFLD:
 					il_op = CEE_LDSFLD;
 					break;
-				case CEE_STFLD:
+				case MONO_CEE_STFLD:
 					il_op = CEE_STSFLD;
 					break;
-				case CEE_LDFLDA:
+				case MONO_CEE_LDFLDA:
 					il_op = CEE_LDSFLDA;
 					break;
 				default:
@@ -9702,7 +9702,7 @@ calli_end:
 			/* INSTANCE CASE */
 
 			foffset = m_class_is_valuetype (klass) ? field->offset - sizeof (MonoObject): field->offset;
-			if (il_op == CEE_STFLD) {
+			if (il_op == MONO_CEE_STFLD) {
 				sp [1] = convert_value (cfg, field->type, sp [1]);
 				if (target_type_is_incompatible (cfg, field->type, sp [1]))
 					UNVERIFIED;
@@ -9785,7 +9785,7 @@ calli_end:
 
 #ifndef DISABLE_REMOTING
 			if (is_instance && ((mono_class_is_marshalbyref (klass) && !MONO_CHECK_THIS (sp [0])) || mono_class_is_contextbound (klass) || klass == mono_defaults.marshalbyrefobject_class)) {
-				MonoMethod *wrapper = (il_op == CEE_LDFLDA) ? mono_marshal_get_ldflda_wrapper (field->type) : mono_marshal_get_ldfld_wrapper (field->type); 
+				MonoMethod *wrapper = (il_op == MONO_CEE_LDFLDA) ? mono_marshal_get_ldflda_wrapper (field->type) : mono_marshal_get_ldfld_wrapper (field->type); 
 				MonoInst *iargs [4];
 
 				GSHAREDVT_FAILURE (il_op);
@@ -9827,7 +9827,7 @@ calli_end:
 					sp [0] = ins;
 				}
 
-				if (il_op == CEE_LDFLDA) {
+				if (il_op == MONO_CEE_LDFLDA) {
 					if (sp [0]->type == STACK_OBJ) {
 						MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sp [0]->dreg, 0);
 						MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");
@@ -10056,16 +10056,16 @@ calli_end:
 
 			/* Generate IR to do the actual load/store operation */
 
-			if ((il_op == CEE_STFLD || il_op == CEE_STSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
+			if ((il_op == MONO_CEE_STFLD || il_op == MONO_CEE_STSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
 				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 			}
 
-			if (il_op == CEE_LDSFLDA) {
+			if (il_op == MONO_CEE_LDSFLDA) {
 				ins->klass = mono_class_from_mono_type (ftype);
 				ins->type = STACK_PTR;
 				*sp++ = ins;
-			} else if (il_op == CEE_STSFLD) {
+			} else if (il_op == MONO_CEE_STSFLD) {
 				MonoInst *store;
 
 				EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, ftype, ins->dreg, 0, store_val->dreg);
@@ -10166,7 +10166,7 @@ calli_end:
 			}
 
 field_access_end:
-			if ((il_op == CEE_LDFLD || il_op == CEE_LDSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
+			if ((il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
 				/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
 			}
@@ -10174,7 +10174,7 @@ field_access_end:
 			ins_flag = 0;
 			break;
 		}
-		case CEE_STOBJ:
+		case MONO_CEE_STOBJ:
 			sp -= 2;
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
@@ -10188,7 +10188,7 @@ field_access_end:
 			/*
 			 * Array opcodes
 			 */
-		case CEE_NEWARR: {
+		case MONO_CEE_NEWARR: {
 			MonoInst *len_ins;
 			const char *data_ptr;
 			int data_size = 0;
@@ -10295,7 +10295,7 @@ field_access_end:
 
 			break;
 		}
-		case CEE_LDLEN:
+		case MONO_CEE_LDLEN:
 			--sp;
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
@@ -10311,7 +10311,7 @@ field_access_end:
 			cfg->cbb->needs_decompose = TRUE;
 			*sp++ = ins;
 			break;
-		case CEE_LDELEMA:
+		case MONO_CEE_LDELEMA:
 			sp -= 2;
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
@@ -10334,23 +10334,23 @@ field_access_end:
 			ins = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE);
 			*sp++ = ins;
 			break;
-		case CEE_LDELEM:
-		case CEE_LDELEM_I1:
-		case CEE_LDELEM_U1:
-		case CEE_LDELEM_I2:
-		case CEE_LDELEM_U2:
-		case CEE_LDELEM_I4:
-		case CEE_LDELEM_U4:
-		case CEE_LDELEM_I8:
-		case CEE_LDELEM_I:
-		case CEE_LDELEM_R4:
-		case CEE_LDELEM_R8:
-		case CEE_LDELEM_REF: {
+		case MONO_CEE_LDELEM:
+		case MONO_CEE_LDELEM_I1:
+		case MONO_CEE_LDELEM_U1:
+		case MONO_CEE_LDELEM_I2:
+		case MONO_CEE_LDELEM_U2:
+		case MONO_CEE_LDELEM_I4:
+		case MONO_CEE_LDELEM_U4:
+		case MONO_CEE_LDELEM_I8:
+		case MONO_CEE_LDELEM_I:
+		case MONO_CEE_LDELEM_R4:
+		case MONO_CEE_LDELEM_R8:
+		case MONO_CEE_LDELEM_REF: {
 			MonoInst *addr;
 
 			sp -= 2;
 
-			if (il_op == CEE_LDELEM) {
+			if (il_op == MONO_CEE_LDELEM) {
 				klass = mini_get_class (method, token, generic_context);
 				CHECK_TYPELOAD (klass);
 				mono_class_init (klass);
@@ -10385,20 +10385,20 @@ field_access_end:
 			*sp++ = ins;
 			break;
 		}
-		case CEE_STELEM_I:
-		case CEE_STELEM_I1:
-		case CEE_STELEM_I2:
-		case CEE_STELEM_I4:
-		case CEE_STELEM_I8:
-		case CEE_STELEM_R4:
-		case CEE_STELEM_R8:
-		case CEE_STELEM_REF:
-		case CEE_STELEM: {
+		case MONO_CEE_STELEM_I:
+		case MONO_CEE_STELEM_I1:
+		case MONO_CEE_STELEM_I2:
+		case MONO_CEE_STELEM_I4:
+		case MONO_CEE_STELEM_I8:
+		case MONO_CEE_STELEM_R4:
+		case MONO_CEE_STELEM_R8:
+		case MONO_CEE_STELEM_REF:
+		case MONO_CEE_STELEM: {
 			sp -= 3;
 
 			cfg->flags |= MONO_CFG_HAS_LDELEMA;
 
-			if (il_op == CEE_STELEM) {
+			if (il_op == MONO_CEE_STELEM) {
 				klass = mini_get_class (method, token, generic_context);
 				CHECK_TYPELOAD (klass);
 				mono_class_init (klass);
@@ -10415,7 +10415,7 @@ field_access_end:
 			inline_costs += 1;
 			break;
 		}
-		case CEE_CKFINITE: {
+		case MONO_CEE_CKFINITE: {
 			--sp;
 
 			if (cfg->llvm_only) {
@@ -10436,7 +10436,7 @@ field_access_end:
 
 			break;
 		}
-		case CEE_REFANYVAL: {
+		case MONO_CEE_REFANYVAL: {
 			MonoInst *src_var, *src;
 
 			int klass_reg = alloc_preg (cfg);
@@ -10476,7 +10476,7 @@ field_access_end:
 			*sp++ = ins;
 			break;
 		}
-		case CEE_MKREFANY: {
+		case MONO_CEE_MKREFANY: {
 			MonoInst *loc, *addr;
 
 			GSHAREDVT_FAILURE (il_op);
@@ -10516,7 +10516,7 @@ field_access_end:
 			*sp++ = ins;
 			break;
 		}
-		case CEE_LDTOKEN: {
+		case MONO_CEE_LDTOKEN: {
 			gpointer handle;
 			MonoClass *handle_class;
 
@@ -10645,7 +10645,7 @@ field_access_end:
 			*sp++ = ins;
 			break;
 		}
-		case CEE_THROW:
+		case MONO_CEE_THROW:
 			if (sp [-1]->type != STACK_OBJ)
 				UNVERIFIED;
 
@@ -10664,7 +10664,7 @@ field_access_end:
 			if (COMPILE_LLVM (cfg))
 				INLINE_FAILURE ("throw");
 			break;
-		case CEE_ENDFINALLY:
+		case MONO_CEE_ENDFINALLY:
 			if (!ip_in_finally_clause (cfg, ip - header->code))
 				UNVERIFIED;
 			/* mono_save_seq_point_info () depends on this */
@@ -10682,8 +10682,8 @@ field_access_end:
 				sp--;
 			}
 			break;
-		case CEE_LEAVE:
-		case CEE_LEAVE_S: {
+		case MONO_CEE_LEAVE:
+		case MONO_CEE_LEAVE_S: {
 			GList *handlers;
 
 			/* empty the stack */
@@ -10705,7 +10705,7 @@ field_access_end:
 				 * The ordering of the exception clauses guarantees that we find the
 				 * innermost clause.
 				 */
-				if (MONO_OFFSET_IN_HANDLER (clause, ip - header->code) && (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) && (ip - header->code + ((il_op == CEE_LEAVE) ? 5 : 2)) <= (clause->handler_offset + clause->handler_len) && method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
+				if (MONO_OFFSET_IN_HANDLER (clause, ip - header->code) && (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) && (ip - header->code + ((il_op == MONO_CEE_LEAVE) ? 5 : 2)) <= (clause->handler_offset + clause->handler_len) && method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 					MonoInst *exc_ins;
 					MonoBasicBlock *dont_throw;
 
@@ -12044,20 +12044,20 @@ static int
 stind_to_store_membase (int opcode)
 {
 	switch (opcode) {
-	case CEE_STIND_I1:
+	case MONO_CEE_STIND_I1:
 		return OP_STOREI1_MEMBASE_REG;
-	case CEE_STIND_I2:
+	case MONO_CEE_STIND_I2:
 		return OP_STOREI2_MEMBASE_REG;
-	case CEE_STIND_I4:
+	case MONO_CEE_STIND_I4:
 		return OP_STOREI4_MEMBASE_REG;
-	case CEE_STIND_I:
-	case CEE_STIND_REF:
+	case MONO_CEE_STIND_I:
+	case MONO_CEE_STIND_REF:
 		return OP_STORE_MEMBASE_REG;
-	case CEE_STIND_I8:
+	case MONO_CEE_STIND_I8:
 		return OP_STOREI8_MEMBASE_REG;
-	case CEE_STIND_R4:
+	case MONO_CEE_STIND_R4:
 		return OP_STORER4_MEMBASE_REG;
-	case CEE_STIND_R8:
+	case MONO_CEE_STIND_R8:
 		return OP_STORER8_MEMBASE_REG;
 	default:
 		g_assert_not_reached ();
