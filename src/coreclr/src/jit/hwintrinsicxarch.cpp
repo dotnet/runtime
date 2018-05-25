@@ -978,7 +978,6 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
     assert((simdSize == 16) || (simdSize == 0));
 
     CORINFO_ARG_LIST_HANDLE argList = sig->args;
-    CORINFO_CLASS_HANDLE    argClass;
     var_types               argType = TYP_UNKNOWN;
 
     switch (intrinsic)
