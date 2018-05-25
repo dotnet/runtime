@@ -75,6 +75,7 @@ namespace System.Net.Sockets
         private ExecutionContext _context;
         private static readonly ContextCallback s_executionCallback = ExecutionCallback;
         private Socket _currentSocket;
+        private bool _userSocket; // if false when performing Connect, _currentSocket should be disposed
         private bool _disposeCalled;
 
         // Controls thread safety via Interlocked.
@@ -572,10 +573,11 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void StartOperationConnect(MultipleConnectAsync multipleConnect = null)
+        internal void StartOperationConnect(MultipleConnectAsync multipleConnect, bool userSocket)
         {
             _multipleConnect = multipleConnect;
             _connectSocket = null;
+            _userSocket = userSocket;
         }
 
         internal void CancelConnectAsync()
@@ -606,7 +608,18 @@ namespace System.Net.Sockets
 
             // This will be null if we're doing a static ConnectAsync to a DnsEndPoint with AddressFamily.Unspecified;
             // the attempt socket will be closed anyways, so not updating the state is OK.
-            _currentSocket?.UpdateStatusAfterSocketError(socketError);
+            // If we're doing a static ConnectAsync to an IPEndPoint, we need to dispose
+            // of the socket, as we manufactured it and the caller has no opportunity to do so.
+            Socket currentSocket = _currentSocket;
+            if (currentSocket != null)
+            {
+                currentSocket.UpdateStatusAfterSocketError(socketError);
+                if (_completedOperation == SocketAsyncOperation.Connect && !_userSocket)
+                {
+                    currentSocket.Dispose();
+                    _currentSocket = null;
+                }
+            }
 
             Complete();
         }
@@ -622,13 +635,8 @@ namespace System.Net.Sockets
 
         internal void FinishOperationAsyncFailure(SocketError socketError, int bytesTransferred, SocketFlags flags)
         {
-            SetResults(socketError, bytesTransferred, flags);
+            FinishOperationSyncFailure(socketError, bytesTransferred, flags);
 
-            // This will be null if we're doing a static ConnectAsync to a DnsEndPoint with AddressFamily.Unspecified;
-            // the attempt socket will be closed anyways, so not updating the state is OK.
-            _currentSocket?.UpdateStatusAfterSocketError(socketError);
-
-            Complete();
             if (_context == null)
             {
                 OnCompleted(this);
@@ -639,13 +647,10 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void FinishOperationAsyncFailure(Exception exception, int bytesTransferred, SocketFlags flags)
+        internal void FinishConnectByNameAsyncFailure(Exception exception, int bytesTransferred, SocketFlags flags)
         {
-            SetResults(exception, bytesTransferred, flags);
+            FinishConnectByNameSyncFailure(exception, bytesTransferred, flags);
 
-            _currentSocket?.UpdateStatusAfterSocketError(_socketError);
-
-            Complete();
             if (_context == null)
             {
                 OnCompleted(this);

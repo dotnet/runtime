@@ -3815,7 +3815,10 @@ namespace System.Net.Sockets
             return pending;
         }
 
-        public bool ConnectAsync(SocketAsyncEventArgs e)
+        public bool ConnectAsync(SocketAsyncEventArgs e) =>
+            ConnectAsync(e, userSocket: true);
+
+        private bool ConnectAsync(SocketAsyncEventArgs e, bool userSocket)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
             bool pending;
@@ -3862,10 +3865,10 @@ namespace System.Net.Sockets
                     throw new NotSupportedException(SR.net_invalidversion);
                 }
 
-                MultipleConnectAsync multipleConnectAsync = new SingleSocketMultipleConnectAsync(this, true);
+                MultipleConnectAsync multipleConnectAsync = new SingleSocketMultipleConnectAsync(this, userSocket: true);
 
                 e.StartOperationCommon(this, SocketAsyncOperation.Connect);
-                e.StartOperationConnect(multipleConnectAsync);
+                e.StartOperationConnect(multipleConnectAsync, userSocket: true);
 
                 pending = multipleConnectAsync.StartConnectAsync(e, dnsEP);
             }
@@ -3903,7 +3906,7 @@ namespace System.Net.Sockets
 
                 // Prepare for the native call.
                 e.StartOperationCommon(this, SocketAsyncOperation.Connect);
-                e.StartOperationConnect();
+                e.StartOperationConnect(multipleConnect: null, userSocket);
 
                 // Make the native call.
                 SocketError socketError = SocketError.Success;
@@ -3962,18 +3965,18 @@ namespace System.Net.Sockets
                 else
                 {
                     attemptSocket = new Socket(dnsEP.AddressFamily, socketType, protocolType);
-                    multipleConnectAsync = new SingleSocketMultipleConnectAsync(attemptSocket, false);
+                    multipleConnectAsync = new SingleSocketMultipleConnectAsync(attemptSocket, userSocket: false);
                 }
 
                 e.StartOperationCommon(attemptSocket, SocketAsyncOperation.Connect);
-                e.StartOperationConnect(multipleConnectAsync);
+                e.StartOperationConnect(multipleConnectAsync, userSocket: false);
 
                 pending = multipleConnectAsync.StartConnectAsync(e, dnsEP);
             }
             else
             {
                 Socket attemptSocket = new Socket(endPointSnapshot.AddressFamily, socketType, protocolType);
-                pending = attemptSocket.ConnectAsync(e);
+                pending = attemptSocket.ConnectAsync(e, userSocket: false);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, pending);
