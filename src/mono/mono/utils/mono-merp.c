@@ -199,7 +199,7 @@ static void
 mono_encode_merp (GString *output, MERPStruct *merp)
 {
 	// Provided by icall
-	g_string_append_printf (output, "ApplicationBundleID: %s\n", merp->bundleIDArg);
+	g_string_append_printf (output, "ApplicationBundleId: %s\n", merp->bundleIDArg);
 	g_string_append_printf (output, "ApplicationVersion: %s\n", merp->versionArg);
 
 	g_string_append_printf (output, "ApplicationBitness: %s\n", get_merp_bitness (merp->archArg));
