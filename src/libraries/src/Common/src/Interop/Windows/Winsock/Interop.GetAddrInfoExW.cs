@@ -15,7 +15,7 @@ internal static partial class Interop
 
         internal unsafe delegate void LPLOOKUPSERVICE_COMPLETION_ROUTINE([In] int dwError, [In] int dwBytes, [In] NativeOverlapped* lpOverlapped);
 
-        [DllImport(Interop.Libraries.Ws2_32, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Ws2_32, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern unsafe int GetAddrInfoExW(
             [In] string pName,
             [In] string pServiceName,
@@ -29,8 +29,7 @@ internal static partial class Interop
             [Out] out IntPtr lpNameHandle
         );
 
-        [DllImport("ws2_32.dll", ExactSpelling = true, SetLastError = true)]
-        internal static extern unsafe void FreeAddrInfoEx([In] AddressInfoEx* pAddrInfo);
+        [DllImport(Libraries.Ws2_32, ExactSpelling = true)]
+        internal static extern unsafe void FreeAddrInfoExW([In] AddressInfoEx* pAddrInfo);
     }
 }
-
