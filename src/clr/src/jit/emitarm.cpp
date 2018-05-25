@@ -5487,7 +5487,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     insFormat     fmt           = id->idInsFmt();
     emitAttr      size          = id->idOpSize();
     unsigned char callInstrSize = 0;
-    ssize_t       condcode;
 
 #ifdef DEBUG
     bool dspOffs = emitComp->opts.dspGCtbls || !emitComp->opts.disDiffable;
@@ -5502,9 +5501,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     switch (fmt)
     {
         int       imm;
-        int       imm0;
-        int       mask;
-        int       bit;
         BYTE*     addr;
         regMaskTP gcrefRegs;
         regMaskTP byrefRegs;
@@ -5517,11 +5513,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 #ifdef FEATURE_ITINSTRUCTION
         case IF_T1_B: // T1_B    ........cccc....                                           cond
+        {
             assert(id->idGCref() == GCT_NONE);
-            condcode = emitGetInsSC(id);
-            dst      = emitOutputIT(dst, ins, fmt, condcode);
-            sz       = SMALL_IDSC_SIZE;
-            break;
+            ssize_t condcode = emitGetInsSC(id);
+            dst              = emitOutputIT(dst, ins, fmt, condcode);
+            sz               = SMALL_IDSC_SIZE;
+        }
+        break;
 #endif // FEATURE_ITINSTRUCTION
 
         case IF_T1_C: // T1_C    .....iiiiinnnddd                       R1  R2              imm5

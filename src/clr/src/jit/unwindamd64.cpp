@@ -528,7 +528,6 @@ void DumpUnwindInfo(bool                     isHotCode,
 
     for (unsigned i = 0; i < pHeader->CountOfUnwindCodes; i++)
     {
-        unsigned                 offset;
         const UNWIND_CODE* const pCode = &(pHeader->UnwindCode[i]);
         switch (pCode->UnwindOp)
         {
@@ -572,17 +571,19 @@ void DumpUnwindInfo(bool                     isHotCode,
 #ifdef UNIX_AMD64_ABI
 
             case UWOP_SET_FPREG_LARGE:
+            {
                 printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SET_FPREG_LARGE (%u) OpInfo: Unused (%u)\n",
                        pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo); // This should be zero
                 i++;
-                offset = *(ULONG*)&(pHeader->UnwindCode[i]);
+                unsigned offset = *(ULONG*)&(pHeader->UnwindCode[i]);
                 i++;
                 printf("      Scaled Offset: %u * 16 = %u = 0x%08X\n", offset, offset * 16, offset * 16);
                 if ((offset & 0xF0000000) != 0)
                 {
                     printf("      Illegal unscaled offset: too large\n");
                 }
-                break;
+            }
+            break;
 
 #endif // UNIX_AMD64_ABI
 
