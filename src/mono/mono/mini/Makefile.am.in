@@ -280,6 +280,8 @@ endif
 wasm_sources = \
 	mini-wasm.c		\
 	mini-wasm.h		\
+	mini-wasm-debugger.c	\
+	debugger-engine.c	\
 	exceptions-wasm.c	\
 	tramp-wasm.c
 
@@ -450,6 +452,7 @@ common_sources = \
 	mini-gc.h		\
 	mini-gc.c		\
 	debugger-agent.h 	\
+	debugger-engine.h	\
 	debugger-agent-stubs.c	\
 	xdebug.c			\
 	mini-llvm.h			\
@@ -634,7 +637,11 @@ libmono_ee_interp_la_LIBADD = libmonosgen-2.0.la
 endif
 endif
 
-libmono_dbg_la_SOURCES = debugger-agent.c
+if !WASM
+extra_libmono_dbg_source = debugger-engine.c
+endif
+
+libmono_dbg_la_SOURCES = debugger-agent.c $(extra_libmono_dbg_source)
 libmono_dbg_la_CFLAGS = $(mono_CFLAGS)
 if BITCODE
 if DISABLE_DEBUGGER_AGENT

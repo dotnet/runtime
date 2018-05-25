@@ -169,6 +169,12 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\debugger-agent.c">
       <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\debugger-engine.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\debugger-engine.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\debugger-agent-stubs.c">
       <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClCompile>

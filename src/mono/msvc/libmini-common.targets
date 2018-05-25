@@ -58,6 +58,8 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\debugger-agent.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\debugger-agent.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\debugger-agent-stubs.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\debugger-engine.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\debugger-engine.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\xdebug.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-llvm.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-llvm-cpp.h" />
