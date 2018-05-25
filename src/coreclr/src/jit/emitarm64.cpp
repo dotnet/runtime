@@ -8500,7 +8500,6 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     BYTE*    srcAddr;
     BYTE*    dstAddr;
     ssize_t  distVal;
-    ssize_t  loBits;
 
     // Set default ins/fmt from id.
     instruction ins = id->idIns();
@@ -9116,7 +9115,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     insFormat     fmt  = id->idInsFmt();
     emitAttr      size = id->idOpSize();
     unsigned char callInstrSize = 0;
-    unsigned      condcode;
 
 #ifdef DEBUG
 #if DUMP_GC_TABLES
@@ -9137,11 +9135,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         ssize_t  imm;
         ssize_t  index;
         ssize_t  index2;
-        unsigned scale;
         unsigned cmode;
         unsigned immShift;
-        bool     hasShift;
-        emitAttr extSize;
         emitAttr elemsize;
         emitAttr datasize;
 
@@ -10844,7 +10839,6 @@ void emitter::emitDispIns(
         ssize_t      imm;
         int          doffs;
         bool         isExtendAlias;
-        bool         canEncode;
         bitMaskImm   bmi;
         halfwordImm  hwi;
         condFlagsImm cfi;

@@ -216,9 +216,6 @@ int LinearScan::BuildNode(GenTree* tree)
 
     switch (tree->OperGet())
     {
-        GenTree* op1;
-        GenTree* op2;
-
         case GT_LCL_VAR:
         case GT_LCL_FLD:
         {
@@ -269,7 +266,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             // TODO-ARM: Implement other type of intrinsics (round, sqrt and etc.)
             // Both operand and its result must be of the same floating point type.
-            op1 = tree->gtGetOp1();
+            GenTree* op1 = tree->gtGetOp1();
             assert(varTypeIsFloating(op1));
             assert(op1->TypeGet() == tree->TypeGet());
             BuildUse(op1);

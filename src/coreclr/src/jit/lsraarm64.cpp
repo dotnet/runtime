@@ -74,9 +74,6 @@ int LinearScan::BuildNode(GenTree* tree)
 
     switch (tree->OperGet())
     {
-        GenTree* op1;
-        GenTree* op2;
-
         default:
             srcCount = BuildSimple(tree);
             break;
@@ -314,7 +311,7 @@ int LinearScan::BuildNode(GenTree* tree)
                          (tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Sqrt));
 
             // Both operand and its result must be of the same floating point type.
-            op1 = tree->gtGetOp1();
+            GenTree* op1 = tree->gtGetOp1();
             assert(varTypeIsFloating(op1));
             assert(op1->TypeGet() == tree->TypeGet());
 

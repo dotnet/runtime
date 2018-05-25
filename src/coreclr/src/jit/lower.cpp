@@ -2293,11 +2293,10 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     // The callTarget tree needs to be sequenced.
     LIR::Range callTargetRange = LIR::SeqTree(comp, callTarget);
 
-    fgArgTabEntry* argEntry;
-
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
 
-// For ARM32 and AMD64, first argument is CopyRoutine and second argument is a place holder node.
+    // For ARM32 and AMD64, first argument is CopyRoutine and second argument is a place holder node.
+    fgArgTabEntry* argEntry;
 
 #ifdef DEBUG
     argEntry = comp->gtArgEntryByArgNum(call, 0);
@@ -2335,6 +2334,8 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     nNewStkArgsWords -= 4;
 
     unsigned numArgs = call->fgArgInfo->ArgCount();
+
+    fgArgTabEntry* argEntry;
 
     // arg 0 == callTarget.
     argEntry = comp->gtArgEntryByArgNum(call, numArgs - 1);

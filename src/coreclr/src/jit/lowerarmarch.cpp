@@ -785,7 +785,6 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
     assert(node->OperIsBoundsCheck());
-    GenTree* other;
     if (!CheckImmedAndMakeContained(node, node->gtIndex))
     {
         CheckImmedAndMakeContained(node, node->gtArrLen);
