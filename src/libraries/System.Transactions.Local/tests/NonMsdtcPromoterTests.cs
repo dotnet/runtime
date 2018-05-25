@@ -28,6 +28,9 @@ namespace System.Transactions.Tests
         {
             // reset the testFailures count back to 0 for each test case.
             VerifySoftDependencies();
+
+            // Make sure we start with Transaction.Current = null.
+            Transaction.Current = null;
         }
 
         private static void VerifySoftDependencies()

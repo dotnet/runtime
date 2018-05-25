@@ -11,6 +11,12 @@ namespace System.Transactions.Tests
 
     public class TransactionScopeTest
     {
+        public TransactionScopeTest()
+        {
+            // Make sure we start with Transaction.Current = null.
+            Transaction.Current = null;
+        }
+
         [Fact]
         public void TransactionScopeWithInvalidTimeSpanThrows()
         {
