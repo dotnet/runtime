@@ -1158,7 +1158,7 @@ CSharedMemoryObjectManager::ImportSharedObjectIntoProcess(
     }
     else
     {
-        ERROR("Unable to alllocate new object\n");
+        ERROR("Unable to allocate new object\n");
         palError = ERROR_OUTOFMEMORY;
         goto ImportSharedObjectIntoProcessExit;
     }

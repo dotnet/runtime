@@ -360,7 +360,7 @@ DacInstantiateTypeByAddressHelper(TADDR addr, ULONG32 size, bool throwEx, bool f
 {
 #ifdef _PREFIX_
 
-    // Dac accesses are not interesting for PREfix and cause alot of PREfix noise
+    // Dac accesses are not interesting for PREfix and cause a lot of PREfix noise
     // so we just return the unmodified pointer for our PREFIX builds
     return (PVOID)addr;
 

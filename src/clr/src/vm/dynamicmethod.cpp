@@ -1279,7 +1279,7 @@ STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
 }
 
 // AddToUsedIndCellList adds a IndCellList link to the beginning of m_UsedIndCellList. It is called by
-// code:CEEInfo::getCallInfo when a indirection cell is alocated for m_pDynamicMethod.
+// code:CEEInfo::getCallInfo when a indirection cell is allocated for m_pDynamicMethod.
 // All the indirection cells usded by m_pDynamicMethod will be recycled when this resolver
 // is finalized, see code:LCGMethodResolver::RecycleIndCells
 void LCGMethodResolver::AddToUsedIndCellList(BYTE * indcell)

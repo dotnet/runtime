@@ -694,7 +694,7 @@ Sid Win32SecurityDescriptor::GetOwner()
 
 //-----------------------------------------------------------------------------
 // Initialize this instance of a SecurityDescriptor with the SD for the handle.
-// The handle must ahve READ_CONTROL permissions to do this.
+// The handle must have READ_CONTROL permissions to do this.
 // Throws on error.
 //-----------------------------------------------------------------------------
 HRESULT Win32SecurityDescriptor::InitFromHandleNoThrow(HANDLE h)

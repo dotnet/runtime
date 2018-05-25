@@ -1471,7 +1471,7 @@ const int PostGrow_CardTableSecondLocation = 36;
 
 
 #ifndef CODECOVERAGE        // Deactivate alignment validation for code coverage builds 
-                            // because the instrumented binaries will not preserve alignmant constraits and we will fail.
+                            // because the instrumented binaries will not preserve alignment constraints and we will fail.
 
 void ValidateWriteBarrierHelpers()
 {

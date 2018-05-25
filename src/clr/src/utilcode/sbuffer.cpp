@@ -88,7 +88,7 @@ void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, COUNT_T insertSize)
     COUNT_T startRange = (COUNT_T) (i.m_ptr - m_buffer);
     // The PRECONDITION(CheckIterationRange(i, deleteSize)) should check this in
     // contract-checking builds, but this ensures we don't integer overflow if someone
-    // passes in an aggregious deleteSize by capping it to the remaining length in the
+    // passes in an egregious deleteSize by capping it to the remaining length in the
     // buffer.
     if ((COUNT_T)(m_buffer + m_size - i.m_ptr) < deleteSize)
     {

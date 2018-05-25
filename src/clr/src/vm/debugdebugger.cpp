@@ -660,7 +660,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                                             // look for the entry matching the one we're looking for
                                             if (offsets[j] >= dwCurILOffset)
                                             {
-                                                // if this offset is > what we're looking for, ajdust the index
+                                                // if this offset is > what we're looking for, adjust the index
                                                 if (offsets[j] > dwCurILOffset && j > 0)
                                                 {
                                                     j--;

@@ -209,7 +209,7 @@ void SafeHandle::Release(bool fDispose)
 
     } while (InterlockedCompareExchange((LONG*)&sh->m_state, newState, oldState) != oldState);
 
-    // If we get here we successfully decremented the ref count. Additonally we
+    // If we get here we successfully decremented the ref count. Additionally we
     // may have decremented it to zero and set the handle state as closed. In
     // this case (providng we own the handle) we will call the ReleaseHandle
     // method on the SafeHandle subclass.

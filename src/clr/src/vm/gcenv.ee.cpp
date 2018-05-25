@@ -1009,7 +1009,7 @@ bool GCToEEInterface::ForceFullGCToBeBlocking()
     // a blocking GC. In the past, this workaround was done to fix an Stress AV, but the root
     // cause of the AV was never discovered and this workaround remains in place.
     //
-    // It would be nice if this were not necessary. However, it's not clear if the aformentioned
+    // It would be nice if this were not necessary. However, it's not clear if the aforementioned
     // stress bug is still lurking and will return if this workaround is removed. We should
     // do some experiments: remove this workaround and see if the stress bug still repros.
     // If so, we should find the root cause instead of relying on this.
