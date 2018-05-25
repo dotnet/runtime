@@ -12744,7 +12744,7 @@ StackWalkAction TAResetStateCallback(CrawlFrame* pCf, void* data)
 }
 #endif // WIN64EXCEPTIONS
 
-// This function will reset the thread abort state agains the specified thread if it is determined that
+// This function will reset the thread abort state against the specified thread if it is determined that
 // there is no more managed code on the stack.
 //
 // Note: This function should be invoked ONLY during unwind.

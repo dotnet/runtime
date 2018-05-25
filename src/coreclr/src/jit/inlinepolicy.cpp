@@ -701,7 +701,7 @@ double DefaultPolicy::DetermineMultiplier()
     if (additionalMultiplier != 0)
     {
         multiplier += additionalMultiplier;
-        JITDUMP("\nmultiplier increased via JitInlineAdditonalMultiplier=%d to %g.", additionalMultiplier, multiplier);
+        JITDUMP("\nmultiplier increased via JitInlineAdditionalMultiplier=%d to %g.", additionalMultiplier, multiplier);
     }
 
     if (m_RootCompiler->compInlineStress())

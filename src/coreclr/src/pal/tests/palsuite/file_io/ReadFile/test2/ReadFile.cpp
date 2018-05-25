@@ -145,7 +145,7 @@ int __cdecl main(int argc, char *argv[])
         return FAIL;
     }
 
-    /* aloocate read-write memery for readBuffer */
+    /* allocate read-write memery for readBuffer */
     if (!(readBuffer = (char*) VirtualAlloc(NULL, BUFFER_SIZE, MEM_COMMIT, PAGE_READWRITE)))
 	{
 		Fail("VirtualAlloc failed: GetLastError returns %d\n", GetLastError());

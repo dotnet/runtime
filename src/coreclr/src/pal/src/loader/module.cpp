@@ -1378,7 +1378,7 @@ static LPWSTR LOADGetModuleFileName(MODSTRUCT *module)
 
     /* return "real" name of module if it is known. we have this if LoadLibrary
        was given an absolute or relative path; we can also determine it at the
-       first GetProcAdress call. */
+       first GetProcAddress call. */
     TRACE("Returning full path name of module\n");
     return module->lib_name;
 }

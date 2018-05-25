@@ -200,7 +200,7 @@ ClrDebugState *CLRInitDebugState()
         pNewClrDebugState = (ClrDebugState*)::HeapAlloc(GetProcessHeap(), 0, sizeof(ClrDebugState));
         if (pNewClrDebugState != NULL)
         {
-            // Only allocate a DbgStateLockData if its owning ClrDebugState was successfully alloctaed
+            // Only allocate a DbgStateLockData if its owning ClrDebugState was successfully allocated
             pNewLockData  = (DbgStateLockData *)::HeapAlloc(GetProcessHeap(), 0, sizeof(DbgStateLockData));
         }
 #define GetProcessHeap() Dont_Use_GetProcessHeap()

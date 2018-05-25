@@ -6618,7 +6618,7 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
         else if ((oper == GT_IND) || GenTree::OperIsBlk(oper))
         {
             // So far, we handle cases in which the address is a ptr-to-local, or if it's
-            // a pointer to an object field or array alement.  Other cases become uses of
+            // a pointer to an object field or array element.  Other cases become uses of
             // the current ByrefExposed value and the pointer value, so that at least we
             // can recognize redundant loads with no stores between them.
             GenTree*             addr         = tree->AsIndir()->Addr();

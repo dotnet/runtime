@@ -2232,7 +2232,7 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
             // tmp = v0
             // tmp = shuffle(tmp, tmp, SHUFFLE_XYZW)          // tmp = (0+1, 1+0, 2+3, 3+2)
             // v0 = v0 + tmp                                  // v0  = (0+1+2+3, 0+1+2+3, 0+1+2+3, 0+1+2+3)
-            //                                                // Essentially horizontal addtion of all elements.
+            //                                                // Essentially horizontal addition of all elements.
             //                                                // We could achieve the same using SSEv3 instruction
             //                                                // HADDPS.
             //

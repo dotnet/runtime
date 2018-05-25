@@ -2351,7 +2351,7 @@ void * MAPMapPEFile(HANDLE hFile)
     InternalEnterCriticalSection(pThread, &mapping_critsec);
 
 #ifdef BIT64
-    // First try to reserve virtual memory using ExecutableAllcator. This allows all PE images to be
+    // First try to reserve virtual memory using ExecutableAllocator. This allows all PE images to be
     // near each other and close to the coreclr library which also allows the runtime to generate
     // more efficient code (by avoiding usage of jump stubs). Alignment to a 64 KB granularity should
     // not be necessary (alignment to page size should be sufficient), but see

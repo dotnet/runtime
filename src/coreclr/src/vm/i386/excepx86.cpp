@@ -3246,7 +3246,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
         context.SetSP(pNestedHandlerExRecord);
 
         // We might have moved the bottommost handler.  The nested record itself is never
-        // the bottom most handler -- it's pushed afte the fact.  So we have to make the
+        // the bottom most handler -- it's pushed after the fact.  So we have to make the
         // bottom-most handler the one BEFORE the nested record.
         if (pExInfo->m_pBottomMostHandler < pNewBottomMostHandler)
         {

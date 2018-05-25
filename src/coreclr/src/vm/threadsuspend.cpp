@@ -6624,7 +6624,7 @@ StackWalkAction SWCB_GetExecutionStateForSwitchIn(CrawlFrame *pCF, VOID *pData)
 // call to GetThreadContext. This feature exists on all Win64 platforms, so this change is only for 32-bit
 // platforms. We've asked for this fix to be applied to future 32-bit OS's, so we can remove this on those
 // platforms when that happens. Furthermore, once we stop supporting the older 32-bit OS versions that don't have
-// the new feature, we can remove these alltogether.
+// the new feature, we can remove these altogether.
 //
 // WARNING: Interrupts (int 3) immediately increment the IP whereas traps (AVs) do not.
 // So this heuristic only works for trap, but not for interrupts. As a result, the race

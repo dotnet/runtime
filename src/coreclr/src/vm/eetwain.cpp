@@ -4755,7 +4755,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                 // We encode the arguments as if they were ESP based variables even though they aren't
                 // If this frame would have ben an ESP based frame,   This fake frame is one DWORD
                 // smaller than the real frame because it did not push EBP but the real frame did.
-                // Thus to get the correct EBP relative offset we have to ajust by info.stackSize-sizeof(void*)
+                // Thus to get the correct EBP relative offset we have to adjust by info.stackSize-sizeof(void*)
                 ptrAddr = EBP + (stkOffs-(info.stackSize - sizeof(void*)));
             }
 
