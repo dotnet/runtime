@@ -4327,6 +4327,7 @@ void MethodContext::dmpCanInlineTypeCheckWithObjectVTable(DWORDLONG key, DWORD v
 }
 BOOL MethodContext::repCanInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls)
 {
+    AssertCodeMsg(CanInlineTypeCheckWithObjectVTable != nullptr, EXCEPTIONCODE_MC, "No map for CanInlineTypeCheckWithObjectVTable");
     return (BOOL)CanInlineTypeCheckWithObjectVTable->Get((DWORDLONG)cls);
 }
 
