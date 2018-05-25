@@ -20,7 +20,7 @@ namespace System.Net.Http
 
         public static HttpResponseMessage CreateResponseMessage(
             WinHttpRequestState state,
-            bool doManualDecompressionCheck)
+            DecompressionMethods manuallyProcessedDecompressionMethods)
         {
             HttpRequestMessage request = state.RequestMessage;
             SafeWinHttpHandle requestHandle = state.RequestHandle;
@@ -65,7 +65,7 @@ namespace System.Net.Http
                 state.RequestHandle = null; // ownership successfully transfered to WinHttpResponseStram.
                 Stream decompressedStream = responseStream;
 
-                if (doManualDecompressionCheck)
+                if (manuallyProcessedDecompressionMethods != DecompressionMethods.None)
                 {
                     int contentEncodingStartIndex = 0;
                     int contentEncodingLength = GetResponseHeader(
@@ -77,14 +77,14 @@ namespace System.Net.Http
 
                     if (contentEncodingLength > 0)
                     {
-                        if (CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(
-                            EncodingNameGzip, buffer, contentEncodingStartIndex, contentEncodingLength))
+                        if ((manuallyProcessedDecompressionMethods & DecompressionMethods.GZip) == DecompressionMethods.GZip &&
+                            CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(EncodingNameGzip, buffer, contentEncodingStartIndex, contentEncodingLength))
                         {
                             decompressedStream = new GZipStream(responseStream, CompressionMode.Decompress);
                             stripEncodingHeaders = true;
                         }
-                        else if (CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(
-                            EncodingNameDeflate, buffer, contentEncodingStartIndex, contentEncodingLength))
+                        else if ((manuallyProcessedDecompressionMethods & DecompressionMethods.Deflate) == DecompressionMethods.Deflate &&
+                                 CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(EncodingNameDeflate, buffer, contentEncodingStartIndex, contentEncodingLength))
                         {
                             decompressedStream = new DeflateStream(responseStream, CompressionMode.Decompress);
                             stripEncodingHeaders = true;
