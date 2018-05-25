@@ -39,6 +39,43 @@ mono_de_unlock (void)
 	dbg_unlock ();
 }
 
+/* Single stepping engine */
+/* Number of single stepping operations in progress */
+static int ss_count;
+
+
+/*
+ * mono_de_start_single_stepping:
+ *
+ *   Turn on single stepping. Can be called multiple times, for example,
+ * by a single step event request + a suspend.
+ */
+void
+mono_de_start_single_stepping (void)
+{
+	int val = mono_atomic_inc_i32 (&ss_count);
+
+	if (val == 1) {
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+		mono_arch_start_single_stepping ();
+#endif
+		mini_get_interp_callbacks ()->start_single_stepping ();
+	}
+}
+
+void
+mono_de_stop_single_stepping (void)
+{
+	int val = mono_atomic_dec_i32 (&ss_count);
+
+	if (val == 0) {
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+		mono_arch_stop_single_stepping ();
+#endif
+		mini_get_interp_callbacks ()->stop_single_stepping ();
+	}
+}
+
 /*
  * mono_de_init:
  *

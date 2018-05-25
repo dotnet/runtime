@@ -593,11 +593,6 @@ static MonoCoopMutex debugger_thread_exited_mutex;
 /* The single step request instance */
 static SingleStepReq *the_ss_req;
 
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
-/* Number of single stepping operations in progress */
-static int ss_count;
-#endif
-
 /* The protocol version of the client */
 static int major_version, minor_version;
 
@@ -663,10 +658,6 @@ static void jit_failed (MonoProfiler *prof, MonoMethod *method);
 static void jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo);
 
 static void add_pending_breakpoints (MonoMethod *method, MonoJitInfo *jinfo);
-
-static void start_single_stepping (void);
-
-static void stop_single_stepping (void);
 
 static void suspend_current (void);
 
@@ -2748,7 +2739,7 @@ suspend_vm (void)
 
 	if (suspend_count == 1) {
 		// FIXME: Is it safe to call this inside the lock ?
-		start_single_stepping ();
+		mono_de_start_single_stepping ();
 		mono_g_hash_table_foreach (thread_to_tls, notify_thread, NULL);
 	}
 
@@ -2788,7 +2779,7 @@ resume_vm (void)
 
 	if (suspend_count == 0) {
 		// FIXME: Is it safe to call this inside the lock ?
-		stop_single_stepping ();
+		mono_de_stop_single_stepping ();
 		mono_g_hash_table_foreach (thread_to_tls, reset_native_thread_suspend_state, NULL);
 	}
 
@@ -5350,42 +5341,6 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx)
 }
 
 /*
- * start_single_stepping:
- *
- *   Turn on single stepping. Can be called multiple times, for example,
- * by a single step event request + a suspend.
- */
-static void
-start_single_stepping (void)
-{
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
-	int val = mono_atomic_inc_i32 (&ss_count);
-
-	if (val == 1) {
-		mono_arch_start_single_stepping ();
-		mini_get_interp_callbacks ()->start_single_stepping ();
-	}
-#else
-	g_assert_not_reached ();
-#endif
-}
-
-static void
-stop_single_stepping (void)
-{
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
-	int val = mono_atomic_dec_i32 (&ss_count);
-
-	if (val == 0) {
-		mono_arch_stop_single_stepping ();
-		mini_get_interp_callbacks ()->stop_single_stepping ();
-	}
-#else
-	g_assert_not_reached ();
-#endif
-}
-
-/*
  * ss_stop:
  *
  *   Stop the single stepping operation given by SS_REQ.
@@ -5406,7 +5361,7 @@ ss_stop (SingleStepReq *ss_req)
 	ss_req->async_id = 0;
 	ss_req->async_stepout_method = NULL;
 	if (ss_req->global) {
-		stop_single_stepping ();
+		mono_de_stop_single_stepping ();
 		ss_req->global = FALSE;
 	}
 }
@@ -5725,11 +5680,11 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 	if (enable_global) {
 		DEBUG_PRINTF (1, "[dbg] Turning on global single stepping.\n");
 		ss_req->global = TRUE;
-		start_single_stepping ();
+		mono_de_start_single_stepping ();
 	} else if (!ss_req->bps) {
 		DEBUG_PRINTF (1, "[dbg] Turning on global single stepping.\n");
 		ss_req->global = TRUE;
-		start_single_stepping ();
+		mono_de_start_single_stepping ();
 	} else {
 		ss_req->global = FALSE;
 	}

@@ -161,4 +161,9 @@ void mono_de_cleanup (void);
 void mono_de_lock (void);
 void mono_de_unlock (void);
 
+
+//single stepping
+void mono_de_start_single_stepping (void);
+void mono_de_stop_single_stepping (void);
+
 #endif
