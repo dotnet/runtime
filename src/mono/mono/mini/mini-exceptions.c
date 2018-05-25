@@ -712,7 +712,7 @@ unwinder_unwind_frame (Unwinder *unwinder,
 
 		/* Process debugger invokes */
 		/* The DEBUGGER_INVOKE should be returned before the first interpreter frame for the invoke */
-		if (unwinder->last_frame_addr > (gpointer)(*lmf)) {
+		if (unwinder->last_frame_addr < (gpointer)(*lmf)) {
 			if (((gsize)(*lmf)->previous_lmf) & 2) {
 				MonoLMFExt *ext = (MonoLMFExt*)(*lmf);
 				if (ext->debugger_invoke) {

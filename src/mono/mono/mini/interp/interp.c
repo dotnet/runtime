@@ -702,6 +702,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, gco
 
 	MonoContext ctx;
 	memset (&ctx, 0, sizeof (MonoContext));
+	MONO_CONTEXT_SET_SP (&ctx, frame);
 
 	/*
 	 * Call the JIT EH code. The EH code will call back to us using:

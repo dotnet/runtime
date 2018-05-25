@@ -3001,6 +3001,7 @@ no_seq_points_found (MonoMethod *method, int offset)
 typedef struct {
 	DebuggerTlsData *tls;
 	GSList *frames;
+	gboolean set_debugger_flag;
 } ComputeFramesUserData;
 
 static gboolean
@@ -3013,11 +3014,13 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	int flags = 0;
 
 	mono_loader_lock ();
-	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP) {
+	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP && info->type != FRAME_TYPE_MANAGED_TO_NATIVE) {
 		if (info->type == FRAME_TYPE_DEBUGGER_INVOKE) {
 			/* Mark the last frame as an invoke frame */
 			if (ud->frames)
 				((StackFrame*)g_slist_last (ud->frames)->data)->flags |= FRAME_FLAG_DEBUGGER_INVOKE;
+			else
+				ud->set_debugger_flag = TRUE;
 		}
 		mono_loader_unlock ();
 		return FALSE;
@@ -3065,6 +3068,12 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		}
 		actual_method = api_method;
 		flags |= FRAME_FLAG_NATIVE_TRANSITION;
+	}
+
+	if (ud->set_debugger_flag) {
+		g_assert (g_slist_length (ud->frames) == 0);
+		flags |= FRAME_FLAG_DEBUGGER_INVOKE;
+		ud->set_debugger_flag = FALSE;
 	}
 
 	frame = g_new0 (StackFrame, 1);
