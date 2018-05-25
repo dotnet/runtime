@@ -27,6 +27,7 @@ Below is a table of contents.
 - [ReadyToRun Overview](readytorun-overview.md)
 - [CLR ABI](clr-abi.md)
 - [Cross-platform Minidumps](xplat-minidump-generation.md)
+- [Mixed Mode Assemblies](mixed-mode.md)
 
 
 It may be possible that this table is not complete.  You can get a complete list 
