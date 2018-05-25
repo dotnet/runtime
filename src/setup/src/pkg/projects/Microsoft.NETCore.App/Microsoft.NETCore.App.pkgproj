@@ -30,12 +30,6 @@
        <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
     </Dependency>
 
-    <!-- Add a placeholder to make sure NuGet understands we still support older versions,
-         even though they don't have ref-assets -->
-    <File Include="$(PlaceHolderFile)">
-      <TargetPath>ref/netcoreapp</TargetPath>
-    </File>
-
     <File Include="$(PropsFile)">
       <TargetPath>build/$(NETCoreAppFramework)</TargetPath>
     </File>
