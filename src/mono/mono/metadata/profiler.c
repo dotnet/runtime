@@ -923,6 +923,7 @@ update_callback (volatile gpointer *location, gpointer new_, volatile gint32 *co
 	void \
 	mono_profiler_raise_ ## name params \
 	{ \
+		if (!mono_profiler_state.startup_done) return;	\
 		for (MonoProfilerHandle h = mono_profiler_state.profilers; h; h = h->next) { \
 			MonoProfiler ## type ## Callback cb = h->name ## _cb; \
 			if (cb) \
