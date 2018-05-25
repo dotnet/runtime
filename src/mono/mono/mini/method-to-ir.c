@@ -5973,7 +5973,16 @@ handle_call_res_devirt (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *call_re
 		/* EqualityComparer<T>.Default returns specific types depending on T */
 		// FIXME: Add more
 		/* 1. Implements IEquatable<T> */
-		if (mono_class_is_assignable_from (inst, mono_class_from_mono_type (param_type))) {
+		/*
+		 * Can't use this for string as it might use a different comparer:
+		 *
+		 * #if MOBILE
+		 *   // Breaks .net serialization compatibility
+		 *   if (t == typeof (string))
+		 *       return (EqualityComparer<T>)(object)new InternalStringComparer ();
+		 * #endif
+		 */
+		if (mono_class_is_assignable_from (inst, mono_class_from_mono_type (param_type)) && param_type->type != MONO_TYPE_STRING) {
 			MonoInst *typed_objref;
 			MonoClass *gcomparer_inst;
 
@@ -7709,6 +7718,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			sp -= n;
 
+			if (virtual_ && cmethod && sp [0]->opcode == OP_TYPED_OBJREF) {
+				ERROR_DECL (error);
+
+				MonoMethod *new_cmethod = mono_class_get_virtual_method (sp [0]->klass, cmethod, FALSE, error);
+				mono_error_assert_ok (error);
+				cmethod = new_cmethod;
+				virtual_ = FALSE;
+			}
+
 			if (cmethod && m_class_get_image (cmethod->klass) == mono_defaults.corlib && !strcmp (m_class_get_name (cmethod->klass), "ThrowHelper"))
 				cfg->cbb->out_of_line = TRUE;
 
@@ -7898,15 +7916,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			check_method_sharing (cfg, cmethod, &pass_vtable, &pass_mrgctx);
-
-			if (virtual_ && cmethod && sp [0]->opcode == OP_TYPED_OBJREF) {
-				ERROR_DECL (error);
-
-				MonoMethod *new_cmethod = mono_class_get_virtual_method (sp [0]->klass, cmethod, FALSE, error);
-				mono_error_assert_ok (error);
-				cmethod = new_cmethod;
-				virtual_ = FALSE;
-			}
 
 			if (cfg->gshared) {
 				MonoGenericContext *cmethod_context = mono_method_get_context (cmethod);
