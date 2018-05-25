@@ -486,8 +486,6 @@ namespace System.Net
         [StructLayout(LayoutKind.Sequential)]
         private unsafe struct GetAddrInfoExContext
         {
-            private static readonly int Size = sizeof(GetAddrInfoExContext);
-
             public NativeOverlapped Overlapped;
             public AddressInfoEx* Result;
             public IntPtr CancelHandle;
@@ -495,7 +493,7 @@ namespace System.Net
 
             public static GetAddrInfoExContext* AllocateContext()
             {
-                var context = (GetAddrInfoExContext*)Marshal.AllocHGlobal(Size);
+                var context = (GetAddrInfoExContext*)Marshal.AllocHGlobal(sizeof(GetAddrInfoExContext));
                 *context = default;
 
                 return context;
@@ -504,7 +502,7 @@ namespace System.Net
             public static void FreeContext(GetAddrInfoExContext* context)
             {
                 if (context->Result != null)
-                    Interop.Winsock.FreeAddrInfoEx(context->Result);
+                    Interop.Winsock.FreeAddrInfoExW(context->Result);
 
                 Marshal.FreeHGlobal((IntPtr)context);
             }
