@@ -1635,6 +1635,10 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
                     *optName = IPV6_MULTICAST_IF;
                     return true;
 
+                case SocketOptionName_SO_IP_MULTICAST_TTL:
+                    *optName = IPV6_MULTICAST_HOPS;
+                    return true;
+
                 default:
                     return false;
             }
