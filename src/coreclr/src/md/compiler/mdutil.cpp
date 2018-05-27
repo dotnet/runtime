@@ -656,7 +656,7 @@ HRESULT CORPATHService::GetClassFromDir(
 
 //*************************************************************
 //
-// Open the file with anme wzModule and check to see if there is a type 
+// Open the file with name wzModule and check to see if there is a type 
 // with namespace/class of wzNamespace/wzType. If so, return the RegMeta
 // corresponding to the file and the mdTypeDef of the typedef
 //

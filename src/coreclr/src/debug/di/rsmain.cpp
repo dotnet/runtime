@@ -2180,7 +2180,7 @@ HRESULT CordbEnumFilter::Clone(ICorDebugEnum **ppEnum)
 
         CordbEnumFilter * pClone = new CordbEnumFilter(this);
 
-        // Ambigous conversion from CordbEnumFilter to ICorDebugEnum, so 
+        // Ambiguous conversion from CordbEnumFilter to ICorDebugEnum, so 
         // we explicitly convert it through ICorDebugThreadEnum.
         pClone->ExternalAddRef();
         (*ppEnum) = static_cast<ICorDebugThreadEnum *> (pClone);

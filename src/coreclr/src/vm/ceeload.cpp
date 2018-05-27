@@ -13436,7 +13436,7 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature)
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
 
-            // Finally, now that it's safe for ansynchronous readers to see it,
+            // Finally, now that it's safe for asynchronous readers to see it,
             // update the count.
             m_pVASigCookieBlock->m_numcookies++;
         }

@@ -78,7 +78,7 @@ public:
     STDMETHOD(AddTestHook)(ICLRTestHook* hook)=0;
     STDMETHOD(EnableSlowPath) (BOOL bEnable) =0;
     STDMETHOD(UnloadAppDomain)(DWORD adid,DWORD flags)=0;
-    STDMETHOD_(VOID,DoApproriateWait)( int cObjs, HANDLE *pObjs, INT32 iTimeout, BOOL bWaitAll, int* res)=0;	
+    STDMETHOD_(VOID,DoAppropriateWait)( int cObjs, HANDLE *pObjs, INT32 iTimeout, BOOL bWaitAll, int* res)=0;	
     STDMETHOD(GC)(int generation)=0;
     STDMETHOD(GetSimpleName)(LPVOID domainfile,LPCUTF8* name)=0;
     STDMETHOD_(INT_PTR,GetCurrentThreadType)(VOID)=0; //see clrhost.h

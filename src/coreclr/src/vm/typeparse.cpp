@@ -633,7 +633,7 @@ TypeName::TypeNameParser::TypeNameTokens TypeName::TypeNameParser::LexAToken(BOO
         case W(','): return TypeNameComma;
         case W('['): return TypeNameOpenSqBracket;
         case W(']'): return TypeNameCloseSqBracket;
-        case W('&'): return TypeNameAmperstand;
+        case W('&'): return TypeNameAmpersand;
         case W('*'): return TypeNameAstrix;
         case W('+'): if (!ignorePlus) return TypeNamePlus;
         case W('\\'): 
@@ -942,7 +942,7 @@ BOOL TypeName::TypeNameParser::QUALIFIER()
     if (!TokenIs(TypeNameQUALIFIER))
         return TRUE;
 
-    if (TokenIs(TypeNameAmperstand))
+    if (TokenIs(TypeNameAmpersand))
     {
         m_pTypeName->SetByRef();
 
