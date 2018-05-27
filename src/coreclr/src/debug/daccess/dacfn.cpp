@@ -500,7 +500,7 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
 {
 #ifdef _PREFIX_
 
-    // Dac accesses are not interesting for PREfix and cause alot of PREfix noise
+    // Dac accesses are not interesting for PREfix and cause a lot of PREfix noise
     // so we just return the unmodified pointer for our PREFIX builds
     return (PVOID)addr;
 
@@ -670,7 +670,7 @@ DacInstantiateStringA(TADDR addr, ULONG32 maxChars, bool throwEx)
 {
 #ifdef _PREFIX_
 
-    // Dac accesses are not interesting for PREfix and cause alot of PREfix noise
+    // Dac accesses are not interesting for PREfix and cause a lot of PREfix noise
     // so we just return the unmodified pointer for our PREFIX builds
     return (PSTR)addr;
 
@@ -802,7 +802,7 @@ DacInstantiateStringW(TADDR addr, ULONG32 maxChars, bool throwEx)
 {
 #ifdef _PREFIX_
 
-    // Dac accesses are not interesting for PREfix and cause alot of PREfix noise
+    // Dac accesses are not interesting for PREfix and cause a lot of PREfix noise
     // so we just return the unmodified pointer for our PREFIX builds
     return (PWSTR)addr;
 
@@ -934,7 +934,7 @@ DacGetTargetAddrForHostAddr(LPCVOID ptr, bool throwEx)
 {
 #ifdef _PREFIX_
 
-    // Dac accesses are not interesting for PREfix and cause alot of PREfix noise
+    // Dac accesses are not interesting for PREfix and cause a lot of PREfix noise
     // so we just return the unmodified pointer for our PREFIX builds
     return (TADDR) ptr;
 
@@ -1008,7 +1008,7 @@ DacGetTargetAddrForHostInteriorAddr(LPCVOID ptr, bool throwEx)
 
 #ifdef _PREFIX_
 
-    // Dac accesses are not interesting for PREfix and cause alot of PREfix noise
+    // Dac accesses are not interesting for PREfix and cause a lot of PREfix noise
     // so we just return the unmodified pointer for our PREFIX builds
     return (TADDR) ptr;
 

@@ -51,7 +51,7 @@ const ULONG READWAITERS_MASK  = 0x003FF000;    // field that counts number of th
 const ULONG READWAITERS_INCR  = 0x00001000;    // amount to add to increment number of read waiters
 
 const ULONG WRITEWAITERS_MASK = 0xFFC00000;    // field that counts number of threads waiting to write
-const ULONG WRITEWAITERS_INCR = 0x00400000;    // amoun to add to increment number of write waiters
+const ULONG WRITEWAITERS_INCR = 0x00400000;    // amount to add to increment number of write waiters
 
 // ======================================================================================
 // Spinning support

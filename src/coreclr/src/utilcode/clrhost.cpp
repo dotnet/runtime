@@ -313,7 +313,7 @@ BOOL CLRFreeLibrary(HMODULE hModule)
 //     The holder withholds the assert if a LoadsTypeViolation suppress is in effect (but
 //     still sets up the new limit.)
 //
-//     As with other contract annoations, however, the violation suppression is *lifted*
+//     As with other contract annotations, however, the violation suppression is *lifted*
 //     within the scope guarded by the holder itself.
 //-----------------------------------------------------------------------------------------------
 LoadsTypeHolder::LoadsTypeHolder(BOOL       fConditional,

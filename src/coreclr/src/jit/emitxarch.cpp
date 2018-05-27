@@ -959,7 +959,7 @@ unsigned emitter::emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, c
             // opcodeSize + VexPrefixAdjustedSize - ExtraEscapePrefixSize + ModR\MSize
             //=opcodeSize + VexPrefixAdjustedSize -1 + 1
             //=opcodeSize + VexPrefixAdjustedSize
-            // So although we may have second byte escape prefix, we won't decrease vexPrefixAjustedSize.
+            // So although we may have second byte escape prefix, we won't decrease vexPrefixAdjustedSize.
         }
 
         return vexPrefixAdjustedSize;

@@ -201,7 +201,7 @@ int SHMLock(void)
                 /* another process is holding the lock... we want to yield and 
                    give the holder a chance to release the lock
                    The function sched_yield() only yields to a thread in the 
-                   current process; this doesn't help us much, anddoens't help 
+                   current process; this doesn't help us much, and doesn't help 
                    at all if there's only 1 thread. There doesn't seem to be 
                    any clean way to force a yield to another process, but the 
                    FreeBSD syscall "yield" does the job. We alternate between 

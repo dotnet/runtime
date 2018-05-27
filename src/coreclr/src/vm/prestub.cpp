@@ -1549,7 +1549,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, Metho
                 INDEBUG(curobj = NULL); // curobj is unprotected and CanCastTo() can trigger GC
                 if (!objectType.CanCastTo(methodType)) 
                 {
-                    // Apperantly ICastable magic was involved when we chose this method to be called
+                    // Apparently ICastable magic was involved when we chose this method to be called
                     // that's why we better stick to the MethodTable it belongs to, otherwise 
                     // DoPrestub() will fail not being able to find implementation for pMD in pDispatchingMT.
 

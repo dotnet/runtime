@@ -4107,7 +4107,7 @@ void AppDomain::Init()
     m_LoaderAllocator.Init(this);
 
 #ifndef CROSSGEN_COMPILE
-    //Allocate the threadpool entry before the appdomin id list. Otherwise,
+    //Allocate the threadpool entry before the appdomain id list. Otherwise,
     //the thread pool list will be out of sync if insertion of id in 
     //the appdomain fails. 
     m_tpIndex = PerAppDomainTPCountList::AddNewTPIndex();    

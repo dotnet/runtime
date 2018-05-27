@@ -165,7 +165,7 @@ private:
             TypeNameComma               = 0x0010,
             TypeNamePlus                = 0x0020,
             TypeNameAstrix              = 0x0040,
-            TypeNameAmperstand          = 0x0080,
+            TypeNameAmpersand           = 0x0080,
             TypeNameBackSlash           = 0x0100,
             TypeNameEnd                 = 0x4000,
 
@@ -184,7 +184,7 @@ private:
             TypeNameEAQN                = TypeNameIdentifier,
             TypeNameEASSEMSPEC          = TypeNameIdentifier,
             TypeNameARRAY               = TypeNameOpenSqBracket,
-            TypeNameQUALIFIER           = TypeNameAmperstand | TypeNameAstrix | TypeNameARRAY | TypeNameEmpty,
+            TypeNameQUALIFIER           = TypeNameAmpersand | TypeNameAstrix | TypeNameARRAY | TypeNameEmpty,
             TypeNameRANK                = TypeNameComma | TypeNameEmpty,            
         } TypeNameTokens;
 

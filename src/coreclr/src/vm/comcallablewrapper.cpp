@@ -2133,9 +2133,9 @@ void SimpleComCallWrapper::EnumConnectionPoints(IEnumConnectionPoints **ppEnumCP
 //  VTable and Stubs: can share stub code, we need to have different vtables
 //                    for different interfaces, so the stub can jump to different
 //                    marshalling code.
-//  Stubs : adjust this pointer and jump to the approp. address,
+//  Stubs : adjust this pointer and jump to the appropriate address,
 //  Marshalling params and results, based on the method signature the stub jumps to
-//  approp. code to handle marshalling and unmarshalling.
+//  appropriate code to handle marshalling and unmarshalling.
 //  
 //--------------------------------------------------------------------------
 

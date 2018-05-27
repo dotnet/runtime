@@ -10627,7 +10627,7 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
 
     // NOTE: the lack of JIT/EE transition markers in this method is intentional. Any
     //       transitions into the EE proper should occur either via the call to
-    //       `EEFilterException` (which is appropraitely marked) or via JIT/EE
+    //       `EEFilterException` (which is appropriately marked) or via JIT/EE
     //       interface calls made by `function`.
 
     bool success = true;
