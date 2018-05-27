@@ -188,7 +188,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
                 {
                     // It's illegal for our helper to return a non-null bstrKey
                     // when the context is design-time. But we'll try to do the
-                    // right thing anway.
+                    // right thing anyway.
                     _ASSERTE(!"We're not supposed to get here, but we'll try to cope anyway.");
                     SysFreeString(bstrKey);
                     bstrKey = NULL;

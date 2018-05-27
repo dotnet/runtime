@@ -1173,7 +1173,7 @@ void DebuggerRCThread::MainLoop()
 
     LOG((LF_CORDB, LL_INFO1000, "DRCT::ML:: running main loop\n"));
 
-    // Anbody doing helper duty is in a can't-stop range, period.
+    // Anybody doing helper duty is in a can't-stop range, period.
     // Our helper thread is already in a can't-stop range, so this is particularly useful for
     // threads doing helper duty.
     CantStopHolder cantStopHolder;
@@ -1419,7 +1419,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
     CONTRACTL_END;
 
     STRESS_LOG0(LF_CORDB, LL_INFO1000, "DRCT::THTML:: Doing helper thread duty, running main loop.\n");
-    // Anbody doing helper duty is in a can't-stop range, period.
+    // Anybody doing helper duty is in a can't-stop range, period.
     // Our helper thread is already in a can't-stop range, so this is particularly useful for
     // threads doing helper duty.
     CantStopHolder cantStopHolder;

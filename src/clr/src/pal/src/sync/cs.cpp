@@ -1141,7 +1141,7 @@ namespace CorUnix
     Function:
       CorUnix::PALCS_WaitOnCS
 
-    Waits on a CS owned by anothr thread. It returns PalCsReturnWaiterAwakened 
+    Waits on a CS owned by another thread. It returns PalCsReturnWaiterAwakened 
     if the thread actually waited on the CS and it has been awakened on CS 
     release. It returns PalCsWaiterDidntWait if another thread is currently 
     fully-initializing the CS and therefore the current thread couldn't wait
