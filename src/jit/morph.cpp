@@ -7078,7 +7078,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 //    If successful, callee's IR is inserted in place of the call, and
 //    is marked with an InlineContext.
 //
-//    If unsuccessful, the transformations done in anticpation of a
+//    If unsuccessful, the transformations done in anticipation of a
 //    possible inline are undone, and the candidate flag on the call
 //    is cleared.
 

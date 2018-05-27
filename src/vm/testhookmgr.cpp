@@ -621,7 +621,7 @@ HRESULT CLRTestHookManager::UnloadAppDomain(DWORD adid,DWORD flags)
     return hr;
 }
 
-VOID CLRTestHookManager::DoApproriateWait( int cObjs, HANDLE *pObjs, INT32 iTimeout, BOOL bWaitAll, int* res)
+VOID CLRTestHookManager::DoAppropriateWait( int cObjs, HANDLE *pObjs, INT32 iTimeout, BOOL bWaitAll, int* res)
 {
     CONTRACTL
     {

@@ -24548,7 +24548,7 @@ void Compiler::fgCloneFinally()
 
             if (block == firstBlock)
             {
-                // Put first cloned finally block into the approprate
+                // Put first cloned finally block into the appropriate
                 // region, somewhere within or after the range of
                 // callfinallys, depending on the EH implementation.
                 const unsigned    hndIndex = 0;

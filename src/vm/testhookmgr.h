@@ -82,7 +82,7 @@ public:
     STDMETHOD(StartingNativeImageBind)(LPCWSTR wszAsmName, BOOL bIsCompilationProcess);
     STDMETHOD(CompletedNativeImageBind)(LPVOID pFile,LPCUTF8 simpleName, BOOL hasNativeImage);
     STDMETHOD(AboutToLockImage)(LPCWSTR wszPath, BOOL bIsCompilationProcess);
-    STDMETHOD_(VOID,DoApproriateWait)( int cObjs, HANDLE *pObjs, INT32 iTimeout, BOOL bWaitAll, int* res);	
+    STDMETHOD_(VOID,DoAppropriateWait)( int cObjs, HANDLE *pObjs, INT32 iTimeout, BOOL bWaitAll, int* res);	
     STDMETHOD(GC)(int generation);
     STDMETHOD(GetSimpleName)(LPVOID domainfile,LPCUTF8* name);	
     STDMETHOD(RuntimeStarted)(DWORD code);	

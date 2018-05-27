@@ -6684,7 +6684,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 
 //
 // Truncates a SString by first converting it to unicode and truncate it 
-// if it is larger than size. "..." will be appened if it is truncated.
+// if it is larger than size. "..." will be appended if it is truncated.
 //
 void TruncateUnicodeString(SString &string, COUNT_T bufSize)
 {

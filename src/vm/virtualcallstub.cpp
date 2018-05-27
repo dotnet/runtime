@@ -2564,7 +2564,7 @@ void VirtualCallStubManager::BackPatchWorker(StubCallSite* pCallSite)
              DBG_ADDR(pCallSite->GetReturnAddress()), DBG_ADDR(dispatchHolder->stub())));
 
         //Add back the default miss count to the counter being used by this resolve stub
-        //Since resolve stub are shared amoung many dispatch stubs each dispatch stub
+        //Since resolve stub are shared among many dispatch stubs each dispatch stub
         //that fails decrements the shared counter and the dispatch stub that trips the
         //counter gets converted into a polymorphic site
         INT32* counter = resolveStub->pCounter();

@@ -4316,7 +4316,7 @@ protected:
 // Shim Helper to enumerate the assemblies in the load-order
 // 
 // Arguments:
-//    pAppdomain - non-null appdmomain to enumerate assemblies.
+//    pAppdomain - non-null appdomain to enumerate assemblies.
 //    pAssemblies - caller pre-allocated array to hold assemblies
 //    countAssemblies - size of the array.
 //    
@@ -4451,7 +4451,7 @@ protected:
 // Shim Helper to enumerate the Modules in the load-order
 // 
 // Arguments:
-//    pAppdomain - non-null appdmomain to enumerate Modules.
+//    pAppdomain - non-null appdomain to enumerate Modules.
 //    pModules - caller pre-allocated array to hold Modules
 //    countModules - size of the array.
 //    
