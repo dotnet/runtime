@@ -257,7 +257,6 @@ namespace System.Net
 
             nativeErrorCode = 0;
 
-            // TODO #2891: Remove the copying step to improve performance. This requires a change in the contracts.
             byte[] addressBuffer = new byte[address.Size];
             for (int i = 0; i < address.Size; i++)
             {
