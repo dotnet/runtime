@@ -162,6 +162,11 @@ void mono_de_set_log_level (int level, FILE *file);
 void mono_de_lock (void);
 void mono_de_unlock (void);
 
+// domain handling
+void mono_de_foreach_domain (GHFunc func, gpointer user_data);
+void mono_de_domain_add (MonoDomain *domain);
+void mono_de_domain_remove (MonoDomain *domain);
+
 
 //single stepping
 void mono_de_start_single_stepping (void);

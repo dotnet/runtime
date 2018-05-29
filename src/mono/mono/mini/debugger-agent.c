@@ -599,10 +599,6 @@ static int major_version, minor_version;
 /* Whenever the variables above are set by the client */
 static gboolean protocol_version_set;
 
-/* A hash table containing all active domains */
-/* Protected by the loader lock */
-static GHashTable *domains;
-
 /* The number of times the runtime is suspended */
 static gint32 suspend_count;
 
@@ -863,12 +859,6 @@ debugger_agent_parse_options (char *options)
 }
 
 static void
-foreach_debugger_domain (GHFunc func, gpointer user_data)
-{
-	g_hash_table_foreach (domains, func, user_data);
-}
-
-static void
 debugger_agent_init (void)
 {
 	if (!agent_config.enabled)
@@ -911,7 +901,6 @@ debugger_agent_init (void)
 	tid_to_thread_obj = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Object Table");
 
 	pending_assembly_loads = g_ptr_array_new ();
-	domains = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	log_level = agent_config.log_level;
 
@@ -2152,9 +2141,7 @@ debugger_agent_free_domain_info (MonoDomain *domain)
 	}
 	dbg_unlock ();
 
-	mono_loader_lock ();
-	g_hash_table_remove (domains, domain);
-	mono_loader_unlock ();
+	mono_de_domain_remove (domain);
 }
 
 static AgentDomainInfo*
@@ -3910,9 +3897,7 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 static void
 appdomain_load (MonoProfiler *prof, MonoDomain *domain)
 {
-	mono_loader_lock ();
-	g_hash_table_insert (domains, domain, domain);
-	mono_loader_unlock ();
+	mono_de_domain_add (domain);
 
 	process_profiler_event (EVENT_KIND_APPDOMAIN_CREATE, domain);
 }
@@ -4446,7 +4431,7 @@ set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError
 		.method_domains = method_domains,
 		.method_seq_points = method_seq_points
 	};
-	foreach_debugger_domain (collect_domain_bp, &user_data);
+	mono_de_foreach_domain (collect_domain_bp, &user_data);
 
 	for (i = 0; i < methods->len; ++i) {
 		m = (MonoMethod *)g_ptr_array_index (methods, i);
@@ -7819,7 +7804,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			.res_classes  = res_classes,
 			.res_domains = res_domains
 		};
-		foreach_debugger_domain (get_types_for_source_file, &args);
+		mono_de_foreach_domain (get_types_for_source_file, &args);
 		mono_loader_unlock ();
 
 		g_free (fname);
@@ -7862,7 +7847,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			.res_domains = res_domains
 		};
 
-		foreach_debugger_domain (get_types, &args);
+		mono_de_foreach_domain (get_types, &args);
 
 		mono_loader_unlock ();
 
@@ -8060,7 +8045,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			switch (req->event_kind) {
 			case EVENT_KIND_APPDOMAIN_CREATE:
 				/* Emit load events for currently loaded domains */
-				foreach_debugger_domain (emit_appdomain_load, NULL);
+				mono_de_foreach_domain (emit_appdomain_load, NULL);
 				break;
 			case EVENT_KIND_ASSEMBLY_LOAD:
 				/* Emit load events for currently loaded assemblies */

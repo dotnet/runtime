@@ -49,6 +49,64 @@ mono_de_unlock (void)
 	dbg_unlock ();
 }
 
+
+/*
+ * Domain support
+ */
+
+
+/* A hash table containing all active domains */
+/* Protected by the loader lock */
+static GHashTable *domains;
+
+
+static void
+domains_init (void)
+{
+	domains = g_hash_table_new (mono_aligned_addr_hash, NULL);
+}
+
+static void
+domains_cleanup (void)
+{
+	//FIXME can we safely destroy `domains`?
+}
+
+/*
+ * mono_de_foreach_domain:
+ *
+ * Iterate over all domains under debugging. Caller must take the loader lock.
+ *
+ * FIXME can we move the locking to here? Callers in sdb must be properly audited.
+ */
+void
+mono_de_foreach_domain (GHFunc func, gpointer user_data)
+{
+	g_hash_table_foreach (domains, func, user_data);
+}
+
+/*
+ * LOCKING: Takes the loader lock
+ */
+void
+mono_de_domain_remove (MonoDomain *domain)
+{
+	mono_loader_lock ();
+	g_hash_table_remove (domains, domain);
+	mono_loader_unlock ();
+}
+
+/*
+ * LOCKING: Takes the loader lock
+ */
+void
+mono_de_domain_add (MonoDomain *domain)
+{
+	mono_loader_lock ();
+	g_hash_table_insert (domains, domain, domain);
+	mono_loader_unlock ();
+}
+
 /* Single stepping engine */
 /* Number of single stepping operations in progress */
 static int ss_count;
@@ -108,11 +166,14 @@ void
 mono_de_init (void)
 {
 	mono_coop_mutex_init_recursive (&debug_mutex);
+
+	domains_init ();
 }
 
 void
 mono_de_cleanup (void)
 {
+	domains_cleanup ();
 }
 
 #endif
