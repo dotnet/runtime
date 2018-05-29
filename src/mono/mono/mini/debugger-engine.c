@@ -18,7 +18,17 @@
 
 #include "debugger-engine.h"
 
-// Locking
+/*
+ * Logging support
+ */
+static int log_level;
+static FILE *log_file;
+
+#ifdef HOST_ANDROID
+#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { g_print (__VA_ARGS__); } } while (0)
+#else
+#define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { fprintf (log_file, __VA_ARGS__); fflush (log_file); } } while (0)
+#endif
 
 /*
  * Locking
@@ -74,6 +84,19 @@ mono_de_stop_single_stepping (void)
 #endif
 		mini_get_interp_callbacks ()->stop_single_stepping ();
 	}
+}
+
+
+/*
+ * mono_de_set_log_level:
+ *
+ * Configures logging level and output file. Must be called together with mono_de_init.
+ */
+void
+mono_de_set_log_level (int level, FILE *file)
+{
+	log_level = level;
+	log_file = file;
 }
 
 /*

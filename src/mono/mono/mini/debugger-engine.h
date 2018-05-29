@@ -156,6 +156,7 @@ typedef struct {
 
 void mono_de_init (void);
 void mono_de_cleanup (void);
+void mono_de_set_log_level (int level, FILE *file);
 
 //locking - we expose the lock object from the debugging engine to ensure we keep the same locking semantics of sdb.
 void mono_de_lock (void);

@@ -920,6 +920,7 @@ debugger_agent_init (void)
 	} else {
 		log_file = stdout;
 	}
+	mono_de_set_log_level (log_level, log_file);
 
 	ids_init ();
 	objrefs_init ();
