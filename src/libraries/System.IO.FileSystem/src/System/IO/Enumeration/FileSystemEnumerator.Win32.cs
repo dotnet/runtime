@@ -64,13 +64,17 @@ namespace System.IO.Enumeration
                 case Interop.StatusOptions.STATUS_SUCCESS:
                     return handle;
                 default:
+                    // Note that there are numerous cases where multiple NT status codes convert to a single Win32 System Error codes,
+                    // such as ERROR_ACCESS_DENIED. As we want to replicate Win32 handling/reporting and the mapping isn't documented,
+                    // we should always do our logic on the converted code, not the NTSTATUS.
+
                     int error = (int)Interop.NtDll.RtlNtStatusToDosError(status);
 
-                    // Note that there are many NT status codes that convert to ERROR_ACCESS_DENIED.
-                    if ((error == Interop.Errors.ERROR_ACCESS_DENIED && _options.IgnoreInaccessible) || ContinueOnError(error))
+                    if (ContinueOnDirectoryError(error, ignoreNotFound: true))
                     {
                         return IntPtr.Zero;
                     }
+
                     throw Win32Marshal.GetExceptionForWin32Error(error, fullPath);
             }
         }
