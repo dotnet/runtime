@@ -863,6 +863,12 @@ debugger_agent_parse_options (char *options)
 }
 
 static void
+foreach_debugger_domain (GHFunc func, gpointer user_data)
+{
+	g_hash_table_foreach (domains, func, user_data);
+}
+
+static void
 debugger_agent_init (void)
 {
 	if (!agent_config.enabled)
@@ -4361,6 +4367,34 @@ set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_
 static void
 clear_breakpoint (MonoBreakpoint *bp);
 
+typedef struct {
+	MonoBreakpoint *bp;
+	GPtrArray *methods;
+	GPtrArray *method_domains;
+	GPtrArray *method_seq_points;
+} CollectDomainData;
+
+static void
+collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
+{
+	GHashTableIter iter;
+	MonoDomain *domain = key;
+	MonoSeqPointInfo *seq_points;
+	CollectDomainData *ud = user_data;
+	MonoMethod *m;
+
+	mono_domain_lock (domain);
+	g_hash_table_iter_init (&iter, domain_jit_info (domain)->seq_points);
+	while (g_hash_table_iter_next (&iter, (void**)&m, (void**)&seq_points)) {
+		if (bp_matches_method (ud->bp, m)) {
+			/* Save the info locally to simplify the code inside the domain lock */
+			g_ptr_array_add (ud->methods, m);
+			g_ptr_array_add (ud->method_domains, domain);
+			g_ptr_array_add (ud->method_seq_points, seq_points);
+		}
+	}
+	mono_domain_unlock (domain);
+}
 /*
  * set_breakpoint:
  *
@@ -4375,7 +4409,6 @@ static MonoBreakpoint*
 set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError *error)
 {
 	MonoBreakpoint *bp;
-	GHashTableIter iter, iter2;
 	MonoDomain *domain;
 	MonoMethod *m;
 	MonoSeqPointInfo *seq_points;
@@ -4406,20 +4439,14 @@ set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError
 	method_seq_points = g_ptr_array_new ();
 
 	mono_loader_lock ();
-	g_hash_table_iter_init (&iter, domains);
-	while (g_hash_table_iter_next (&iter, (void**)&domain, NULL)) {
-		mono_domain_lock (domain);
-		g_hash_table_iter_init (&iter2, domain_jit_info (domain)->seq_points);
-		while (g_hash_table_iter_next (&iter2, (void**)&m, (void**)&seq_points)) {
-			if (bp_matches_method (bp, m)) {
-				/* Save the info locally to simplify the code inside the domain lock */
-				g_ptr_array_add (methods, m);
-				g_ptr_array_add (method_domains, domain);
-				g_ptr_array_add (method_seq_points, seq_points);
-			}
-		}
-		mono_domain_unlock (domain);
-	}
+
+	CollectDomainData user_data = {
+		.bp = bp,
+		.methods = methods,
+		.method_domains = method_domains,
+		.method_seq_points = method_seq_points
+	};
+	foreach_debugger_domain (collect_domain_bp, &user_data);
 
 	for (i = 0; i < methods->len; ++i) {
 		m = (MonoMethod *)g_ptr_array_index (methods, i);
@@ -7400,6 +7427,118 @@ get_source_files_for_type (MonoClass *klass)
 	return files;
 }
 
+
+typedef struct {
+	MonoTypeNameParse *info;
+	gboolean ignore_case;
+	GPtrArray *res_classes;
+	GPtrArray *res_domains;
+} GetTypesArgs;
+
+static void
+get_types (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoAssembly *ass;
+	gboolean type_resolve;
+	MonoType *t;
+	GSList *tmp;
+	MonoDomain *domain = key;
+	GetTypesArgs *ud = user_data;
+
+	mono_domain_assemblies_lock (domain);
+	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+		ass = (MonoAssembly *)tmp->data;
+
+		if (ass->image) {
+			ERROR_DECL_VALUE (probe_type_error);
+			/* FIXME really okay to call while holding locks? */
+			t = mono_reflection_get_type_checked (ass->image, ass->image, ud->info, ud->ignore_case, &type_resolve, &probe_type_error);
+			mono_error_cleanup (&probe_type_error);
+			if (t) {
+				g_ptr_array_add (ud->res_classes, mono_type_get_class (t));
+				g_ptr_array_add (ud->res_domains, domain);
+			}
+		}
+	}
+	mono_domain_assemblies_unlock (domain);
+}
+
+typedef struct {
+	gboolean ignore_case;
+	char *basename;
+	GPtrArray *res_classes;
+	GPtrArray *res_domains;
+} GetTypesForSourceFileArgs;
+
+static void
+get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
+{
+	GHashTableIter iter;
+	GSList *class_list = NULL;
+	MonoClass *klass = NULL;
+	GPtrArray *files = NULL;
+
+	GetTypesForSourceFileArgs *ud = user_data;
+	MonoDomain *domain = key;
+
+	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
+
+	/* Update 'source_file_to_class' cache */
+	g_hash_table_iter_init (&iter, info->loaded_classes);
+	while (g_hash_table_iter_next (&iter, NULL, (void**)&klass)) {
+		if (!g_hash_table_lookup (info->source_files, klass)) {
+			files = get_source_files_for_type (klass);
+			g_hash_table_insert (info->source_files, klass, files);
+
+			for (int i = 0; i < files->len; ++i) {
+				char *s = (char *)g_ptr_array_index (files, i);
+				char *s2 = dbg_path_get_basename (s);
+				char *s3;
+
+				class_list = (GSList *)g_hash_table_lookup (info->source_file_to_class, s2);
+				if (!class_list) {
+					class_list = g_slist_prepend (class_list, klass);
+					g_hash_table_insert (info->source_file_to_class, g_strdup (s2), class_list);
+				} else {
+					class_list = g_slist_prepend (class_list, klass);
+					g_hash_table_insert (info->source_file_to_class, s2, class_list);
+				}
+
+				/* The _ignorecase hash contains the lowercase path */
+				s3 = strdup_tolower (s2);
+				class_list = (GSList *)g_hash_table_lookup (info->source_file_to_class_ignorecase, s3);
+				if (!class_list) {
+					class_list = g_slist_prepend (class_list, klass);
+					g_hash_table_insert (info->source_file_to_class_ignorecase, g_strdup (s3), class_list);
+				} else {
+					class_list = g_slist_prepend (class_list, klass);
+					g_hash_table_insert (info->source_file_to_class_ignorecase, s3, class_list);
+				}
+
+				g_free (s2);
+				g_free (s3);
+			}
+		}
+	}
+
+	if (ud->ignore_case) {
+		char *s;
+
+		s = strdup_tolower (ud->basename);
+		class_list = (GSList *)g_hash_table_lookup (info->source_file_to_class_ignorecase, s);
+		g_free (s);
+	} else {
+		class_list = (GSList *)g_hash_table_lookup (info->source_file_to_class, ud->basename);
+	}
+
+	for (GSList *l = class_list; l; l = l->next) {
+		klass = (MonoClass *)l->data;
+
+		g_ptr_array_add (ud->res_classes, klass);
+		g_ptr_array_add (ud->res_domains, domain);
+	}
+}
+
 static ErrorCode
 vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -7660,14 +7799,9 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_VM_GET_TYPES_FOR_SOURCE_FILE: {
-		GHashTableIter iter, kiter;
-		MonoDomain *domain;
-		MonoClass *klass;
-		GPtrArray *files;
 		int i;
 		char *fname, *basename;
 		gboolean ignore_case;
-		GSList *class_list, *l;
 		GPtrArray *res_classes, *res_domains;
 
 		fname = decode_string (p, &p, end);
@@ -7679,65 +7813,13 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		res_domains = g_ptr_array_new ();
 
 		mono_loader_lock ();
-		g_hash_table_iter_init (&iter, domains);
-		while (g_hash_table_iter_next (&iter, NULL, (void**)&domain)) {
-			AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
-
-			/* Update 'source_file_to_class' cache */
-			g_hash_table_iter_init (&kiter, info->loaded_classes);
-			while (g_hash_table_iter_next (&kiter, NULL, (void**)&klass)) {
-				if (!g_hash_table_lookup (info->source_files, klass)) {
-					files = get_source_files_for_type (klass);
-					g_hash_table_insert (info->source_files, klass, files);
-
-					for (i = 0; i < files->len; ++i) {
-						char *s = (char *)g_ptr_array_index (files, i);
-						char *s2 = dbg_path_get_basename (s);
-						char *s3;
-
-						class_list = (GSList *)g_hash_table_lookup (info->source_file_to_class, s2);
-						if (!class_list) {
-							class_list = g_slist_prepend (class_list, klass);
-							g_hash_table_insert (info->source_file_to_class, g_strdup (s2), class_list);
-						} else {
-							class_list = g_slist_prepend (class_list, klass);
-							g_hash_table_insert (info->source_file_to_class, s2, class_list);
-						}
-
-						/* The _ignorecase hash contains the lowercase path */
-						s3 = strdup_tolower (s2);
-						class_list = (GSList *)g_hash_table_lookup (info->source_file_to_class_ignorecase, s3);
-						if (!class_list) {
-							class_list = g_slist_prepend (class_list, klass);
-							g_hash_table_insert (info->source_file_to_class_ignorecase, g_strdup (s3), class_list);
-						} else {
-							class_list = g_slist_prepend (class_list, klass);
-							g_hash_table_insert (info->source_file_to_class_ignorecase, s3, class_list);
-						}
-
-						g_free (s2);
-						g_free (s3);
-					}
-				}
-			}
-
-			if (ignore_case) {
-				char *s;
-
-				s = strdup_tolower (basename);
-				class_list = (GSList *)g_hash_table_lookup (info->source_file_to_class_ignorecase, s);
-				g_free (s);
-			} else {
-				class_list = (GSList *)g_hash_table_lookup (info->source_file_to_class, basename);
-			}
-
-			for (l = class_list; l; l = l->next) {
-				klass = (MonoClass *)l->data;
-
-				g_ptr_array_add (res_classes, klass);
-				g_ptr_array_add (res_domains, domain);
-			}
-		}
+		GetTypesForSourceFileArgs args = {
+			.ignore_case = ignore_case,
+			.basename = basename,
+			.res_classes  = res_classes,
+			.res_domains = res_domains
+		};
+		foreach_debugger_domain (get_types_for_source_file, &args);
 		mono_loader_unlock ();
 
 		g_free (fname);
@@ -7752,8 +7834,6 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	case CMD_VM_GET_TYPES: {
 		ERROR_DECL (error);
-		GHashTableIter iter;
-		MonoDomain *domain;
 		int i;
 		char *name;
 		gboolean ignore_case;
@@ -7774,30 +7854,16 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		res_domains = g_ptr_array_new ();
 
 		mono_loader_lock ();
-		g_hash_table_iter_init (&iter, domains);
-		while (g_hash_table_iter_next (&iter, NULL, (void**)&domain)) {
-			MonoAssembly *ass;
-			gboolean type_resolve;
-			MonoType *t;
-			GSList *tmp;
 
-			mono_domain_assemblies_lock (domain);
-			for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-				ass = (MonoAssembly *)tmp->data;
+		GetTypesArgs args = {
+			.info = &info,
+			.ignore_case = ignore_case,
+			.res_classes = res_classes,
+			.res_domains = res_domains
+		};
 
-				if (ass->image) {
-					ERROR_DECL_VALUE (probe_type_error);
-					/* FIXME really okay to call while holding locks? */
-					t = mono_reflection_get_type_checked (ass->image, ass->image, &info, ignore_case, &type_resolve, &probe_type_error);
-					mono_error_cleanup (&probe_type_error); 
-					if (t) {
-						g_ptr_array_add (res_classes, mono_type_get_class (t));
-						g_ptr_array_add (res_domains, domain);
-					}
-				}
-			}
-			mono_domain_assemblies_unlock (domain);
-		}
+		foreach_debugger_domain (get_types, &args);
+
 		mono_loader_unlock ();
 
 		g_free (name);
@@ -7994,7 +8060,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			switch (req->event_kind) {
 			case EVENT_KIND_APPDOMAIN_CREATE:
 				/* Emit load events for currently loaded domains */
-				g_hash_table_foreach (domains, emit_appdomain_load, NULL);
+				foreach_debugger_domain (emit_appdomain_load, NULL);
 				break;
 			case EVENT_KIND_ASSEMBLY_LOAD:
 				/* Emit load events for currently loaded assemblies */
