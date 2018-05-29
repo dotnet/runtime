@@ -4208,7 +4208,6 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 static void
 remove_breakpoint (BreakpointInstance *inst)
 {
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 	int count;
 	MonoJitInfo *ji = inst->ji;
 	guint8 *ip = inst->ip;
@@ -4221,15 +4220,17 @@ remove_breakpoint (BreakpointInstance *inst)
 	g_assert (count > 0);
 
 	if (count == 1 && inst->native_offset != SEQ_POINT_NATIVE_OFFSET_DEAD_CODE) {
-		if (ji->is_interp)
+		if (ji->is_interp) {
 			mini_get_interp_callbacks ()->clear_breakpoint (ji, ip);
-		else
+		} else {
+#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 			mono_arch_clear_breakpoint (ji, ip);
+#else
+			NOT_IMPLEMENTED;
+#endif
+		}
 		DEBUG_PRINTF (1, "[dbg] Clear breakpoint at %s [%p].\n", mono_method_full_name (jinfo_get_method (ji), TRUE), ip);
 	}
-#else
-	NOT_IMPLEMENTED;
-#endif
 }	
 
 /*
@@ -4460,6 +4461,29 @@ clear_breakpoint (MonoBreakpoint *bp)
 	g_ptr_array_free (bp->children, TRUE);
 	g_free (bp);
 }
+
+static void
+collect_breakpoints_by_sp (SeqPoint *sp, MonoJitInfo *ji, GPtrArray *ss_reqs, GPtrArray *bp_reqs)
+{
+	for (int i = 0; i < breakpoints->len; ++i) {
+		MonoBreakpoint *bp = (MonoBreakpoint *)g_ptr_array_index (breakpoints, i);
+
+		if (!bp->method)
+			continue;
+
+		for (int j = 0; j < bp->children->len; ++j) {
+			BreakpointInstance *inst = (BreakpointInstance *)g_ptr_array_index (bp->children, j);
+			if (inst->ji == ji && inst->il_offset == sp->il_offset && inst->native_offset == sp->native_offset) {
+				if (bp->req->event_kind == EVENT_KIND_STEP) {
+					g_ptr_array_add (ss_reqs, bp->req);
+				} else {
+					g_ptr_array_add (bp_reqs, bp->req);
+				}
+			}
+		}
+		}
+}
+
 
 static void
 breakpoints_cleanup (void)
@@ -4845,10 +4869,9 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 {
 	MonoJitInfo *ji;
 	guint8 *ip;
-	int i, j, suspend_policy;
+	int i, suspend_policy;
 	guint32 native_offset;
 	MonoBreakpoint *bp;
-	BreakpointInstance *inst;
 	GPtrArray *bp_reqs, *ss_reqs_orig, *ss_reqs;
 	GSList *bp_events = NULL, *ss_events = NULL, *enter_leave_events = NULL;
 	EventKind kind = EVENT_KIND_BREAKPOINT;
@@ -4899,23 +4922,8 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 	DEBUG_PRINTF (1, "[%p] Breakpoint hit, method=%s, ip=%p, [il=0x%x,native=0x%x].\n", (gpointer) (gsize) mono_native_thread_id_get (), method->name, ip, sp.il_offset, native_offset);
 
 	bp = NULL;
-	for (i = 0; i < breakpoints->len; ++i) {
-		bp = (MonoBreakpoint *)g_ptr_array_index (breakpoints, i);
+	collect_breakpoints_by_sp (&sp, ji, ss_reqs_orig, bp_reqs);
 
-		if (!bp->method)
-			continue;
-
-		for (j = 0; j < bp->children->len; ++j) {
-			inst = (BreakpointInstance *)g_ptr_array_index (bp->children, j);
-			if (inst->ji == ji && inst->il_offset == sp.il_offset && inst->native_offset == sp.native_offset) {
-				if (bp->req->event_kind == EVENT_KIND_STEP) {
-					g_ptr_array_add (ss_reqs_orig, bp->req);
-				} else {
-					g_ptr_array_add (bp_reqs, bp->req);
-				}
-			}
-		}
-	}
 	if (bp_reqs->len == 0 && ss_reqs_orig->len == 0) {
 		/* Maybe a method entry/exit event */
 		if (sp.il_offset == METHOD_ENTRY_IL_OFFSET)
