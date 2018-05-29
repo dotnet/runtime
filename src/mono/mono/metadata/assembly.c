@@ -63,18 +63,6 @@ typedef struct  {
 	gboolean framework_facade_assembly;
 } AssemblyVersionMap;
 
-/* Flag bits for assembly_names_equal_flags (). */
-typedef enum {
-	/* Default comparison: all fields must match */
-	ANAME_EQ_NONE = 0x0,
-	/* Don't compare public key token */
-	ANAME_EQ_IGNORE_PUBKEY = 0x1,
-	/* Don't compare the versions */
-	ANAME_EQ_IGNORE_VERSION = 0x2,
-
-	ANAME_EQ_MASK = 0x3
-} AssemblyNameEqFlags;
-
 /* the default search path is empty, the first slot is replaced with the computed value */
 static const char*
 default_path [] = {
@@ -371,9 +359,6 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 static MonoAssembly*
 prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refonly);
 
-static gboolean
-assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, AssemblyNameEqFlags flags);
-
 /* Assembly name matching */
 static gboolean
 exact_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name);
@@ -650,16 +635,32 @@ check_policy_versions (MonoAssemblyBindingInfo *info, MonoAssemblyName *name)
 gboolean
 mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 {
-	return assembly_names_equal_flags (l, r, ANAME_EQ_NONE);
+	return mono_assembly_names_equal_flags (l, r, MONO_ANAME_EQ_NONE);
 }
 
+/**
+ * mono_assembly_names_equal_flags:
+ * \param l first assembly name
+ * \param r second assembly name
+ * \param flags flags that affect what is compared.
+ *
+ * Compares two \c MonoAssemblyName instances and returns whether they are equal.
+ *
+ * This compares the simple names and cultures and optionally the versions and
+ * public key tokens, depending on the \c flags.
+ *
+ * \returns TRUE if both assembly names are equal.
+ */
 gboolean
-assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, AssemblyNameEqFlags flags)
+mono_assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, MonoAssemblyNameEqFlags flags)
 {
 	if (!l->name || !r->name)
 		return FALSE;
 
-	if (strcmp (l->name, r->name))
+	if ((flags & MONO_ANAME_EQ_IGNORE_CASE) != 0 && g_strcasecmp (l->name, r->name))
+		return FALSE;
+
+	if ((flags & MONO_ANAME_EQ_IGNORE_CASE) == 0 && strcmp (l->name, r->name))
 		return FALSE;
 
 	if (l->culture && r->culture && strcmp (l->culture, r->culture))
@@ -667,11 +668,11 @@ assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, AssemblyNa
 
 	if ((l->major != r->major || l->minor != r->minor ||
 	     l->build != r->build || l->revision != r->revision) &&
-	    (flags & ANAME_EQ_IGNORE_VERSION) == 0)
+	    (flags & MONO_ANAME_EQ_IGNORE_VERSION) == 0)
 		if (! ((l->major == 0 && l->minor == 0 && l->build == 0 && l->revision == 0) || (r->major == 0 && r->minor == 0 && r->build == 0 && r->revision == 0)))
 			return FALSE;
 
-	if (!l->public_key_token [0] || !r->public_key_token [0] || (flags & ANAME_EQ_IGNORE_PUBKEY) != 0)
+	if (!l->public_key_token [0] || !r->public_key_token [0] || (flags & MONO_ANAME_EQ_IGNORE_PUBKEY) != 0)
 		return TRUE;
 
 	if (!mono_public_tokens_are_equal (l->public_key_token, r->public_key_token))
@@ -3955,14 +3956,14 @@ framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *ca
 	if (vmap) {
 		if (!vmap->framework_facade_assembly) {
 			/* If the wanted name is a framework assembly, it's enough for the name/version/culture to match.  If the assembly was remapped, the public key token is likely unrelated. */
-			gboolean result = assembly_names_equal_flags (wanted_name, candidate_name, ANAME_EQ_IGNORE_PUBKEY);
+			gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_IGNORE_PUBKEY);
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring the public key token)", result ? "match, returning TRUE" : "don't match, returning FALSE");
 			return result;
 		} else {
 			/* For facades, the name and public key token should
 			 * match, but the version doesn't matter as long as the
 			 * candidate is not older. */
-			gboolean result = assembly_names_equal_flags (wanted_name, candidate_name, ANAME_EQ_IGNORE_VERSION);
+			gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_IGNORE_VERSION);
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring version)", result ? "match" : "don't match, returning FALSE");
 			if (result) {
 				// compare major of candidate and wanted

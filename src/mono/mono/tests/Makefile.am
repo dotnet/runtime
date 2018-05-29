@@ -249,6 +249,7 @@ TESTS_CS_SRC=		\
 	assembly-load-bytes-bindingredirect.cs	\
 	assembly-loadfile-bindingredirect.cs	\
 	assembly-loadfrom-bindingredirect.cs	\
+	assembly-loadfrom-simplename.cs	\
 	assemblyresolve_event.cs	\
 	assemblyresolve_event3.cs	\
 	assemblyresolve_event4.cs	\
@@ -1143,6 +1144,13 @@ PROFILE_DISABLED_TESTS += \
 PROFILE_DISABLED_TESTS += \
 	assembly-load-bytes.exe \
 	assembly-load-bytes-bindingredirect.exe
+
+# Tests which depend on a case-insensitive filesystem when using AOT
+if HOST_DARWIN
+else
+PROFILE_DISABLED_TESTS += \
+	assembly-loadfrom-simplename.exe
+endif
 
 # constraints-load.il: 
 # Failed to load method 0x6000007 from '..../mono/tests/constraints-load.exe' due to 
@@ -2336,6 +2344,31 @@ assembly-loadfile-bindingredirect.exe: assembly-load-dir1/LibStrongName.dll asse
 assembly-load-bytes-bindingredirect.exe: assembly-load-dir1/LibStrongName.dll assembly-load-dir2/LibStrongName.dll assembly-load-bytes-bindingredirect.exe.config
 
 EXTRA_DIST += assembly-loadfrom-bindingredirect.exe.config assembly-loadfile-bindingredirect.exe.config assembly-load-bytes-bindingredirect.exe.config
+
+
+assembly-load-dir1/LibSimpleName.dll: assembly-load-dir1/LibSimpleName.cs
+	$(MKDIR_P) $(dir $@)
+	$(MCS) -target:library -out:$@ $<
+
+# NOTE: unlike assembly-load-dir1/LibSimpleName.dll, the output name here is in all lower case!
+assembly-load-dir2/libsimplename.dll: assembly-load-dir2/LibSimpleName.cs
+	$(MKDIR_P) $(dir $@)
+	$(MCS) -target:library -out:$@ $<
+
+assembly-dep-simplename.dll: assembly-dep-simplename.cs assembly-load-dir1/LibSimpleName.dll
+	$(MCS) -target:library -out:$@ $< -r:assembly-load-dir1/LibSimpleName.dll
+
+# NOTE: while we compile assembly-dep-simplename.dll using assembly-load-dir1, we AOT it using assembly-load-dir2
+#  (So that the AOT image has the right GUID of the referenced assembly baked in)
+assembly-dep-simplename.dll$(PLATFORM_AOT_SUFFIX): assembly-dep-simplename.dll assembly-load-dir2/libsimplename.dll$(PLATFORM_AOT_SUFFIX)
+	MONO_PATH=$(CLASS):assembly-load-dir2 $(top_builddir)/runtime/mono-wrapper $(TEST_AOT_BUILD_FLAGS) --aot-path=assembly-load-dir2 assembly-dep-simplename.dll
+
+EXTRA_DIST += assembly-load-dir1/LibSimpleName.cs assembly-load-dir2/LibSimpleName.cs \
+	assembly-dep-simplename.cs
+
+assembly-loadfrom-simplename.exe: assembly-dep-simplename.dll assembly-load-dir2/libsimplename.dll
+
+assembly-loadfrom-simplename.exe$(PLATFORM_AOT_SUFFIX): assembly-load-dir2/libsimplename.dll$(PLATFORM_AOT_SUFFIX) assembly-dep-simplename.dll$(PLATFORM_AOT_SUFFIX)
 
 gshared:
 	$(MAKE) test-generic-sharing

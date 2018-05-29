@@ -2198,13 +2198,19 @@ mono_domain_assembly_search (MonoAssemblyName *aname,
 	GSList *tmp;
 	MonoAssembly *ass;
 	gboolean refonly = GPOINTER_TO_UINT (user_data);
+	const gboolean strong_name = aname->public_key_token[0] != 0;
+	/* If it's not a strong name, any version that has the right simple
+	 * name is good enough to satisfy the request.  .NET Framework also
+	 * ignores case differences in this case. */
+	const MonoAssemblyNameEqFlags eq_flags = strong_name ? MONO_ANAME_EQ_IGNORE_CASE :
+		(MONO_ANAME_EQ_IGNORE_PUBKEY | MONO_ANAME_EQ_IGNORE_VERSION | MONO_ANAME_EQ_IGNORE_CASE);
 
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		ass = (MonoAssembly *)tmp->data;
 		/* Dynamic assemblies can't match here in MS.NET */
 		gboolean ass_ref_only = mono_asmctx_get_kind (&ass->context) == MONO_ASMCTX_REFONLY;
-		if (assembly_is_dynamic (ass) || refonly != ass_ref_only || !mono_assembly_names_equal (aname, &ass->aname))
+		if (assembly_is_dynamic (ass) || refonly != ass_ref_only || !mono_assembly_names_equal_flags (aname, &ass->aname, eq_flags))
 			continue;
 
 		mono_domain_assemblies_unlock (domain);
