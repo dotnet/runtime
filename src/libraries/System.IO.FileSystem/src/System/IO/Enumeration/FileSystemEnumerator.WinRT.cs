@@ -43,7 +43,7 @@ namespace System.IO.Enumeration
         {
             // We don't have access to any APIs that allow us to pass in a base handle in UAP,
             // just call our "normal" handle open.
-            return CreateDirectoryHandle(fullPath);
+            return CreateDirectoryHandle(fullPath, ignoreNotFound: true);
         }
     }
 }
