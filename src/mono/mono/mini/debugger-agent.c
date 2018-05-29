@@ -672,6 +672,7 @@ static void process_profiler_event (EventKind event, gpointer arg);
 /* Submodule init/cleanup */
 static void breakpoints_init (void);
 static void breakpoints_cleanup (void);
+static void event_requests_cleanup (void);
 
 static void objrefs_init (void);
 static void objrefs_cleanup (void);
@@ -1005,6 +1006,7 @@ mono_debugger_agent_cleanup (void)
 
 	stop_debugger_thread ();
 
+	event_requests_cleanup ();
 	breakpoints_cleanup ();
 	objrefs_cleanup ();
 	ids_cleanup ();
@@ -4485,14 +4487,11 @@ collect_breakpoints_by_sp (SeqPoint *sp, MonoJitInfo *ji, GPtrArray *ss_reqs, GP
 		}
 }
 
-
 static void
-breakpoints_cleanup (void)
+event_requests_cleanup (void)
 {
-	int i;
-
 	mono_loader_lock ();
-	i = 0;
+	int i = 0;
 	while (i < event_requests->len) {
 		EventRequest *req = (EventRequest *)g_ptr_array_index (event_requests, i);
 
@@ -4504,6 +4503,15 @@ breakpoints_cleanup (void)
 			i ++;
 		}
 	}
+	mono_loader_unlock ();
+}
+
+static void
+breakpoints_cleanup (void)
+{
+	int i;
+
+	mono_loader_lock ();
 
 	for (i = 0; i < breakpoints->len; ++i)
 		g_free (g_ptr_array_index (breakpoints, i));
