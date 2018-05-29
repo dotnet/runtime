@@ -167,6 +167,12 @@ void mono_de_foreach_domain (GHFunc func, gpointer user_data);
 void mono_de_domain_add (MonoDomain *domain);
 void mono_de_domain_remove (MonoDomain *domain);
 
+//breakpoints
+void mono_de_clear_breakpoint (MonoBreakpoint *bp);
+MonoBreakpoint* mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError *error);
+void mono_de_collect_breakpoints_by_sp (SeqPoint *sp, MonoJitInfo *ji, GPtrArray *ss_reqs, GPtrArray *bp_reqs);
+void mono_de_clear_breakpoints_for_domain (MonoDomain *domain);
+void mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji);
 
 //single stepping
 void mono_de_start_single_stepping (void);
