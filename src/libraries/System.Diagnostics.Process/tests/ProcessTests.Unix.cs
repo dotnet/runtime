@@ -605,8 +605,9 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Verifies a new Process instance can refer to a process with a recycled pid
-        /// for which there is still an existing Process instance.
+        /// Verifies a new Process instance can refer to a process with a recycled pid for which
+        /// there is still an existing Process instance. Operations on the existing instance will
+        /// throw since that process has exited.
         /// </summary>
         [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         public void TestProcessRecycledPid()
@@ -619,7 +620,12 @@ namespace System.Diagnostics.Tests
                 var process = CreateProcessLong();
                 process.Start();
 
-                foundRecycled = processes.ContainsKey(process.Id);
+                Process recycled;
+                foundRecycled = processes.TryGetValue(process.Id, out recycled);
+                if (foundRecycled)
+                {
+                    Assert.Throws<InvalidOperationException>(() => recycled.Kill());
+                }
 
                 process.Kill();
                 process.WaitForExit();
