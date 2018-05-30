@@ -2226,7 +2226,8 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
     bRet = CreateNewOSThread(stackSize, start, args);
 #ifndef FEATURE_PAL
     UndoRevert(bReverted, token);
-    SetThreadName(m_ThreadHandle, pName);
+    if (pName != NULL)
+        SetThreadName(m_ThreadHandle, pName);
 #endif // !FEATURE_PAL
 
     return bRet;

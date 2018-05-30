@@ -1443,7 +1443,7 @@ private:
     //  at run time, not compile time.
     OBJECTREF     m_ExecutionContext;
     OBJECTREF     m_SynchronizationContext;
-    OBJECTREF     m_Name;
+    STRINGREF     m_Name;
     OBJECTREF     m_Delegate;
     OBJECTREF     m_ThreadStartArg;
 
@@ -1497,6 +1497,10 @@ public:
     
     }
 
+    STRINGREF GetName() {
+        LIMITED_METHOD_CONTRACT;
+        return m_Name;
+    }
     OBJECTREF GetDelegate()                   { LIMITED_METHOD_CONTRACT; return m_Delegate; }
     void      SetDelegate(OBJECTREF delegate);
 
