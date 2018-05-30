@@ -232,6 +232,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     // Simd instantiation type check
     if (simdClass != nullptr)
     {
+        compFloatingPointUsed = true;
+
         simdBaseType = getBaseTypeAndSizeOfSIMDType(simdClass, &simdSizeBytes);
 
         if (simdBaseType == TYP_UNKNOWN)
@@ -311,6 +313,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         case HWIntrinsicInfo::Sha1RotateOp:
             assert(sig->numArgs == 1);
+            compFloatingPointUsed = true;
             return gtNewScalarHWIntrinsicNode(TYP_UINT, impPopStack().val, NI_ARM64_Sha1FixedRotate);
 
         default:
