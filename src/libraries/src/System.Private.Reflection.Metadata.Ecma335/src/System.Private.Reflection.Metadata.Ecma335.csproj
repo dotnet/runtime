@@ -246,7 +246,7 @@
     <Compile Include="Shims\MiniLinq.cs" />
     <Compile Include="Shims\RuntimeReflectionExtensions.cs" />
     <Compile Include="..\..\Common\src\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" />
-    <Compile Include="..\..\Common\src\System\Runtime\Versioning\NonVersionableAttribute.cs" />
+    <Compile Include="..\..\Common\src\CoreLib\System\Runtime\Versioning\NonVersionableAttribute.cs" />
     <Compile Include="..\..\System.Collections.Immutable\src\Validation\ValidatedNotNullAttribute.cs" />
     <Compile Include="..\..\System.Collections.Immutable\src\Validation\Requires.cs" />
     <Compile Include="..\..\System.Collections.Immutable\src\System\Collections\Immutable\ImmutableExtensions.Minimal.cs" />
