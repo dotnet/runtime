@@ -13,21 +13,12 @@
 ** 
 ===========================================================*/
 
-using System;
-using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
-using System.Runtime.Versioning;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
     #region ArraySortHelper for single arrays
-
-    internal interface IArraySortHelper<TKey>
-    {
-        void Sort(TKey[] keys, int index, int length, IComparer<TKey> comparer);
-        int BinarySearch(TKey[] keys, int index, int length, TKey value, IComparer<TKey> comparer);
-    }
 
     internal static class IntrospectiveSortUtilities
     {
@@ -53,37 +44,8 @@ namespace System.Collections.Generic
         }
     }
 
-    [TypeDependencyAttribute("System.Collections.Generic.GenericArraySortHelper`1")]
-    internal class ArraySortHelper<T>
-        : IArraySortHelper<T>
+    internal partial class ArraySortHelper<T>
     {
-        private static volatile IArraySortHelper<T> defaultArraySortHelper;
-
-        public static IArraySortHelper<T> Default
-        {
-            get
-            {
-                IArraySortHelper<T> sorter = defaultArraySortHelper;
-                if (sorter == null)
-                    sorter = CreateArraySortHelper();
-
-                return sorter;
-            }
-        }
-
-        private static IArraySortHelper<T> CreateArraySortHelper()
-        {
-            if (typeof(IComparable<T>).IsAssignableFrom(typeof(T)))
-            {
-                defaultArraySortHelper = (IArraySortHelper<T>)RuntimeTypeHandle.Allocate(typeof(GenericArraySortHelper<string>).TypeHandle.Instantiate(new Type[] { typeof(T) }));
-            }
-            else
-            {
-                defaultArraySortHelper = new ArraySortHelper<T>();
-            }
-            return defaultArraySortHelper;
-        }
-
         #region IArraySortHelper<T> Members
 
         public void Sort(T[] keys, int index, int length, IComparer<T> comparer)
@@ -366,8 +328,7 @@ namespace System.Collections.Generic
         }
     }
 
-    internal class GenericArraySortHelper<T>
-        : IArraySortHelper<T>
+    internal partial class GenericArraySortHelper<T>
         where T : IComparable<T>
     {
         // Do not add a constructor to this class because ArraySortHelper<T>.CreateSortHelper will not execute it
@@ -661,42 +622,8 @@ namespace System.Collections.Generic
 
     #region ArraySortHelper for paired key and value arrays
 
-    internal interface IArraySortHelper<TKey, TValue>
+    internal partial class ArraySortHelper<TKey, TValue>
     {
-        void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey> comparer);
-    }
-
-    [TypeDependencyAttribute("System.Collections.Generic.GenericArraySortHelper`2")]
-    internal class ArraySortHelper<TKey, TValue>
-        : IArraySortHelper<TKey, TValue>
-    {
-        private static volatile IArraySortHelper<TKey, TValue> defaultArraySortHelper;
-
-        public static IArraySortHelper<TKey, TValue> Default
-        {
-            get
-            {
-                IArraySortHelper<TKey, TValue> sorter = defaultArraySortHelper;
-                if (sorter == null)
-                    sorter = CreateArraySortHelper();
-
-                return sorter;
-            }
-        }
-
-        private static IArraySortHelper<TKey, TValue> CreateArraySortHelper()
-        {
-            if (typeof(IComparable<TKey>).IsAssignableFrom(typeof(TKey)))
-            {
-                defaultArraySortHelper = (IArraySortHelper<TKey, TValue>)RuntimeTypeHandle.Allocate(typeof(GenericArraySortHelper<string, string>).TypeHandle.Instantiate(new Type[] { typeof(TKey), typeof(TValue) }));
-            }
-            else
-            {
-                defaultArraySortHelper = new ArraySortHelper<TKey, TValue>();
-            }
-            return defaultArraySortHelper;
-        }
-
         public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey> comparer)
         {
             Debug.Assert(keys != null, "Check the arguments in the caller!");  // Precondition on interface method
@@ -941,8 +868,7 @@ namespace System.Collections.Generic
         }
     }
 
-    internal class GenericArraySortHelper<TKey, TValue>
-        : IArraySortHelper<TKey, TValue>
+    internal partial class GenericArraySortHelper<TKey, TValue>
         where TKey : IComparable<TKey>
     {
         public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey> comparer)
