@@ -423,14 +423,18 @@ void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE)
     struct _gc
     {
         THREADBASEREF   pThis;
+        STRINGREF       name;
     } gc;
 
     gc.pThis       = (THREADBASEREF) pThisUNSAFE;
+    gc.name = NULL;
 
     GCPROTECT_BEGIN(gc);
 
     if (gc.pThis == NULL)
         COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+
+    gc.name = gc.pThis->GetName();
 
     Thread        *pNewThread = gc.pThis->GetInternal();
     if (pNewThread == NULL)
@@ -473,7 +477,7 @@ void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE)
 
         BOOL success = pNewThread->CreateNewThread(
                                         pNewThread->RequestedThreadStackSize() /* 0 stackSize override*/,
-                                        KickOffThread, share);
+                                        KickOffThread, share, gc.name == NULL ? NULL : gc.name->GetBuffer());
 
         if (!success)
         {
@@ -1547,7 +1551,7 @@ void QCALLTYPE ThreadNative::InformThreadNameChange(QCall::ThreadHandle thread, 
 #ifndef FEATURE_PAL
     // Set on Windows 10 Creators Update and later machines the unmanaged thread name as well. That will show up in ETW traces and debuggers which is very helpful
     // if more and more threads get a meaningful name
-    if (len > 0 && name != NULL)
+    if (len > 0 && name != NULL && pThread->GetThreadHandle() != INVALID_HANDLE_VALUE)
     {
         SetThreadName(pThread->GetThreadHandle(), name);
     }
