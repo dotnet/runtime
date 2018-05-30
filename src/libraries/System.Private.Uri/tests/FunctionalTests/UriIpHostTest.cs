@@ -234,6 +234,36 @@ namespace System.PrivateUri.Tests
 
         #region IPv6
 
+        [Theory]
+        [InlineData("fe80::e077:c9a3:eeba:b8e9", "%18")]
+        [InlineData("Fe80::e077:c9a3:eeba:b8e9", "%18")]
+        [InlineData("fE80::e077:c9a3:eeba:b8e9", "%18")]
+        [InlineData("FE80::e077:c9a3:eeba:b8e9", "%18")]
+        [InlineData("FE80::e077:c9a3:eeba:b8e9", "%eth10")]
+        [InlineData("FE80::e077:c9a3:eeba:b8e9", "")]
+        [InlineData("FE80::e077:c9a3:eeba:b8e9", "%")]
+        [InlineData("fe80::e077:c9a3:eeba:b8e9", "%\u30AF\u20E7")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void Host_IPv6LinkLocalAddress_HasScopeId(string address, string zoneIndex)
+        {
+            string scopedLiteralIpv6Brackets = "[" + address + zoneIndex + "]";
+            string literalIpV6Uri = "http://" + scopedLiteralIpv6Brackets;
+            var uri = new Uri(literalIpV6Uri);
+            Assert.Equal(scopedLiteralIpv6Brackets, uri.Host, ignoreCase: true);
+        }
+        
+        [Fact]
+        public void Host_NonIPv6LinkLocalAddress_NoScopeId()
+        {
+            const string Address = "fe81::e077:c9a3:eeba:b8e9";
+            const string ZoneIndex = "%18";
+
+            string scopedLiteralIpv6Brackets = "[" + Address + ZoneIndex + "]";
+            string literalIpV6Uri = "http://" + scopedLiteralIpv6Brackets;
+            var uri = new Uri(literalIpV6Uri);
+            Assert.Equal("[" + Address + "]", uri.Host);
+        }
+       
         [Fact]
         public void UriIPv6Host_CanonicalCollonHex_Success()
         {
