@@ -127,6 +127,7 @@ sosCommandInitialize(lldb::SBDebugger debugger)
     interpreter.AddCommand("clrthreads", new sosCommand("Threads"), "List the managed threads running.");
     interpreter.AddCommand("createdump", new sosCommand("CreateDump"), "Create a xplat minidump.");
     interpreter.AddCommand("clru", new sosCommand("u"), "Displays an annotated disassembly of a managed method.");
+    interpreter.AddCommand("dumpasync", new sosCommand("DumpAsync"), "Displays info about async state machines on the garbage-collected heap.");
     interpreter.AddCommand("dumpclass", new sosCommand("DumpClass"), "Displays information about a EE class structure at the specified address.");
     interpreter.AddCommand("dumpheap", new sosCommand("DumpHeap"), "Displays info about the garbage-collected heap and collection statistics about objects.");
     interpreter.AddCommand("dumpil", new sosCommand("DumpIL"), "Displays the Microsoft intermediate language (MSIL) that is associated with a managed method.");

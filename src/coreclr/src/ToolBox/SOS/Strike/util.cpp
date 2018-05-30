@@ -1772,7 +1772,7 @@ int GetObjFieldOffset(CLRDATA_ADDRESS cdaObj, __in_z LPCWSTR wszFieldName, BOOL 
 //                0 = field not found, 
 //              > 0 = offset to field from objAddr
 int GetObjFieldOffset(CLRDATA_ADDRESS cdaObj, CLRDATA_ADDRESS cdaMT, __in_z LPCWSTR wszFieldName,
-                        BOOL bFirst/*=TRUE*/)
+                        BOOL bFirst/*=TRUE*/, DacpFieldDescData* pDacpFieldDescData/*=NULL*/)
 {
 
 #define EXITPOINT(EXPR) do { if(!(EXPR)) { return -1; } } while (0)
@@ -1795,7 +1795,7 @@ int GetObjFieldOffset(CLRDATA_ADDRESS cdaObj, CLRDATA_ADDRESS cdaMT, __in_z LPCW
     if (dmtd.ParentMethodTable)
     {
         DWORD retVal = GetObjFieldOffset (cdaObj, dmtd.ParentMethodTable, 
-                                          wszFieldName, FALSE);
+                                          wszFieldName, FALSE, pDacpFieldDescData);
         if (retVal != 0)
         {
             // return in case of error or success.
@@ -1820,6 +1820,10 @@ int GetObjFieldOffset(CLRDATA_ADDRESS cdaObj, CLRDATA_ADDRESS cdaMT, __in_z LPCW
             NameForToken_s (TokenFromRid(vFieldDesc.mb, mdtFieldDef), pImport, g_mdName, mdNameLen, false);
             if (_wcscmp (wszFieldName, g_mdName) == 0)
             {
+                if (pDacpFieldDescData != NULL)
+                {
+                    *pDacpFieldDescData = vFieldDesc;
+                }
                 return offset;
             }
             numInstanceFields ++;                        
