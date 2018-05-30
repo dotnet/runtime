@@ -137,11 +137,6 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
-    public sealed class PlatformHandler_HttpClientHandler_ResponseDrain_Test : HttpClientHandler_ResponseDrain_Test
-    {
-        protected override bool UseSocketsHttpHandler => false;
-    }
-
     public sealed class PlatformHandler_HttpClientHandler_Cancellation_Test : HttpClientHandler_Cancellation_Test
     {
         protected override bool UseSocketsHttpHandler => false;
