@@ -4824,8 +4824,8 @@ public:
         LIMITED_METHOD_CONTRACT;
         PRECONDITION(!HasPendingGCStressInstructionUpdate());
 
-        m_pbDestCode = pbDestCode;
-        m_pbSrcCode = pbSrcCode;
+        VolatileStoreWithoutBarrier<BYTE*>(&m_pbSrcCode, pbSrcCode);
+        VolatileStore<BYTE*>(&m_pbDestCode, pbDestCode);
     }
     bool HasPendingGCStressInstructionUpdate()
     {
@@ -4838,8 +4838,8 @@ public:
         LIMITED_METHOD_CONTRACT;
         PRECONDITION(HasPendingGCStressInstructionUpdate());
 
-        m_pbDestCode = NULL;
-        m_pbSrcCode = NULL;
+        VolatileStoreWithoutBarrier<BYTE*>(&m_pbDestCode, NULL);
+        VolatileStore<BYTE*>(&m_pbSrcCode, NULL);
     }
 #if defined(GCCOVER_TOLERATE_SPURIOUS_AV)
     void SetLastAVAddress(LPVOID address)
