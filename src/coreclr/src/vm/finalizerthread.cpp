@@ -585,12 +585,6 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
 
         GetFinalizerThread()->DisablePreemptiveGC();
 
-        // TODO: The following call causes 12 more classes loaded.
-        //if (!fNameSet) {
-        //    fNameSet = TRUE;
-        //    GetFinalizerThread()->SetName(L"FinalizerThread");
-        //}
-
 #ifdef _DEBUG
         // <TODO> workaround.  make finalization very lazy for gcstress 3 or 4.  
         // only do finalization if the system is quiescent</TODO>
@@ -904,7 +898,7 @@ void FinalizerThread::FinalizerThreadCreate()
     // actual thread terminates.
     GetFinalizerThread()->IncExternalCount();
 
-    if (GetFinalizerThread()->CreateNewThread(0, &FinalizerThreadStart, NULL, W("Finalizer")) )
+    if (GetFinalizerThread()->CreateNewThread(0, &FinalizerThreadStart, NULL, W(".NET Finalizer")) )
     {
         DWORD dwRet = GetFinalizerThread()->StartThread();
 
