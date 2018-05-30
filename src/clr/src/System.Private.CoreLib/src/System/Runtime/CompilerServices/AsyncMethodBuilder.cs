@@ -498,7 +498,7 @@ namespace System.Runtime.CompilerServices
         /// event about the state machine if it's being finalized without having been completed.
         /// </summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
-        private sealed class DebugFinalizableAsyncStateMachineBox<TStateMachine> :
+        private sealed class DebugFinalizableAsyncStateMachineBox<TStateMachine> : // SOS DumpAsync command depends on this name
             AsyncStateMachineBox<TStateMachine>
             where TStateMachine : IAsyncStateMachine
         {
@@ -517,7 +517,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>A strongly-typed box for Task-based async state machines.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <typeparam name="TResult">Specifies the type of the Task's result.</typeparam>
-        private class AsyncStateMachineBox<TStateMachine> :
+        private class AsyncStateMachineBox<TStateMachine> : // SOS DumpAsync command depends on this name
             Task<TResult>, IAsyncStateMachineBox
             where TStateMachine : IAsyncStateMachine
         {
@@ -527,7 +527,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>A delegate to the <see cref="MoveNext"/> method.</summary>
             private Action _moveNextAction;
             /// <summary>The state machine itself.</summary>
-            public TStateMachine StateMachine; // mutable struct; do not make this readonly
+            public TStateMachine StateMachine; // mutable struct; do not make this readonly. SOS DumpAsync command depends on this name.
             /// <summary>Captured ExecutionContext with which to invoke <see cref="MoveNextAction"/>; may be null.</summary>
             public ExecutionContext Context;
 
