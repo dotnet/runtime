@@ -1949,7 +1949,7 @@ public:
     // Creates a raw OS thread; use this only for CLR-internal threads that never execute user code.
     // StackSizeBucket determines how large the stack should be.
     //
-    static HANDLE CreateUtilityThread(StackSizeBucket stackSizeBucket, LPTHREAD_START_ROUTINE start, void *args, DWORD flags = 0, DWORD* pThreadId = NULL);
+    static HANDLE CreateUtilityThread(StackSizeBucket stackSizeBucket, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName, DWORD flags = 0, DWORD* pThreadId = NULL);
 
     //--------------------------------------------------------------
     // Destructor
