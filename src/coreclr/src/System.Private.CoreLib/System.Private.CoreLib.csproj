@@ -561,7 +561,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ComparerHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentStack.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentDictionary.cs" />
