@@ -7,6 +7,7 @@ ClrStack
 CreateDump
 DumpArray
 DumpAssembly
+DumpAsync
 DumpClass
 DumpDomain
 DumpGCData
