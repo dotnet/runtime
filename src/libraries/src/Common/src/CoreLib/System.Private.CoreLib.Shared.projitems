@@ -64,6 +64,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Concurrent\IProducerConsumerCollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\DictionaryEntry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ArraySortHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Dictionary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ICollection.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ICollectionDebugView.cs" />
