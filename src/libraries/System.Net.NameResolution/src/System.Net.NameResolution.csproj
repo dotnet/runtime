@@ -122,8 +122,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.GetAddrInfoExW.cs">
       <Link>Interop\Windows\Winsock\Interop.GetAddrInfoExW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" Condition="'$(TargetGroup)' != 'uap'">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" Condition="'$(TargetGroup)' != 'uap'">
+      <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetProcAddress.cs" Condition="'$(TargetGroup)' != 'uap'">
       <Link>Interop\Windows\Kernel32\Interop.GetProcAddress.cs</Link>

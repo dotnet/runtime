@@ -284,8 +284,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.Win32SystemColors.cs">
       <Link>Common\Interop\Windows\user32\Interop.Win32SystemColors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\FunctionWrapper.Windows.cs">
       <Link>Common\System\Runtime\InteropServices\FunctionWrapper.Windows.cs</Link>
