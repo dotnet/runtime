@@ -1192,7 +1192,7 @@ namespace
     bool CreateSuspendableThread(
         void (*threadStart)(void*),
         void* argument,
-        const char* name)
+        const wchar_t* name)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -1247,25 +1247,7 @@ namespace
 
             return 0;
         };
-
-        InlineSString<MaxThreadNameSize> wideName;
-        const WCHAR* namePtr = nullptr;
-        EX_TRY
-        {
-            if (name != nullptr)
-            {
-                wideName.SetUTF8(name);
-                namePtr = wideName.GetUnicode();
-            }
-        }
-        EX_CATCH
-        {
-            // we're not obligated to provide a name - if it's not valid,
-            // just report nullptr as the name.
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-
-        if (!args.Thread->CreateNewThread(0, threadStub, &args, namePtr))
+        if (!args.Thread->CreateNewThread(0, threadStub, &args, name))
         {
             args.Thread->DecExternalCount(FALSE);
             args.ThreadStartedEvent.CloseEvent();
@@ -1293,7 +1275,7 @@ namespace
     bool CreateNonSuspendableThread(
         void (*threadStart)(void*),
         void* argument,
-        const char* name)
+        const wchar_t* name)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -1325,7 +1307,7 @@ namespace
             return 0;
         };
 
-        args.Thread = Thread::CreateUtilityThread(Thread::StackSize_Medium, threadStub, &args);
+        args.Thread = Thread::CreateUtilityThread(Thread::StackSize_Medium, threadStub, &args, name);
         if (args.Thread == INVALID_HANDLE_VALUE)
         {
             args.ThreadStartedEvent.CloseEvent();
@@ -1344,14 +1326,31 @@ namespace
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
+    InlineSString<MaxThreadNameSize> wideName;
+    const WCHAR* namePtr = nullptr;
+    EX_TRY
+    {
+        if (name != nullptr)
+        {
+            wideName.SetUTF8(name);
+            namePtr = wideName.GetUnicode();
+        }
+    }
+        EX_CATCH
+    {
+        // we're not obligated to provide a name - if it's not valid,
+        // just report nullptr as the name.
+    }
+    EX_END_CATCH(SwallowAllExceptions)
+
     LIMITED_METHOD_CONTRACT;
     if (is_suspendable)
     {
-        return CreateSuspendableThread(threadStart, arg, name);
+        return CreateSuspendableThread(threadStart, arg, namePtr);
     }
     else
     {
-        return CreateNonSuspendableThread(threadStart, arg, name);
+        return CreateNonSuspendableThread(threadStart, arg, namePtr);
     }
 }
 
