@@ -263,7 +263,8 @@ namespace System.Net.Http
                 Uri requestUri = _requestMessage.RequestUri;
 
                 long scopeId;
-                if (IsLinkLocal(requestUri, out scopeId))
+                bool isLinkLocal = false;
+                if ((isLinkLocal = IsLinkLocal(requestUri, out scopeId)))
                 {
                     // Uri.AbsoluteUri doesn't include the ScopeId/ZoneID, so if it is link-local,
                     // we separately pass the scope to libcurl.
@@ -272,10 +273,11 @@ namespace System.Net.Http
                 }
 
                 EventSourceTrace("Url: {0}", requestUri);
+                int scopeIdIndex = 0;
                 string idnHost = requestUri.IdnHost;
-                string url = requestUri.Host == idnHost ? 
-                                requestUri.AbsoluteUri : 
-                                new UriBuilder(requestUri) { Host = idnHost }.Uri.AbsoluteUri;
+                string url = requestUri.Host == idnHost ?
+                             requestUri.AbsoluteUri :
+                             new UriBuilder(requestUri){ Host = isLinkLocal && (scopeIdIndex = idnHost.IndexOf("%")) != -1 ? idnHost.Substring(0, scopeIdIndex) : idnHost}.Uri.AbsoluteUri;
 
                 SetCurlOption(CURLoption.CURLOPT_URL, url);
                 SetCurlOption(CURLoption.CURLOPT_PROTOCOLS, (long)(CurlProtocols.CURLPROTO_HTTP | CurlProtocols.CURLPROTO_HTTPS));
