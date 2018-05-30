@@ -348,9 +348,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (PlatformDetection.IsNetCore && !UseSocketsHttpHandler)
             {
-                // [ActiveIssue(24862)]
-                // WinHttpHandler and CurlHandler do not use the Host header to influence the SSL auth.
-                // .NET Framework and SocketsHttpHandler do.
+                // Only .NET Framework and SocketsHttpHandler use the Host header to influence the SSL auth.
                 return;
             }
 
