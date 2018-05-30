@@ -6179,4 +6179,10 @@ mono_aot_register_jit_icall (const char *name, gpointer addr)
 {
 }
 
+GHashTable *
+mono_aot_get_weak_field_indexes (MonoImage *image)
+{
+	return NULL;
+}
+
 #endif
