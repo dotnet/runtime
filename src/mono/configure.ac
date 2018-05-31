@@ -3070,7 +3070,7 @@ if test x$host_win32 = xno; then
 	])
 
 	AC_MSG_CHECKING(for sendfile with 6 arguments)
-	AC_TRY_COMPILE([
+	AC_TRY_LINK([
 		#include <stdlib.h>
 		#include <sys/types.h>
 		#include <sys/socket.h>
