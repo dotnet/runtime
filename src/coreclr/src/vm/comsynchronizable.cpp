@@ -470,10 +470,10 @@ void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE)
         // copy out the managed name into a buffer that will not move if a GC happens
         const WCHAR* nativeThreadName = NULL;
         InlineSString<64> threadNameBuffer;
-        STRINGREF managedThreaddName = gc.pThis->GetName();
-        if (managedThreaddName != NULL)
+        STRINGREF managedThreadName = gc.pThis->GetName();
+        if (managedThreadName != NULL)
         {
-            threadNameBuffer.Set(managedThreaddName->GetBuffer());
+            threadNameBuffer.Set(managedThreadName->GetBuffer());
             nativeThreadName = threadNameBuffer.GetUnicode();
         }
 
