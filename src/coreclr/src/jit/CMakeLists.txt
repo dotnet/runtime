@@ -185,7 +185,6 @@ if (WIN32)
     valuenumtype.h
     varset.h
     vartype.h
-    x86_instrs.h
   )
 endif(WIN32)
 
