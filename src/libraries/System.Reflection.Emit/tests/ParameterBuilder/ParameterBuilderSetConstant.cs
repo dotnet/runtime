@@ -70,17 +70,31 @@ namespace System.Reflection.Emit.Tests
             SetConstant_Null(parameterType);
         }
 
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Passing non-null value for SetConstant on nullable enum types not supported on NETFX")]
+        [InlineData(typeof(AttributeTargets?), AttributeTargets.All, (int)AttributeTargets.All)]
+        [InlineData(typeof(AttributeTargets?), (int)AttributeTargets.All, (int)AttributeTargets.All)]
+        public void SetConstant_NonNull_on_nullable_enum_not_supported_on_NETFX(Type parameterType, object valueToWrite, object expectedValueWhenRead)
+        {
+            SetConstant(parameterType, valueToWrite, expectedValueWhenRead);
+        }
+
         private void SetConstant_Null(Type parameterType)
+        {
+            SetConstant(parameterType, null, null);
+        }
+
+        private void SetConstant(Type parameterType, object valueToWrite, object expectedValueWhenRead)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Interface | TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, typeof(void), new Type[] { parameterType });
             ParameterBuilder parameter = method.DefineParameter(1, ParameterAttributes.Optional | ParameterAttributes.HasDefault, "arg");
 
-            parameter.SetConstant(null);
+            parameter.SetConstant(valueToWrite);
 
             ParameterInfo createdParameter = GetCreatedParameter(type, "TestMethod", 1);
             Assert.Equal(true, createdParameter.HasDefaultValue);
-            Assert.Equal(null, createdParameter.DefaultValue);
+            Assert.Equal(expectedValueWhenRead, createdParameter.DefaultValue);
         }
 
         private static ParameterInfo GetCreatedParameter(TypeBuilder type, string methodName, int parameterIndex)
