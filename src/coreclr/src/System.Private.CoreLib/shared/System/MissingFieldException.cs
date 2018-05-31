@@ -2,18 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-** Purpose: The exception class for class loading failures.
-**
-=============================================================================*/
-
-
-using System;
 using System.Runtime.Serialization;
-using System.Runtime.CompilerServices;
-using System.Globalization;
 
 namespace System
 {
@@ -39,11 +28,18 @@ namespace System
             HResult = HResults.COR_E_MISSINGFIELD;
         }
 
-        protected MissingFieldException(SerializationInfo info, StreamingContext context) : base(info, context)
+        public MissingFieldException(string className, string fieldName)
+        {
+            ClassName = className;
+            MemberName = fieldName;
+        }
+
+        protected MissingFieldException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
 
-        public override String Message
+        public override string Message
         {
             get
             {
@@ -58,15 +54,5 @@ namespace System
                 }
             }
         }
-
-        public MissingFieldException(String className, String fieldName)
-        {
-            ClassName = className;
-            MemberName = fieldName;
-        }
-
-        // If ClassName != null, Message will construct on the fly using it
-        // and the other variables. This allows customization of the
-        // format depending on the language environment.
     }
 }
