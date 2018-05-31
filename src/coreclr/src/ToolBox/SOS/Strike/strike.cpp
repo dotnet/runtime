@@ -4123,18 +4123,20 @@ DECLARE_API(DumpAsync)
         TADDR mt = NULL;
         ArrayHolder<char> ansiType = NULL;
         ArrayHolder<WCHAR> type = NULL;
-        BOOL dml = FALSE;
+        BOOL dml = FALSE, waiting = FALSE, roots = FALSE;
         CMDOption option[] =
         {   // name, vptr, type, hasValue
             { "-mt", &mt, COHEX, TRUE },             // dump state machines only with a given MethodTable
             { "-type", &ansiType, COSTRING, TRUE },  // dump state machines only that contain the specified type substring
+            { "-waiting", &waiting, COBOOL, FALSE }, // dump state machines only when they're in a waiting state
+            { "-roots", &roots, COBOOL, FALSE },     // gather GC root information
 #ifndef FEATURE_PAL
-            { "/d", &dml, COBOOL, FALSE },          // Debugger Markup Language
+            { "/d", &dml, COBOOL, FALSE },            // Debugger Markup Language
 #endif
         };
         if (!GetCMDOption(args, option, _countof(option), NULL, 0, &nArg))
         {
-            sos::Throw<sos::Exception>("Usage: DumpAsync [-mt MethodTableAddr] [-type TypeName] [-waiting]");
+            sos::Throw<sos::Exception>("Usage: DumpAsync [-mt MethodTableAddr] [-type TypeName] [-waiting] [-roots]");
         }
         if (nArg != 0)
         {
@@ -4164,6 +4166,7 @@ DECLARE_API(DumpAsync)
         ExtOut("%" POINTERSIZE "s %" POINTERSIZE "s %8s %s\n", "Address", "MT", "Size", "Name");
 
         // Walk each heap object looking for async state machine objects.
+        BOOL missingStateFieldWarning = FALSE;
         int numStateMachines = 0;
         for (sos::ObjectIterator itr = gcheap.WalkHeap(); !IsInterrupt() && itr != NULL; ++itr)
         {
@@ -4224,6 +4227,36 @@ DECLARE_API(DumpAsync)
                 stateMachineMT = objData.MethodTable; // update from Canon to actual type
             }
 
+            // Get the current state value of the state machine. If the user has requested to filter down
+            // to only those state machines that are currently at an await, compare it against the expected
+            // waiting values.  This value can also be used in later analysis.
+            int stateValue = -2;
+            DacpFieldDescData stateField;
+            int stateFieldOffset = bStateMachineIsValueType ?
+                GetValueFieldOffset(stateMachineMT, W("<>1__state"), &stateField) :
+                GetObjFieldOffset(stateMachineAddr, stateMachineMT, W("<>1__state"), TRUE, &stateField);
+            if (stateFieldOffset < 0 || (!bStateMachineIsValueType && stateFieldOffset == 0))
+            {
+                missingStateFieldWarning = TRUE;
+                if (waiting)
+                {
+                    // waiting was specified and we couldn't find the field to satisfy the query,
+                    // so skip this object.
+                    continue;
+                }
+            }
+            else
+            {
+                MOVE(stateValue, stateMachineAddr + stateFieldOffset);
+                if (waiting && stateValue < 0)
+                {
+                    // 0+ values correspond to the await in linear sequence in the method, so a non-negative
+                    // value indicates the state machine is at an await.  Since we're filtering for waiting,
+                    // anything else should be skipped.
+                    continue;
+                }
+            }
+
             // We now have a state machine that's passed all of our criteria.  Print out its details.
 
             // Print out top level description of the state machine object.
@@ -4261,16 +4294,28 @@ DECLARE_API(DumpAsync)
 
             // Finally, output gcroots, as they can serve as call stacks, and also help to highlight
             // state machines that aren't being kept alive.
-            ExtOut("GC roots:\n");
-            IncrementIndent();
-            GCRootImpl gcroot;
-            gcroot.PrintRootsForObject(*itr, FALSE, FALSE);
-            DecrementIndent();
+            if (roots)
+            {
+                ExtOut("GC roots:\n");
+                IncrementIndent();
+                GCRootImpl gcroot;
+                int numRoots = gcroot.PrintRootsForObject(*itr, FALSE, FALSE);
+                DecrementIndent();
+
+                if (stateValue >= 0 && numRoots == 0)
+                {
+                    ExtOut("Incomplete state machine (<>1__state == %d) with 0 roots.\n", stateValue);
+                }
+            }
 
             ExtOut("\n");
         }
 
         ExtOut("\nFound %d state machines.\n", numStateMachines);
+        if (missingStateFieldWarning)
+        {
+            ExtOut("Warning: Could not find a state machine's <>1__state field.\n");
+        }
         return S_OK;
     }
     catch (const sos::Exception &e)
