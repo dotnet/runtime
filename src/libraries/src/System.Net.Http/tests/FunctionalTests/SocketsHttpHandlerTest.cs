@@ -852,12 +852,6 @@ namespace System.Net.Http.Functional.Tests
     {
         protected override bool UseSocketsHttpHandler => true;
 
-        // TODO: ISSUE #27272
-        // Currently the subsequent tests sometimes fail/hang with WinHttpHandler / CurlHandler.
-        // In theory they should pass with any handler that does appropriate connection pooling.
-        // We should understand why they sometimes fail there and ideally move them to be
-        // used by all handlers this test project tests.
-
         [Fact]
         public async Task MultipleIterativeRequests_SameConnectionReused()
         {
