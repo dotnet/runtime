@@ -1072,7 +1072,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 e = new Exception(message);
             }
 
-            e.SetErrorCode(hresult);
+            e.HResult = hresult;
             return e;
         }
 
