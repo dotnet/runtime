@@ -19,7 +19,7 @@ namespace System
             if (hr != 0)
             {
                 Exception ex = new Exception();
-                ex.SetErrorCode(hr);
+                ex.HResult = hr;
                 throw ex;
             }
             return g;
