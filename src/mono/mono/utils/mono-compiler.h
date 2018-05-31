@@ -100,6 +100,9 @@ typedef SSIZE_T ssize_t;
 /* Used to mark internal functions used by the profiler modules */
 #define MONO_PROFILER_API MONO_API
 
+/* Used to mark internal functions used by the CoreFX PAL library */
+#define MONO_PAL_API MONO_API
+
 #ifdef __GNUC__
 #define MONO_ALWAYS_INLINE __attribute__ ((__always_inline__))
 #elif defined(_MSC_VER)
