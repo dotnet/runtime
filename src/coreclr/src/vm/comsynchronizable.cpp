@@ -423,18 +423,14 @@ void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE)
     struct _gc
     {
         THREADBASEREF   pThis;
-        STRINGREF       name;
     } gc;
 
     gc.pThis       = (THREADBASEREF) pThisUNSAFE;
-    gc.name = NULL;
 
     GCPROTECT_BEGIN(gc);
 
     if (gc.pThis == NULL)
         COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-
-    gc.name = gc.pThis->GetName();
 
     Thread        *pNewThread = gc.pThis->GetInternal();
     if (pNewThread == NULL)
@@ -471,13 +467,23 @@ void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE)
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadCreating))
             FireEtwThreadCreating(pNewThread, GetClrInstanceId());
 
+        // copy out the managed name into a buffer that will not move if a GC happens
+        const WCHAR* nativeThreadName = NULL;
+        InlineSString<64> threadNameBuffer;
+        STRINGREF managedThreaddName = gc.pThis->GetName();
+        if (managedThreaddName != NULL)
+        {
+            threadNameBuffer.Set(managedThreaddName->GetBuffer());
+            nativeThreadName = threadNameBuffer.GetUnicode();
+        }
+
         // As soon as we create the new thread, it is eligible for suspension, etc.
         // So it gets transitioned to cooperative mode before this call returns to
         // us.  It is our duty to start it running immediately, so that GC isn't blocked.
 
         BOOL success = pNewThread->CreateNewThread(
                                         pNewThread->RequestedThreadStackSize() /* 0 stackSize override*/,
-                                        KickOffThread, share, gc.name == NULL ? NULL : gc.name->GetBuffer());
+                                        KickOffThread, share, nativeThreadName);
 
         if (!success)
         {
