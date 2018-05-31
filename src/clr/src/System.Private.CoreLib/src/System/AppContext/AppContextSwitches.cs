@@ -19,6 +19,16 @@ namespace System
             }
         }
 
+        private static int _enforceJapaneseEraYearRanges;
+        public static bool EnforceJapaneseEraYearRanges
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return GetCachedSwitchValue(AppContextDefaultValues.SwitchEnforceJapaneseEraYearRanges, ref _enforceJapaneseEraYearRanges);
+            }
+        }
+
         private static int _preserveEventListnerObjectIdentity;
         public static bool PreserveEventListnerObjectIdentity
         {
