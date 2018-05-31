@@ -1974,13 +1974,14 @@ namespace System
                 if (groupDigits != null)
                 {
                     int groupSizeIndex = 0;                             // Index into the groupDigits array.
-                    int groupSizeCount = groupDigits[groupSizeIndex];   // The current total of group size.
                     int bufferSize = digPos;                            // The length of the result buffer string.
                     int groupSize = 0;                                  // The current group size.
 
                     // Find out the size of the string buffer for the result.
                     if (groupDigits.Length != 0) // You can pass in 0 length arrays
                     {
+                        int groupSizeCount = groupDigits[groupSizeIndex];   // The current total of group size.
+
                         while (digPos > groupSizeCount)
                         {
                             groupSize = groupDigits[groupSizeIndex];
