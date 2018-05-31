@@ -473,7 +473,7 @@ void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE)
         STRINGREF managedThreadName = gc.pThis->GetName();
         if (managedThreadName != NULL)
         {
-            managedThreadName.GetString(threadNameBuffer).
+            managedThreadName->GetString(threadNameBuffer).
             nativeThreadName = threadNameBuffer.GetUnicode();
         }
 
