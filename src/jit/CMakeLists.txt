@@ -95,7 +95,6 @@ if (WIN32)
     blockset.h
     codegen.h
     codegeninterface.h
-    codegenlinear.h
     compiler.h
     compiler.hpp
     compilerbitsettraits.h
