@@ -7,9 +7,9 @@
 #include <CommonCrypto/CommonCrypto.h>
 #include <CommonCrypto/CommonRandom.h>
 
-extern "C" int32_t AppleCryptoNative_GetRandomBytes(uint8_t* pBuf, uint32_t cbBuf, int32_t* pkCCStatus)
+int32_t AppleCryptoNative_GetRandomBytes(uint8_t* pBuf, uint32_t cbBuf, int32_t* pkCCStatus)
 {
-    if (pBuf == nullptr || pkCCStatus == nullptr)
+    if (pBuf == NULL || pkCCStatus == NULL)
         return -1;
 
     CCRNGStatus status = CCRandomGenerateBytes(pBuf, cbBuf);
