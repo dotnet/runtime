@@ -88,49 +88,10 @@ mono_trace (GLogLevelFlags level, MonoTraceMask mask, const char *format, ...)
 	}
 }
 
-#ifdef G_HAVE_ISO_VARARGS
-#define mono_trace_error(...)	mono_trace(G_LOG_LEVEL_ERROR, \
-											__VA_ARGS__)
-#define mono_trace_warning(...) mono_trace(G_LOG_LEVEL_WARNING, \
-											__VA_ARGS__)
-#define mono_trace_message(...) mono_trace(G_LOG_LEVEL_MESSAGE, \
-											__VA_ARGS__)
-#elif defined(G_HAVE_GNUC_VARARGS)
-#define mono_trace_error(format...)	mono_trace(G_LOG_LEVEL_ERROR, \
-											format)
-#define mono_trace_warning(format...) mono_trace(G_LOG_LEVEL_WARNING, \
-											format)
-#define mono_trace_message(format...) mono_trace(G_LOG_LEVEL_MESSAGE, \
-											format)
-#else /* no varargs macros */
-G_GNUC_UNUSED static void
-mono_trace_error(MonoTraceMask mask, const char *format, ...)
-{
-	va_list args;
-	va_start (args, format);
-	mono_tracev(G_LOG_LEVEL_ERROR, mask, format, args);
-	va_end (args);
-}
-
-G_GNUC_UNUSED static void
-mono_trace_warning(MonoTraceMask mask, const char *format, ...)
-{
-	va_list args;
-	va_start (args, format);
-	mono_tracev(G_LOG_LEVEL_WARNING, mask, format, args);
-	va_end (args);
-}
-
-G_GNUC_UNUSED static void
-mono_trace_message(MonoTraceMask mask, const char *format, ...)
-{
-	va_list args;
-	va_start (args, format);
-	mono_tracev(G_LOG_LEVEL_MESSAGE, mask, format, args);
-	va_end (args);
-}
-
-#endif /* !__GNUC__ */
+// __VA_ARGS__ is never empty, so a comma before it is always correct.
+#define mono_trace_error(...)	(mono_trace (G_LOG_LEVEL_ERROR, __VA_ARGS__))
+#define mono_trace_warning(...) (mono_trace (G_LOG_LEVEL_WARNING, __VA_ARGS__))
+#define mono_trace_message(...) (mono_trace (G_LOG_LEVEL_MESSAGE, __VA_ARGS__))
 
 #if defined (HOST_ANDROID) || (defined (TARGET_IOS) && defined (TARGET_IOS))
 

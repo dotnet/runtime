@@ -4647,21 +4647,6 @@ if test $found_export_dynamic = no; then
 	LDFLAGS="${old_ldflags}"
 fi
 
-AC_MSG_CHECKING(for varargs macros)
-AC_TRY_COMPILE([],[
-int foo (int i, int j);
-#define bar(...) foo (1, __VA_ARGS__)
-void main () {
-	 bar (2);
-}
-],have_iso_varargs=yes,have_iso_varargs=no)
-AC_MSG_RESULT($have_iso_varargs)
-G_HAVE_ISO_VARARGS=0
-if test "x$have_iso_varargs" = "xyes"; then
-   G_HAVE_ISO_VARARGS=1
-fi
-AC_SUBST(G_HAVE_ISO_VARARGS)
-
 AC_CHECK_HEADERS(getopt.h sys/select.h sys/time.h sys/wait.h pwd.h iconv.h localcharset.h sys/types.h sys/resource.h)
 AC_CHECK_LIB([iconv], [locale_charset],[],[AC_CHECK_LIB([charset], [locale_charset],[LIBS+=" -liconv -lcharset"])])
 AC_CHECK_HEADER(alloca.h, [HAVE_ALLOCA_H=1], [HAVE_ALLOCA_H=0])

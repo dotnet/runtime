@@ -24,10 +24,6 @@ typedef @GSSIZE@ gssize;
 
 #define G_GSIZE_FORMAT   @GSIZE_FORMAT@
 
-#if @G_HAVE_ISO_VARARGS@ == 1
-#define G_HAVE_ISO_VARARGS
-#endif
-
 #if defined (HOST_WATCHOS)
 #undef G_BREAKPOINT
 #define G_BREAKPOINT()
