@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (!found)
             {
                 Exception e = new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
-                e.SetErrorCode(HResults.E_BOUNDS);
+                e.HResult = HResults.E_BOUNDS;
                 throw e;
             }
 
