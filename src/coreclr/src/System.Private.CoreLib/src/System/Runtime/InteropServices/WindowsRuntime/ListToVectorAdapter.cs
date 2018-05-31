@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             catch (ArgumentOutOfRangeException ex)
             {
                 // Change error code to match what WinRT expects
-                ex.SetErrorCode(HResults.E_BOUNDS);
+                ex.HResult = HResults.E_BOUNDS;
                 throw;
             }
         }
@@ -137,7 +137,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             catch (ArgumentOutOfRangeException ex)
             {
                 // Change error code to match what WinRT expects
-                ex.SetErrorCode(HResults.E_BOUNDS);
+                ex.HResult = HResults.E_BOUNDS;
                 throw;
             }
         }
@@ -156,7 +156,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (_this.Count == 0)
             {
                 Exception e = new InvalidOperationException(SR.InvalidOperation_CannotRemoveLastFromEmptyCollection);
-                e.SetErrorCode(HResults.E_BOUNDS);
+                e.HResult = HResults.E_BOUNDS;
                 throw e;
             }
 
@@ -202,7 +202,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (((uint)Int32.MaxValue) <= index || index >= (uint)listCapacity)
             {
                 Exception e = new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexLargerThanMaxValue);
-                e.SetErrorCode(HResults.E_BOUNDS);
+                e.HResult = HResults.E_BOUNDS;
                 throw e;
             }
         }

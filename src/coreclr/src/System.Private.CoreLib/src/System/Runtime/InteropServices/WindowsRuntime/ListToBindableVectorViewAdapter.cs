@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (((uint)Int32.MaxValue) <= index || index >= (uint)listCapacity)
             {
                 Exception e = new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexLargerThanMaxValue);
-                e.SetErrorCode(HResults.E_BOUNDS);
+                e.HResult = HResults.E_BOUNDS;
                 throw e;
             }
         }
