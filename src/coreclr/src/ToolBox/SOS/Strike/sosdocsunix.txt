@@ -203,7 +203,9 @@ The arguments in detail:
 
 COMMAND: dumpasync.
 !DumpAsync [-mt <MethodTable address>] 
-           [-type <partial type name>]]
+           [-type <partial type name>]
+           [-waiting]
+           [-roots]]
 
 !DumpAsync traverses the garbage collected heap, looking for objects representing
 async state machines as created when an async method's state is transferred to the
@@ -221,7 +223,7 @@ These details include:
   
 For example:
 
-    (lldb) dumpasync
+    (lldb) dumpasync -roots
     #0
     000001989f413de0 00007ff88c506ba8      112  System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Threading.Tasks.VoidTaskResult, System.Private.CoreLib],[Program+<MethodD>d__4, test]]
     StateMachine: Program+<MethodD>d__4 (struct)
@@ -255,6 +257,8 @@ The arguments in detail:
 -mt       List only those state machine objects with the MethodTable given.
 -type     List only those state machine objects whose type name is a
           substring match of the string provided.
+-waiting  List only those state machines that are currently at an await point.
+-roots    Include GC root information for each state machine object.
 
 \\
 

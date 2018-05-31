@@ -1838,6 +1838,66 @@ int GetObjFieldOffset(CLRDATA_ADDRESS cdaObj, CLRDATA_ADDRESS cdaMT, __in_z LPCW
 #undef EXITPOINT    
 }
 
+
+// Return value: -1 = error
+//               -2 = not found
+//             >= 0 = offset to field from cdaValue
+int GetValueFieldOffset(CLRDATA_ADDRESS cdaMT, __in_z LPCWSTR wszFieldName, DacpFieldDescData* pDacpFieldDescData)
+{
+#define EXITPOINT(EXPR) do { if(!(EXPR)) { return -1; } } while (0)
+
+    const int NOT_FOUND = -2;
+    DacpMethodTableData dmtd;
+    DacpMethodTableFieldData vMethodTableFields;
+    DacpFieldDescData vFieldDesc;
+    DacpModuleData module;
+    static DWORD numInstanceFields = 0; // Static due to recursion visiting parents
+    numInstanceFields = 0;
+
+    EXITPOINT(vMethodTableFields.Request(g_sos, cdaMT) == S_OK);
+
+    EXITPOINT(dmtd.Request(g_sos, cdaMT) == S_OK);
+    EXITPOINT(module.Request(g_sos, dmtd.Module) == S_OK);
+    if (dmtd.ParentMethodTable)
+    {
+        DWORD retVal = GetValueFieldOffset(dmtd.ParentMethodTable, wszFieldName, pDacpFieldDescData);
+        if (retVal != NOT_FOUND)
+        {
+            // Return in case of error or success. Fall through for field-not-found.
+            return retVal;
+        }
+    }
+
+    CLRDATA_ADDRESS dwAddr = vMethodTableFields.FirstField;
+    ToRelease<IMetaDataImport> pImport = MDImportForModule(&module);
+
+    while (numInstanceFields < vMethodTableFields.wNumInstanceFields)
+    {
+        EXITPOINT(vFieldDesc.Request(g_sos, dwAddr) == S_OK);
+
+        if (!vFieldDesc.bIsStatic)
+        {
+            NameForToken_s(TokenFromRid(vFieldDesc.mb, mdtFieldDef), pImport, g_mdName, mdNameLen, false);
+            if (_wcscmp(wszFieldName, g_mdName) == 0)
+            {
+                if (pDacpFieldDescData != NULL)
+                {
+                    *pDacpFieldDescData = vFieldDesc;
+                }
+                return vFieldDesc.dwOffset;
+            }
+            numInstanceFields++;
+        }
+
+        dwAddr = vFieldDesc.NextField;
+    }
+
+    // Field name not found...
+    return NOT_FOUND;
+
+#undef EXITPOINT    
+}
+
 // Returns an AppDomain address if AssemblyPtr is loaded into that domain only. Otherwise
 // returns NULL
 CLRDATA_ADDRESS IsInOneDomainOnly(CLRDATA_ADDRESS AssemblyPtr)
