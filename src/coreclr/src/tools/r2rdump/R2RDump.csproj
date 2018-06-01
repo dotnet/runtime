@@ -10,7 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.CoreDisTools" Version="1.0.1-prerelease-00003" />
     <PackageReference Include="System.CommandLine" Version="0.1.0-e160119-1" />
+    <PackageReference Include="System.Reflection.Metadata" Version="1.7.0-preview1-26530-04" />
   </ItemGroup>
 
 </Project>
