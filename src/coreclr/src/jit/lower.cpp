@@ -4511,6 +4511,17 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 {
     assert(divMod->OperIs(GT_UDIV, GT_UMOD));
 
+#if defined(USE_HELPERS_FOR_INT_DIV)
+    if (!varTypeIsIntegral(divMod->TypeGet()))
+    {
+        assert(!"unreachable: integral GT_UDIV/GT_UMOD should get morphed into helper calls");
+    }
+    assert(varTypeIsFloating(divMod->TypeGet()));
+#endif // USE_HELPERS_FOR_INT_DIV
+#if defined(_TARGET_ARM64_)
+    assert(divMod->OperGet() != GT_UMOD);
+#endif // _TARGET_ARM64_
+
     GenTree* next     = divMod->gtNext;
     GenTree* dividend = divMod->gtGetOp1();
     GenTree* divisor  = divMod->gtGetOp2();
@@ -4710,17 +4721,20 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     GenTree* dividend = divMod->gtGetOp1();
     GenTree* divisor  = divMod->gtGetOp2();
 
-    if (!divisor->IsCnsIntOrI())
-    {
-        return nullptr; // no transformations to make
-    }
-
     const var_types type = divMod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
 
 #if defined(USE_HELPERS_FOR_INT_DIV)
-    assert(!"unreachable: GT_DIV/GT_MOD should get morphed into helper calls");
+    assert(!"unreachable: integral GT_DIV/GT_MOD should get morphed into helper calls");
 #endif // USE_HELPERS_FOR_INT_DIV
+#if defined(_TARGET_ARM64_)
+    assert(node->OperGet() != GT_MOD);
+#endif // _TARGET_ARM64_
+
+    if (!divisor->IsCnsIntOrI())
+    {
+        return nullptr; // no transformations to make
+    }
 
     if (dividend->IsCnsIntOrI())
     {
@@ -4984,9 +4998,7 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
     GenTree* dividend = divMod->gtGetOp1();
     GenTree* divisor  = divMod->gtGetOp2();
 
-#ifdef _TARGET_XARCH_
-    if (!varTypeIsFloating(node->TypeGet()))
-#endif // _TARGET_XARCH_
+    if (varTypeIsIntegral(node->TypeGet()))
     {
         // LowerConstIntDivOrMod will return nullptr if it doesn't transform the node.
         GenTree* newNode = LowerConstIntDivOrMod(node);
