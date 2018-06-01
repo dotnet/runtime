@@ -17,6 +17,7 @@ namespace System.Xml.Tests
             _output = output;
         }
 
+        [ActiveIssue(30017)]
         //[Variation("3", Desc = "Exercise basic use case, a supported option val", Pri = 1, Params = new object[] { "/platform:x64 pft3.xsl", "", "pft3.dll", "pft3.txt" })]
         [InlineData("/platform:x64 pft3.xsl", "", "pft3.dll", "pft3.txt")]
         //[Variation("8", Desc = "Exercise keyword case sensitivity -2", Pri = 1, Params = new object[] { "/PLAtforM:ItaNiuM pft8.xsl", "", "pft8.dll", "pft8.txt" })]
@@ -38,6 +39,7 @@ namespace System.Xml.Tests
             VerifyTest(cmdLine, asmName, asmCreated, typeName, pdbName, pdbCreated, baselineFile, _createFromInputFile);
         }
 
+        [ActiveIssue(30017)]
         //[Variation("2", Desc = "Exercise basic use case, no option value", Pri = 1, Params = new object[] { "/platform: pft2.xsl", "pft2.txt" })]
         [InlineData("/platform: pft2.xsl", "pft2.txt")]
         //[Variation("4", Desc = "Exercise basic use case, an unsupported option value", Pri = 1, Params = new object[] { "/platform:foo pft4.xsl", "pft4.txt" })]
