@@ -59,6 +59,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
+    <Compile Include="System\InternalHelpers.CoreCLR.cs" />
     <Compile Include="System\IO\StreamOperationAsyncResult.CoreCLR.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\RestrictedErrorInfoHelper.cs" />
@@ -79,10 +80,10 @@
     <Compile Include="System\Windows\Size.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
+    <Compile Include="System\InternalHelpers.CoreRT.cs" />
     <Compile Include="System\IO\StreamOperationAsyncResult.CoreRT.cs" />
     <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.CoreRT.cs" />
     <Compile Include="System\WindowsRuntimeSystemExtensions.CoreRT.cs" />
-    <Compile Include="System\InternalHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs">
