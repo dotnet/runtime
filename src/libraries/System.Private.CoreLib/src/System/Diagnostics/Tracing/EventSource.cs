@@ -2211,7 +2211,10 @@ namespace System.Diagnostics.Tracing
                         break;
                     default:
                         if (innerEx != null)
+                        {
+                            innerEx = innerEx.GetBaseException();
                             ReportOutOfBandMessage(errorPrefix + ": " + innerEx.GetType() + ":" + innerEx.Message, true);
+                        }
                         else
                             ReportOutOfBandMessage(errorPrefix, true);
                         if (ThrowOnEventWriteErrors) throw new EventSourceException(innerEx);
