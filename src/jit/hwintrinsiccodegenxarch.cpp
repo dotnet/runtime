@@ -94,7 +94,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if ((ival != -1) && varTypeIsFloating(baseType))
                 {
-                    emit->emitIns_R_R_I(ins, simdSize, targetReg, op1Reg, ival);
+                    assert((ival >= 0) && (ival <= 127));
+                    emit->emitIns_R_R_I(ins, simdSize, targetReg, op1Reg, (int8_t)ival);
                 }
                 else
                 {
@@ -130,6 +131,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if ((ival != -1) && varTypeIsFloating(baseType))
                 {
+                    assert((ival >= 0) && (ival <= 127));
                     genHWIntrinsic_R_R_RM_I(node, ins);
                 }
                 else if (category == HW_Category_MemoryLoad)
@@ -145,19 +147,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (Compiler::isImmHWIntrinsic(intrinsicID, op2))
                 {
+                    assert(ival == -1);
+
                     if (intrinsicID == NI_SSE2_Extract)
                     {
                         // extract instructions return to GP-registers, so it needs int size as the emitsize
                         simdSize = emitTypeSize(TYP_INT);
                     }
-                    auto emitSwCase = [&](unsigned i) {
-                        emit->emitIns_SIMD_R_R_I(ins, simdSize, targetReg, op1Reg, (int)i);
-                    };
+
+                    auto emitSwCase = [&](int8_t i) { emit->emitIns_SIMD_R_R_I(ins, simdSize, targetReg, op1Reg, i); };
 
                     if (op2->IsCnsIntOrI())
                     {
                         ssize_t ival = op2->AsIntCon()->IconValue();
-                        emitSwCase((unsigned)ival);
+                        assert((ival >= 0) && (ival <= 255));
+                        emitSwCase((int8_t)ival);
                     }
                     else
                     {
@@ -199,13 +203,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (Compiler::isImmHWIntrinsic(intrinsicID, op3))
                 {
-                    auto emitSwCase = [&](unsigned i) {
-                        emit->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op2Reg, (int)i);
+                    assert(ival == -1);
+
+                    auto emitSwCase = [&](int8_t i) {
+                        emit->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op2Reg, i);
                     };
+
                     if (op3->IsCnsIntOrI())
                     {
                         ssize_t ival = op3->AsIntCon()->IconValue();
-                        emitSwCase((unsigned)ival);
+                        assert((ival >= 0) && (ival <= 255));
+                        emitSwCase((int8_t)ival);
                     }
                     else
                     {
@@ -443,8 +451,10 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
     GenTree*  op1        = node->gtGetOp1();
     GenTree*  op2        = node->gtGetOp2();
     emitAttr  simdSize   = EA_ATTR(node->gtSIMDSize);
-    int       ival       = Compiler::ivalOfHWIntrinsic(node->gtHWIntrinsicId);
     emitter*  emit       = getEmitter();
+
+    int ival = Compiler::ivalOfHWIntrinsic(node->gtHWIntrinsicId);
+    assert((ival >= 0) && (ival <= 127));
 
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
@@ -748,7 +758,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
     for (unsigned i = 0; i < maxByte; i++)
     {
         genDefineTempLabel(jmpTable[i]);
-        emitSwCase(i);
+        emitSwCase((int8_t)i);
         emit->emitIns_J(INS_jmp, switchTableEnd);
     }
 
@@ -975,7 +985,6 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
     regNumber      op1Reg      = REG_NA;
     regNumber      op2Reg      = REG_NA;
     emitter*       emit        = getEmitter();
-    int            ival        = -1;
 
     if ((op1 != nullptr) && !op1->OperIsList())
     {
@@ -990,11 +999,14 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
         {
             assert(op1 != nullptr);
             assert(op2 != nullptr);
+
             assert(baseType == TYP_DOUBLE);
+
+            int ival = Compiler::ivalOfHWIntrinsic(intrinsicID);
+            assert((ival >= 0) && (ival <= 127));
+
             instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
             op2Reg          = op2->gtRegNum;
-            ival            = Compiler::ivalOfHWIntrinsic(intrinsicID);
-            assert(ival != -1);
             emit->emitIns_SIMD_R_R_R_I(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg, op2Reg, ival);
 
             break;
@@ -1305,23 +1317,25 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
             {
                 tmpTargetReg = node->ExtractTempReg();
             }
-            auto emitSwCase = [&](unsigned i) {
+
+            auto emitSwCase = [&](int8_t i) {
                 if (baseType == TYP_FLOAT)
                 {
                     // extract instructions return to GP-registers, so it needs int size as the emitsize
-                    emit->emitIns_SIMD_R_R_I(ins, emitTypeSize(TYP_INT), tmpTargetReg, op1Reg, (int)i);
+                    emit->emitIns_SIMD_R_R_I(ins, emitTypeSize(TYP_INT), tmpTargetReg, op1Reg, i);
                     emit->emitIns_R_R(INS_mov_i2xmm, EA_4BYTE, targetReg, tmpTargetReg);
                 }
                 else
                 {
-                    emit->emitIns_SIMD_R_R_I(ins, emitTypeSize(TYP_INT), targetReg, op1Reg, (int)i);
+                    emit->emitIns_SIMD_R_R_I(ins, emitTypeSize(TYP_INT), targetReg, op1Reg, i);
                 }
             };
 
             if (op2->IsCnsIntOrI())
             {
                 ssize_t ival = op2->AsIntCon()->IconValue();
-                emitSwCase((unsigned)ival);
+                assert((ival >= 0) && (ival <= 255));
+                emitSwCase((int8_t)ival);
             }
             else
             {
@@ -1584,38 +1598,36 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
 
             regNumber op3Reg = lastOp->gtRegNum;
 
-            auto emitSwCase = [&](unsigned i) {
-                // TODO-XARCH-Bug the emitter cannot work with imm8 >= 128,
-                // so clear the 8th bit that is not used by the instructions
-                i &= 0x7FU;
+            auto emitSwCase = [&](int8_t i) {
                 if (numArgs == 3)
                 {
                     if (intrinsicID == NI_AVX_ExtractVector128 || intrinsicID == NI_AVX2_ExtractVector128)
                     {
-                        emit->emitIns_AR_R_I(ins, attr, op1Reg, 0, op2Reg, (int)i);
+                        emit->emitIns_AR_R_I(ins, attr, op1Reg, 0, op2Reg, i);
                     }
                     else if (op2->TypeGet() == TYP_I_IMPL)
                     {
-                        emit->emitIns_SIMD_R_R_AR_I(ins, attr, targetReg, op1Reg, op2Reg, (int)i);
+                        emit->emitIns_SIMD_R_R_AR_I(ins, attr, targetReg, op1Reg, op2Reg, i);
                     }
                     else
                     {
                         assert(op2->TypeGet() == TYP_SIMD16);
-                        emit->emitIns_SIMD_R_R_R_I(ins, attr, targetReg, op1Reg, op2Reg, (int)i);
+                        emit->emitIns_SIMD_R_R_R_I(ins, attr, targetReg, op1Reg, op2Reg, i);
                     }
                 }
                 else
                 {
                     assert(numArgs == 2);
                     assert(intrinsicID == NI_AVX_ExtractVector128 || intrinsicID == NI_AVX2_ExtractVector128);
-                    emit->emitIns_SIMD_R_R_I(ins, attr, targetReg, op1Reg, (int)i);
+                    emit->emitIns_SIMD_R_R_I(ins, attr, targetReg, op1Reg, i);
                 }
             };
 
             if (lastOp->IsCnsIntOrI())
             {
                 ssize_t ival = lastOp->AsIntCon()->IconValue();
-                emitSwCase((unsigned)ival);
+                assert((ival >= 0) && (ival <= 255));
+                emitSwCase((int8_t)ival);
             }
             else
             {
