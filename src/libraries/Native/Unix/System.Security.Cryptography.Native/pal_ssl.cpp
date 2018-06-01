@@ -510,7 +510,9 @@ CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallba
 // delimiter ":" is used to allow more than one strings
 // below string is corresponding to "AllowNoEncryption"
 #define SSL_TXT_Separator ":"
+#define SSL_TXT_Exclusion "!"
 #define SSL_TXT_AllIncludingNull SSL_TXT_ALL SSL_TXT_Separator SSL_TXT_eNULL
+#define SSL_TXT_NotAnon SSL_TXT_Separator SSL_TXT_Exclusion SSL_TXT_aNULL
 
 extern "C" int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 {
@@ -518,7 +520,7 @@ extern "C" int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPoli
     switch (policy)
     {
         case EncryptionPolicy::RequireEncryption:
-            cipherString = SSL_TXT_ALL;
+            cipherString = SSL_TXT_ALL SSL_TXT_NotAnon;
             break;
 
         case EncryptionPolicy::AllowNoEncryption:
