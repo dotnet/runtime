@@ -22,6 +22,7 @@ namespace R2RDump
         private IReadOnlyList<int> _runtimeFunctions = Array.Empty<int>();
         private IReadOnlyList<string> _sections = Array.Empty<string>();
         private bool _diff = false;
+        private long _disassembler;
         private TextWriter _writer;
 
         private R2RDump()
@@ -90,7 +91,7 @@ namespace R2RDump
 
         private void WriteSubDivider()
         {
-            _writer.WriteLine("------------------");
+            _writer.WriteLine("_______________________________________________");
             _writer.WriteLine();
         }
 
@@ -146,7 +147,15 @@ namespace R2RDump
         /// </summary>
         private void DumpRuntimeFunction(R2RReader r2r, RuntimeFunction rtf)
         {
-            _writer.WriteLine(rtf.ToString());
+            if (_disasm)
+            {
+                _writer.WriteLine($"Id: {rtf.Id}");
+                CoreDisTools.DumpCodeBlock(_disassembler, rtf.StartAddress, r2r.GetOffset(rtf.StartAddress), r2r.Image, rtf.Size);
+            }
+            else
+            {
+                _writer.Write($"{rtf}");
+            }
             if (_raw)
             {
                 DumpBytes(r2r, rtf.StartAddress, (uint)rtf.Size);
@@ -302,7 +311,7 @@ namespace R2RDump
                 QueryMethod(r2r, "R2R Methods by Keyword", _keywords, false);
             }
 
-            _writer.WriteLine("========================================================");
+            _writer.WriteLine("=============================================================");
             _writer.WriteLine();
         }
 
@@ -440,7 +449,17 @@ namespace R2RDump
                 foreach (string filename in _inputFilenames)
                 {
                     R2RReader r2r = new R2RReader(filename);
+                    if (_disasm)
+                    {
+                        _disassembler = CoreDisTools.GetDisasm(r2r.Machine);
+                    }
+
                     Dump(r2r);
+
+                    if (_disasm)
+                    {
+                        CoreDisTools.FinishDisasm(_disassembler);
+                    }
                 }
             }
             catch (Exception e)

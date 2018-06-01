@@ -189,13 +189,14 @@ namespace R2RDump
 
             TypeDefinitionHandle declaringTypeHandle = _methodDef.GetDeclaringType();
             TypeDefinition declaringTypeDef;
-            while (!declaringTypeHandle.IsNil)
+            do
             {
                 declaringTypeDef = mdReader.GetTypeDefinition(declaringTypeHandle);
                 DeclaringType = mdReader.GetString(declaringTypeDef.Name) + "." + DeclaringType;
                 declaringTypeHandle = declaringTypeDef.GetDeclaringType();
             }
-            
+            while (!declaringTypeHandle.IsNil);
+
             NamespaceDefinitionHandle namespaceHandle = declaringTypeDef.NamespaceDefinition;
             while (!namespaceHandle.IsNil)
             {
