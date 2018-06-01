@@ -4830,8 +4830,9 @@ public:
     bool HasPendingGCStressInstructionUpdate()
     {
         LIMITED_METHOD_CONTRACT;
-        CONSISTENCY_CHECK((NULL == m_pbDestCode) == (NULL == m_pbSrcCode));
-        return m_pbDestCode != NULL;
+        BYTE* dest = VolatileLoad(&m_pbDestCode);
+        CONSISTENCY_CHECK((NULL == dest) || (NULL != VolatileLoadWithoutBarrier(&m_pbSrcCode)));
+        return dest != NULL;
     }
     void ClearGCStressInstructionUpdate()
     {
