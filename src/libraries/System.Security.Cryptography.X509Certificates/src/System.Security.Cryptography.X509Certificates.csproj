@@ -181,12 +181,6 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Permissions.cs">
       <Link>Common\CoreLib\Interop\Unix\System.Native\Interop.Permissions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs">
-      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.VersionInfo.cs">
-      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.VersionInfo.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
     </Compile>
@@ -252,12 +246,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\CoreLib\Interop\Unix\System.Native\Interop.Stat.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs">
-      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Easy.cs">
-      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Easy.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs</Link>
