@@ -46,9 +46,9 @@ namespace R2RDump
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendFormat($"Type:  {Enum.GetName(typeof(SectionType), Type)} ({Type:D})\n");
-            sb.AppendFormat($"RelativeVirtualAddress: 0x{RelativeVirtualAddress:X8}\n");
-            sb.AppendFormat($"Size: {Size} bytes\n");
+            sb.AppendLine($"Type:  {Enum.GetName(typeof(SectionType), Type)} ({Type:D})");
+            sb.AppendLine($"RelativeVirtualAddress: 0x{RelativeVirtualAddress:X8}");
+            sb.AppendLine($"Size: {Size} bytes");
             return sb.ToString();
         }
     }

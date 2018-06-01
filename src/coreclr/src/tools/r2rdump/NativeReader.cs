@@ -200,5 +200,29 @@ namespace R2RDump
 
             return offset;
         }
+
+        public static uint ReadCompressedData(byte[] image, ref int start)
+        {
+            int off = start;
+            uint data = ReadUInt32(image, ref off);
+            if ((data & 0x80) == 0x00)
+            {
+                start++;
+                return (byte)data;
+            }
+            if ((data & 0xC0) == 0x80)  // 10?? ????
+            {
+                data = (uint)((ReadByte(image, ref start) & 0x3f) << 8);
+                data |= ReadByte(image, ref start);
+            }
+            else // 110? ????
+            {
+                data = (uint)(ReadByte(image, ref start) & 0x1f) << 24;
+                data |= (uint)ReadByte(image, ref start) << 16;
+                data |= (uint)ReadByte(image, ref start) << 8;
+                data |= ReadByte(image, ref start);
+            }
+            return data;
+        }
     }
 }

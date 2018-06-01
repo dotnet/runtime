@@ -74,7 +74,7 @@ namespace R2RDump
             Signature = NativeReader.ReadUInt32(image, ref curOffset);
             if (Signature != READYTORUN_SIGNATURE)
             {
-                throw new System.BadImageFormatException("Incorrect R2R header signature");
+                throw new System.BadImageFormatException("Incorrect R2R header signature: " + SignatureString);
             }
 
             MajorVersion = NativeReader.ReadUInt16(image, ref curOffset);
@@ -89,7 +89,7 @@ namespace R2RDump
                 var sectionType = (R2RSection.SectionType)type;
                 if (!Enum.IsDefined(typeof(R2RSection.SectionType), type))
                 {
-                    R2RDump.OutputWarning("Invalid ReadyToRun section type");
+                    R2RDump.WriteWarning("Invalid ReadyToRun section type");
                 }
                 Sections[sectionType] = new R2RSection(sectionType,
                     NativeReader.ReadInt32(image, ref curOffset),
@@ -102,19 +102,19 @@ namespace R2RDump
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendFormat($"Signature: 0x{Signature:X8} ({SignatureString})\n");
-            sb.AppendFormat($"RelativeVirtualAddress: 0x{RelativeVirtualAddress:X8}\n");
+            sb.AppendLine($"Signature: 0x{Signature:X8} ({SignatureString})");
+            sb.AppendLine($"RelativeVirtualAddress: 0x{RelativeVirtualAddress:X8}");
             if (Signature == READYTORUN_SIGNATURE)
             {
-                sb.AppendFormat($"Size: {Size} bytes\n");
-                sb.AppendFormat($"MajorVersion: 0x{MajorVersion:X4}\n");
-                sb.AppendFormat($"MinorVersion: 0x{MinorVersion:X4}\n");
-                sb.AppendFormat($"Flags: 0x{Flags:X8}\n");
+                sb.AppendLine($"Size: {Size} bytes");
+                sb.AppendLine($"MajorVersion: 0x{MajorVersion:X4}");
+                sb.AppendLine($"MinorVersion: 0x{MinorVersion:X4}");
+                sb.AppendLine($"Flags: 0x{Flags:X8}");
                 foreach (ReadyToRunFlag flag in Enum.GetValues(typeof(ReadyToRunFlag)))
                 {
                     if ((Flags & (uint)flag) != 0)
                     {
-                        sb.AppendFormat($"  - {Enum.GetName(typeof(ReadyToRunFlag), flag)}\n");
+                        sb.AppendLine($"  - {Enum.GetName(typeof(ReadyToRunFlag), flag)}");
                     }
                 }
             }
