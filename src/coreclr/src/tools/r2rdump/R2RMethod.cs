@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -11,7 +12,7 @@ using System.Text;
 
 namespace R2RDump
 {
-    struct RuntimeFunction
+    class RuntimeFunction
     {
         /// <summary>
         /// The index of the runtime function
@@ -37,7 +38,12 @@ namespace R2RDump
         /// </summary>
         public int UnwindRVA { get; }
 
-        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva)
+        /// <summary>
+        /// The method that this runtime function belongs to
+        /// </summary>
+        public R2RMethod Method { get; }
+
+        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, R2RMethod method)
         {
             Id = id;
             StartAddress = startRva;
@@ -45,21 +51,22 @@ namespace R2RDump
             if (endRva == -1)
                 Size = -1;
             UnwindRVA = unwindRva;
+            Method = method;
         }
 
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendFormat($"Id: {Id}\n");
-            sb.AppendFormat($"StartAddress: 0x{StartAddress:X8}\n");
+            sb.AppendLine($"Id: {Id}");
+            sb.AppendLine($"StartAddress: 0x{StartAddress:X8}");
             if (Size == -1)
             {
-                sb.Append("Size: Unavailable\n");
+                sb.AppendLine("Size: Unavailable");
             }
             else
             {
-                sb.AppendFormat($"Size: {Size} bytes\n");
+                sb.AppendLine($"Size: {Size} bytes");
             }
 
             return sb.ToString();
@@ -78,17 +85,24 @@ namespace R2RDump
         /// </summary>
         public string Name { get; }
 
+        /// <summary>
+        /// The signature with format: namespace.class.methodName<S, T, ...>(S, T, ...)
+        /// </summary>
+        public string SignatureString { get; }
+
         public bool IsGeneric { get; }
 
-        /// <summary>
+        /*/// <summary>
         /// The return type of the method
         /// </summary>
-        public SignatureType ReturnType { get; }
+        public string ReturnType { get; }
 
         /// <summary>
         /// The argument types of the method
         /// </summary>
-        public SignatureType[] ArgTypes { get; }
+        public string[] ArgTypes { get; }*/
+
+        public MethodSignature<string> Signature { get; }
 
         /// <summary>
         /// The type that the method belongs to
@@ -101,9 +115,14 @@ namespace R2RDump
         public uint Token { get; }
 
         /// <summary>
+        /// The row id of the method
+        /// </summary>
+        public uint Rid { get; }
+
+        /// <summary>
         /// All the runtime functions of this method
         /// </summary>
-        public List<RuntimeFunction> RuntimeFunctions { get; }
+        public IList<RuntimeFunction> RuntimeFunctions { get; }
 
         /// <summary>
         /// The id of the entrypoint runtime function
@@ -113,7 +132,7 @@ namespace R2RDump
         /// <summary>
         /// Maps all the generic parameters to the type in the instance
         /// </summary>
-        Dictionary<string, GenericInstance> _genericParamInstanceMap;
+        Dictionary<string, string> _genericParamInstanceMap;
 
         [Flags]
         public enum EncodeMethodSigFlags
@@ -156,6 +175,7 @@ namespace R2RDump
         public R2RMethod(byte[] image, MetadataReader mdReader, uint rid, int entryPointId, GenericElementTypes[] instanceArgs, uint[] tok)
         {
             Token = _mdtMethodDef | rid;
+            Rid = rid;
             EntryPointRuntimeFunctionId = entryPointId;
 
             _mdReader = mdReader;
@@ -187,7 +207,7 @@ namespace R2RDump
             SignatureHeader signatureHeader = signatureReader.ReadSignatureHeader();
             IsGeneric = signatureHeader.IsGeneric;
             GenericParameterHandleCollection genericParams = _methodDef.GetGenericParameters();
-            _genericParamInstanceMap = new Dictionary<string, GenericInstance>();
+            _genericParamInstanceMap = new Dictionary<string, string>();
             
             int argCount = signatureReader.ReadCompressedInteger();
             if (IsGeneric)
@@ -195,17 +215,16 @@ namespace R2RDump
                 argCount = signatureReader.ReadCompressedInteger();
             }
 
-            ReturnType = new SignatureType(ref signatureReader, mdReader, genericParams);
-            ArgTypes = new SignatureType[argCount];
-            for (int i = 0; i < argCount; i++)
-            {
-                ArgTypes[i] = new SignatureType(ref signatureReader, mdReader, genericParams);
-            }
-
+            DisassemblingTypeProvider provider = new DisassemblingTypeProvider();
             if (IsGeneric && instanceArgs != null && tok != null)
             {
                 InitGenericInstances(genericParams, instanceArgs, tok);
             }
+            
+            DisassemblingGenericContext genericContext = new DisassemblingGenericContext(new string[0], _genericParamInstanceMap.Values.ToArray());
+            Signature = _methodDef.DecodeSignature(provider, genericContext);
+
+            SignatureString = GetSignature();
         }
 
         private void InitGenericInstances(GenericParameterHandleCollection genericParams, GenericElementTypes[] instanceArgs, uint[] tok)
@@ -215,80 +234,66 @@ namespace R2RDump
                 throw new BadImageFormatException("Generic param indices out of bounds");
             }
 
-            for (int i = 0; i < genericParams.Count; i++)
+            for (int i = 0; i < instanceArgs.Length; i++)
             {
-                var key = _mdReader.GetString(_mdReader.GetGenericParameter(genericParams.ElementAt(i)).Name);
-
+                string key = _mdReader.GetString(_mdReader.GetGenericParameter(genericParams.ElementAt(i)).Name);
+                string name = instanceArgs[i].ToString();
                 if (instanceArgs[i] == GenericElementTypes.ValueType)
                 {
-                    string classname = _mdReader.GetString(_mdReader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle((int)tok[i])).Name);
-                    _genericParamInstanceMap[key] = new GenericInstance(instanceArgs[i], classname);
+                    var t = _mdReader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle((int)tok[i]));
+                    name = _mdReader.GetString(t.Name);
+
                 }
-                else
+                _genericParamInstanceMap[key] = name;
+            }
+        }
+
+        private string GetSignature()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.AppendFormat($"{DeclaringType}{Name}");
+
+            if (IsGeneric)
+            {
+                sb.Append("<");
+                int i = 0;
+                foreach (var instance in _genericParamInstanceMap.Values)
                 {
-                    _genericParamInstanceMap[key] = new GenericInstance(instanceArgs[i], Enum.GetName(typeof(GenericElementTypes), instanceArgs[i]));
+                    if (i > 0)
+                    {
+                        sb.Append(", ");
+                    }
+                    sb.AppendFormat($"{instance}");
+                    i++;
                 }
+                sb.Append(">");
             }
 
-            if ((ReturnType.Flags & SignatureType.SignatureTypeFlags.GENERIC) != 0)
+            sb.Append("(");
+            for (int i = 0; i < Signature.ParameterTypes.Length; i++)
             {
-                ReturnType.GenericInstance = _genericParamInstanceMap[ReturnType.TypeName];
-            }
-
-            for (int i = 0; i < ArgTypes.Length; i++)
-            {
-                if ((ArgTypes[i].Flags & SignatureType.SignatureTypeFlags.GENERIC) != 0)
+                if (i > 0)
                 {
-                    ArgTypes[i].GenericInstance = _genericParamInstanceMap[ArgTypes[i].TypeName];
+                    sb.Append(", ");
                 }
+                sb.AppendFormat($"{Signature.ParameterTypes[i]}");
             }
+            sb.Append(")");
+
+            return sb.ToString();
         }
 
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
 
-            if (Name != null)
-            {
-                sb.AppendFormat($"{ReturnType.ToString()} ");
-                sb.AppendFormat($"{DeclaringType}{Name}");
+            sb.AppendLine($"{Signature.ReturnType} {SignatureString}");
 
-                if (IsGeneric)
-                {
-                    sb.Append("<");
-                    int i = 0;
-                    foreach (var instance in _genericParamInstanceMap.Values)
-                    {
-                        if (i > 0)
-                        {
-                            sb.Append(", ");
-                        }
-                        sb.AppendFormat($"{instance.TypeName}");
-                        i++;
-                    }
-                    sb.Append(">");
-                }
-
-                sb.Append("(");
-                for (int i = 0; i < ArgTypes.Length; i++)
-                {
-                    if (i > 0)
-                    {
-                        sb.Append(", ");
-                    }
-                    sb.AppendFormat($"{ArgTypes[i].ToString()}");
-                }
-                sb.Append(")\n");
-            }
-
-            sb.AppendFormat($"Token: 0x{Token:X8}\n");
-            sb.AppendFormat($"EntryPointRuntimeFunctionId: {EntryPointRuntimeFunctionId}\n");
-            sb.AppendFormat($"Number of RuntimeFunctions: {RuntimeFunctions.Count}\n\n");
-
-            foreach (RuntimeFunction runtimeFunction in RuntimeFunctions)
-            {
-                sb.AppendFormat($"{runtimeFunction}\n");
-            }
+            sb.AppendLine($"Token: 0x{Token:X8}");
+            sb.AppendLine($"Rid: {Rid}");
+            sb.AppendLine($"EntryPointRuntimeFunctionId: {EntryPointRuntimeFunctionId}");
+            sb.AppendLine($"Number of RuntimeFunctions: {RuntimeFunctions.Count}");
 
             return sb.ToString();
         }

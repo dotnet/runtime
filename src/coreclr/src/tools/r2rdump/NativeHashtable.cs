@@ -47,6 +47,14 @@ namespace R2RDump
             return val;
         }
 
+        public uint GetCompressedData()
+        {
+            int off = (int)Offset;
+            uint val = NativeReader.ReadCompressedData(_image, ref off);
+            Offset += 1;
+            return val;
+        }
+
         public uint GetUnsigned()
         {
             uint value = 0;
