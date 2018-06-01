@@ -11918,25 +11918,18 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             //
             // a % b = a - (a / b) * b;
             //
-            // We will use the suggested transform except in the special case
+            // TODO: there are special cases where it can be done better, for example
             // when the modulo operation is unsigned and the divisor is a
-            // integer constant power of two.  In this case, we will rely on lower
-            // to make the transform:
+            // integer constant power of two.  In this case, we can make the transform:
             //
             // a % b = a & (b - 1);
             //
-            // Note: We must always perform one or the other of these transforms.
-            // Therefore we must also detect the special cases where lower does not do the
-            // % to & transform.  In our case there is only currently one extra condition:
-            //
-            // * Dividend must not be constant.  Lower disables this rare const % const case
-            //
+            // Lower supports it for all cases except when `a` is constant, but
+            // in Morph we can't guarantee that `a` won't be transformed into a constant,
+            // so can't guarantee that lower will be able to do this optimization.
             {
-                // Do "a % b = a - (a / b) * b" morph if ...........................
-                bool doMorphModToSubMulDiv = (tree->OperGet() == GT_MOD) || // Modulo operation is signed
-                                             !op2->IsIntegralConst() ||     // Divisor is not an integer constant
-                                             !isPow2(op2->AsIntCon()->IconValue()) || // Divisor is not a power of two
-                                             op1->IsCnsIntOrI();                      // Dividend is constant
+                // Do "a % b = a - (a / b) * b" morph always, see TODO before this block.
+                bool doMorphModToSubMulDiv = true;
 
                 if (doMorphModToSubMulDiv)
                 {
