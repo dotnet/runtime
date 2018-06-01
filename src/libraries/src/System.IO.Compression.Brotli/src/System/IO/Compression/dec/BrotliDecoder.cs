@@ -40,8 +40,6 @@ namespace System.IO.Compression
                 throw new ObjectDisposedException(nameof(BrotliDecoder), SR.BrotliDecoder_Disposed);
         }
 
-        internal OperationStatus Decompress(ReadOnlyMemory<byte> source, Memory<byte> destination, out int bytesConsumed, out int bytesWritten) => Decompress(source.Span, destination.Span, out bytesConsumed, out bytesWritten);
-
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
         {
             EnsureInitialized();
