@@ -17,6 +17,7 @@ namespace System.Xml.Tests
             _output = output;
         }
 
+        [ActiveIssue(30017)]
         //[Variation("2", Desc = "Create a file that is Unicode encoded and send to xsltc.exe", Pri = 1, Params = new object[] { "@infft2.txt", "fft2.dll", "yes", "fft2", "fft2.pdb", "no", "fft2.txt" })]
         //[InlineData("@infft2.txt", "fft2.dll", "yes", "fft2", "fft2.pdb", "no", "fft2.txt")] //Skipping this, it tries to load System.dll
         //[Variation("3", Desc = "Create a file that is UTF-8 encoded and send to xsltc.exe", Pri = 1, Params = new object[] { "@infft3.txt", "fft3.dll", "yes", "fft3", "fft3.pdb", "no", "fft3.txt" })]
