@@ -3439,7 +3439,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			args [cinfo->vret_arg_pindex] = convert (ctx, emit_gsharedvt_ldaddr (ctx, var->dreg), IntPtrType ());
 		} else {
 			g_assert (addresses [call->inst.dreg]);
-			args [cinfo->vret_arg_pindex] = addresses [call->inst.dreg];
+			args [cinfo->vret_arg_pindex] = convert (ctx, addresses [call->inst.dreg], IntPtrType ());
 		}
 		break;
 	}
@@ -7495,6 +7495,7 @@ emit_method_inner (EmitContext *ctx)
 		if (cfg->verbose_level)
 			printf ("%s emitted as %s\n", mono_method_full_name (cfg->method, TRUE), ctx->method_name);
 
+		//LLVMDumpValue (ctx->lmethod);
 #if LLVM_API_VERSION < 100
 		/* VerifyFunction can't handle some of the debug info created by DIBuilder in llvm 3.9 */
 		int err = LLVMVerifyFunction(ctx->lmethod, LLVMPrintMessageAction);
