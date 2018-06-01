@@ -325,7 +325,12 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
     if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
         assert((Compiler::flagsOfHWIntrinsic(node->gtHWIntrinsicId) & HW_Flag_NoContainment) == 0);
-        assert(compiler->m_pLowering->IsContainableHWIntrinsicOp(node, op2) || op2->IsRegOptional());
+
+#if DEBUG
+        bool supportsRegOptional = false;
+        bool isContainable       = compiler->m_pLowering->IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional);
+        assert(isContainable || (supportsRegOptional && op2->IsRegOptional()));
+#endif // DEBUG
 
         TempDsc* tmpDsc = nullptr;
         unsigned varNum = BAD_VAR_NUM;
@@ -467,7 +472,12 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
     if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
         assert((Compiler::flagsOfHWIntrinsic(node->gtHWIntrinsicId) & HW_Flag_NoContainment) == 0);
-        assert(compiler->m_pLowering->IsContainableHWIntrinsicOp(node, op2) || op2->IsRegOptional());
+
+#if DEBUG
+        bool supportsRegOptional = false;
+        bool isContainable       = compiler->m_pLowering->IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional);
+        assert(isContainable || (supportsRegOptional && op2->IsRegOptional()));
+#endif // DEBUG
 
         TempDsc* tmpDsc = nullptr;
         unsigned varNum = BAD_VAR_NUM;
