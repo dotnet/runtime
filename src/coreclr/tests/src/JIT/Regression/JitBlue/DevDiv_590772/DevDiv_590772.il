@@ -11,164 +11,169 @@
 .class public auto ansi beforefieldinit DevDiv_590772
        extends [System.Runtime]System.Object
 {
-	.method static unsigned int16 ILGEN_METHOD(unsigned int32, unsigned int32, int32, char, float32)
-	{
-		.maxstack  177
-		.locals init (unsigned int8, bool, int8, unsigned int32, int8, unsigned int64, int8)
-		IL_0000: ldloc 0x0001
-		IL_0004: stloc 0x0004
-		IL_0008: ldc.r8 float64(0xfa1caf5352b592b5)
-		IL_0011: conv.ovf.i4
-		IL_0012: ldarg 0x0003
-		IL_0016: conv.ovf.u8
-		IL_0017: ldarg 0x0001
-		IL_001b: conv.ovf.i8.un
-		IL_001c: conv.u8
-		IL_001d: neg
-		IL_001e: neg
-		IL_001f: not
-		IL_0020: ldloc 0x0000
-		IL_0024: conv.r4
-		IL_0025: conv.u8
-		IL_0026: neg
-		IL_0027: cgt.un
-		IL_0029: conv.r8
-		IL_002a: pop
-		IL_002b: conv.ovf.i8.un
-		IL_002c: ldloc 0x0002
-		IL_0030: conv.ovf.u1
-		IL_0031: conv.ovf.u8.un
-		IL_0032: conv.u8
-		IL_0033: ldloc.s 0x05
-		IL_0035: sub.ovf.un
-		IL_0036: conv.ovf.u8
-		IL_0037: ldloc.s 0x05
-		IL_0039: ldc.i8 0x3ef77ff626f9ded8
-		IL_0042: or
-		IL_0043: xor
-		IL_0044: or
-		IL_0045: not
-		IL_0046: ldarg 0x0004
-		IL_004a: ldarg 0x0004
-		IL_004e: neg
-		IL_004f: conv.r.un
-		IL_0050: mul
-		IL_0051: neg
-		IL_0052: ckfinite
-		IL_0053: pop
-		IL_0054: conv.r8
-		IL_0055: neg
-		IL_0056: ldarg 0x0004
-		IL_005a: ldloc.s 0x05
-		IL_005c: ldarg.s 0x04
-		IL_005e: conv.ovf.u8
-		IL_005f: and
-		IL_0060: pop
-		IL_0061: add
-		IL_0062: ldloc 0x0004
-		IL_0066: conv.ovf.i8
-		IL_0067: ldloc.s 0x00
-		IL_0069: conv.ovf.i8
-		IL_006a: dup
-		IL_006b: conv.u2
-		IL_006c: shr
-		IL_006d: div
-		IL_006e: conv.r4
-		IL_006f: ldloc.s 0x05
-		IL_0071: ldloc.s 0x05
-		IL_0073: div.un
-		IL_0074: conv.r4
-		IL_0075: neg
-		IL_0076: add
-		IL_0077: neg
-		IL_0078: ldarg.s 0x04
-		IL_007a: ldarg 0x0004
-		IL_007e: clt
-		IL_0080: ldloc 0x0000
-		IL_0084: sub.ovf
-		IL_0085: conv.r4
-		IL_0086: conv.r.un
-		IL_0087: ckfinite
-		IL_0088: conv.r4
-		IL_0089: add
-		IL_008a: dup
-		IL_008b: ckfinite
-		IL_008c: cgt
-		IL_008e: ldc.r8 float64(0x9c1be4140fda2146)
-		IL_0097: ckfinite
-		IL_0098: conv.ovf.u8.un
-		IL_0099: ldarg 0x0004
-		IL_009d: conv.i2
-		IL_009e: shr.un
-		IL_009f: conv.ovf.i8
-		IL_00a0: conv.ovf.i.un
-		IL_00a1: ldloc.s 0x04
-		IL_00a3: neg
-		IL_00a4: not
-		IL_00a5: ldloc.s 0x00
-		IL_00a7: xor
-		IL_00a8: shr
-		IL_00a9: neg
-		IL_00aa: rem
-		IL_00ab: nop
-		IL_00ac: conv.r8
-		IL_00ad: mul
-		IL_00ae: conv.ovf.i4.un
-		IL_00af: shr.un
-		IL_00b0: ret   
-	}
+  .method static int8 ILGEN_METHOD(int64, char, native unsigned int, unsigned int32, char, native int)
+  {
+    .maxstack  183
+    .locals init (float64, int32, unsigned int32, native unsigned int, unsigned int32, int16, int64, native unsigned int, int32)
+    IL_0000: ldarg.s 0x04
+    IL_0002: pop
+    IL_0003: ldloc 0x0006
+    IL_0007: not
+    IL_0008: ldarg.s 0x00
+    IL_000a: ceq
+    IL_000c: ldloc.s 0x07
+    IL_000e: neg
+    IL_000f: ldloc 0x0007
+    IL_0013: conv.r4
+    IL_0014: conv.u4
+    IL_0015: ldarg 0x0001
+    IL_0019: ldloc.s 0x01
+    IL_001b: ldloc.s 0x03
+    IL_001d: clt
+    IL_001f: xor
+    IL_0020: neg
+    IL_0021: conv.u2
+    IL_0022: ldloc.s 0x03
+    IL_0024: not
+    IL_0025: rem.un
+    IL_0026: mul
+    IL_0027: ldarg.s 0x04
+    IL_0029: ldloc 0x0004
+    IL_002d: clt.un
+    IL_002f: dup
+    IL_0030: xor
+    IL_0031: dup
+    IL_0032: ceq
+    IL_0034: rem.un
+    IL_0035: div
+    IL_0036: not
+    IL_0037: ldc.i4 0xb8807944
+    IL_003c: ldloc.s 0x00
+    IL_003e: conv.r8
+    IL_003f: ldloc 0x0000
+    IL_0043: cgt
+    IL_0045: ldarg 0x0000
+    IL_0049: ldloc.s 0x06
+    IL_004b: neg
+    IL_004c: clt.un
+    IL_004e: add.ovf.un
+    IL_004f: xor
+    IL_0050: conv.ovf.u1
+    IL_0051: rem.un
+    IL_0052: rem.un
+    IL_0053: nop
+    IL_0054: ldarg 0x0000
+    IL_0058: ldarg.s 0x00
+    IL_005a: or
+    IL_005b: conv.ovf.i8.un
+    IL_005c: not
+    IL_005d: ldarg.s 0x00
+    IL_005f: ldarg 0x0000
+    IL_0063: cgt.un
+    IL_0065: not
+    IL_0066: conv.ovf.u8.un
+    IL_0067: ldarg 0x0003
+    IL_006b: ldc.i4 0x61790215
+    IL_0070: dup
+    IL_0071: xor
+    IL_0072: shl
+    IL_0073: conv.i
+    IL_0074: ldloc.s 0x08
+    IL_0076: pop
+    IL_0077: shl
+    IL_0078: or
+    IL_0079: not
+    IL_007a: dup
+    IL_007b: xor
+    IL_007c: ldloc 0x0001
+    IL_0080: conv.ovf.u2
+    IL_0081: conv.i8
+    IL_0082: cgt.un
+    IL_0084: ceq
+    IL_0086: not
+    IL_0087: neg
+    IL_0088: not
+    IL_0089: ldloc 0x0006
+    IL_008d: ldloc.s 0x05
+    IL_008f: ldarg.s 0x05
+    IL_0091: cgt
+    IL_0093: conv.i8
+    IL_0094: conv.ovf.u8.un
+    IL_0095: ldarg.s 0x00
+    IL_0097: ldc.i8 0x81fc8651e81eba9a
+    IL_00a0: ldc.i4 0x4d3cd1ad
+    IL_00a5: shr
+    IL_00a6: mul.ovf.un
+    IL_00a7: not
+    IL_00a8: conv.ovf.u8.un
+    IL_00a9: ceq
+    IL_00ab: shl
+    IL_00ac: conv.ovf.u8.un
+    IL_00ad: pop
+    IL_00ae: nop
+    IL_00af: ldloc 0x0007
+    IL_00b3: nop
+    IL_00b4: or
+    IL_00b5: neg
+    IL_00b6: ret   
+  }
 
- 	.method private hidebysig static int32 
-		  Main() cil managed
-	{
-		.entrypoint
-		// Code size       35 (0x23)
-		.maxstack  5
-		.locals init (int32 V_0)
-		IL_0000:  nop
-		.try
-		{
-		  IL_0001:  nop
-		  IL_0002:  ldc.i4.s   100
-		  IL_0004:  ldc.i4.s   100
-		  IL_0006:  ldc.i4.1
-		  IL_0007:  ldc.i4.s   97
-		  IL_0009:  ldc.r4     1.
-		  IL_000e:  call       uint16 DevDiv_590772::ILGEN_METHOD(uint32,
-																  uint32,
-																  int32,
-																  char,
-																  float32)
-		  IL_0013:  pop
-		  IL_0014:  nop
-		  IL_0015:  leave.s    IL_001c
+  .method private hidebysig static int32 
+          Main(string[] args) cil managed
+  {
+    .entrypoint
+    // Code size       34 (0x22)
+    .maxstack  7
+    .locals init (int32 V_0)
+    IL_0000:  nop
+    .try
+    {
+      IL_0001:  nop
+      IL_0002:  ldc.i4.0
+      IL_0003:  conv.i8
+      IL_0004:  ldc.i4.s   49
+      IL_0006:  ldc.i4.2
+      IL_0007:  ldc.i4.3
+      IL_0009:  ldc.i4.s   52
+      IL_000b:  ldc.i4.5
+      IL_000c:  call       int8 DevDiv_590772::ILGEN_METHOD(int64,
+                                                            char,
+                                                            native unsigned int,
+                                                            uint32,
+                                                            char,
+                                                            native int)
+      IL_0011:  pop
+      IL_0012:  nop
+      IL_0013:  leave.s    IL_001c
 
-		}  // end .try
-		catch [System.Runtime]System.Object 
-		{
-		  IL_0017:  pop
-		  IL_0018:  nop
-		  IL_0019:  nop
-		  IL_001a:  leave.s    IL_001c
+    }  // end .try
+    catch [System.Runtime]System.Object 
+    {
+      IL_0015:  pop
+      IL_0016:  nop
+      IL_0017:  ldc.i4.s   100
+      IL_0019:  stloc.0
+      IL_001a:  leave.s    IL_0020
 
-		}  // end handler
-		IL_001c:  ldc.i4.s   100
-		IL_001e:  stloc.0
-		IL_001f:  br.s       IL_0021
+    }  // end handler
+    IL_001c:  ldc.i4.m1
+    IL_001d:  stloc.0
+    IL_001e:  br.s       IL_0020
 
-		IL_0021:  ldloc.0
-		IL_0022:  ret
-	} // end of method DevDiv_590772::Main
+    IL_0020:  ldloc.0
+    IL_0021:  ret
+  } // end of method DevDiv_590772::Main
 
-	.method public hidebysig specialname rtspecialname 
-		  instance void  .ctor() cil managed
-	{
-		// Code size       8 (0x8)
-		.maxstack  8
-		IL_0000:  ldarg.0
-		IL_0001:  call       instance void [System.Runtime]System.Object::.ctor()
-		IL_0006:  nop
-		IL_0007:  ret
-	} // end of method DevDiv_590772::.ctor
+  .method public hidebysig specialname rtspecialname 
+          instance void  .ctor() cil managed
+  {
+    // Code size       8 (0x8)
+    .maxstack  8
+    IL_0000:  ldarg.0
+    IL_0001:  call       instance void [System.Runtime]System.Object::.ctor()
+    IL_0006:  nop
+    IL_0007:  ret
+  } // end of method DevDiv_590772::.ctor
 
 } // end of class DevDiv_590772
+
