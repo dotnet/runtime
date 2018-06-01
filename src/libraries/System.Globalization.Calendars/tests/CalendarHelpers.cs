@@ -111,7 +111,8 @@ namespace System.Globalization.Tests
         {
             foreach (Calendar calendar in s_calendars)
             {
-                yield return new object[] { calendar };
+                if (!(calendar is JapaneseLunisolarCalendar) || !PlatformDetection.IsFullFramework)
+                    yield return new object[] { calendar };
             }
         }
 
@@ -121,7 +122,7 @@ namespace System.Globalization.Tests
             int day = 1;
             foreach (Calendar calendar in s_calendars)
             {
-                if (ignoreJapaneseLunisolarCalendar && calendar is JapaneseLunisolarCalendar)
+                if (calendar is JapaneseLunisolarCalendar && (ignoreJapaneseLunisolarCalendar || PlatformDetection.IsFullFramework))
                 {
                     // desktop has a bug in JapaneseLunisolarCalendar which is fixed in .Net Core.
                     // in case of a new era starts in the middle of a month which means part of the month will belong to one
@@ -482,6 +483,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void TestJapaneseCalendarDateParsing()
         {
             CultureInfo ciJapanese = new CultureInfo("ja-JP") { DateTimeFormat = { Calendar = new JapaneseCalendar() } };
