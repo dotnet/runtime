@@ -50,6 +50,48 @@ bool IsFMAInstruction(instruction ins)
     return (ins >= INS_FIRST_FMA_INSTRUCTION) && (ins <= INS_LAST_FMA_INSTRUCTION);
 }
 
+regNumber getSseShiftRegNumber(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_psrldq:
+        {
+            return (regNumber)3;
+        }
+
+        case INS_pslldq:
+        {
+            return (regNumber)7;
+        }
+
+        case INS_psrld:
+        case INS_psrlw:
+        case INS_psrlq:
+        {
+            return (regNumber)2;
+        }
+
+        case INS_pslld:
+        case INS_psllw:
+        case INS_psllq:
+        {
+            return (regNumber)6;
+        }
+
+        case INS_psrad:
+        case INS_psraw:
+        {
+            return (regNumber)4;
+        }
+
+        default:
+        {
+            assert(!"Invalid instruction for SSE2 instruction of the form: opcode reg, immed8");
+            return REG_NA;
+        }
+    }
+}
+
 bool emitter::IsAVXInstruction(instruction ins)
 {
     return UseVEXEncoding() && IsSSEOrAVXInstruction(ins);
@@ -185,9 +227,11 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_psubusw:
         case INS_psubw:
         case INS_pslld:
+        case INS_pslldq:
         case INS_psllq:
         case INS_psllw:
         case INS_psrld:
+        case INS_psrldq:
         case INS_psrlq:
         case INS_psrlw:
         case INS_psrad:
@@ -5383,26 +5427,6 @@ void emitter::emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber reg, 
     }
 }
 
-static bool isSseShift(instruction ins)
-{
-    switch (ins)
-    {
-        case INS_psrldq:
-        case INS_pslldq:
-        case INS_psrld:
-        case INS_psrlw:
-        case INS_psrlq:
-        case INS_pslld:
-        case INS_psllw:
-        case INS_psllq:
-        case INS_psrad:
-        case INS_psraw:
-            return true;
-        default:
-            return false;
-    }
-}
-
 //------------------------------------------------------------------------
 // IsDstSrcImmAvxInstruction: check if instruction has "R(M) R(M) I" format
 // for EVEX, VEX and legacy SSE encodings and has no (E)VEX.NDS
@@ -5433,9 +5457,7 @@ static bool IsDstSrcImmAvxInstruction(instruction ins)
 
 void emitter::emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, int ival)
 {
-    // TODO-XARCH refactoring emitIns_R_R_I to handle SSE2/AVX2 shift as well as emitIns_R_I
-    bool isShift = isSseShift(ins);
-    if (IsDstSrcImmAvxInstruction(ins) || (UseVEXEncoding() && !isShift))
+    if (UseVEXEncoding() || IsDstSrcImmAvxInstruction(ins))
     {
         emitIns_R_R_I(ins, attr, reg, reg1, ival);
     }
@@ -5444,12 +5466,6 @@ void emitter::emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber reg, 
         if (reg1 != reg)
         {
             emitIns_R_R(INS_movaps, attr, reg, reg1);
-        }
-        // TODO-XARCH-BUG emitOutputRI cannot work with SSE2 shift instruction on imm8 > 127, so we replace it by the
-        // semantic alternatives. https://github.com/dotnet/coreclr/issues/16543
-        if (isShift && ival > 127)
-        {
-            ival = 127;
         }
         emitIns_R_I(ins, attr, reg, ival);
     }
@@ -10723,35 +10739,9 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         assert(id->idGCref() == GCT_NONE);
         assert(valInByte);
+
         // The left and right shifts use the same encoding, and are distinguished by the Reg/Opcode field.
-        regNumber regOpcode;
-        switch (ins)
-        {
-            case INS_psrldq:
-                regOpcode = (regNumber)3;
-                break;
-            case INS_pslldq:
-                regOpcode = (regNumber)7;
-                break;
-            case INS_psrld:
-            case INS_psrlw:
-            case INS_psrlq:
-                regOpcode = (regNumber)2;
-                break;
-            case INS_pslld:
-            case INS_psllw:
-            case INS_psllq:
-                regOpcode = (regNumber)6;
-                break;
-            case INS_psrad:
-            case INS_psraw:
-                regOpcode = (regNumber)4;
-                break;
-            default:
-                assert(!"Invalid instruction for SSE2 instruction of the form: opcode reg, immed8");
-                regOpcode = REG_NA;
-                break;
-        }
+        regNumber regOpcode = getSseShiftRegNumber(ins);
 
         // Get the 'base' opcode.
         code = insCodeMI(ins);
@@ -11892,7 +11882,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // Also, determine which operand goes where in the ModRM byte.
             regNumber mReg;
             regNumber rReg;
-            // if (ins == INS_shld || ins == INS_shrd || ins == INS_vextractf128 || ins == INS_vinsertf128)
             if (hasCodeMR(ins))
             {
                 code = insCodeMR(ins);
@@ -11901,6 +11890,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = insEncodeMRreg(ins, code);
                 mReg = id->idReg1();
                 rReg = id->idReg2();
+            }
+            else if (hasCodeMI(ins))
+            {
+                code = insCodeMI(ins);
+
+                // Emit the VEX prefix if it exists
+                code = AddVexPrefixIfNeeded(ins, code, size);
+
+                assert((code & 0xC000) == 0);
+                code |= 0xC000;
+
+                mReg = id->idReg2();
+
+                // The left and right shifts use the same encoding, and are distinguished by the Reg/Opcode field.
+                rReg = getSseShiftRegNumber(ins);
             }
             else
             {
