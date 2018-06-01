@@ -467,13 +467,23 @@ void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE)
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadCreating))
             FireEtwThreadCreating(pNewThread, GetClrInstanceId());
 
+        // copy out the managed name into a buffer that will not move if a GC happens
+        const WCHAR* nativeThreadName = NULL;
+        InlineSString<64> threadNameBuffer;
+        STRINGREF managedThreadName = gc.pThis->GetName();
+        if (managedThreadName != NULL)
+        {
+            managedThreadName->GetSString(threadNameBuffer);
+            nativeThreadName = threadNameBuffer.GetUnicode();
+        }
+
         // As soon as we create the new thread, it is eligible for suspension, etc.
         // So it gets transitioned to cooperative mode before this call returns to
         // us.  It is our duty to start it running immediately, so that GC isn't blocked.
 
         BOOL success = pNewThread->CreateNewThread(
                                         pNewThread->RequestedThreadStackSize() /* 0 stackSize override*/,
-                                        KickOffThread, share);
+                                        KickOffThread, share, nativeThreadName);
 
         if (!success)
         {
@@ -1547,7 +1557,7 @@ void QCALLTYPE ThreadNative::InformThreadNameChange(QCall::ThreadHandle thread, 
 #ifndef FEATURE_PAL
     // Set on Windows 10 Creators Update and later machines the unmanaged thread name as well. That will show up in ETW traces and debuggers which is very helpful
     // if more and more threads get a meaningful name
-    if (len > 0 && name != NULL)
+    if (len > 0 && name != NULL && pThread->GetThreadHandle() != INVALID_HANDLE_VALUE)
     {
         SetThreadName(pThread->GetThreadHandle(), name);
     }
