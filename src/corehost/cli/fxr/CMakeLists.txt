@@ -46,6 +46,7 @@ set(SOURCES
     ./fx_muxer.cpp
     ./framework_info.cpp
     ./sdk_info.cpp
+    ./sdk_resolver.cpp
 )
 
 if(WIN32)

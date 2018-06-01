@@ -106,7 +106,5 @@ private:
         const runtime_config_t& config,
         const pal::string_t& dotnet_dir,
         const pal::string_t& specified_fx_version);
-    static pal::string_t resolve_cli_version(const pal::string_t& global);
-    static bool resolve_sdk_dotnet_path(const pal::string_t& dotnet_root, pal::string_t* cli_sdk);
     static void muxer_usage(bool is_sdk_present);
 };
