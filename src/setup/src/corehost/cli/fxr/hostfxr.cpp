@@ -10,6 +10,7 @@
 #include "error_codes.h"
 #include "libhost.h"
 #include "runtime_config.h"
+#include "sdk_resolver.h"
 
 typedef int(*corehost_load_fn) (const host_interface_t* init);
 typedef int(*corehost_main_fn) (const int argc, const pal::char_t* argv[]);
@@ -252,9 +253,9 @@ SHARED_API int32_t hostfxr_resolve_sdk(
     }
 
     pal::string_t cli_sdk;
-    if (!fx_muxer_t::resolve_sdk_dotnet_path(exe_dir, working_dir, &cli_sdk))
+    if (!sdk_resolver_t::resolve_sdk_dotnet_path(exe_dir, working_dir, &cli_sdk))
     {
-        // fx_muxer_t::resolve_sdk_dotnet_path handles tracing for this error case.
+        // sdk_resolver_t::resolve_sdk_dotnet_path handles tracing for this error case.
         return 0;
     }
 
