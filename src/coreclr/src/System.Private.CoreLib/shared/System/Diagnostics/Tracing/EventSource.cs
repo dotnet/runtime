@@ -2212,9 +2212,7 @@ namespace System.Diagnostics.Tracing
                     default:
                         if (innerEx != null)
                         {
-                            // The innermost exception is the interesting one.  
-                            while (innerEx.InnerException != null)
-                                innerEx = innerEx.InnerException;
+                            innerEx = innerEx.GetBaseException();
                             ReportOutOfBandMessage(errorPrefix + ": " + innerEx.GetType() + ":" + innerEx.Message, true);
                         }
                         else
