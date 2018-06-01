@@ -9,4 +9,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="0.1.0-e160119-1" />
+  </ItemGroup>
+
 </Project>
