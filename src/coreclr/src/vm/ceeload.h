@@ -1903,7 +1903,7 @@ protected:
 
     BOOL IsIntrospectionOnly();
 
-#ifndef DACCESS_COMMPILE
+#ifndef DACCESS_COMPILE
     VOID EnsureActive();
     VOID EnsureAllocated();    
     VOID EnsureLibraryLoaded();
