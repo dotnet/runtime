@@ -1165,7 +1165,7 @@ namespace System
         public Exception(string message, System.Exception innerException) { }
         public virtual System.Collections.IDictionary Data { get { throw null; } }
         public virtual string HelpLink { get { throw null; } set { } }
-        public int HResult { get { throw null; } protected set { } }
+        public int HResult { get { throw null; } set { } }
         public System.Exception InnerException { get { throw null; } }
         public virtual string Message { get { throw null; } }
         public virtual string Source { get { throw null; } set { } }
