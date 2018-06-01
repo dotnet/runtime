@@ -332,7 +332,7 @@ public:
 
 #ifdef FEATURE_HW_INTRINSICS
     // Return true if 'node' is a containable HWIntrinsic op.
-    bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node);
+    bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node, bool* supportsRegOptional);
 #endif // FEATURE_HW_INTRINSICS
 
 private:

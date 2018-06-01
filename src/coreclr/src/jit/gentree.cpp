@@ -17399,8 +17399,25 @@ bool GenTree::isContainableHWIntrinsic() const
     assert(gtOper == GT_HWIntrinsic);
 
 #ifdef _TARGET_XARCH_
-    HWIntrinsicFlag flags = Compiler::flagsOfHWIntrinsic(AsHWIntrinsic()->gtHWIntrinsicId);
-    return ((flags & HW_Flag_NoContainment) == 0);
+    switch (AsHWIntrinsic()->gtHWIntrinsicId)
+    {
+        case NI_SSE_LoadAlignedVector128:
+        case NI_SSE_LoadScalarVector128:
+        case NI_SSE_LoadVector128:
+        case NI_SSE2_LoadAlignedVector128:
+        case NI_SSE2_LoadScalarVector128:
+        case NI_SSE2_LoadVector128:
+        case NI_AVX_LoadAlignedVector256:
+        case NI_AVX_LoadVector256:
+        {
+            return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
 #else
     return false;
 #endif // _TARGET_XARCH_
