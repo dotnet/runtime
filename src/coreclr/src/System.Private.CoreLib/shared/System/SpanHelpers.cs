@@ -233,13 +233,13 @@ namespace System
 
             nuint i = 0; // byte offset at which we're copying
 
-            if ((Unsafe.As<byte, int>(ref b) & 3) != 0)
+            if (((nuint)Unsafe.AsPointer(ref b) & 3) != 0)
             {
-                if ((Unsafe.As<byte, int>(ref b) & 1) != 0)
+                if (((nuint)Unsafe.AsPointer(ref b) & 1) != 0)
                 {
-                    Unsafe.AddByteOffset<byte>(ref b, i) = 0;
+                    b = 0;
                     i += 1;
-                    if ((Unsafe.As<byte, int>(ref b) & 2) != 0)
+                    if (((nuint)Unsafe.AsPointer(ref b) & 2) != 0)
                         goto IntAligned;
                 }
                 Unsafe.As<byte, short>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
@@ -256,7 +256,7 @@ namespace System
             // The thing 1, 2, 3, and 4 have in common that the others don't is that if you
             // subtract one from them, their 3rd lsb will not be set. Hence, the below check.
 
-            if (((Unsafe.As<byte, int>(ref b) - 1) & 4) == 0)
+            if ((((nuint)Unsafe.AsPointer(ref b) - 1) & 4) == 0)
             {
                 Unsafe.As<byte, int>(ref Unsafe.AddByteOffset<byte>(ref b, i)) = 0;
                 i += 4;
