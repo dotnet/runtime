@@ -1228,7 +1228,7 @@ void DebuggerJitInfo::Init(TADDR newAddress)
     this->m_addrOfCode = (ULONG_PTR)PTR_TO_CORDB_ADDRESS((BYTE*) newAddress);
     this->m_jitComplete = true;
 
-    this->m_codeRegionInfo.InitializeFromStartAddress((PCODE)this->m_addrOfCode);
+    this->m_codeRegionInfo.InitializeFromStartAddress(PINSTRToPCODE((TADDR)this->m_addrOfCode));
     this->m_sizeOfCode =  this->m_codeRegionInfo.getSizeOfTotalCode();
 
     this->m_encVersion = this->m_methodInfo->GetCurrentEnCVersion();
@@ -1586,6 +1586,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     //
     // We haven't got the lock yet so we'll repeat this lookup once
     // we've taken the lock.
+    ARM_ONLY(_ASSERTE((startAddr & THUMB_CODE) == 1));
     DebuggerJitInfo * pResult = FindJitInfo(fd, startAddr);
     if (pResult != NULL)
     {
