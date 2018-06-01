@@ -45,7 +45,7 @@
     IL_0000:  ldloca.s   V_0
     IL_0002:  ldarg.0
     IL_0003:  conv.i
-    IL_0004:  ldc.i4.s   28
+    IL_0004:  ldc.i4.s   12
     IL_0006:  unaligned. 4 // This opcode created the bad tree, "Convert" needed to be inlined to have a LCL_VAR here.
     IL_0009:  cpblk
     IL_000b:  ldloc.0
@@ -76,6 +76,6 @@
        extends [mscorlib]System.ValueType
 {
   .pack 0
-  .size 28
+  .size 12
   .field private int32 Padding
 } // end of class StructY
