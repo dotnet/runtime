@@ -2640,10 +2640,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
         if (HWIntrinsicInfo::lookupCategory(intrinsicID) == HW_Category_IMM)
         {
-            GenTree* lastOp = Compiler::lastOpOfHWIntrinsic(node, numArgs);
+            GenTree* lastOp = HWIntrinsicInfo::lookupLastOp(node);
             assert(lastOp != nullptr);
 
-            if (Compiler::isImmHWIntrinsic(intrinsicID, lastOp) && lastOp->IsCnsIntOrI())
+            if (HWIntrinsicInfo::isImmOp(intrinsicID, lastOp) && lastOp->IsCnsIntOrI())
             {
                 MakeSrcContained(node, lastOp);
             }
