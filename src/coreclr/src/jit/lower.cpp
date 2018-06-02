@@ -4341,7 +4341,7 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
     GenTree* base   = nullptr;
     GenTree* index  = nullptr;
     unsigned scale  = 0;
-    unsigned offset = 0;
+    ssize_t  offset = 0;
     bool     rev    = false;
 
     // TODO-1stClassStructs: This logic is here to preserve prior behavior. Note that previously
@@ -4373,8 +4373,15 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
     }
 
     // Find out if an addressing mode can be constructed
-    bool doAddrMode =
-        comp->codeGen->genCreateAddrMode(addr, -1, true, 0, &rev, &base, &index, &scale, &offset, true /*nogen*/);
+    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,   // address
+                                                       true,   // fold
+                                                       &rev,   // reverse ops
+                                                       &base,  // base addr
+                                                       &index, // index val
+#if SCALED_ADDR_MODES
+                                                       &scale,   // scaling
+#endif                                                           // SCALED_ADDR_MODES
+                                                       &offset); // displacement
 
     if (scale == 0)
     {
@@ -4411,12 +4418,12 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
     DISPNODE(base);
     if (index != nullptr)
     {
-        JITDUMP("  + Index * %u + %u\n    ", scale, offset);
+        JITDUMP("  + Index * %u + %d\n    ", scale, offset);
         DISPNODE(index);
     }
     else
     {
-        JITDUMP("  + %u\n", offset);
+        JITDUMP("  + %d\n", offset);
     }
 
     var_types addrModeType = addr->TypeGet();
