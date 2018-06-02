@@ -2965,8 +2965,6 @@ protected:
 
 protected:
 #ifdef _TARGET_XARCH_
-    static bool isIntrinsicAnIsSupportedPropertyGetter(NamedIntrinsic intrinsic);
-    static bool isFullyImplmentedISAClass(InstructionSet isa);
     GenTree* impSSEIntrinsic(NamedIntrinsic        intrinsic,
                              CORINFO_METHOD_HANDLE method,
                              CORINFO_SIG_INFO*     sig,
@@ -3012,14 +3010,10 @@ protected:
                                 CORINFO_SIG_INFO*     sig,
                                 bool                  mustExpand);
     bool compSupportsHWIntrinsic(InstructionSet isa);
-    bool isScalarISA(InstructionSet isa);
-    static GenTree* lastOpOfHWIntrinsic(GenTreeHWIntrinsic* node, int numArgs);
 
 protected:
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
-    static int immUpperBoundOfHWIntrinsic(NamedIntrinsic intrinsic);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
-    static bool isImmHWIntrinsic(NamedIntrinsic intrinsic, GenTree* lastOp);
     GenTree* addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand);
     bool hwIntrinsicSignatureTypeSupported(var_types retType, CORINFO_SIG_INFO* sig, HWIntrinsicFlag flags);
 #endif // _TARGET_XARCH_

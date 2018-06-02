@@ -2355,7 +2355,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
         if ((category == HW_Category_IMM) && ((flags & HW_Flag_NoJmpTableIMM) == 0))
         {
-            if (Compiler::isImmHWIntrinsic(intrinsicId, lastOp) && !lastOp->isContainedIntOrIImmed())
+            if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && !lastOp->isContainedIntOrIImmed())
             {
                 assert(!lastOp->IsCnsIntOrI());
 
