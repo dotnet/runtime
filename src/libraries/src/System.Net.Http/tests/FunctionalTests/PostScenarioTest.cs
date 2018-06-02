@@ -14,7 +14,6 @@ namespace System.Net.Http.Functional.Tests
 
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
-    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
     public abstract class PostScenarioTest : HttpClientTestBase
     {
         private const string ExpectedContent = "Test contest";
@@ -41,6 +40,7 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
+        [ActiveIssue(30057, TargetFrameworkMonikers.Uap)]
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostRewindableStreamContentMultipleTimes_StreamContentFullySent(Uri serverUri)
@@ -139,17 +139,18 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx behaves differently and will buffer content and use 'Content-Length' semantics")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT behaves differently and will use 'Content-Length' semantics")]
         public async Task PostUsingNoSpecifiedSemantics_UsesChunkedSemantics(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new StringContent(ExpectedContent),
                 useContentLengthUpload: false, useChunkedEncodingUpload: false);
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external server")]
         [Theory]
         [InlineData(5 * 1024)]
         [InlineData(63 * 1024)]
-        public async Task PostLongerContentLengths_UsesChunkedSemantics(int contentLength)
+        public async Task PostLargeContentUsingContentLengthSemantics_Success(int contentLength)
         {
             var rand = new Random(42);
             var sb = new StringBuilder(contentLength);
@@ -163,6 +164,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT based handler has PreAuthenticate always true")]
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostRewindableContentUsingAuth_NoPreAuthenticate_Success(Uri serverUri)
@@ -172,6 +174,7 @@ namespace System.Net.Http.Functional.Tests
             await PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, false);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT based handler has PreAuthenticate always true")]
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostNonRewindableContentUsingAuth_NoPreAuthenticate_ThrowsHttpRequestException(Uri serverUri)
@@ -182,6 +185,7 @@ namespace System.Net.Http.Functional.Tests
                 PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, preAuthenticate: false));
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT based handler has PreAuthenticate always true")]
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostNonRewindableContentUsingAuth_PreAuthenticate_Success(Uri serverUri)

@@ -13,8 +13,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    // TODO: #2383 - Consolidate the use of the environment variable settings to Common/tests.
-    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP will send default credentials based on manifest settings")]
     [PlatformSpecific(TestPlatforms.Windows)]
     public abstract class DefaultCredentialsTest : HttpClientTestBase
     {
@@ -44,7 +43,7 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(ServerAuthenticationTestsEnabled))]
         [MemberData(nameof(AuthenticatedServers))]
         public async Task UseDefaultCredentials_DefaultValue_Unauthorized(string uri, bool useProxy)
@@ -59,7 +58,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(ServerAuthenticationTestsEnabled))]
         [MemberData(nameof(AuthenticatedServers))]
         public async Task UseDefaultCredentials_SetFalse_Unauthorized(string uri, bool useProxy)
@@ -75,7 +74,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(ServerAuthenticationTestsEnabled))]
         [MemberData(nameof(AuthenticatedServers))]
         public async Task UseDefaultCredentials_SetTrue_ConnectAsCurrentIdentity(string uri, bool useProxy)
@@ -96,7 +95,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(ServerAuthenticationTestsEnabled))]
         [MemberData(nameof(AuthenticatedServers))]
         public async Task Credentials_SetToWrappedDefaultCredential_ConnectAsCurrentIdentity(string uri, bool useProxy)
@@ -120,7 +119,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(ServerAuthenticationTestsEnabled))]
         [MemberData(nameof(AuthenticatedServers))]
         public async Task Credentials_SetToBadCredential_Unauthorized(string uri, bool useProxy)
@@ -136,7 +135,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [ActiveIssue(10041)]
         [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
         [InlineData(false)]
@@ -158,7 +157,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [ActiveIssue(10041)]
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithNoCredentials_ProxyAuthenticationRequired()
@@ -173,7 +172,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [ActiveIssue(10041)]
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithDefaultCredentials_OK()
@@ -188,7 +187,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
         
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [ConditionalFact(nameof(DomainProxyTestsEnabled))]
         public async Task Proxy_UseAuthenticatedProxyWithWrappedDefaultCredentials_OK()
         {

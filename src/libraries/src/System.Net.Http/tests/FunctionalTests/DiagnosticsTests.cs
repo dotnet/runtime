@@ -43,7 +43,7 @@ namespace System.Net.Http.Functional.Tests
         /// This test must be in the same test collection as any others testing HttpClient/WinHttpHandler
         /// DiagnosticSources, since the global logging mechanism makes them conflict inherently.
         /// </remarks>
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticSourceLogging()
         {
@@ -111,7 +111,7 @@ namespace System.Net.Http.Functional.Tests
         /// This test must be in the same test collection as any others testing HttpClient/WinHttpHandler
         /// DiagnosticSources, since the global logging mechanism makes them conflict inherently.
         /// </remarks>
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticSourceNoLogging()
         {
@@ -167,7 +167,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ActiveIssue(23771, TestPlatforms.AnyUnix)]
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -214,7 +214,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString(), useSsl.ToString()).Dispose();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticExceptionLogging()
         {
@@ -260,7 +260,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ActiveIssue(23209)]
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticCancelledLogging()
         {
@@ -305,7 +305,6 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendAsync_ExpectedDiagnosticSourceActivityLogging()
         {
@@ -381,7 +380,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticSourceUrlFilteredActivityLogging()
         {
@@ -422,7 +421,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticExceptionActivityLogging()
         {
@@ -468,8 +467,8 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
-        [OuterLoop] // TODO: Issue #11345
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't support .Proxy property")]
+        [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
         {
@@ -556,7 +555,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging()
         {
@@ -595,7 +594,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticExceptionOnlyActivityLogging()
         {
@@ -633,7 +632,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticStopOnlyActivityLogging()
         {
@@ -671,7 +670,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ActiveIssue(23209)]
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticCancelledActivityLogging()
         {
@@ -717,11 +716,10 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [Fact]
         public void SendAsync_NullRequest_ThrowsArgumentNullException()
         {
-            RemoteInvoke(() =>
+            RemoteInvoke(async () =>
             {
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(null);
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
@@ -730,7 +728,17 @@ namespace System.Net.Http.Functional.Tests
 
                     using (MyHandler handler = new MyHandler())
                     {
-                        Assert.ThrowsAsync<ArgumentNullException>(() => handler.SendAsync(null)).Wait();
+                        // Getting the Task first from the .SendAsync() call also tests
+                        // that the exception comes from the async Task path.
+                        Task t = handler.SendAsync(null);
+                        if (PlatformDetection.IsUap)
+                        {
+                            await Assert.ThrowsAsync<HttpRequestException>(() => t);
+                        }
+                        else
+                        {
+                            await Assert.ThrowsAsync<ArgumentNullException>(() => t);
+                        }
                     }
                 }
 
