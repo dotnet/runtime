@@ -75,7 +75,9 @@
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
     <Compile Include="System\Configuration\ApplicationSettingsBaseTests.cs" />
+    <Compile Include="System\Configuration\AppSettingsReaderTests.cs" />
     <Compile Include="System\Configuration\AppSettingsTests.cs" />
+    <Compile Include="System\Configuration\CallBackValidatorAttributeTests.cs" />
     <Compile Include="System\Configuration\ConfigPathUtilityTests.cs" />
     <Compile Include="System\Configuration\ConfigurationElementCollectionTests.cs" />
     <Compile Include="System\Configuration\ConfigurationElementTests.cs" />
@@ -90,7 +92,14 @@
     <Compile Include="System\Configuration\LocalFileSettingsProviderTests.cs" />
     <Compile Include="System\Configuration\NameValueConfigurationCollectionTests.cs" />
     <Compile Include="System\Configuration\SectionGroupsTests.cs" />
+    <Compile Include="System\Configuration\SettingElementCollectionTests.cs" />
     <Compile Include="System\Configuration\SettingElementTests.cs" />
+    <Compile Include="System\Configuration\SettingsDescriptionAttributeTests.cs" />
+    <Compile Include="System\Configuration\SettingsGroupDescriptionAttributeTests.cs" />
+    <Compile Include="System\Configuration\SettingsManageabilityAtrributeTests.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyIsReadOnlyExceptionTests.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyNotFoundExceptionTests.cs" />
+    <Compile Include="System\Configuration\SettingsPropertyWrongTypeExceptionTests.cs" />
     <Compile Include="System\Configuration\SmokeTest.cs" />
     <Compile Include="System\Configuration\StringUtilTests.cs" />
     <Compile Include="System\Configuration\TempConfig.cs" />
@@ -110,6 +119,9 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
