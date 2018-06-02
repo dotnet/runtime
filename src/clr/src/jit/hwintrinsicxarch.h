@@ -127,8 +127,8 @@ enum HWIntrinsicFlag : unsigned int
 
 struct HWIntrinsicInfo
 {
-    NamedIntrinsic          intrinsicID;
-    const char*             intrinsicName;
+    NamedIntrinsic          id;
+    const char*             name;
     InstructionSet          isa;
     int                     ival;
     unsigned                simdSize;
@@ -136,6 +136,13 @@ struct HWIntrinsicInfo
     instruction             ins[10];
     HWIntrinsicCategory     category;
     HWIntrinsicFlag         flags;
+
+    static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
+
+    static const char* lookupName(NamedIntrinsic id)
+    {
+        return lookup(id).name;
+    }
 };
 
 #endif // FEATURE_HW_INTRINSICS
