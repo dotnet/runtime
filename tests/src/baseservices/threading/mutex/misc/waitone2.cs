@@ -206,8 +206,8 @@ public class MutexWaitOne2
 
             thread = new Thread(new ThreadStart(CallContextBoundObjectMethod));
             thread.Start();
-            Thread.Sleep(c_DEFAULT_SLEEP_TIME / 5); // To avoid race
-            if (false != m_Mutex.WaitOne(c_DEFAULT_SLEEP_TIME))
+            Thread.Sleep(c_DEFAULT_SLEEP_TIME); // To avoid race
+            if (false != m_Mutex.WaitOne(c_DEFAULT_SLEEP_TIME / 5))
             {
                 m_Mutex.ReleaseMutex();
                 TestLibrary.TestFramework.LogError("006", "WaitOne returns true when wait some finite time will quit for timeout when another thread is in nondefault managed context");
