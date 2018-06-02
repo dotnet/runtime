@@ -178,12 +178,16 @@ namespace System.Numerics
         public static double Abs(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Acos(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Add(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
+        public static System.Numerics.Complex Add(System.Numerics.Complex left, double right) { throw null; }
+        public static System.Numerics.Complex Add(double left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex Asin(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Atan(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Conjugate(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Cos(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Cosh(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Divide(System.Numerics.Complex dividend, System.Numerics.Complex divisor) { throw null; }
+        public static System.Numerics.Complex Divide(System.Numerics.Complex dividend, double divisor) { throw null; }
+        public static System.Numerics.Complex Divide(double dividend, System.Numerics.Complex divisor) { throw null; }
         public bool Equals(System.Numerics.Complex value) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public static System.Numerics.Complex Exp(System.Numerics.Complex value) { throw null; }
@@ -193,9 +197,15 @@ namespace System.Numerics
         public static System.Numerics.Complex Log(System.Numerics.Complex value, double baseValue) { throw null; }
         public static System.Numerics.Complex Log10(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Multiply(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
+        public static System.Numerics.Complex Multiply(System.Numerics.Complex left, double right) { throw null; }
+        public static System.Numerics.Complex Multiply(double left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex Negate(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex operator +(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
+        public static System.Numerics.Complex operator +(System.Numerics.Complex left, double right) { throw null; }
+        public static System.Numerics.Complex operator +(double left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex operator /(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
+        public static System.Numerics.Complex operator /(System.Numerics.Complex left, double right) { throw null; }
+        public static System.Numerics.Complex operator /(double left, System.Numerics.Complex right) { throw null; }
         public static bool operator ==(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
         public static explicit operator System.Numerics.Complex (decimal value) { throw null; }
         public static explicit operator System.Numerics.Complex (System.Numerics.BigInteger value) { throw null; }
@@ -215,7 +225,11 @@ namespace System.Numerics
         public static implicit operator System.Numerics.Complex (ulong value) { throw null; }
         public static bool operator !=(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex operator *(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
+        public static System.Numerics.Complex operator *(System.Numerics.Complex left, double right) { throw null; }
+        public static System.Numerics.Complex operator *(double left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex operator -(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
+        public static System.Numerics.Complex operator -(System.Numerics.Complex left, double right) { throw null; }
+        public static System.Numerics.Complex operator -(double left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex operator -(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Pow(System.Numerics.Complex value, double power) { throw null; }
         public static System.Numerics.Complex Pow(System.Numerics.Complex value, System.Numerics.Complex power) { throw null; }
@@ -224,6 +238,8 @@ namespace System.Numerics
         public static System.Numerics.Complex Sinh(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Sqrt(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Subtract(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
+        public static System.Numerics.Complex Subtract(System.Numerics.Complex left, double right) { throw null; }
+        public static System.Numerics.Complex Subtract(double left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex Tan(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Tanh(System.Numerics.Complex value) { throw null; }
         public override string ToString() { throw null; }
