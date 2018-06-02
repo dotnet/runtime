@@ -2964,8 +2964,6 @@ public:
 
 protected:
 #ifdef _TARGET_XARCH_
-    static InstructionSet lookupHWIntrinsicISA(const char* className);
-    static NamedIntrinsic lookupHWIntrinsic(const char* methodName, InstructionSet isa);
     static InstructionSet isaOfHWIntrinsic(NamedIntrinsic intrinsic);
     static bool isIntrinsicAnIsSupportedPropertyGetter(NamedIntrinsic intrinsic);
     static bool isFullyImplmentedISAClass(InstructionSet isa);
