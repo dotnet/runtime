@@ -141,8 +141,17 @@ struct HWIntrinsicInfo
 
     static NamedIntrinsic lookupId(const char* className, const char* methodName);
     static InstructionSet lookupIsa(const char* className);
+
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
+
     static int lookupNumArgs(const GenTreeHWIntrinsic* node);
+    static GenTree* lookupLastOp(const GenTreeHWIntrinsic* node);
+    static bool isImmOp(NamedIntrinsic id, const GenTree* op);
+
+    static int lookupImmUpperBound(NamedIntrinsic id);
+
+    static bool isFullyImplementedIsa(InstructionSet isa);
+    static bool isScalarIsa(InstructionSet isa);
 
     // Member lookup
 

@@ -145,7 +145,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         emit->emitIns_SIMD_R_R_AR(ins, simdSize, targetReg, op1Reg, op2Reg);
                     }
                 }
-                else if (Compiler::isImmHWIntrinsic(intrinsicId, op2))
+                else if (HWIntrinsicInfo::isImmOp(intrinsicId, op2))
                 {
                     assert(ival == -1);
 
@@ -201,7 +201,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 genConsumeRegs(op3);
                 regNumber op3Reg = op3->gtRegNum;
 
-                if (Compiler::isImmHWIntrinsic(intrinsicId, op3))
+                if (HWIntrinsicInfo::isImmOp(intrinsicId, op3))
                 {
                     assert(ival == -1);
 
@@ -734,7 +734,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
     assert(nonConstImmReg != REG_NA);
     emitter* emit = getEmitter();
 
-    const unsigned maxByte = (unsigned)Compiler::immUpperBoundOfHWIntrinsic(intrinsic) + 1;
+    const unsigned maxByte = (unsigned)HWIntrinsicInfo::lookupImmUpperBound(intrinsic) + 1;
     assert(maxByte <= 256);
     BasicBlock* jmpTable[256];
 
