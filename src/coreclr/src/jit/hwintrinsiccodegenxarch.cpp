@@ -40,7 +40,7 @@ static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
     const bool tableDrivenCategory =
         (category != HW_Category_Special) && (category != HW_Category_Scalar) && (category != HW_Category_Helper);
     const bool tableDrivenFlag =
-        !(HWIntrinsicInfo::GeneratesMultipleIns(intrinsicId) | HWIntrinsicInfo::HasSpecialCodegen(intrinsicId));
+        !HWIntrinsicInfo::GeneratesMultipleIns(intrinsicId) && !HWIntrinsicInfo::HasSpecialCodegen(intrinsicId);
     return tableDrivenCategory && tableDrivenFlag;
 }
 
