@@ -689,6 +689,8 @@
   </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows)">
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\BCrypt\Interop.BCryptGenRandom.GetRandomBytes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\BCrypt\Interop.NTSTATUS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.Libraries.cs" />
