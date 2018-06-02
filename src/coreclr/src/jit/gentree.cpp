@@ -17384,8 +17384,7 @@ bool GenTree::isCommutativeHWIntrinsic() const
     assert(gtOper == GT_HWIntrinsic);
 
 #ifdef _TARGET_XARCH_
-    HWIntrinsicFlag flags = HWIntrinsicInfo::lookupFlags(AsHWIntrinsic()->gtHWIntrinsicId);
-    return ((flags & HW_Flag_Commutative) != 0);
+    return HWIntrinsicInfo::IsCommutative(AsHWIntrinsic()->gtHWIntrinsicId);
 #else
     return false;
 #endif // _TARGET_XARCH_
@@ -17428,8 +17427,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 #ifdef _TARGET_XARCH_
     if (!comp->canUseVexEncoding())
     {
-        HWIntrinsicFlag flags = HWIntrinsicInfo::lookupFlags(AsHWIntrinsic()->gtHWIntrinsicId);
-        return ((flags & HW_Flag_NoRMWSemantics) == 0);
+        return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->gtHWIntrinsicId);
     }
 
     switch (AsHWIntrinsic()->gtHWIntrinsicId)
@@ -17447,10 +17445,14 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         case NI_FMA_MultiplySubtractNegated:
         case NI_FMA_MultiplySubtractNegatedScalar:
         case NI_FMA_MultiplySubtractScalar:
+        {
             return true;
+        }
 
         default:
+        {
             return false;
+        }
     }
 #else
     return false;
