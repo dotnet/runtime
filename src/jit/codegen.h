@@ -36,17 +36,14 @@ public:
     // TODO-Cleanup: Abstract out the part of this that finds the addressing mode, and
     // move it to Lower
     virtual bool genCreateAddrMode(GenTree*  addr,
-                                   int       mode,
                                    bool      fold,
-                                   regMaskTP regMask,
                                    bool*     revPtr,
                                    GenTree** rv1Ptr,
                                    GenTree** rv2Ptr,
 #if SCALED_ADDR_MODES
                                    unsigned* mulPtr,
-#endif
-                                   unsigned* cnsPtr,
-                                   bool      nogen = false);
+#endif // SCALED_ADDR_MODES
+                                   ssize_t* cnsPtr);
 
 private:
 #if defined(_TARGET_XARCH_)
