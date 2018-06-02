@@ -427,7 +427,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
             getEmitter()->emitIns_R_I(INS_mov, size, reg, imm);
         }
     }
-    regTracker.rsTrackRegIntCns(reg, imm);
+    regSet.verifyRegUsed(reg);
 }
 
 /***********************************************************************************
@@ -450,7 +450,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (con->ImmedValNeedsReloc(compiler))
             {
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, targetReg, cnsVal);
-                regTracker.rsTrackRegTrash(targetReg);
+                regSet.verifyRegUsed(targetReg);
             }
             else
             {
@@ -867,7 +867,7 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     else
     {
         inst_RV_RV(ins_Copy(targetType), targetReg, op1reg, targetType);
-        regTracker.rsTrackRegCopy(targetReg, op1reg);
+        regSet.verifyRegUsed(targetReg);
         gcInfo.gcMarkRegPtrVal(targetReg, targetType);
         dst = treeNode;
         src = op2;
@@ -8597,7 +8597,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                emitter::emitNoGChelper(helper));
     // clang-format on
 
-    regTracker.rsTrashRegSet(killMask);
+    regSet.verifyRegistersUsed(killMask);
 }
 
 #if !defined(_TARGET_64BIT_)

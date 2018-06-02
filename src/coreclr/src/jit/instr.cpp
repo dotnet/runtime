@@ -706,7 +706,7 @@ AGAIN:
                 getEmitter()->emitIns_R_R(ins, size, regTmp, reg, flags);
                 getEmitter()->emitIns_S_R(ins_Store(tree->TypeGet()), size, regTmp, varNum, offs);
 
-                regTracker.rsTrackRegTrash(regTmp);
+                regSet.verifyRegUsed(regTmp);
             }
             else
 #endif
@@ -868,7 +868,7 @@ AGAIN:
                     getEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), size, regTmp, varNum, offs);
                     getEmitter()->emitIns_R_R(ins, size, reg, regTmp, flags);
 
-                    regTracker.rsTrackRegTrash(regTmp);
+                    regSet.verifyRegUsed(regTmp);
                     return;
             }
 #else  // !_TARGET_ARM_
@@ -2133,7 +2133,7 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 #else
 #error "Unknown _TARGET_"
 #endif
-    regTracker.rsTrackRegIntCns(reg, 0);
+    regSet.verifyRegUsed(reg);
 }
 
 /*****************************************************************************
@@ -2262,7 +2262,7 @@ void CodeGen::instGen_Store_Imm_Into_Lcl(
     instGen_Store_Reg_Into_Lcl(dstType, immReg, varNum, offs);
     if (EA_IS_RELOC(sizeAttr))
     {
-        regTracker.rsTrackRegTrash(immReg);
+        regSet.verifyRegUsed(immReg);
     }
 #else // _TARGET_*
 #error "Unknown _TARGET_"
