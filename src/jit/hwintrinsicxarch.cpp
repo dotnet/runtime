@@ -158,27 +158,23 @@ InstructionSet HWIntrinsicInfo::lookupIsa(const char* className)
 }
 
 //------------------------------------------------------------------------
-// simdSizeOfHWIntrinsic: get the SIMD size of this intrinsic
+// lookupSimdSize: Gets the SimdSize for a given HWIntrinsic and signature
 //
 // Arguments:
-//    intrinsic -- id of the intrinsic function.
+//    id -- The ID associated with the HWIntrinsic to lookup
+//   sig -- The signature of the HWIntrinsic to lookup
 //
 // Return Value:
-//     the SIMD size of this intrinsic
-//         - from the hwIntrinsicInfoArray table if intrinsic has NO HW_Flag_UnfixedSIMDSize
-//         - from the signature if intrinsic has HW_Flag_UnfixedSIMDSize
+//    The SIMD size for the HWIntrinsic associated with id and sig
 //
-// Note - this function is only used by the importer
-//        after importation (i.e., codegen), we can get the SIMD size from GenTreeHWIntrinsic IR
-unsigned Compiler::simdSizeOfHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig)
+// Remarks:
+//    This function is only used by the importer. After importation, we can
+//    get the SIMD size from the GenTreeHWIntrinsic node.
+unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig)
 {
-    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
-
-    HWIntrinsicFlag flags = HWIntrinsicInfo::lookupFlags(intrinsic);
-
-    if ((flags & HW_Flag_UnfixedSIMDSize) == 0)
+    if ((lookupFlags(id) & HW_Flag_UnfixedSIMDSize) == 0)
     {
-        return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].simdSize;
+        return lookupSimdSize(id);
     }
 
     CORINFO_CLASS_HANDLE typeHnd = nullptr;
@@ -189,37 +185,31 @@ unsigned Compiler::simdSizeOfHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_I
     }
     else
     {
-        assert((flags & HW_Flag_BaseTypeFromFirstArg) != 0);
-        typeHnd = info.compCompHnd->getArgClass(sig, sig->args);
+        assert((lookupFlags(id) & HW_Flag_BaseTypeFromFirstArg) != 0);
+        typeHnd = comp->info.compCompHnd->getArgClass(sig, sig->args);
     }
 
     unsigned  simdSize = 0;
-    var_types baseType = getBaseTypeAndSizeOfSIMDType(typeHnd, &simdSize);
-    assert(simdSize > 0 && baseType != TYP_UNKNOWN);
+    var_types baseType = comp->getBaseTypeAndSizeOfSIMDType(typeHnd, &simdSize);
+    assert((simdSize > 0) && (baseType != TYP_UNKNOWN));
     return simdSize;
 }
 
 //------------------------------------------------------------------------
-// numArgsOfHWIntrinsic: gets the number of arguments for the hardware intrinsic.
-// This attempts to do a table based lookup but will fallback to the number
-// of operands in 'node' if the table entry is -1.
+// lookupNumArgs: Gets the number of args for a given HWIntrinsic
 //
 // Arguments:
-//    node      -- GenTreeHWIntrinsic* node with nullptr default value
+//    node -- The HWIntrinsic node to get the number of args for
 //
 // Return Value:
-//     number of arguments
-//
-int Compiler::numArgsOfHWIntrinsic(GenTreeHWIntrinsic* node)
+//    The number of args for the HWIntrinsic associated with node
+int HWIntrinsicInfo::lookupNumArgs(const GenTreeHWIntrinsic* node)
 {
     assert(node != nullptr);
 
-    NamedIntrinsic intrinsic = node->gtHWIntrinsicId;
+    NamedIntrinsic id      = node->gtHWIntrinsicId;
+    int            numArgs = lookupNumArgs(id);
 
-    assert(intrinsic != NI_Illegal);
-    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
-
-    int numArgs = hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].numArgs;
     if (numArgs >= 0)
     {
         return numArgs;
@@ -228,7 +218,6 @@ int Compiler::numArgsOfHWIntrinsic(GenTreeHWIntrinsic* node)
     assert(numArgs == -1);
 
     GenTree* op1 = node->gtGetOp1();
-    GenTree* op2 = node->gtGetOp2();
 
     if (op1 == nullptr)
     {
@@ -237,26 +226,25 @@ int Compiler::numArgsOfHWIntrinsic(GenTreeHWIntrinsic* node)
 
     if (op1->OperIsList())
     {
-        numArgs              = 0;
+#if DEBUG
         GenTreeArgList* list = op1->AsArgList();
+        numArgs              = 0;
 
-        while (list != nullptr)
+        do
         {
             numArgs++;
             list = list->Rest();
-        }
+        } while (list != nullptr);
 
-        // We should only use a list if we have 3 operands.
-        assert(numArgs >= 3);
-        return numArgs;
+        assert(numArgs == 3);
+#endif
+
+        return 3;
     }
 
-    if (op2 == nullptr)
-    {
-        return 1;
-    }
+    GenTree* op2 = node->gtGetOp2();
 
-    return 2;
+    return (op2 == nullptr) ? 1 : 2;
 }
 
 //------------------------------------------------------------------------
@@ -728,7 +716,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     // table-driven importer of simple intrinsics
     if (isTableDriven)
     {
-        unsigned                simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
+        unsigned                simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
         CORINFO_ARG_LIST_HANDLE argList  = sig->args;
         CORINFO_CLASS_HANDLE    argClass;
         var_types               argType = TYP_UNKNOWN;
@@ -847,7 +835,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
     GenTree* op2      = nullptr;
     GenTree* op3      = nullptr;
     GenTree* op4      = nullptr;
-    int      simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
+    int      simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
 
     // The Prefetch and StoreFence intrinsics don't take any SIMD operands
     // and have a simdSize of 0
@@ -897,7 +885,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
     GenTree*  op1      = nullptr;
     GenTree*  op2      = nullptr;
     int       ival     = -1;
-    int       simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
+    int       simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
     var_types baseType = TYP_UNKNOWN;
     var_types retType  = TYP_UNKNOWN;
 
@@ -1031,7 +1019,7 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
     GenTree*  op1      = nullptr;
     GenTree*  op2      = nullptr;
     var_types baseType = TYP_UNKNOWN;
-    int       simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
+    int       simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
 
     switch (intrinsic)
     {
