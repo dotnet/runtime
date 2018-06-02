@@ -1,8 +1,17 @@
+set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
 set(TARGET_ARCH_NAME $ENV{TARGET_BUILD_ARCH})
 
 macro(set_cache_value)
   set(${ARGV0} ${ARGV1} CACHE STRING "Result from TRY_RUN" FORCE)
 endmacro()
+
+if(EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv6-alpine-linux-musleabihf OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/aarch64-alpine-linux-musl)
+  
+   SET(ALPINE_LINUX 1)
+else()
+   SET(ALPINE_LINUX 0)
+endif()
 
 if(TARGET_ARCH_NAME MATCHES "^(armel|arm|arm64|x86)$")
   set_cache_value(FILE_OPS_CHECK_FERROR_OF_PREVIOUS_CALL_EXITCODE 1)
@@ -33,13 +42,22 @@ if(TARGET_ARCH_NAME MATCHES "^(armel|arm|arm64|x86)$")
   set_cache_value(PTHREAD_CREATE_MODIFIES_ERRNO_EXITCODE 1)
   set_cache_value(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1)
   set_cache_value(SEM_INIT_MODIFIES_ERRNO_EXITCODE 1)
-  set_cache_value(SSCANF_CANNOT_HANDLE_MISSING_EXPONENT_EXITCODE 1)
-  set_cache_value(SSCANF_SUPPORT_ll_EXITCODE 0)
-  set_cache_value(UNGETC_NOT_RETURN_EOF_EXITCODE 0)
+
+
+  if(ALPINE_LINUX)
+    set_cache_value(SSCANF_CANNOT_HANDLE_MISSING_EXPONENT_EXITCODE 0)
+    set_cache_value(SSCANF_SUPPORT_ll_EXITCODE 1)
+    set_cache_value(UNGETC_NOT_RETURN_EOF_EXITCODE 1)
+  else()
+    set_cache_value(SSCANF_CANNOT_HANDLE_MISSING_EXPONENT_EXITCODE 1)
+    set_cache_value(SSCANF_SUPPORT_ll_EXITCODE 0)
+    set_cache_value(UNGETC_NOT_RETURN_EOF_EXITCODE 0)
+  endif()
+
 else()
   message(FATAL_ERROR "Arch is ${TARGET_ARCH_NAME}. Only armel, arm, arm64 and x86 are supported!")
 endif()
 
 if(TARGET_ARCH_NAME STREQUAL "x86")
-  set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES 0)
+  set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
 endif()
