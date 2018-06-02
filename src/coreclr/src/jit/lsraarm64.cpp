@@ -1051,7 +1051,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     bool op3IsDelayFree = false;
 
     // Create internal temps, and handle any other special requirements.
-    switch (compiler->getHWIntrinsicInfo(intrinsicID).form)
+    switch (HWIntrinsicInfo::lookup(intrinsicID).form)
     {
         case HWIntrinsicInfo::Sha1HashOp:
             assert((numArgs == 3) && (op2 != nullptr) && (op3 != nullptr));
