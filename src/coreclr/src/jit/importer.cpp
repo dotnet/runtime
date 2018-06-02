@@ -14305,8 +14305,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("Localloc can't be inside handler");
                 }
 
-                setNeedsGSSecurityCookie();
-
                 // Get the size to allocate
 
                 op2 = impPopStack().val;
@@ -14355,9 +14353,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 lvaTable[stackallocAsLocal].lvType           = TYP_BLK;
                                 lvaTable[stackallocAsLocal].lvExactSize      = (unsigned)allocSize;
                                 lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
-                                op1                      = gtNewLclvNode(stackallocAsLocal, TYP_BLK);
-                                op1                      = gtNewOperNode(GT_ADDR, TYP_I_IMPL, op1);
-                                convertedToLocal         = true;
+                                op1              = gtNewLclvNode(stackallocAsLocal, TYP_BLK);
+                                op1              = gtNewOperNode(GT_ADDR, TYP_I_IMPL, op1);
+                                convertedToLocal = true;
+
+                                // Ensure we have stack security for this method.
+                                // Reorder layout since the converted localloc is treated as an unsafe buffer.
+                                setNeedsGSSecurityCookie();
                                 compGSReorderStackLayout = true;
                             }
                         }
@@ -14381,6 +14383,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
                         // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
                         op1->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
+
+                        // Ensure we have stack security for this method.
+                        setNeedsGSSecurityCookie();
 
                         /* The FP register may not be back to the original value at the end
                            of the method, even if the frame size is 0, as localloc may
