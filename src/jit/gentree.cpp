@@ -12,6 +12,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #include "jitpch.h"
+#include "hwintrinsic.h"
 #include "simd.h"
 
 #ifdef _MSC_VER
@@ -10813,10 +10814,6 @@ extern const char* const simdIntrinsicNames[] = {
 };
 #endif // FEATURE_SIMD
 
-#ifdef FEATURE_HW_INTRINSICS
-extern const char* getHWIntrinsicName(NamedIntrinsic intrinsic);
-#endif // FEATURE_HW_INTRINSICS
-
 /*****************************************************************************/
 
 void Compiler::gtDispTree(GenTree*     tree,
@@ -11143,7 +11140,7 @@ void Compiler::gtDispTree(GenTree*     tree,
             printf(" %s %s",
                    tree->gtHWIntrinsic.gtSIMDBaseType == TYP_UNKNOWN ? ""
                                                                      : varTypeName(tree->gtHWIntrinsic.gtSIMDBaseType),
-                   getHWIntrinsicName(tree->gtHWIntrinsic.gtHWIntrinsicId));
+                   HWIntrinsicInfo::lookupName(tree->gtHWIntrinsic.gtHWIntrinsicId));
         }
 #endif // FEATURE_HW_INTRINSICS
 

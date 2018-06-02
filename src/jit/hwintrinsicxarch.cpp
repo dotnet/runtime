@@ -15,9 +15,22 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 #include "hwintrinsiclistxarch.h"
 };
 
-extern const char* getHWIntrinsicName(NamedIntrinsic intrinsic)
+//------------------------------------------------------------------------
+// lookup: Gets the HWIntrinsicInfo associated with a given NamedIntrinsic
+//
+// Arguments:
+//    id -- The NamedIntrinsic associated with the HWIntrinsic to lookup
+//
+// Return Value:
+//    The HWIntrinsicInfo associated with id
+const HWIntrinsicInfo& HWIntrinsicInfo::lookup(NamedIntrinsic id)
 {
-    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].intrinsicName;
+    assert(id != NI_Illegal);
+
+    assert(id > NI_HW_INTRINSIC_START);
+    assert(id < NI_HW_INTRINSIC_END);
+
+    return hwIntrinsicInfoArray[id - NI_HW_INTRINSIC_START - 1];
 }
 
 //------------------------------------------------------------------------
@@ -124,9 +137,9 @@ NamedIntrinsic Compiler::lookupHWIntrinsic(const char* methodName, InstructionSe
     {
         for (int i = 0; i < NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1; i++)
         {
-            if (isa == hwIntrinsicInfoArray[i].isa && strcmp(methodName, hwIntrinsicInfoArray[i].intrinsicName) == 0)
+            if (isa == hwIntrinsicInfoArray[i].isa && strcmp(methodName, hwIntrinsicInfoArray[i].name) == 0)
             {
-                result = hwIntrinsicInfoArray[i].intrinsicID;
+                result = hwIntrinsicInfoArray[i].id;
                 break;
             }
         }
