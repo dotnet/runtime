@@ -64,7 +64,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(const char* className, const char* meth
         }
     }
 
-    unreached();
+    // There are several helper intrinsics that are implemented in managed code
+    // Those intrinsics will hit this code path and need to return NI_Illegal
     return NI_Illegal;
 }
 
@@ -618,7 +619,7 @@ static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 {
     // HW_Flag_NoCodeGen implies this intrinsic should be manually morphed in the importer.
     return (category != HW_Category_Special) && (category != HW_Category_Scalar) &&
-           HWIntrinsicInfo::RequiresCodegen(intrinsicId) | !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
+           HWIntrinsicInfo::RequiresCodegen(intrinsicId) && !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
 }
 
 //------------------------------------------------------------------------
