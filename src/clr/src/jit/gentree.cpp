@@ -17583,7 +17583,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad()
         // Some AVX instructions here also have MemoryLoad sematics
 
         // Do we have 3 operands?
-        if (Compiler::numArgsOfHWIntrinsic(this) != 3)
+        if (HWIntrinsicInfo::lookupNumArgs(this) != 3)
         {
             return false;
         }
@@ -17618,7 +17618,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore()
         // Some AVX instructions here also have MemoryStore sematics
 
         // Do we have 3 operands?
-        if (Compiler::numArgsOfHWIntrinsic(this) != 3)
+        if (HWIntrinsicInfo::lookupNumArgs(this) != 3)
         {
             return false;
         }
@@ -17650,7 +17650,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore()
         // Some AVX instructions here also have MemoryLoad or MemoryStore sematics
 
         // Do we have 3 operands?
-        if (Compiler::numArgsOfHWIntrinsic(this) != 3)
+        if (HWIntrinsicInfo::lookupNumArgs(this) != 3)
         {
             return false;
         }

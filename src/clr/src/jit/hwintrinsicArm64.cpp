@@ -139,7 +139,7 @@ bool Compiler::impCheckImmediate(GenTree* immediateOp, unsigned int max)
 }
 
 //------------------------------------------------------------------------
-// numArgsOfHWIntrinsic: gets the number of arguments for the hardware intrinsic.
+// lookupNumArgs: gets the number of arguments for the hardware intrinsic.
 // This attempts to do a table based lookup but will fallback to the number
 // of operands in 'node' if the table entry is -1.
 //
@@ -149,7 +149,7 @@ bool Compiler::impCheckImmediate(GenTree* immediateOp, unsigned int max)
 // Return Value:
 //     number of arguments
 //
-int Compiler::numArgsOfHWIntrinsic(GenTreeHWIntrinsic* node)
+int HWIntrinsicInfo::lookupNumArgs(const GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsic = node->gtHWIntrinsicId;
 
