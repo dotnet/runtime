@@ -3,21 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
+#include "hwintrinsic.h"
 
 #ifdef FEATURE_HW_INTRINSICS
-
-struct HWIntrinsicInfo
-{
-    NamedIntrinsic      intrinsicID;
-    const char*         intrinsicName;
-    InstructionSet      isa;
-    int                 ival;
-    unsigned            simdSize;
-    int                 numArgs;
-    instruction         ins[10];
-    HWIntrinsicCategory category;
-    HWIntrinsicFlag     flags;
-};
 
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
