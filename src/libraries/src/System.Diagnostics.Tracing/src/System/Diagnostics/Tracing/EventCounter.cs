@@ -292,24 +292,7 @@ namespace System.Diagnostics.Tracing
 
         private void RegisterCommandCallback()
         {
-            // Old destktop runtimes don't have this 
-#if NO_EVENTCOMMANDEXECUTED_SUPPORT
-            // We could not build against the API that had the EventCommandExecuted but maybe it is there are runtime.  
-            // use reflection to try to get it.  
-            System.Reflection.MethodInfo method = typeof(EventSource).GetMethod("add_EventCommandExecuted");
-            if (method != null)
-            {
-                method.Invoke(_eventSource, new object[] { (EventHandler<EventCommandEventArgs>)OnEventSourceCommand });
-            }
-            else
-            {
-                string msg = "EventCounterError: Old Runtime that does not support EventSource.EventCommandExecuted.  EventCounters not Supported";
-                _eventSource.Write(msg);
-                Debug.WriteLine(msg);
-            }
-#else 
             _eventSource.EventCommandExecuted += OnEventSourceCommand;
-#endif
         }
 
         private void OnEventSourceCommand(object sender, EventCommandEventArgs e)
