@@ -2312,7 +2312,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
     HWIntrinsicCategory category              = HWIntrinsicInfo::lookupCategory(containingIntrinsicID);
 
     // We shouldn't have called in here if containingNode doesn't support containment
-    assert((HWIntrinsicInfo::lookupFlags(containingIntrinsicID) & HW_Flag_NoContainment) == 0);
+    assert(HWIntrinsicInfo::SupportsContainment(containingIntrinsicID));
 
     // containingNode supports nodes that read from an aligned memory address
     //
@@ -2504,7 +2504,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic      intrinsicID = node->gtHWIntrinsicId;
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicID);
-    HWIntrinsicFlag     flags       = HWIntrinsicInfo::lookupFlags(intrinsicID);
     int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
     var_types           baseType    = node->gtSIMDBaseType;
 
@@ -2512,7 +2511,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     GenTree* op2 = node->gtGetOp2();
     GenTree* op3 = nullptr;
 
-    if ((flags & HW_Flag_NoContainment) != 0)
+    if (!HWIntrinsicInfo::SupportsContainment(intrinsicID))
     {
         // Exit early if containment isn't supported
         return;
@@ -2520,7 +2519,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
-    bool isCommutative = ((flags & HW_Flag_Commutative) != 0);
+    const bool isCommutative = HWIntrinsicInfo::IsCommutative(intrinsicID);
 
     if (numArgs == 1)
     {
@@ -2613,7 +2612,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
 
-                    if ((flags & HW_Flag_CopyUpperBits) == 0)
+                    if (!HWIntrinsicInfo::CopiesUpperBits(intrinsicID))
                     {
                         // 231 form: op3 = (op2 * op3) + [op1]
                         MakeSrcContained(node, op1);

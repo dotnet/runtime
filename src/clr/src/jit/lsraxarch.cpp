@@ -2294,7 +2294,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     var_types           baseType    = intrinsicTree->gtSIMDBaseType;
     InstructionSet      isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-    HWIntrinsicFlag     flags       = HWIntrinsicInfo::lookupFlags(intrinsicId);
     int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
 
     if ((isa == InstructionSet_AVX) || (isa == InstructionSet_AVX2))
@@ -2353,7 +2352,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
         bool buildUses = true;
 
-        if ((category == HW_Category_IMM) && ((flags & HW_Flag_NoJmpTableIMM) == 0))
+        if ((category == HW_Category_IMM) && !HWIntrinsicInfo::NoJmpTableImm(intrinsicId))
         {
             if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && !lastOp->isContainedIntOrIImmed())
             {
@@ -2522,16 +2521,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 assert(numArgs == 3);
                 assert(isRMW);
 
-                bool copyUpperBits = (flags & HW_Flag_CopyUpperBits) != 0;
+                const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);;
 
                 // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
-                assert(!copyUpperBits || !op1->isContained());
+                assert(!copiesUpperBits || !op1->isContained());
 
                 if (op3->isContained())
                 {
                     // 213 form: op1 = (op2 * op1) + [op3]
 
-                    if (copyUpperBits)
+                    if (copiesUpperBits)
                     {
                         tgtPrefUse = BuildUse(op1);
 
@@ -2573,7 +2572,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 {
                     // 213 form: op1 = (op2 * op1) + op3
 
-                    if (copyUpperBits)
+                    if (copiesUpperBits)
                     {
                         tgtPrefUse = BuildUse(op1);
 
