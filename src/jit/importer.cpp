@@ -4081,13 +4081,12 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
 #ifdef FEATURE_HW_INTRINSICS
 #if defined(_TARGET_XARCH_)
-    if ((namespaceName != nullptr) && strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0)
+    if (strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0)
     {
-        InstructionSet isa = lookupHWIntrinsicISA(className);
-        result             = lookupHWIntrinsic(methodName, isa);
+        result = HWIntrinsicInfo::lookupId(className, methodName);
     }
 #elif defined(_TARGET_ARM64_)
-    if ((namespaceName != nullptr) && strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0)
+    if (strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0)
     {
         result = lookupHWIntrinsic(className, methodName);
     }
@@ -4095,6 +4094,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #error Unsupported platform
 #endif // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
 #endif // FEATURE_HW_INTRINSICS
+
     return result;
 }
 
