@@ -3571,8 +3571,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         bool rev;
 #if SCALED_ADDR_MODES
                         unsigned mul;
-#endif
-                        unsigned cns;
+#endif // SCALED_ADDR_MODES
+                        ssize_t  cns;
                         GenTree* base;
                         GenTree* idx;
 
@@ -3607,18 +3607,15 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             }
                         }
                         if ((doAddrMode) &&
-                            codeGen->genCreateAddrMode(addr,     // address
-                                                       0,        // mode
-                                                       false,    // fold
-                                                       RBM_NONE, // reg mask
-                                                       &rev,     // reverse ops
-                                                       &base,    // base addr
-                                                       &idx,     // index val
+                            codeGen->genCreateAddrMode(addr,  // address
+                                                       false, // fold
+                                                       &rev,  // reverse ops
+                                                       &base, // base addr
+                                                       &idx,  // index val
 #if SCALED_ADDR_MODES
-                                                       &mul, // scaling
-#endif
-                                                       &cns,  // displacement
-                                                       true)) // don't generate code
+                                                       &mul,  // scaling
+#endif                                                        // SCALED_ADDR_MODES
+                                                       &cns)) // displacement
                         {
                             // We can form a complex addressing mode, so mark each of the interior
                             // nodes with GTF_ADDRMODE_NO_CSE and calculate a more accurate cost.
