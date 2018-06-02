@@ -29,19 +29,19 @@ namespace System.Net.Http.Functional.Tests
                 {
                     "deflate",
                     new Func<Stream, Stream>(s => new DeflateStream(s, CompressionLevel.Optimal, leaveOpen: true)),
-                    specifyAllMethods ? DecompressionMethods.Deflate : ~DecompressionMethods.None
+                    specifyAllMethods ? DecompressionMethods.Deflate : DecompressionMethods.All
                 };
                 yield return new object[]
                 {
                     "gzip",
                     new Func<Stream, Stream>(s => new GZipStream(s, CompressionLevel.Optimal, leaveOpen: true)),
-                    specifyAllMethods ? DecompressionMethods.GZip : ~DecompressionMethods.None
+                    specifyAllMethods ? DecompressionMethods.GZip : DecompressionMethods.All
                 };
                 yield return new object[]
                 {
                     "br",
                     new Func<Stream, Stream>(s => new BrotliStream(s, CompressionLevel.Optimal, leaveOpen: true)),
-                    specifyAllMethods ? DecompressionMethods.Brotli : ~DecompressionMethods.None
+                    specifyAllMethods ? DecompressionMethods.Brotli : DecompressionMethods.All
                 };
             }
         }
