@@ -52,6 +52,7 @@ struct HWIntrinsicInfo
     instruction    instrs[3];
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
+    static int lookupNumArgs(const GenTreeHWIntrinsic* node);
 
     static const char* lookupName(NamedIntrinsic id)
     {

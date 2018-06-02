@@ -56,7 +56,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     HWIntrinsicFlag     flags       = HWIntrinsicInfo::lookupFlags(intrinsicId);
     int                 ival        = HWIntrinsicInfo::lookupIval(intrinsicId);
-    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(node);
+    int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
 
     assert((flags & HW_Flag_NoCodeGen) == 0);
 
@@ -1429,7 +1429,7 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
     emitAttr       attr        = EA_ATTR(node->gtSIMDSize);
     var_types      targetType  = node->TypeGet();
     instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-    int            numArgs     = Compiler::numArgsOfHWIntrinsic(node);
+    int            numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
     GenTree*       op1         = node->gtGetOp1();
     GenTree*       op2         = node->gtGetOp2();
     regNumber      op1Reg      = REG_NA;
@@ -1708,7 +1708,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     GenTree*        op1         = node->gtGetOp1();
     regNumber       targetReg   = node->gtRegNum;
 
-    assert(Compiler::numArgsOfHWIntrinsic(node) == 3);
+    assert(HWIntrinsicInfo::lookupNumArgs(node) == 3);
     assert(op1 != nullptr);
     assert(op1->OperIsList());
     assert(op1->gtGetOp2()->OperIsList());

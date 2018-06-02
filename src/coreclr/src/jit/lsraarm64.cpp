@@ -1027,7 +1027,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 {
     NamedIntrinsic intrinsicID = intrinsicTree->gtHWIntrinsicId;
-    int            numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicTree);
+    int            numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
 
     GenTree* op1      = intrinsicTree->gtGetOp1();
     GenTree* op2      = intrinsicTree->gtGetOp2();

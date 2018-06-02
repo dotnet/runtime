@@ -2295,7 +2295,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     InstructionSet      isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     HWIntrinsicFlag     flags       = HWIntrinsicInfo::lookupFlags(intrinsicId);
-    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicTree);
+    int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
 
     if ((isa == InstructionSet_AVX) || (isa == InstructionSet_AVX2))
     {

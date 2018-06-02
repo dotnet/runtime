@@ -138,8 +138,11 @@ struct HWIntrinsicInfo
     HWIntrinsicFlag         flags;
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
+
     static NamedIntrinsic lookupId(const char* className, const char* methodName);
     static InstructionSet lookupIsa(const char* className);
+    static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
+    static int lookupNumArgs(const GenTreeHWIntrinsic* node);
 
     // Member lookup
 
