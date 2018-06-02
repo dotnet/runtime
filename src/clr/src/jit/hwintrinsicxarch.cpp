@@ -158,39 +158,6 @@ InstructionSet HWIntrinsicInfo::lookupIsa(const char* className)
 }
 
 //------------------------------------------------------------------------
-// isaOfHWIntrinsic: map named intrinsic value to its instruction set
-//
-// Arguments:
-//    intrinsic -- id of the intrinsic function.
-//
-// Return Value:
-//    instruction set of the intrinsic.
-//
-InstructionSet Compiler::isaOfHWIntrinsic(NamedIntrinsic intrinsic)
-{
-    assert(intrinsic != NI_Illegal);
-    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
-    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].isa;
-}
-
-//------------------------------------------------------------------------
-// ivalOfHWIntrinsic: get the imm8 value of this intrinsic from the hwIntrinsicInfoArray table
-//
-// Arguments:
-//    intrinsic -- id of the intrinsic function.
-//
-// Return Value:
-//     The imm8 value that is implicit for this intrinsic, or -1 for intrinsics that do not take an immediate, or for
-//     which the immediate is an explicit argument.
-//
-int Compiler::ivalOfHWIntrinsic(NamedIntrinsic intrinsic)
-{
-    assert(intrinsic != NI_Illegal);
-    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
-    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].ival;
-}
-
-//------------------------------------------------------------------------
 // simdSizeOfHWIntrinsic: get the SIMD size of this intrinsic
 //
 // Arguments:
@@ -207,7 +174,7 @@ unsigned Compiler::simdSizeOfHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_I
 {
     assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
 
-    HWIntrinsicFlag flags = flagsOfHWIntrinsic(intrinsic);
+    HWIntrinsicFlag flags = HWIntrinsicInfo::lookupFlags(intrinsic);
 
     if ((flags & HW_Flag_UnfixedSIMDSize) == 0)
     {
@@ -328,57 +295,6 @@ GenTree* Compiler::lastOpOfHWIntrinsic(GenTreeHWIntrinsic* node, int numArgs)
 }
 
 //------------------------------------------------------------------------
-// insOfHWIntrinsic: get the instruction of the given intrinsic
-//
-// Arguments:
-//    intrinsic -- id of the intrinsic function.
-//    type      -- vector base type of this intrinsic
-//
-// Return Value:
-//     the instruction of the given intrinsic on the base type
-//     return INS_invalid for unsupported base types
-//
-instruction Compiler::insOfHWIntrinsic(NamedIntrinsic intrinsic, var_types type)
-{
-    assert(intrinsic != NI_Illegal);
-    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
-    assert(type >= TYP_BYTE && type <= TYP_DOUBLE);
-    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].ins[type - TYP_BYTE];
-}
-
-//------------------------------------------------------------------------
-// categoryOfHWIntrinsic: get the category of the given intrinsic
-//
-// Arguments:
-//    intrinsic -- id of the intrinsic function.
-//
-// Return Value:
-//     the category of the given intrinsic
-//
-HWIntrinsicCategory Compiler::categoryOfHWIntrinsic(NamedIntrinsic intrinsic)
-{
-    assert(intrinsic != NI_Illegal);
-    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
-    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].category;
-}
-
-//------------------------------------------------------------------------
-// HWIntrinsicFlag: get the flags of the given intrinsic
-//
-// Arguments:
-//    intrinsic -- id of the intrinsic function.
-//
-// Return Value:
-//     the flags of the given intrinsic
-//
-HWIntrinsicFlag Compiler::flagsOfHWIntrinsic(NamedIntrinsic intrinsic)
-{
-    assert(intrinsic != NI_Illegal);
-    assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
-    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].flags;
-}
-
-//------------------------------------------------------------------------
 // getArgForHWIntrinsic: get the argument from the stack and match  the signature
 //
 // Arguments:
@@ -421,7 +337,7 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
 //
 int Compiler::immUpperBoundOfHWIntrinsic(NamedIntrinsic intrinsic)
 {
-    assert(categoryOfHWIntrinsic(intrinsic) == HW_Category_IMM);
+    assert(HWIntrinsicInfo::lookupCategory(intrinsic) == HW_Category_IMM);
     switch (intrinsic)
     {
         case NI_AVX_Compare:
@@ -429,7 +345,7 @@ int Compiler::immUpperBoundOfHWIntrinsic(NamedIntrinsic intrinsic)
             return 31; // enum FloatComparisonMode has 32 values
 
         default:
-            assert((flagsOfHWIntrinsic(intrinsic) & HW_Flag_FullRangeIMM) != 0);
+            assert((HWIntrinsicInfo::lookupFlags(intrinsic) & HW_Flag_FullRangeIMM) != 0);
             return 255;
     }
 }
@@ -448,7 +364,7 @@ int Compiler::immUpperBoundOfHWIntrinsic(NamedIntrinsic intrinsic)
 //
 GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType)
 {
-    assert((flagsOfHWIntrinsic(intrinsic) & HW_Flag_NoJmpTableIMM) != 0);
+    assert((HWIntrinsicInfo::lookupFlags(intrinsic) & HW_Flag_NoJmpTableIMM) != 0);
     switch (intrinsic)
     {
         case NI_SSE2_ShiftLeftLogical:
@@ -485,12 +401,12 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //
 bool Compiler::isImmHWIntrinsic(NamedIntrinsic intrinsic, GenTree* lastOp)
 {
-    if (categoryOfHWIntrinsic(intrinsic) != HW_Category_IMM)
+    if (HWIntrinsicInfo::lookupCategory(intrinsic) != HW_Category_IMM)
     {
         return false;
     }
 
-    if ((flagsOfHWIntrinsic(intrinsic) & HW_Flag_MaybeIMM) != 0 && genActualType(lastOp->TypeGet()) != TYP_INT)
+    if ((HWIntrinsicInfo::lookupFlags(intrinsic) & HW_Flag_MaybeIMM) != 0 && genActualType(lastOp->TypeGet()) != TYP_INT)
     {
         return false;
     }
@@ -515,7 +431,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* last
     assert(lastOp != nullptr);
     // Full-range imm-intrinsics do not need the range-check
     // because the imm-parameter of the intrinsic method is a byte.
-    if (mustExpand && ((flagsOfHWIntrinsic(intrinsic) & HW_Flag_FullRangeIMM) == 0) &&
+    if (mustExpand && ((HWIntrinsicInfo::lookupFlags(intrinsic) & HW_Flag_FullRangeIMM) == 0) &&
         isImmHWIntrinsic(intrinsic, lastOp))
     {
         assert(!lastOp->IsCnsIntOrI());
@@ -693,9 +609,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
 {
-    InstructionSet      isa      = isaOfHWIntrinsic(intrinsic);
-    HWIntrinsicCategory category = categoryOfHWIntrinsic(intrinsic);
-    HWIntrinsicFlag     flags    = flagsOfHWIntrinsic(intrinsic);
+    InstructionSet      isa      = HWIntrinsicInfo::lookupIsa(intrinsic);
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
+    HWIntrinsicFlag     flags    = HWIntrinsicInfo::lookupFlags(intrinsic);
     int                 numArgs  = sig->numArgs;
     var_types           retType  = JITtype2varType(sig->retType);
     var_types           baseType = TYP_UNKNOWN;
@@ -818,7 +734,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         var_types               argType = TYP_UNKNOWN;
 
         assert(numArgs >= 0);
-        assert(insOfHWIntrinsic(intrinsic, baseType) != INS_invalid);
+        assert(HWIntrinsicInfo::lookupIns(intrinsic, baseType) != INS_invalid);
         assert(simdSize == 32 || simdSize == 16);
 
         GenTreeHWIntrinsic* retNode = nullptr;

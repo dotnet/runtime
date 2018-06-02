@@ -2290,11 +2290,11 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 //
 int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 {
-    NamedIntrinsic      intrinsicID = intrinsicTree->gtHWIntrinsicId;
+    NamedIntrinsic      intrinsicId = intrinsicTree->gtHWIntrinsicId;
     var_types           baseType    = intrinsicTree->gtSIMDBaseType;
-    InstructionSet      isa         = Compiler::isaOfHWIntrinsic(intrinsicID);
-    HWIntrinsicCategory category    = Compiler::categoryOfHWIntrinsic(intrinsicID);
-    HWIntrinsicFlag     flags       = Compiler::flagsOfHWIntrinsic(intrinsicID);
+    InstructionSet      isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
+    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+    HWIntrinsicFlag     flags       = HWIntrinsicInfo::lookupFlags(intrinsicId);
     int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicTree);
 
     if ((isa == InstructionSet_AVX) || (isa == InstructionSet_AVX2))
@@ -2355,7 +2355,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
         if ((category == HW_Category_IMM) && ((flags & HW_Flag_NoJmpTableIMM) == 0))
         {
-            if (Compiler::isImmHWIntrinsic(intrinsicID, lastOp) && !lastOp->isContainedIntOrIImmed())
+            if (Compiler::isImmHWIntrinsic(intrinsicId, lastOp) && !lastOp->isContainedIntOrIImmed())
             {
                 assert(!lastOp->IsCnsIntOrI());
 
@@ -2375,7 +2375,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         // Note that the default case for building uses will handle the RMW flag, but if the uses
         // are built in the individual cases, buildUses is set to false, and any RMW handling (delayFree)
         // must be handled within the case.
-        switch (intrinsicID)
+        switch (intrinsicId)
         {
             case NI_SSE_CompareEqualOrderedScalar:
             case NI_SSE_CompareEqualUnorderedScalar:
@@ -2598,7 +2598,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
             default:
             {
-                assert((intrinsicID > NI_HW_INTRINSIC_START) && (intrinsicID < NI_HW_INTRINSIC_END));
+                assert((intrinsicId > NI_HW_INTRINSIC_START) && (intrinsicId < NI_HW_INTRINSIC_END));
                 break;
             }
         }

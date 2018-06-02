@@ -2309,10 +2309,10 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node, bool* supportsRegOptional)
 {
     NamedIntrinsic      containingIntrinsicID = containingNode->gtHWIntrinsicId;
-    HWIntrinsicCategory category              = Compiler::categoryOfHWIntrinsic(containingIntrinsicID);
+    HWIntrinsicCategory category              = HWIntrinsicInfo::lookupCategory(containingIntrinsicID);
 
     // We shouldn't have called in here if containingNode doesn't support containment
-    assert((Compiler::flagsOfHWIntrinsic(containingIntrinsicID) & HW_Flag_NoContainment) == 0);
+    assert((HWIntrinsicInfo::lookupFlags(containingIntrinsicID) & HW_Flag_NoContainment) == 0);
 
     // containingNode supports nodes that read from an aligned memory address
     //
@@ -2503,8 +2503,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic      intrinsicID = node->gtHWIntrinsicId;
-    HWIntrinsicCategory category    = Compiler::categoryOfHWIntrinsic(intrinsicID);
-    HWIntrinsicFlag     flags       = Compiler::flagsOfHWIntrinsic(intrinsicID);
+    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicID);
+    HWIntrinsicFlag     flags       = HWIntrinsicInfo::lookupFlags(intrinsicID);
     int                 numArgs     = Compiler::numArgsOfHWIntrinsic(node);
     var_types           baseType    = node->gtSIMDBaseType;
 
@@ -2638,7 +2638,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             unreached();
         }
 
-        if (Compiler::categoryOfHWIntrinsic(intrinsicID) == HW_Category_IMM)
+        if (HWIntrinsicInfo::lookupCategory(intrinsicID) == HW_Category_IMM)
         {
             GenTree* lastOp = Compiler::lastOpOfHWIntrinsic(node, numArgs);
             assert(lastOp != nullptr);
