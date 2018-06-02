@@ -1014,7 +1014,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-#include "hwintrinsicArm64.h"
+#include "hwintrinsic.h"
 //------------------------------------------------------------------------
 // BuildHWIntrinsic: Set the NodeInfo for a GT_HWIntrinsic tree.
 //
