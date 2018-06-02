@@ -1181,6 +1181,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't send fragments")]
         [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData("#origFragment", "", "#origFragment", false)]
@@ -1196,12 +1197,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 // Starting with libcurl 7.20, "fragment part of URLs are no longer sent to the server".
                 // So CurlHandler doesn't send fragments.
-                return;
-            }
-
-            if (IsNetfxHandler)
-            {
-                // Similarly, netfx doesn't send fragments at all.
                 return;
             }
 
@@ -1893,15 +1888,10 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "No exception thrown")]
         [Fact]
         public async Task SendAsync_TransferEncodingSetButNoRequestContent_Throws()
         {
-            if (IsNetfxHandler)
-            {
-                // no exception thrown
-                return;
-            }
-
             var req = new HttpRequestMessage(HttpMethod.Post, "http://bing.com");
             req.Headers.TransferEncodingChunked = true;
             using (HttpClient c = CreateHttpClient())
@@ -2597,6 +2587,25 @@ namespace System.Net.Http.Functional.Tests
                     }
                 }
             }
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't send content for get requests")]
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [Fact]
+        public async Task GetAsync_ExpectContinueTrue_NoContent_StillSendsHeader()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var client = CreateHttpClient())
+                {
+                    client.DefaultRequestHeaders.ExpectContinue = true;
+                    await client.GetStringAsync(uri);
+                }
+            }, async server =>
+            {
+                List<string> headers = await server.AcceptConnectionSendResponseAndCloseAsync();
+                Assert.Contains("Expect: 100-continue", headers);
+            });
         }
 
         [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
