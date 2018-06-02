@@ -17384,7 +17384,7 @@ bool GenTree::isCommutativeHWIntrinsic() const
     assert(gtOper == GT_HWIntrinsic);
 
 #ifdef _TARGET_XARCH_
-    HWIntrinsicFlag flags = Compiler::flagsOfHWIntrinsic(AsHWIntrinsic()->gtHWIntrinsicId);
+    HWIntrinsicFlag flags = HWIntrinsicInfo::lookupFlags(AsHWIntrinsic()->gtHWIntrinsicId);
     return ((flags & HW_Flag_Commutative) != 0);
 #else
     return false;
@@ -17428,7 +17428,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 #ifdef _TARGET_XARCH_
     if (!comp->canUseVexEncoding())
     {
-        HWIntrinsicFlag flags = Compiler::flagsOfHWIntrinsic(AsHWIntrinsic()->gtHWIntrinsicId);
+        HWIntrinsicFlag flags = HWIntrinsicInfo::lookupFlags(AsHWIntrinsic()->gtHWIntrinsicId);
         return ((flags & HW_Flag_NoRMWSemantics) == 0);
     }
 
@@ -17573,7 +17573,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad()
 {
 #ifdef _TARGET_XARCH_
     // Some xarch instructions have MemoryLoad sematics
-    HWIntrinsicCategory category = Compiler::categoryOfHWIntrinsic(gtHWIntrinsicId);
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
     if (category == HW_Category_MemoryLoad)
     {
         return true;
@@ -17608,7 +17608,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore()
 {
 #ifdef _TARGET_XARCH_
     // Some xarch instructions have MemoryStore sematics
-    HWIntrinsicCategory category = Compiler::categoryOfHWIntrinsic(gtHWIntrinsicId);
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
     if (category == HW_Category_MemoryStore)
     {
         return true;
@@ -17640,7 +17640,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore()
 {
 #ifdef _TARGET_XARCH_
     // Some xarch instructions have MemoryLoad sematics
-    HWIntrinsicCategory category = Compiler::categoryOfHWIntrinsic(gtHWIntrinsicId);
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
     if ((category == HW_Category_MemoryLoad) || (category == HW_Category_MemoryStore))
     {
         return true;

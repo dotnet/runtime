@@ -141,9 +141,52 @@ struct HWIntrinsicInfo
     static NamedIntrinsic lookupId(const char* className, const char* methodName);
     static InstructionSet lookupIsa(const char* className);
 
+    // Member lookup
+
+    static NamedIntrinsic lookupId(NamedIntrinsic id)
+    {
+        return lookup(id).id;
+    }
+
     static const char* lookupName(NamedIntrinsic id)
     {
         return lookup(id).name;
+    }
+
+    static InstructionSet lookupIsa(NamedIntrinsic id)
+    {
+        return lookup(id).isa;
+    }
+
+    static int lookupIval(NamedIntrinsic id)
+    {
+        return lookup(id).ival;
+    }
+
+    static unsigned lookupSimdSize(NamedIntrinsic id)
+    {
+        return lookup(id).simdSize;
+    }
+
+    static int lookupNumArgs(NamedIntrinsic id)
+    {
+        return lookup(id).numArgs;
+    }
+
+    static instruction lookupIns(NamedIntrinsic id, var_types type)
+    {
+        assert((type >= TYP_BYTE) && (type <= TYP_DOUBLE));
+        return lookup(id).ins[type - TYP_BYTE];
+    }
+
+    static HWIntrinsicCategory lookupCategory(NamedIntrinsic id)
+    {
+        return lookup(id).category;
+    }
+
+    static HWIntrinsicFlag lookupFlags(NamedIntrinsic id)
+    {
+        return lookup(id).flags;
     }
 };
 
