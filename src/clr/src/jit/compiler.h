@@ -59,6 +59,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "emit.h"
 
+#include "hwintrinsic.h"
 #include "simd.h"
 
 // This is only used locally in the JIT to indicate that

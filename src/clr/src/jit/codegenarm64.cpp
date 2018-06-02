@@ -4890,7 +4890,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-#include "hwintrinsicArm64.h"
+#include "hwintrinsic.h"
 
 instruction CodeGen::getOpForHWIntrinsic(GenTreeHWIntrinsic* node, var_types instrType)
 {

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "jitpch.h"
-#include "hwintrinsicArm64.h"
+#include "hwintrinsic.h"
 
 #ifdef FEATURE_HW_INTRINSICS
 
