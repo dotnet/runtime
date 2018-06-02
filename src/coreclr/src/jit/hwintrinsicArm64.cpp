@@ -44,17 +44,22 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 };
 // clang-format on
 
-extern const char* getHWIntrinsicName(NamedIntrinsic intrinsic)
+//------------------------------------------------------------------------
+// lookup: Gets the HWIntrinsicInfo associated with a given NamedIntrinsic
+//
+// Arguments:
+//    id -- The NamedIntrinsic associated with the HWIntrinsic to lookup
+//
+// Return Value:
+//    The HWIntrinsicInfo associated with id
+const HWIntrinsicInfo& HWIntrinsicInfo::lookup(NamedIntrinsic id)
 {
-    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].intrinsicName;
-}
+    assert(id != NI_Illegal);
 
-const HWIntrinsicInfo& Compiler::getHWIntrinsicInfo(NamedIntrinsic intrinsic)
-{
-    assert(intrinsic > NI_HW_INTRINSIC_START);
-    assert(intrinsic < NI_HW_INTRINSIC_END);
+    assert(id > NI_HW_INTRINSIC_START);
+    assert(id < NI_HW_INTRINSIC_END);
 
-    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1];
+    return hwIntrinsicInfoArray[id - NI_HW_INTRINSIC_START - 1];
 }
 
 //------------------------------------------------------------------------
@@ -102,19 +107,19 @@ NamedIntrinsic Compiler::lookupHWIntrinsic(const char* className, const char* me
         for (int i = 0; i < NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START; i++)
         {
             if ((isaFlag & hwIntrinsicInfoArray[i].isaflags) &&
-                strcmp(methodName, hwIntrinsicInfoArray[i].intrinsicName) == 0)
+                strcmp(methodName, hwIntrinsicInfoArray[i].name) == 0)
             {
                 if (compSupports(isa))
                 {
                     // Intrinsic is supported on platform
-                    result = hwIntrinsicInfoArray[i].intrinsicID;
+                    result = hwIntrinsicInfoArray[i].id;
                 }
                 else
                 {
                     // When the intrinsic class is not supported
                     // Return NI_ARM64_PlatformNotSupported for all intrinsics
                     // Return NI_ARM64_IsSupported_False for the IsSupported property
-                    result = (hwIntrinsicInfoArray[i].intrinsicID != NI_ARM64_IsSupported_True)
+                    result = (hwIntrinsicInfoArray[i].id != NI_ARM64_IsSupported_True)
                                  ? NI_ARM64_PlatformNotSupported
                                  : NI_ARM64_IsSupported_False;
                 }
@@ -210,7 +215,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     var_types            simdBaseType  = TYP_UNKNOWN;
     unsigned             simdSizeBytes = 0;
 
-    switch (getHWIntrinsicInfo(intrinsic).form)
+    switch (HWIntrinsicInfo::lookup(intrinsic).form)
     {
         case HWIntrinsicInfo::SimdBinaryOp:
         case HWIntrinsicInfo::SimdInsertOp:
@@ -243,7 +248,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         simdType = getSIMDTypeForSize(simdSizeBytes);
     }
 
-    switch (getHWIntrinsicInfo(intrinsic).form)
+    switch (HWIntrinsicInfo::lookup(intrinsic).form)
     {
         case HWIntrinsicInfo::IsSupported:
             return gtNewIconNode((intrinsic == NI_ARM64_IsSupported_True) ? 1 : 0);
