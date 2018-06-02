@@ -33,13 +33,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Return Value:
 //    returns true if this category can be table-driven in CodeGen
 //
-static bool genIsTableDrivenHWIntrinsic(HWIntrinsicCategory category, HWIntrinsicFlag flags)
+static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicCategory category)
 {
     // TODO - make more categories to the table-driven framework
     // HW_Category_Helper and HW_Flag_MultiIns/HW_Flag_SpecialCodeGen usually need manual codegen
     const bool tableDrivenCategory =
-        category != HW_Category_Special && category != HW_Category_Scalar && category != HW_Category_Helper;
-    const bool tableDrivenFlag = (flags & (HW_Flag_MultiIns | HW_Flag_SpecialCodeGen)) == 0;
+        (category != HW_Category_Special) && (category != HW_Category_Scalar) && (category != HW_Category_Helper);
+    const bool tableDrivenFlag = !(HWIntrinsicInfo::GeneratesMultipleIns(intrinsicId) | HWIntrinsicInfo::HasSpecialCodegen(intrinsicId));
     return tableDrivenCategory && tableDrivenFlag;
 }
 
@@ -54,13 +54,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic      intrinsicId = node->gtHWIntrinsicId;
     InstructionSet      isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-    HWIntrinsicFlag     flags       = HWIntrinsicInfo::lookupFlags(intrinsicId);
     int                 ival        = HWIntrinsicInfo::lookupIval(intrinsicId);
     int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
 
-    assert((flags & HW_Flag_NoCodeGen) == 0);
+    assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
 
-    if (genIsTableDrivenHWIntrinsic(category, flags))
+    if (genIsTableDrivenHWIntrinsic(intrinsicId, category))
     {
         GenTree*  op1        = node->gtGetOp1();
         GenTree*  op2        = node->gtGetOp2();
@@ -88,7 +87,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     emit->emitIns_R_AR(ins, simdSize, targetReg, op1Reg, 0);
                 }
-                else if (category == HW_Category_SIMDScalar && (flags & HW_Flag_CopyUpperBits) != 0)
+                else if ((category == HW_Category_SIMDScalar) && HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
                 {
                     emit->emitIns_SIMD_R_R_R(ins, simdSize, targetReg, op1Reg, op1Reg);
                 }
@@ -324,7 +323,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
 
     if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
-        assert((HWIntrinsicInfo::lookupFlags(node->gtHWIntrinsicId) & HW_Flag_NoContainment) == 0);
+        assert(HWIntrinsicInfo::SupportsContainment(node->gtHWIntrinsicId));
 
 #if DEBUG
         bool supportsRegOptional = false;
@@ -471,7 +470,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
 
     if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
-        assert((HWIntrinsicInfo::lookupFlags(node->gtHWIntrinsicId) & HW_Flag_NoContainment) == 0);
+        assert(HWIntrinsicInfo::SupportsContainment(node->gtHWIntrinsicId));
 
 #if DEBUG
         bool supportsRegOptional = false;
@@ -1702,7 +1701,6 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic  intrinsicId = node->gtHWIntrinsicId;
     var_types       baseType    = node->gtSIMDBaseType;
-    HWIntrinsicFlag flags       = HWIntrinsicInfo::lookupFlags(intrinsicId);
     emitAttr        attr        = EA_ATTR(node->gtSIMDSize);
     instruction     ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
     GenTree*        op1         = node->gtGetOp1();
@@ -1730,10 +1728,10 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     regNumber op2Reg;
 
     bool isCommutative = false;
-    bool copyUpperBits = (flags & HW_Flag_CopyUpperBits) != 0;
+    const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
     // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
-    assert(!copyUpperBits || !op1->isContained());
+    assert(!copiesUpperBits || !op1->isContained());
 
     if (op3->isContained() || op3->isUsedFromSpillTemp())
     {
@@ -1742,7 +1740,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         op1Reg = op1->gtRegNum;
         op2Reg = op2->gtRegNum;
 
-        isCommutative = !copyUpperBits;
+        isCommutative = !copiesUpperBits;
     }
     else if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
@@ -1769,7 +1767,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         op1Reg = op1->gtRegNum;
         op2Reg = op2->gtRegNum;
 
-        isCommutative = !copyUpperBits;
+        isCommutative = !copiesUpperBits;
     }
 
     if (isCommutative && (op1Reg != targetReg) && (op2Reg == targetReg))
