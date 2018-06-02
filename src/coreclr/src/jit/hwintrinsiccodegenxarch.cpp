@@ -39,7 +39,8 @@ static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
     // HW_Category_Helper and HW_Flag_MultiIns/HW_Flag_SpecialCodeGen usually need manual codegen
     const bool tableDrivenCategory =
         (category != HW_Category_Special) && (category != HW_Category_Scalar) && (category != HW_Category_Helper);
-    const bool tableDrivenFlag = !(HWIntrinsicInfo::GeneratesMultipleIns(intrinsicId) | HWIntrinsicInfo::HasSpecialCodegen(intrinsicId));
+    const bool tableDrivenFlag =
+        !(HWIntrinsicInfo::GeneratesMultipleIns(intrinsicId) | HWIntrinsicInfo::HasSpecialCodegen(intrinsicId));
     return tableDrivenCategory && tableDrivenFlag;
 }
 
@@ -1699,12 +1700,12 @@ void CodeGen::genBMI2Intrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic  intrinsicId = node->gtHWIntrinsicId;
-    var_types       baseType    = node->gtSIMDBaseType;
-    emitAttr        attr        = EA_ATTR(node->gtSIMDSize);
-    instruction     ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-    GenTree*        op1         = node->gtGetOp1();
-    regNumber       targetReg   = node->gtRegNum;
+    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    var_types      baseType    = node->gtSIMDBaseType;
+    emitAttr       attr        = EA_ATTR(node->gtSIMDSize);
+    instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+    GenTree*       op1         = node->gtGetOp1();
+    regNumber      targetReg   = node->gtRegNum;
 
     assert(HWIntrinsicInfo::lookupNumArgs(node) == 3);
     assert(op1 != nullptr);
@@ -1727,7 +1728,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     regNumber op1Reg;
     regNumber op2Reg;
 
-    bool isCommutative = false;
+    bool       isCommutative   = false;
     const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
     // Intrinsics with CopyUpperBits semantics cannot have op1 be contained

@@ -526,12 +526,12 @@ GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* last
     assert(lastOp != nullptr);
     // Full-range imm-intrinsics do not need the range-check
     // because the imm-parameter of the intrinsic method is a byte.
-    if (mustExpand && !HWIntrinsicInfo::HasFullRangeImm(intrinsic) &&
-        HWIntrinsicInfo::isImmOp(intrinsic, lastOp))
+    if (mustExpand && !HWIntrinsicInfo::HasFullRangeImm(intrinsic) && HWIntrinsicInfo::isImmOp(intrinsic, lastOp))
     {
         assert(!lastOp->IsCnsIntOrI());
-        GenTree* upperBoundNode = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, HWIntrinsicInfo::lookupImmUpperBound(intrinsic));
-        GenTree* index          = nullptr;
+        GenTree* upperBoundNode =
+            new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, HWIntrinsicInfo::lookupImmUpperBound(intrinsic));
+        GenTree* index = nullptr;
         if ((lastOp->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
             index = fgInsertCommaFormTemp(&lastOp);
@@ -565,9 +565,9 @@ bool Compiler::compSupportsHWIntrinsic(InstructionSet isa)
 {
     return (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) && (
 #ifdef DEBUG
-                                                    JitConfig.EnableIncompleteISAClass() ||
+                                                                     JitConfig.EnableIncompleteISAClass() ||
 #endif
-                                                    HWIntrinsicInfo::isFullyImplementedIsa(isa));
+                                                                     HWIntrinsicInfo::isFullyImplementedIsa(isa));
 }
 
 //------------------------------------------------------------------------
@@ -703,8 +703,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     bool isTableDriven = impIsTableDrivenHWIntrinsic(intrinsic, category);
 
-    if (isTableDriven && ((category == HW_Category_MemoryStore) ||
-                          HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic)))
+    if (isTableDriven && ((category == HW_Category_MemoryStore) || HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic) ||
+                          HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic)))
     {
         if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
         {
@@ -727,7 +727,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         assert(baseType != TYP_UNKNOWN);
     }
 
-    if ((HWIntrinsicInfo::IsOneTypeGeneric(intrinsic) || HWIntrinsicInfo::IsTwoTypeGeneric(intrinsic)) && !HWIntrinsicInfo::HasSpecialImport(intrinsic))
+    if ((HWIntrinsicInfo::IsOneTypeGeneric(intrinsic) || HWIntrinsicInfo::IsTwoTypeGeneric(intrinsic)) &&
+        !HWIntrinsicInfo::HasSpecialImport(intrinsic))
     {
         if (!varTypeIsArithmetic(baseType))
         {
