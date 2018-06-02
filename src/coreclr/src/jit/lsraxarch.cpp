@@ -2521,7 +2521,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 assert(numArgs == 3);
                 assert(isRMW);
 
-                const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);;
+                const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
                 // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
                 assert(!copiesUpperBits || !op1->isContained());

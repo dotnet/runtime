@@ -127,15 +127,15 @@ enum HWIntrinsicFlag : unsigned int
 
 struct HWIntrinsicInfo
 {
-    NamedIntrinsic          id;
-    const char*             name;
-    InstructionSet          isa;
-    int                     ival;
-    unsigned                simdSize;
-    int                     numArgs;
-    instruction             ins[10];
-    HWIntrinsicCategory     category;
-    HWIntrinsicFlag         flags;
+    NamedIntrinsic      id;
+    const char*         name;
+    InstructionSet      isa;
+    int                 ival;
+    unsigned            simdSize;
+    int                 numArgs;
+    instruction         ins[10];
+    HWIntrinsicCategory category;
+    HWIntrinsicFlag     flags;
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
