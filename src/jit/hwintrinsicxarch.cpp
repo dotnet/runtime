@@ -172,7 +172,7 @@ InstructionSet HWIntrinsicInfo::lookupIsa(const char* className)
 //    get the SIMD size from the GenTreeHWIntrinsic node.
 unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig)
 {
-    if ((lookupFlags(id) & HW_Flag_UnfixedSIMDSize) == 0)
+    if (HWIntrinsicInfo::HasFixedSimdSize(id))
     {
         return lookupSimdSize(id);
     }
@@ -185,7 +185,7 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
     }
     else
     {
-        assert((lookupFlags(id) & HW_Flag_BaseTypeFromFirstArg) != 0);
+        assert(HWIntrinsicInfo::BaseTypeFromFirstArg(id));
         typeHnd = comp->info.compCompHnd->getArgClass(sig, sig->args);
     }
 
@@ -321,7 +321,7 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
         return false;
     }
 
-    if ((HWIntrinsicInfo::lookupFlags(id) & HW_Flag_MaybeIMM) == 0)
+    if (!HWIntrinsicInfo::MaybeImm(id))
     {
         return true;
     }
@@ -352,13 +352,13 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
         case NI_AVX_Compare:
         case NI_AVX_CompareScalar:
         {
-            assert((HWIntrinsicInfo::lookupFlags(id) & HW_Flag_FullRangeIMM) == 0);
+            assert(!HWIntrinsicInfo::HasFullRangeImm(id));
             return 31; // enum FloatComparisonMode has 32 values
         }
 
         default:
         {
-            assert((HWIntrinsicInfo::lookupFlags(id) & HW_Flag_FullRangeIMM) != 0);
+            assert(HWIntrinsicInfo::HasFullRangeImm(id));
             return 255;
         }
     }
@@ -486,7 +486,7 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
 //
 GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType)
 {
-    assert((HWIntrinsicInfo::lookupFlags(intrinsic) & HW_Flag_NoJmpTableIMM) != 0);
+    assert(HWIntrinsicInfo::NoJmpTableImm(intrinsic));
     switch (intrinsic)
     {
         case NI_SSE2_ShiftLeftLogical:
@@ -526,7 +526,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* last
     assert(lastOp != nullptr);
     // Full-range imm-intrinsics do not need the range-check
     // because the imm-parameter of the intrinsic method is a byte.
-    if (mustExpand && ((HWIntrinsicInfo::lookupFlags(intrinsic) & HW_Flag_FullRangeIMM) == 0) &&
+    if (mustExpand && !HWIntrinsicInfo::HasFullRangeImm(intrinsic) &&
         HWIntrinsicInfo::isImmOp(intrinsic, lastOp))
     {
         assert(!lastOp->IsCnsIntOrI());
@@ -576,23 +576,22 @@ bool Compiler::compSupportsHWIntrinsic(InstructionSet isa)
 // Arguments:
 //    retType - return type
 //    sig     - intrinsic signature
-//    flags   - flags of the intrinsics
 //
 // Return Value:
 //    Returns true iff the given type signature is supported
 // Notes:
 //    - This is only used on 32-bit systems to determine whether the signature uses no 64-bit registers.
 //    - The `retType` is passed to avoid another call to the type system, as it has already been retrieved.
-bool Compiler::hwIntrinsicSignatureTypeSupported(var_types retType, CORINFO_SIG_INFO* sig, HWIntrinsicFlag flags)
+bool Compiler::hwIntrinsicSignatureTypeSupported(var_types retType, CORINFO_SIG_INFO* sig, NamedIntrinsic intrinsic)
 {
 #ifdef _TARGET_X86_
     CORINFO_CLASS_HANDLE argClass;
 
-    if ((flags & HW_Flag_64BitOnly) != 0)
+    if (HWIntrinsicInfo::Is64BitOnly(intrinsic))
     {
         return false;
     }
-    else if ((flags & HW_Flag_SecondArgMaybe64Bit) != 0)
+    else if (HWIntrinsicInfo::SecondArgMaybe64Bit(intrinsic))
     {
         assert(sig->numArgs >= 2);
         CorInfoType corType =
@@ -615,11 +614,11 @@ bool Compiler::hwIntrinsicSignatureTypeSupported(var_types retType, CORINFO_SIG_
 // Return Value:
 //    returns true if this category can be table-driven in the importer
 //
-static bool impIsTableDrivenHWIntrinsic(HWIntrinsicCategory category, HWIntrinsicFlag flags)
+static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicCategory category)
 {
     // HW_Flag_NoCodeGen implies this intrinsic should be manually morphed in the importer.
-    return category != HW_Category_Special && category != HW_Category_Scalar &&
-           ((flags & (HW_Flag_NoCodeGen | HW_Flag_SpecialImport)) == 0);
+    return (category != HW_Category_Special) && (category != HW_Category_Scalar) &&
+           HWIntrinsicInfo::RequiresCodegen(intrinsicId) | !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
 }
 
 //------------------------------------------------------------------------
@@ -640,7 +639,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 {
     InstructionSet      isa      = HWIntrinsicInfo::lookupIsa(intrinsic);
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
-    HWIntrinsicFlag     flags    = HWIntrinsicInfo::lookupFlags(intrinsic);
     int                 numArgs  = sig->numArgs;
     var_types           retType  = JITtype2varType(sig->retType);
     var_types           baseType = TYP_UNKNOWN;
@@ -659,7 +657,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     // - intrinsics do not require 64-bit registers (r64) on 32-bit platforms (signatureTypeSupproted returns
     // true)
     bool issupported =
-        compSupports(isa) && compSupportsHWIntrinsic(isa) && hwIntrinsicSignatureTypeSupported(retType, sig, flags);
+        compSupports(isa) && compSupportsHWIntrinsic(isa) && hwIntrinsicSignatureTypeSupported(retType, sig, intrinsic);
 
     if (category == HW_Category_IsSupportedProperty)
     {
@@ -676,7 +674,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         GenTree* lastOp = impStackTop().val;
         // The imm-HWintrinsics that do not accept all imm8 values may throw
         // ArgumentOutOfRangeException when the imm argument is not in the valid range
-        if ((flags & HW_Flag_FullRangeIMM) == 0)
+        if (!HWIntrinsicInfo::HasFullRangeImm(intrinsic))
         {
             if (!mustExpand && lastOp->IsCnsIntOrI() &&
                 lastOp->AsIntCon()->IconValue() > HWIntrinsicInfo::lookupImmUpperBound(intrinsic))
@@ -687,7 +685,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         if (!lastOp->IsCnsIntOrI())
         {
-            if ((flags & HW_Flag_NoJmpTableIMM) == 0 && !mustExpand)
+            if (HWIntrinsicInfo::NoJmpTableImm(intrinsic))
+            {
+                return impNonConstFallback(intrinsic, retType, baseType);
+            }
+
+            if (!mustExpand)
             {
                 // When the imm-argument is not a constant and we are not being forced to expand, we need to
                 // return nullptr so a GT_CALL to the intrinsic method is emitted instead. The
@@ -695,25 +698,21 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 // we emit some less efficient fallback code.
                 return nullptr;
             }
-            else if ((flags & HW_Flag_NoJmpTableIMM) != 0)
-            {
-                return impNonConstFallback(intrinsic, retType, baseType);
-            }
         }
     }
 
-    bool isTableDriven = impIsTableDrivenHWIntrinsic(category, flags);
+    bool isTableDriven = impIsTableDrivenHWIntrinsic(intrinsic, category);
 
     if (isTableDriven && ((category == HW_Category_MemoryStore) ||
-                          ((flags & (HW_Flag_BaseTypeFromFirstArg | HW_Flag_BaseTypeFromSecondArg)) != 0)))
+                          HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic)))
     {
-        if ((flags & HW_Flag_BaseTypeFromFirstArg) != 0)
+        if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
         {
             baseType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
         }
         else
         {
-            assert((category == HW_Category_MemoryStore) || ((flags & HW_Flag_BaseTypeFromSecondArg) != 0));
+            assert((category == HW_Category_MemoryStore) || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic));
             CORINFO_ARG_LIST_HANDLE secondArg      = info.compCompHnd->getArgNext(sig->args);
             CORINFO_CLASS_HANDLE    secondArgClass = info.compCompHnd->getArgClass(sig, secondArg);
             baseType                               = getBaseTypeOfSIMDType(secondArgClass);
@@ -728,14 +727,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         assert(baseType != TYP_UNKNOWN);
     }
 
-    if (((flags & (HW_Flag_OneTypeGeneric | HW_Flag_TwoTypeGeneric)) != 0) && ((flags & HW_Flag_SpecialImport) == 0))
+    if ((HWIntrinsicInfo::IsOneTypeGeneric(intrinsic) || HWIntrinsicInfo::IsTwoTypeGeneric(intrinsic)) && !HWIntrinsicInfo::HasSpecialImport(intrinsic))
     {
         if (!varTypeIsArithmetic(baseType))
         {
             return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig, mustExpand);
         }
 
-        if ((flags & HW_Flag_TwoTypeGeneric) != 0)
+        if (HWIntrinsicInfo::IsTwoTypeGeneric(intrinsic))
         {
             // StaticCast<T, U> has two type parameters.
             assert(numArgs == 1);
@@ -747,7 +746,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    if ((flags & HW_Flag_NoFloatingPointUsed) == 0)
+    if (HWIntrinsicInfo::IsFloatingPointUsed(intrinsic))
     {
         // Set `compFloatingPointUsed` to cover the scenario where an intrinsic is being on SIMD fields, but
         // where no SIMD local vars are in use. This is the same logic as is used for FEATURE_SIMD.
