@@ -22,9 +22,7 @@
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="EndPointTest.cs" />
     <Compile Include="IPAddressParsing.cs" />
-    <Compile Include="IPAddressParsingSpan.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="IPAddressTest.cs" />
-    <Compile Include="IPAddressSpanTest.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="IPAddressMappingTest.cs" />
     <Compile Include="IPEndPointTest.cs" />
     <Compile Include="NetworkCredentialTest.cs" />
@@ -39,6 +37,11 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="CookieCollectionTest.netcoreapp.cs" />
+    <Compile Include="IPAddressSpanTest.cs" />
+    <Compile Include="IPAddressParsingSpan.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
