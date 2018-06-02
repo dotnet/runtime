@@ -34,117 +34,127 @@ const HWIntrinsicInfo& HWIntrinsicInfo::lookup(NamedIntrinsic id)
 }
 
 //------------------------------------------------------------------------
-// lookupHWIntrinsicISA: map class name to InstructionSet value
+// lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
 //
 // Arguments:
-//    className -- class name in System.Runtime.Intrinsics.X86
+//    className  -- The name of the class associated with the HWIntrinsic to lookup
+//    methodName -- The name of the method associated with the HWIntrinsic to lookup
 //
 // Return Value:
-//    Id for the ISA class.
-//
-InstructionSet Compiler::lookupHWIntrinsicISA(const char* className)
+//    The NamedIntrinsic associated with methodName and isa
+NamedIntrinsic HWIntrinsicInfo::lookupId(const char* className, const char* methodName)
 {
-    if (className != nullptr)
+    // TODO-Throughput: replace sequential search by binary search
+
+    InstructionSet isa = lookupIsa(className);
+    assert(isa != InstructionSet_ILLEGAL);
+
+    assert(methodName != nullptr);
+
+    for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
     {
-        if (className[0] == 'A')
+        if (isa != hwIntrinsicInfoArray[i].isa)
         {
-            if (strcmp(className, "Aes") == 0)
-            {
-                return InstructionSet_AES;
-            }
-            else if (strcmp(className, "Avx") == 0)
-            {
-                return InstructionSet_AVX;
-            }
-            else if (strcmp(className, "Avx2") == 0)
-            {
-                return InstructionSet_AVX2;
-            }
-        }
-        if (className[0] == 'S')
-        {
-            if (strcmp(className, "Sse") == 0)
-            {
-                return InstructionSet_SSE;
-            }
-            else if (strcmp(className, "Sse2") == 0)
-            {
-                return InstructionSet_SSE2;
-            }
-            else if (strcmp(className, "Sse3") == 0)
-            {
-                return InstructionSet_SSE3;
-            }
-            else if (strcmp(className, "Ssse3") == 0)
-            {
-                return InstructionSet_SSSE3;
-            }
-            else if (strcmp(className, "Sse41") == 0)
-            {
-                return InstructionSet_SSE41;
-            }
-            else if (strcmp(className, "Sse42") == 0)
-            {
-                return InstructionSet_SSE42;
-            }
+            continue;
         }
 
+        if (strcmp(methodName, hwIntrinsicInfoArray[i].name) == 0)
+        {
+            return hwIntrinsicInfoArray[i].id;
+        }
+    }
+
+    unreached();
+    return NI_Illegal;
+}
+
+//------------------------------------------------------------------------
+// lookupIsa: Gets the InstructionSet for a given class name
+//
+// Arguments:
+//    className -- The name of the class associated with the InstructionSet to lookup
+//
+// Return Value:
+//    The InstructionSet associated with className
+InstructionSet HWIntrinsicInfo::lookupIsa(const char* className)
+{
+    assert(className != nullptr);
+
+    if (className[0] == 'A')
+    {
+        if (strcmp(className, "Aes") == 0)
+        {
+            return InstructionSet_AES;
+        }
+        if (strcmp(className, "Avx") == 0)
+        {
+            return InstructionSet_AVX;
+        }
+        if (strcmp(className, "Avx2") == 0)
+        {
+            return InstructionSet_AVX2;
+        }
+    }
+    else if (className[0] == 'S')
+    {
+        if (strcmp(className, "Sse") == 0)
+        {
+            return InstructionSet_SSE;
+        }
+        if (strcmp(className, "Sse2") == 0)
+        {
+            return InstructionSet_SSE2;
+        }
+        if (strcmp(className, "Sse3") == 0)
+        {
+            return InstructionSet_SSE3;
+        }
+        if (strcmp(className, "Ssse3") == 0)
+        {
+            return InstructionSet_SSSE3;
+        }
+        if (strcmp(className, "Sse41") == 0)
+        {
+            return InstructionSet_SSE41;
+        }
+        if (strcmp(className, "Sse42") == 0)
+        {
+            return InstructionSet_SSE42;
+        }
+    }
+    else if (className[0] == 'B')
+    {
         if (strcmp(className, "Bmi1") == 0)
         {
             return InstructionSet_BMI1;
         }
-        else if (strcmp(className, "Bmi2") == 0)
+        if (strcmp(className, "Bmi2") == 0)
         {
             return InstructionSet_BMI2;
         }
-        else if (strcmp(className, "Fma") == 0)
-        {
-            return InstructionSet_FMA;
-        }
-        else if (strcmp(className, "Lzcnt") == 0)
-        {
-            return InstructionSet_LZCNT;
-        }
-        else if (strcmp(className, "Pclmulqdq") == 0)
+    }
+    else if (className[0] == 'P')
+    {
+        if (strcmp(className, "Pclmulqdq") == 0)
         {
             return InstructionSet_PCLMULQDQ;
         }
-        else if (strcmp(className, "Popcnt") == 0)
+        if (strcmp(className, "Popcnt") == 0)
         {
             return InstructionSet_POPCNT;
         }
     }
-
-    JITDUMP("Unsupported ISA.\n");
-    return InstructionSet_ILLEGAL;
-}
-
-//------------------------------------------------------------------------
-// lookupHWIntrinsic: map intrinsic name to named intrinsic value
-//
-// Arguments:
-//    methodName -- name of the intrinsic function.
-//    isa        -- instruction set of the intrinsic.
-//
-// Return Value:
-//    Id for the hardware intrinsic
-//
-// TODO-Throughput: replace sequential search by binary search
-NamedIntrinsic Compiler::lookupHWIntrinsic(const char* methodName, InstructionSet isa)
-{
-    NamedIntrinsic result = NI_Illegal;
-    if (isa != InstructionSet_ILLEGAL)
+    else if (strcmp(className, "Fma") == 0)
     {
-        for (int i = 0; i < NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1; i++)
-        {
-            if (isa == hwIntrinsicInfoArray[i].isa && strcmp(methodName, hwIntrinsicInfoArray[i].name) == 0)
-            {
-                result = hwIntrinsicInfoArray[i].id;
-                break;
-            }
-        }
+        return InstructionSet_FMA;
     }
-    return result;
+    else if (strcmp(className, "Lzcnt") == 0)
+    {
+        return InstructionSet_LZCNT;
+    }
+
+    unreached();
+    return InstructionSet_ILLEGAL;
 }
 
 //------------------------------------------------------------------------

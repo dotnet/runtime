@@ -138,6 +138,8 @@ struct HWIntrinsicInfo
     HWIntrinsicFlag         flags;
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
+    static NamedIntrinsic lookupId(const char* className, const char* methodName);
+    static InstructionSet lookupIsa(const char* className);
 
     static const char* lookupName(NamedIntrinsic id)
     {
