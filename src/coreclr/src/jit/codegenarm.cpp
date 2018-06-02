@@ -119,7 +119,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
         }
     }
 
-    regTracker.rsTrackRegIntCns(reg, imm);
+    regSet.verifyRegUsed(reg);
 }
 
 //------------------------------------------------------------------------
@@ -143,7 +143,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (con->ImmedValNeedsReloc(compiler))
             {
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, targetReg, cnsVal);
-                regTracker.rsTrackRegTrash(targetReg);
+                regSet.verifyRegUsed(targetReg);
             }
             else
             {
@@ -1599,7 +1599,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         else
         {
             getEmitter()->emitIns_R_AI(INS_ldr, EA_PTR_DSP_RELOC, callTargetReg, (ssize_t)pAddr);
-            regTracker.rsTrackRegTrash(callTargetReg);
+            regSet.verifyRegUsed(callTargetReg);
         }
 
         getEmitter()->emitIns_Call(emitter::EC_INDIR_R, compiler->eeFindHelper(helper),
@@ -1624,7 +1624,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                    (CorInfoHelpFunc)helper == CORINFO_HELP_PROF_FCN_LEAVE);
     }
 
-    regTracker.rsTrashRegSet(RBM_CALLEE_TRASH);
+    regSet.verifyRegistersUsed(RBM_CALLEE_TRASH);
 }
 
 //------------------------------------------------------------------------

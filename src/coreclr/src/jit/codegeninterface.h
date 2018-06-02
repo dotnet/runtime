@@ -96,10 +96,6 @@ public:
     RegState intRegState;
     RegState floatRegState;
 
-    // TODO-Cleanup: The only reason that regTracker needs to live in CodeGenInterface is that
-    // in RegSet::rsUnspillOneReg, it needs to mark the new register as "trash"
-    RegTracker regTracker;
-
 protected:
     Compiler* compiler;
     bool      m_genAlignLoops;

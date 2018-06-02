@@ -116,7 +116,11 @@ void CodeGen::genCodeForBBlist()
 
         /* Mark the register as holding the variable */
 
-        regTracker.rsTrackRegLclVar(varDsc->lvRegNum, varNum);
+        assert(varDsc->lvRegNum != REG_STK);
+        if (!varDsc->lvAddrExposed)
+        {
+            regSet.verifyRegUsed(varDsc->lvRegNum);
+        }
     }
 
     unsigned finallyNesting = 0;

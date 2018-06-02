@@ -94,6 +94,10 @@ public:
         return (rsModifiedRegsMask & mask) != 0;
     }
 
+    void verifyRegUsed(regNumber reg);
+
+    void verifyRegistersUsed(regMaskTP regMask);
+
 public: // TODO-Cleanup: Should be private, but GCInfo uses them
     __declspec(property(get = GetMaskVars, put = SetMaskVars)) regMaskTP rsMaskVars; // mask of registers currently
                                                                                      // allocated to variables
@@ -170,30 +174,4 @@ private:
     void rsMarkSpill(GenTree* tree, regNumber reg);
 };
 
-//-------------------------------------------------------------------------
-//
-//  These are used to track the contents of the registers during
-//  code generation.
-//
-//  Only integer registers are tracked.
-//
-
-class RegTracker
-{
-    Compiler* compiler;
-    RegSet*   regSet;
-
-public:
-    void rsTrackInit(Compiler* comp, RegSet* rs)
-    {
-        compiler = comp;
-        regSet   = rs;
-    }
-
-    void rsTrackRegTrash(regNumber reg);
-    void rsTrackRegIntCns(regNumber reg, ssize_t val);
-    void rsTrackRegLclVar(regNumber reg, unsigned var);
-    void rsTrackRegCopy(regNumber reg1, regNumber reg2);
-    void rsTrashRegSet(regMaskTP regMask);
-};
 #endif // _REGSET_H

@@ -45,6 +45,61 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
+//------------------------------------------------------------------------
+// verifyRegUsed: verify that the register is marked as used.
+//
+// Arguments:
+//    reg - The register to verify.
+//
+// Return Value:
+//   None.
+//
+// Assumptions:
+//    The caller must have ensured that the register is already marked
+//    as used.
+//
+// Notes:
+//     This method is intended to be called during code generation, and
+//     should simply validate that the register (or registers) have
+//     already been added to the modified set.
+
+void RegSet::verifyRegUsed(regNumber reg)
+{
+    // TODO-Cleanup: we need to identify the places where the register
+    //               is not marked as used when this is called.
+    rsSetRegsModified(genRegMask(reg));
+}
+
+//------------------------------------------------------------------------
+// verifyRegistersUsed: verify that the registers are marked as used.
+//
+// Arguments:
+//    regs - The registers to verify.
+//
+// Return Value:
+//   None.
+//
+// Assumptions:
+//    The caller must have ensured that the registers are already marked
+//    as used.
+//
+// Notes:
+//     This method is intended to be called during code generation, and
+//     should simply validate that the register (or registers) have
+//     already been added to the modified set.
+
+void RegSet::verifyRegistersUsed(regMaskTP regMask)
+{
+    if (m_rsCompiler->opts.MinOpts() || m_rsCompiler->opts.compDbgCode)
+    {
+        return;
+    }
+
+    // TODO-Cleanup: we need to identify the places where the registers
+    //               are not marked as used when this is called.
+    rsSetRegsModified(regMask);
+}
+
 void RegSet::rsClearRegsModified()
 {
     assert(m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT);
@@ -153,31 +208,6 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
     _rsMaskVars = newMaskVars;
 }
 
-/*****************************************************************************
- *
- *  Trash the rsRegValues associated with a register
- */
-
-// inline
-void RegTracker::rsTrackRegTrash(regNumber reg)
-{
-    /* Keep track of which registers we ever touch */
-
-    regSet->rsSetRegsModified(genRegMask(reg));
-}
-
-/*****************************************************************************/
-
-// inline
-void RegTracker::rsTrackRegIntCns(regNumber reg, ssize_t val)
-{
-    assert(genIsValidIntReg(reg));
-
-    /* Keep track of which registers we ever touch */
-
-    regSet->rsSetRegsModified(genRegMask(reg));
-}
-
 /*****************************************************************************/
 
 RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_rsGCInfo(gcInfo)
@@ -235,44 +265,6 @@ RegSet::SpillDsc* RegSet::rsGetSpillInfo(GenTree* tree, regNumber reg, SpillDsc*
     }
 
     return dsc;
-}
-
-/*****************************************************************************
- *
- *  Record the fact that the given register now contains the given local
- *  variable. Pointers are handled specially since reusing the register
- *  will extend the lifetime of a pointer register which is not a register
- *  variable.
- */
-
-void RegTracker::rsTrackRegLclVar(regNumber reg, unsigned var)
-{
-    LclVarDsc* varDsc = &compiler->lvaTable[var];
-    assert(reg != REG_STK);
-#if CPU_HAS_FP_SUPPORT
-    assert(varTypeIsFloating(varDsc->TypeGet()) == false);
-#endif
-
-    if (compiler->lvaTable[var].lvAddrExposed)
-    {
-        return;
-    }
-
-    /* Keep track of which registers we ever touch */
-
-    regSet->rsSetRegsModified(genRegMask(reg));
-}
-
-/*****************************************************************************/
-
-void RegTracker::rsTrackRegCopy(regNumber reg1, regNumber reg2)
-{
-    /* Keep track of which registers we ever touch */
-
-    assert(reg1 < REG_COUNT);
-    assert(reg2 < REG_COUNT);
-
-    regSet->rsSetRegsModified(genRegMask(reg1));
 }
 
 //------------------------------------------------------------
@@ -589,29 +581,6 @@ TempDsc* RegSet::rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regI
 void RegSet::rsMarkSpill(GenTree* tree, regNumber reg)
 {
     tree->gtFlags |= GTF_SPILLED;
-}
-
-/*****************************************************************************
- *
- *  A little helper to trash the given set of registers.
- *  Usually used after a call has been generated.
- */
-
-void RegTracker::rsTrashRegSet(regMaskTP regMask)
-{
-    if (compiler->opts.MinOpts() || compiler->opts.compDbgCode)
-    {
-        return;
-    }
-    regMaskTP regBit = 1;
-    for (regNumber regNum = REG_FIRST; regMask != 0; regNum = REG_NEXT(regNum), regBit <<= 1)
-    {
-        if (regBit & regMask)
-        {
-            rsTrackRegTrash(regNum);
-            regMask -= regBit;
-        }
-    }
 }
 
 /*****************************************************************************/
