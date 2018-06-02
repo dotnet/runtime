@@ -61,7 +61,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT HTTP stack doesn't support Expect: 100-continue")]
         [Fact]
         public async Task PostAsyncExpect100Continue_FailsAfterContentSendStarted_Throws()
         {

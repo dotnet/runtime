@@ -13,7 +13,6 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
     public abstract class HttpClientHandler_Cancellation_Test : HttpClientTestBase
     {
         [Theory]
@@ -99,6 +98,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Test needs to be rewritten to work on UAP due to WinRT differences")]
         [Theory]
         [MemberData(nameof(TwoBoolsAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Buffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, CancellationMode mode)
@@ -288,6 +288,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT stack can't set MaxConnectionsPerServer < 2")]
         [Fact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {

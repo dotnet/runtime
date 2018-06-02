@@ -378,7 +378,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [Theory]
         [MemberData(nameof(GetAsync_IPBasedUri_Success_MemberData))]
         public async Task GetAsync_IPBasedUri_Success(IPAddress address)
@@ -438,7 +437,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [OuterLoop("Uses external server")]
         [Fact]
         public async Task SendAsync_Cancel_CancellationTokenPropagates()
@@ -448,8 +446,17 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteEchoServer);
-                TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() =>
-                    client.SendAsync(request, cts.Token));
+                Task t = client.SendAsync(request, cts.Token);
+                OperationCanceledException ex;
+                if (PlatformDetection.IsUap)
+                {
+                    ex = await Assert.ThrowsAsync<OperationCanceledException>(() => t);
+                }
+                else
+                {
+                    ex = await Assert.ThrowsAsync<TaskCanceledException>(() => t);
+                }
+
                 Assert.True(cts.Token.IsCancellationRequested, "cts token IsCancellationRequested");
                 if (!PlatformDetection.IsFullFramework)
                 {
@@ -481,7 +488,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't support .Proxy property")]
         [Theory]
         [InlineData("[::1234]")]
         [InlineData("[::1234]:8080")]
@@ -508,7 +515,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(connectionAccepted);
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't support .Proxy property")]
         [Theory]
         [InlineData("1.2.3.4")]
         [InlineData("1.2.3.4:8080")]
@@ -544,7 +551,7 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { "[::1234]" };
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't support .Proxy property")]
         [Theory]
         [OuterLoop("Uses external server")]
         [MemberData(nameof(DestinationHost_MemberData))]
@@ -572,7 +579,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(connectionAccepted);
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't support .Proxy property")]
         [Fact]
         [OuterLoop("Uses external server")]
         public async Task ProxyTunnelRequest_PortSpecified_NotStrippedOffInUri()
@@ -606,7 +613,7 @@ namespace System.Net.Http.Functional.Tests
             from useSsl in new[] { true, false }
             select new object[] { address, useSsl };
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(30056, TargetFrameworkMonikers.Uap)]
         [Theory]
         [MemberData(nameof(SecureAndNonSecure_IPBasedUri_MemberData))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
@@ -869,7 +876,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(30063, TargetFrameworkMonikers.Uap)] // fails due to TE header
         [Theory]
         [InlineData(300)]
         [InlineData(301)]
@@ -1043,7 +1050,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Needs to be rewritten to use RemoteInvoke")]
         [OuterLoop("Uses external server")]
         [Fact]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectToUriWithParams_RequestMsgUriSet()
@@ -1182,7 +1189,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't send fragments")]
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't send fragments")]
         [Theory]
         [InlineData("#origFragment", "", "#origFragment", false)]
         [InlineData("#origFragment", "", "#origFragment", true)]
@@ -1273,7 +1280,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Needs to be rewritten to use RemoteInvoke")]
         [Fact]
         [OuterLoop("Uses external server")]
         public async Task HttpClientHandler_CredentialIsNotCredentialCacheAfterRedirect_StatusCodeOK()
@@ -1379,7 +1386,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP ignores invalid headers")]
         [Theory]
         [InlineData(":")]
         [InlineData("\x1234: \x5678")]
@@ -1404,7 +1411,6 @@ namespace System.Net.Http.Functional.Tests
             }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync($"HTTP/1.1 200 OK\r\n{invalidHeader}\r\nContent-Length: 11\r\n\r\nhello world"));
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [Fact]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
@@ -1549,7 +1555,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains("X-Http-Method-Override: DELETE", headersSet);
                     Assert.Contains("X-ATT-DeviceId: GT-P7320/P7320XXLPG", headersSet);
                     Assert.Contains("X-Wap-Profile: http://wap.samsungmobile.com/uaprof/SGH-I777.xml", headersSet);
-                    if (!IsNetfxHandler)
+                    if (!IsNetfxHandler && !PlatformDetection.IsUap)
                     {
                         Assert.Contains("Proxy-Connection: keep-alive", headersSet);
                     }
@@ -1566,7 +1572,7 @@ namespace System.Net.Http.Functional.Tests
             from dribble in new[] { false, true }
             select new object[] { newline, fold, dribble };
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(30060, TargetFrameworkMonikers.Uap)]
         [Theory]
         [MemberData(nameof(GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly_MemberData))]
         public async Task GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(string newline, string fold, bool dribble)
@@ -1794,7 +1800,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Test hangs due to bugs in WinRT HTTP stack")]
         [Theory]
         [InlineData("")] // missing size
         [InlineData("    ")] // missing size
@@ -2608,7 +2614,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(30061, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -2814,7 +2820,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)] // Test hangs. But this test seems invalid. An HttpRequestMessage can only be sent once.
+        [ActiveIssue(30057, TargetFrameworkMonikers.Uap)]
         [OuterLoop("Uses external server")]
         [Theory]
         [InlineData("12345678910", 0)]
@@ -3237,7 +3243,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ActiveIssue(23702, TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't support .Proxy property")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public async Task ProxyAuth_Digest_Succeeds()
         {
