@@ -73,6 +73,29 @@ namespace System
             return formattable.ToString(Globalization.CultureInfo.InvariantCulture);
         }
 
+        /// <summary>
+        /// Format the given object in the current culture. This static method may be
+        /// imported in C# by
+        /// <code>
+        /// using static System.FormattableString;
+        /// </code>.
+        /// Within the scope
+        /// of that import directive an interpolated string may be formatted in the
+        /// current culture by writing, for example,
+        /// <code>
+        /// CurrentCulture($"{{ lat = {latitude}; lon = {longitude} }}")
+        /// </code>
+        /// </summary>
+        public static string CurrentCulture(FormattableString formattable)
+        {
+            if (formattable == null)
+            {
+                throw new ArgumentNullException(nameof(formattable));
+            }
+
+            return formattable.ToString(Globalization.CultureInfo.CurrentCulture);
+        }
+
         public override string ToString()
         {
             return ToString(Globalization.CultureInfo.CurrentCulture);
