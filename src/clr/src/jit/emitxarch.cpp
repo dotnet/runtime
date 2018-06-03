@@ -4024,7 +4024,7 @@ void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int off
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, insFormat fmt)
+void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir)
 {
     ssize_t    offs = indir->Offset();
     instrDesc* id   = emitNewInstrAmd(attr, offs);
@@ -4032,7 +4032,7 @@ void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTre
     id->idIns(ins);
     id->idReg1(reg1);
 
-    emitHandleMemOp(indir, id, fmt, ins);
+    emitHandleMemOp(indir, id, IF_RRW_ARD, ins);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -4160,7 +4160,7 @@ void emitter::emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int 
 }
 
 void emitter::emitIns_R_R_A(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, insFormat fmt)
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir)
 {
     assert(IsSSEOrAVXInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins));
@@ -4172,7 +4172,7 @@ void emitter::emitIns_R_R_A(
     id->idReg1(reg1);
     id->idReg2(reg2);
 
-    emitHandleMemOp(indir, id, fmt, ins);
+    emitHandleMemOp(indir, id, IF_RWR_RRD_ARD, ins);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins)) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -5407,7 +5407,7 @@ void emitter::emitIns_SIMD_R_R_A(instruction ins, emitAttr attr, regNumber targe
 {
     if (UseVEXEncoding())
     {
-        emitIns_R_R_A(ins, attr, targetReg, op1Reg, indir, IF_RWR_RRD_ARD);
+        emitIns_R_R_A(ins, attr, targetReg, op1Reg, indir);
     }
     else
     {
@@ -5415,7 +5415,7 @@ void emitter::emitIns_SIMD_R_R_A(instruction ins, emitAttr attr, regNumber targe
         {
             emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
         }
-        emitIns_R_A(ins, attr, targetReg, indir, IF_RRW_ARD);
+        emitIns_R_A(ins, attr, targetReg, indir);
     }
 }
 
@@ -5589,7 +5589,7 @@ void emitter::emitIns_SIMD_R_R_R_A(
         emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
     }
 
-    emitIns_R_R_A(ins, attr, targetReg, op2Reg, indir, IF_RWR_RRD_ARD);
+    emitIns_R_R_A(ins, attr, targetReg, op2Reg, indir);
 }
 
 void emitter::emitIns_SIMD_R_R_R_AR(
