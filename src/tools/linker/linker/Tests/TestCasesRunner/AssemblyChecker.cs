@@ -159,7 +159,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				builder.Append (">");
 				expectedBaseName = builder.ToString ();
 			} else {
-				var defaultBaseType = src.IsValueType ? "System.ValueType" : "System.Object";
+				var defaultBaseType = src.IsEnum ? "System.Enum" : src.IsValueType ? "System.ValueType" : "System.Object";
 				expectedBaseName = GetCustomAttributeCtorValues<object> (src, nameof (KeptBaseTypeAttribute)).FirstOrDefault ()?.ToString () ?? defaultBaseType;
 			}
 			Assert.AreEqual (expectedBaseName, linked.BaseType?.FullName);
