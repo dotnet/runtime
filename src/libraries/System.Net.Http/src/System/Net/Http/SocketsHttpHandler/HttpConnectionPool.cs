@@ -788,7 +788,7 @@ namespace System.Net.Http
 
         // For diagnostic purposes
         public override string ToString() =>
-            $"{nameof(HttpConnectionPool)}" +
+            $"{nameof(HttpConnectionPool)} " +
             (_proxyUri == null ?
                 (_sslOptions == null ?
                     $"http://{_host}:{_port}" :
