@@ -450,7 +450,6 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_XADD:
         case GT_XCHG:
-        case GT_LOCKADD:
         {
             // TODO-XArch-Cleanup: We should make the indirection explicit on these nodes so that we don't have
             // to special case them.
@@ -462,29 +461,10 @@ int LinearScan::BuildNode(GenTree* tree)
             RefPosition* addrUse = BuildUse(addr);
             setDelayFree(addrUse);
             tgtPrefUse = addrUse;
-            srcCount   = 1;
-            dstCount   = 1;
-            if (!data->isContained())
-            {
-                RefPosition* dataUse = dataUse = BuildUse(data);
-                srcCount                       = 2;
-            }
-
-            if (tree->TypeGet() == TYP_VOID)
-            {
-                // Right now a GT_XADD node could be morphed into a
-                // GT_LOCKADD of TYP_VOID. See gtExtractSideEffList().
-                // Note that it is advantageous to use GT_LOCKADD
-                // instead of of GT_XADD as the former uses lock.add,
-                // which allows its second operand to be a contained
-                // immediate wheres xadd instruction requires its
-                // second operand to be in a register.
-                // Give it an artificial type and mark it as an unused value.
-                // This results in a Def position created but not considered consumed by its parent node.
-                tree->gtType  = TYP_INT;
-                isLocalDefUse = true;
-                tree->SetUnusedValue();
-            }
+            assert(!data->isContained());
+            BuildUse(data);
+            srcCount = 2;
+            assert(dstCount == 1);
             BuildDef(tree);
         }
         break;
@@ -771,6 +751,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
         case GT_SWITCH_TABLE:
+        case GT_LOCKADD:
 #ifdef _TARGET_X86_
         case GT_LONG:
 #endif
