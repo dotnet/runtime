@@ -3990,7 +3990,8 @@ void Compiler::compInitDebuggingInfo()
 
 void Compiler::compSetOptimizationLevel()
 {
-    bool     theMinOptsValue;
+    bool theMinOptsValue;
+#pragma warning(suppress : 4101)
     unsigned jitMinOpts;
 
     if (compIsForInlining())

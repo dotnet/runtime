@@ -4791,7 +4791,6 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
                      return -1;
                  }
 
-                 BYTE *result;
                  WORD displace = -1;
 
                  // See: Tables A-15,16,17 in AMD Dev Manual 3 for information

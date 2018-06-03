@@ -13032,8 +13032,6 @@ HRESULT Debugger::UpdateFunction(MethodDesc* pMD, SIZE_T encVersion)
     // function, i.e., its already been jitted. Otherwise, the EE will
     // pickup the new method on the next JIT anyway.
 
-    ICorDebugInfo::SourceTypes src;
-
     EnCSequencePointHelper sequencePointHelper(pJitInfo);
 
     // For each offset in the IL->Native map, set a new EnC breakpoint on the

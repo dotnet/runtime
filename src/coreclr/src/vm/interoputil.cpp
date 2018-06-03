@@ -5709,7 +5709,7 @@ void WinRTGuidGenerator::PopulateNamesAppendNamePointers(MethodTable *pMT, SArra
     // Scan through strings, and build list of pointers to them. This assumes that the strings are seperated by a single null character
     PWSTR pszName = (PWSTR)pBuffer;
     pszNames = (PCWSTR*)(pBuffer + cbNamesOld);
-    for (COUNT_T i = 0, P; i < cNames; i++)
+    for (COUNT_T i = 0; i < cNames; i++)
     {
         pszNames[i] = pszName;
         pszName += wcslen(pszName) + 1;

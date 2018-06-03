@@ -6256,8 +6256,7 @@ GenTreeCall* Compiler::gtNewCallNode(
         }
 
         // Make sure that there are no duplicate entries for a given call node
-        IL_OFFSETX value;
-        assert(!genCallSite2ILOffsetMap->Lookup(node, &value));
+        assert(!genCallSite2ILOffsetMap->Lookup(node));
         genCallSite2ILOffsetMap->Set(node, ilOffset);
     }
 

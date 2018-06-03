@@ -13225,10 +13225,10 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     MethodDesc * pMD = NULL;
 
+#ifndef CROSSGEN_COMPILE
     PCCOR_SIGNATURE pSig;
     DWORD cSig;
-
-    mdSignature token;
+#endif // CROSSGEN_COMPILE
 
     size_t result = 0;
     
@@ -13345,12 +13345,13 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case ENCODE_VARARGS_METHODDEF:
         {
-            token = TokenFromRid(
-                        CorSigUncompressData(pBlob),
-                        mdtMethodDef);
+            mdSignature token = TokenFromRid(
+                                    CorSigUncompressData(pBlob),
+                                    mdtMethodDef);
 
             IfFailThrow(pInfoModule->GetMDImport()->GetSigOfMethodDef(token, &cSig, &pSig));
-
+        }
+        {
         VarArgs:
             result = (size_t) CORINFO_VARARGS_HANDLE(currentModule->GetVASigCookie(Signature(pSig, cSig)));
         }

@@ -920,7 +920,6 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
     CONTRACTL_END;
     
     HRESULT     hr = E_FAIL;
-    size_t      rcPartialPathLen;
     
 
     _ASSERTE(m_pResourceFile != NULL);

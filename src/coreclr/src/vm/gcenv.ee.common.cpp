@@ -188,7 +188,6 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     // KEEP IN SYNC WITH DacStackReferenceWalker::Callback in debug\daccess\daccess.cpp
     //
 
-    Frame       *pFrame;
     GCCONTEXT   *gcctx = (GCCONTEXT*) pData;
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING

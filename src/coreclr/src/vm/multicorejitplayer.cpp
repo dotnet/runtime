@@ -888,8 +888,6 @@ bool MulticoreJitProfilePlayer::HandleModuleDependency(unsigned jitInfo)
 
             if (!mod.m_pModule)
             {
-                HRESULT hr;
-
                 // Get the assembly name.
                 SString assemblyName;
                 assemblyName.SetASCII(mod.m_pRecord->GetAssemblyName(), mod.m_pRecord->AssemblyNameLen());
