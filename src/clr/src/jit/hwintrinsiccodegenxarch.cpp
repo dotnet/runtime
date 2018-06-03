@@ -425,8 +425,8 @@ void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emi
 }
 
 //------------------------------------------------------------------------
-// genHWIntrinsic_R_RM_I: Generates the code for a hardware intrinsic node that takes a register operand, a
-//                        register/memory operand, an immediate operand, and that returns a value in register
+// genHWIntrinsic_R_RM_I: Generates the code for a hardware intrinsic node that takes a register/memory operand,
+//                        an immediate operand, and that returns a value in register
 //
 // Arguments:
 //    node - The hardware intrinsic node
@@ -447,8 +447,8 @@ void CodeGen::genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
     assert(targetReg != REG_NA);
-    assert(node->gtGetOp2() == nullptr);
-    assert(!node->OperIsCommutative());
+    assert(node->gtGetOp2() == nullptr); // The second operand is implicit and comes from lookupIval
+    assert(!node->OperIsCommutative());  // One operand intrinsics cannot be commutative
 
     if (op1->isContained() || op1->isUsedFromSpillTemp())
     {
@@ -501,8 +501,7 @@ void CodeGen::genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
 
                 case GT_CLS_VAR_ADDR:
                 {
-                    emit->emitIns_R_C_I(ins, simdSize, targetReg, memBase->gtClsVar.gtClsVarHnd, 0,
-                                               ival);
+                    emit->emitIns_R_C_I(ins, simdSize, targetReg, memBase->gtClsVar.gtClsVarHnd, 0, ival);
                     return;
                 }
 
