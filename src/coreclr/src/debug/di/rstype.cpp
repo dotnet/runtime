@@ -1854,7 +1854,7 @@ CordbType::GetUnboxedObjectSize(ULONG32 *pObjectSize)
     }
     else
     {
-        // Caller gaurantees that we're not a class. And the check above guarantees we're not a value-type.
+        // Caller guarantees that we're not a class. And the check above guarantees we're not a value-type.
         // So we're some sort of primitive, and thus we can determine size from the signature.
         // 
         // @dbgtodo inspection - We didn't have this assert in Whidbey, and it's firing in vararg 
