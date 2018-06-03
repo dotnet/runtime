@@ -20,14 +20,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AllocationHelper.cs" />
-    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.char.cs" />
-    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.byte.cs" />
-    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Default.cs" />
-    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Empty.cs" />
     <Compile Include="TInt.cs" />
     <Compile Include="TestException.cs" />
     <Compile Include="TestHelpers.cs" />
     <Compile Include="TestMemory.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="BuffersExtensions\BuffersExtensionsTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Span\AsSpan.cs" />
@@ -86,6 +85,10 @@
     <Compile Include="Span\ToString.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.char.cs" />
+    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.byte.cs" />
+    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Default.cs" />
+    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Empty.cs" />    
     <Compile Include="ReadOnlyBuffer\BufferSegment.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceFactory.byte.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceFactory.char.cs" />
@@ -162,7 +165,7 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\Tests\System\StringTests.cs">
       <Link>ReadOnlySpan\StringTests.cs</Link>
-    </Compile>    
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Memory\AsMemory.cs" />
