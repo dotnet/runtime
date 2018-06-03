@@ -40,7 +40,7 @@
 // To resolve this problem, SOS now abstracts the target behind the IMachine interface, and uses 
 // calls on IMachine to take target-specific actions. It implements X86Machine, ARMMachine, and 
 // AMD64Machine. An instance of these exists in each appropriate host (e.g. the X86 version of SOS
-// contains instaces of X86Machine and ARMMachine, the ARM version contains an instance of 
+// contains instances of X86Machine and ARMMachine, the ARM version contains an instance of 
 // ARMMachine, and the AMD64 version contains an instance of AMD64Machine). The code included in 
 // each version if determined by the SosTarget*** MSBuild symbols, and SOS_TARGET_*** conditional 
 // compilation symbols (as specified in sos.targets).
@@ -4206,7 +4206,7 @@ DECLARE_API(DumpAsync)
             }
 
             // Get the address and method table of the state machine.  While it'll generally be a struct,
-            // it is valid for it to be a class, so we accomodate both.
+            // it is valid for it to be a class, so we accommodate both.
             BOOL bStateMachineIsValueType = stateMachineField.Type == ELEMENT_TYPE_VALUETYPE;
             CLRDATA_ADDRESS stateMachineAddr;
             CLRDATA_ADDRESS stateMachineMT;
@@ -4445,8 +4445,8 @@ static const char *const str_fgm[] =
     "Failed to reserve memory", // fgm_reserve_segment
     "Didn't have enough memory to commit beginning of the segment", // fgm_commit_segment_beg
     "Didn't have enough memory to commit the new ephemeral segment", // fgm_commit_eph_segment
-    "Didn't have enough memory to grow the internal GC datastructures", // fgm_grow_table
-    "Didn't have enough memory to commit the internal GC datastructures", // fgm_commit_table
+    "Didn't have enough memory to grow the internal GC data structures", // fgm_grow_table
+    "Didn't have enough memory to commit the internal GC data structures", // fgm_commit_table
 };
 
 void PrintOOMInfo(DacpOomData* oomData)
@@ -4924,7 +4924,7 @@ DECLARE_API(GCHeapStat)
             return Status;
         }
 
-        // aggregate stats accross heaps / generation
+        // aggregate stats across heaps / generation
         GenUsageStat genUsageStat[4] = {0, 0, 0, 0};
 
         for (DWORD n = 0; n < dwNHeaps; n ++)
@@ -6787,7 +6787,7 @@ public:
             pMeth->EndEnumInstances (h1);
         }
 
-        // if this is a generic method we need to add a defered bp
+        // if this is a generic method we need to add a deferred bp
         BOOL bGeneric = FALSE;
         pMeth->HasClassOrMethodInstantiation(&bGeneric);
 
@@ -9041,7 +9041,7 @@ static const char * const str_interesting_data_points[] =
 static const char * const str_heap_compact_reasons[] = 
 {
     "low on ephemeral space",
-    "high fragmetation",
+    "high fragmentation",
     "couldn't allocate gaps",
     "user specfied compact LOH",
     "last GC before OOM",

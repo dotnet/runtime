@@ -96,7 +96,7 @@ static TADDR GetRealCallTarget(TADDR PC)
     if (instr[0] != 0xf8df)
         return PC;
 
-    // The first instruction is defintely a LDR of the form we expect so it's OK to read the second half of
+    // The first instruction is definitely a LDR of the form we expect so it's OK to read the second half of
     // the encoding.
     if (g_ExtData->ReadVirtual(TO_CDADDR(PC + 2), &instr[1], sizeof(WORD), NULL) != S_OK)
         return 0;

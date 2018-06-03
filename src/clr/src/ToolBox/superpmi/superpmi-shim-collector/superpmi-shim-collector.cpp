@@ -64,7 +64,7 @@ void SetLogPath()
 
 void SetLogPathName()
 {
-    // NOTE: under PAL, we don't get the comand line, so we depend on the random number generator to give us a unique
+    // NOTE: under PAL, we don't get the command line, so we depend on the random number generator to give us a unique
     // filename.
     WCHAR* OriginalExecutableName =
         GetCommandLineW(); // TODO-Cleanup: not cool to write to the process view of commandline....
