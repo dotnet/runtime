@@ -364,14 +364,19 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// IsDstSrcImmAvxInstruction: check if instruction has "R(M) R(M) I" format
-// for EVEX, VEX and legacy SSE encodings and has no (E)VEX.NDS
+// IsDstSrcImmAvxInstruction: Checks if the instruction has a "reg, reg/mem, imm" or
+//                            "reg/mem, reg, imm" form for the legacy, VEX, and EVEX
+//                            encodings.
 //
 // Arguments:
 //    instruction -- processor instruction to check
 //
 // Return Value:
-//    true if instruction has "R(M) R(M) I" format and has no (E)VEX.NDS
+//    true if instruction has a "reg, reg/mem, imm" or "reg/mem, reg, imm" encoding
+//    form for the legacy, VEX, and EVEX encodings.
+//
+//    That is, the instruction takes two operands, one of which is immediate, and it
+//    does not need to encode any data in the VEX.vvvv field.
 //
 static bool IsDstSrcImmAvxInstruction(instruction ins)
 {
@@ -4159,8 +4164,7 @@ void emitter::emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int 
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_R_A(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir)
+void emitter::emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir)
 {
     assert(IsSSEOrAVXInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins));
@@ -5387,6 +5391,17 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 #ifdef FEATURE_HW_INTRINSICS
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_I: emits the code for a SIMD instruction that takes a register operand, an immediate operand
+//                     and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    ival      -- The immediate value
+//
 void emitter::emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int ival)
 {
     if (UseVEXEncoding() || IsDstSrcImmAvxInstruction(ins))
@@ -5403,7 +5418,19 @@ void emitter::emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber targe
     }
 }
 
-void emitter::emitIns_SIMD_R_R_A(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTreeIndir* indir)
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_A: emits the code for a SIMD instruction that takes a register operand, a GenTreeIndir address,
+//                     and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    indir     -- The GenTreeIndir used for the memory address
+//
+void emitter::emitIns_SIMD_R_R_A(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTreeIndir* indir)
 {
     if (UseVEXEncoding())
     {
@@ -5419,6 +5446,17 @@ void emitter::emitIns_SIMD_R_R_A(instruction ins, emitAttr attr, regNumber targe
     }
 }
 
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_AR: emits the code for a SIMD instruction that takes a register operand, a base memory register,
+//                      and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    base      -- The base register used for the memory address
+//
 void emitter::emitIns_SIMD_R_R_AR(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber base)
 {
     if (UseVEXEncoding())
@@ -5435,6 +5473,18 @@ void emitter::emitIns_SIMD_R_R_AR(instruction ins, emitAttr attr, regNumber targ
     }
 }
 
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_C: emits the code for a SIMD instruction that takes a register operand, a field handle + offset,
+//                     and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    fldHnd    -- The CORINFO_FIELD_HANDLE used for the memory address
+//    offs      -- The offset added to the memory address from fldHnd
+//
 void emitter::emitIns_SIMD_R_R_C(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, CORINFO_FIELD_HANDLE fldHnd, int offs)
 {
@@ -5452,7 +5502,19 @@ void emitter::emitIns_SIMD_R_R_C(
     }
 }
 
-void emitter::emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg)
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_R: emits the code for a SIMD instruction that takes two register operands, and that returns a
+//                     value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    op2Reg    -- The register of the second operand
+//
+void emitter::emitIns_SIMD_R_R_R(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg)
 {
     if (UseVEXEncoding())
     {
@@ -5471,7 +5533,20 @@ void emitter::emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber targe
     }
 }
 
-void emitter::emitIns_SIMD_R_R_S(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs)
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_S: emits the code for a SIMD instruction that takes a register operand, a variable index + offset,
+//                     and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    varx      -- The variable index used for the memory address
+//    offs      -- The offset added to the memory address from varx
+//
+void emitter::emitIns_SIMD_R_R_S(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs)
 {
     if (UseVEXEncoding())
     {
@@ -5487,6 +5562,18 @@ void emitter::emitIns_SIMD_R_R_S(instruction ins, emitAttr attr, regNumber targe
     }
 }
 
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_A_I: emits the code for a SIMD instruction that takes a register operand, a GenTreeIndir address,
+//                       an immediate operand, and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    indir     -- The GenTreeIndir used for the memory address
+//    ival      -- The immediate value
+//
 void emitter::emitIns_SIMD_R_R_A_I(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTreeIndir* indir, int ival)
 {
@@ -5504,6 +5591,18 @@ void emitter::emitIns_SIMD_R_R_A_I(
     }
 }
 
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_AR_I: emits the code for a SIMD instruction that takes a register operand, a base memory register,
+//                        an immediate operand, and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    base      -- The base register used for the memory address
+//    ival      -- The immediate value
+//
 void emitter::emitIns_SIMD_R_R_AR_I(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber base, int ival)
 {
@@ -5521,8 +5620,26 @@ void emitter::emitIns_SIMD_R_R_AR_I(
     }
 }
 
-void emitter::emitIns_SIMD_R_R_C_I(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, CORINFO_FIELD_HANDLE fldHnd, int offs, int ival)
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_C_I: emits the code for a SIMD instruction that takes a register operand, a field handle + offset,
+//                       an immediate operand, and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    fldHnd    -- The CORINFO_FIELD_HANDLE used for the memory address
+//    offs      -- The offset added to the memory address from fldHnd
+//    ival      -- The immediate value
+//
+void emitter::emitIns_SIMD_R_R_C_I(instruction          ins,
+                                   emitAttr             attr,
+                                   regNumber            targetReg,
+                                   regNumber            op1Reg,
+                                   CORINFO_FIELD_HANDLE fldHnd,
+                                   int                  offs,
+                                   int                  ival)
 {
     if (UseVEXEncoding())
     {
@@ -5538,6 +5655,18 @@ void emitter::emitIns_SIMD_R_R_C_I(
     }
 }
 
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_R_I: emits the code for a SIMD instruction that takes two register operands, an immediate operand,
+//                       and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    op2Reg    -- The register of the second operand
+//    ival      -- The immediate value
+//
 void emitter::emitIns_SIMD_R_R_R_I(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, int ival)
 {
@@ -5558,6 +5687,19 @@ void emitter::emitIns_SIMD_R_R_R_I(
     }
 }
 
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_S_I: emits the code for a SIMD instruction that takes a register operand, a variable index + offset,
+//                       an imediate operand, and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    varx      -- The variable index used for the memory address
+//    offs      -- The offset added to the memory address from varx
+//    ival      -- The immediate value
+//
 void emitter::emitIns_SIMD_R_R_S_I(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs, int ival)
 {
@@ -5575,6 +5717,18 @@ void emitter::emitIns_SIMD_R_R_S_I(
     }
 }
 
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_R_A: emits the code for a SIMD instruction that takes two register operands, a GenTreeIndir address,
+//                       and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    op2Reg    -- The register of the second operand
+//    indir     -- The GenTreeIndir used for the memory address
+//
 void emitter::emitIns_SIMD_R_R_R_A(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTreeIndir* indir)
 {
@@ -5592,6 +5746,18 @@ void emitter::emitIns_SIMD_R_R_R_A(
     emitIns_R_R_A(ins, attr, targetReg, op2Reg, indir);
 }
 
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_R_AR: emits the code for a SIMD instruction that takes two register operands, a base memory
+//                        register, and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operands
+//    op2Reg    -- The register of the second operand
+//    base      -- The base register used for the memory address
+//
 void emitter::emitIns_SIMD_R_R_R_AR(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber base)
 {
@@ -5609,6 +5775,19 @@ void emitter::emitIns_SIMD_R_R_R_AR(
     emitIns_R_R_AR(ins, attr, targetReg, op2Reg, base, 0);
 }
 
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_R_C: emits the code for a SIMD instruction that takes two register operands, a field handle +
+//                       offset, and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    op2Reg    -- The register of the second operand
+//    fldHnd    -- The CORINFO_FIELD_HANDLE used for the memory address
+//    offs      -- The offset added to the memory address from fldHnd
+//
 void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
                                    emitAttr             attr,
                                    regNumber            targetReg,
@@ -5631,6 +5810,18 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
     emitIns_R_R_C(ins, attr, targetReg, op2Reg, fldHnd, offs);
 }
 
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_R_R: emits the code for a SIMD instruction that takes three register operands, and that returns a
+//                     value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    op2Reg    -- The register of the second operand
+//    op3Reg    -- The register of the second operand
+//
 void emitter::emitIns_SIMD_R_R_R_R(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg)
 {
@@ -5695,6 +5886,19 @@ void emitter::emitIns_SIMD_R_R_R_R(
     }
 }
 
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_R_S: emits the code for a SIMD instruction that takes two register operands, a variable index +
+//                       offset, and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    op2Reg    -- The register of the second operand
+//    varx      -- The variable index used for the memory address
+//    offs      -- The offset added to the memory address from varx
+//
 void emitter::emitIns_SIMD_R_R_R_S(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, int varx, int offs)
 {
