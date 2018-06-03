@@ -15165,15 +15165,6 @@ void Compiler::gtExtractSideEffList(GenTree*  expr,
 
     if (oper == GT_LOCKADD || oper == GT_XADD || oper == GT_XCHG || oper == GT_CMPXCHG)
     {
-        // XADD both adds to the memory location and also fetches the old value.  If we only need the side
-        // effect of this instruction, change it into a GT_LOCKADD node (the add only)
-        if (oper == GT_XADD)
-        {
-            expr->SetOperRaw(GT_LOCKADD);
-            assert(genActualType(expr->gtType) == genActualType(expr->gtOp.gtOp2->gtType));
-            expr->gtType = TYP_VOID;
-        }
-
         // These operations are kind of important to keep
         *pList = gtBuildCommaList(*pList, expr);
         return;
