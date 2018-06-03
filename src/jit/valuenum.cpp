@@ -7052,6 +7052,7 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
                 case GT_LOCKADD: // Binop
                 case GT_XADD:    // Binop
                 case GT_XCHG:    // Binop
+                    assert(!tree->OperIs(GT_LOCKADD) && "LOCKADD should not appear before lowering");
                     // For CMPXCHG and other intrinsics add an arbitrary side effect on GcHeap/ByrefExposed.
                     fgMutateGcHeap(tree DEBUGARG("Interlocked intrinsic"));
                     tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));

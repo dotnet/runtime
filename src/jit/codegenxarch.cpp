@@ -1800,6 +1800,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_LOCKADD:
+            genCodeForLockAdd(treeNode->AsOp());
+            break;
+
         case GT_XCHG:
         case GT_XADD:
             genLockedInstructions(treeNode->AsOp());
@@ -3513,64 +3516,78 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     genProduceReg(treeNode);
 }
 
-// generate code for the locked operations:
-// GT_LOCKADD, GT_XCHG, GT_XADD
-void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
+//------------------------------------------------------------------------
+// genCodeForLockAdd: Generate code for a GT_LOCKADD node
+//
+// Arguments:
+//    node - the GT_LOCKADD node
+//
+void CodeGen::genCodeForLockAdd(GenTreeOp* node)
 {
-    GenTree*    data      = treeNode->gtOp.gtOp2;
-    GenTree*    addr      = treeNode->gtOp.gtOp1;
-    regNumber   targetReg = treeNode->gtRegNum;
-    regNumber   dataReg   = data->gtRegNum;
-    regNumber   addrReg   = addr->gtRegNum;
-    var_types   type      = genActualType(data->TypeGet());
-    instruction ins;
+    assert(node->OperIs(GT_LOCKADD));
 
-    // The register allocator should have extended the lifetime of the address
-    // so that it is not used as the target.
-    noway_assert(addrReg != targetReg);
+    GenTree* addr = node->gtGetOp1();
+    GenTree* data = node->gtGetOp2();
+    emitAttr size = emitTypeSize(data->TypeGet());
 
-    // If data is a lclVar that's not a last use, we'd better have allocated a register
-    // for the result (except in the case of GT_LOCKADD which does not produce a register result).
-    assert(targetReg != REG_NA || treeNode->OperGet() == GT_LOCKADD || !genIsRegCandidateLocal(data) ||
-           (data->gtFlags & GTF_VAR_DEATH) != 0);
+    assert(addr->isUsedFromReg());
+    assert(data->isUsedFromReg() || data->isContainedIntOrIImmed());
+    assert((size == EA_4BYTE) || (size == EA_PTRSIZE));
 
-    genConsumeOperands(treeNode);
-    if (targetReg != REG_NA && dataReg != REG_NA && dataReg != targetReg)
+    genConsumeOperands(node);
+    instGen(INS_lock);
+
+    if (data->isContainedIntOrIImmed())
     {
-        inst_RV_RV(ins_Copy(type), targetReg, dataReg);
-        data->gtRegNum = targetReg;
-
-        // TODO-XArch-Cleanup: Consider whether it is worth it, for debugging purposes, to restore the
-        // original gtRegNum on data, after calling emitInsBinary below.
+        int imm = static_cast<int>(data->AsIntCon()->IconValue());
+        assert(imm == data->AsIntCon()->IconValue());
+        getEmitter()->emitIns_I_AR(INS_add, size, imm, addr->gtRegNum, 0);
     }
-    switch (treeNode->OperGet())
+    else
     {
-        case GT_LOCKADD:
-            instGen(INS_lock);
-            ins = INS_add;
-            break;
-        case GT_XCHG:
-            // lock is implied by xchg
-            ins = INS_xchg;
-            break;
-        case GT_XADD:
-            instGen(INS_lock);
-            ins = INS_xadd;
-            break;
-        default:
-            unreached();
+        getEmitter()->emitIns_AR_R(INS_add, size, data->gtRegNum, addr->gtRegNum, 0);
     }
+}
 
-    // all of these nodes implicitly do an indirection on op1
-    // so create a temporary node to feed into the pattern matching
-    GenTreeIndir i = indirForm(type, addr);
-    i.SetContained();
-    getEmitter()->emitInsBinary(ins, emitTypeSize(type), &i, data);
+//------------------------------------------------------------------------
+// genLockedInstructions: Generate code for a GT_XADD or GT_XCHG node.
+//
+// Arguments:
+//    node - the GT_XADD/XCHG node
+//
+void CodeGen::genLockedInstructions(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_XADD, GT_XCHG));
 
-    if (treeNode->gtRegNum != REG_NA)
+    GenTree* addr = node->gtGetOp1();
+    GenTree* data = node->gtGetOp2();
+    emitAttr size = emitTypeSize(node->TypeGet());
+
+    assert(addr->isUsedFromReg());
+    assert(data->isUsedFromReg());
+    assert((size == EA_4BYTE) || (size == EA_PTRSIZE));
+
+    genConsumeOperands(node);
+
+    if (node->gtRegNum != data->gtRegNum)
     {
-        genProduceReg(treeNode);
+        // If the destination register is different from the data register then we need
+        // to first move the data to the target register. Make sure we don't overwrite
+        // the address, the register allocator should have taken care of this.
+        assert(node->gtRegNum != addr->gtRegNum);
+        getEmitter()->emitIns_R_R(INS_mov, size, node->gtRegNum, data->gtRegNum);
     }
+
+    instruction ins = node->OperIs(GT_XADD) ? INS_xadd : INS_xchg;
+
+    // XCHG has an implied lock prefix when the first operand is a memory operand.
+    if (ins != INS_xchg)
+    {
+        instGen(INS_lock);
+    }
+
+    getEmitter()->emitIns_AR_R(ins, size, node->gtRegNum, addr->gtRegNum, 0);
+    genProduceReg(node);
 }
 
 //------------------------------------------------------------------------

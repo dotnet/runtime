@@ -2650,8 +2650,12 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     genProduceReg(treeNode);
 }
 
-// generate code for the locked operations:
-// GT_LOCKADD, GT_XCHG, GT_XADD
+//------------------------------------------------------------------------
+// genLockedInstructions: Generate code for a GT_XADD or GT_XCHG node.
+//
+// Arguments:
+//    treeNode - the GT_XADD/XCHG node
+//
 void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
     GenTree*  data      = treeNode->gtOp.gtOp2;
@@ -2701,7 +2705,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     // Emit code like this:
     //   retry:
     //     ldxr loadReg, [addrReg]
-    //     add storeDataReg, loadReg, dataReg         # Only for GT_XADD & GT_LOCKADD
+    //     add storeDataReg, loadReg, dataReg         # Only for GT_XADD
     //                                                # GT_XCHG storeDataReg === dataReg
     //     stxr exResult, storeDataReg, [addrReg]
     //     cbnz exResult, retry
@@ -2718,7 +2722,6 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     switch (treeNode->OperGet())
     {
         case GT_XADD:
-        case GT_LOCKADD:
             if (data->isContainedIntOrIImmed())
             {
                 // Even though INS_add is specified here, the encoder will choose either

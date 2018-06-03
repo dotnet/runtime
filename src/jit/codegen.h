@@ -121,6 +121,9 @@ private:
     void genRangeCheck(GenTree* node);
 
     void genLockedInstructions(GenTreeOp* node);
+#ifdef _TARGET_XARCH_
+    void genCodeForLockAdd(GenTreeOp* node);
+#endif
 
     //-------------------------------------------------------------------------
     // Register-related methods
