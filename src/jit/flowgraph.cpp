@@ -376,7 +376,6 @@ void Compiler::fgInstrumentMethod()
 
         // Compare Basic-Block count value against zero
         GenTree* relop = gtNewOperNode(GT_NE, TYP_INT, valueNode, gtNewIconNode(0, TYP_INT));
-        relop->gtFlags |= GTF_RELOP_QMARK; // TODO-Cleanup: [Simple]  Move this to gtNewQmarkNode
         GenTree* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), call);
         GenTree* cond  = gtNewQmarkNode(TYP_VOID, relop, colon);
         stmt           = gtNewStmt(cond);
@@ -8944,7 +8943,6 @@ void Compiler::fgAddInternal()
         GenTree* embNode        = gtNewIconEmbHndNode(dbgHandle, pDbgHandle, GTF_ICON_TOKEN_HDL, info.compMethodHnd);
         GenTree* guardCheckVal  = gtNewOperNode(GT_IND, TYP_INT, embNode);
         GenTree* guardCheckCond = gtNewOperNode(GT_EQ, TYP_INT, guardCheckVal, gtNewZeroConNode(TYP_INT));
-        guardCheckCond->gtFlags |= GTF_RELOP_QMARK;
 
         // Create the callback which will yield the final answer
 
