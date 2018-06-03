@@ -254,7 +254,6 @@ BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, mdToken mdTy
     }
     CONTRACTL_END;
 
-    mdToken mdEncloser;
     switch (TypeFromToken(mdType))
     {
     case mdtTypeDef:

@@ -409,8 +409,6 @@ HRESULT SecurityUtil::SetSecurityDescriptorMandatoryLabel(PSID psidIntegrityLeve
     }
     CONTRACTL_END;
 
-    HRESULT hr;
-
     DWORD cbSid = GetLengthSid(psidIntegrityLevelLabel);
     DWORD cbAceStart = offsetof(SYSTEM_MANDATORY_LABEL_ACE, SidStart);
     // We are about allocate memory for a ACL and an ACE so we need space for:

@@ -674,7 +674,6 @@ GuidToMethodTableEntry *GuidToMethodTableHashTable::InsertValue(PTR_GUID pGuid, 
     CONTRACTL_END;
 
     GuidToMethodTableEntry *pEntry = NULL;
-    LookupContext ctx;
 
     if (bReplaceIfFound)
     {

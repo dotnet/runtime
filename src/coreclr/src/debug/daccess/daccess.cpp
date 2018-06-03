@@ -2817,7 +2817,6 @@ public:
     {
         StreamHeader hdr;
 
-        DWORD _sig;
         in >> hdr; // in >> hdr.sig >> hdr.cnt;
 
         if (hdr.sig != sig)
@@ -7269,9 +7268,6 @@ ClrDataAccess::GetDacGlobals()
     LPVOID rsrcData = NULL;
     DWORD rsrcSize = 0;
 
-    HRSRC rsrcFound;
-    HGLOBAL rsrc;
-
     DWORD resourceSectionRVA = 0;
 
     if (FAILED(status = GetMachineAndResourceSectionRVA(m_pTarget, m_globalBase, NULL, &resourceSectionRVA)))
@@ -7392,7 +7388,6 @@ BOOL ClrDataAccess::IsExceptionFromManagedCode(EXCEPTION_RECORD* pExceptionRecor
 {
     DAC_ENTER();
 
-    HRESULT status;
     BOOL flag = FALSE;
 
     if (::IsExceptionFromManagedCode(pExceptionRecord))

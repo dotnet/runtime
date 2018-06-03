@@ -256,7 +256,6 @@ MethodDesc *ComPlusCall::GetWinRTFactoryMethodForCtor(MethodDesc *pMDCtor, BOOL 
     SigParser ctorSig(pSig, cSig);
     
     ULONG numArgs;
-    CorElementType et;
 
     IfFailThrow(ctorSig.GetCallingConv(NULL)); // calling convention
     IfFailThrow(ctorSig.GetData(&numArgs));    // number of args

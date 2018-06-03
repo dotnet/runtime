@@ -1505,7 +1505,6 @@ LPVOID F_CALL_CONV ThreadNative::FastGetDomain()
     }
     CONTRACTL_END;
 
-    Thread *pThread;
     AppDomain *pDomain;
     OBJECTHANDLE ExposedObject;
 

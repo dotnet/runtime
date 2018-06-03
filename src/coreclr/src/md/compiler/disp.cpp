@@ -70,7 +70,6 @@ Disp::DefineScope(
     HRESULT     hr = S_OK;
     PathString szFileName(PathString::Literal, W("file:"));
     PathString szFileNameSuffix;
-    DWORD len;
     BEGIN_ENTRYPOINT_NOTHROW;
 
     RegMeta     *pMeta = 0;
@@ -99,7 +98,8 @@ Disp::DefineScope(
 
 #ifdef ENC_DELTA_HACK
 // Testers need this flag for their tests.
-    
+
+    DWORD len;
     EX_TRY{
     len = WszGetEnvironmentVariable(W("COMP_ENC_OPENSCOPE"), szFileNameSuffix);
     szFileName.Append(szFileNameSuffix);

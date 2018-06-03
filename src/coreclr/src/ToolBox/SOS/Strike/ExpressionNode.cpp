@@ -577,7 +577,6 @@ HRESULT ExpressionNode::ExpandFields(ICorDebugValue* pInnerValue, __in_z WCHAR* 
         ULONG             nameLen = 0;
         DWORD             fieldAttr = 0;
         WCHAR             mdName[mdNameLen];
-        WCHAR             typeName[mdNameLen];
         CorElementType    fieldDefaultValueEt;
         UVCP_CONSTANT     pDefaultValue;
         ULONG             cchDefaultValue;
@@ -771,7 +770,6 @@ HRESULT ExpressionNode::PopulateEnumValue(ICorDebugValue* pEnumValue, BYTE* enum
         ULONG             nameLen = 0;
         DWORD             fieldAttr = 0;
         WCHAR             mdName[mdNameLen];
-        WCHAR             typeName[mdNameLen];
         UVCP_CONSTANT     pRawValue = NULL;
         ULONG             rawValueLength = 0;
         if(SUCCEEDED(pMD->GetFieldProps(fieldDef, NULL, mdName, mdNameLen, &nameLen, &fieldAttr, NULL, NULL, NULL, &pRawValue, &rawValueLength)))
@@ -1478,7 +1476,6 @@ HRESULT ExpressionNode::CreateExpressionNodeHelper(__in_z WCHAR* pExpression,
                 ULONG             nameLen = 0;
                 DWORD             fieldAttr = 0;
                 WCHAR             mdName[mdNameLen];
-                WCHAR             typeName[mdNameLen];
                 CorElementType    fieldDefaultValueEt;
                 UVCP_CONSTANT     pDefaultValue;
                 ULONG             cchDefaultValue;

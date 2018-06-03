@@ -281,7 +281,6 @@ SNAPI StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] publ
     SHA1Hash        sha1;
     BYTE            *pHash = NULL;
     DWORD           i;
-    DWORD           cbKeyBlob;
     PublicKeyBlob   *pPublicKey = NULL;
     DWORD dwHashLenMinusTokenSize = 0;
 

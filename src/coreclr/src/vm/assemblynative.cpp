@@ -439,7 +439,6 @@ void QCALLTYPE AssemblyNative::GetForwardedType(QCall::AssemblyHandle pAssembly,
 
     BEGIN_QCALL;
 
-    HRESULT hr;
     LPCSTR pszNameSpace;
     LPCSTR pszClassName;
     mdToken mdImpl;

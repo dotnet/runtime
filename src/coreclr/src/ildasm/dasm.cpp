@@ -1054,7 +1054,6 @@ BOOL EnumTypedefs()
 
 void DumpTypedefs(void* GUICookie)
 {
-    HRESULT hr;
     DWORD i;
     char* szptr;
     CQuickBytes out;
@@ -1500,7 +1499,6 @@ mdToken ResolveReflectionNotation(BYTE* dataPtr,
 
 unsigned UnderlyingTypeOfEnumTypeDef(mdToken tk, IMDInternalImport *pIMDI)
 {
-    HRESULT hr;
     // make sure it's a TypeDef
     if(TypeFromToken(tk) != mdtTypeDef) return 0;
     
@@ -2268,7 +2266,6 @@ BOOL PrettyPrintCustomAttributeNVPairs(unsigned nPairs, BYTE* dataPtr, BYTE* dat
 }
 BOOL PrettyPrintCustomAttributeBlob(mdToken tkType, BYTE* pBlob, ULONG ulLen, void* GUICookie, __inout __nullterminated char* szString)
 {
-    HRESULT hr;
     char* initszptr = szString + strlen(szString);
     PCCOR_SIGNATURE typePtr;            // type to convert,     
     ULONG typeLen;                  // the lenght of 'typePtr' 
@@ -2387,7 +2384,6 @@ BOOL PrettyPrintCustomAttributeBlob(mdToken tkType, BYTE* pBlob, ULONG ulLen, vo
 
 void DumpCustomAttributeProps(mdToken tkCA, mdToken tkType, mdToken tkOwner, BYTE* pBlob, ULONG ulLen, void *GUICookie, bool bWithOwner)
 {
-    HRESULT hr;
     char*           szptr = &szString[0];
     BOOL            fCommentItOut = FALSE;
     if((TypeFromToken(tkType) == mdtMemberRef)||(TypeFromToken(tkType) == mdtMethodDef))
@@ -3255,7 +3251,6 @@ void DumpGenericParsCA(mdToken tok, void* GUICookie/*=NULL*/)
 void PrettyPrintOverrideDecl(ULONG i, __inout __nullterminated char* szString, void* GUICookie, mdToken tkOverrider,
                              BOOL *pbOverridingTypeSpec)
 {
-    HRESULT hr;
     const char *    pszMemberName;
     mdToken         tkDecl,tkDeclParent=0;
     char            szBadToken[256];
@@ -3363,7 +3358,6 @@ void PrettyPrintOverrideDecl(ULONG i, __inout __nullterminated char* szString, v
 #endif
 BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointToken,void *GUICookie,BOOL DumpBody)
 {
-    HRESULT hr;
     const char      *pszMemberName = NULL;//[MAX_MEMBER_LENGTH];
     const char      *pszMemberSig = NULL;
     DWORD           dwAttrs = 0;
@@ -6940,7 +6934,6 @@ void DumpPreamble()
 
 void DumpSummary()
 {
-    HRESULT hr;
     ULONG i;
     const char      *pcClass,*pcNS,*pcMember, *pcSig;
     char szFQN[4096];

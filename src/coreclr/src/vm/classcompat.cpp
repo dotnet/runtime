@@ -963,7 +963,6 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceMembers(
                 if(tokMember == bmtMethodImpl->rgMethodImplTokens[m].methodBody)
                 {
                     MethodDesc* desc = NULL;
-                    BOOL fIsMethod;
                     mdToken mdDecl = bmtMethodImpl->rgMethodImplTokens[m].methodDecl;
                     Substitution *pDeclSubst = &bmtMethodImpl->pMethodDeclSubsts[m];
 
