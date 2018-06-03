@@ -2308,11 +2308,11 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node, bool* supportsRegOptional)
 {
-    NamedIntrinsic      containingintrinsicId = containingNode->gtHWIntrinsicId;
-    HWIntrinsicCategory category              = HWIntrinsicInfo::lookupCategory(containingintrinsicId);
+    NamedIntrinsic      containingIntrinsicId = containingNode->gtHWIntrinsicId;
+    HWIntrinsicCategory category              = HWIntrinsicInfo::lookupCategory(containingIntrinsicId);
 
     // We shouldn't have called in here if containingNode doesn't support containment
-    assert(HWIntrinsicInfo::SupportsContainment(containingintrinsicId));
+    assert(HWIntrinsicInfo::SupportsContainment(containingIntrinsicId));
 
     // containingNode supports nodes that read from an aligned memory address
     //
@@ -2352,7 +2352,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
             assert(supportsSIMDScalarLoads == false);
 
             supportsAlignedSIMDLoads =
-                !comp->canUseVexEncoding() && (containingintrinsicId != NI_SSE2_ConvertToVector128Double);
+                !comp->canUseVexEncoding() && (containingIntrinsicId != NI_SSE2_ConvertToVector128Double);
             supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
             supportsGeneralLoads       = supportsUnalignedSIMDLoads;
 
@@ -2361,7 +2361,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
         case HW_Category_IMM:
         {
-            switch (containingintrinsicId)
+            switch (containingIntrinsicId)
             {
                 case NI_SSE_Shuffle:
                 case NI_SSE2_CompareLessThan:
