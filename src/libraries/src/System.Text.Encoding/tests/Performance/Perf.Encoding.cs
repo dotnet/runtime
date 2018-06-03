@@ -14,7 +14,7 @@ namespace System.Text.Tests
         public static IEnumerable<object[]> EncodingSizeData()
         {
             int[] sizes = new int[] { 16, 32, 64, 128, 256, 512, 10000, 1000000 };
-            string[] encs = new string[] { "utf-8", "ascii" };
+            string[] encs = new string[] { "utf-8", "ascii", "unicode" };
             foreach (int size in sizes)
                 foreach (string enc in encs)
                     yield return new object[] { size, enc };
