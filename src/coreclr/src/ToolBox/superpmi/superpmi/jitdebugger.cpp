@@ -299,9 +299,9 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
     *pcchDebuggerString = valueSize / sizeof(WCHAR);
 
     // The size of an empty string with the null terminator is 2.
-    BOOL fIsDebuggerStringEmptry = valueSize <= 2 ? TRUE : FALSE;
+    BOOL fIsDebuggerStringEmpty = valueSize <= 2 ? TRUE : FALSE;
 
-    if ((ret != ERROR_SUCCESS) || (valueType != REG_SZ) || fIsDebuggerStringEmptry)
+    if ((ret != ERROR_SUCCESS) || (valueType != REG_SZ) || fIsDebuggerStringEmpty)
     {
         RegCloseKey(hKey);
         return S_OK;
@@ -424,7 +424,7 @@ int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
             TerminateProcess(GetCurrentProcess(), 1);
             break;
 
-        // Tell caller to break at the correct loction.
+        // Tell caller to break at the correct location.
         case IDRETRY:
 
             if (IsDebuggerPresent())

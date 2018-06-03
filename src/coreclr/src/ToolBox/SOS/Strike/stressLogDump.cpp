@@ -315,7 +315,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
     BOOL    bDoGcHist = (fileName == NULL);
     FILE*   file = NULL;
 
-    // Fetch the circular buffer bookeeping data 
+    // Fetch the circular buffer bookkeeping data 
     StressLog inProcLog;
     HRESULT hr = memCallBack->ReadVirtual(UL64_TO_CDA(outProcLog), &inProcLog, sizeof(StressLog), 0);
     if (hr != S_OK) 

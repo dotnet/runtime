@@ -134,7 +134,7 @@ LLDBServices::GetExpression(
 }
 
 //
-// lldb doesn't have a way or API to unwind an arbitary context (IP, SP)
+// lldb doesn't have a way or API to unwind an arbitrary context (IP, SP)
 // and return the next frame so we have to stick with the native frames
 // lldb has found and find the closest frame to the incoming context SP.
 //

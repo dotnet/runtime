@@ -472,7 +472,7 @@ bool MethodContext::Equal(MethodContext* other)
 //------------------------------------------------------------------------------
 // MethodContext::recGlobalContext
 //    This method copies any relevant global (i.e. per-JIT-instance) data from
-//    the given method context. Currently this is limited to configuiration
+//    the given method context. Currently this is limited to configuration
 //    values, but may grow to encompass other information in the future (e.g.
 //    any information that is exposed by the ICorJitHost interface and is
 //    therefore accessible outside the context of a call to
@@ -2472,7 +2472,7 @@ void MethodContext::recGetArgType(CORINFO_SIG_INFO*       sig,
     ZeroMemory(&key, sizeof(GetArgType)); // We use the input structs as a key and use memcmp to compare.. so
                                           // we need to zero out padding too
     // Only setting values for things the EE seems to pay attention to... this is necessary since some of the values
-    // are unset and fail our precise comparisions...
+    // are unset and fail our precise comparisons ...
     key.flags                  = (DWORD)sig->flags;
     key.numArgs                = (DWORD)sig->numArgs;
     key.sigInst_classInstCount = (DWORD)sig->sigInst.classInstCount;
@@ -5395,7 +5395,7 @@ void MethodContext::recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass,
 }
 void MethodContext::dmpCompareTypesForCast(DLDL key, DWORD value)
 {
-    printf("CompareTypesForCast key fromClas=%016llX, toClass=%016llx, result=%d", key.A, key.B, value);
+    printf("CompareTypesForCast key fromClass=%016llX, toClass=%016llx, result=%d", key.A, key.B, value);
 }
 TypeCompareState MethodContext::repCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
 {
