@@ -873,8 +873,6 @@ void PrintNativeStack(DWORD_PTR ip, BOOL bSuppressLines)
 // Return TRUE if we have printed something.
 BOOL PrintCallInfo(DWORD_PTR vEBP, DWORD_PTR IP, DumpStackFlag& DSFlag, BOOL bSymbolOnly)
 {
-    char Symbol[1024];
-    char filename[MAX_PATH_FNAME+1];
     ULONG64 Displacement;
     BOOL bOutput = FALSE;
 

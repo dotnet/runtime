@@ -2642,8 +2642,6 @@ WORD ZapInfo::getRelocTypeHint(void * target)
 
 void ZapInfo::getModuleNativeEntryPointRange(void** pStart, void** pEnd)
 {
-    ULONG rvaStart, rvaEnd;
-
     // Initialize outparams to default range of (0,0).
     *pStart = 0;
     *pEnd = 0;

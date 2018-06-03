@@ -1599,7 +1599,6 @@ HRESULT WinMDAdapter::ComputeMethodDefTreatment(mdMethodDef tkMethodDef, mdTypeD
         
         mdToken tkMethodImplFirst;
         ULONG count;
-        mdTypeRef mtTypeRef;
         IfFailGo(m_pRawMetaModelCommonRO->CommonGetMethodImpls(tkDeclaringTypeDef, &tkMethodImplFirst, &count));
         for (ULONG i = 0; i < count; i++)
         {

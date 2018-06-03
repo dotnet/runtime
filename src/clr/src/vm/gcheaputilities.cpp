@@ -250,7 +250,6 @@ HRESULT InitializeDefaultGC()
     LOG((LF_GC, LL_INFO100, "Standalone GC location not provided, using provided GC\n"));
 
     g_gc_load_status = GC_LOAD_STATUS_DONE_LOAD;
-    VersionInfo info;
     GC_VersionInfo(&g_gc_version_info);
     g_gc_load_status = GC_LOAD_STATUS_CALL_VERSIONINFO;
 

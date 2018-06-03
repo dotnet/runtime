@@ -314,6 +314,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         // we fail.
         ClrFlsSetValue(theLog.TLSslot, NULL);
     }
+#pragma warning(suppress: 4101)
     PAL_CPP_CATCH_DERIVED(OutOfMemoryException, obj)
     {
         // Just leave on any exception. Note: can't goto or return from within EX_CATCH...

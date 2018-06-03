@@ -658,7 +658,6 @@ Return Value:
     ULONG FunctionLength;
     ULONG HeaderWord;
     ULONG NextCode;
-    ULONG Offset;
     DWORD64 OffsetInFunction;
     ULONG ScopeNum;
     ULONG ScopeSize;
@@ -1293,7 +1292,6 @@ Return Value:
     ULONG HBit;
     ULONG HOpcodes;
     ULONG IRegOpcodes;
-    ULONG InstCount;
     ULONG IntSize;
     ULONG LocalSize;
     DWORD64 OffsetInFunction;

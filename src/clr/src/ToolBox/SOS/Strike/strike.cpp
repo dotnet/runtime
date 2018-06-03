@@ -7300,10 +7300,9 @@ HRESULT HandleExceptionNotification(ILLDBServices *client)
 
 DECLARE_API(bpmd)
 {
-    INIT_API_NOEE();    
-    MINIDUMP_NOT_SUPPORTED();    
-    int i;
-    char buffer[1024];    
+    INIT_API_NOEE();
+    MINIDUMP_NOT_SUPPORTED();
+    char buffer[1024];
     
     if (IsDumpFile())
     {
@@ -11459,7 +11458,6 @@ private:
             ULONG             nameLen = 0;
             DWORD             fieldAttr = 0;
             WCHAR             mdName[mdNameLen];
-            WCHAR             typeName[mdNameLen];
             UVCP_CONSTANT     pRawValue = NULL;
             ULONG             rawValueLength = 0;
             if(SUCCEEDED(pMD->GetFieldProps(fieldDef, NULL, mdName, mdNameLen, &nameLen, &fieldAttr, NULL, NULL, NULL, &pRawValue, &rawValueLength)))

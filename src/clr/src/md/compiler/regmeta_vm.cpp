@@ -166,7 +166,6 @@ RegMeta::ResolveTypeRef(
     TypeRefRec * pTypeRefRec;
     WCHAR        wzNameSpace[_MAX_PATH];
     CMiniMdRW *  pMiniMd = NULL;
-    WCHAR rcModule[_MAX_PATH];
 
     LOG((LOGMD, "{%08x} RegMeta::ResolveTypeRef(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", 
         this, tr, riid, ppIScope, ptd));
