@@ -34,6 +34,7 @@ namespace System
         public static void Throws<T>(string netCoreParamName, string netFxParamName, System.Action action) where T : System.ArgumentException { }
         public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, System.Action action) where TNetCoreExceptionType : System.ArgumentException where TNetFxExceptionType : System.ArgumentException { }
         public static Exception Throws<TNetCoreExceptionType, TNetFxExceptionType>(Action action) where TNetCoreExceptionType : Exception where TNetFxExceptionType : Exception { throw null; }
+        public static Exception Throws(Type netCoreExceptionType, Type netFxExceptionType, Action action) { throw null; }
         public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string netCoreParamName, string netFxParamName, System.Action action) where TNetCoreExceptionType : System.ArgumentException where TNetFxExceptionType : System.ArgumentException { }
     }
     public static partial class PlatformDetection
