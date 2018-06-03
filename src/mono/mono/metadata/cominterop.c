@@ -1876,15 +1876,11 @@ void
 ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxyHandle proxy, MonoError *error)
 {
 #ifndef DISABLE_COM
-	if (!rcw_hash) {
-		mono_cominterop_lock ();
-		rcw_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		mono_cominterop_unlock ();
-	}
-
 	guint32 const gchandle = mono_gchandle_new_weakref_from_handle (MONO_HANDLE_CAST (MonoObject, proxy));
 
 	mono_cominterop_lock ();
+	if (!rcw_hash)
+		rcw_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	g_hash_table_insert (rcw_hash, pUnk, GUINT_TO_POINTER (gchandle));
 	mono_cominterop_unlock ();
 #else
