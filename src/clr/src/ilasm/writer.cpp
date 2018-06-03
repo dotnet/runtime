@@ -176,7 +176,7 @@ HRESULT Assembler::CreateTLSDirectory() {
         tlsDir->AddressOfIndex = VALPTR(tlsIndexOffset);
         if(FAILED(hr=m_pCeeFileGen->AddSectionReloc(tlsDirSec, tlsDirOffset + offsetofAddressOfIndex, m_pGlobalDataSection, srRelocHighLow))) return(hr);
     
-            // Set addres of callbacks chain
+            // Set address of callbacks chain
         tlsDir->AddressOfCallBacks = VALPTR((DWORD)(DWORD_PTR)(PIMAGE_TLS_CALLBACK*)(size_t)(tlsDirOffset + sizeofdir));
         if(FAILED(hr=m_pCeeFileGen->AddSectionReloc(tlsDirSec, tlsDirOffset + offsetofAddressOfCallBacks, tlsDirSec, srRelocHighLow))) return(hr);
         

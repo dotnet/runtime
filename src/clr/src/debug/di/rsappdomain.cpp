@@ -399,7 +399,7 @@ void CordbAppDomain::AssemblyEnumerationCallback(VMPTR_DomainAssembly vmDomainAs
 //    NULL on failure, and sets unrecoverable error.
 //
 // Assumptions:
-//    Caller gaurantees assembly is not already added.
+//    Caller guarantees assembly is not already added.
 //    Called under the stop-go lock.
 //
 // Notes:
