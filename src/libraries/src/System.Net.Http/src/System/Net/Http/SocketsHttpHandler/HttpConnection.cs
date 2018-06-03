@@ -363,6 +363,7 @@ namespace System.Net.Http
 
             _currentRequest = request;
             bool isConnectMethod = (request.Method == HttpMethod.Connect);
+            bool hasExpectContinueHeader = request.HasHeaders && request.Headers.ExpectContinue == true;
 
             Debug.Assert(!_canRetry);
             _canRetry = true;
@@ -474,7 +475,7 @@ namespace System.Net.Http
                     // Send the body if there is one.  We prefer to serialize the sending of the content before
                     // we try to receive any response, but if ExpectContinue has been set, we allow the sending
                     // to run concurrently until we receive the final status line, at which point we wait for it.
-                    if (!request.HasHeaders || request.Headers.ExpectContinue != true)
+                    if (!hasExpectContinueHeader)
                     {
                         await SendRequestContentAsync(request, CreateRequestContentStream(request), cancellationToken).ConfigureAwait(false);
                     }
@@ -530,10 +531,12 @@ namespace System.Net.Http
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionResponseContent() };
                 ParseStatusLine(await ReadNextResponseHeaderLineAsync().ConfigureAwait(false), response);
 
-                // If we sent an Expect: 100-continue header, handle the response accordingly.
-                if (allowExpect100ToContinue != null)
+                // If we sent an Expect: 100-continue header, handle the response accordingly. Note that the developer
+                // may have added an Expect: 100-continue header even if there is no Content.
+                if (hasExpectContinueHeader)
                 {
                     if ((int)response.StatusCode >= 300 &&
+                        request.Content != null &&
                         (request.Content.Headers.ContentLength == null || request.Content.Headers.ContentLength.GetValueOrDefault() > Expect100ErrorSendThreshold))
                     {
                         // For error final status codes, try to avoid sending the payload if its size is unknown or if it's known to be "big".
@@ -549,8 +552,10 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        // For any success or informational status codes (including 100 continue), send the payload.
-                        allowExpect100ToContinue.TrySetResult(true);
+                        // For any success or informational status codes (including 100 continue), or for errors when the request content
+                        // length is known to be small, send the payload (if there is one... if there isn't, Content is null and thus
+                        // allowExpect100ToContinue is also null).
+                        allowExpect100ToContinue?.TrySetResult(true);
 
                         // And if this was 100 continue, deal with the extra headers.
                         if (response.StatusCode == HttpStatusCode.Continue)
