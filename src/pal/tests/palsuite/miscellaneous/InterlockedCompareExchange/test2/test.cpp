@@ -117,8 +117,8 @@ void ModifyGlobalResource(void)
 			AcquireLock(&Lock);
 			
 			/*
-			The following set of operations is gauranteed to be atomic by virtue of the fact 
-			that InterLockedCompareExchange was able to gaurantee that the compare 
+			The following set of operations is guaranteed to be atomic by virtue of the fact 
+			that InterLockedCompareExchange was able to guarantee that the compare 
 			and exchange operation on pLock was thread safe.  If the same set of code was 
 			executed without using InterlockedCompareExchange the code would fail most of 
 			time.

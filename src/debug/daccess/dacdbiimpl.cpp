@@ -4485,7 +4485,7 @@ void DacDbiInterfaceImpl::MarkDebuggerAttachPending()
     }
     else
     {
-        // Caller should have gauranteed that the LS is loaded.
+        // Caller should have guaranteed that the LS is loaded.
         // If we're detaching, then don't throw because we don't care.
         ThrowHR(CORDBG_E_NOTREADY);
     }
@@ -4521,7 +4521,7 @@ void DacDbiInterfaceImpl::MarkDebuggerAttached(BOOL fAttached)
     }
     else if (fAttached)
     {
-        // Caller should have gauranteed that the LS is loaded.
+        // Caller should have guaranteed that the LS is loaded.
         // If we're detaching, then don't throw because we don't care.
         ThrowHR(CORDBG_E_NOTREADY);
     }

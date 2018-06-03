@@ -2037,7 +2037,7 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 
     BEGIN_DYNAMIC_HELPER_EMIT(16);
  
-    // ldr x0, <lable>
+    // ldr x0, <label>
     *(DWORD*)p = 0x58000040;
     p += 4;
     
