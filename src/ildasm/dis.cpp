@@ -870,7 +870,6 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, __out_ecount(nSize)
 #endif
 BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, mdToken FuncToken, ParamDescriptor* pszArgname, ULONG ulArgs)
 {
-    HRESULT hr;
     DWORD      PC;
     BOOL    fNeedNewLine = FALSE;
     //char    szString[4096];
@@ -2469,7 +2468,6 @@ void PrettyPrintToken(__inout __nullterminated char* szString, mdToken tk, IMDIn
         
         case mdtFieldDef:
         {
-            HRESULT         hr;
             mdTypeRef       cr=0;
             const char *    pszMemberName;
             CQuickBytes     qbMemberSig;

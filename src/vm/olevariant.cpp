@@ -1146,6 +1146,7 @@ void SafeVariantClear(VARIANT* pVar)
 
             SCAN_EHMARKER_END_TRY();
         }
+#pragma warning(suppress: 4101)
         PAL_CPP_CATCH_DERIVED(OutOfMemoryException, obj)
         {
             SCAN_EHMARKER_CATCH();

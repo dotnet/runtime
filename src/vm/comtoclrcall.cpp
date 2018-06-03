@@ -1843,9 +1843,6 @@ MethodDesc* ComCall::GetILStubMethodDesc(MethodDesc *pCallMD, DWORD dwStubFlags)
     }
     CONTRACTL_END;
 
-    PCCOR_SIGNATURE pSig;
-    DWORD           cSig;
-
     // Get the call signature information
     StubSigDesc sigDesc(pCallMD);
 
@@ -1902,7 +1899,6 @@ MethodDesc *ComCall::GetCtorForWinRTFactoryMethod(MethodTable *pClsMT, MethodDes
     SigParser sig(pSig, cSig);
     
     ULONG numArgs;
-    CorElementType et;
 
     IfFailThrow(sig.GetCallingConv(NULL)); // calling convention
     IfFailThrow(sig.GetData(&numArgs));    // number of args

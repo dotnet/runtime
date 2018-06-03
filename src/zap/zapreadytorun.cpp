@@ -408,9 +408,6 @@ void ZapImage::OutputTypesTableForReadyToRun(IMDInternalImport * pMDImport)
     // Note on duplicate types with same name: there is not need to perform that check when building
     // the hashtable. If such types were encountered, the R2R compilation would fail before reaching here.
 
-    LPCUTF8 pszName;
-    LPCUTF8 pszNameSpace;
-
     // Save the TypeDefs to the hashtable
     {
         HENUMInternalHolder hEnum(pMDImport);

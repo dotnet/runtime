@@ -936,10 +936,6 @@ void ArrayNative::ArrayCopyNoTypeCheck(BASEARRAYREF pSrc, unsigned int srcIndex,
 FCIMPL6(void, ArrayNative::ArrayCopy, ArrayBase* m_pSrc, INT32 m_iSrcIndex, ArrayBase* m_pDst, INT32 m_iDstIndex, INT32 m_iLength, CLR_BOOL reliable)
 {
     FCALL_CONTRACT;
-
-    BYTE *src;
-    BYTE *dst;
-    SIZE_T size;
     
     struct _gc
     {

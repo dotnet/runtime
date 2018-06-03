@@ -452,7 +452,6 @@ HRESULT.
     ULONG OpInfo;
     PULONG64 ReturnAddress;
     PULONG64 StackAddress;
-    NTSTATUS Status;
     PUNWIND_INFO UnwindInfo;
     UNWIND_CODE UnwindOp;
 
@@ -978,8 +977,6 @@ Return Value:
     
         if ((UnwindInfo->Flags & UNW_FLAG_CHAININFO) != 0) {
     
-            _PIMAGE_RUNTIME_FUNCTION_ENTRY ChainEntry;
-            
             Index = UnwindInfo->CountOfUnwindCodes;
             if ((Index & 1) != 0) {
                 Index += 1;

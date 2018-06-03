@@ -201,7 +201,6 @@ int UtilMessageBoxNonLocalizedVA(
         // message box style was specified.
         if (!RunningInteractive())
         {
-            HANDLE h;
             StackSString message;
 
             message.Printf(W(".NET Runtime version : %s - "), VER_FILEVERSION_STR_L);

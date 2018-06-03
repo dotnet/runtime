@@ -1791,7 +1791,7 @@ void GcInfoEncoder::Build()
                 }
             }
         }
-        catch (GcInfoNoMemoryException& e)
+        catch (GcInfoNoMemoryException&)
         {
             outOfMemory = true;
         }

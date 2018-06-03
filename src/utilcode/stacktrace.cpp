@@ -287,7 +287,6 @@ LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
 #endif
 
    InlineSString<MAX_SYM_PATH> rcBuff ; // Working buffer
-    WCHAR       rcVerString[64];            // Extension for install directory.
     int         chTotal = 0;                // How full is working buffer.
     int         ch;
 

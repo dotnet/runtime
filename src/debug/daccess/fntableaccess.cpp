@@ -179,7 +179,6 @@ static NTSTATUS OutOfProcessFunctionTableCallback_JIT(IN  ReadMemoryFunction    
             DWORD_PTR          hdrOffsetInitial;
             DWORD              nEntries;
             DWORD              index;
-            DWORD_PTR          pUnwindInfo;
             PT_RUNTIME_FUNCTION  pFunctions;
             LONG64             lSmallestOffset;
 

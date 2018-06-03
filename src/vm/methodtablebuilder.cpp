@@ -89,7 +89,6 @@ MethodTableBuilder::CreateClass( Module *pModule,
 
     EEClass *pEEClass = NULL;
     IMDInternalImport *pInternalImport;
-    HRESULT hrToThrow;
 
     //<TODO>============================================================================
     // vtabsize and static size need to be converted from pointer sizes to #'s

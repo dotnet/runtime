@@ -914,7 +914,6 @@ void WinRTClassFactory::Init()
         // being binary breaking).
         // Note that we just ignore activation attributes if they occur on the wrong type of class
         LPCSTR attributeName;
-        UINT numExpectedParams;
         if (IsComposition())
         {
             attributeName = g_WindowsFoundationComposableAttributeClassName;
