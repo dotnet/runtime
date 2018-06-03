@@ -1894,7 +1894,7 @@ MethodDesc* Assembly::GetEntryPoint()
     // byMDInternalRO::FindParamOfMethod and we will bail out. 
     // 
     // If it does not exist (return value CLDB_E_RECORD_NOTFOUND) or if it is found (S_OK),
-    // we do not bother as the values would have come upon ensurin a valid parameter record
+    // we do not bother as the values would have come upon ensuring a valid parameter record
     // list.
     mdParamDef pdParam;
     HRESULT hrValidParamList = pModule->GetMDImport()->FindParamOfMethod(mdEntry, 0, &pdParam);

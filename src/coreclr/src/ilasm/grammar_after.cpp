@@ -1259,7 +1259,7 @@ AGAIN:
                 }
                 break;
 
-                // Modifiers or depedant types
+                // Modifiers or dependent types
         case ELEMENT_TYPE_PINNED                :
         case ELEMENT_TYPE_PTR                   :
         case ELEMENT_TYPE_BYREF                 :

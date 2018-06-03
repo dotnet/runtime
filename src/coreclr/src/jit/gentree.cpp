@@ -3484,7 +3484,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 case GT_NEG:
                     // We need to ensure that -x is evaluated before x or else
                     // we get burned while adjusting genFPstkLevel in x*-x where
-                    // the rhs x is the last use of the enregsitered x.
+                    // the rhs x is the last use of the enregistered x.
                     //
                     // Even in the integer case we want to prefer to
                     // evaluate the side without the GT_NEG node, all other things
