@@ -2308,7 +2308,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node, bool* supportsRegOptional)
 {
-    NamedIntrinsic      containingintrinsicId = containingNode->gtHWintrinsicId;
+    NamedIntrinsic      containingintrinsicId = containingNode->gtHWIntrinsicId;
     HWIntrinsicCategory category              = HWIntrinsicInfo::lookupCategory(containingintrinsicId);
 
     // We shouldn't have called in here if containingNode doesn't support containment
@@ -2461,7 +2461,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
     // TODO-XArch: Update this to be table driven, if possible.
 
-    NamedIntrinsic intrinsicId = node->AsHWIntrinsic()->gtHWintrinsicId;
+    NamedIntrinsic intrinsicId = node->AsHWIntrinsic()->gtHWIntrinsicId;
 
     switch (intrinsicId)
     {
@@ -2502,7 +2502,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic      intrinsicId = node->gtHWintrinsicId;
+    NamedIntrinsic      intrinsicId = node->gtHWIntrinsicId;
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
     var_types           baseType    = node->gtSIMDBaseType;
@@ -2531,6 +2531,66 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
         switch (category)
         {
+            case HW_Category_SimpleSIMD:
+            case HW_Category_SIMDScalar:
+            {
+                switch (intrinsicId)
+                {
+                    case NI_SSE_ReciprocalScalar:
+                    case NI_SSE_ReciprocalSqrtScalar:
+                    case NI_SSE_SqrtScalar:
+                    case NI_SSE2_SqrtScalar:
+                    case NI_SSE41_CeilingScalar:
+                    case NI_SSE41_FloorScalar:
+                    case NI_SSE41_RoundCurrentDirectionScalar:
+                    case NI_SSE41_RoundToNearestIntegerScalar:
+                    case NI_SSE41_RoundToNegativeInfinityScalar:
+                    case NI_SSE41_RoundToPositiveInfinityScalar:
+                    case NI_SSE41_RoundToZeroScalar:
+                    {
+                        // These intrinsics have both 1 and 2-operand overloads.
+                        //
+                        // The 1-operand overload basically does `intrinsic(op1, op1)`
+                        //
+                        // Because of this, the operand must be loaded into a register
+                        // and cannot be contained.
+                        return;
+                    }
+
+                    case NI_SSE2_ConvertToInt32:
+                    case NI_SSE2_ConvertToInt64:
+                    case NI_SSE2_ConvertToUInt32:
+                    case NI_SSE2_ConvertToUInt64:
+                    {
+                        if (varTypeIsIntegral(baseType))
+                        {
+                            // These intrinsics are "ins reg/mem, xmm" and don't
+                            // currently support containment.
+                            return;
+                        }
+
+                        break;
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
+                }
+
+                bool supportsRegOptional = false;
+
+                if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                {
+                    MakeSrcContained(node, op1);
+                }
+                else if (supportsRegOptional)
+                {
+                    op1->SetRegOptional();
+                }
+                break;
+            }
+
             default:
             {
                 // TODO-XArch-CQ: Assert that this is unreached after we have ensured the relevant node types are
