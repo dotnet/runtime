@@ -2308,11 +2308,11 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node, bool* supportsRegOptional)
 {
-    NamedIntrinsic      containingIntrinsicID = containingNode->gtHWIntrinsicId;
-    HWIntrinsicCategory category              = HWIntrinsicInfo::lookupCategory(containingIntrinsicID);
+    NamedIntrinsic      containingintrinsicId = containingNode->gtHWintrinsicId;
+    HWIntrinsicCategory category              = HWIntrinsicInfo::lookupCategory(containingintrinsicId);
 
     // We shouldn't have called in here if containingNode doesn't support containment
-    assert(HWIntrinsicInfo::SupportsContainment(containingIntrinsicID));
+    assert(HWIntrinsicInfo::SupportsContainment(containingintrinsicId));
 
     // containingNode supports nodes that read from an aligned memory address
     //
@@ -2352,7 +2352,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
             assert(supportsSIMDScalarLoads == false);
 
             supportsAlignedSIMDLoads =
-                !comp->canUseVexEncoding() && (containingIntrinsicID != NI_SSE2_ConvertToVector128Double);
+                !comp->canUseVexEncoding() && (containingintrinsicId != NI_SSE2_ConvertToVector128Double);
             supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
             supportsGeneralLoads       = supportsUnalignedSIMDLoads;
 
@@ -2361,7 +2361,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
         case HW_Category_IMM:
         {
-            switch (containingIntrinsicID)
+            switch (containingintrinsicId)
             {
                 case NI_SSE_Shuffle:
                 case NI_SSE2_CompareLessThan:
@@ -2461,9 +2461,9 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
     // TODO-XArch: Update this to be table driven, if possible.
 
-    NamedIntrinsic intrinsicID = node->AsHWIntrinsic()->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId = node->AsHWIntrinsic()->gtHWintrinsicId;
 
-    switch (intrinsicID)
+    switch (intrinsicId)
     {
         case NI_SSE_LoadAlignedVector128:
         case NI_SSE2_LoadAlignedVector128:
@@ -2502,8 +2502,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic      intrinsicID = node->gtHWIntrinsicId;
-    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicID);
+    NamedIntrinsic      intrinsicId = node->gtHWintrinsicId;
+    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
     var_types           baseType    = node->gtSIMDBaseType;
 
@@ -2511,7 +2511,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     GenTree* op2 = node->gtGetOp2();
     GenTree* op3 = nullptr;
 
-    if (!HWIntrinsicInfo::SupportsContainment(intrinsicID))
+    if (!HWIntrinsicInfo::SupportsContainment(intrinsicId))
     {
         // Exit early if containment isn't supported
         return;
@@ -2519,7 +2519,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
-    const bool isCommutative = HWIntrinsicInfo::IsCommutative(intrinsicID);
+    const bool isCommutative = HWIntrinsicInfo::IsCommutative(intrinsicId);
 
     if (numArgs == 1)
     {
@@ -2528,6 +2528,17 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
         assert(!op1->OperIsList());
         assert(op2 == nullptr);
+
+        switch (category)
+        {
+            default:
+            {
+                // TODO-XArch-CQ: Assert that this is unreached after we have ensured the relevant node types are
+                // handled.
+                //                https://github.com/dotnet/coreclr/issues/16497
+                break;
+            }
+        }
     }
     else
     {
@@ -2594,41 +2605,56 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             op3 = argList->Current();
             assert(argList->Rest() == nullptr);
 
-            if ((intrinsicID >= NI_FMA_MultiplyAdd) && (intrinsicID <= NI_FMA_MultiplySubtractNegatedScalar))
+            switch (category)
             {
-                bool supportsRegOptional = false;
-
-                if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                case HW_Category_SimpleSIMD:
+                case HW_Category_SIMDScalar:
                 {
-                    // 213 form: op1 = (op2 * op1) + [op3]
-                    MakeSrcContained(node, op3);
-                }
-                else if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
-                {
-                    // 132 form: op1 = (op1 * op3) + [op2]
-                    MakeSrcContained(node, op2);
-                }
-                else if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
-                {
-                    // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
-
-                    if (!HWIntrinsicInfo::CopiesUpperBits(intrinsicID))
+                    if ((intrinsicId >= NI_FMA_MultiplyAdd) && (intrinsicId <= NI_FMA_MultiplySubtractNegatedScalar))
                     {
-                        // 231 form: op3 = (op2 * op3) + [op1]
-                        MakeSrcContained(node, op1);
+                        bool supportsRegOptional = false;
+
+                        if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                        {
+                            // 213 form: op1 = (op2 * op1) + [op3]
+                            MakeSrcContained(node, op3);
+                        }
+                        else if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                        {
+                            // 132 form: op1 = (op1 * op3) + [op2]
+                            MakeSrcContained(node, op2);
+                        }
+                        else if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                        {
+                            // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
+
+                            if (!HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
+                            {
+                                // 231 form: op3 = (op2 * op3) + [op1]
+                                MakeSrcContained(node, op1);
+                            }
+                        }
+                        else
+                        {
+                            assert(supportsRegOptional);
+
+                            // TODO-XArch-CQ: Technically any one of the three operands can
+                            //                be reg-optional. With a limitation on op1 where
+                            //                it can only be so if CopyUpperBits is off.
+                            //                https://github.com/dotnet/coreclr/issues/6361
+
+                            // 213 form: op1 = (op2 * op1) + op3
+                            op3->SetRegOptional();
+                        }
                     }
                 }
-                else
+
+                default:
                 {
-                    assert(supportsRegOptional);
-
-                    // TODO-XArch-CQ: Technically any one of the three operands can
-                    //                be reg-optional. With a limitation on op1 where
-                    //                it can only be so if CopyUpperBits is off.
-                    //                https://github.com/dotnet/coreclr/issues/6361
-
-                    // 213 form: op1 = (op2 * op1) + op3
-                    op3->SetRegOptional();
+                    // TODO-XArch-CQ: Assert that this is unreached after we have ensured the relevant node types are
+                    // handled.
+                    //                https://github.com/dotnet/coreclr/issues/16497
+                    break;
                 }
             }
         }
@@ -2637,12 +2663,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             unreached();
         }
 
-        if (HWIntrinsicInfo::lookupCategory(intrinsicID) == HW_Category_IMM)
+        if (HWIntrinsicInfo::lookupCategory(intrinsicId) == HW_Category_IMM)
         {
             GenTree* lastOp = HWIntrinsicInfo::lookupLastOp(node);
             assert(lastOp != nullptr);
 
-            if (HWIntrinsicInfo::isImmOp(intrinsicID, lastOp) && lastOp->IsCnsIntOrI())
+            if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI())
             {
                 MakeSrcContained(node, lastOp);
             }
