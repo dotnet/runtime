@@ -1044,7 +1044,7 @@ void
         move_xp (offs, retAddr-4);
         *whereCalled = retAddr + (ULONG64)(LONG)(offs);
         //*whereCalled = *((int*) (retAddr-4)) + retAddr;
-        // on WOW64 the range valid for code is almost the whole 4GB adddress space
+        // on WOW64 the range valid for code is almost the whole 4GB address space
         if (g_ExtData->ReadVirtual(TO_CDADDR(*whereCalled), &addr, sizeof(addr), NULL) == S_OK)
         {
             TADDR callee;
@@ -1070,7 +1070,7 @@ void
         if (g_ExtData->ReadVirtual(TO_CDADDR(addr), whereCalled, sizeof(*whereCalled), NULL) == S_OK) {
             move_xp (*whereCalled, addr);
             //*whereCalled = **((unsigned**) (retAddr-4));
-            // on WOW64 the range valid for code is almost the whole 4GB adddress space
+            // on WOW64 the range valid for code is almost the whole 4GB address space
             if (g_ExtData->ReadVirtual(TO_CDADDR(*whereCalled), &addr, sizeof(addr), NULL) == S_OK) 
             {
                 TADDR callee;

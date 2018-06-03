@@ -69,7 +69,7 @@ HRESULT ExpressionNode::CreateExpressionNode(__in_z WCHAR* pExpression, Expressi
 }
 
 // Performs recursive expansion within the tree for nodes that are along the path to varToExpand.
-// Expansion involves calulating a set of child expressions from the current expression via
+// Expansion involves calculating a set of child expressions from the current expression via
 // field dereferencing, array index dereferencing, or casting to a base type.
 // For example if a tree was rooted with expression 'foo.bar' and varToExpand is '(Baz)foo.bar[9]'
 // then 'foo.bar', 'foo.bar[9]', and '(Baz)foo.bar[9]' nodes would all be expanded.
@@ -1228,14 +1228,14 @@ VOID ExpressionNode::EvaluateExpressionVariableScanCallback(ICorDebugValue* pVal
 //  pParsedType          - A debuggee type that should be used as the context for interpreting
 //                         pExpressionRemainder. 
 //  pParsedDefaultValue  - A fixed value from metadata that should be used as context for
-//                         interpretting pExpressionRemainder
+//                         interpreting pExpressionRemainder
 //  cchParsedDefaultValue- Size of pParsedDefaultValue
 //  pFrame               - A debuggee IL frame that disambiguates the thread and context needed
 //                         to evaluate a thread-static or context-static value
 //  ppExpressionNode     - OUT - the resulting expression node
 //
 //
-//  Valid combinations of state comming into this method:
+//  Valid combinations of state coming into this method:
 //      The expression up to charactersParsed isn't recognized yet:
 //           pParsedValue = pParsedType = pParsedDefaultValue = NULL
 //           cchParsedDefaultValue = 0

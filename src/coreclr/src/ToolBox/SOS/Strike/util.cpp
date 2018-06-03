@@ -1547,7 +1547,7 @@ LPWSTR FormatTypeName (__out_ecount (maxChars) LPWSTR pszName, UINT maxChars)
 *                                                                      *
 *    This function is called to dump all fields of a managed object.   *  
 *    dwStartAddr specifies the beginning memory address.               *
-*    bFirst is used to avoid printing header everytime.                *
+*    bFirst is used to avoid printing header every time.               *
 *                                                                      *
 \**********************************************************************/
 void DisplayFields(CLRDATA_ADDRESS cdaMT, DacpMethodTableData *pMTD, DacpMethodTableFieldData *pMTFD, DWORD_PTR dwStartAddr, BOOL bFirst, BOOL bValueClass)
