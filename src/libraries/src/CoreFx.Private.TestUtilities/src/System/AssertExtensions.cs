@@ -91,13 +91,18 @@ namespace System
             where TNetCoreExceptionType : Exception
             where TNetFxExceptionType : Exception
         {
+            return Throws(typeof(TNetCoreExceptionType), typeof(TNetFxExceptionType), action);
+        }
+
+        public static Exception Throws(Type netCoreExceptionType, Type netFxExceptionType, Action action)
+        {
             if (IsFullFramework)
             {
-                return Throws<TNetFxExceptionType>(action);
+                return Assert.Throws(netFxExceptionType, action);
             }
             else
             {
-                return Throws<TNetCoreExceptionType>(action);
+                return Assert.Throws(netCoreExceptionType, action);
             }
         }
 
