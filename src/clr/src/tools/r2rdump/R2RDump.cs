@@ -23,6 +23,7 @@ namespace R2RDump
         private IReadOnlyList<string> _sections = Array.Empty<string>();
         private bool _diff = false;
         private long _disassembler;
+        private bool _types = false;
         private TextWriter _writer;
 
         private R2RDump()
@@ -47,7 +48,8 @@ namespace R2RDump
                 syntax.DefineOptionList("k|keyword", ref _keywords, "Search method by keyword");
                 syntax.DefineOptionList("r|runtimefunction", ref _runtimeFunctions, ArgStringToInt, "Get one runtime function by id or relative virtual address");
                 syntax.DefineOptionList("s|section", ref _sections, "Get section by keyword");
-                syntax.DefineOption("diff", ref _diff, "Compare two R2R images"); // not yet implemented
+                syntax.DefineOption("types", ref _types, "Dump available types");
+                syntax.DefineOption("diff", ref _diff, "Compare two R2R images (not yet implemented)"); // not yet implemented
             });
 
             return argSyntax;
@@ -85,7 +87,8 @@ namespace R2RDump
 
         private void WriteDivider(string title)
         {
-            _writer.WriteLine("============== " + title + " ==============");
+            int len = 61 - title.Length - 2;
+            _writer.WriteLine(new String('=', len/2) + " " + title + " " + new String('=', (int)Math.Ceiling(len/2.0)));
             _writer.WriteLine();
         }
 
@@ -108,6 +111,8 @@ namespace R2RDump
             if (dumpSections)
             {
                 WriteDivider("R2R Sections");
+                _writer.WriteLine($"{r2r.R2RHeader.Sections.Count} sections");
+                _writer.WriteLine();
                 foreach (R2RSection section in r2r.R2RHeader.Sections.Values)
                 {
                     DumpSection(r2r, section);
@@ -192,6 +197,16 @@ namespace R2RDump
                     _writer.WriteLine();
                     _writer.Write("    ");
                 }
+            }
+            _writer.WriteLine();
+        }
+
+        private void DumpAvailableTypes(R2RReader r2r)
+        {
+            WriteDivider("Available Types");
+            foreach (string name in r2r.AvailableTypes)
+            {
+                _writer.WriteLine(name);
             }
             _writer.WriteLine();
         }
@@ -291,6 +306,7 @@ namespace R2RDump
                 if (!_header)
                 {
                     WriteDivider("R2R Methods");
+                    _writer.WriteLine($"{r2r.R2RMethods.Count} methods");
                     _writer.WriteLine();
                     foreach (R2RMethod method in r2r.R2RMethods)
                     {
@@ -309,6 +325,11 @@ namespace R2RDump
                 QueryRuntimeFunction(r2r, _runtimeFunctions);
                 QueryMethod(r2r, "R2R Methods by Query", _queries, true);
                 QueryMethod(r2r, "R2R Methods by Keyword", _keywords, false);
+            }
+
+            if (_types)
+            {
+                DumpAvailableTypes(r2r);
             }
 
             _writer.WriteLine("=============================================================");
