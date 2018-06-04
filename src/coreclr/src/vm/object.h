@@ -95,11 +95,28 @@ class ArgDestination;
 
 struct RCW;
 
+#ifdef _TARGET_64BIT_
+#define OBJHEADER_SIZE      (sizeof(DWORD) /* m_alignpad */ + sizeof(DWORD) /* m_SyncBlockValue */)
+#else
+#define OBJHEADER_SIZE      sizeof(DWORD) /* m_SyncBlockValue */
+#endif
+
+#define OBJECT_SIZE         TARGET_POINTER_SIZE /* m_pMethTab */
+#define OBJECT_BASESIZE     (OBJHEADER_SIZE + OBJECT_SIZE)
+
+#ifdef _TARGET_64BIT_
+#define ARRAYBASE_SIZE      (OBJECT_SIZE /* m_pMethTab */ + sizeof(DWORD) /* m_NumComponents */ + sizeof(DWORD) /* pad */)
+#else
+#define ARRAYBASE_SIZE      (OBJECT_SIZE /* m_pMethTab */ + sizeof(DWORD) /* m_NumComponents */)
+#endif
+
+#define ARRAYBASE_BASESIZE  (OBJHEADER_SIZE + ARRAYBASE_SIZE)
+
 //
 // The generational GC requires that every object be at least 12 bytes
 // in size.   
 
-#define MIN_OBJECT_SIZE     (2*sizeof(BYTE*) + sizeof(ObjHeader))
+#define MIN_OBJECT_SIZE     (2*TARGET_POINTER_SIZE + OBJHEADER_SIZE)
 
 #define PTRALIGNCONST (DATA_ALIGNMENT-1)
 

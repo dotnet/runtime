@@ -499,7 +499,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     _ASSERTE(pMT->IsClassPreInited());
 
     // Set BaseSize to be size of non-data portion of the array
-    DWORD baseSize = ObjSizeOf(ArrayBase);
+    DWORD baseSize = ARRAYBASE_BASESIZE;
     if (arrayKind == ELEMENT_TYPE_ARRAY)
         baseSize += Rank*sizeof(DWORD)*2;
 
@@ -682,7 +682,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             // This equals the offset of the first pointer if this were an array of entirely pointers, plus the offset of the
             // first pointer in the value class
             pSeries->SetSeriesOffset(ArrayBase::GetDataPtrOffset(pMT)
-                + (sortedSeries[0]->GetSeriesOffset()) - sizeof (Object) );
+                + (sortedSeries[0]->GetSeriesOffset()) - OBJECT_SIZE);
             for (index = 0; index < nSeries; index ++)
             {
                 size_t numPtrsInBytes = sortedSeries[index]->GetSeriesSize()
@@ -701,7 +701,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                 else
                 {
                     skip = sortedSeries[0]->GetSeriesOffset() + pElemMT->GetBaseSize()
-                         - ObjSizeOf(Object) - currentOffset;
+                         - OBJECT_BASESIZE - currentOffset;
                 }
 
                 _ASSERTE(!"Module::CreateArrayMethodTable() - unaligned GC info" || IS_ALIGNED(skip, TARGET_POINTER_SIZE));
