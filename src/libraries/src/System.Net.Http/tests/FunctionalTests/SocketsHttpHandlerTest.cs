@@ -1058,6 +1058,43 @@ namespace System.Net.Http.Functional.Tests
                 return SuccessExitCode;
             }, secure.ToString()).Dispose();
         }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not support custom proxies.")]
+        [Fact]
+        public async Task ProxyAuth_SameConnection_Succeeds()
+        {
+            Task serverTask = LoopbackServer.CreateServerAsync(async (proxyServer, proxyUrl) =>
+            {
+                string responseBody =
+                        "HTTP/1.1 407 Proxy Auth Required\r\n" +
+                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                        "Proxy-Authenticate: Basic\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n";
+
+                using  (var handler = new HttpClientHandler())
+                {
+                    handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, new NetworkCredential("abc", "def"));
+
+                    using (var client = new HttpClient(handler))
+                    {
+                        Task<string> request = client.GetStringAsync($"http://notarealserver.com/");
+
+                        await proxyServer.AcceptConnectionAsync(async connection =>
+                        {
+                            // Get first request, no body for GET.
+                            await connection.ReadRequestHeaderAndSendCustomResponseAsync(responseBody).ConfigureAwait(false);
+                            // Client should send another request after being rejected with 407.
+                            await connection.ReadRequestHeaderAndSendResponseAsync(content:"OK").ConfigureAwait(false);
+                        });
+
+                        string response = await request;
+                        Assert.Equal("OK", response);
+                    }
+                }
+            });
+            await serverTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+        }
     }
 
     public sealed class SocketsHttpHandler_PublicAPIBehavior_Test
