@@ -923,5 +923,15 @@ namespace System.Security.Cryptography.Pkcs.Tests
             // Assert.NoThrow
             cms.CheckSignature(true);
         }
+
+        [Fact]
+        public static void SignerInfoCollection_Indexer_MinusOne ()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => cms.SignerInfos[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>(() => cms.SignerInfos[1]);
+        }
     }
 }

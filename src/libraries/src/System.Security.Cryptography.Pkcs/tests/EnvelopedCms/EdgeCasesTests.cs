@@ -481,6 +481,14 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        public static void ContentInfoGetContentTypeUnknown()
+        {
+            byte[] encodedMessage =
+                 ("301A06092A864886F70D010700A00D040B48656C6C6F202E4E455421").HexToByteArray();
+            Assert.ThrowsAny<CryptographicException>(() => ContentInfo.GetContentType(encodedMessage));
+        }
+
+        [Fact]
         public static void CryptographicAttributeObjectOidCtor()
         {
             Oid oid = new Oid(Oids.DocumentDescription);
