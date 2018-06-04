@@ -4831,16 +4831,26 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         BYTE* dest = VolatileLoad(&m_pbDestCode);
-        CONSISTENCY_CHECK((NULL == dest) || (NULL != VolatileLoadWithoutBarrier(&m_pbSrcCode)));
         return dest != NULL;
     }
-    void ClearGCStressInstructionUpdate()
+    bool TryClearGCStressInstructionUpdate(BYTE** ppbDestCode, BYTE** ppbSrcCode)
     {
         LIMITED_METHOD_CONTRACT;
-        PRECONDITION(HasPendingGCStressInstructionUpdate());
+        bool result = false;
 
-        VolatileStoreWithoutBarrier<BYTE*>(&m_pbDestCode, NULL);
-        VolatileStore<BYTE*>(&m_pbSrcCode, NULL);
+        if(HasPendingGCStressInstructionUpdate())
+        {
+            *ppbDestCode = FastInterlockExchangePointer(&m_pbDestCode, NULL);
+
+            if(*ppbDestCode != NULL)
+            {
+                result = true;
+                *ppbSrcCode = FastInterlockExchangePointer(&m_pbSrcCode, NULL);
+
+                CONSISTENCY_CHECK(*ppbSrcCode != NULL);
+            }
+        }
+        return result;
     }
 #if defined(GCCOVER_TOLERATE_SPURIOUS_AV)
     void SetLastAVAddress(LPVOID address)
