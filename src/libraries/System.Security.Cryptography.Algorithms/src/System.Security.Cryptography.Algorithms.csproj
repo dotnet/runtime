@@ -141,11 +141,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Cng.cs">
       <Link>Common\Interop\Windows\BCrypt\Cng.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
-      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
+      <Link>Common\CoreLib\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
-      <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
+      <Link>Common\CoreLib\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs</Link>

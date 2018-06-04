@@ -138,8 +138,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.Blobs.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.Blobs.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
-      <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
+      <Link>Common\CoreLib\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs</Link>

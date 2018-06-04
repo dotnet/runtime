@@ -8,11 +8,11 @@ namespace System.Security.Cryptography
 {
     partial class RandomNumberGeneratorImplementation
     {
-        private static void GetBytes(ref byte pbBuffer, int count)
+        private static unsafe void GetBytes(byte* pbBuffer, int count)
         {
             Debug.Assert(count > 0);
 
-            if (!Interop.Crypto.GetRandomBytes(ref pbBuffer, count))
+            if (!Interop.Crypto.GetRandomBytes(pbBuffer, count))
             {
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }

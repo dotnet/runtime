@@ -10,11 +10,11 @@ namespace System.Security.Cryptography
     {
         // As long as each implementation can provide a static GetBytes(ref byte buf, int length)
         // they can share this one implementation of FillSpan.
-        internal static void FillSpan(Span<byte> data)
+        internal static unsafe void FillSpan(Span<byte> data)
         {
             if (data.Length > 0)
             {
-                GetBytes(ref MemoryMarshal.GetReference(data), data.Length);
+                fixed (byte* ptr = data) GetBytes(ptr, data.Length);
             }
         }
 
@@ -30,11 +30,11 @@ namespace System.Security.Cryptography
             GetBytes(new Span<byte>(data, offset, count));
         }
 
-        public override void GetBytes(Span<byte> data)
+        public override unsafe void GetBytes(Span<byte> data)
         {
             if (data.Length > 0)
             {
-                GetBytes(ref MemoryMarshal.GetReference(data), data.Length);
+                fixed (byte* ptr = data) GetBytes(ptr, data.Length);
             }
         }
 
