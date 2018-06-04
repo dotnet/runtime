@@ -2520,8 +2520,6 @@ HRESULT CodeVersionManager::DoJumpStampIfNecessary(MethodDesc* pMD, PCODE pCode)
     }
     CONTRACTL_END;
 
-    HRESULT hr;
-
     _ASSERTE(LockOwnedByCurrentThread());
 
     NativeCodeVersion activeCodeVersion = GetActiveILCodeVersion(pMD).GetActiveNativeCodeVersion(pMD);
@@ -2540,6 +2538,7 @@ HRESULT CodeVersionManager::DoJumpStampIfNecessary(MethodDesc* pMD, PCODE pCode)
     _ASSERTE(!"How did we get here? IsVersionableWithJumpStamp() should have been FALSE above");
     return S_OK;
 #else
+    HRESULT hr;
     MethodDescVersioningState* pVersioningState;
     if (FAILED(hr = GetOrCreateMethodDescVersioningState(pMD, &pVersioningState)))
     {
