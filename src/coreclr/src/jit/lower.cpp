@@ -305,16 +305,28 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
         }
 
-#ifdef _TARGET_ARM64_
+#if defined(_TARGET_ARM64_)
         case GT_CMPXCHG:
             CheckImmedAndMakeContained(node, node->AsCmpXchg()->gtOpComparand);
             break;
 
         case GT_XADD:
-#endif
-        case GT_LOCKADD:
             CheckImmedAndMakeContained(node, node->gtOp.gtOp2);
             break;
+#elif defined(_TARGET_XARCH_)
+        case GT_XADD:
+            if (node->IsUnusedValue())
+            {
+                node->ClearUnusedValue();
+                // Make sure the types are identical, since the node type is changed to VOID
+                // CodeGen relies on op2's type to determine the instruction size.
+                assert(node->gtGetOp2()->TypeGet() == node->TypeGet());
+                node->SetOper(GT_LOCKADD);
+                node->gtType = TYP_VOID;
+                CheckImmedAndMakeContained(node, node->gtGetOp2());
+            }
+            break;
+#endif
 
         default:
             break;
