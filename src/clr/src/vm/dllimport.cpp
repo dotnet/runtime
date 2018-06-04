@@ -6110,8 +6110,9 @@ static void DetermineLibNameVariations(const WCHAR** libNameVariations, int* num
     // LoadLibrary won't append extension if filename itself contains '.'. Thus it will break the following scenario:
     // [DllImport("A.B")] // The full name for file is "A.B.dll". This is common code pattern for cross-platform PInvoke
     // The workaround for above scenario is to call LoadLibrary with "A.B" first, if it fails, then call LoadLibrary with "A.B.dll"
+    auto it = libName.Begin();
     if (!libNameIsRelativePath ||
-        !libName.Find(libName.Begin(), W('.')) || 
+        !libName.Find(it, W('.')) || 
         libName.EndsWith(W(".")) || 
         libName.EndsWithCaseInsensitive(W(".dll")) || 
         libName.EndsWithCaseInsensitive(W(".exe")))
