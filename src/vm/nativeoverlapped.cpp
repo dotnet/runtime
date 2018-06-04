@@ -443,7 +443,7 @@ void AddMTForPinHandle(OBJECTREF obj)
             }
             else
             {
-                pNewMT->SetBaseSize(ObjSizeOf (ArrayBase));
+                pNewMT->SetBaseSize(ARRAYBASE_BASESIZE);
                 pNewMT->SetComponentSize(static_cast<WORD>(-size));
             }
             s_pPinHandleTable->InsertValue(size, (HashDatum)pNewMT);

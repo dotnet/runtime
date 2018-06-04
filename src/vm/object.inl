@@ -62,7 +62,7 @@ __forceinline /*static*/ DWORD StringObject::GetBaseSize()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return ObjSizeOf(Object) + sizeof(DWORD) /* length */ + sizeof(WCHAR) /* null terminator */;
+    return OBJECT_BASESIZE + sizeof(DWORD) /* length */ + sizeof(WCHAR) /* null terminator */;
 }
 
 __forceinline /*static*/ SIZE_T StringObject::GetSize(DWORD strLen)
@@ -247,7 +247,7 @@ inline /* static */ unsigned ArrayBase::GetDataPtrOffset(MethodTable* pMT)
     _ASSERTE(pMT->IsArray());
 #endif // DACCESS_COMPILE
     // The -sizeof(ObjHeader) is because of the sync block, which is before "this"
-    return pMT->GetBaseSize() - sizeof(ObjHeader);
+    return pMT->GetBaseSize() - OBJHEADER_SIZE;
 }
 
 inline /* static */ unsigned ArrayBase::GetBoundsOffset(MethodTable* pMT) 
@@ -255,9 +255,9 @@ inline /* static */ unsigned ArrayBase::GetBoundsOffset(MethodTable* pMT)
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMT->IsArray());
     if (!pMT->IsMultiDimArray()) 
-        return(offsetof(ArrayBase, m_NumComponents));
+        return OBJECT_SIZE /* offset(ArrayBase, m_NumComponents */;
     _ASSERTE(pMT->GetInternalCorElementType() == ELEMENT_TYPE_ARRAY);
-    return sizeof(ArrayBase);
+    return ARRAYBASE_SIZE;
 }
 inline /* static */ unsigned ArrayBase::GetLowerBoundsOffset(MethodTable* pMT) 
 {

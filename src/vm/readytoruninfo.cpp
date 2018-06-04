@@ -888,7 +888,7 @@ DWORD ReadyToRunInfo::GetFieldBaseOffset(MethodTable * pMT)
 
     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, dwAlignment);
 
-    return (DWORD)sizeof(Object) + dwCumulativeInstanceFieldPos - dwOffsetBias;
+    return OBJECT_SIZE + dwCumulativeInstanceFieldPos - dwOffsetBias;
 }
 
 BOOL ReadyToRunInfo::IsImageVersionAtLeast(int majorVersion, int minorVersion)

@@ -2138,7 +2138,7 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
                         (S_SIZE_T(2 * sizeof(DWORD))*(S_SIZE_T(dwNumTypes)+S_SIZE_T(1)))));
 
                 for (DWORD i = 0; i < dwIndex; i++) {
-                    pRegularStaticOffsets[i * 2    ] = dwGCHandles[0]*sizeof(OBJECTREF);
+                    pRegularStaticOffsets[i * 2    ] = dwGCHandles[0]*TARGET_POINTER_SIZE;
                     pRegularStaticOffsets[i * 2 + 1] = dwNonGCBytes[0];                    
                 }
             }
@@ -2151,7 +2151,7 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
                         (S_SIZE_T(2 * sizeof(DWORD))*(S_SIZE_T(dwNumTypes)+S_SIZE_T(1)))));
 
                 for (DWORD i = 0; i < dwIndex; i++) {
-                    pThreadStaticOffsets[i * 2    ] = dwGCHandles[1]*sizeof(OBJECTREF);
+                    pThreadStaticOffsets[i * 2    ] = dwGCHandles[1]*TARGET_POINTER_SIZE;
                     pThreadStaticOffsets[i * 2 + 1] = dwNonGCBytes[1];                    
                 }
             }
@@ -2163,7 +2163,7 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
             dwNonGCBytes[0] = (DWORD) ALIGN_UP(dwNonGCBytes[0], dwAlignment[0]);
 
             // Save current offsets
-            pRegularStaticOffsets[dwIndex*2]     = dwGCHandles[0]*sizeof(OBJECTREF);
+            pRegularStaticOffsets[dwIndex*2]     = dwGCHandles[0]*TARGET_POINTER_SIZE;
             pRegularStaticOffsets[dwIndex*2 + 1] = dwNonGCBytes[0];
         
             // Increment for next class
@@ -2177,7 +2177,7 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
             dwNonGCBytes[1] = (DWORD) ALIGN_UP(dwNonGCBytes[1], dwAlignment[1]);
 
             // Save current offsets
-            pThreadStaticOffsets[dwIndex*2]     = dwGCHandles[1]*sizeof(OBJECTREF);
+            pThreadStaticOffsets[dwIndex*2]     = dwGCHandles[1]*TARGET_POINTER_SIZE;
             pThreadStaticOffsets[dwIndex*2 + 1] = dwNonGCBytes[1];
         
             // Increment for next class
@@ -2190,13 +2190,13 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
 
     if (pRegularStaticOffsets != NULL)
     {
-        pRegularStaticOffsets[dwNumTypes*2]     = dwGCHandles[0]*sizeof(OBJECTREF);
+        pRegularStaticOffsets[dwNumTypes*2]     = dwGCHandles[0]*TARGET_POINTER_SIZE;
         pRegularStaticOffsets[dwNumTypes*2 + 1] = dwNonGCBytes[0];
     }
 
     if (pThreadStaticOffsets != NULL)
     {
-        pThreadStaticOffsets[dwNumTypes*2]     = dwGCHandles[1]*sizeof(OBJECTREF);
+        pThreadStaticOffsets[dwNumTypes*2]     = dwGCHandles[1]*TARGET_POINTER_SIZE;
         pThreadStaticOffsets[dwNumTypes*2 + 1] = dwNonGCBytes[1];
     }
 

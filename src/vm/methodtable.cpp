@@ -942,7 +942,7 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
     pMT->SetLoaderModule(pContainingModule);
     pMT->SetLoaderAllocator(pContainingModule->GetLoaderAllocator());
     pMT->SetInternalCorElementType(ELEMENT_TYPE_CLASS);
-    pMT->SetBaseSize(ObjSizeOf(Object));
+    pMT->SetBaseSize(OBJECT_BASESIZE);
 
 #ifdef _DEBUG
     pClass->SetDebugClassName("dynamicClass");
