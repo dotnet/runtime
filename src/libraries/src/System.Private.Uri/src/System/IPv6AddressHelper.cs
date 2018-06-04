@@ -22,7 +22,7 @@ namespace System
 
         // methods
 
-        internal static string ParseCanonicalName(string str, int start, ref bool isLoopback, ref bool linkLocalAddress, ref string scopeId)
+        internal static string ParseCanonicalName(string str, int start, ref bool isLoopback, ref string scopeId)
         {
             unsafe
             {
@@ -31,8 +31,7 @@ namespace System
                 ((long*)numbers)[0] = 0L;
                 ((long*)numbers)[1] = 0L;
                 isLoopback = Parse(str, numbers, start, ref scopeId);
-                linkLocalAddress = numbers[0] == 0xfe80;
-                return "[" + CreateCanonicalName(numbers) + (linkLocalAddress ? scopeId : "") + "]";
+                return '[' + CreateCanonicalName(numbers) + ']';
             }
         }
 
