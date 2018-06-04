@@ -86,7 +86,7 @@ void EventPipeConfiguration::Initialize()
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -108,7 +108,7 @@ EventPipeProvider* EventPipeConfiguration::CreateProvider(const SString &provide
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -151,7 +151,7 @@ bool EventPipeConfiguration::RegisterProvider(EventPipeProvider &provider)
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -346,7 +346,7 @@ void EventPipeConfiguration::Enable(EventPipeSession *pSession)
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(pSession != NULL);
         // Lock must be held by EventPipe::Enable.
@@ -385,7 +385,7 @@ void EventPipeConfiguration::Disable(EventPipeSession *pSession)
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         // TODO: Multiple session support will require that the session be specified.
         PRECONDITION(pSession != NULL);
@@ -431,7 +431,7 @@ void EventPipeConfiguration::EnableRundown(EventPipeSession *pSession)
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(pSession != NULL);
         // Lock must be held by EventPipe::Disable.
