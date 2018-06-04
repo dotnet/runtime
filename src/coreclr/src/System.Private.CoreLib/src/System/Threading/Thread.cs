@@ -293,7 +293,7 @@ namespace System.Threading
         ** forces the thread to give up the remainder of its timeslice.  If timeout
         ** == Timeout.Infinite, no timeout will occur.
         **
-        ** Exceptions: ArgumentException if timeout < 0.
+        ** Exceptions: ArgumentException if timeout < -1 (Timeout.Infinite).
         **             ThreadInterruptedException if the thread is interrupted while sleeping.
         =========================================================================*/
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
