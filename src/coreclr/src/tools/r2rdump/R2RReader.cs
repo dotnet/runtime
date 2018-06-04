@@ -254,6 +254,21 @@ namespace R2RDump
             return rva - containingSection.VirtualAddress + containingSection.PointerToRawData;
         }
 
+        public string GetTypeDefFullName(TypeDefinitionHandle handle)
+        {
+            TypeDefinition typeDef;
+            string typeStr = "";
+            do
+            {
+                typeDef = _mdReader.GetTypeDefinition(handle);
+                typeStr = "." + _mdReader.GetString(typeDef.Name) + typeStr;
+                handle = typeDef.GetDeclaringType();
+            }
+            while (!handle.IsNil);
+
+            return _mdReader.GetString(typeDef.Namespace) + typeStr;
+        }
+
         /// <summary>
         /// Get the full name of a type, including parent classes and namespace
         /// </summary>
