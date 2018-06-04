@@ -112,15 +112,19 @@
 #define NOT_ARM64_ARG(x)    , x
 #endif
 
+#ifdef _TARGET_64BIT_
+#define LOG2_PTRSIZE 3
+#else
+#define LOG2_PTRSIZE 2
+#endif
+
 #ifdef _WIN64
-    #define LOG2_PTRSIZE       3
     #define INVALID_POINTER_CC 0xcccccccccccccccc
     #define INVALID_POINTER_CD 0xcdcdcdcdcdcdcdcd
     #define FMT_ADDR           " %08x`%08x "
     #define LFMT_ADDR          W(" %08x`%08x ")
     #define DBG_ADDR(ptr)      (((UINT_PTR) (ptr)) >> 32), (((UINT_PTR) (ptr)) & 0xffffffff)
 #else // _WIN64
-    #define LOG2_PTRSIZE       2
     #define INVALID_POINTER_CC 0xcccccccc
     #define INVALID_POINTER_CD 0xcdcdcdcd
     #define FMT_ADDR           " %08x "

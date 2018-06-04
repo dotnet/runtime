@@ -1645,7 +1645,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
         // FieldDesc::GetOffset() does not include the size of Object
         if (!pFieldMT->IsValueType())
         {
-            pResult->offset += sizeof(Object);
+            pResult->offset += OBJECT_SIZE;
         }
     }
 
@@ -2226,7 +2226,7 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
             {
                 // Get offset into the value class of the first pointer field (includes a +Object)
                 size_t cbSeriesSize = pByValueSeries->GetSeriesSize() + pMT->GetBaseSize();
-                size_t cbOffset = pByValueSeries->GetSeriesOffset() - sizeof(Object);
+                size_t cbOffset = pByValueSeries->GetSeriesOffset() - OBJECT_SIZE;
 
                 _ASSERTE (cbOffset % TARGET_POINTER_SIZE == 0);
                 _ASSERTE (cbSeriesSize % TARGET_POINTER_SIZE == 0);
@@ -9360,7 +9360,7 @@ unsigned CEEInfo::getFieldOffset (CORINFO_FIELD_HANDLE fieldHnd)
     }
     else if (!field->GetApproxEnclosingMethodTable()->IsValueType())
     {
-        result += sizeof(Object);
+        result += OBJECT_SIZE;
     }
 
     EE_TO_JIT_TRANSITION();

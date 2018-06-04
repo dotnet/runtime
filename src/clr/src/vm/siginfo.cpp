@@ -4981,7 +4981,7 @@ void ReportPointersFromValueType(promote_func *fn, ScanContext *sc, PTR_MethodTa
         while (srcPtr < srcPtrStop)                                         
         {   
             (*fn)(dac_cast<PTR_PTR_Object>(srcPtr), sc, 0);
-            srcPtr++;
+            srcPtr = (PTR_OBJECTREF)(PTR_BYTE(srcPtr) + TARGET_POINTER_SIZE);
         }                                                               
         cur--;                                                              
     } while (cur >= last);
