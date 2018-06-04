@@ -1587,7 +1587,7 @@ private:
     void setDelayFree(RefPosition* use);
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
 #ifdef _TARGET_XARCH_
-    int LinearScan::BuildRMWUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
+    int BuildRMWUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
 #endif // !_TARGET_XARCH_
     // This is the main entry point for building the RefPositions for a node.
     // These methods return the number of sources.
