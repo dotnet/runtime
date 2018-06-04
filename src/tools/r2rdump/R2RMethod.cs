@@ -50,13 +50,11 @@ namespace R2RDump
         {
             Id = id;
             StartAddress = startRva;
-            Size = endRva - startRva;
-            if (endRva == -1)
-                Size = -1;
             UnwindRVA = unwindRva;
             Method = method;
             UnwindInfo = unwindInfo;
             GCInfo = gcInfo;
+            Size = gcInfo.CodeLength;
         }
 
         public override string ToString()
