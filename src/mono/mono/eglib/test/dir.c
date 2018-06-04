@@ -11,8 +11,8 @@
 #include "test.h"
 
 /* This test is just to be used with valgrind */
-RESULT
-test_dir ()
+static RESULT
+test_dir (void)
 {
 	GDir *dir;
 	GError *gerror;

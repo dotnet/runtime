@@ -7,11 +7,11 @@ public class Test {
 	public static extern int mono_test_many_int_arguments (int a, int b, int c, int d, int e,
 							       int f, int g, int h, int i, int j);
 	[DllImport ("libtest", EntryPoint="mono_test_many_short_arguments")]
-	public static extern int mono_test_many_short_arguments (short a, short b, short c, short d, short e,
+	public static extern short mono_test_many_short_arguments (short a, short b, short c, short d, short e,
 								 short f, short g, short h, short i, short j);
 	[DllImport ("libtest", EntryPoint="mono_test_many_byte_arguments")]
-	public static extern int mono_test_many_byte_arguments (byte a, byte b, byte c, byte d, byte e,
-								byte f, byte g, byte h, byte i, byte j);
+	public static extern sbyte mono_test_many_byte_arguments (sbyte a, sbyte b, sbyte c, sbyte d, sbyte e,
+								sbyte f, sbyte g, sbyte h, sbyte i, sbyte j);
 	[DllImport ("libtest", EntryPoint="mono_test_many_float_arguments")]
 	public static extern float mono_test_many_float_arguments (float a, float b, float c, float d, float e,
 								float f, float g, float h, float i, float j);

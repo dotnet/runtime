@@ -712,7 +712,7 @@ unwinder_unwind_frame (Unwinder *unwinder,
 
 		/* Process debugger invokes */
 		/* The DEBUGGER_INVOKE should be returned before the first interpreter frame for the invoke */
-		if (unwinder->last_frame_addr > (gpointer)(*lmf)) {
+		if (unwinder->last_frame_addr < (gpointer)(*lmf)) {
 			if (((gsize)(*lmf)->previous_lmf) & 2) {
 				MonoLMFExt *ext = (MonoLMFExt*)(*lmf);
 				if (ext->debugger_invoke) {
@@ -1251,6 +1251,7 @@ typedef struct {
 	MonoFrameSummary *frames;
 	int num_frames;
 	int max_frames;
+	MonoStackHash *hashes;
 } MonoSummarizeUserData;
 
 static void
@@ -1301,6 +1302,38 @@ mono_get_portable_ip (intptr_t in_ip, intptr_t *out_ip, char *out_name)
 	return TRUE;
 }
 
+static intptr_t
+summarize_offset_free_hash (intptr_t accum, MonoFrameSummary *frame)
+{
+	if (!frame->is_managed)
+		return accum;
+
+	// See: mono_ptrarray_hash
+	intptr_t hash_accum = accum;
+
+	// The assembly and the method token, no offsets
+	hash_accum += mono_metadata_str_hash (frame->str_descr);
+	hash_accum += frame->managed_data.token;
+
+	return hash_accum;
+}
+
+static intptr_t
+summarize_offset_rich_hash (intptr_t accum, MonoFrameSummary *frame)
+{
+	// See: mono_ptrarray_hash
+	intptr_t hash_accum = accum;
+
+	if (!frame->is_managed) {
+		hash_accum += frame->unmanaged_data.ip;
+	} else {
+		hash_accum += mono_metadata_str_hash (frame->str_descr);
+		hash_accum += frame->managed_data.token;
+		hash_accum += frame->managed_data.native_offset;
+	}
+
+	return hash_accum;
+}
 
 static gboolean
 summarize_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
@@ -1341,6 +1374,9 @@ summarize_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 		mono_debug_free_source_location (location);
 	}
 
+	ud->hashes->offset_free_hash = summarize_offset_free_hash (ud->hashes->offset_free_hash, dest);
+	ud->hashes->offset_rich_hash = summarize_offset_rich_hash (ud->hashes->offset_rich_hash, dest);
+
 	return FALSE;
 }
 
@@ -1353,6 +1389,7 @@ mono_summarize_stack (MonoDomain *domain, MonoThreadSummary *out, MonoContext *c
 	data.max_frames = MONO_MAX_SUMMARY_FRAMES;
 	data.num_frames = 0;
 	data.frames = out->managed_frames;
+	data.hashes = &out->hashes;
 
 	// FIXME: collect stack pointer for both and sort frames by SP
 	// so people can see relative ordering of both managed and unmanaged frames.
@@ -2845,6 +2882,55 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 }
 
 #ifndef MONO_CROSS_COMPILE
+static gchar
+conv_ascii_char (gchar s)
+{
+	if (s < 0x20)
+		return '.';
+	if (s > 0x7e)
+		return '.';
+	return s;
+}
+
+static void
+xxd_mem (gpointer d, int len)
+{
+	guint8 *data = (guint8 *) d;
+
+	for (int off = 0; off < len; off += 0x10) {
+		g_printerr ("%p  ", data + off);
+
+		for (int i = 0; i < 0x10; i++) {
+			if ((i + off) >= len)
+				g_printerr ("   ");
+			else
+				g_printerr ("%02x ", data [off + i]);
+		}
+
+		g_printerr (" ");
+
+		for (int i = 0; i < 0x10; i++) {
+			if ((i + off) >= len)
+				g_printerr (" ");
+			else
+				g_printerr ("%c", conv_ascii_char (data [off + i]));
+		}
+
+		g_printerr ("\n");
+	}
+}
+
+static void
+dump_memory_around_ip (void *ctx)
+{
+#ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
+	MonoContext mctx;
+	mono_sigctx_to_monoctx (ctx, &mctx);
+	gpointer native_ip = MONO_CONTEXT_GET_IP (&mctx);
+	g_printerr ("Memory around native instruction pointer (%p):\n", native_ip);
+	xxd_mem (((guint8 *) native_ip) - 0x10, 0x40);
+#endif
+}
 
 static void print_process_map (void)
 {
@@ -2858,12 +2944,14 @@ static void print_process_map (void)
 	}
 
 	mono_runtime_printf_err ("/proc/self/maps:");
+	const int max_lines = 25;
+	int i = 0;
 
-	while (fgets (line, sizeof (line), fp)) {
+	while (fgets (line, sizeof (line), fp) && i++ < max_lines) {
 		// strip newline
-		size_t len = strlen (line) - 1;
-		if (len >= 0 && line [len] == '\n')
-			line [len] = '\0';
+		size_t len = strlen (line);
+		if (len > 0 && line [len - 1] == '\n')
+			line [len - 1] = '\0';
 
 		mono_runtime_printf_err ("%s", line);
 	}
@@ -2954,6 +3042,8 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 
 	print_process_map ();
 
+	dump_memory_around_ip (ctx);
+
 #ifdef HAVE_BACKTRACE_SYMBOLS
  {
 	void *array [256];
@@ -2978,6 +3068,9 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 		int status;
 		pid_t crashed_pid = getpid ();
 
+#if defined(TARGET_OSX)
+		MonoStackHash hashes;
+#endif
 		gchar *output = NULL;
 		MonoContext mctx;
 		if (ctx) {
@@ -2999,7 +3092,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 			if (!leave) {
 				mono_sigctx_to_monoctx (ctx, &mctx);
 				// Do before forking
-				if (!mono_threads_summarize (&mctx, &output))
+				if (!mono_threads_summarize (&mctx, &output, &hashes))
 					g_assert_not_reached ();
 			}
 
@@ -3043,9 +3136,9 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 					exit (1);
 				}
 
-				intptr_t thread_pointer = (intptr_t) MONO_CONTEXT_GET_SP (&mctx);
+				char *full_version = mono_get_runtime_build_info ();
 
-				mono_merp_invoke (crashed_pid, thread_pointer, signal, output);
+				mono_merp_invoke (crashed_pid, signal, output, &hashes, full_version);
 
 				exit (1);
 			}

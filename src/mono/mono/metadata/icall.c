@@ -7616,16 +7616,8 @@ mono_TypedReference_MakeTypedReferenceInternal (MonoObject *target, MonoArray *f
 
 	for (i = 0; i < mono_array_length (fields); ++i) {
 		f = mono_array_get (fields, MonoReflectionField*, i);
-		if (f == NULL) {
-			mono_error_set_argument_null (error, "field", "");
-			mono_error_set_pending_exception (error);
-			return res;
-		}
-		if (f->field->parent != klass) {
-			mono_error_set_argument (error, "field", "");
-			mono_error_set_pending_exception (error);
-			return res;
-		}
+		g_assert (f);
+
 		if (i == 0)
 			p = (guint8*)target + f->field->offset;
 		else

@@ -26,7 +26,7 @@ static GPtrArray *ptrarray_alloc_and_fill(guint *item_count)
 		g_ptr_array_add(array, (gpointer)items[i]);
 	}
 
-	if(item_count != NULL) {
+	if (item_count != NULL) {
 		*item_count = i;
 	}
 	
@@ -37,26 +37,27 @@ static guint guess_size(guint length)
 {
 	guint size = 1;
 
-	while(size < length) {
+	while (size < length) {
 		size <<= 1;
 	}
 
 	return size;
 }
 
-RESULT ptrarray_alloc()
+static RESULT
+ptrarray_alloc (void)
 {
 	GPtrArrayPriv *array;
 	guint i;
 	
 	array = (GPtrArrayPriv *)ptrarray_alloc_and_fill(&i);
 	
-	if(array->size != guess_size(array->len)) {
+	if (array->size != guess_size(array->len)) {
 		return FAILED("Size should be %d, but it is %d", 
 			guess_size(array->len), array->size);
 	}
 	
-	if(array->len != i) {
+	if (array->len != i) {
 		return FAILED("Expected %d node(s) in the array", i);
 	}
 	
@@ -65,14 +66,15 @@ RESULT ptrarray_alloc()
 	return OK;
 }
 
-RESULT ptrarray_for_iterate()
+static
+RESULT ptrarray_for_iterate (void)
 {
 	GPtrArray *array = ptrarray_alloc_and_fill(NULL);
 	guint i;
 
-	for(i = 0; i < array->len; i++) {
+	for (i = 0; i < array->len; i++) {
 		char *item = (char *)g_ptr_array_index(array, i);
-		if(item != items[i]) {
+		if (item != items[i]) {
 			return FAILED(
 				"Expected item at %d to be %s, but it was %s", 
 				i, items[i], item);
@@ -87,23 +89,25 @@ RESULT ptrarray_for_iterate()
 static gint foreach_iterate_index = 0;
 static char *foreach_iterate_error = NULL;
 
-void foreach_callback(gpointer data, gpointer user_data)
+static void
+foreach_callback (gpointer data, gpointer user_data)
 {
 	char *item = (char *)data;
 	const char *item_cmp = items[foreach_iterate_index++];
 
-	if(foreach_iterate_error != NULL) {
+	if (foreach_iterate_error != NULL) {
 		return;
 	}
 
-	if(item != item_cmp) {
+	if (item != item_cmp) {
 		foreach_iterate_error = FAILED(
 			"Expected item at %d to be %s, but it was %s", 
 				foreach_iterate_index - 1, item_cmp, item);
 	}
 }
 
-RESULT ptrarray_foreach_iterate()
+static RESULT
+ptrarray_foreach_iterate (void)
 {
 	GPtrArray *array = ptrarray_alloc_and_fill(NULL);
 	
@@ -117,7 +121,8 @@ RESULT ptrarray_foreach_iterate()
 	return foreach_iterate_error;
 }
 
-RESULT ptrarray_set_size()
+static RESULT
+ptrarray_set_size (void)
 {
 	GPtrArray *array = g_ptr_array_new();
 	guint i, grow_length = 50;
@@ -126,16 +131,16 @@ RESULT ptrarray_set_size()
 	g_ptr_array_add(array, (gpointer)items[1]);
 	g_ptr_array_set_size(array, grow_length);
 
-	if(array->len != grow_length) {
+	if (array->len != grow_length) {
 		return FAILED("Array length should be 50, it is %d", array->len);
-	} else if(array->pdata[0] != items[0]) {
+	} else if (array->pdata[0] != items[0]) {
 		return FAILED("Item 0 was overwritten, should be %s", items[0]);
-	} else if(array->pdata[1] != items[1]) {
+	} else if (array->pdata[1] != items[1]) {
 		return FAILED("Item 1 was overwritten, should be %s", items[1]);
 	}
 
-	for(i = 2; i < array->len; i++) {
-		if(array->pdata[i] != NULL) {
+	for (i = 2; i < array->len; i++) {
+		if (array->pdata[i] != NULL) {
 			return FAILED("Item %d is not NULL, it is %p", i, array->pdata[i]);
 		}
 	}
@@ -145,7 +150,8 @@ RESULT ptrarray_set_size()
 	return OK;
 }
 
-RESULT ptrarray_remove_index()
+static RESULT
+ptrarray_remove_index (void)
 {
 	GPtrArray *array;
 	guint i;
@@ -153,14 +159,14 @@ RESULT ptrarray_remove_index()
 	array = ptrarray_alloc_and_fill(&i);
 	
 	g_ptr_array_remove_index(array, 0);
-	if(array->pdata[0] != items[1]) {
+	if (array->pdata[0] != items[1]) {
 		return FAILED("First item is not %s, it is %s", items[1],
 			array->pdata[0]);
 	}
 
 	g_ptr_array_remove_index(array, array->len - 1);
 	
-	if(array->pdata[array->len - 1] != items[array->len]) {
+	if (array->pdata[array->len - 1] != items[array->len]) {
 		return FAILED("Last item is not %s, it is %s", 
 			items[array->len - 2], array->pdata[array->len - 1]);
 	}
@@ -170,7 +176,8 @@ RESULT ptrarray_remove_index()
 	return OK;
 }
 
-RESULT ptrarray_remove_index_fast()
+static RESULT
+ptrarray_remove_index_fast (void)
 {
 	GPtrArray *array;
 	guint i;
@@ -178,13 +185,13 @@ RESULT ptrarray_remove_index_fast()
 	array = ptrarray_alloc_and_fill(&i);
 
 	g_ptr_array_remove_index_fast(array, 0);
-	if(array->pdata[0] != items[array->len]) {
+	if (array->pdata[0] != items[array->len]) {
 		return FAILED("First item is not %s, it is %s", items[array->len],
 			array->pdata[0]);
 	}
 
 	g_ptr_array_remove_index_fast(array, array->len - 1);
-	if(array->pdata[array->len - 1] != items[array->len - 1]) {
+	if (array->pdata[array->len - 1] != items[array->len - 1]) {
 		return FAILED("Last item is not %s, it is %s",
 			items[array->len - 1], array->pdata[array->len - 1]);
 	}
@@ -194,7 +201,8 @@ RESULT ptrarray_remove_index_fast()
 	return OK;
 }
 
-RESULT ptrarray_remove()
+static RESULT
+ptrarray_remove (void)
 {
 	GPtrArray *array;
 	guint i;
@@ -203,15 +211,15 @@ RESULT ptrarray_remove()
 
 	g_ptr_array_remove(array, (gpointer)items[7]);
 
-	if(!g_ptr_array_remove(array, (gpointer)items[4])) {
+	if (!g_ptr_array_remove(array, (gpointer)items[4])) {
 		return FAILED("Item %s not removed", items[4]);
 	}
 
-	if(g_ptr_array_remove(array, (gpointer)items[4])) {
+	if (g_ptr_array_remove(array, (gpointer)items[4])) {
 		return FAILED("Item %s still in array after removal", items[4]);
 	}
 
-	if(array->pdata[array->len - 1] != items[array->len + 1]) {
+	if (array->pdata[array->len - 1] != items[array->len + 1]) {
 		return FAILED("Last item in GPtrArray not correct");
 	}
 
@@ -220,18 +228,20 @@ RESULT ptrarray_remove()
 	return OK;
 }
 
-static gint ptrarray_sort_compare(gconstpointer a, gconstpointer b)
+static gint
+ptrarray_sort_compare (gconstpointer a, gconstpointer b)
 {
 	gchar *stra = *(gchar **) a;
 	gchar *strb = *(gchar **) b;
 	return strcmp(stra, strb);
 }
 
-RESULT ptrarray_sort()
+static RESULT
+ptrarray_sort (void)
 {
 	GPtrArray *array = g_ptr_array_new();
 	guint i;
-	gchar *letters [] = { "A", "B", "C", "D", "E" };
+	static gchar * const letters [] = { (char*)"A", (char*)"B", (char*)"C", (char*)"D", (char*)"E" };
 	
 	g_ptr_array_add(array, letters[0]);
 	g_ptr_array_add(array, letters[1]);
@@ -241,8 +251,8 @@ RESULT ptrarray_sort()
 	
 	g_ptr_array_sort(array, ptrarray_sort_compare);
 
-	for(i = 0; i < array->len; i++) {
-		if(array->pdata[i] != letters[i]) {
+	for (i = 0; i < array->len; i++) {
+		if (array->pdata[i] != letters[i]) {
 			return FAILED("Array out of order, expected %s got %s at position %d",
 				letters [i], (gchar *) array->pdata [i], i);
 		}
@@ -253,7 +263,8 @@ RESULT ptrarray_sort()
 	return OK;
 }
 
-static gint ptrarray_sort_compare_with_data (gconstpointer a, gconstpointer b, gpointer user_data)
+static gint
+ptrarray_sort_compare_with_data (gconstpointer a, gconstpointer b, gpointer user_data)
 {
 	gchar *stra = *(gchar **) a;
 	gchar *strb = *(gchar **) b;
@@ -264,11 +275,12 @@ static gint ptrarray_sort_compare_with_data (gconstpointer a, gconstpointer b, g
 	return strcmp(stra, strb);
 }
 
-RESULT ptrarray_sort_with_data ()
+static RESULT
+ptrarray_sort_with_data (void)
 {
 	GPtrArray *array = g_ptr_array_new();
 	guint i;
-	gchar *letters [] = { "A", "B", "C", "D", "E" };
+	static gchar * const letters [] = { (char*)"A", (char*)"B", (char*)"C", (char*)"D", (char*)"E" };
 
 	g_ptr_array_add(array, letters[4]);
 	g_ptr_array_add(array, letters[1]);
@@ -276,10 +288,10 @@ RESULT ptrarray_sort_with_data ()
 	g_ptr_array_add(array, letters[0]);
 	g_ptr_array_add(array, letters[3]);
 
-	g_ptr_array_sort_with_data(array, ptrarray_sort_compare_with_data, "this is the data for qsort");
+	g_ptr_array_sort_with_data(array, ptrarray_sort_compare_with_data, (char*)"this is the data for qsort");
 
-	for(i = 0; i < array->len; i++) {
-		if(array->pdata[i] != letters[i]) {
+	for (i = 0; i < array->len; i++) {
+		if (array->pdata[i] != letters[i]) {
 			return FAILED("Array out of order, expected %s got %s at position %d",
 				letters [i], (gchar *) array->pdata [i], i);
 		}
@@ -290,10 +302,11 @@ RESULT ptrarray_sort_with_data ()
 	return OK;
 }
 
-RESULT ptrarray_remove_fast()
+static RESULT
+ptrarray_remove_fast (void)
 {
 	GPtrArray *array = g_ptr_array_new();
-	gchar *letters [] = { "A", "B", "C", "D", "E" };
+	static gchar * const letters [] = { (char*)"A", (char*)"B", (char*)"C", (char*)"D", (char*)"E" };
 	
 	if (g_ptr_array_remove_fast (array, NULL))
 		return FAILED ("Removing NULL succeeded");
@@ -345,5 +358,3 @@ static Test ptrarray_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(ptrarray_tests_init, ptrarray_tests)
-
-

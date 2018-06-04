@@ -63,18 +63,6 @@ typedef struct  {
 	gboolean framework_facade_assembly;
 } AssemblyVersionMap;
 
-/* Flag bits for assembly_names_equal_flags (). */
-typedef enum {
-	/* Default comparison: all fields must match */
-	ANAME_EQ_NONE = 0x0,
-	/* Don't compare public key token */
-	ANAME_EQ_IGNORE_PUBKEY = 0x1,
-	/* Don't compare the versions */
-	ANAME_EQ_IGNORE_VERSION = 0x2,
-
-	ANAME_EQ_MASK = 0x3
-} AssemblyNameEqFlags;
-
 /* the default search path is empty, the first slot is replaced with the computed value */
 static const char*
 default_path [] = {
@@ -358,6 +346,10 @@ static MonoAssembly*
 mono_assembly_load_full_gac_base_default (MonoAssemblyName *aname, const char *basedir, MonoAssemblyContextKind asmctx, MonoImageOpenStatus *status);
 static MonoAssembly*
 mono_assembly_load_full_nodomain (MonoAssemblyName *aname, MonoAssemblyContextKind asmctx, MonoImageOpenStatus *status);
+static MonoAssembly*
+chain_redirections_loadfrom (MonoImage *image, MonoImageOpenStatus *status);
+static MonoAssembly*
+mono_problematic_image_reprobe (MonoImage *image, MonoImageOpenStatus *status);
 
 static MonoBoolean
 mono_assembly_is_in_gac (const gchar *filanem);
@@ -366,9 +358,6 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 
 static MonoAssembly*
 prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refonly);
-
-static gboolean
-assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, AssemblyNameEqFlags flags);
 
 /* Assembly name matching */
 static gboolean
@@ -646,16 +635,32 @@ check_policy_versions (MonoAssemblyBindingInfo *info, MonoAssemblyName *name)
 gboolean
 mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 {
-	return assembly_names_equal_flags (l, r, ANAME_EQ_NONE);
+	return mono_assembly_names_equal_flags (l, r, MONO_ANAME_EQ_NONE);
 }
 
+/**
+ * mono_assembly_names_equal_flags:
+ * \param l first assembly name
+ * \param r second assembly name
+ * \param flags flags that affect what is compared.
+ *
+ * Compares two \c MonoAssemblyName instances and returns whether they are equal.
+ *
+ * This compares the simple names and cultures and optionally the versions and
+ * public key tokens, depending on the \c flags.
+ *
+ * \returns TRUE if both assembly names are equal.
+ */
 gboolean
-assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, AssemblyNameEqFlags flags)
+mono_assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, MonoAssemblyNameEqFlags flags)
 {
 	if (!l->name || !r->name)
 		return FALSE;
 
-	if (strcmp (l->name, r->name))
+	if ((flags & MONO_ANAME_EQ_IGNORE_CASE) != 0 && g_strcasecmp (l->name, r->name))
+		return FALSE;
+
+	if ((flags & MONO_ANAME_EQ_IGNORE_CASE) == 0 && strcmp (l->name, r->name))
 		return FALSE;
 
 	if (l->culture && r->culture && strcmp (l->culture, r->culture))
@@ -663,11 +668,11 @@ assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, AssemblyNa
 
 	if ((l->major != r->major || l->minor != r->minor ||
 	     l->build != r->build || l->revision != r->revision) &&
-	    (flags & ANAME_EQ_IGNORE_VERSION) == 0)
+	    (flags & MONO_ANAME_EQ_IGNORE_VERSION) == 0)
 		if (! ((l->major == 0 && l->minor == 0 && l->build == 0 && l->revision == 0) || (r->major == 0 && r->minor == 0 && r->build == 0 && r->revision == 0)))
 			return FALSE;
 
-	if (!l->public_key_token [0] || !r->public_key_token [0] || (flags & ANAME_EQ_IGNORE_PUBKEY) != 0)
+	if (!l->public_key_token [0] || !r->public_key_token [0] || (flags & MONO_ANAME_EQ_IGNORE_PUBKEY) != 0)
 		return TRUE;
 
 	if (!mono_public_tokens_are_equal (l->public_key_token, r->public_key_token))
@@ -2157,7 +2162,7 @@ mono_assembly_open_predicate (const char *filename, MonoAssemblyContextKind asmc
 	if (asmctx == MONO_ASMCTX_LOADFROM || asmctx == MONO_ASMCTX_INDIVIDUAL) {
 		MonoAssembly *redirected_asm = NULL;
 		MonoImageOpenStatus new_status = MONO_IMAGE_OK;
-		if ((redirected_asm = mono_assembly_binding_applies_to_image (image, &new_status))) {
+		if ((redirected_asm = chain_redirections_loadfrom (image, &new_status))) {
 			mono_image_close (image);
 			image = redirected_asm->image;
 			mono_image_addref (image); /* so that mono_image_close, below, has something to do */
@@ -2354,6 +2359,40 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
 }
 
 /**
+ * chain_redirections_loadfrom:
+ * \param image a MonoImage that we wanted to load using LoadFrom context
+ * \param status set if there was an error opening the redirected image
+ *
+ * Check if we need to open a different image instead of the given one for some reason.
+ * Returns NULL and sets status to \c MONO_IMAGE_OK if the given image was good.
+ *
+ * Otherwise returns the assembly that we opened instead or sets status if
+ * there was a problem opening the redirected image.
+ *
+ */
+MonoAssembly*
+chain_redirections_loadfrom (MonoImage *image, MonoImageOpenStatus *out_status)
+{
+	MonoImageOpenStatus status = MONO_IMAGE_OK;
+	MonoAssembly *redirected = NULL;
+
+	redirected = mono_assembly_binding_applies_to_image (image, &status);
+	if (redirected || status != MONO_IMAGE_OK) {
+		*out_status = status;
+		return redirected;
+	}
+
+	redirected = mono_problematic_image_reprobe (image, &status);
+	if (redirected || status != MONO_IMAGE_OK) {
+		*out_status = status;
+		return redirected;
+	}
+
+	*out_status = MONO_IMAGE_OK;
+	return NULL;
+}
+
+/**
  * mono_assembly_binding_applies_to_image:
  * \param image The image whose assembly name we should check
  * \param status sets on error;
@@ -2410,6 +2449,57 @@ mono_assembly_binding_applies_to_image (MonoImage* image, MonoImageOpenStatus *s
 	return result_ass;
 }
 
+/**
+ * mono_problematic_image_reprobe:
+ * \param image A MonoImage
+ * \param status set on error
+ *
+ * If the given image is problematic for mono (see image.c), then try to load
+ * by assembly name in the default context (which should succeed with Mono's
+ * own implementations of those assemblies).
+ *
+ * Returns NULL and sets status to MONO_IMAGE_OK if no redirect is needed.
+ *
+ * Otherwise returns the assembly we were redirected to, or NULL and sets a
+ * non-ok status on failure.
+ *
+ * IMPORTANT NOTE: Don't call this if \c image was found by probing the search
+ * path, you will end up in a loop and a stack overflow.
+ */
+MonoAssembly*
+mono_problematic_image_reprobe (MonoImage *image, MonoImageOpenStatus *status)
+{
+	if (G_LIKELY (!mono_is_problematic_image (image))) {
+		*status = MONO_IMAGE_OK;
+		return NULL;
+	}
+	MonoAssemblyName probed_aname;
+	if (!mono_assembly_fill_assembly_name_full (image, &probed_aname, TRUE)) {
+		*status = MONO_IMAGE_IMAGE_INVALID;
+		return NULL;
+	}
+	if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
+		char *probed_fullname = mono_stringify_assembly_name (&probed_aname);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Requested to load from problematic image %s, probing instead for assembly with name %s", image->name, probed_fullname);
+		g_free (probed_fullname);
+	}
+	const char *new_basedir = NULL;
+	MonoAssemblyContextKind new_asmctx = MONO_ASMCTX_DEFAULT;
+	MonoAssembly *new_requesting = NULL;
+	MonoImageOpenStatus new_status = MONO_IMAGE_OK;
+	// Note: this interacts with mono_image_open_a_lot (). If the path from
+	// which we tried to load the problematic image is among the probing
+	// paths, the MonoImage will be in the hash of loaded images and we
+	// would just get it back again here, except for the code there that
+	// mitigates the situation.  Instead
+	MonoAssembly *result_ass = mono_assembly_load_full_internal (&probed_aname, new_requesting, new_basedir, new_asmctx, &new_status);
+
+	if (! (result_ass && new_status == MONO_IMAGE_OK)) {
+		*status = new_status;
+	}
+	mono_assembly_name_free (&probed_aname);
+	return result_ass;
+}
 /**
  * mono_assembly_open:
  * \param filename Opens the assembly pointed out by this name
@@ -3866,14 +3956,14 @@ framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *ca
 	if (vmap) {
 		if (!vmap->framework_facade_assembly) {
 			/* If the wanted name is a framework assembly, it's enough for the name/version/culture to match.  If the assembly was remapped, the public key token is likely unrelated. */
-			gboolean result = assembly_names_equal_flags (wanted_name, candidate_name, ANAME_EQ_IGNORE_PUBKEY);
+			gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_IGNORE_PUBKEY);
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring the public key token)", result ? "match, returning TRUE" : "don't match, returning FALSE");
 			return result;
 		} else {
 			/* For facades, the name and public key token should
 			 * match, but the version doesn't matter as long as the
 			 * candidate is not older. */
-			gboolean result = assembly_names_equal_flags (wanted_name, candidate_name, ANAME_EQ_IGNORE_VERSION);
+			gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_IGNORE_VERSION);
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring version)", result ? "match" : "don't match, returning FALSE");
 			if (result) {
 				// compare major of candidate and wanted

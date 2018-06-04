@@ -488,10 +488,10 @@ mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec,
  /*
  * Returns the index that a token refers to
  */
-#define mono_metadata_token_index(token) ((token & 0xffffff))
+#define mono_metadata_token_index(token) ((token) & 0xffffff)
 
 
-#define mono_metadata_token_code(token) ((token & 0xff000000))
+#define mono_metadata_token_code(token) ((token) & 0xff000000)
 
 MONO_API uint32_t mono_metadata_token_from_dor (uint32_t dor_index);
 

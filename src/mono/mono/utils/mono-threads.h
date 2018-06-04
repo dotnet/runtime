@@ -265,6 +265,12 @@ typedef struct {
 	gint32 thread_wait_info;
 #endif
 
+	/*
+	 * This is where we store tools tls data so it follows our lifecycle and doesn't depends on posix tls cleanup ordering
+	 *
+	 * TODO support multiple values by multiple tools
+	 */
+	void *tools_data;
 } MonoThreadInfo;
 
 typedef struct {
@@ -379,7 +385,7 @@ mono_threads_get_runtime_callbacks (void);
 MONO_API int
 mono_thread_info_register_small_id (void);
 
-THREAD_INFO_TYPE *
+MONO_API THREAD_INFO_TYPE *
 mono_thread_info_attach (void);
 
 MONO_API void
@@ -399,6 +405,13 @@ mono_thread_info_is_exiting (void);
 
 THREAD_INFO_TYPE *
 mono_thread_info_current (void);
+
+MONO_API gboolean
+mono_thread_info_set_tools_data (void *data);
+
+MONO_API void*
+mono_thread_info_get_tools_data (void);
+
 
 THREAD_INFO_TYPE*
 mono_thread_info_current_unchecked (void);

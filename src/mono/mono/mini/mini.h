@@ -130,6 +130,8 @@
 #endif
 
 #define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+//XXX this ignores if t is byref
+#define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
 typedef struct
 {
@@ -317,6 +319,18 @@ enum {
 
 #endif
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#define EMIT_NEW_X86_LEA(cfg,dest,sr1,sr2,shift,imm) do { \
+		MONO_INST_NEW (cfg, dest, OP_X86_LEA); \
+		(dest)->dreg = alloc_ireg_mp ((cfg)); \
+		(dest)->sreg1 = (sr1); \
+		(dest)->sreg2 = (sr2); \
+		(dest)->inst_imm = (imm); \
+		(dest)->backend.shift_amount = (shift); \
+		MONO_ADD_INS ((cfg)->cbb, (dest)); \
+	} while (0)
+#endif
+
 typedef struct MonoInstList MonoInstList;
 typedef struct MonoInst MonoInst;
 typedef struct MonoCallInst MonoCallInst;
@@ -474,7 +488,7 @@ struct MonoBasicBlock {
 	/* Caches the result of uselessness calculation during optimize_branches */
 	guint not_useless : 1;
 	/* Whenever the decompose_array_access_opts () pass needs to process this bblock */
-	guint has_array_access : 1;
+	guint needs_decompose : 1;
 	/* Whenever this bblock is extended, ie. it has branches inside it */
 	guint extended : 1;
 	/* Whenever this bblock contains a OP_JUMP_TABLE instruction */
@@ -1348,6 +1362,7 @@ typedef struct {
 	guint            gsharedvt : 1;
 	guint            r4fp : 1;
 	guint            llvm_only : 1;
+	guint            domainvar_inited : 1;
 	int              r4_stack_type;
 	gpointer         debug_info;
 	guint32          lmf_offset;
@@ -1517,7 +1532,7 @@ typedef enum {
 	MONO_CFG_HAS_FPOUT    = 1 << 5, /* there are fp values passed in int registers */
 	MONO_CFG_HAS_SPILLUP  = 1 << 6, /* spill var slots are allocated from bottom to top */
 	MONO_CFG_HAS_CHECK_THIS  = 1 << 7,
-	MONO_CFG_HAS_ARRAY_ACCESS = 1 << 8,
+	MONO_CFG_NEEDS_DECOMPOSE = 1 << 8,
 	MONO_CFG_HAS_TYPE_CHECK = 1 << 9
 } MonoCompileFlags;
 
@@ -1547,6 +1562,7 @@ typedef struct {
 	gint32 optimized_divisions;
 	gint32 methods_with_llvm;
 	gint32 methods_without_llvm;
+	gint32 methods_with_interp;
 	char *max_ratio_method;
 	char *biggest_method;
 	gdouble jit_method_to_ir;
@@ -2094,6 +2110,11 @@ void              mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb);
 MonoInst         *mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, const char * exname);
 void              mono_remove_critical_edges (MonoCompile *cfg);
 gboolean          mono_is_regsize_var (MonoType *t);
+int               mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass);
+int               mini_method_check_context_used (MonoCompile *cfg, MonoMethod *method);
+void              mini_type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2);
+void              mini_set_inline_failure (MonoCompile *cfg, const char *msg);
+MonoInst*         mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used);
 void              mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int soffset, int size, int align);
 void              mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, int align);
 void              mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native);
@@ -2108,6 +2129,11 @@ void              mini_emit_memory_store (MonoCompile *cfg, MonoType *type, Mono
 void              mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoInst *size, int ins_flag);
 void              mini_emit_memory_init_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *value, MonoInst *size, int ins_flag);
 void              mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native, int ins_flag);
+MonoInst*         mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboolean safety_checks);
+MonoInst*         mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
+MonoInst*         mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
+MonoInst*         mini_emit_inst_for_sharable_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
+MonoInst*         mini_handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, int enum_val_reg, MonoInst *enum_flag);
 
 MonoMethod*       mini_get_memcpy_method (void);
 MonoMethod*       mini_get_memset_method (void);

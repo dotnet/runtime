@@ -3,14 +3,14 @@
 #include <glib.h>
 #include "test.h"
 
-RESULT
-test_queue_push ()
+static RESULT
+test_queue_push (void)
 {
 	GQueue *queue = g_queue_new ();
 
-	g_queue_push_head (queue, "foo");
-	g_queue_push_head (queue, "bar");
-	g_queue_push_head (queue, "baz");
+	g_queue_push_head (queue, (char*)"foo");
+	g_queue_push_head (queue, (char*)"bar");
+	g_queue_push_head (queue, (char*)"baz");
 
 	if (queue->length != 3)
 		return FAILED ("push failed");
@@ -41,14 +41,14 @@ test_queue_push ()
 	return OK;
 }
 
-RESULT
-test_queue_push_tail ()
+static RESULT
+test_queue_push_tail (void)
 {
 	GQueue *queue = g_queue_new ();
 
-	g_queue_push_tail (queue, "baz");
-	g_queue_push_tail (queue, "bar");
-	g_queue_push_tail (queue, "foo");
+	g_queue_push_tail (queue, (char*)"baz");
+	g_queue_push_tail (queue, (char*)"bar");
+	g_queue_push_tail (queue, (char*)"foo");
 
 	if (queue->length != 3)
 		return FAILED ("push failed");
@@ -79,15 +79,15 @@ test_queue_push_tail ()
 	return OK;
 }
 
-RESULT
-test_queue_pop ()
+static RESULT
+test_queue_pop (void)
 {
 	GQueue *queue = g_queue_new ();
 	gpointer data;
 
-	g_queue_push_head (queue, "foo");
-	g_queue_push_head (queue, "bar");
-	g_queue_push_head (queue, "baz");
+	g_queue_push_head (queue, (char*)"foo");
+	g_queue_push_head (queue, (char*)"bar");
+	g_queue_push_head (queue, (char*)"baz");
 
 	data = g_queue_pop_head (queue);
 	if (strcmp ("baz", data))
@@ -107,9 +107,9 @@ test_queue_pop ()
 	if (queue->length != 0)
 		return FAILED ("expect 0 length .");
 
-	g_queue_push_head (queue, "foo");
-	g_queue_push_head (queue, "bar");
-	g_queue_push_head (queue, "baz");
+	g_queue_push_head (queue, (char*)"foo");
+	g_queue_push_head (queue, (char*)"bar");
+	g_queue_push_head (queue, (char*)"baz");
 
 	g_queue_pop_head (queue);
 
@@ -135,8 +135,8 @@ test_queue_pop ()
 	return OK;
 }
 
-RESULT
-test_queue_new ()
+static RESULT
+test_queue_new (void)
 {
 	GQueue *queue = g_queue_new ();
 
@@ -153,15 +153,15 @@ test_queue_new ()
 	return OK;
 }
 
-RESULT
-test_queue_is_empty ()
+static RESULT
+test_queue_is_empty (void)
 {
 	GQueue *queue = g_queue_new ();
 
 	if (g_queue_is_empty (queue) == FALSE)
 		return FAILED ("new queue should be empty");
 
-	g_queue_push_head (queue, "foo");
+	g_queue_push_head (queue, (char*)"foo");
 
 	if (g_queue_is_empty (queue) == TRUE)
 		return FAILED ("expected TRUE");
@@ -181,4 +181,3 @@ static Test queue_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(queue_tests_init, queue_tests)
-

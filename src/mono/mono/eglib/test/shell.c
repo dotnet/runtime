@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include "test.h"
 
-RESULT
-test_shell_argv1 ()
+static RESULT
+test_shell_argv1 (void)
 {
 	GError *gerror;
 	gint argc;
@@ -101,8 +101,8 @@ test_shell_argv1 ()
 	return OK;
 }
 
-RESULT
-test_shell_argv2 ()
+static RESULT
+test_shell_argv2 (void)
 {
 	GError *gerror;
 	gint argc;
@@ -182,8 +182,8 @@ test_shell_argv2 ()
 	return OK;
 }
 
-RESULT
-test_shell_argv3 ()
+static RESULT
+test_shell_argv3 (void)
 {
 	GError *gerror;
 	gint argc;
@@ -240,14 +240,14 @@ test_shell_argv3 ()
 }
 
 // This was the 2.8 showstopper error
-RESULT
-test_shell_argv4 ()
+static RESULT
+test_shell_argv4 (void)
 {
 	GError *gerror;
 	gint argc;
 	gchar **argv;
 	gboolean ret;
-	char *str = "'/usr/bin/gnome-terminal' -e \"bash -c 'read -p \\\"Press any key to continue...\\\" -n1;'\"";
+	const char *str = "'/usr/bin/gnome-terminal' -e \"bash -c 'read -p \\\"Press any key to continue...\\\" -n1;'\"";
 
 	argv = NULL;
 	argc = 0;
@@ -273,14 +273,14 @@ test_shell_argv4 ()
 }
 
 // This is https://bugzilla.novell.com/show_bug.cgi?id=655896
-RESULT
-test_shell_argv5 ()
+static RESULT
+test_shell_argv5 (void)
 {
 	GError *gerror;
 	gint argc;
 	gchar **argv;
 	gboolean ret;
-	char *str = "echo \"foo\",\"bar\"";
+	const char *str = "echo \"foo\",\"bar\"";
 
 	argv = NULL;
 	argc = 0;
@@ -303,8 +303,8 @@ test_shell_argv5 ()
 	return OK;
 }
 
-RESULT
-test_quote ()
+static RESULT
+test_quote (void)
 {
 	if (strcmp (g_shell_quote ("foo"), "'foo'"))
 		return FAILED ("Should return 'foo'");
@@ -328,4 +328,3 @@ static Test shell_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(shell_tests_init, shell_tests)
-

@@ -194,9 +194,9 @@ public:
 					  } );
 
 #if LLVM_API_VERSION >= 500
-		ModuleHandleT m = CompileLayer.addModule(M,
-												 std::move(Resolver)).get ();
-		return m;
+		auto m = CompileLayer.addModule(M, std::move(Resolver));
+		g_assert (!!m);
+		return m.get ();
 #else
 		return CompileLayer.addModuleSet(singletonSet(M),
 										  make_unique<MonoJitMemoryManager>(),

@@ -48,7 +48,7 @@
 extern gint global_passed, global_tests;
 static gchar *last_result = NULL;
 
-gboolean 
+static gboolean 
 run_test(Test *test, gchar **result_out)
 {
 	gchar *result; 
@@ -86,7 +86,7 @@ run_group(Group *group, gint iterations, gboolean quiet,
 	start_time_group = get_timestamp();
 
 	for(i = 0; tests[i].name != NULL; i++) {
-		gchar *result = "";
+		gchar *result = (char*)"";
 		gboolean iter_pass, run;
 	
 		iter_pass = FALSE;
@@ -190,7 +190,7 @@ FAILED(const gchar *format, ...)
 }
 
 gdouble
-get_timestamp()
+get_timestamp (void)
 {
 	/* FIXME: We should use g_get_current_time here */
 	GTimeVal res;
@@ -270,6 +270,3 @@ eg_strfreev (gchar **str_array)
 	}
 	g_free (orig);
 }
-
-
-

@@ -2,8 +2,8 @@
 #include <glib.h>
 #include "test.h"
 
-RESULT
-test_memory_zero_size_allocations ()
+static RESULT
+test_memory_zero_size_allocations (void)
 {
 	gpointer p;
 
@@ -30,11 +30,9 @@ test_memory_zero_size_allocations ()
         return OK;
 }
 
-
 static Test memory_tests [] = {
         {       "zero_size_allocations", test_memory_zero_size_allocations},
         {NULL, NULL}
 };
 
 DEFINE_TEST_GROUP_INIT(memory_tests_init, memory_tests)
-

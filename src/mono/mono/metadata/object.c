@@ -72,9 +72,6 @@ mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s, MonoError *error);
 static void
 array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size);
 
-static MonoMethod*
-class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is_proxy, MonoError *error);
-
 /* Class lazy loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (pointer, "System.Reflection", "Pointer")
 static GENERATE_GET_CLASS_WITH_CACHE (remoting_services, "System.Runtime.Remoting", "RemotingServices")
@@ -2858,18 +2855,17 @@ mono_object_handle_get_virtual_method (MonoObjectHandle obj, MonoMethod *method,
 		klass = remote_class->proxy_class;
 		is_proxy = TRUE;
 	}
-	return class_get_virtual_method (klass, method, is_proxy, error);
+	return mono_class_get_virtual_method (klass, method, is_proxy, error);
 }
 
-static MonoMethod*
-class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is_proxy, MonoError *error)
+MonoMethod*
+mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is_proxy, MonoError *error)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 	error_init (error);
 
-
 	if (!is_proxy && ((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)))
-			return method;
+		return method;
 
 	mono_class_setup_vtable (klass);
 	MonoMethod **vtable = m_class_get_vtable (klass);

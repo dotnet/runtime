@@ -1,5 +1,8 @@
 include $(top_srcdir)/mk/common.mk
 
+# FIXME
+#SUBDIRS = test
+
 noinst_LTLIBRARIES = libeglib.la
 
 AM_CFLAGS = $(WERROR_CFLAGS)

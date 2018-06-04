@@ -702,6 +702,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, gco
 
 	MonoContext ctx;
 	memset (&ctx, 0, sizeof (MonoContext));
+	MONO_CONTEXT_SET_SP (&ctx, frame);
 
 	/*
 	 * Call the JIT EH code. The EH code will call back to us using:
@@ -4565,7 +4566,8 @@ array_constructed:
 			ip ++;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_END_ABORT_PROT)
-			mono_threads_end_abort_protected_block ();
+			if (mono_threads_end_abort_protected_block ())
+				frame->ex = mono_thread_interruption_checkpoint ();
 			ip ++;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ENDFINALLY)
@@ -4582,7 +4584,7 @@ array_constructed:
 				goto main_loop;
 			}
 			if (frame->ex)
-				goto handle_catch;
+				THROW_EX (frame->ex, ip);
 			ves_abort();
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LEAVE) /* Fall through */
@@ -5205,80 +5207,7 @@ array_constructed:
 			goto main_loop;
 		}
 
-		/*
-		 * If an exception is set, we need to execute the fault handler, too,
-		 * otherwise, we continue normally.
-		 */
-		if (frame->ex)
-			goto handle_fault;
 		ves_abort();
-	}
-	handle_fault:
-	{
-		int i;
-		guint32 ip_offset;
-		MonoExceptionClause *clause;
-		GSList *old_list = finally_ips;
-		
-#if DEBUG_INTERP
-		if (tracing)
-			g_print ("* Handle fault\n");
-#endif
-		ip_offset = frame->ip - rtm->code;
-
-		for (i = 0; i < rtm->num_clauses; ++i) {
-			clause = &rtm->clauses [i];
-			if (clause->flags == MONO_EXCEPTION_CLAUSE_FAULT && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
-				ip = rtm->code + clause->handler_offset;
-				finally_ips = g_slist_prepend (finally_ips, (gpointer) ip);
-#if DEBUG_INTERP
-				if (tracing)
-					g_print ("* Executing handler at IL_%04x\n", clause->handler_offset);
-#endif
-			}
-		}
-
-		if (old_list != finally_ips && finally_ips) {
-			ip = finally_ips->data;
-			finally_ips = g_slist_remove (finally_ips, ip);
-			sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
-			vt_sp = (unsigned char *) sp + rtm->stack_size;
-			goto main_loop;
-		}
-	}
-	handle_catch:
-	{
-		/*
-		 * If the handler for the exception was found in this method, we jump
-		 * to it right away, otherwise we return and let the caller run
-		 * the finally, fault and catch blocks.
-		 * This same code should be present in the endfault opcode, but it
-		 * is corrently not assigned in the ECMA specs: LAMESPEC.
-		 */
-		if (frame->ex_handler) {
-#if DEBUG_INTERP
-			if (tracing)
-				g_print ("* Executing handler at IL_%04x\n", frame->ex_handler->handler_offset);
-#endif
-			ip = rtm->code + frame->ex_handler->handler_offset;
-			sp = frame->stack;
-			vt_sp = (unsigned char *) sp + rtm->stack_size;
-			sp->data.p = frame->ex;
-			++sp;
-			goto main_loop;
-		}
-		goto check_lmf;
-	}
-
-check_lmf:
-	{
-		/* make sure we don't miss to pop a LMF */
-		MonoLMF *lmf= mono_get_lmf ();
-		if (lmf && (gsize) lmf->previous_lmf & 2) {
-			MonoLMFExt *ext = (MonoLMFExt *) lmf;
-			if (ext->interp_exit && ext->interp_exit_data == frame->parent)
-				interp_pop_lmf (ext);
-		}
 	}
 
 exit_frame:

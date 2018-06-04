@@ -5872,4 +5872,3 @@ retry:
 	g_assert (result != NULL);
 	return result;
 }
-

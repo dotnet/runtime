@@ -225,7 +225,7 @@ MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 	MonoContext mctx;
 	gchar *output = NULL;
 	mono_sigctx_to_monoctx (ctx, &mctx);
-	if (!mono_threads_summarize (&mctx, &output))
+	if (!mono_threads_summarize (&mctx, &output, NULL))
 		g_assert_not_reached ();
 
 	// Only the dumping-supervisor thread exits mono_thread_summarize
@@ -863,11 +863,13 @@ native_stack_with_gdb (pid_t crashed_pid, const char **argv, FILE *commands, cha
 	fprintf (commands, "attach %ld\n", (long) crashed_pid);
 	fprintf (commands, "info threads\n");
 	fprintf (commands, "thread apply all bt\n");
-	for (int i = 0; i < 32; ++i) {
-		fprintf (commands, "info registers\n");
-		fprintf (commands, "info frame\n");
-		fprintf (commands, "info locals\n");
-		fprintf (commands, "up\n");
+	if (mini_get_debug_options ()->verbose_gdb) {
+		for (int i = 0; i < 32; ++i) {
+			fprintf (commands, "info registers\n");
+			fprintf (commands, "info frame\n");
+			fprintf (commands, "info locals\n");
+			fprintf (commands, "up\n");
+		}
 	}
 
 	return TRUE;
@@ -892,11 +894,13 @@ native_stack_with_lldb (pid_t crashed_pid, const char **argv, FILE *commands, ch
 	fprintf (commands, "process attach --pid %ld\n", (long) crashed_pid);
 	fprintf (commands, "thread list\n");
 	fprintf (commands, "thread backtrace all\n");
-	for (int i = 0; i < 32; ++i) {
-		fprintf (commands, "reg read\n");
-		fprintf (commands, "frame info\n");
-		fprintf (commands, "frame variable\n");
-		fprintf (commands, "up\n");
+	if (mini_get_debug_options ()->verbose_gdb) {
+		for (int i = 0; i < 32; ++i) {
+			fprintf (commands, "reg read\n");
+			fprintf (commands, "frame info\n");
+			fprintf (commands, "frame variable\n");
+			fprintf (commands, "up\n");
+		}
 	}
 	fprintf (commands, "detach\n");
 	fprintf (commands, "quit\n");

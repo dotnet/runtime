@@ -6,21 +6,23 @@
 int foreach_count = 0;
 int foreach_fail = 0;
 
-void foreach (gpointer key, gpointer value, gpointer user_data)
+static void
+foreach (gpointer key, gpointer value, gpointer user_data)
 {
 	foreach_count++;
 	if (GPOINTER_TO_INT (user_data) != 'a')
 		foreach_fail = 1;
 }
 
-RESULT hash_t1 (void)
+static RESULT
+hash_t1 (void)
 {
 	GHashTable *t = g_hash_table_new (g_str_hash, g_str_equal);
 
 	foreach_count = 0;
 	foreach_fail = 0;
-	g_hash_table_insert (t, "hello", "world");
-	g_hash_table_insert (t, "my", "god");
+	g_hash_table_insert (t, (char*)"hello", (char*)"world");
+	g_hash_table_insert (t, (char*)"my", (char*)"god");
 
 	g_hash_table_foreach (t, foreach, GINT_TO_POINTER('a'));
 	if (foreach_count != 2)
@@ -28,15 +30,15 @@ RESULT hash_t1 (void)
 	if (foreach_fail)
 		return FAILED("failed to pass the user-data to foreach");
 	
-	if (!g_hash_table_remove (t, "my"))
+	if (!g_hash_table_remove (t, (char*)"my"))
 		return FAILED ("did not find known key");
 	if (g_hash_table_size (t) != 1)
 		return FAILED ("unexpected size");
-	g_hash_table_insert(t, "hello", "moon");
-	if (strcmp (g_hash_table_lookup (t, "hello"), "moon") != 0)
+	g_hash_table_insert(t, (char*)"hello", (char*)"moon");
+	if (strcmp (g_hash_table_lookup (t, (char*)"hello"), (char*)"moon") != 0)
 		return FAILED ("did not replace world with moon");
 		
-	if (!g_hash_table_remove (t, "hello"))
+	if (!g_hash_table_remove (t, (char*)"hello"))
 		return FAILED ("did not find known key");
 	if (g_hash_table_size (t) != 0)
 		return FAILED ("unexpected size");
@@ -45,12 +47,14 @@ RESULT hash_t1 (void)
 	return OK;
 }
 
-RESULT hash_t2 (void)
+static RESULT
+hash_t2 (void)
 {
 	return OK;
 }
 
-RESULT hash_default (void)
+static RESULT
+hash_default (void)
 {
 	GHashTable *hash = g_hash_table_new (NULL, NULL);
 
@@ -61,7 +65,7 @@ RESULT hash_default (void)
 	return NULL;
 }
 
-RESULT
+static RESULT
 hash_null_lookup (void)
 {
 	GHashTable *hash = g_hash_table_new (NULL, NULL);
@@ -97,7 +101,8 @@ counter (gpointer key, gpointer value, gpointer user_data)
 	(*counter)++;
 }
 
-RESULT hash_grow (void)
+static RESULT
+hash_grow (void)
 {
 	GHashTable *hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 	int i, count = 0;
@@ -131,7 +136,8 @@ RESULT hash_grow (void)
 	return NULL;
 }
 
-RESULT hash_iter (void)
+static RESULT
+hash_iter (void)
 {
 #if !defined(GLIB_MAJOR_VERSION) || GLIB_CHECK_VERSION(2, 16, 0)
 	GHashTable *hash = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, NULL);
@@ -174,4 +180,3 @@ static Test hashtable_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(hashtable_tests_init, hashtable_tests)
-

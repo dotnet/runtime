@@ -3698,7 +3698,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		mono_decompose_soft_float (cfg);
 #endif
 	MONO_TIME_TRACK (mono_jit_stats.jit_decompose_vtype_opts, mono_decompose_vtype_opts (cfg));
-	if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS) {
+	if (cfg->flags & MONO_CFG_NEEDS_DECOMPOSE) {
 		MONO_TIME_TRACK (mono_jit_stats.jit_decompose_array_access_opts, mono_decompose_array_access_opts (cfg));
 		mono_cfg_dump_ir (cfg, "decompose_array_access_opts");
 	}
@@ -3801,7 +3801,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			cfg->disable_llvm = TRUE;
 		}
 
-		if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS)
+		if (cfg->flags & MONO_CFG_NEEDS_DECOMPOSE)
 			mono_decompose_array_access_opts (cfg);
 
 		if (!cfg->disable_llvm)
@@ -3965,33 +3965,6 @@ mono_cfg_set_exception_invalid_program (MonoCompile *cfg, char *msg)
 
 #endif /* DISABLE_JIT */
 
-static MonoJitInfo*
-create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
-{
-	MonoDomain *domain = mono_get_root_domain ();
-	MonoJitInfo *jinfo;
-	guint8 *uw_info;
-	guint32 info_len;
-
-	if (info->uw_info) {
-		uw_info = info->uw_info;
-		info_len = info->uw_info_len;
-	} else {
-		uw_info = mono_unwind_ops_encode (info->unwind_ops, &info_len);
-	}
-
-	jinfo = (MonoJitInfo *)mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO);
-	jinfo->d.method = wrapper;
-	jinfo->code_start = info->code;
-	jinfo->code_size = info->code_size;
-	jinfo->unwind_info = mono_cache_unwind_info (uw_info, info_len);
-
-	if (!info->uw_info)
-		g_free (uw_info);
-
-	return jinfo;
-}
-
 GTimer *mono_time_track_start ()
 {
 	return g_timer_new ();
@@ -4046,124 +4019,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	MonoMethod *prof_method, *shared;
 
 	error_init (error);
-
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		MonoMethod *nm;
-		MonoMethodPInvoke* piinfo = (MonoMethodPInvoke *) method;
-
-		if (!piinfo->addr) {
-			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-				piinfo->addr = mono_lookup_internal_call (method);
-			else if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)
-#ifdef HOST_WIN32
-				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono in modules loaded from byte arrays. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), m_class_get_image (method->klass)->name);
-#else
-				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono on this platform. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), m_class_get_image (method->klass)->name);
-#endif
-			else
-				mono_lookup_pinvoke_call (method, NULL, NULL);
-		}
-		nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
-		gpointer compiled_method = mono_compile_method_checked (nm, error);
-		return_val_if_nok (error, NULL);
-		code = mono_get_addr_from_ftnptr (compiled_method);
-		jinfo = mono_jit_info_table_find (target_domain, code);
-		if (!jinfo)
-			jinfo = mono_jit_info_table_find (mono_domain_get (), code);
-		if (jinfo)
-			MONO_PROFILER_RAISE (jit_done, (method, jinfo));
-		return code;
-	} else if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
-		const char *name = method->name;
-		char *full_name, *msg;
-		MonoMethod *nm;
-
-		if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) {
-			if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
-				MonoJitICallInfo *mi = mono_find_jit_icall_by_name ("ves_icall_mono_delegate_ctor");
-				g_assert (mi);
-				/*
-				 * We need to make sure this wrapper
-				 * is compiled because it might end up
-				 * in an (M)RGCTX if generic sharing
-				 * is enabled, and would be called
-				 * indirectly.  If it were a
-				 * trampoline we'd try to patch that
-				 * indirect call, which is not
-				 * possible.
-				 */
-				return mono_get_addr_from_ftnptr ((gpointer)mono_icall_get_wrapper_full (mi, TRUE));
-			} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-				if (mono_llvm_only) {
-					nm = mono_marshal_get_delegate_invoke (method, NULL);
-					gpointer compiled_ptr = mono_compile_method_checked (nm, error);
-					mono_error_assert_ok (error);
-					return mono_get_addr_from_ftnptr (compiled_ptr);
-				}
-				return mono_create_delegate_trampoline (target_domain, method->klass);
-			} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
-				nm = mono_marshal_get_delegate_begin_invoke (method);
-				gpointer compiled_ptr = mono_compile_method_checked (nm, error);
-				mono_error_assert_ok (error);
-				return mono_get_addr_from_ftnptr (compiled_ptr);
-			} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
-				nm = mono_marshal_get_delegate_end_invoke (method);
-				gpointer compiled_ptr = mono_compile_method_checked (nm, error);
-				mono_error_assert_ok (error);
-				return mono_get_addr_from_ftnptr (compiled_ptr);
-			}
-		}
-
-		full_name = mono_method_full_name (method, TRUE);
-		msg = g_strdup_printf ("Unrecognizable runtime implemented method '%s'", full_name);
-		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", msg);
-		mono_error_set_exception_instance (error, ex);
-		g_free (full_name);
-		g_free (msg);
-		return NULL;
-	}
-
-	if (method->wrapper_type == MONO_WRAPPER_UNKNOWN) {
-		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
-		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
-			static MonoTrampInfo *in_tinfo, *out_tinfo;
-			MonoTrampInfo *tinfo;
-			MonoJitInfo *jinfo;
-			gboolean is_in = info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN;
-
-			if (is_in && in_tinfo)
-				return in_tinfo->code;
-			else if (!is_in && out_tinfo)
-				return out_tinfo->code;
-
-			/*
-			 * This is a special wrapper whose body is implemented in assembly, like a trampoline. We use a wrapper so EH
-			 * works.
-			 * FIXME: The caller signature doesn't match the callee, which might cause problems on some platforms
-			 */
-			if (mono_ee_features.use_aot_trampolines)
-				mono_aot_get_trampoline_full (is_in ? "gsharedvt_trampoline" : "gsharedvt_out_trampoline", &tinfo);
-			else
-				mono_arch_get_gsharedvt_trampoline (&tinfo, FALSE);
-			jinfo = create_jit_info_for_trampoline (method, tinfo);
-			mono_jit_info_table_add (mono_get_root_domain (), jinfo);
-			if (is_in)
-				in_tinfo = tinfo;
-			else
-				out_tinfo = tinfo;
-			return tinfo->code;
-		}
-	}
-
-	if (mono_aot_only) {
-		char *fullname = mono_method_full_name (method, TRUE);
-		mono_error_set_execution_engine (error, "Attempting to JIT compile method '%s' while running in aot-only mode. See https://docs.microsoft.com/xamarin/ios/internals/limitations for more information.\n", fullname);
-		g_free (fullname);
-
-		return NULL;
-	}
 
 	jit_timer = mono_time_track_start ();
 	cfg = mini_method_compile (method, opt, target_domain, JIT_FLAG_RUN_CCTORS, 0, -1);

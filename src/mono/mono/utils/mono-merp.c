@@ -25,6 +25,34 @@
 #include <mach/mach_traps.h>
 #include <servers/bootstrap.h>
 
+#include <metadata/locales.h>
+#include <mini/jit.h>
+
+#if defined(HAVE_SYS_UTSNAME_H)
+#include <sys/utsname.h>
+#endif
+
+// To get the apple machine model
+#include <sys/param.h>
+#include <sys/sysctl.h>
+
+static const char *
+os_version_string (void)
+{
+#ifdef HAVE_SYS_UTSNAME_H
+	struct utsname name;
+
+	memset (&name, 0, sizeof (name)); // WSL does not always nul terminate.
+
+	if (uname (&name) >= 0)
+		return g_strdup_printf ("%s", name.release);
+#endif
+	return "";
+}
+
+// To get the path of the running process
+#include <libproc.h>
+
 typedef enum {
 	MerpArchInvalid = 0,
 
@@ -51,33 +79,26 @@ typedef enum
 } MERPExcType;
 
 typedef struct {
-	pid_t pidArg; // Process ID of crashed app (required for crash log generation)
-	MerpArch archArg; // Arch, MacOS only, bails out if not found also required for bucketization. (required)
-	uintptr_t capabilitiesArg; // App capabilities (optional) i.e. recover files, etc.
-	uintptr_t threadArg; // Stack Pointer of crashing thread. (required for crash log generation) Used for identifying crashing thread on crawl back when generating crashreport.txt
-	uintptr_t timeArg; // Total runtime (optional)
+	const char *bundleIDArg; // App Bundle ID (required for bucketization)
+	const char *versionArg; // App Version (required for bucketization)
 
+	MerpArch archArg; // Arch, MacOS only, bails out if not found also required for bucketization. (required)
 	MERPExcType exceptionArg; // Exception type (refer to merpcommon.h and mach/exception_types.h for more info (optional)
 
-	const char *bundleIDArg; // App Bundle ID (required for bucketization)
-	const char *signatureArg; // App Bundle Signature (required) 
-
-	const char *versionArg; // App Version (required for bucketization)
-	const char *devRegionArg; // App region (optional)
-	const char *uiLidArg; // Application LCID aka Language ID (optional for bucketization)
-
 	const char *serviceNameArg; // This is the Bootstrap service name that MERP GUI will create to receive mach_task_self on a port created. Bails out if MERP GUI fails to receive mach_task_self from the crashed app. (Required for crash log generation)
+	const char *servicePathArg;
 
-	const char *appLoggerName; // App loger name (optional)
-	const char *appLogSessionUUID; // App Session ID (optional but very useful)
-	gboolean isOfficeApplication; // Is office application (1 = True 0 = false). Needs to be 1 to continue. (Required by design)
-	gboolean isObjCException; // Is objectiveC Exception. (optional for crash log generation)
-	size_t memVirt; // Virtual memory (pagination) at the time of crash (optional)
-	size_t memRes; // Physical memory allocated at the time of the crash (optional)
-	const char *treSessionID; // Rules engine session ID (optional)
-	const char *exceptionCodeArg; // Exception code (optional)
-	const char *exceptionAddressArg; // Exception address (optional)
-	gboolean isAppRegisteredWithMAU; // Was this app installed with Microsoft Autoupdate (1 = True 0 = false)
+	const char *moduleName;
+	const char *moduleVersion;
+	size_t moduleOffset;
+
+	const char *osVersion; 
+	int uiLidArg; // Application LCID 
+
+	const char systemModel [100];
+	const char *systemManufacturer;
+
+	MonoStackHash hashes;
 } MERPStruct;
 
 typedef struct {
@@ -92,22 +113,14 @@ typedef struct {
 
 static MerpOptions config;
 
-static void
-append_merp_arch (GString *output, MerpArch arch)
+static const char *
+get_merp_bitness (MerpArch arch)
 {
 	switch (arch) {
 		case MerpArchx86_64:
-			g_string_append_printf (output, "01000007\n");
-			break;
+			return "x64";
 		case MerpArchx86:
-			g_string_append_printf (output, "00000007\n");
-			break;
-		case MerpArchPPC:
-			g_string_append_printf (output, "00000012\n");
-			break;
-		case MerpArchPPC64:
-			g_string_append_printf (output, "01000012\n");
-			break;
+			return "x32";
 		default:
 			g_assert_not_reached ();
 	}
@@ -129,44 +142,33 @@ get_merp_arch (void)
 #endif
 }
 
-static void
-append_merp_exctype (GString *output, MERPExcType exc)
+static const char *
+get_merp_exctype (MERPExcType exc)
 {
 	switch (exc) {
 		case MERP_EXC_FORCE_QUIT:
-			g_string_append_printf (output, "10000000\n");
-			break;
+			return "0x10000000";
 		case MERP_EXC_SIGSEGV:
-			g_string_append_printf (output, "20000000\n");
-			break;
+			return "0x20000000";
 		case MERP_EXC_SIGABRT:
-			g_string_append_printf (output, "30000000\n");
-			break;
+			return "0x30000000";
 		case MERP_EXC_SIGSYS:
-			g_string_append_printf (output, "40000000\n");
-			break;
+			return "0x40000000";
 		case MERP_EXC_SIGILL:
-			g_string_append_printf (output, "50000000\n");
-			break;
+			return "0x50000000";
 		case MERP_EXC_SIGBUS:
-			g_string_append_printf (output, "60000000\n");
-			break;
+			return "0x60000000";
 		case MERP_EXC_SIGFPE:
-			g_string_append_printf (output, "70000000\n");
-			break;
+			return "0x70000000";
 		case MERP_EXC_SIGTRAP:
-			g_string_append_printf (output, "80000000\n");
-			break;
+			return "0x03000000";
 		case MERP_EXC_SIGKILL:
-			g_string_append_printf (output, "90000000\n");
-			break;
+			return "0x04000000";
 		case MERP_EXC_HANG: 
-			g_string_append_printf (output, "02000000\n");
-			break;
+			return "0x02000000";
 		case MERP_EXC_NONE:
 			// Exception type is optional
-			g_string_append_printf (output, "\n");
-			break;
+			return "";
 		default:
 			g_assert_not_reached ();
 	}
@@ -194,148 +196,46 @@ parse_exception_type (const char *signal)
 }
 
 static void
-print_string_or_blank (GString *output, const char *maybeString)
-{
-	if (maybeString)
-		g_string_append_printf (output, "%s", maybeString);
-	g_string_append_printf (output, "\n");
-}
-
-static void
-print_pointer_param (GString *output, intptr_t ptr)
-{
-	// The format is arch-specific
-#if defined(TARGET_AMD64)
-	g_string_append_printf (output, "%016llx\n", ptr);
-#elif defined(TARGET_X86)
-	g_string_append_printf (output, "%08x\n", ptr);
-#endif
-}
-
-static void
-print_memory_fraction (GString *output, size_t mem_bytes)
-{
-	if (!mem_bytes) {
-		g_string_append_printf (output, "\n");
-		return;
-	}
-
-	mem_bytes >>= 10; // convert from bytes to kb
-	float frac = (float) mem_bytes / 1024.0; // kb to mb
-
-	g_string_append_printf (output, "%f\n", frac);
-}
-
-static void
 mono_encode_merp (GString *output, MERPStruct *merp)
 {
-	// Format of integers seems to be 8 digits with padding
-	g_assert (merp->pidArg);
-	g_string_append_printf (output, "%.8x\n", merp->pidArg);
+	// Provided by icall
+	g_string_append_printf (output, "ApplicationBundleId: %s\n", merp->bundleIDArg);
+	g_string_append_printf (output, "ApplicationVersion: %s\n", merp->versionArg);
 
-	g_assert (merp->archArg);
-	append_merp_arch (output, merp->archArg);
+	g_string_append_printf (output, "ApplicationBitness: %s\n", get_merp_bitness (merp->archArg));
 
-	g_string_append_printf (output, "%.8x\n", merp->capabilitiesArg);
-	print_pointer_param (output, merp->threadArg);
-	print_pointer_param (output, merp->timeArg);
+	// Provided by icall
+	g_string_append_printf (output, "ApplicationName: %s\n", merp->serviceNameArg);
 
-	append_merp_exctype (output, merp->exceptionArg);
+	// When embedded, sometimes this really doesn't make sense.
+	// FIXME: On OSX, could figure this out for just VS4Mac.
+	g_string_append_printf (output, "ApplicationPath: %s\n", merp->servicePathArg ? merp->servicePathArg : "missing");
 
-	g_assert (merp->bundleIDArg);
-	g_assert (merp->signatureArg);
-	g_assert (merp->versionArg);
-	g_string_append_printf (output, "%s\n%s\n%s\n", merp->bundleIDArg, merp->signatureArg, merp->versionArg);
+	// Provided by icall
+	g_string_append_printf (output, "BlameModuleName: %s\n", merp->moduleName);
+	g_string_append_printf (output, "BlameModuleVersion: %s\n", merp->moduleVersion);
+	g_string_append_printf (output, "BlameModuleOffset: 0x%x\n", merp->moduleOffset);
 
-	print_string_or_blank (output, merp->devRegionArg);
-	print_string_or_blank (output, merp->uiLidArg);
+	g_string_append_printf (output, "ExceptionType: %s\n", get_merp_exctype (merp->exceptionArg));
 
-	g_assert (merp->serviceNameArg);
-	g_string_append_printf (output, "%s\n", merp->serviceNameArg);
+	g_string_append_printf (output, "StackChecksum: 0x%x\n", merp->hashes.offset_free_hash);
+	g_string_append_printf (output, "StackHash: 0x%x\n", merp->hashes.offset_rich_hash);
 
-	print_string_or_blank (output, merp->appLoggerName);
-	print_string_or_blank (output, merp->appLogSessionUUID);
-
-	g_string_append_printf (output, "%d\n", merp->isOfficeApplication ? 1 : 0);
-
-	print_string_or_blank (output, merp->isObjCException ? "1" : NULL);
-
-	print_memory_fraction (output, merp->memRes);
-	print_memory_fraction (output, merp->memVirt);
-
-	print_string_or_blank (output, merp->treSessionID);
-	print_string_or_blank (output, merp->exceptionCodeArg);
-	print_string_or_blank (output, merp->exceptionAddressArg);
-	print_string_or_blank (output, merp->isAppRegisteredWithMAU ? "1" : "0");
-}
-
-// Darwin-only for now
-static void
-mono_arch_memory_info (size_t *resOut, size_t *vmOut)
-{
-	struct task_basic_info t_info;
-	memset (&t_info, 0, sizeof (t_info));
-	mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
-	task_name_t task = mach_task_self ();
-
-	task_info(task, TASK_BASIC_INFO, (task_info_t) &t_info, &t_info_count);
-
-	*resOut = (size_t) t_info.resident_size;
-	*vmOut = (size_t) t_info.virtual_size;
+	// Provided by icall
+	g_string_append_printf (output, "OSVersion: %s\n", merp->osVersion);
+	g_string_append_printf (output, "LanguageID: 0x%x\n", merp->uiLidArg);
+	g_string_append_printf (output, "SystemManufacturer: %s\n", merp->systemManufacturer);
+	g_string_append_printf (output, "SystemModel: %s\n", merp->systemModel);
 }
 
 static void
-write_file (GString *str, const char *fileName)
+write_file (const char *payload, const char *fileName)
 {
 	FILE *outfile = fopen (fileName, "w");
 	if (!outfile)
 		g_error ("Could not create file %s\n", fileName);
-	fwrite (str->str, sizeof (gchar), str->len, outfile);
+	fprintf (outfile, "%s\n", payload);
 	fclose (outfile);
-}
-
-/*
- * This struct is the wire protocol between MERP
- * and mono
- */
-
-typedef struct {
-	mach_msg_header_t head;
-
-	/* start of the merp-specific data */
-	mach_msg_body_t msgh_body;
-	mach_msg_port_descriptor_t task;
-	/* end of the merp-specific data */
-
-} MerpRequest;
-
-static void
-send_mach_message (mach_port_t *mach_port)
-{
-	task_name_t task = mach_task_self ();
-
-	// Setup request
-	MerpRequest req;
-	memset (&req, 0, sizeof (req));
-	req.head.msgh_bits = MACH_MSGH_BITS_COMPLEX | MACH_MSGH_BITS(19, 0);
-	req.task.name = task;
-	req.task.disposition = 19;
-	req.task.type = MACH_MSG_PORT_DESCRIPTOR;
-
-	/* msgh_size passed as argument */
-	req.head.msgh_remote_port = *mach_port;
-	req.head.msgh_local_port = MACH_PORT_NULL;
-	req.head.msgh_id = 400;
-
-	req.msgh_body.msgh_descriptor_count = 1;
-
-	// Send port to merp GUI
-	if (config.log)
-		fprintf (stderr, "Sending message to MERP\n");
-	mach_msg_return_t res = mach_msg (&req.head, MACH_SEND_MSG|MACH_MSG_OPTION_NONE, (mach_msg_size_t)sizeof(MerpRequest), 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
-	g_assert (res == KERN_SUCCESS);
-	if (config.log)
-		fprintf (stderr, "Successfully sent message to MERP\n");
 }
 
 static void
@@ -348,126 +248,119 @@ connect_to_merp (const char *serviceName, mach_port_t *merp_port)
 	// // FIXME error handling
 	g_assert (status == 0);
 
-	// Register our service name with this task
-	// BOOTSTRAP_UNKNOWN_SERVICE is returned while the service doesn't exist.
-	// We rely on MERP to make the service with serviceName for us
-	kern_return_t kernErr = bootstrap_look_up(bootstrap_port, serviceName, merp_port);
-	while (TRUE) {
-		for (int i = 0; BOOTSTRAP_UNKNOWN_SERVICE == kernErr && i < 5000; i++)
-			kernErr = bootstrap_look_up(bootstrap_port, serviceName, merp_port);
-
-		if (kernErr != BOOTSTRAP_UNKNOWN_SERVICE)
-			break;
-
-		if (config.log)
-			fprintf (stderr, "Merp: Service not registered with name %s, resetting counter after 10s sleep\n", serviceName);
-		sleep(10);
-	}
-
-	/*// FIXME error handling*/
-	g_assert (KERN_SUCCESS == kernErr);
 }
 
 static void
-mono_merp_send (GString *str, const char *serviceName)
+mono_merp_send (const char *merpFile, const char *crashLog)
 {
 	// Write struct to magic file location
 	// This registers our mach service so we can connect
 	// to the merp process
 	const char *home = g_get_home_dir ();
-	char *merpParamPath = g_strdup_printf ("%s/Library/Group Containers/UBF8T346G9.ms/MERP.Params.txt", home);
-	write_file (str, merpParamPath);
+	char *merpParamPath = g_strdup_printf ("%s/Library/Group Containers/UBF8T346G9.ms/MERP.uploadparams.txt", home);
+	write_file (merpFile, merpParamPath);
 	g_free (merpParamPath);
 
-	mach_port_t merpPort = MACH_PORT_NULL;
+	char *crashLogPath = g_strdup_printf ("%s/Library/Group Containers/UBF8T346G9.ms/lastcrashlog.txt", home);
+	write_file (crashLog, crashLogPath);
+	g_free (crashLogPath);
 
-	// Start merpGui application
-	// Assign to merpPort the port that merpGui opens
-	// Connecting to the service with name serviceName 
-	// that merpGUI starts
-	connect_to_merp (serviceName, &merpPort);
+	if (config.log) {
+		if (merpFile != NULL)
+			fprintf (stderr, "Crashing MERP File:\n####\n%s\n####\n", merpFile);
+		if (crashLog != NULL)
+			fprintf (stderr, "Crashing Dump File:\n####\n%s\n####\n", crashLog);
+	}
 
-	// Send this mach task to MERP over the port
-	send_mach_message (&merpPort);
+	// // Create process to launch merp gui application
+	const char *argvOpen[] = {"/usr/bin/open", "-a", config.merpGUIPath, NULL};
+	int status = posix_spawn(NULL, "/usr/bin/open", NULL, NULL, (char *const*)(argvOpen), NULL);
 
-	// After we resume from the suspend, we are done
-	// We're spinning down the process shortly.
-	// This thread exits, and the crashing thread's
-	// waitpid on this thread ends.
+	// // FIXME error handling
+	if (status == 0)
+		g_error ("Could not start merp\n");
+
 	return;
 }
 
 static void
-mono_init_merp (const char *serviceName, const char *signal, pid_t crashed_pid, intptr_t thread_pointer, MERPStruct *merp)
+get_apple_model (char *buffer, size_t max_length) 
+{
+	size_t sz = 0;
+
+	// Get the number of bytes to copy
+	sysctlbyname("hw.model", NULL, &sz, NULL, 0);
+
+	if (sz > max_length) {
+		buffer[0] = '\0';
+		return;
+	}
+
+	sysctlbyname("hw.model", buffer, &sz, NULL, 0);
+}
+
+
+static void
+mono_init_merp (const intptr_t crashed_pid, const char *signal, MonoStackHash *hashes, MERPStruct *merp, const char *version)
 {
 	g_assert (mono_merp_enabled ());
 
-	merp->pidArg = crashed_pid;
-	merp->archArg = get_merp_arch ();
-	merp->capabilitiesArg = 0x0;
-
-	merp->threadArg = thread_pointer;
-
-	// FIXME: time the runtime?
-	merp->timeArg = 0x0;
-
-	merp->exceptionArg = parse_exception_type (signal);
-
 	// If these aren't set, icall wasn't made
 	// don't do merp? / don't set the variable to use merp;
-	merp->bundleIDArg = config.appBundleID;
-	merp->signatureArg = config.appSignature;
+	g_assert (config.appBundleID);
+	g_assert (config.appVersion);
+	merp->bundleIDArg = config.appSignature;
 	merp->versionArg = config.appVersion;
 
-	// FIXME: Do we want these?
-	merp->devRegionArg = NULL;
-	merp->uiLidArg = NULL;
+	merp->archArg = get_merp_arch ();
+	merp->exceptionArg = parse_exception_type (signal);
 
-	merp->serviceNameArg = serviceName;
+	merp->serviceNameArg = config.appBundleID;
 
-	// FIXME: Do we want these?
-	merp->appLoggerName = NULL;
-	merp->appLogSessionUUID = NULL;
+	// FIXME: Not really a posix way to associated a process with a single executable
+	// path? Linux gets bogged down in /proc
+	merp->servicePathArg = NULL;
+	if (crashed_pid) {
+		size_t servicePathSize = sizeof (gchar) * 1200;
+		merp->servicePathArg = g_malloc0 (servicePathSize);
+		int result = proc_pidpath (crashed_pid, (void *) merp->servicePathArg, 1200);
+		if (result <= 0) {
+			g_free ((void *) merp->servicePathArg);
+			merp->servicePathArg = NULL;
+		}
+	}
 
-	// Should be set for our usage as per document
-	merp->isOfficeApplication = TRUE;
-	merp->isObjCException = FALSE;
+	merp->moduleName = "Mono Exception";
+	merp->moduleVersion = version;
 
-	mono_arch_memory_info (&merp->memRes, &merp->memVirt);
+	merp->moduleOffset = 0;
 
-	// No sessions right now
-	merp->treSessionID = NULL;
-	merp->exceptionCodeArg = NULL;
-	merp->exceptionAddressArg = NULL;
+	ERROR_DECL (error);
+	merp->uiLidArg = ves_icall_System_Threading_Thread_current_lcid (error);
+	mono_error_assert_ok (error);
 
-	// Not certain? Maybe expose to config options
-	merp->isAppRegisteredWithMAU = TRUE;
+	merp->osVersion = os_version_string ();
+
+	// FIXME: THis is apple-only for now
+	merp->systemManufacturer = "apple";
+	get_apple_model ((char *) merp->systemModel, sizeof (merp->systemModel));
+
+	merp->hashes = *hashes;
 }
 
 void
-mono_merp_invoke (pid_t crashed_pid, intptr_t thread_pointer, const char *signal, const char *dump_file)
+mono_merp_invoke (const intptr_t crashed_pid, const char *signal, const char *dump_file, MonoStackHash *hashes, char *version)
 {
-	if (dump_file != NULL)
-		fprintf (stderr, "Crashing Dump File:\n####\n%s\n####\n", dump_file);
-
-	// This unique service name is used to communicate with merp over mach service ports
-	char *serviceName = g_strdup_printf ("com.mono.merp.%.8x", crashed_pid);
-
 	MERPStruct merp;
 	memset (&merp, 0, sizeof (merp));
-	mono_init_merp (serviceName, signal, crashed_pid, thread_pointer, &merp);
+	mono_init_merp (crashed_pid, signal, hashes, &merp, version);
 
 	GString *output = g_string_new ("");
 	mono_encode_merp (output, &merp);
 
-	if (config.log)
-		fprintf (stderr, "Results: \n(%s)\n", output->str);
-
-	// We send the merp over the port
-	mono_merp_send (output, serviceName);
+	mono_merp_send (output->str, dump_file);
 
 	g_string_free (output, TRUE);
-	g_free (serviceName);
 }
 
 void

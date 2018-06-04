@@ -11,8 +11,8 @@
 #include <glib.h>
 #include "test.h"
 
-RESULT
-test_formats ()
+static RESULT
+test_formats (void)
 {
 	char buffer [1024];
 	gsize a = 1;
@@ -22,8 +22,8 @@ test_formats ()
 	return NULL;
 }
 
-RESULT
-test_ptrconv ()
+static RESULT
+test_ptrconv (void)
 {
 	int iv, iv2;
 	unsigned int uv, uv2;
@@ -86,8 +86,8 @@ typedef struct {
 	int b;
 } my_struct;
 
-RESULT
-test_offset ()
+static RESULT
+test_offset (void)
 {
 	if (G_STRUCT_OFFSET (my_struct, a) != 0)
 		return FAILED ("offset of a is not zero");

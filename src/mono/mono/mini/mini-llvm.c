@@ -3439,7 +3439,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			args [cinfo->vret_arg_pindex] = convert (ctx, emit_gsharedvt_ldaddr (ctx, var->dreg), IntPtrType ());
 		} else {
 			g_assert (addresses [call->inst.dreg]);
-			args [cinfo->vret_arg_pindex] = addresses [call->inst.dreg];
+			args [cinfo->vret_arg_pindex] = convert (ctx, addresses [call->inst.dreg], IntPtrType ());
 		}
 		break;
 	}
@@ -5176,7 +5176,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef base, index, addr;
 			LLVMTypeRef t;
 			gboolean sext = FALSE, zext = FALSE;
-			gboolean is_volatile = (ins->flags & MONO_INST_FAULT);
+			gboolean is_volatile = (ins->flags & (MONO_INST_FAULT | MONO_INST_VOLATILE)) != 0;
 
 			t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
@@ -5237,7 +5237,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef index, addr, base;
 			LLVMTypeRef t;
 			gboolean sext = FALSE, zext = FALSE;
-			gboolean is_volatile = (ins->flags & MONO_INST_FAULT);
+			gboolean is_volatile = (ins->flags & (MONO_INST_FAULT | MONO_INST_VOLATILE)) != 0;
 
 			if (!values [ins->inst_destbasereg]) {
 				set_failure (ctx, "inst_destbasereg");
@@ -5268,7 +5268,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef index, addr, base;
 			LLVMTypeRef t;
 			gboolean sext = FALSE, zext = FALSE;
-			gboolean is_volatile = (ins->flags & MONO_INST_FAULT);
+			gboolean is_volatile = (ins->flags & (MONO_INST_FAULT | MONO_INST_VOLATILE)) != 0;
 
 			t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
@@ -5597,7 +5597,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			int size;
 			gboolean sext, zext;
 			LLVMTypeRef t;
-			gboolean is_volatile = (ins->flags & MONO_INST_FAULT);
+			gboolean is_volatile = (ins->flags & (MONO_INST_FAULT | MONO_INST_VOLATILE)) != 0;
 			BarrierKind barrier = (BarrierKind) ins->backend.memory_barrier_kind;
 			LLVMValueRef index, addr;
 
@@ -5642,7 +5642,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			int size;
 			gboolean sext, zext;
 			LLVMTypeRef t;
-			gboolean is_volatile = (ins->flags & MONO_INST_FAULT);
+			gboolean is_volatile = (ins->flags & (MONO_INST_FAULT | MONO_INST_VOLATILE)) != 0;
 			BarrierKind barrier = (BarrierKind) ins->backend.memory_barrier_kind;
 			LLVMValueRef index, addr, value, base;
 
@@ -7495,6 +7495,7 @@ emit_method_inner (EmitContext *ctx)
 		if (cfg->verbose_level)
 			printf ("%s emitted as %s\n", mono_method_full_name (cfg->method, TRUE), ctx->method_name);
 
+		//LLVMDumpValue (ctx->lmethod);
 #if LLVM_API_VERSION < 100
 		/* VerifyFunction can't handle some of the debug info created by DIBuilder in llvm 3.9 */
 		int err = LLVMVerifyFunction(ctx->lmethod, LLVMPrintMessageAction);
@@ -8734,6 +8735,7 @@ AddJitGlobal (MonoLLVMModule *module, LLVMTypeRef type, const char *name)
 
 	s = g_strdup_printf ("%s%s", module->global_prefix, name);
 	v = LLVMAddGlobal (module->lmodule, LLVMInt8Type (), s);
+	LLVMSetVisibility (v, LLVMHiddenVisibility);
 	g_free (s);
 	return v;
 }

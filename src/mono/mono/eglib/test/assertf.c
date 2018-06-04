@@ -16,6 +16,5 @@ int main(int argc, char** argv)
 {
 	g_assertf(1, "", *(volatile char*)0);
 	g_assertf(0, "argc:%d, argv0:%s", argc, argv[0]);
-
 	return 0;
 }

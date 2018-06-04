@@ -105,19 +105,34 @@ g_log_set_fatal_mask (const gchar *log_domain, GLogLevelFlags fatal_mask)
 	return fatal_mask;
 }
 
-void
-g_logv (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, va_list args)
-{
-	char *msg;
+#define g_logstr monoeg_g_logstr
+#define g_logv_nofree monoeg_g_logv_nofree
 
+static void
+g_logstr (const gchar *log_domain, GLogLevelFlags log_level, const gchar *msg)
+{
 	if (!default_log_func)
 		default_log_func = g_log_default_handler;
 	
-	if (g_vasprintf (&msg, format, args) < 0)
-		return;
-
 	default_log_func (log_domain, log_level, msg, default_log_func_user_data);
-	g_free (msg);
+}
+
+static gchar*
+g_logv_nofree (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, va_list args)
+{
+	char *msg;
+
+	if (g_vasprintf (&msg, format, args) < 0)
+		return NULL;
+
+	g_logstr (log_domain, log_level, msg);
+	return msg;
+}
+
+void
+g_logv (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, va_list args)
+{
+	g_free (g_logv_nofree (log_domain, log_level, format, args));
 }
 
 void
@@ -145,9 +160,8 @@ g_assertion_message (const gchar *format, ...)
 
 	va_start (args, format);
 
-	g_vasprintf (&failure_assertion, format, args);
+	failure_assertion = g_logv_nofree (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
 
-	g_logv (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
 	va_end (args);
 	exit (0);
 }
@@ -170,10 +184,57 @@ to_android_priority (GLogLevelFlags log_level)
 	return ANDROID_LOG_UNKNOWN;
 }
 
+#define LOG_MESSAGE_MAX_LEN 4096
+
+static void
+android_log_line (gint log_priority, const gchar *log_domain, gchar *log_message, gint log_len)
+{
+	gchar log_buf [LOG_MESSAGE_MAX_LEN];
+
+	g_assert (log_len <= LOG_MESSAGE_MAX_LEN - 1);
+
+	/* If line is longer than LOG_MESSAGE_MAX_LEN - 1, then we simply cut it out. This is consistent with the previous behavior. */
+	strncpy (log_buf, log_message, log_len);
+	log_buf [log_len] = '\0';
+
+	__android_log_write (log_priority, log_domain, log_buf);
+}
+
+static void
+android_log (gint log_priority, const gchar *log_domain, const gchar *log_message)
+{
+	gint log_message_len, log_message_p_len;
+	gchar *log_message_p;
+
+	log_message_len = strlen (log_message);
+	if (log_message_len <= LOG_MESSAGE_MAX_LEN) {
+		__android_log_write (log_priority, log_domain, log_message);
+		return;
+	}
+
+	for (log_message_p = log_message; log_message_p < log_message + log_message_len;) {
+		gchar *p = strstr (log_message_p, "\n");
+		if (p == NULL) {
+			/* There is no more "\n". */
+			android_log_line (log_priority, log_domain, log_message_p, LOG_MESSAGE_MAX_LEN - 1);
+			break;
+		}
+
+		log_message_p_len = p - log_message_p;
+		if (log_message_p_len > LOG_MESSAGE_MAX_LEN - 1)
+			log_message_p_len = LOG_MESSAGE_MAX_LEN - 1;
+
+		android_log_line (log_priority, log_domain, log_message_p, log_message_p_len);
+
+		/* Set `log_message_p` to the character right after "\n" */
+		log_message_p = p + 1;
+	}
+}
+
 void
 g_log_default_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer unused_data)
 {
-	__android_log_write (to_android_priority (log_level), log_domain, message);
+	android_log (to_android_priority (log_level), log_domain, message);
 	if (log_level & fatal)
 		abort ();
 }
@@ -182,14 +243,14 @@ static void
 default_stdout_handler (const gchar *message)
 {
 	/* TODO: provide a proper app name */
-	__android_log_write (ANDROID_LOG_ERROR, "mono", message);
+	android_log (ANDROID_LOG_ERROR, "mono", message);
 }
 
 static void
 default_stderr_handler (const gchar *message)
 {
 	/* TODO: provide a proper app name */
-	__android_log_write (ANDROID_LOG_ERROR, "mono", message);
+	android_log (ANDROID_LOG_ERROR, "mono", message);
 }
 
 

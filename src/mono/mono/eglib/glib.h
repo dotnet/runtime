@@ -17,6 +17,16 @@
 #include <inttypes.h>
 
 #include <eglib-config.h>
+
+// - Pointers should only be converted to or from pointer-sized integers.
+// - Any size integer can be converted to any other size integer.
+// - Therefore a pointer-sized integer is the intermediary between
+//   a pointer and any integer type.
+#define GPOINTER_TO_INT(ptr)   ((gint)(gssize)(ptr))
+#define GPOINTER_TO_UINT(ptr)  ((guint)(gsize)(ptr))
+#define GINT_TO_POINTER(v)     ((gpointer)(gssize)(v))
+#define GUINT_TO_POINTER(v)    ((gpointer)(gsize)(v))
+
 #ifndef EGLIB_NO_REMAP
 #include <eglib-remap.h>
 #endif
@@ -1136,6 +1146,3 @@ glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 G_END_DECLS
 
 #endif
-
-
-

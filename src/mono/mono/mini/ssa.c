@@ -1509,7 +1509,7 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 				MONO_REMOVE_INS (bb, ins);
 				mono_bblock_insert_before_ins (idom, idom->last_ins, ins);
 				if (ins->opcode == OP_LDLEN || ins->opcode == OP_STRLEN)
-					idom->has_array_access = TRUE;
+					idom->needs_decompose = TRUE;
 			}
 		}
 	}

@@ -77,16 +77,16 @@ mono_opcode_value (const mono_byte **ip, const mono_byte *end)
 	const mono_byte *p = *ip;
 
 	if (p >= end)
-		return (MonoOpcodeEnum)-1;
+		return MonoOpcodeEnum_Invalid;
 	if (*p == 0xfe) {
 		++p;
 		if (p >= end)
-			return (MonoOpcodeEnum)-1;
+			return MonoOpcodeEnum_Invalid;
 		res = (MonoOpcodeEnum)(*p + MONO_PREFIX1_OFFSET);
 	} else if (*p == MONO_CUSTOM_PREFIX) {
 		++p;
 		if (p >= end)
-			return (MonoOpcodeEnum)-1;
+			return MonoOpcodeEnum_Invalid;
 		res = (MonoOpcodeEnum)(*p + MONO_CUSTOM_PREFIX_OFFSET);
 	} else {
 		res = (MonoOpcodeEnum)*p;

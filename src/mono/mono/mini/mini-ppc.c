@@ -734,6 +734,9 @@ void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
 #ifdef MONO_CROSS_COMPILE
+	/* do nothing */
+#elif defined (__GNUC__)
+	__builtin___clear_cache (code, code + size);
 #else
 	register guint8 *p;
 	guint8 *endp, *start;
@@ -2025,7 +2028,7 @@ if (0 && ins->inst_true_bb->native_offset) { \
 	ppc_bc (code, (b0), (b1), (code - cfg->native_code + ins->inst_true_bb->native_offset) & 0xffff); \
 } else { \
 	int br_disp = ins->inst_true_bb->max_offset - offset;	\
-	if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
+	if (!ppc_is_imm16 (br_disp + 8 * 1024) || !ppc_is_imm16 (br_disp - 8 * 1024)) {	\
 		MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
 		ovfj->data.bb = ins->inst_true_bb;	\
 		ovfj->ip_offset = 0;	\
@@ -2824,104 +2827,111 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 	return code;
 }
 
-typedef struct {
-	guchar *code;
-	const guchar *target;
-	int absolute;
-	int found;
-} PatchData;
+static void
+emit_thunk (guint8 *code, gconstpointer target)
+{
+	guint8 *p = code;
 
-#define is_call_imm(diff) ((glong)(diff) >= -33554432 && (glong)(diff) <= 33554431)
+	/* 2 bytes on 32bit, 5 bytes on 64bit */
+	ppc_load_sequence (code, ppc_r0, target);
 
-static int
-search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
-#ifdef __mono_ppc64__
-	g_assert_not_reached ();
-#else
-	PatchData *pdata = (PatchData*)user_data;
-	guchar *code = data;
-	guint32 *thunks = data;
-	guint32 *endthunks = (guint32*)(code + bsize);
-	guint32 load [2];
-	guchar *templ;
-	int count = 0;
-	int difflow, diffhigh;
+	ppc_mtctr (code, ppc_r0);
+	ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 
-	/* always ensure a call from pdata->code can reach to the thunks without further thunks */
-	difflow = (char*)pdata->code - (char*)thunks;
-	diffhigh = (char*)pdata->code - (char*)endthunks;
-	if (!((is_call_imm (thunks) && is_call_imm (endthunks)) || (is_call_imm (difflow) && is_call_imm (diffhigh))))
-		return 0;
-
-	templ = (guchar*)load;
-	ppc_load_sequence (templ, ppc_r0, pdata->target);
-
-	//g_print ("thunk nentries: %d\n", ((char*)endthunks - (char*)thunks)/16);
-	if ((pdata->found == 2) || (pdata->code >= code && pdata->code <= code + csize)) {
-		while (thunks < endthunks) {
-			//g_print ("looking for target: %p at %p (%08x-%08x)\n", pdata->target, thunks, thunks [0], thunks [1]);
-			if ((thunks [0] == load [0]) && (thunks [1] == load [1])) {
-				ppc_patch (pdata->code, (guchar*)thunks);
-				pdata->found = 1;
-				/*{
-					static int num_thunks = 0;
-					num_thunks++;
-					if ((num_thunks % 20) == 0)
-						g_print ("num_thunks lookup: %d\n", num_thunks);
-				}*/
-				return 1;
-			} else if ((thunks [0] == 0) && (thunks [1] == 0)) {
-				/* found a free slot instead: emit thunk */
-				code = (guchar*)thunks;
-				ppc_lis (code, ppc_r0, (gulong)(pdata->target) >> 16);
-				ppc_ori (code, ppc_r0, ppc_r0, (gulong)(pdata->target) & 0xffff);
-				ppc_mtctr (code, ppc_r0);
-				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
-				mono_arch_flush_icache ((guchar*)thunks, 16);
-
-				ppc_patch (pdata->code, (guchar*)thunks);
-				pdata->found = 1;
-				/*{
-					static int num_thunks = 0;
-					num_thunks++;
-					if ((num_thunks % 20) == 0)
-						g_print ("num_thunks: %d\n", num_thunks);
-				}*/
-				return 1;
-			}
-			/* skip 16 bytes, the size of the thunk */
-			thunks += 4;
-			count++;
-		}
-		//g_print ("failed thunk lookup for %p from %p at %p (%d entries)\n", pdata->target, pdata->code, data, count);
-	}
-#endif
-	return 0;
+	mono_arch_flush_icache (p, code - p);
 }
 
 static void
-handle_thunk (int absolute, guchar *code, const guchar *target) {
-	MonoDomain *domain = mono_domain_get ();
-	PatchData pdata;
+handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target)
+{
+	MonoJitInfo *ji = NULL;
+	MonoThunkJitInfo *info;
+	guint8 *thunks, *p;
+	int thunks_size;
+	guint8 *orig_target;
+	guint8 *target_thunk;
 
-	pdata.code = code;
-	pdata.target = target;
-	pdata.absolute = absolute;
-	pdata.found = 0;
+	if (!domain)
+		domain = mono_domain_get ();
 
-	mono_domain_lock (domain);
-	mono_domain_code_foreach (domain, search_thunk_slot, &pdata);
+	if (cfg) {
+		/*
+		 * This can be called multiple times during JITting,
+		 * save the current position in cfg->arch to avoid
+		 * doing a O(n^2) search.
+		 */
+		if (!cfg->arch.thunks) {
+			cfg->arch.thunks = cfg->thunks;
+			cfg->arch.thunks_size = cfg->thunk_area;
+		}
+		thunks = cfg->arch.thunks;
+		thunks_size = cfg->arch.thunks_size;
+		if (!thunks_size) {
+			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, mono_method_full_name (cfg->method, TRUE));
+			g_assert_not_reached ();
+		}
 
-	if (!pdata.found) {
-		/* this uses the first available slot */
-		pdata.found = 2;
-		mono_domain_code_foreach (domain, search_thunk_slot, &pdata);
+		g_assert (*(guint32*)thunks == 0);
+		emit_thunk (thunks, target);
+		ppc_patch (code, thunks);
+
+		cfg->arch.thunks += THUNK_SIZE;
+		cfg->arch.thunks_size -= THUNK_SIZE;
+	} else {
+		ji = mini_jit_info_table_find (domain, (char *) code, NULL);
+		g_assert (ji);
+		info = mono_jit_info_get_thunk_info (ji);
+		g_assert (info);
+
+		thunks = (guint8 *) ji->code_start + info->thunks_offset;
+		thunks_size = info->thunks_size;
+
+		orig_target = mono_arch_get_call_target (code + 4);
+
+		mono_mini_arch_lock ();
+
+		target_thunk = NULL;
+		if (orig_target >= thunks && orig_target < thunks + thunks_size) {
+			/* The call already points to a thunk, because of trampolines etc. */
+			target_thunk = orig_target;
+		} else {
+			for (p = thunks; p < thunks + thunks_size; p += THUNK_SIZE) {
+				if (((guint32 *) p) [0] == 0) {
+					/* Free entry */
+					target_thunk = p;
+					break;
+				} else {
+					/* ppc64 requires 5 instructions, 32bit two instructions */
+#ifdef __mono_ppc64__
+					const int const_load_size = 5;
+#else
+					const int const_load_size = 2;
+#endif
+					guint32 load [const_load_size];
+					guchar *templ = (guchar *) load;
+					ppc_load_sequence (templ, ppc_r0, target);
+					if (!memcmp (p, load, const_load_size)) {
+						/* Thunk already points to target */
+						target_thunk = p;
+						break;
+					}
+				}
+			}
+		}
+
+		// g_print ("THUNK: %p %p %p\n", code, target, target_thunk);
+
+		if (!target_thunk) {
+			mono_mini_arch_unlock ();
+			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE));
+			g_assert_not_reached ();
+		}
+
+		emit_thunk (target_thunk, target);
+		ppc_patch (code, target_thunk);
+
+		mono_mini_arch_unlock ();
 	}
-	mono_domain_unlock (domain);
-
-	if (pdata.found != 1)
-		g_print ("thunk failed for %p from %p\n", target, code);
-	g_assert (pdata.found == 1);
 }
 
 static void
@@ -2931,8 +2941,8 @@ patch_ins (guint8 *code, guint32 ins)
 	mono_arch_flush_icache (code, 4);
 }
 
-void
-ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
+static void
+ppc_patch_full (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target, gboolean is_fd)
 {
 	guint32 ins = *(guint32*)code;
 	guint32 prim = ins >> 26;
@@ -2972,7 +2982,7 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 			}
 		}
 
-		handle_thunk (TRUE, code, target);
+		handle_thunk (cfg, domain, code, target);
 		return;
 
 		g_assert_not_reached ();
@@ -3080,7 +3090,7 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 void
 ppc_patch (guchar *code, const guchar *target)
 {
-	ppc_patch_full (code, target, FALSE);
+	ppc_patch_full (NULL, NULL, code, target, FALSE);
 }
 
 void
@@ -3817,6 +3827,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_stw (code, ins->sreg1, -4, ppc_r1);
 			ppc_lfs (code, ins->dreg, -4, ppc_r1);
 			break;
+#ifdef __mono_ppc64__
+		case OP_MOVE_F_TO_I8:
+			ppc_stfd (code, ins->sreg1, -8, ppc_r1);
+			ppc_ldptr (code, ins->dreg, -8, ppc_r1);
+			break;
+		case OP_MOVE_I8_TO_F:
+			ppc_stptr (code, ins->sreg1, -8, ppc_r1);
+			ppc_lfd (code, ins->dreg, -8, ppc_r1);
+			break;
+#endif
 		case OP_FCONV_TO_R4:
 			ppc_frsp (code, ins->dreg, ins->sreg1);
 			break;
@@ -3887,6 +3907,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			ppc_mr (code, ppc_sp, ppc_r12);
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method);
+			cfg->thunk_area += THUNK_SIZE;
 			if (cfg->compile_aot) {
 				/* arch_emit_got_access () patches this */
 				ppc_load32 (code, ppc_r0, 0);
@@ -4757,7 +4778,7 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 		/* fall through */
 #endif
 	default:
-		ppc_patch_full (ip, target, is_fd);
+		ppc_patch_full (cfg, domain, ip, target, is_fd);
 		break;
 	}
 }

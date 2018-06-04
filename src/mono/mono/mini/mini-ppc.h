@@ -32,8 +32,13 @@
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
+#ifdef __mono_ppc64__
+#define THUNK_SIZE ((2 + 5) * 4)
+#else
+#define THUNK_SIZE ((2 + 2) * 4)
+#endif
+
 void ppc_patch (guchar *code, const guchar *target);
-void ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd);
 
 struct MonoLMF {
 	/*
@@ -54,6 +59,8 @@ struct MonoLMF {
 
 typedef struct MonoCompileArch {
 	int fp_conv_var_offset;
+	guint8 *thunks;
+	int thunks_size;
 } MonoCompileArch;
 
 /*
@@ -349,13 +356,13 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code);
 
 #if defined(__linux__)
 #define MONO_ARCH_USE_SIGACTION 1
-#elif defined (__APPLE__) && defined (_STRUCT_MCONTEXT)
-#define MONO_ARCH_USE_SIGACTION 1
-#elif defined (__APPLE__) && !defined (_STRUCT_MCONTEXT)
+#elif defined (__APPLE__)
 #define MONO_ARCH_USE_SIGACTION 1
 #elif defined(__NetBSD__)
 #define MONO_ARCH_USE_SIGACTION 1
 #elif defined(__FreeBSD__)
+#define MONO_ARCH_USE_SIGACTION 1
+#elif defined (_AIX)
 #define MONO_ARCH_USE_SIGACTION 1
 #elif defined(MONO_CROSS_COMPILE)
 	typedef MonoContext ucontext_t;
@@ -366,11 +373,8 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code);
 	#define UCONTEXT_REG_FPRn(ctx, n)
 	#define UCONTEXT_REG_NIP(ctx)
 	#define UCONTEXT_REG_LNK(ctx)
-#elif defined (_AIX)
-#define MONO_ARCH_USE_SIGACTION 1
 #else
-/* For other operating systems, we pull the definition from an external file */
-#include "mini-ppc-os.h"
+#error No OS definition for MONO_ARCH_USE_SIGACTION.
 #endif
 
 gboolean

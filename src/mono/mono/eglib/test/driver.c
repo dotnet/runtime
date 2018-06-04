@@ -54,16 +54,16 @@ typedef struct _StringArray {
 static StringArray *
 string_array_append(StringArray *array, gchar *string)
 {
-	if(array == NULL) {
+	if (array == NULL) {
 		array = g_new0(StringArray, 1);
 		array->length = 1;
 		array->strings = g_malloc(sizeof(gchar *) * 2);
 	} else {
 		array->length++;
-		array->strings = g_realloc(array->strings, sizeof(gchar *) 
+		array->strings = g_realloc(array->strings, sizeof(gchar *)
 			* (array->length + 1));
 	}
-	
+
 	array->strings[array->length - 1] = string;
 	array->strings[array->length] = NULL;
 
@@ -82,7 +82,7 @@ string_array_free(StringArray *array)
 static void print_help(char *s)
 {
 	gint i;
-	
+
 	printf("Usage: %s [OPTION]... [TESTGROUP]...\n\n", s);
 	printf("OPTIONS are:\n");
 	printf("  -h, --help          show this help\n");
@@ -96,8 +96,8 @@ static void print_help(char *s)
 		"debug the driver itself for valgrind\n\n");
 	printf("TESTGROUPS available:\n");
 
-	for(i = 0; test_groups[i].name != NULL; i++) {
-		if(test_groups[i].handler != fake_tests_init) {
+	for (i = 0; test_groups[i].name != NULL; i++) {
+		if (test_groups[i].handler != fake_tests_init) {
 			printf("  %s\n", test_groups[i].name);
 		}
 	}
@@ -153,8 +153,8 @@ gint main(gint argc, gchar **argv)
 		}
 	}
 
-	for(i = optind; i < argc; i++) {
-		if(argv[i][0] == '-') {
+	for (i = optind; i < argc; i++) {
+		if (argv[i][0] == '-') {
 			continue;
 		}
 
@@ -163,52 +163,52 @@ gint main(gint argc, gchar **argv)
 #endif
 
 	time_start = get_timestamp();
-	
-	for(j = 0; test_groups[j].name != NULL; j++) {
+
+	for (j = 0; test_groups[j].name != NULL; j++) {
 		gboolean run = TRUE;
 		gchar *tests = NULL;
 		gchar *group = NULL;
-		
-		if(tests_to_run != NULL) {
+
+		if (tests_to_run != NULL) {
 			gint k;
 			run = FALSE;
-			
-			for(k = 0; k < tests_to_run->length; k++) {	
+
+			for (k = 0; k < tests_to_run->length; k++) {
 				gchar *user = tests_to_run->strings[k];
 				const gchar *table = test_groups[j].name;
 				size_t user_len = strlen(user);
 				size_t table_len = strlen(table);
-				
-				if(strncmp(user, table, table_len) == 0) {
-					if(user_len > table_len && user[table_len] != ':') {
+
+				if (strncmp(user, table, table_len) == 0) {
+					if (user_len > table_len && user[table_len] != ':') {
 						break;
 					}
-					
+
 					run = TRUE;
 					group = tests_to_run->strings[k];
 					break;
 				}
 			}
 		}
-	
-		if(run) {
+
+		if (run) {
 			gboolean passed;
 			gchar **split = NULL;
-			
-			if(debug && test_groups[j].handler != fake_tests_init) {
-				printf("Skipping %s, in driver debug mode\n", 
+
+			if (debug && test_groups[j].handler != fake_tests_init) {
+				printf("Skipping %s, in driver debug mode\n",
 					test_groups[j].name);
 				continue;
-			} else if(!debug && test_groups[j].handler == fake_tests_init) {
+			} else if (!debug && test_groups[j].handler == fake_tests_init) {
 				continue;
 			}
 
-			if(group != NULL) {
-				split = eg_strsplit(group, ":", -1);	
-				if(split != NULL) {
+			if (group != NULL) {
+				split = eg_strsplit(group, ":", -1);
+				if (split != NULL) {
 					gint m;
-					for(m = 0; split[m] != NULL; m++) {
-						if(m == 1) {
+					for (m = 0; split[m] != NULL; m++) {
+						if (m == 1) {
 							tests = strdup(split[m]);
 							break;
 						}
@@ -216,40 +216,38 @@ gint main(gint argc, gchar **argv)
 					eg_strfreev(split);
 				}
 			}
-			
-			passed = run_group(&(test_groups[j]), 
+
+			passed = run_group(&(test_groups[j]),
 				iterations, quiet, report_time, tests);
 
-			if(tests != NULL) {
+			if (tests != NULL) {
 				g_free(tests);
 			}
 
-			if(!passed && !global_failure) {
+			if (!passed && !global_failure) {
 				global_failure = TRUE;
 			}
 		}
 	}
-	
-	if(!quiet) {
+
+	if (!quiet) {
 		gdouble pass_percentage = ((gdouble)global_passed / (gdouble)global_tests) * 100.0;
 		printf("=============================\n");
 		printf("Overall result: %s : %d / %d (%g%%)\n", global_failure ? "FAILED" : "OK", global_passed, global_tests, pass_percentage);
 	}
-	
-	if(report_time) {
+
+	if (report_time) {
 		gdouble duration = get_timestamp() - time_start;
-		if(no_final_time_labels) {
+		if (no_final_time_labels) {
 			printf("%g\n", duration);
 		} else {
 			printf("%s Total Time: %g\n", DRIVER_NAME, duration);
 		}
 	}
 
-	if(tests_to_run != NULL) {
+	if (tests_to_run != NULL) {
 		string_array_free(tests_to_run);
 	}
 
 	return global_tests - global_passed;
 }
-
-

@@ -293,6 +293,8 @@ ves_icall_CoreFX_Interop_RunLoop_CFRunLoopRun (void)
 	mono_thread_info_uninstall_interrupt (&interrupted);
 }
 
+#ifdef HOST_IOS
+
 MONO_API char* SystemNative_RealPath(const char* path)
 {
     g_assert(path != NULL);
@@ -303,4 +305,7 @@ MONO_API void SystemNative_Sync(void)
 {
     sync();
 }
+
+#endif // HOST_IOS
+
 #endif /* #if defined(__APPLE__) */

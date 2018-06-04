@@ -11,6 +11,23 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata-internals.h>
 
+/* Flag bits for mono_assembly_names_equal_flags (). */
+typedef enum {
+	/* Default comparison: all fields must match */
+	MONO_ANAME_EQ_NONE = 0x0,
+	/* Don't compare public key token */
+	MONO_ANAME_EQ_IGNORE_PUBKEY = 0x1,
+	/* Don't compare the versions */
+	MONO_ANAME_EQ_IGNORE_VERSION = 0x2,
+	/* When comparing simple names, ignore case differences */
+	MONO_ANAME_EQ_IGNORE_CASE = 0x4,
+
+	MONO_ANAME_EQ_MASK = 0x7
+} MonoAssemblyNameEqFlags;
+
+gboolean
+mono_assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, MonoAssemblyNameEqFlags flags);
+
 gboolean
 mono_assembly_get_assemblyref_checked (MonoImage *image, int index, MonoAssemblyName *aname, MonoError *error);
 

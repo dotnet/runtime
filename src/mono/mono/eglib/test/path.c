@@ -16,12 +16,12 @@
 #endif
 
 /* This test is just to be used with valgrind */
-RESULT
-test_buildpath ()
+static RESULT
+test_buildpath (void)
 {
 	char *s;
-	char *buffer = "var/private";
-	char *dir = "/";
+	const char *buffer = "var/private";
+	const char *dir = "/";
 	
 	s = g_build_path ("/", "hola///", "//mundo", NULL);
 	if (strcmp (s, "hola/mundo") != 0)
@@ -115,8 +115,8 @@ test_buildpath ()
 	return OK;
 }
 
-RESULT
-test_buildfname ()
+static RESULT
+test_buildfname (void)
 {
 	char *s;
 	
@@ -147,8 +147,8 @@ test_buildfname ()
 	return OK;
 }
 
-char *
-test_dirname ()
+static char *
+test_dirname (void)
 {
 	char *s;
 
@@ -199,8 +199,8 @@ test_dirname ()
 	return OK;
 }
 
-char *
-test_basename ()
+static char *
+test_basename (void)
 {
 	char *s;
 
@@ -248,8 +248,8 @@ test_basename ()
 	return OK;
 }
 
-gchar *
-test_ppath ()
+static gchar *
+test_ppath (void)
 {
 	char *s;
 #ifdef G_OS_WIN32
@@ -264,8 +264,8 @@ test_ppath ()
 	return OK;
 }
 
-gchar *
-test_ppath2 ()
+static gchar *
+test_ppath2 (void)
 {
 	char *s;
 	const char *path = g_getenv ("PATH");
@@ -293,8 +293,8 @@ test_ppath2 ()
 }
 
 #ifndef DISABLE_FILESYSTEM_TESTS
-gchar *
-test_cwd ()
+static gchar *
+test_cwd (void)
 {
 	char *dir = g_get_current_dir ();
 #ifdef G_OS_WIN32
@@ -318,15 +318,15 @@ test_cwd ()
 	return OK;
 }
 #else
-gchar *
-test_cwd ()
+static gchar *
+test_cwd (void)
 {
 	return OK;
 }
 #endif
 
-gchar *
-test_misc ()
+static gchar *
+test_misc (void)
 {
 	const char *home = g_get_home_dir ();
 	const char *tmp = g_get_tmp_dir ();
@@ -353,5 +353,3 @@ static Test path_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(path_tests_init, path_tests)
-
-

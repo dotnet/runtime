@@ -4940,6 +4940,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Int
 		imethod->next_jit_code_hash = hash;
 		mono_memory_barrier ();
 		imethod->transformed = TRUE;
+		mono_atomic_fetch_add_i32 (&mono_jit_stats.methods_with_interp, 1);
 	}
 	mono_os_mutex_unlock (&calc_section);
 

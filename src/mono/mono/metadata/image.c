@@ -1286,8 +1286,8 @@ hash_guid (const char *str)
 	return h;
 }
 
-static gboolean
-is_problematic_image (MonoImage *image)
+gboolean
+mono_is_problematic_image (MonoImage *image)
 {
 	int h = hash_guid (image->guid);
 
@@ -1360,7 +1360,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
 
-	if (!image->ref_only && is_problematic_image (image)) {
+	if (!image->ref_only && mono_is_problematic_image (image)) {
 		if (image->load_from_context) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Loading problematic image %s", image->name);
 		} else {
@@ -1681,6 +1681,18 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 		mono_images_lock ();
 		image = g_hash_table_lookup (loaded_images, absfname);
 		if (image) { // Image already loaded
+			if (!load_from_context && mono_is_problematic_image (image)) {
+				// If we previously loaded a problematic image, don't
+				// return it if we're not in LoadFrom context.
+				//
+				// Note: this has an interaction with
+				//  mono_problematic_image_reprobe - at that point we
+				//  have a problematic image opened, but we don't want
+				//  to see it again when we go searching for an image
+				//  to load.
+				mono_images_unlock ();
+				return NULL;
+			}
 			g_assert (image->is_module_handle);
 			if (image->has_entry_point && image->ref_count == 0) {
 				/* Increment reference count on images loaded outside of the runtime. */
@@ -1751,6 +1763,18 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 	g_free (absfname);
 
 	if (image) { // Image already loaded
+		if (!load_from_context && mono_is_problematic_image (image)) {
+			// If we previously loaded a problematic image, don't
+			// return it if we're not in LoadFrom context.
+			//
+			// Note: this has an interaction with
+			//  mono_problematic_image_reprobe - at that point we
+			//  have a problematic image opened, but we don't want
+			//  to see it again when we go searching for an image
+			//  to load.
+			mono_images_unlock ();
+			return NULL;
+		}
 		mono_image_addref (image);
 		mono_images_unlock ();
 		return image;

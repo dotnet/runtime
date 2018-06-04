@@ -249,6 +249,7 @@ TESTS_CS_SRC=		\
 	assembly-load-bytes-bindingredirect.cs	\
 	assembly-loadfile-bindingredirect.cs	\
 	assembly-loadfrom-bindingredirect.cs	\
+	assembly-loadfrom-simplename.cs	\
 	assemblyresolve_event.cs	\
 	assemblyresolve_event3.cs	\
 	assemblyresolve_event4.cs	\
@@ -801,6 +802,9 @@ TESTS_IL_SRC=			\
 	ldfldvt.il \
 	newobj-abstract.il
 
+# This test crashes the runtime, even with recent fixes.
+#	incorrect-ldvirtftn-read-behind-for-dup.il
+
 TESTS_GSHARED_SRC = \
 	generics-sharing.2.cs	\
 	shared-generic-methods.2.cs	\
@@ -926,6 +930,9 @@ PLATFORM_DISABLED_TESTS += tailcall/3.exe
 PLATFORM_DISABLED_TESTS += tailcall/4.exe
 PLATFORM_DISABLED_TESTS += tailcall/8273.exe
 PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail.exe
+PLATFORM_DISABLED_TESTS += tailcall/coreclr/JIT/Directed/tailcall/tailcall.exe
+PLATFORM_DISABLED_TESTS += tailcall/coreclr/JIT/Methodical/tailcall/test_virt.exe
+PLATFORM_DISABLED_TESTS += tailcall/coreclr/JIT/Methodical/nonvirtualcall/tailcall.exe
 PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack.exe
 PLATFORM_DISABLED_TESTS += ivtail1.exe
 PLATFORM_DISABLED_TESTS += appdomain-threadpool-unload.exe
@@ -1138,6 +1145,13 @@ PROFILE_DISABLED_TESTS += \
 	assembly-load-bytes.exe \
 	assembly-load-bytes-bindingredirect.exe
 
+# Tests which depend on a case-insensitive filesystem when using AOT
+if HOST_DARWIN
+else
+PROFILE_DISABLED_TESTS += \
+	assembly-loadfrom-simplename.exe
+endif
+
 # constraints-load.il: 
 # Failed to load method 0x6000007 from '..../mono/tests/constraints-load.exe' due to 
 # Could not resolve type with token 01000002 assembly:mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089 type:System.BrokenIComparable`1 member:<none>.
@@ -1195,8 +1209,6 @@ CI_DISABLED_TESTS = \
 # so they don't interfere with other people's work
 CI_PR_DISABLED_TESTS = \
 	appdomain-threadpool-unload.exe \
-	monitor-abort.exe \
-	monitor-wait-abort.exe \
 	process-stress-3.exe
 
 # appdomain-threadpool-unload.exe creates 100 appdomains, takes too long with llvm
@@ -1350,7 +1362,6 @@ INTERP_DISABLED_TESTS += \
 	handleref.exe \
 	monitor-abort.exe \
 	nullable_boxing.2.exe \
-	pinvoke.exe \
 	pinvoke2.exe \
 	pinvoke3.exe \
 	remoting2.exe \
@@ -1387,7 +1398,6 @@ INTERP_DISABLED_TESTS += \
 	cominterop.exe \
 	delegate-with-null-target.exe \
 	dim-diamondshape.exe \
-	pinvoke.exe \
 	pinvoke3.exe
 endif
 
@@ -2334,6 +2344,31 @@ assembly-loadfile-bindingredirect.exe: assembly-load-dir1/LibStrongName.dll asse
 assembly-load-bytes-bindingredirect.exe: assembly-load-dir1/LibStrongName.dll assembly-load-dir2/LibStrongName.dll assembly-load-bytes-bindingredirect.exe.config
 
 EXTRA_DIST += assembly-loadfrom-bindingredirect.exe.config assembly-loadfile-bindingredirect.exe.config assembly-load-bytes-bindingredirect.exe.config
+
+
+assembly-load-dir1/LibSimpleName.dll: assembly-load-dir1/LibSimpleName.cs
+	$(MKDIR_P) $(dir $@)
+	$(MCS) -target:library -out:$@ $<
+
+# NOTE: unlike assembly-load-dir1/LibSimpleName.dll, the output name here is in all lower case!
+assembly-load-dir2/libsimplename.dll: assembly-load-dir2/LibSimpleName.cs
+	$(MKDIR_P) $(dir $@)
+	$(MCS) -target:library -out:$@ $<
+
+assembly-dep-simplename.dll: assembly-dep-simplename.cs assembly-load-dir1/LibSimpleName.dll
+	$(MCS) -target:library -out:$@ $< -r:assembly-load-dir1/LibSimpleName.dll
+
+# NOTE: while we compile assembly-dep-simplename.dll using assembly-load-dir1, we AOT it using assembly-load-dir2
+#  (So that the AOT image has the right GUID of the referenced assembly baked in)
+assembly-dep-simplename.dll$(PLATFORM_AOT_SUFFIX): assembly-dep-simplename.dll assembly-load-dir2/libsimplename.dll$(PLATFORM_AOT_SUFFIX)
+	MONO_PATH=$(CLASS):assembly-load-dir2 $(top_builddir)/runtime/mono-wrapper $(TEST_AOT_BUILD_FLAGS) --aot-path=assembly-load-dir2 assembly-dep-simplename.dll
+
+EXTRA_DIST += assembly-load-dir1/LibSimpleName.cs assembly-load-dir2/LibSimpleName.cs \
+	assembly-dep-simplename.cs
+
+assembly-loadfrom-simplename.exe: assembly-dep-simplename.dll assembly-load-dir2/libsimplename.dll
+
+assembly-loadfrom-simplename.exe$(PLATFORM_AOT_SUFFIX): assembly-load-dir2/libsimplename.dll$(PLATFORM_AOT_SUFFIX) assembly-dep-simplename.dll$(PLATFORM_AOT_SUFFIX)
 
 gshared:
 	$(MAKE) test-generic-sharing

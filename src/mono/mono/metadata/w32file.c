@@ -713,6 +713,8 @@ ves_icall_System_IO_MonoIO_get_ConsoleError ()
 MonoBoolean
 ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle, HANDLE *write_handle, gint32 *error)
 {
+	*error = ERROR_SUCCESS;
+
 	gboolean ret;
 
 	ret=mono_w32file_create_pipe (read_handle, write_handle, 0);

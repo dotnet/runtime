@@ -1,7 +1,7 @@
 #include "test.h"
 
-RESULT
-test_swap ()
+static RESULT
+test_swap (void)
 {
 	guint32 a = 0xabcdef01, res32;
 	guint64 b = (((guint64)a) << 32) | a, res64;
@@ -35,4 +35,3 @@ static Test endian_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(endian_tests_init, endian_tests)
-

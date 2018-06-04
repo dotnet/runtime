@@ -506,7 +506,7 @@ class Tests
 		try {
 			Action d = delegate () { data.Cast<IEnumerable> ().GetEnumerator ().MoveNext (); };
 			d ();
-		} catch (Exception ex) {
+		} catch (Exception) {
 		}
 		return 0;
 	}
@@ -516,4 +516,39 @@ class Tests
 		var map2 = new Dictionary <IntPtr, WeakReference> (EqualityComparer<IntPtr>.Default);
 		return 0;
 	}
+
+	// Requires c# 7.2
+#if !__MonoCS__
+	public interface GameComponent {
+	}
+
+	public struct Components<T> {
+        public T[] Collection;
+        public int Count;
+    }
+
+	struct AStruct : GameComponent {
+	}
+
+	public class ReadonlyTest<T> where T: GameComponent {
+		private static Components<T> _components;
+
+        public static T[] GetArray()
+		{
+			ref readonly Components<T> components = ref GetComponents();
+			return components.Collection;
+		}
+
+		public static ref readonly Components<T> GetComponents()
+		{
+			return ref _components;
+		}
+	}
+
+	// gh #8701
+	public static int test_0_readonly_modopt () {
+		typeof (ReadonlyTest<>).MakeGenericType (new Type[] { typeof (AStruct) }).GetMethod ("GetArray").Invoke (null, null);
+		return 0;
+	}
+#endif
 }

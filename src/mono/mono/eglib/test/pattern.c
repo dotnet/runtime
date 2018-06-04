@@ -18,8 +18,8 @@
 #define TEST_MATCH(pat,string,n) MATCH (pat, string, FALSE, "MATCH " #n)
 #define TEST_NO_MATCH(pat,string,n) MATCH (pat, string,TRUE, "NO_MATCH " #n)
 
-RESULT
-test_pattern_spec ()
+static RESULT
+test_pattern_spec (void)
 {
 	GPatternSpec *spec;
 	gboolean res;
@@ -57,5 +57,3 @@ static Test pattern_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(pattern_tests_init, pattern_tests)
-
-

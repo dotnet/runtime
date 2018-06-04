@@ -1207,6 +1207,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 		if (cfg->verbose_level > 2) mono_print_bb (bb, "BEFORE LOWER-VTYPE-OPTS ");
 
 		cfg->cbb->code = cfg->cbb->last_ins = NULL;
+		cfg->cbb->out_of_line = bb->out_of_line;
 		restart = TRUE;
 
 		while (restart) {
@@ -1434,6 +1435,30 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 					}
 					break;
 				}
+				case OP_BOX:
+				case OP_BOX_ICONST: {
+					MonoInst *src;
+
+					/* Temporary value required by emit_box () */
+					if (ins->opcode == OP_BOX_ICONST) {
+						NEW_ICONST (cfg, src, ins->inst_c0);
+						src->klass = ins->klass;
+						MONO_ADD_INS (cfg->cbb, src);
+					} else {
+						MONO_INST_NEW (cfg, src, OP_LOCAL);
+						src->type = STACK_MP;
+						src->klass = ins->klass;
+						src->dreg = ins->sreg1;
+					}
+					MonoInst *tmp = mini_emit_box (cfg, src, ins->klass, mini_class_check_context_used (cfg, ins->klass));
+					g_assert (tmp);
+
+					MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, tmp->dreg);
+
+					/* This might be decomposed into other vtype opcodes */
+					restart = TRUE;
+					break;
+				}
 				default:
 					break;
 				}
@@ -1468,7 +1493,7 @@ mono_get_domainvar (MonoCompile *cfg)
 /**
  * mono_decompose_array_access_opts:
  *
- *  Decompose array access opcodes.
+ *  Decompose array access and other misc opcodes.
  */
 void
 mono_decompose_array_access_opts (MonoCompile *cfg)
@@ -1494,7 +1519,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 		MonoInst *iargs [3];
 		gboolean restart;
 
-		if (!bb->has_array_access)
+		if (!bb->needs_decompose)
 			continue;
 
 		if (cfg->verbose_level > 3) mono_print_bb (bb, "BEFORE DECOMPOSE-ARRAY-ACCESS-OPTS ");
@@ -1507,6 +1532,9 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 
 			for (ins = bb->code; ins; ins = ins->next) {
 				switch (ins->opcode) {
+				case OP_TYPED_OBJREF:
+					ins->opcode = OP_MOVE;
+					break;
 				case OP_LDLEN:
 					NEW_LOAD_MEMBASE_FLAGS (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg, ins->sreg1,
 											MONO_STRUCT_OFFSET (MonoArray, max_length), ins->flags | MONO_INST_INVARIANT_LOAD);

@@ -1272,6 +1272,27 @@ ncells ) {
 		return sb.ToString () == "ADC" ? 0 : 1;
 	}
 
+	enum FlagsEnum {
+		None = 0,
+		A = 1,
+		B = 2,
+		C = 4
+	}
+
+	public static int test_0_intrins_enum_hasflag () {
+		var e = FlagsEnum.A | FlagsEnum.B;
+
+		if (!e.HasFlag (FlagsEnum.A))
+			return 1;
+		if (!e.HasFlag (FlagsEnum.A | FlagsEnum.B))
+			return 2;
+		if (!e.HasFlag (FlagsEnum.None))
+			return 3;
+		if (e.HasFlag (FlagsEnum.C))
+			return 4;
+		return 0;
+	}
+
 	public class Bar {
 		bool allowLocation = true;
         Foo f = new Foo ();	
@@ -1907,6 +1928,25 @@ ncells ) {
 		return dataPtr [0] == 1.0f ? 0 : 1;
 	}
 
+	class AClass1 {
+	}
+
+	class BClass1 : AClass1 {
+	}
+
+	class CClass1 {
+	}
+
+	public static int test_0_array_of_magic_iface () {
+		// Need to make this an object otherwise csc removes the cast
+		object d = new [] { new [] { new BClass1 () } };
+		if (!(d is IList<AClass1> []))
+			return 1;
+		if (d is IList<CClass1> [])
+			return 2;
+		var e2 = (IList<AClass1> []) d;
+		return 0;
+	}
 }
 
 #if __MOBILE__

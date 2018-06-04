@@ -52,7 +52,7 @@ TOOLS_RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/build $(top_builddir)/runtime/
 INTERP_RUNTIME = $(MINI_RUNTIME) --interpreter
 RUNTIME_AOTCHECK = MONO_PATH="$(CLASS)$(PLATFORM_PATH_SEPARATOR)." $(RUNTIME_EXECUTABLE)
 
-MCS = CSC_SDK_PATH_DISABLED= $(TOOLS_RUNTIME) $(CSC) -unsafe -nowarn:0162 -nologo -noconfig -r:$(CLASS)/mscorlib.dll -r:$(CLASS)/System.dll -r:$(CLASS)/System.Core.dll
+MCS = CSC_SDK_PATH_DISABLED= $(TOOLS_RUNTIME) $(CSC) -langversion:7.2 -unsafe -nowarn:0162 -nologo -noconfig -r:$(CLASS)/mscorlib.dll -r:$(CLASS)/System.dll -r:$(CLASS)/System.Core.dll
 ILASM = $(TOOLS_RUNTIME) $(mcs_topdir)/class/lib/build/ilasm.exe
 
 AM_CFLAGS = \
@@ -280,6 +280,8 @@ endif
 wasm_sources = \
 	mini-wasm.c		\
 	mini-wasm.h		\
+	mini-wasm-debugger.c	\
+	debugger-engine.c	\
 	exceptions-wasm.c	\
 	tramp-wasm.c
 
@@ -450,6 +452,7 @@ common_sources = \
 	mini-gc.h		\
 	mini-gc.c		\
 	debugger-agent.h 	\
+	debugger-engine.h	\
 	debugger-agent-stubs.c	\
 	xdebug.c			\
 	mini-llvm.h			\
@@ -463,6 +466,7 @@ common_sources = \
 	lldb.h			\
 	lldb.c	\
 	memory-access.c	\
+	intrinsics.c \
 	mini-profiler.c	\
 	interp-stubs.c \
 	aot-runtime.h	\
@@ -626,14 +630,18 @@ endif
 
 libmono_ee_interp_la_SOURCES = $(interp_sources)
 libmono_ee_interp_la_CFLAGS = $(mono_CFLAGS)
-libmono_ee_interp_la_LDFLAGS = $(libmonoldflags)
 if BITCODE
+libmono_ee_interp_la_LDFLAGS = $(libmonoldflags)
 if DISABLE_INTERPRETER
 libmono_ee_interp_la_LIBADD = libmonosgen-2.0.la
 endif
 endif
 
-libmono_dbg_la_SOURCES = debugger-agent.c
+if !WASM
+extra_libmono_dbg_source = debugger-engine.c
+endif
+
+libmono_dbg_la_SOURCES = debugger-agent.c $(extra_libmono_dbg_source)
 libmono_dbg_la_CFLAGS = $(mono_CFLAGS)
 if BITCODE
 if DISABLE_DEBUGGER_AGENT

@@ -15,8 +15,8 @@
 
 #include "test.h"
 
-RESULT
-test_timer ()
+static RESULT
+test_timer (void)
 {
 	GTimer *timer;
 	gdouble elapsed1, elapsed2;
@@ -51,5 +51,3 @@ static Test timer_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(timer_tests_init, timer_tests)
-
-

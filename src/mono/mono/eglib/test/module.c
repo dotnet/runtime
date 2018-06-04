@@ -15,13 +15,16 @@
 #endif
 
 void G_MODULE_EXPORT
-dummy_test_export ()
+dummy_test_export (void);
+
+void G_MODULE_EXPORT
+dummy_test_export (void)
 {
 }
 
 /* test for g_module_open (NULL, ...) */
-RESULT
-test_module_symbol_null ()
+static RESULT
+test_module_symbol_null (void)
 {
 	gpointer proc = GINT_TO_POINTER (42);
 
@@ -60,5 +63,3 @@ static Test module_tests [] = {
 };
 
 DEFINE_TEST_GROUP_INIT(module_tests_init, module_tests)
-
-
