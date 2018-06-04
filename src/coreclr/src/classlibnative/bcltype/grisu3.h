@@ -33,7 +33,7 @@ private:
     static void CachedPower(int k, DiyFp* cmk, int* decimalExponent);
     static bool DigitGen(const DiyFp& mp, int count, wchar_t* buffer, int* len, int* k);
     static bool RoundWeed(wchar_t* buffer, int len, UINT64 rest, UINT64 tenKappa, UINT64 ulp, int* kappa);
-    static void Grisu3::BiggestPowerTenLessThanOrEqualTo(UINT32 number, int bits, UINT32 *power, int *exponent);
+    static void BiggestPowerTenLessThanOrEqualTo(UINT32 number, int bits, UINT32 *power, int *exponent);
 
     // 1/lg(10)
     static const double D_1_LOG2_10;

@@ -419,7 +419,7 @@ namespace Ro { namespace detail {
         __in_ecount(size) const T* src, 
         size_t               size)
     {
-        for (size_t i = 0; i != _size; ++i) 
+        for (size_t i = 0; i != size; ++i) 
         {
             dst[i] = src[i];
         }
