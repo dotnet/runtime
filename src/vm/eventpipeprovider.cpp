@@ -116,7 +116,7 @@ void EventPipeProvider::SetConfiguration(bool providerEnabled, INT64 keywords, E
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
     }
@@ -191,7 +191,7 @@ void EventPipeProvider::InvokeCallback()
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
     }
