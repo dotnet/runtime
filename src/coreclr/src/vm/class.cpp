@@ -2619,7 +2619,7 @@ MethodTable::DebugDumpGCDesc(
                 {
                     ssBuff.Printf(W("   offset %5d (%d w/o Object), size %5d (%5d w/o BaseSize subtr)\n"),
                         pSeries->GetSeriesOffset(),
-                        pSeries->GetSeriesOffset() - sizeof(Object),
+                        pSeries->GetSeriesOffset() - OBJECT_SIZE,
                         pSeries->GetSeriesSize(),
                         pSeries->GetSeriesSize() + GetBaseSize() );
                     WszOutputDebugString(ssBuff.GetUnicode());
@@ -2629,7 +2629,7 @@ MethodTable::DebugDumpGCDesc(
                     //LF_ALWAYS allowed here because this is controlled by special env var ShouldDumpOnClassLoad
                     LOG((LF_ALWAYS, LL_ALWAYS, "   offset %5d (%d w/o Object), size %5d (%5d w/o BaseSize subtr)\n",
                          pSeries->GetSeriesOffset(),
-                         pSeries->GetSeriesOffset() - sizeof(Object),
+                         pSeries->GetSeriesOffset() - OBJECT_SIZE,
                          pSeries->GetSeriesSize(),
                          pSeries->GetSeriesSize() + GetBaseSize()
                          ));

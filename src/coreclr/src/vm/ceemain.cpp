@@ -2456,7 +2456,7 @@ void InitializeGarbageCollector()
     // in the object, there is no gc descriptor, and thus no need to adjust
     // the pointer to skip the gc descriptor.
 
-    g_pFreeObjectMethodTable->SetBaseSize(ObjSizeOf (ArrayBase));
+    g_pFreeObjectMethodTable->SetBaseSize(ARRAYBASE_BASESIZE);
     g_pFreeObjectMethodTable->SetComponentSize(1);
 
     hr = GCHeapUtilities::LoadAndInitialize();
