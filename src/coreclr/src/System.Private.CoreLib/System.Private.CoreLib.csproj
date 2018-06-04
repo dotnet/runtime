@@ -496,7 +496,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\IO\BinaryReader.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\SearchOption.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\Stream.CoreCLR.cs" />
