@@ -222,23 +222,19 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 gboolean
-ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer user, gpointer group)
+ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer user, gpointer group, MonoError *error)
 {
-	gboolean result = FALSE;
-
 	/* The convertion from an ID to a string is done in managed code for Windows */
 	g_warning ("IsMemberOfGroupId should never be called on Win32");
-	return result;
+	return FALSE;
 }
 
 gboolean
-ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpointer user, MonoString *group)
+ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpointer user, const gchar *group, MonoError *error)
 {
-	gboolean result = FALSE;
-
 	/* Windows version use a cache built using WindowsIdentity._GetRoles */
 	g_warning ("IsMemberOfGroupName should never be called on Win32");
-	return result;
+	return FALSE;
 }
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
