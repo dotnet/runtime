@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,6 +23,11 @@ namespace System.IO.Compression
         {
             ValidateParameters(buffer, offset, count);
             WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
+        }
+
+        public override void WriteByte(byte value)
+        {
+            WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
