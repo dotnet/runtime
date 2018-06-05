@@ -28,7 +28,7 @@ In addition to providing the source code, this repository also acts as a useful 
 related to .NET Core including:
 
  * Want to **learn more** about .NET Runtime Internals?  See the [Documentation on the .NET Core Runtime](Documentation/README.md) page.
- * Need to **log a issue** or Provide Feedback?   See then [Issues and Feedback Page](Documentation/workflow/IssuesFeedbackEngagement.md) page.
+ * Need to **log an issue** or provide feedback?   See the [Issues and Feedback Page](Documentation/workflow/IssuesFeedbackEngagement.md) page.
  * Want to **chat** with other members of the CoreCLR community?  See the [Chat Section](Documentation/workflow/IssuesFeedbackEngagement.md#Chat-with-the-CoreCLR-community) page.
  * Need a **current build** or **test results** of the CoreCLR repository?   See the [Official and Daily Builds](Documentation/workflow/OfficalAndDailyBuilds.md) page.
  * If you want powerful search of the source code for both CoreCLR and CoreFx see [.NET Source Code Index](https://source.dot.net).
