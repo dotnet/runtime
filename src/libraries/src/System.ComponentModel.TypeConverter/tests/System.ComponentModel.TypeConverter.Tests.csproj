@@ -84,6 +84,7 @@
     <Compile Include="ContextStackTests.cs" />
     <Compile Include="InstanceDescriptorTests.cs" />
     <Compile Include="Design\DesignerOptionServiceTests.cs" />
+    <Compile Include="Design\DesignerTransactionTests.cs" />
     <Compile Include="Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverterTests.cs" />
   </ItemGroup>
   <ItemGroup>
