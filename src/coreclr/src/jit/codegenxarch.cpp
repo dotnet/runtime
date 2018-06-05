@@ -3528,7 +3528,7 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
 
     GenTree* addr = node->gtGetOp1();
     GenTree* data = node->gtGetOp2();
-    emitAttr size = emitTypeSize(data->TypeGet());
+    emitAttr size = emitActualTypeSize(data->TypeGet());
 
     assert(addr->isUsedFromReg());
     assert(data->isUsedFromReg() || data->isContainedIntOrIImmed());
