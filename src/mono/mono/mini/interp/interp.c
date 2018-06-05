@@ -1658,7 +1658,7 @@ interp_entry (InterpEntryData *data)
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (MONO_TYPE_IS_REFERENCE (type))
-				args [a_index].data.p = params [i];
+				args [a_index].data.p = *(gpointer*)params [i];
 			else
 				args [a_index].data.vt = params [i];
 			break;
@@ -1700,7 +1700,7 @@ interp_entry (InterpEntryData *data)
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (MONO_TYPE_IS_REFERENCE (type)) {
-			*(MonoObject**)data->res = *(MonoObject**)frame.retval->data.p;
+			*(MonoObject**)data->res = (MonoObject*)frame.retval->data.p;
 		} else {
 			/* Already set before the call */
 		}
@@ -1808,7 +1808,7 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 	MonoType *type;
 	MonoLMFExt ext;
 
-	//printf ("%s\n", mono_method_full_name (rmethod->method, 1));
+	//printf ("jit_call: %s\n", mono_method_full_name (rmethod->method, 1));
 
 	/*
 	 * Call JITted code through a gsharedvt_out wrapper. These wrappers receive every argument
@@ -1894,6 +1894,15 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 			case MONO_TYPE_U8:
 				args [pindex ++] = &sval->data.l;
 				break;
+			case MONO_TYPE_R4: {
+				float tmp = (float)sval->data.f;
+				sval->data.i = *(int*)&tmp;
+				args [pindex ++] = &sval->data.i;
+				break;
+			}
+			case MONO_TYPE_R8:
+				args [pindex ++] = &sval->data.f;
+				break;
 			default:
 				printf ("%s\n", mono_type_full_name (t));
 				g_assert_not_reached ();
@@ -1952,6 +1961,12 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 		func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], &ftndesc);
 		break;
 	}
+	case 8: {
+		void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], args [7], &ftndesc);
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 		break;
@@ -1969,6 +1984,7 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
 		sp->data.p = *(gpointer*)res_buf;
 		break;
 	case MONO_TYPE_I1:
@@ -1988,6 +2004,18 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 		break;
 	case MONO_TYPE_U4:
 		sp->data.i = *(guint32*)res_buf;
+		break;
+	case MONO_TYPE_I8:
+		sp->data.l = *(gint64*)res_buf;
+		break;
+	case MONO_TYPE_U8:
+		sp->data.l = *(guint64*)res_buf;
+		break;
+	case MONO_TYPE_R4:
+		sp->data.f = *(float*)res_buf;
+		break;
+	case MONO_TYPE_R8:
+		sp->data.f = *(double*)res_buf;
 		break;
 	case MONO_TYPE_VALUETYPE:
 		/* The result was written to vt_sp */

@@ -1315,33 +1315,6 @@ class Tests
 			return 5;
 		if ((n / 1) != n)
 			return 6;
-
-		try {
-			int r = n / (-1);
-		} catch (OverflowException) {
-			overflow = true;
-		}
-		if (!overflow)
-			return 7;
-
-		try {
-			int r = n / 0;
-		} catch (DivideByZeroException) {
-			divide_by_zero = true;
-		}
-		if (!divide_by_zero)
-			return 8;
-
-		if ((n / 35) != -61356675)
-			return 9;
-		if ((n / -35) != 61356675)
-			return 10;
-		n = -(n + 1);  /* MaxValue */
-		if ((n / 35) != 61356675)
-			return 11;
-		if ((n / -35) != -61356675)
-			return 12;
-
 		return 0;
 	}
 
@@ -1359,18 +1332,6 @@ class Tests
 			return 3;
 		if ((n / 1) != n)
 			return 4;
-
-		try {
-			uint a = n / 0;
-		} catch (DivideByZeroException) {
-			divide_by_zero = true;
-		}
-
-		if (!divide_by_zero)
-			return 5;
-
-		if ((n / 35) != 122713351)
-			return 9;
 
 		return 0;
 	}

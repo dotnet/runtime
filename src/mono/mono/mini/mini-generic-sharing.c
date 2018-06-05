@@ -1476,6 +1476,11 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	csig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + (sig->param_count * sizeof (MonoType*)));
 	memcpy (csig, sig, mono_metadata_signature_size (sig));
 
+	for (i = 0; i < sig->param_count; i++) {
+		if (sig->params [i]->byref)
+			csig->params [i] = m_class_get_this_arg (mono_defaults.int_class);
+	}
+
 	MonoType *int_type = mono_get_int_type ();
 	/* Create the signature for the callee callconv */
 	if (generic) {
@@ -1609,7 +1614,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 #endif
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_INTERP_IN);
-	info->d.interp_in.sig = sig;
+	info->d.interp_in.sig = csig;
 
 	res = mono_mb_create (mb, csig, sig->param_count + 16, info);
 

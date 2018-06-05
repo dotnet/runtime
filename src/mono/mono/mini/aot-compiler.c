@@ -7765,11 +7765,20 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 
 		//printf ("%s\n", mono_signature_full_name (sig));
 
-		copy->ret = mini_get_underlying_type (sig->ret);
+		if (sig->ret->byref)
+			copy->ret = m_class_get_this_arg (mono_defaults.int_class);
+		else
+			copy->ret = mini_get_underlying_type (sig->ret);
 		if (!is_concrete_type (copy->ret))
 			concrete = FALSE;
 		for (i = 0; i < sig->param_count; ++i) {
-			copy->params [i] = mini_get_underlying_type (sig->params [i]);
+			if (sig->params [i]->byref) {
+				MonoType *t = m_class_get_byval_arg (mono_class_from_mono_type (sig->params [i]));
+				t = mini_get_underlying_type (t);
+				copy->params [i] = m_class_get_this_arg (mono_class_from_mono_type (t));
+			} else {
+				copy->params [i] = mini_get_underlying_type (sig->params [i]);
+			}
 			if (!is_concrete_type (copy->params [i]))
 				concrete = FALSE;
 		}
