@@ -91,6 +91,12 @@
     <Compile Include="TestEnvironmentConfiguration.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)system.security.cryptography.x509certificates.testdata\1.0.2-prerelease\content\**\*.*" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
