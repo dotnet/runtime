@@ -100,17 +100,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ReadOnlySpan\AsSpan.cs" />
-    <Compile Include="ReadOnlySpan\BinarySearch.cs" />
-    <Compile Include="ReadOnlySpan\Contains.cs" />
+    <Compile Include="ReadOnlySpan\BinarySearch.cs" />    
     <Compile Include="ReadOnlySpan\CopyTo.cs" />
     <Compile Include="ReadOnlySpan\CtorArray.cs" />
     <Compile Include="ReadOnlySpan\CtorArrayIntInt.cs" />
     <Compile Include="ReadOnlySpan\CtorPointerInt.cs" />
     <Compile Include="ReadOnlySpan\Empty.cs" />
-    <Compile Include="ReadOnlySpan\EndsWith.byte.cs" />
-    <Compile Include="ReadOnlySpan\EndsWith.char.cs" />
-    <Compile Include="ReadOnlySpan\EndsWith.long.cs" />
-    <Compile Include="ReadOnlySpan\EndsWith.StringComparison.cs" />
+    <Compile Include="ReadOnlySpan\EndsWith.byte.cs" />    
+    <Compile Include="ReadOnlySpan\EndsWith.long.cs" />    
     <Compile Include="ReadOnlySpan\EndsWith.T.cs" />
     <Compile Include="ReadOnlySpan\Equality.cs" />
     <Compile Include="ReadOnlySpan\Equals.cs" />
