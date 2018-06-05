@@ -790,7 +790,7 @@ HANDLES(ICALL(REMSER_2, "IsTransparentProxy", ves_icall_IsTransparentProxy))
 #endif
 
 ICALL_TYPE(RVH, "System.Runtime.Versioning.VersioningHelper", RVH_1)
-ICALL(RVH_1, "GetRuntimeId", ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId)
+HANDLES(ICALL(RVH_1, "GetRuntimeId", ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId))
 
 ICALL_TYPE(RFH, "System.RuntimeFieldHandle", RFH_1)
 ICALL(RFH_1, "SetValueDirect", ves_icall_System_RuntimeFieldHandle_SetValueDirect)

@@ -7077,7 +7077,7 @@ ves_icall_System_Environment_get_TickCount (void)
 }
 
 ICALL_EXPORT gint32
-ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId (void)
+ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId (MonoError *error)
 {
 	return 9;
 }
