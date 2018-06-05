@@ -1,14 +1,17 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using FluentAssertions;
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup.Test;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using Xunit;
-using FluentAssertions;
-using Microsoft.DotNet.CoreSetup.Test;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
 {
@@ -276,6 +279,65 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
                 .Fail();
         }
 
+        [Fact]
+        public void Framework_Dependent_AppHost_Succeeds()
+        {
+            var fixture = PreviouslyPublishedAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            // Since SDK doesn't support building framework dependent apphost yet, emulate that behavior
+            // by creating the executable from apphost.exe
+            var appExe = fixture.TestProject.AppExe;
+            var appDllName = Path.GetFileName(fixture.TestProject.AppDll);
+
+            string hostExeName = $"apphost{Constants.ExeSuffix}";
+            string builtAppHost = Path.Combine(RepoDirectories.HostArtifacts, hostExeName);
+            string appDir = Path.GetDirectoryName(appExe);
+            string appDirHostExe = Path.Combine(appDir, hostExeName);
+
+            // Make a copy of apphost first, replace hash and overwrite app.exe, rather than
+            // overwrite app.exe and edit in place, because the file is opened as "write" for
+            // the replacement -- the test fails with ETXTBSY (exit code: 26) in Linux when
+            // executing a file opened in "write" mode.
+            File.Copy(builtAppHost, appDirHostExe, true);
+            using (var sha256 = SHA256.Create())
+            {
+                // Replace the hash with the managed DLL name.
+                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
+                var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
+                AppHostExtensions.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDllName), true);
+            }
+            File.Copy(appDirHostExe, appExe, true);
+
+            // Get the framework location that was built
+            string builtDotnet = fixture.BuiltDotnet.BinPath;
+
+            // Verify running with the default working directory
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .EnvironmentVariable("DOTNET_ROOT", builtDotnet)
+                .EnvironmentVariable("DOTNET_ROOT(x86)", builtDotnet)
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World");
+
+            // Verify running from within the working directory
+            Command.Create(appExe)
+                .WorkingDirectory(fixture.TestProject.OutputDirectory)
+                .EnvironmentVariable("DOTNET_ROOT", builtDotnet)
+                .EnvironmentVariable("DOTNET_ROOT(x86)", builtDotnet)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World");
+        }
+
         private void MoveDepsJsonToSubdirectory(TestProjectFixture testProjectFixture)
         {
             var subdirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "d");
@@ -314,7 +376,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             testProjectFixture.TestProject.RuntimeConfigJson = destRuntimeConfig;
         }
 
-         private string CreateAStore(TestProjectFixture testProjectFixture)
+        private string CreateAStore(TestProjectFixture testProjectFixture)
         {
             var storeoutputDirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "store");
             if (!Directory.Exists(storeoutputDirectory))
