@@ -85,13 +85,13 @@ def main(argv):
 
     print("Downloading .Net CLI")
     if platform == 'Linux':
-        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.0.0/dotnet-sdk-2.0.0-linux-x64.tar.gz"
+        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.300/dotnet-sdk-2.1.300-linux-x64.tar.gz"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.tar.gz')
     elif platform == 'OSX':
-        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.0.0/dotnet-sdk-2.0.0-macos-x64.tar.gz"
+        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.300/dotnet-sdk-2.1.300-osx-x64.tar.gz"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.tar.gz')
     elif platform == 'Windows_NT':
-        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.0.0/dotnet-sdk-2.0.0-win-x64.zip"
+        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.300/dotnet-sdk-2.1.300-win-x64.zip"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.zip')
     else:
         print('Unknown os ', os)
@@ -222,6 +222,10 @@ def main(argv):
         patchFile = open("format.patch", "w")
         proc = subprocess.Popen(["git", "diff", "--patch", "-U20"], env=my_env, stdout=patchFile)
         output,error = proc.communicate()
+
+    # shutdown the dotnet build servers before cleaning things up
+    proc = subprocess.Popen(["dotnet", "build-server", "shutdown"], env=my_env)
+    output,error = proc.communicate()
 
     if os.path.isdir(jitUtilsPath):
         print("Deleting " + jitUtilsPath)
