@@ -1863,7 +1863,7 @@ public:
                     if (ch > 0x7F)
                         goto ProcessChar;
 
-                    *pTarget = (char)ch;
+                    *pTarget = (WCHAR)ch;
                     pTarget++;
                 }
                 // we are done
@@ -1899,7 +1899,7 @@ public:
                     if (ch > 0x7F) {
                         goto LongCode;
                     }
-                    *pTarget = (char)ch;
+                    *pTarget = (WCHAR)ch;
                     pTarget++;
                 }
 
@@ -2022,7 +2022,7 @@ public:
 
                         ch = (chc << 6) | (ch & 0x3F);
 
-                        *pTarget = (char)(((ch >> 10) & 0x7FF) +
+                        *pTarget = (WCHAR)(((ch >> 10) & 0x7FF) +
                             (SHORT)(CharUnicodeInfo::HIGH_SURROGATE_START - (0x10000 >> 10)));
                         pTarget++;
 
