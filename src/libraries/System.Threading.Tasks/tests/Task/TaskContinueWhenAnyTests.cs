@@ -3,12 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Diagnostics;
 
-namespace Test
+namespace System.Threading.Tasks.Tests
 {
     public class TaskContinueWhenAnyTests
     {
@@ -240,21 +237,21 @@ namespace Test
             {
                 if (antecedentsAreFutures)
                 {
-                    Assert.ThrowsAsync<ArgumentNullException>(
-                       () => Task<int>.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => 0, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null));
+                    Assert.Throws<ArgumentNullException>(
+                       () => { Task<int>.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => 0, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
 
-                    Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-                       () => Task<int>.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => 0, TaskContinuationOptions.NotOnFaulted));
+                    Assert.Throws<ArgumentOutOfRangeException>(
+                       () => { Task<int>.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => 0, TaskContinuationOptions.NotOnFaulted); });
 
-                    Assert.ThrowsAsync<ArgumentNullException>(
-                       () => Task<int>.Factory.ContinueWhenAny<int>(null, t => 0));
+                    Assert.Throws<ArgumentNullException>(
+                       () => { Task<int>.Factory.ContinueWhenAny<int>(null, t => 0); });
 
                     var cFuture = Task.Factory.ContinueWhenAny<int, int>((Task<int>[])antecedents, t => 0, ct);
                     CheckForCorrectCT(cFuture, ct);
                     antecedents[0] = null;
 
-                    Assert.ThrowsAsync<ArgumentException>(
-                       () => Task<int>.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => 0));
+                    Assert.Throws<ArgumentException>(
+                       () => { Task<int>.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => 0); });
 
 
                     AssertExtensions.Throws<ArgumentException>("tasks", () => Task<int>.Factory.ContinueWhenAny(new Task<int>[0], t => 0));
@@ -277,26 +274,26 @@ namespace Test
                 else //antecedents are tasks
                 {
                     var dummy = Task.Factory.StartNew(delegate { });
-                    Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-                       () => Task<int>.Factory.ContinueWhenAny(new Task[] { dummy }, t => 0, TaskContinuationOptions.LongRunning | TaskContinuationOptions.ExecuteSynchronously));
+                    Assert.Throws<ArgumentOutOfRangeException>(
+                       () => { Task<int>.Factory.ContinueWhenAny(new Task[] { dummy }, t => 0, TaskContinuationOptions.LongRunning | TaskContinuationOptions.ExecuteSynchronously); });
                     dummy.Wait();
 
 
-                    Assert.ThrowsAsync<ArgumentNullException>(
-                       () => Task<int>.Factory.ContinueWhenAny(antecedents, t => 0, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null));
+                    Assert.Throws<ArgumentNullException>(
+                       () => { Task<int>.Factory.ContinueWhenAny(antecedents, t => 0, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
 
-                    Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-                       () => Task<int>.Factory.ContinueWhenAny(antecedents, t => 0, TaskContinuationOptions.NotOnFaulted));
+                    Assert.Throws<ArgumentOutOfRangeException>(
+                       () => { Task<int>.Factory.ContinueWhenAny(antecedents, t => 0, TaskContinuationOptions.NotOnFaulted); });
 
-                    Assert.ThrowsAsync<ArgumentNullException>(
-                       () => Task<int>.Factory.ContinueWhenAny(null, t => 0));
+                    Assert.Throws<ArgumentNullException>(
+                       () => { Task<int>.Factory.ContinueWhenAny(null, t => 0); });
 
                     var cTask = Task.Factory.ContinueWhenAny(antecedents, t => 0, ct);
                     CheckForCorrectCT(cTask, ct);
                     antecedents[0] = null;
 
-                    Assert.ThrowsAsync<ArgumentException>(
-                       () => Task<int>.Factory.ContinueWhenAny(antecedents, (t) => 0));
+                    Assert.Throws<ArgumentException>(
+                       () => { Task<int>.Factory.ContinueWhenAny(antecedents, (t) => 0); });
 
 
                     AssertExtensions.Throws<ArgumentException>("tasks", () => Task<int>.Factory.ContinueWhenAny(new Task[0], t => 0));
@@ -324,22 +321,22 @@ namespace Test
                 {
                     if (antecedentsAreFutures)
                     {
-                        Assert.ThrowsAsync<ArgumentNullException>(
-                           () => Task.Factory.ContinueWhenAny<int, int>((Task<int>[])antecedents, t => 0, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null));
+                        Assert.Throws<ArgumentNullException>(
+                           () => { Task.Factory.ContinueWhenAny<int, int>((Task<int>[])antecedents, t => 0, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
 
-                        Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-                           () => Task.Factory.ContinueWhenAny<int, int>((Task<int>[])antecedents, t => 0, TaskContinuationOptions.NotOnFaulted));
+                        Assert.Throws<ArgumentOutOfRangeException>(
+                           () => { Task.Factory.ContinueWhenAny<int, int>((Task<int>[])antecedents, t => 0, TaskContinuationOptions.NotOnFaulted); });
 
-                        Assert.ThrowsAsync<ArgumentNullException>(
-                           () => Task.Factory.ContinueWhenAny<int, int>(null, t => 0));
+                        Assert.Throws<ArgumentNullException>(
+                           () => { Task.Factory.ContinueWhenAny<int, int>(null, t => 0); });
 
                         var cTask = Task.Factory.ContinueWhenAny<int, int>((Task<int>[])antecedents, t => 0, ct);
                         CheckForCorrectCT(cTask, ct);
                         antecedents[0] = null;
 
 
-                        Assert.ThrowsAsync<ArgumentException>(
-                           () => Task.Factory.ContinueWhenAny<int, int>((Task<int>[])antecedents, t => 0));
+                        Assert.Throws<ArgumentException>(
+                           () => { Task.Factory.ContinueWhenAny<int, int>((Task<int>[])antecedents, t => 0); });
 
                         AssertExtensions.Throws<ArgumentException>("tasks", () => Task.Factory.ContinueWhenAny(new Task<int>[0], t => 0));
 
@@ -361,21 +358,21 @@ namespace Test
 
                     else // antecedents are tasks
                     {
-                        Assert.ThrowsAsync<ArgumentNullException>(
-                           () => Task.Factory.ContinueWhenAny<int>(antecedents, t => 0, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null));
+                        Assert.Throws<ArgumentNullException>(
+                           () => { Task.Factory.ContinueWhenAny<int>(antecedents, t => 0, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
 
-                        Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-                           () => Task.Factory.ContinueWhenAny<int>(antecedents, t => 0, TaskContinuationOptions.NotOnFaulted));
+                        Assert.Throws<ArgumentOutOfRangeException>(
+                           () => { Task.Factory.ContinueWhenAny<int>(antecedents, t => 0, TaskContinuationOptions.NotOnFaulted); });
 
-                        Assert.ThrowsAsync<ArgumentNullException>(
-                           () => Task.Factory.ContinueWhenAny<int>(null, t => 0));
+                        Assert.Throws<ArgumentNullException>(
+                           () => { Task.Factory.ContinueWhenAny<int>(null, t => 0); });
 
                         var cTask = Task.Factory.ContinueWhenAny(antecedents, delegate (Task t) { }, ct);
                         CheckForCorrectCT(cTask, ct);
                         antecedents[0] = null;
 
-                        Assert.ThrowsAsync<ArgumentException>(
-                           () => Task.Factory.ContinueWhenAny<int>(antecedents, t => 0));
+                        Assert.Throws<ArgumentException>(
+                           () => { Task.Factory.ContinueWhenAny<int>(antecedents, t => 0); });
 
 
                         AssertExtensions.Throws<ArgumentException>("tasks", () => Task.Factory.ContinueWhenAny(new Task[0], t => 0));
@@ -401,22 +398,22 @@ namespace Test
                 {
                     if (antecedentsAreFutures)
                     {
-                        Assert.ThrowsAsync<ArgumentNullException>(
-                           () => Task.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => { }, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null));
+                        Assert.Throws<ArgumentNullException>(
+                           () => { Task.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => { }, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
 
-                        Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-                           () => Task.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => { }, TaskContinuationOptions.NotOnFaulted));
+                        Assert.Throws<ArgumentOutOfRangeException>(
+                           () => { Task.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => { }, TaskContinuationOptions.NotOnFaulted); });
 
-                        Assert.ThrowsAsync<ArgumentNullException>(
-                           () => Task.Factory.ContinueWhenAny<int>(null, t => { }));
+                        Assert.Throws<ArgumentNullException>(
+                           () => { Task.Factory.ContinueWhenAny<int>(null, t => { }); });
 
                         var cTask = Task.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => { }, ct);
                         CheckForCorrectCT(cTask, ct);
                         antecedents[0] = null;
 
 
-                        Assert.ThrowsAsync<ArgumentException>(
-                            () => Task.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => { }));
+                        Assert.Throws<ArgumentException>(
+                            () => { Task.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => { }); });
 
                         AssertExtensions.Throws<ArgumentException>("tasks", () => Task.Factory.ContinueWhenAny(new Task<int>[] { }, t => { }));
 
@@ -437,22 +434,22 @@ namespace Test
                     }
                     else // antecedents are tasks
                     {
-                        Assert.ThrowsAsync<ArgumentNullException>(
-                           () => Task.Factory.ContinueWhenAny(antecedents, t => { }, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null));
+                        Assert.Throws<ArgumentNullException>(
+                           () => { Task.Factory.ContinueWhenAny(antecedents, t => { }, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
 
-                        Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-                           () => Task.Factory.ContinueWhenAny(antecedents, t => { }, TaskContinuationOptions.NotOnFaulted));
+                        Assert.Throws<ArgumentOutOfRangeException>(
+                           () => { Task.Factory.ContinueWhenAny(antecedents, t => { }, TaskContinuationOptions.NotOnFaulted); });
 
-                        Assert.ThrowsAsync<ArgumentNullException>(
-                           () => Task.Factory.ContinueWhenAny(null, t => { }));
+                        Assert.Throws<ArgumentNullException>(
+                           () => { Task.Factory.ContinueWhenAny(null, t => { }); });
 
                         var task = Task.Factory.ContinueWhenAny(antecedents, t => { }, ct);
                         CheckForCorrectCT(task, ct);
                         antecedents[0] = null;
 
 
-                        Assert.ThrowsAsync<ArgumentException>(
-                           () => Task.Factory.ContinueWhenAny(antecedents, t => { }));
+                        Assert.Throws<ArgumentException>(
+                           () => { Task.Factory.ContinueWhenAny(antecedents, t => { }); });
 
                         AssertExtensions.Throws<ArgumentException>("tasks",() => Task.Factory.ContinueWhenAny(new Task[0], t => { }));
 
