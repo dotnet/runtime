@@ -40,6 +40,12 @@
 #include <unistd.h> // sysconf
 #include "globals.h"
 
+#if defined(_ARM_) || defined(_ARM64_)
+#define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
+#else
+#define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
+#endif
+
 // The cachced number of logical CPUs observed.
 static uint32_t g_logicalCpuCount = 0;
 
@@ -67,7 +73,7 @@ bool GCToOSInterface::Initialize()
     g_pageSizeUnixInl = uint32_t((pageSize > 0) ? pageSize : 0x1000);
 
     // Calculate and cache the number of processors on this machine
-    int cpuCount = sysconf(_SC_NPROCESSORS_CONF);
+    int cpuCount = sysconf(SYSCONF_GET_NUMPROCS);
     if (cpuCount == -1)
     {
         return false;
