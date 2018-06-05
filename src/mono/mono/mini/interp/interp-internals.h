@@ -152,8 +152,8 @@ typedef struct {
 extern int mono_interp_traceopt;
 extern GSList *mono_interp_jit_classes;
 
-MonoException *
-mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, InterpFrame *frame);
+void
+mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, InterpFrame *frame, MonoError *error);
 
 void
 mono_interp_transform_init (void);

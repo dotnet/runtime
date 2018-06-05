@@ -2053,12 +2053,14 @@ do_transform_method (InterpFrame *frame, ThreadContext *context)
 	MonoLMFExt ext;
 	/* Don't push lmf if we have no interp data */
 	gboolean push_lmf = frame->parent != NULL;
+	ERROR_DECL (error);
 
 	/* Use the parent frame as the current frame is not complete yet */
 	if (push_lmf)
 		interp_push_lmf (&ext, frame->parent);
 
-	frame->ex = mono_interp_transform_method (frame->imethod, context, frame);
+	mono_interp_transform_method (frame->imethod, context, frame, error);
+	frame->ex = mono_error_convert_to_exception (error);
 
 	if (push_lmf)
 		interp_pop_lmf (&ext);
@@ -2667,8 +2669,11 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				MONO_PROFILER_RAISE (method_tail_call, (frame->imethod->method, new_method->method));
 
 			if (!new_method->transformed) {
+				ERROR_DECL (error);
+
 				frame->ip = ip;
-				frame->ex = mono_interp_transform_method (new_method, context, NULL);
+				mono_interp_transform_method (new_method, context, NULL, error);
+				frame->ex = mono_error_convert_to_exception (error);
 				if (frame->ex)
 					goto exit_frame;
 			}
