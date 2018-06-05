@@ -363,6 +363,7 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
     }
 }
 
+#ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // IsDstSrcImmAvxInstruction: Checks if the instruction has a "reg, reg/mem, imm" or
 //                            "reg/mem, reg, imm" form for the legacy, VEX, and EVEX
@@ -395,6 +396,7 @@ static bool IsDstSrcImmAvxInstruction(instruction ins)
             return false;
     }
 }
+#endif // FEATURE_HW_INTRINSICS
 
 // -------------------------------------------------------------------
 // Is4ByteSSE4Instruction: Returns true if the SSE4 instruction
