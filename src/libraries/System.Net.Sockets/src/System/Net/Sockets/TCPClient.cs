@@ -20,7 +20,7 @@ namespace System.Net.Sockets
         private bool _active;
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class.
-        public TcpClient() : this(AddressFamily.InterNetwork)
+        public TcpClient() : this(AddressFamily.Unknown)
         {
         }
 
@@ -31,7 +31,8 @@ namespace System.Net.Sockets
 
             // Validate parameter
             if (family != AddressFamily.InterNetwork &&
-                family != AddressFamily.InterNetworkV6)
+                family != AddressFamily.InterNetworkV6 &&
+                family != AddressFamily.Unknown)
             {
                 throw new ArgumentException(SR.Format(SR.net_protocol_invalid_family, "TCP"), nameof(family));
             }
@@ -111,7 +112,11 @@ namespace System.Net.Sockets
         public Socket Client
         {
             get { return _clientSocket; }
-            set { _clientSocket = value; }
+            set
+            {
+                _clientSocket = value;
+                _family = _clientSocket?.AddressFamily ?? AddressFamily.Unknown;
+            }
         }
 
         public bool Connected => _clientSocket?.Connected ?? false;
@@ -186,7 +191,7 @@ namespace System.Net.Sockets
                             _active = true;
                             break;
                         }
-                        else if (address.AddressFamily == _family)
+                        else if (address.AddressFamily == _family || _family == AddressFamily.Unknown)
                         {
                             // Only use addresses with a matching family
                             Connect(new IPEndPoint(address, port));
@@ -257,6 +262,7 @@ namespace System.Net.Sockets
             }
 
             Client.Connect(remoteEP);
+            _family = Client.AddressFamily;
             _active = true;
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -267,6 +273,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, ipAddresses);
 
             Client.Connect(ipAddresses, port);
+            _family = Client.AddressFamily;
             _active = true;
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -468,7 +475,19 @@ namespace System.Net.Sockets
         private void InitializeClientSocket()
         {
             Debug.Assert(_clientSocket == null);
-            _clientSocket = new Socket(_family, SocketType.Stream, ProtocolType.Tcp);
+            if (_family == AddressFamily.Unknown)
+            {
+                // If AF was not explicitly set try to initialize dual mode socket or fall-back to IPv4.
+                _clientSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                if (_clientSocket.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    _family = AddressFamily.InterNetwork;
+                }
+            }
+            else
+            {
+                _clientSocket = new Socket(_family, SocketType.Stream, ProtocolType.Tcp);
+            }
         }
     }
 }
