@@ -51,23 +51,31 @@ void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& na
 
 host_mode_t detect_operating_mode(const host_startup_info_t& host_info)
 {
-    if (coreclr_exists_in_dir(host_info.dotnet_root) || pal::file_exists(host_info.app_path))
+    if (coreclr_exists_in_dir(host_info.dotnet_root))
     {
-        pal::string_t own_deps_json = host_info.dotnet_root;
-        pal::string_t own_deps_filename = host_info.get_app_name() + _X(".deps.json");
-        pal::string_t own_config_filename = host_info.get_app_name() + _X(".runtimeconfig.json");
-        append_path(&own_deps_json, own_deps_filename.c_str());
-        if (trace::is_enabled())
-        {
-            trace::info(_X("Detecting mode... CoreCLR present in dotnet root [%s] and checking if [%s] file present=[%d]"),
-                host_info.dotnet_root.c_str(), own_deps_filename.c_str(), pal::file_exists(own_deps_json));
-        }
-        return ((pal::file_exists(own_deps_json) || !pal::file_exists(own_config_filename)) && pal::file_exists(host_info.app_path)) ? host_mode_t::apphost : host_mode_t::split_fx;
+        // Detect between standalone apphost or legacy split mode (specifying --depsfile and --runtimeconfig)
+
+        pal::string_t deps_in_dotnet_root = host_info.dotnet_root;
+        pal::string_t deps_filename = host_info.get_app_name() + _X(".deps.json");
+        append_path(&deps_in_dotnet_root, deps_filename.c_str());
+        bool deps_exists = pal::file_exists(deps_in_dotnet_root);
+
+        trace::info(_X("Detecting mode... CoreCLR present in dotnet root [%d] and checking if [%s] file present=[%d]"),
+            host_info.dotnet_root.c_str(), deps_filename.c_str(), deps_exists);
+
+        // Name of runtimeconfig file; since no path is included here the check is in the current working directory
+        pal::string_t config_in_cwd = host_info.get_app_name() + _X(".runtimeconfig.json");
+
+        return (deps_exists || !pal::file_exists(config_in_cwd)) && pal::file_exists(host_info.app_path) ? host_mode_t::apphost : host_mode_t::split_fx;
     }
-    else
+
+    if (pal::file_exists(host_info.app_path))
     {
-        return host_mode_t::muxer;
+        // Framework-dependent apphost
+        return host_mode_t::apphost;
     }
+
+    return host_mode_t::muxer;
 }
 
 void try_patch_roll_forward_in_dir(const pal::string_t& cur_dir, const fx_ver_t& start_ver, pal::string_t* max_str)
