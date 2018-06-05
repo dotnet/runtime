@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,6 +19,13 @@ namespace System.IO.Compression
         {
             ValidateParameters(buffer, offset, count);
             return Read(new Span<byte>(buffer, offset, count));
+        }
+
+        public override int ReadByte()
+        {
+            byte b = default;
+            int numRead = Read(MemoryMarshal.CreateSpan(ref b, 1));
+            return numRead != 0 ? b : -1;
         }
 
         public override int Read(Span<byte> buffer)
