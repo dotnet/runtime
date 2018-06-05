@@ -608,6 +608,35 @@ namespace System.Net.Http.Functional.Tests
                 });
             });
         }
+
+        [Theory]
+        [InlineData("get", "GET")]
+        [InlineData("head", "HEAD")]
+        [InlineData("post", "POST")]
+        [InlineData("put", "PUT")]
+        [InlineData("other", "other")]
+        [InlineData("SometHING", "SometHING")]
+        public async Task CustomMethod_SentUppercasedIfKnown(string specifiedMethod, string expectedMethod)
+        {
+            if (IsCurlHandler && specifiedMethod == "get")
+            {
+                // CurlHandler doesn't special-case "get" and sends it in the original casing.
+                expectedMethod = specifiedMethod;
+            }
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var client = CreateHttpClient())
+                {
+                    var m = new HttpRequestMessage(new HttpMethod(specifiedMethod), uri);
+                    (await client.SendAsync(m)).Dispose();
+                }
+            }, async server =>
+            {
+                List<string> headers = await server.AcceptConnectionSendResponseAndCloseAsync();
+                Assert.StartsWith(expectedMethod + " ", headers[0]);
+            });
+        }
     }
 
     public abstract class HttpProtocolTests_Dribble : HttpProtocolTests

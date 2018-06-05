@@ -362,7 +362,7 @@ namespace System.Net.Http
             Debug.Assert(RemainingBuffer.Length == 0, "Unexpected data in read buffer");
 
             _currentRequest = request;
-            bool isConnectMethod = (request.Method == HttpMethod.Connect);
+            HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
             bool hasExpectContinueHeader = request.HasHeaders && request.Headers.ExpectContinue == true;
 
             Debug.Assert(!_canRetry);
@@ -374,10 +374,10 @@ namespace System.Net.Http
             try
             {
                 // Write request line
-                await WriteStringAsync(request.Method.Method).ConfigureAwait(false);
+                await WriteStringAsync(normalizedMethod.Method).ConfigureAwait(false);
                 await WriteByteAsync((byte)' ').ConfigureAwait(false);
 
-                if (isConnectMethod)
+                if (ReferenceEquals(normalizedMethod, HttpMethod.Connect))
                 {
                     // RFC 7231 #section-4.3.6.
                     // Write only CONNECT foo.com:345 HTTP/1.1
@@ -443,7 +443,7 @@ namespace System.Net.Http
                 {
                     // Write out Content-Length: 0 header to indicate no body,
                     // unless this is a method that never has a body.
-                    if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head && !isConnectMethod)
+                    if (!ReferenceEquals(normalizedMethod, HttpMethod.Get) && !ReferenceEquals(normalizedMethod, HttpMethod.Head) && !ReferenceEquals(normalizedMethod, HttpMethod.Connect))
                     {
                         await WriteBytesAsync(s_contentLength0NewlineAsciiBytes).ConfigureAwait(false);
                     }
@@ -606,12 +606,12 @@ namespace System.Net.Http
 
                 // Create the response stream.
                 HttpContentStream responseStream;
-                if (request.Method == HttpMethod.Head || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
+                if (ReferenceEquals(normalizedMethod, HttpMethod.Head) || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
                 {
                     responseStream = EmptyReadStream.Instance;
                     CompleteResponse();
                 }
-                else if (isConnectMethod && response.StatusCode == HttpStatusCode.OK)
+                else if (ReferenceEquals(normalizedMethod, HttpMethod.Connect) && response.StatusCode == HttpStatusCode.OK)
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
