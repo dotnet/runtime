@@ -82,12 +82,11 @@ namespace System.Data.SqlClient.Tests
             });
         }
 
+        [ActiveIssue(30144)]
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework doesn't throw the Not Supported Exception")]
-        public void TestNotSupportedExceptionForTransactionScopeAsync()
+        public async Task TestNotSupportedExceptionForTransactionScopeAsync()
         {
-            Assert.ThrowsAsync<NotSupportedException>(() => ConnectToServerInTransactionScopeTask(s_connectionStringWithEnlistAsDefault));
+            await Assert.ThrowsAsync<NotSupportedException>(() => ConnectToServerInTransactionScopeTask(s_connectionStringWithEnlistAsDefault));
         }
-
     }
 }
