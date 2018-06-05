@@ -3,11 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Diagnostics;
 
 namespace System.Threading.Tasks.Tests
@@ -239,12 +236,14 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal("4567", s);
 
             // Test Exception handling from beginMethod
-            Assert.ThrowsAsync<NullReferenceException>(() =>
-               t = Task.Factory.FromAsync(
-                   fac.StartWrite,
-                   fac.EndWrite,
-                   (string)null,  // will cause null.Length to be dereferenced
-                   null));
+            Assert.Throws<NullReferenceException>(() =>
+            {
+                t = Task.Factory.FromAsync(
+                    fac.StartWrite,
+                    fac.EndWrite,
+                    (string)null,  // will cause null.Length to be dereferenced
+                    null);
+            });
 
 
             // Test Exception handling from asynchronous logic
@@ -259,11 +258,11 @@ namespace System.Threading.Tasks.Tests
             Assert.Throws<AggregateException>(() =>
                check = f.Result);
 
-            Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
-               Task.Factory.FromAsync(fac.StartWrite, fac.EndWrite, null, TaskCreationOptions.LongRunning));
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                { Task.Factory.FromAsync(fac.StartWrite, fac.EndWrite, null, TaskCreationOptions.LongRunning); });
 
-            Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
-              Task.Factory.FromAsync(fac.StartWrite, fac.EndWrite, null, TaskCreationOptions.PreferFairness));
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                { Task.Factory.FromAsync(fac.StartWrite, fac.EndWrite, null, TaskCreationOptions.PreferFairness); });
 
             // Empty the buffer, then inject a few more characters into the buffer
             fac.ResetStateTo("0123456789");
