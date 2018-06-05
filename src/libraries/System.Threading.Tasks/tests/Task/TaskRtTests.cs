@@ -3,12 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
 using System.Collections.Generic;
 using System.Text;
-// TPL namespaces
-using System.Threading;
-using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -888,23 +884,23 @@ namespace System.Threading.Tasks.Tests
         public static void RunBasicFutureTest_Negative()
         {
             Task<int> future = new Task<int>(() => 1);
-            Assert.ThrowsAsync<ArgumentNullException>(
-               () => future.ContinueWith((Action<Task<int>, Object>)null, null, CancellationToken.None));
-            Assert.ThrowsAsync<ArgumentNullException>(
-              () => future.ContinueWith((Action<Task<int>, Object>)null, null, TaskContinuationOptions.None));
-            Assert.ThrowsAsync<ArgumentNullException>(
-              () => future.ContinueWith((Action<Task<int>, Object>)null, null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default));
-            Assert.ThrowsAsync<ArgumentNullException>(
-              () => future.ContinueWith((t, s) => { }, null, CancellationToken.None, TaskContinuationOptions.None, null));
+            Assert.Throws<ArgumentNullException>(
+               () => { future.ContinueWith((Action<Task<int>, Object>)null, null, CancellationToken.None); });
+            Assert.Throws<ArgumentNullException>(
+              () => { future.ContinueWith((Action<Task<int>, Object>)null, null, TaskContinuationOptions.None); });
+            Assert.Throws<ArgumentNullException>(
+              () => { future.ContinueWith((Action<Task<int>, Object>)null, null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default); });
+            Assert.Throws<ArgumentNullException>(
+              () => { future.ContinueWith((t, s) => { }, null, CancellationToken.None, TaskContinuationOptions.None, null); });
 
-            Assert.ThrowsAsync<ArgumentNullException>(
-               () => future.ContinueWith<int>((Func<Task<int>, Object, int>)null, null, CancellationToken.None));
-            Assert.ThrowsAsync<ArgumentNullException>(
-              () => future.ContinueWith<int>((Func<Task<int>, Object, int>)null, null, TaskContinuationOptions.None));
-            Assert.ThrowsAsync<ArgumentNullException>(
-              () => future.ContinueWith<int>((Func<Task<int>, Object, int>)null, null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default));
-            Assert.ThrowsAsync<ArgumentNullException>(
-              () => future.ContinueWith<int>((t, s) => 2, null, CancellationToken.None, TaskContinuationOptions.None, null));
+            Assert.Throws<ArgumentNullException>(
+               () => { future.ContinueWith<int>((Func<Task<int>, Object, int>)null, null, CancellationToken.None); });
+            Assert.Throws<ArgumentNullException>(
+              () => { future.ContinueWith<int>((Func<Task<int>, Object, int>)null, null, TaskContinuationOptions.None); });
+            Assert.Throws<ArgumentNullException>(
+              () => { future.ContinueWith<int>((Func<Task<int>, Object, int>)null, null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default); });
+            Assert.Throws<ArgumentNullException>(
+              () => { future.ContinueWith<int>((t, s) => 2, null, CancellationToken.None, TaskContinuationOptions.None, null); });
         }
 
         #region Helper Methods / Classes
