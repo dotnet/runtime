@@ -308,7 +308,7 @@ checked_build_thread_transition (const char *transition, void *info, int from_st
 }
 
 void
-mono_fatal_with_history (const char *msg, ...)
+mono_fatal_with_history (const char * volatile msg, ...)
 {
 	GString* err = g_string_sized_new (100);
 
