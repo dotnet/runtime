@@ -43,7 +43,9 @@ namespace R2RDump
         /// </summary>
         public R2RMethod Method { get; }
 
-        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, R2RMethod method)
+        public UnwindInfo UnwindInfo { get; }
+
+        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, R2RMethod method, UnwindInfo unwindInfo)
         {
             Id = id;
             StartAddress = startRva;
@@ -52,6 +54,7 @@ namespace R2RDump
                 Size = -1;
             UnwindRVA = unwindRva;
             Method = method;
+            UnwindInfo = unwindInfo;
         }
 
         public override string ToString()
@@ -132,7 +135,7 @@ namespace R2RDump
         /// <summary>
         /// Maps all the generic parameters to the type in the instance
         /// </summary>
-        Dictionary<string, string> _genericParamInstanceMap;
+        private Dictionary<string, string> _genericParamInstanceMap;
 
         [Flags]
         public enum EncodeMethodSigFlags
@@ -172,7 +175,7 @@ namespace R2RDump
         /// <summary>
         /// Extracts the method signature from the metadata by rid
         /// </summary>
-        public R2RMethod(byte[] image, MetadataReader mdReader, uint rid, int entryPointId, GenericElementTypes[] instanceArgs, uint[] tok)
+        public R2RMethod(MetadataReader mdReader, uint rid, int entryPointId, GenericElementTypes[] instanceArgs, uint[] tok)
         {
             Token = _mdtMethodDef | rid;
             Rid = rid;
@@ -188,22 +191,7 @@ namespace R2RDump
             BlobReader signatureReader = mdReader.GetBlobReader(_methodDef.Signature);
 
             TypeDefinitionHandle declaringTypeHandle = _methodDef.GetDeclaringType();
-            TypeDefinition declaringTypeDef;
-            do
-            {
-                declaringTypeDef = mdReader.GetTypeDefinition(declaringTypeHandle);
-                DeclaringType = mdReader.GetString(declaringTypeDef.Name) + "." + DeclaringType;
-                declaringTypeHandle = declaringTypeDef.GetDeclaringType();
-            }
-            while (!declaringTypeHandle.IsNil);
-
-            NamespaceDefinitionHandle namespaceHandle = declaringTypeDef.NamespaceDefinition;
-            while (!namespaceHandle.IsNil)
-            {
-                NamespaceDefinition namespaceDef = mdReader.GetNamespaceDefinition(namespaceHandle);
-                DeclaringType = mdReader.GetString(namespaceDef.Name) + "." + DeclaringType;
-                namespaceHandle = namespaceDef.Parent;
-            }
+            DeclaringType = R2RReader.GetTypeDefFullName(mdReader, declaringTypeHandle);
 
             SignatureHeader signatureHeader = signatureReader.ReadSignatureHeader();
             IsGeneric = signatureHeader.IsGeneric;
@@ -253,7 +241,7 @@ namespace R2RDump
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendFormat($"{DeclaringType}{Name}");
+            sb.AppendFormat($"{DeclaringType}.{Name}");
 
             if (IsGeneric)
             {
