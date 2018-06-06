@@ -2,21 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Internal;
-using System.Text;
 using System.Collections;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Drawing.Internal;
-using System.Drawing.Imaging;
-using System.Drawing.Text;
-using System.Drawing.Drawing2D;
-using System.Threading;
-using System.Security;
-using System.Runtime.ConstrainedExecution;
+using System.Internal;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources", Scope = "member", Target = "System.Drawing.SafeNativeMethods+BITMAP.bmBits")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources", Scope = "member", Target = "System.Drawing.SafeNativeMethods+DIBSECTION.dshSection")]
@@ -323,53 +319,6 @@ namespace System.Drawing
                 }
 
                 return new ExternalException(SR.GdiplusUnknown, E_UNEXPECTED);
-            }
-
-            //----------------------------------------------------------------------------------------                                                           
-            // Helper function:  Convert GpPointF* memory block to PointF[]
-            //----------------------------------------------------------------------------------------
-            internal static PointF[] ConvertGPPOINTFArrayF(IntPtr memory, int count)
-            {
-                if (memory == IntPtr.Zero)
-                {
-                    throw new ArgumentNullException(nameof(memory));
-                }
-
-                var points = new PointF[count];
-                Type pointType = typeof(GPPOINTF);
-                int size = Marshal.SizeOf(pointType);
-
-                for (int index = 0; index < count; index++)
-                {
-                    var pt = (GPPOINTF)Marshal.PtrToStructure((IntPtr)((long)memory + index * size), pointType);
-                    points[index] = new PointF(pt.X, pt.Y);
-                }
-
-                return points;
-            }
-
-            //----------------------------------------------------------------------------------------                                                           
-            // Helper function:  Convert GpPoint* memory block to Point[]
-            //----------------------------------------------------------------------------------------
-            internal static Point[] ConvertGPPOINTArray(IntPtr memory, int count)
-            {
-                if (memory == IntPtr.Zero)
-                {
-                    throw new ArgumentNullException(nameof(memory));
-                }
-
-                var points = new Point[count];
-                Type pointType = typeof(GPPOINT);
-
-                int size = Marshal.SizeOf(pointType);
-
-                for (int index = 0; index < count; index++)
-                {
-                    var pt = (GPPOINT)Marshal.PtrToStructure((IntPtr)((long)memory + index * size), pointType);
-                    points[index] = new Point(pt.X, pt.Y);
-                }
-
-                return points;
             }
 
             //----------------------------------------------------------------------------------------                                                           
