@@ -8003,6 +8003,11 @@ public:
 #endif // ALT_JIT
 
 #ifdef DEBUG
+    static bool                s_pJitDisasmIncludeAssembliesListInitialized;
+    static AssemblyNamesList2* s_pJitDisasmIncludeAssembliesList;
+#endif // DEBUG
+
+#ifdef DEBUG
 
     template <typename T>
     T dspPtr(T p)
