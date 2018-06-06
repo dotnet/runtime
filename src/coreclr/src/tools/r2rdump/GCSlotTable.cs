@@ -27,18 +27,18 @@ namespace R2RDump
             public override string ToString()
             {
                 StringBuilder sb = new StringBuilder();
-                string tab = "    ";
+                string tab3 = new string(' ', 12);
 
                 if (StackSlot != null)
                 {
-                    sb.AppendLine($"{tab}{tab}{tab}Stack:");
+                    sb.AppendLine($"{tab3}Stack:");
                     sb.AppendLine(StackSlot.ToString());
                 }
                 else
                 {
-                    sb.AppendLine($"{tab}{tab}{tab}RegisterNumber: {RegisterNumber}");
+                    sb.AppendLine($"{tab3}RegisterNumber: {RegisterNumber}");
                 }
-                sb.AppendLine($"{tab}{tab}{tab}Flags: {Flags}");
+                sb.AppendLine($"{tab3}Flags: {Flags}");
 
                 return sb.ToString();
             }
@@ -79,10 +79,10 @@ namespace R2RDump
             public override string ToString()
             {
                 StringBuilder sb = new StringBuilder();
-                string tab = "    ";
+                string tab4 = new string(' ', 16);
 
-                sb.AppendLine($"{tab}{tab}{tab}{tab}SpOffset: {SpOffset}");
-                sb.Append($"{tab}{tab}{tab}{tab}Base: {Enum.GetName(typeof(GcStackSlotBase), Base)}");
+                sb.AppendLine($"{tab4}SpOffset: {SpOffset}");
+                sb.Append($"{tab4}Base: {Enum.GetName(typeof(GcStackSlotBase), Base)}");
 
                 return sb.ToString();
             }
@@ -125,15 +125,16 @@ namespace R2RDump
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            string tab = "    ";
+            string tab2 = new string(' ', 8);
+            string tab3 = new string(' ', 12);
 
-            sb.AppendLine($"{tab}{tab}NumSlots({NumSlots}) = NumRegisters({NumRegisters}) + NumStackSlots({NumStackSlots}) + NumUntracked({NumUntracked})");
-            sb.AppendLine($"{tab}{tab}GcSlots:");
-            sb.AppendLine($"{tab}{tab}{tab}-------------------------");
+            sb.AppendLine($"{tab2}NumSlots({NumSlots}) = NumRegisters({NumRegisters}) + NumStackSlots({NumStackSlots}) + NumUntracked({NumUntracked})");
+            sb.AppendLine($"{tab2}GcSlots:");
+            sb.AppendLine($"{tab3}-------------------------");
             foreach (GcSlot slot in GcSlots)
             {
                 sb.Append(slot.ToString());
-                sb.AppendLine($"{tab}{tab}{tab}-------------------------");
+                sb.AppendLine($"{tab3}-------------------------");
             }
 
             return sb.ToString();
