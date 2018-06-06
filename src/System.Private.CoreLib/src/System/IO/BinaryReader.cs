@@ -60,13 +60,19 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(encoding));
             }
             if (!input.CanRead)
+            {
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
+            }
+
             _stream = input;
             _decoder = encoding.GetDecoder();
             _maxCharsSize = encoding.GetMaxCharCount(MaxCharBytesSize);
             int minBufferSize = encoding.GetMaxByteCount(1);  // max bytes per one char
             if (minBufferSize < 16)
+            {
                 minBufferSize = 16;
+            }
+
             _buffer = new byte[minBufferSize];
             // _charBuffer and _charBytes will be left null.
 
@@ -89,11 +95,6 @@ namespace System.IO
             }
         }
 
-        public virtual void Close()
-        {
-            Dispose(true);
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -101,7 +102,9 @@ namespace System.IO
                 Stream copyOfStream = _stream;
                 _stream = null;
                 if (copyOfStream != null && !_leaveOpen)
+                {
                     copyOfStream.Close();
+                }
             }
             _stream = null;
             _buffer = null;
@@ -116,12 +119,26 @@ namespace System.IO
             Dispose(true);
         }
 
+        /// <remarks>
+        /// Override Dispose(bool) instead of Close(). This API exists for compatibility purposes.
+        /// </remarks>
+        public virtual void Close()
+        {
+            Dispose(true);
+        }
+
         public virtual int PeekChar()
         {
-            if (_stream == null) throw Error.GetFileNotOpen();
+            if (_stream == null)
+            {
+                throw Error.GetFileNotOpen();
+            }
 
             if (!_stream.CanSeek)
+            {
                 return -1;
+            }
+
             long origPos = _stream.Position;
             int ch = Read();
             _stream.Position = origPos;
@@ -146,11 +163,17 @@ namespace System.IO
         public virtual byte ReadByte()
         {
             // Inlined to avoid some method call overhead with FillBuffer.
-            if (_stream == null) throw Error.GetFileNotOpen();
+            if (_stream == null)
+            {
+                throw Error.GetFileNotOpen();
+            }
 
             int b = _stream.ReadByte();
             if (b == -1)
+            {
                 throw Error.GetEndOfFile();
+            }
+
             return (byte)b;
         }
 
@@ -188,7 +211,11 @@ namespace System.IO
         {
             if (_isMemoryStream)
             {
-                if (_stream == null) throw Error.GetFileNotOpen();
+                if (_stream == null)
+                {
+                    throw Error.GetFileNotOpen();
+                }
+
                 // read directly from MemoryStream buffer
                 MemoryStream mStream = _stream as MemoryStream;
                 Debug.Assert(mStream != null, "_stream as MemoryStream != null");
@@ -266,7 +293,9 @@ namespace System.IO
         public virtual string ReadString()
         {
             if (_stream == null)
+            {
                 throw Error.GetFileNotOpen();
+            }
 
             int currPos = 0;
             int n;
@@ -310,10 +339,15 @@ namespace System.IO
                 charsRead = _decoder.GetChars(_charBytes, 0, n, _charBuffer, 0);
 
                 if (currPos == 0 && n == stringLength)
+                {
                     return new string(_charBuffer, 0, charsRead);
+                }
 
                 if (sb == null)
+                {
                     sb = StringBuilderCache.Acquire(stringLength); // Actual string length in chars may be smaller.
+                }
+
                 sb.Append(_charBuffer, 0, charsRead);
                 currPos += n;
             } while (currPos < stringLength);
@@ -339,9 +373,10 @@ namespace System.IO
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
-
             if (_stream == null)
+            {
                 throw Error.GetFileNotOpen();
+            }
 
             // SafeCritical: index and count have already been verified to be a valid range for the buffer
             return InternalReadChars(new Span<char>(buffer, index, count));
@@ -350,7 +385,9 @@ namespace System.IO
         public virtual int Read(Span<char> buffer)
         {
             if (_stream == null)
+            {
                 throw Error.GetFileNotOpen();
+            }
 
             return InternalReadChars(buffer);
         }
@@ -386,7 +423,9 @@ namespace System.IO
                 if (_2BytesPerChar)
                     numBytes <<= 1;
                 if (numBytes > MaxCharBytesSize)
+                {
                     numBytes = MaxCharBytesSize;
+                }
 
                 int position = 0;
                 byte[] byteBuffer = null;
@@ -411,7 +450,6 @@ namespace System.IO
                 }
 
                 Debug.Assert(byteBuffer != null, "expected byteBuffer to be non-null");
-
                 checked
                 {
                     if (position < 0 || numBytes < 0 || position > byteBuffer.Length - numBytes)
@@ -455,11 +493,13 @@ namespace System.IO
             long posSav = posSav = 0;
 
             if (_stream.CanSeek)
+            {
                 posSav = _stream.Position;
+            }
 
             if (_charBytes == null)
             {
-                _charBytes = new byte[MaxCharBytesSize];
+                _charBytes = new byte[MaxCharBytesSize]; //REVIEW: We need at most 2 bytes/char here? 
             }
             if (_singleChar == null)
             {
@@ -477,13 +517,17 @@ namespace System.IO
                 int r = _stream.ReadByte();
                 _charBytes[0] = (byte)r;
                 if (r == -1)
+                {
                     numBytes = 0;
+                }
                 if (numBytes == 2)
                 {
                     r = _stream.ReadByte();
                     _charBytes[1] = (byte)r;
                     if (r == -1)
+                    {
                         numBytes = 1;
+                    }
                 }
 
                 if (numBytes == 0)
@@ -503,7 +547,9 @@ namespace System.IO
                     // Handle surrogate char 
 
                     if (_stream.CanSeek)
+                    {
                         _stream.Seek((posSav - _stream.Position), SeekOrigin.Current);
+                    }
                     // else - we can't do much here
 
                     throw;
@@ -530,7 +576,7 @@ namespace System.IO
 
             if (count == 0)
             {
-                return Array.Empty<Char>();
+                return Array.Empty<char>();
             }
 
             // SafeCritical: we own the chars buffer, and therefore can guarantee that the index and count are valid
@@ -549,44 +595,65 @@ namespace System.IO
         public virtual int Read(byte[] buffer, int index, int count)
         {
             if (buffer == null)
+            {
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+            }
             if (index < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (count < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
             if (buffer.Length - index < count)
+            {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
+            }
+            if (_stream == null)
+            {
+                throw Error.GetFileNotOpen();
+            }
 
-            if (_stream == null) throw Error.GetFileNotOpen();
             return _stream.Read(buffer, index, count);
         }
 
         public virtual int Read(Span<byte> buffer)
         {
             if (_stream == null)
+            {
                 throw Error.GetFileNotOpen();
+            }
 
             return _stream.Read(buffer);
         }
 
         public virtual byte[] ReadBytes(int count)
         {
-            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (_stream == null) throw Error.GetFileNotOpen();
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            if (_stream == null)
+            {
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            }
 
             if (count == 0)
             {
-                return Array.Empty<Byte>();
+                return Array.Empty<byte>();
             }
 
             byte[] result = new byte[count];
-
             int numRead = 0;
             do
             {
                 int n = _stream.Read(result, numRead, count);
                 if (n == 0)
+                {
                     break;
+                }
+
                 numRead += n;
                 count -= n;
             } while (count > 0);
@@ -608,10 +675,14 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_BinaryReaderFillBuffer);
             }
+
             int bytesRead = 0;
             int n = 0;
 
-            if (_stream == null) throw Error.GetFileNotOpen();
+            if (_stream == null)
+            {
+                throw Error.GetFileNotOpen();
+            }
 
             // Need to find a good threshold for calling ReadByte() repeatedly
             // vs. calling Read(byte[], int, int) for both buffered & unbuffered
@@ -620,7 +691,10 @@ namespace System.IO
             {
                 n = _stream.ReadByte();
                 if (n == -1)
+                {
                     throw Error.GetEndOfFile();
+                }
+
                 _buffer[0] = (byte)n;
                 return;
             }
@@ -636,7 +710,7 @@ namespace System.IO
             } while (bytesRead < numBytes);
         }
 
-        internal protected int Read7BitEncodedInt()
+        protected internal int Read7BitEncodedInt()
         {
             // Read out an Int32 7 bits at a time.  The high bit
             // of the byte when on means to continue reading more bytes.
@@ -648,7 +722,9 @@ namespace System.IO
                 // Check for a corrupted stream.  Read a max of 5 bytes.
                 // In a future version, add a DataFormatException.
                 if (shift == 5 * 7)  // 5 bytes max per Int32, shift += 7
+                {
                     throw new FormatException(SR.Format_Bad7BitInt32);
+                }
 
                 // ReadByte handles end of stream cases for us.
                 b = ReadByte();

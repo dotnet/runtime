@@ -42,7 +42,6 @@ namespace System.Resources
             ResourceSet rs = null;
 
             // Don't use Assembly manifest, but grovel on disk for a file.
-
             // Create new ResourceSet, if a file exists on disk for it.
             String tempFileName = _mediator.GetResourceFileName(culture);
             fileName = FindResourceFile(culture, tempFileName);
