@@ -609,6 +609,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData("get", "GET")]
         [InlineData("head", "HEAD")]
