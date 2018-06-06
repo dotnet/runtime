@@ -82,6 +82,7 @@ namespace R2RDump
         public IEnumerable<uint> SafePointOffsets { get; }
         public IEnumerable<InterruptibleRange> InterruptibleRanges { get; }
         public GcSlotTable SlotTable { get; }
+        public int Size { get; }
 
         public GcInfo(byte[] image, int offset, Machine machine, ushort majorVersion)
         {
@@ -99,7 +100,7 @@ namespace R2RDump
             GcInfoHeaderFlags headerFlags;
             Version = ReadyToRunVersionToGcInfoVersion(majorVersion);
             int bitOffset = offset * 8;
-            int initOffset = bitOffset;
+            int startBitOffset = bitOffset;
             bool slimHeader = (NativeReader.ReadBits(image, 1, ref bitOffset) == 0);
 
             if (slimHeader)
@@ -196,7 +197,7 @@ namespace R2RDump
                 SizeOfStackOutgoingAndScratchArea = DenormalizeSizeOfStackArea(machine, NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.SIZE_OF_STACK_AREA_ENCBASE, ref bitOffset));
             }
 
-            // PARTIALLY_intERRUPTIBLE_GC_SUPPORTED
+            // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
             NumSafePoints = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NUM_SAFE_POINTS_ENCBASE, ref bitOffset);
 
             if (slimHeader)
@@ -208,15 +209,17 @@ namespace R2RDump
                 NumInterruptibleRanges = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NUM_INTERRUPTIBLE_RANGES_ENCBASE, ref bitOffset);
             }
 
-            // PARTIALLY_intERRUPTIBLE_GC_SUPPORTED
+            // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
             SafePointOffsets = EnumerateSafePoints(image, ref bitOffset);
 
             uint numBitsPerOffset = CeilOfLog2(CodeLength);
             bitOffset += (int)(NumSafePoints * numBitsPerOffset);
 
-            InterruptibleRanges = EnumerateinterruptibleRanges(image, gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA1_ENCBASE, gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA2_ENCBASE, ref bitOffset);
+            InterruptibleRanges = EnumerateInterruptibleRanges(image, gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA1_ENCBASE, gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA2_ENCBASE, ref bitOffset);
 
             SlotTable = new GcSlotTable(image, machine, gcInfoTypes, ref bitOffset);
+
+            Size = (int)Math.Ceiling((bitOffset - startBitOffset) / 8.0);
         }
 
         public override string ToString()
@@ -251,7 +254,7 @@ namespace R2RDump
             {
                 sb.AppendLine($"{tab}{tab}{offset}");
             }
-            sb.AppendLine($"{tab}SafePointOffsets:");
+            sb.AppendLine($"{tab}InterruptibleRanges:");
             foreach (InterruptibleRange range in InterruptibleRanges)
             {
                 sb.AppendLine($"{tab}{tab}start:{range.StartOffset}, end:{range.StopOffset}");
@@ -318,6 +321,8 @@ namespace R2RDump
 
         private uint CeilOfLog2(int x)
         {
+            if (x == 0)
+                return 0;
             uint result = (uint)((x & (x - 1)) != 0 ? 1 : 0);
             while (x != 1)
             {
@@ -339,7 +344,7 @@ namespace R2RDump
             return safePoints;
         }
 
-        private IEnumerable<InterruptibleRange> EnumerateinterruptibleRanges(byte[] image, int interruptibleRangeDelta1EncBase, int interruptibleRangeDelta2EncBase, ref int bitOffset)
+        private IEnumerable<InterruptibleRange> EnumerateInterruptibleRanges(byte[] image, int interruptibleRangeDelta1EncBase, int interruptibleRangeDelta2EncBase, ref int bitOffset)
         {
             List<InterruptibleRange> ranges = new List<InterruptibleRange>();
             uint lastinterruptibleRangeStopOffset = 0;
