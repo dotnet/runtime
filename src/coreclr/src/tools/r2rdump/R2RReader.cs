@@ -276,24 +276,6 @@ namespace R2RDump
         }
 
         /// <summary>
-        /// Get the full name of a type, including parent classes and namespace
-        /// </summary>
-        public static string GetTypeDefFullName(MetadataReader mdReader, TypeDefinitionHandle handle)
-        {
-            TypeDefinition typeDef;
-            string typeStr = "";
-            do
-            {
-                typeDef = mdReader.GetTypeDefinition(handle);
-                typeStr = "." + mdReader.GetString(typeDef.Name) + typeStr;
-                handle = typeDef.GetDeclaringType();
-            }
-            while (!handle.IsNil);
-
-            return mdReader.GetString(typeDef.Namespace) + typeStr;
-        }
-
-        /// <summary>
         /// Reads the method entrypoint from the offset. Used for non-generic methods
         /// </summary>
         private int GetEntryPointIdFromOffset(int offset)
