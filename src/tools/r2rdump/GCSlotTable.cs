@@ -44,50 +44,6 @@ namespace R2RDump
             }
         }
 
-        public enum GcSlotFlags
-        {
-            GC_SLOT_BASE = 0x0,
-            GC_SLOT_INTERIOR = 0x1,
-            GC_SLOT_PINNED = 0x2,
-            GC_SLOT_UNTRACKED = 0x4,
-
-            // For internal use by the encoder/decoder
-            GC_SLOT_IS_REGISTER = 0x8,
-            GC_SLOT_IS_DELETED = 0x10,
-        };
-
-        public enum GcStackSlotBase
-        {
-            GC_CALLER_SP_REL = 0x0,
-            GC_SP_REL = 0x1,
-            GC_FRAMEREG_REL = 0x2,
-
-            GC_SPBASE_FIRST = GC_CALLER_SP_REL,
-            GC_SPBASE_LAST = GC_FRAMEREG_REL,
-        };
-
-        public class GcStackSlot
-        {
-            public int SpOffset { get; }
-            public GcStackSlotBase Base { get; }
-            public GcStackSlot(int spOffset, GcStackSlotBase stackSlotBase)
-            {
-                SpOffset = spOffset;
-                Base = stackSlotBase;
-            }
-
-            public override string ToString()
-            {
-                StringBuilder sb = new StringBuilder();
-                string tab4 = new string(' ', 16);
-
-                sb.AppendLine($"{tab4}SpOffset: {SpOffset}");
-                sb.Append($"{tab4}Base: {Enum.GetName(typeof(GcStackSlotBase), Base)}");
-
-                return sb.ToString();
-            }
-        };
-
         public uint NumRegisters { get; }
         public uint NumStackSlots { get; }
         public uint NumUntracked { get; }
@@ -140,20 +96,6 @@ namespace R2RDump
             return sb.ToString();
         }
 
-        private int DenormalizeStackSlot(Machine target, int x)
-        {
-            switch (target)
-            {
-                case Machine.Amd64:
-                    return (x << 3);
-                case Machine.Arm:
-                    return (x << 2);
-                case Machine.Arm64:
-                    return (x << 3);
-            }
-            return x;
-        }
-
         private void DecodeRegisters(byte[] image, GcInfoTypes gcInfoTypes, ref int bitOffset)
         {
             // We certainly predecode the first register
@@ -182,7 +124,7 @@ namespace R2RDump
             // We have stack slots left and more room to predecode
             GcStackSlotBase spBase = (GcStackSlotBase)NativeReader.ReadBits(image, 2, ref bitOffset);
             int normSpOffset = NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.STACK_SLOT_ENCBASE, ref bitOffset);
-            int spOffset = DenormalizeStackSlot(machine, normSpOffset);
+            int spOffset = gcInfoTypes.DenormalizeStackSlot(normSpOffset);
             GcSlotFlags flags = (GcSlotFlags)NativeReader.ReadBits(image, 2, ref bitOffset);
             GcSlots.Add(new GcSlot(-1, new GcStackSlot(spOffset, spBase), flags));
 
@@ -192,14 +134,14 @@ namespace R2RDump
                 if ((uint)flags != 0)
                 {
                     normSpOffset = NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.STACK_SLOT_ENCBASE, ref bitOffset);
-                    spOffset = DenormalizeStackSlot(machine, normSpOffset);
+                    spOffset = gcInfoTypes.DenormalizeStackSlot(normSpOffset);
                     flags = (GcSlotFlags)NativeReader.ReadBits(image, 2, ref bitOffset);
                 }
                 else
                 {
                     int normSpOffsetDelta = NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.STACK_SLOT_DELTA_ENCBASE, ref bitOffset);
                     normSpOffset += normSpOffsetDelta;
-                    spOffset = DenormalizeStackSlot(machine, normSpOffset);
+                    spOffset = gcInfoTypes.DenormalizeStackSlot(normSpOffset);
                 }
                 GcSlots.Add(new GcSlot(-1, new GcStackSlot(spOffset, spBase), flags));
             }

@@ -111,7 +111,7 @@ namespace R2RDump
                 sb.Append(UnwindCode[i].ToString());
             }
             sb.AppendLine($"{tab}PersonalityRoutineRVA: 0x{PersonalityRoutineRVA:X8}");
-            sb.AppendLine($"{tab}Size: {Size}");
+            sb.AppendLine($"{tab}Size: {Size} bytes");
 
             return sb.ToString();
         }
