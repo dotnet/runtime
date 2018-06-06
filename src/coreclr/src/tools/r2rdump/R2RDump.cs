@@ -11,20 +11,21 @@ namespace R2RDump
 {
     class R2RDump
     {
-        private bool _help = false;
+        private bool _help;
         private IReadOnlyList<string> _inputFilenames = Array.Empty<string>();
         private string _outputFilename = null;
-        private bool _raw = false;
-        private bool _header = false;
-        private bool _disasm = false;
+        private bool _raw;
+        private bool _header;
+        private bool _disasm;
         private IReadOnlyList<string> _queries = Array.Empty<string>();
         private IReadOnlyList<string> _keywords = Array.Empty<string>();
         private IReadOnlyList<int> _runtimeFunctions = Array.Empty<int>();
         private IReadOnlyList<string> _sections = Array.Empty<string>();
-        private bool _diff = false;
+        private bool _diff;
         private long _disassembler;
-        private bool _types = false;
-        private bool _unwind = false;
+        private bool _types;
+        private bool _unwind;
+        private bool _gc;
         private TextWriter _writer;
 
         private R2RDump()
@@ -51,6 +52,7 @@ namespace R2RDump
                 syntax.DefineOptionList("s|section", ref _sections, "Get section by keyword");
                 syntax.DefineOption("types", ref _types, "Dump available types");
                 syntax.DefineOption("unwind", ref _unwind, "Dump unwindInfo");
+                syntax.DefineOption("gc", ref _gc, "Dump gcInfo and slot table");
                 syntax.DefineOption("diff", ref _diff, "Compare two R2R images (not yet implemented)"); // not yet implemented
             });
 
@@ -173,6 +175,11 @@ namespace R2RDump
             {
                 _writer.WriteLine("UnwindInfo:");
                 _writer.Write(rtf.UnwindInfo);
+            }
+            if (_gc)
+            {
+                _writer.WriteLine("GcInfo:");
+                _writer.Write(rtf.GcInfo);
             }
             _writer.WriteLine();
         }

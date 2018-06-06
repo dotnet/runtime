@@ -44,16 +44,16 @@ namespace R2RDump
         public R2RMethod Method { get; }
 
         public UnwindInfo UnwindInfo { get; }
-        public GCInfo GCInfo { get; }
+        public GcInfo GcInfo { get; }
 
-        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, R2RMethod method, UnwindInfo unwindInfo, GCInfo gcInfo)
+        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, R2RMethod method, UnwindInfo unwindInfo, GcInfo gcInfo)
         {
             Id = id;
             StartAddress = startRva;
             UnwindRVA = unwindRva;
             Method = method;
             UnwindInfo = unwindInfo;
-            GCInfo = gcInfo;
+            GcInfo = gcInfo;
             Size = gcInfo.CodeLength;
         }
 

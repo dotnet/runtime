@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections.Generic;
 using System.Reflection.PortableExecutable;
+using System.Text;
 
 namespace R2RDump
 {
-    class GCInfo
+    class GcInfo
     {
         public enum GcInfoHeaderFlags
         {
@@ -46,6 +49,17 @@ namespace R2RDump
             RT_Illegal = 0xFF
         };
 
+        public struct InterruptibleRange
+        {
+            public uint StartOffset { get; }
+            public uint StopOffset { get; }
+            public InterruptibleRange(uint start, uint stop)
+            {
+                StartOffset = start;
+                StopOffset = stop;
+            }
+        }
+
         private const int GCINFO_VERSION = 2;
         private const int MIN_GCINFO_VERSION_WITH_RETURN_KIND = 2;
         private const int MIN_GCINFO_VERSION_WITH_REV_PINVOKE_FRAME = 2;
@@ -65,52 +79,13 @@ namespace R2RDump
         public uint SizeOfStackOutgoingAndScratchArea { get; }
         public uint NumSafePoints { get; }
         public uint NumInterruptibleRanges { get; }
+        public IEnumerable<uint> SafePointOffsets { get; }
+        public IEnumerable<InterruptibleRange> InterruptibleRanges { get; }
+        public GcSlotTable SlotTable { get; }
 
-        public GCInfo(byte[] image, int offset, Machine machine, ushort majorVersion)
+        public GcInfo(byte[] image, int offset, Machine machine, ushort majorVersion)
         {
-            int sizeOfReturnKindSlim = 2;
-            int sizeOfReturnKindFat = 2;
-            int codeLengthEncBase = 8;
-            int normPrologSizeEncBase = 5;
-            int securityObjectStackSlotEncBase = 6;
-            int gsCookieStackSlotEncBase = 6;
-            int pspSymStackSlotEncBase = 6;
-            int genericsInstContextStackSlotEncBase = 6;
-            int stackBaseRegisterEncBase = 3;
-            int sizeOfEditAndContinuePreservedAreaEncBase = 4;
-            int reversePinvokeFrameEncBase = 6;
-            int sizeOfStackAreaEncBase = 3;
-            int numSafePointsEncBase = 3;
-            int numInterruptibleRangesEncBase = 1;
-            switch (machine)
-            {
-                case Machine.Amd64:
-                    sizeOfReturnKindFat = 4;
-                    numSafePointsEncBase = 2;
-                    break;
-                case Machine.Arm:
-                    codeLengthEncBase = 7;
-                    securityObjectStackSlotEncBase = 5;
-                    gsCookieStackSlotEncBase = 5;
-                    pspSymStackSlotEncBase = 5;
-                    genericsInstContextStackSlotEncBase = 5;
-                    stackBaseRegisterEncBase = 1;
-                    sizeOfEditAndContinuePreservedAreaEncBase = 3;
-                    reversePinvokeFrameEncBase = 5;
-                    numInterruptibleRangesEncBase = 2;
-                    break;
-                case Machine.Arm64:
-                    sizeOfReturnKindFat = 4;
-                    stackBaseRegisterEncBase = 2;
-                    break;
-                case Machine.I386:
-                    codeLengthEncBase = 6;
-                    normPrologSizeEncBase = 4;
-                    sizeOfEditAndContinuePreservedAreaEncBase = 3;
-                    sizeOfStackAreaEncBase = 6;
-                    numSafePointsEncBase = 4;
-                    break;
-            }
+            GcInfoTypes gcInfoTypes = new GcInfoTypes(machine);
 
             SecurityObjectStackSlot = -1;
             GSCookieStackSlot = -1;
@@ -124,6 +99,7 @@ namespace R2RDump
             GcInfoHeaderFlags headerFlags;
             Version = ReadyToRunVersionToGcInfoVersion(majorVersion);
             int bitOffset = offset * 8;
+            int initOffset = bitOffset;
             bool slimHeader = (NativeReader.ReadBits(image, 1, ref bitOffset) == 0);
 
             if (slimHeader)
@@ -144,17 +120,17 @@ namespace R2RDump
 
             if (Version >= MIN_GCINFO_VERSION_WITH_RETURN_KIND) // IsReturnKindAvailable
             {
-                int returnKindBits = (slimHeader) ? sizeOfReturnKindSlim : sizeOfReturnKindFat;
+                int returnKindBits = (slimHeader) ? gcInfoTypes.SIZE_OF_RETURN_KIND_SLIM : gcInfoTypes.SIZE_OF_RETURN_KIND_FAT;
                 ReturnKind = (ReturnKinds)NativeReader.ReadBits(image, returnKindBits, ref bitOffset);
             }
 
-            CodeLength = DenormalizeCodeLength(machine, (int)NativeReader.DecodeVarLengthUnsigned(image, codeLengthEncBase, ref bitOffset));
+            CodeLength = DenormalizeCodeLength(machine, (int)NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.CODE_LENGTH_ENCBASE, ref bitOffset));
 
             if ((headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GS_COOKIE) != 0)
             {
                 // Decode prolog/epilog information
-                uint normPrologSize = NativeReader.DecodeVarLengthUnsigned(image, normPrologSizeEncBase, ref bitOffset) + 1;
-                uint normEpilogSize = NativeReader.DecodeVarLengthUnsigned(image, normPrologSizeEncBase, ref bitOffset);
+                uint normPrologSize = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
+                uint normEpilogSize = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset);
 
                 ValidRangeStart = normPrologSize;
                 ValidRangeEnd = (uint)CodeLength - normEpilogSize;
@@ -162,7 +138,7 @@ namespace R2RDump
             else if ((headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_SECURITY_OBJECT) != 0 || (headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
             {
                 // Decode prolog information
-                ValidRangeStart = NativeReader.DecodeVarLengthUnsigned(image, normPrologSizeEncBase, ref bitOffset) + 1;
+                ValidRangeStart = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
                 // satisfy asserts that assume m_GSCookieValidRangeStart != 0 ==> m_GSCookieValidRangeStart < m_GSCookieValidRangeEnd
                 ValidRangeEnd = ValidRangeStart + 1;
             }
@@ -170,22 +146,22 @@ namespace R2RDump
             // Decode the offset to the security object.
             if ((headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_SECURITY_OBJECT) != 0)
             {
-                SecurityObjectStackSlot = DenormalizeStackSlot(machine, NativeReader.DecodeVarLengthSigned(image, securityObjectStackSlotEncBase, ref bitOffset));
+                SecurityObjectStackSlot = DenormalizeStackSlot(machine, NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.SECURITY_OBJECT_STACK_SLOT_ENCBASE, ref bitOffset));
             }
 
             if ((headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GS_COOKIE) != 0)
             {
-                GSCookieStackSlot = DenormalizeStackSlot(machine, NativeReader.DecodeVarLengthSigned(image, gsCookieStackSlotEncBase, ref bitOffset));
+                GSCookieStackSlot = DenormalizeStackSlot(machine, NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.GS_COOKIE_STACK_SLOT_ENCBASE, ref bitOffset));
             }
 
             if ((headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_PSP_SYM) != 0)
             {
-                PSPSymStackSlot = DenormalizeStackSlot(machine, NativeReader.DecodeVarLengthSigned(image, pspSymStackSlotEncBase, ref bitOffset));
+                PSPSymStackSlot = DenormalizeStackSlot(machine, NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.PSP_SYM_STACK_SLOT_ENCBASE, ref bitOffset));
             }
 
             if ((headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
             {
-                GenericsInstContextStackSlot = DenormalizeStackSlot(machine, NativeReader.DecodeVarLengthSigned(image, genericsInstContextStackSlotEncBase, ref bitOffset));
+                GenericsInstContextStackSlot = DenormalizeStackSlot(machine, NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE, ref bitOffset));
             }
 
             if ((headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_STACK_BASE_REGISTER) != 0)
@@ -196,18 +172,18 @@ namespace R2RDump
                 }
                 else
                 {
-                    StackBaseRegister = DenormalizeStackBaseRegister(machine, NativeReader.DecodeVarLengthUnsigned(image, stackBaseRegisterEncBase, ref bitOffset));
+                    StackBaseRegister = DenormalizeStackBaseRegister(machine, NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.STACK_BASE_REGISTER_ENCBASE, ref bitOffset));
                 }
             }
 
             if ((headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_EDIT_AND_CONTINUE_PRESERVED_SLOTS) != 0)
             {
-                SizeOfEditAndContinuePreservedArea = NativeReader.DecodeVarLengthUnsigned(image, sizeOfEditAndContinuePreservedAreaEncBase, ref bitOffset);
+                SizeOfEditAndContinuePreservedArea = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, ref bitOffset);
             }
 
             if (hasReversePInvokeFrame)
             {
-                ReversePInvokeFrameStackSlot = NativeReader.DecodeVarLengthSigned(image, reversePinvokeFrameEncBase, ref bitOffset);
+                ReversePInvokeFrameStackSlot = NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.REVERSE_PINVOKE_FRAME_ENCBASE, ref bitOffset);
             }
 
             // FIXED_STACK_PARAMETER_SCRATCH_AREA
@@ -217,11 +193,11 @@ namespace R2RDump
             }
             else
             {
-                SizeOfStackOutgoingAndScratchArea = DenormalizeSizeOfStackArea(machine, NativeReader.DecodeVarLengthUnsigned(image, sizeOfStackAreaEncBase, ref bitOffset));
+                SizeOfStackOutgoingAndScratchArea = DenormalizeSizeOfStackArea(machine, NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.SIZE_OF_STACK_AREA_ENCBASE, ref bitOffset));
             }
 
-            // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-            NumSafePoints = NativeReader.DecodeVarLengthUnsigned(image, numSafePointsEncBase, ref bitOffset);
+            // PARTIALLY_intERRUPTIBLE_GC_SUPPORTED
+            NumSafePoints = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NUM_SAFE_POINTS_ENCBASE, ref bitOffset);
 
             if (slimHeader)
             {
@@ -229,26 +205,61 @@ namespace R2RDump
             }
             else
             {
-                NumInterruptibleRanges = NativeReader.DecodeVarLengthUnsigned(image, numInterruptibleRangesEncBase, ref bitOffset);
+                NumInterruptibleRanges = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NUM_INTERRUPTIBLE_RANGES_ENCBASE, ref bitOffset);
             }
 
-            // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-            /*if (NumSafePoints != 0)
-            {
-                SafePointIndex = FindSafePoint(image, machine, InstructionOffset, ref bitOffset);
-            }
-            else
-            {
-                SafePointIndex = 0;
-            }
+            // PARTIALLY_intERRUPTIBLE_GC_SUPPORTED
+            SafePointOffsets = EnumerateSafePoints(image, ref bitOffset);
 
             uint numBitsPerOffset = CeilOfLog2(CodeLength);
-            bitOffset += (int)(NumSafePoints* numBitsPerOffset);
-            
+            bitOffset += (int)(NumSafePoints * numBitsPerOffset);
 
+            InterruptibleRanges = EnumerateinterruptibleRanges(image, gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA1_ENCBASE, gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA2_ENCBASE, ref bitOffset);
 
-            EnumerateInterruptibleRanges(&SetIsInterruptibleCB, this);*/
+            SlotTable = new GcSlotTable(image, machine, gcInfoTypes, ref bitOffset);
+        }
 
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            string tab = "    ";
+
+            sb.AppendLine($"{tab}Version: {Version}");
+            sb.AppendLine($"{tab}CodeLength: {CodeLength}");
+            sb.AppendLine($"{tab}ReturnKind: {Enum.GetName(typeof(ReturnKinds), ReturnKind)}");
+            sb.AppendLine($"{tab}ValidRangeStart: {ValidRangeStart}");
+            sb.AppendLine($"{tab}ValidRangeEnd: {ValidRangeEnd}");
+            if (SecurityObjectStackSlot != -1)
+                sb.AppendLine($"{tab}SecurityObjectStackSlot: {SecurityObjectStackSlot}");
+            if (GSCookieStackSlot != -1)
+                sb.AppendLine($"{tab}GSCookieStackSlot: {GSCookieStackSlot}");
+            if (PSPSymStackSlot != -1)
+                sb.AppendLine($"{tab}PSPSymStackSlot: {PSPSymStackSlot}");
+            if (GenericsInstContextStackSlot != -1)
+                sb.AppendLine($"{tab}GenericsInstContextStackSlot: {GenericsInstContextStackSlot}");
+            if (StackBaseRegister != 0xffffffff)
+                sb.AppendLine($"{tab}StackBaseRegister: {StackBaseRegister}");
+            if (SizeOfEditAndContinuePreservedArea != 0xffffffff)
+                sb.AppendLine($"{tab}SizeOfEditAndContinuePreservedArea: {SizeOfEditAndContinuePreservedArea}");
+            if (ReversePInvokeFrameStackSlot != -1)
+                sb.AppendLine($"{tab}ReversePInvokeFrameStackSlot: {ReversePInvokeFrameStackSlot}");
+            sb.AppendLine($"{tab}SizeOfStackOutgoingAndScratchArea: {SizeOfStackOutgoingAndScratchArea}");
+            sb.AppendLine($"{tab}NumSafePoints: {NumSafePoints}");
+            sb.AppendLine($"{tab}NumInterruptibleRanges: {NumInterruptibleRanges}");
+            sb.AppendLine($"{tab}SafePointOffsets:");
+            foreach (uint offset in SafePointOffsets)
+            {
+                sb.AppendLine($"{tab}{tab}{offset}");
+            }
+            sb.AppendLine($"{tab}SafePointOffsets:");
+            foreach (InterruptibleRange range in InterruptibleRanges)
+            {
+                sb.AppendLine($"{tab}{tab}start:{range.StartOffset}, end:{range.StopOffset}");
+            }
+            sb.AppendLine($"{tab}SlotTable:");
+            sb.Append(SlotTable.ToString());
+
+            return sb.ToString();
         }
 
         private int DenormalizeCodeLength(Machine target, int x)
@@ -316,44 +327,35 @@ namespace R2RDump
             return result;
         }
 
-
-        private uint FindSafePoint(byte[] image, Machine target, uint breakOffset, ref int currentPos)
+        private IEnumerable<uint> EnumerateSafePoints(byte[] image, ref int bitOffset)
         {
-            if (NumSafePoints == 0)
-                return 0;
-
-            int savedPos = currentPos;
+            List<uint> safePoints = new List<uint>();
             uint numBitsPerOffset = CeilOfLog2(CodeLength);
-            uint result = NumSafePoints;
-
-            // Safepoints are encoded with a -1 adjustment
-            // but normalizing them masks off the low order bit
-            // Thus only bother looking if the address is odd
-            if ((target != Machine.Arm && target != Machine.Arm64) || (breakOffset & 1) != 0)
+            for (int i = 0; i < NumSafePoints; i++)
             {
-                int low = 0;
-                int high = (int)NumSafePoints;
-
-                while (low < high)
-                {
-                    int mid = (low + high) / 2;
-                    currentPos = (int)(savedPos + mid * numBitsPerOffset);
-                    uint normOffset = (uint)NativeReader.ReadBits(image, (int)numBitsPerOffset, ref currentPos);
-                    if (normOffset == breakOffset)
-                    {
-                        result = (uint)mid;
-                        break;
-                    }
-
-                    if (normOffset < breakOffset)
-                        low = mid + 1;
-                    else
-                        high = mid;
-                }
+                uint normOffset = (uint)NativeReader.ReadBits(image, (int)numBitsPerOffset, ref bitOffset);
+                safePoints.Add(normOffset);
             }
+            return safePoints;
+        }
 
-            currentPos = (int)(savedPos + NumSafePoints * numBitsPerOffset);
-            return result;
+        private IEnumerable<InterruptibleRange> EnumerateinterruptibleRanges(byte[] image, int interruptibleRangeDelta1EncBase, int interruptibleRangeDelta2EncBase, ref int bitOffset)
+        {
+            List<InterruptibleRange> ranges = new List<InterruptibleRange>();
+            uint lastinterruptibleRangeStopOffset = 0;
+
+            for (uint i = 0; i < NumInterruptibleRanges; i++)
+            {
+                uint normStartDelta = NativeReader.DecodeVarLengthUnsigned(image, interruptibleRangeDelta1EncBase, ref bitOffset);
+                uint normStopDelta = NativeReader.DecodeVarLengthUnsigned(image, interruptibleRangeDelta2EncBase, ref bitOffset) + 1;
+
+                uint rangeStartOffset = lastinterruptibleRangeStopOffset + normStartDelta;
+                uint rangeStopOffset = rangeStartOffset + normStopDelta;
+                ranges.Add(new InterruptibleRange(rangeStartOffset, rangeStopOffset));
+
+                lastinterruptibleRangeStopOffset = rangeStopOffset;
+            }
+            return ranges;
         }
 
         /// <summary>

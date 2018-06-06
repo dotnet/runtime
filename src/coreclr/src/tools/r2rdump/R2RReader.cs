@@ -219,7 +219,7 @@ namespace R2RDump
                     int unwindOffset = GetOffset(unwindRva);
 
                     UnwindInfo unwindInfo = new UnwindInfo(Image, unwindOffset);
-                    GCInfo gcInfo = new GCInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
+                    GcInfo gcInfo = new GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
 
                     method.RuntimeFunctions.Add(new RuntimeFunction(runtimeFunctionId, startRva, endRva, unwindRva, method, unwindInfo, gcInfo));
                     runtimeFunctionId++;
