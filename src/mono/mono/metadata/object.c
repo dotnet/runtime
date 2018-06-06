@@ -4395,76 +4395,44 @@ mono_runtime_try_run_main (MonoMethod *method, int argc, char* argv[],
 	return mono_runtime_try_exec_main (method, args, exc);
 }
 
-
 static MonoObject*
-serialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
+serialize_or_deserialize_object (MonoObject *obj, const gchar *method_name, MonoMethod **method, MonoError *error)
 {
-	static MonoMethod *serialize_method;
-
-	ERROR_DECL (error);
-	void *params [1];
-	MonoObject *array;
-
-	if (!serialize_method) {
+	if (!*method) {
 		MonoClass *klass = mono_class_get_remoting_services_class ();
-		serialize_method = mono_class_get_method_from_name (klass, "SerializeCallData", -1);
+		*method = mono_class_get_method_from_name (klass, method_name, -1);
 	}
 
-	if (!serialize_method) {
-		*failure = TRUE;
+	if (!*method) {
+		mono_error_set_exception_instance (error, NULL);
 		return NULL;
 	}
 
-	g_assert (!mono_class_is_marshalbyref (mono_object_class (obj)));
-
-	params [0] = obj;
-	*exc = NULL;
-
-	array = mono_runtime_try_invoke (serialize_method, NULL, params, exc, error);
-	if (*exc == NULL && !mono_error_ok (error))
-		*exc = (MonoObject*) mono_error_convert_to_exception (error); /* FIXME convert serialize_object to MonoError */
-	else
-		mono_error_cleanup (error);
-
-	if (*exc)
-		*failure = TRUE;
-
-	return array;
-}
-
-static MonoObject*
-deserialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	static MonoMethod *deserialize_method;
-
-	ERROR_DECL (error);
-	void *params [1];
-	MonoObject *result;
-
-	if (!deserialize_method) {
-		MonoClass *klass = mono_class_get_remoting_services_class ();
-		deserialize_method = mono_class_get_method_from_name (klass, "DeserializeCallData", -1);
-	}
-	if (!deserialize_method) {
-		*failure = TRUE;
-		return NULL;
-	}
-
-	params [0] = obj;
-	*exc = NULL;
-
-	result = mono_runtime_try_invoke (deserialize_method, NULL, params, exc, error);
-	if (*exc == NULL && !mono_error_ok (error))
-		*exc = (MonoObject*) mono_error_convert_to_exception (error); /* FIXME convert deserialize_object to MonoError */
-	else
-		mono_error_cleanup (error);
-
-	if (*exc)
-		*failure = TRUE;
+	MonoException *exc = NULL;
+	void *params [ ] = { obj };
+	MonoObject *result = mono_runtime_try_invoke (*method, NULL, params, (MonoObject**)&exc, error);
+	if (is_ok (error) && exc)
+		mono_error_set_exception_instance (error, exc);
 
 	return result;
+}
+
+static MonoMethod *serialize_method;
+
+static MonoObject*
+serialize_object (MonoObject *obj, MonoError *error)
+{
+	g_assert (!mono_class_is_marshalbyref (mono_object_class (obj)));
+	return serialize_or_deserialize_object (obj, "SerializeCallData", &serialize_method, error);
+}
+
+static MonoMethod *deserialize_method;
+
+static MonoObject*
+deserialize_object (MonoObject *obj, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	return serialize_or_deserialize_object (obj, "DeserializeCallData", &deserialize_method, error);
 }
 
 #ifndef DISABLE_REMOTING
@@ -4522,7 +4490,6 @@ mono_object_xdomain_representation (MonoObject *obj, MonoDomain *target_domain, 
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	error_init (error);
 	MonoObject *deserialized = NULL;
 
 #ifndef DISABLE_REMOTING
@@ -4532,20 +4499,16 @@ mono_object_xdomain_representation (MonoObject *obj, MonoDomain *target_domain, 
 	else
 #endif
 	{
-		gboolean failure = FALSE;
 		MonoDomain *domain = mono_domain_get ();
 		MonoObject *serialized;
-		MonoObject *exc = NULL;
 
 		mono_domain_set_internal_with_options (mono_object_domain (obj), FALSE);
-		serialized = serialize_object (obj, &failure, &exc);
+		serialized = serialize_object (obj, error);
 		mono_domain_set_internal_with_options (target_domain, FALSE);
-		if (!failure)
-			deserialized = deserialize_object (serialized, &failure, &exc);
+		if (is_ok (error))
+			deserialized = deserialize_object (serialized, error);
 		if (domain != target_domain)
 			mono_domain_set_internal_with_options (domain, FALSE);
-		if (failure)
-			mono_error_set_exception_instance (error, (MonoException*)exc);
 	}
 
 	return deserialized;
@@ -4585,7 +4548,8 @@ create_unhandled_exception_eventargs (MonoObject *exc, MonoError *error)
 
 /* Used in mono_unhandled_exception */
 static void
-call_unhandled_exception_delegate (MonoDomain *domain, MonoObject *delegate, MonoObject *exc) {
+call_unhandled_exception_delegate (MonoDomain *domain, MonoObject *delegate, MonoObject *exc)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	ERROR_DECL (error);
@@ -8872,4 +8836,3 @@ Type mono_array_get (MonoArray *array, Type element_type, uintptr_t index)
 {
 }
 #endif
- 
