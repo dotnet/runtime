@@ -141,10 +141,12 @@ CONFIG_INTEGER(TailcallStress, W("TailcallStress"), 0)
 CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, display each tree before/after morphing
 CONFIG_METHODSET(JitBreak, W("JitBreak")) // Stops in the importer when compiling a specified method
 CONFIG_METHODSET(JitDebugBreak, W("JitDebugBreak"))
-CONFIG_METHODSET(JitDisasm, W("JitDisasm")) // Dumps disassembly for specified method
-CONFIG_METHODSET(JitDump, W("JitDump"))     // Dumps trees for specified method
-CONFIG_METHODSET(JitDumpIR, W("JitDumpIR")) // Dumps trees (in linear IR form) for specified method
-CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
+CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Dumps disassembly for specified method
+CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies")) // Only show JitDisasm and related info for methods
+                                                             // from this semicolon-delimited list of assemblies.
+CONFIG_METHODSET(JitDump, W("JitDump"))                      // Dumps trees for specified method
+CONFIG_METHODSET(JitDumpIR, W("JitDumpIR"))                  // Dumps trees (in linear IR form) for specified method
+CONFIG_METHODSET(JitEHDump, W("JitEHDump"))                  // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_METHODSET(JitForceProcedureSplitting, W("JitForceProcedureSplitting"))
 CONFIG_METHODSET(JitGCDump, W("JitGCDump"))
