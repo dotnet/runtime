@@ -175,11 +175,19 @@ namespace R2RDump
             {
                 _writer.WriteLine("UnwindInfo:");
                 _writer.Write(rtf.UnwindInfo);
+                if (_raw)
+                {
+                    DumpBytes(r2r, rtf.UnwindRVA, (uint)rtf.UnwindInfo.Size);
+                }
             }
             if (_gc)
             {
                 _writer.WriteLine("GcInfo:");
                 _writer.Write(rtf.GcInfo);
+                if (_raw)
+                {
+                    DumpBytes(r2r, rtf.UnwindRVA + rtf.UnwindInfo.Size, (uint)rtf.GcInfo.Size);
+                }
             }
             _writer.WriteLine();
         }
