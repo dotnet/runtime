@@ -24,6 +24,7 @@ namespace R2RDump
         private bool _diff = false;
         private long _disassembler;
         private bool _types = false;
+        private bool _unwind = false;
         private TextWriter _writer;
 
         private R2RDump()
@@ -49,6 +50,7 @@ namespace R2RDump
                 syntax.DefineOptionList("r|runtimefunction", ref _runtimeFunctions, ArgStringToInt, "Get one runtime function by id or relative virtual address");
                 syntax.DefineOptionList("s|section", ref _sections, "Get section by keyword");
                 syntax.DefineOption("types", ref _types, "Dump available types");
+                syntax.DefineOption("unwind", ref _unwind, "Dump unwindInfo");
                 syntax.DefineOption("diff", ref _diff, "Compare two R2R images (not yet implemented)"); // not yet implemented
             });
 
@@ -108,6 +110,7 @@ namespace R2RDump
             {
                 DumpBytes(r2r, r2r.R2RHeader.RelativeVirtualAddress, (uint)r2r.R2RHeader.Size);
             }
+            _writer.WriteLine();
             if (dumpSections)
             {
                 WriteDivider("R2R Sections");
@@ -118,6 +121,7 @@ namespace R2RDump
                     DumpSection(r2r, section);
                 }
             }
+            _writer.WriteLine();
         }
 
         /// <summary>
@@ -164,6 +168,11 @@ namespace R2RDump
             if (_raw)
             {
                 DumpBytes(r2r, rtf.StartAddress, (uint)rtf.Size);
+            }
+            if (_unwind)
+            {
+                _writer.WriteLine("UnwindInfo:");
+                _writer.Write(rtf.UnwindInfo);
             }
             _writer.WriteLine();
         }
