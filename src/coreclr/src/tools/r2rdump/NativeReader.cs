@@ -117,6 +117,8 @@ namespace R2RDump
                     val ^= extraBits;
                 }
             }
+            int mask = (1 << numBits) - 1;
+            val &= mask;
             bitOffset += numBits;
             return val;
         }
