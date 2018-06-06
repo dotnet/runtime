@@ -45,6 +45,12 @@ bool                Compiler::s_pAltJitExcludeAssembliesListInitialized = false;
 AssemblyNamesList2* Compiler::s_pAltJitExcludeAssembliesList            = nullptr;
 #endif // ALT_JIT
 
+#ifdef DEBUG
+// static
+bool                Compiler::s_pJitDisasmIncludeAssembliesListInitialized = false;
+AssemblyNamesList2* Compiler::s_pJitDisasmIncludeAssembliesList            = nullptr;
+#endif // DEBUG
+
 /*****************************************************************************
  *
  *  Little helpers to grab the current cycle counter value; this is done
@@ -1385,6 +1391,14 @@ void Compiler::compShutdown()
         s_pAltJitExcludeAssembliesList = nullptr;
     }
 #endif // ALT_JIT
+
+#ifdef DEBUG
+    if (s_pJitDisasmIncludeAssembliesList != nullptr)
+    {
+        s_pJitDisasmIncludeAssembliesList->~AssemblyNamesList2(); // call the destructor
+        s_pJitDisasmIncludeAssembliesList = nullptr;
+    }
+#endif // DEBUG
 
 #if MEASURE_NOWAY
     DisplayNowayAssertMap();
@@ -3390,34 +3404,64 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
         else
         {
-            if ((JitConfig.JitOrder() & 1) == 1)
+            bool disEnabled = true;
+
+            // Setup assembly name list for disassembly, if not already set up.
+            if (!s_pJitDisasmIncludeAssembliesListInitialized)
             {
-                opts.dspOrder = true;
+                const wchar_t* assemblyNameList = JitConfig.JitDisasmAssemblies();
+                if (assemblyNameList != nullptr)
+                {
+                    s_pJitDisasmIncludeAssembliesList = new (HostAllocator::getHostAllocator())
+                        AssemblyNamesList2(assemblyNameList, HostAllocator::getHostAllocator());
+                }
+                s_pJitDisasmIncludeAssembliesListInitialized = true;
             }
 
-            if (JitConfig.JitGCDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            // If we have an assembly name list for disassembly, also check this method's assembly.
+            if (s_pJitDisasmIncludeAssembliesList != nullptr)
             {
-                opts.dspGCtbls = true;
+                const char* assemblyName = info.compCompHnd->getAssemblyName(
+                    info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+
+                if (!s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
+                {
+                    disEnabled = false;
+                }
             }
 
-            if (JitConfig.JitDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (disEnabled)
             {
-                opts.disAsm = true;
-            }
+                if ((JitConfig.JitOrder() & 1) == 1)
+                {
+                    opts.dspOrder = true;
+                }
 
-            if (JitConfig.JitDisasm().contains("SPILLED", nullptr, nullptr))
-            {
-                opts.disAsmSpilled = true;
-            }
+                if (JitConfig.JitGCDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+                {
+                    opts.dspGCtbls = true;
+                }
 
-            if (JitConfig.JitUnwindDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-            {
-                opts.dspUnwind = true;
-            }
+                if (JitConfig.JitDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+                {
+                    opts.disAsm = true;
+                }
 
-            if (JitConfig.JitEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-            {
-                opts.dspEHTable = true;
+                if (JitConfig.JitDisasm().contains("SPILLED", nullptr, nullptr))
+                {
+                    opts.disAsmSpilled = true;
+                }
+
+                if (JitConfig.JitUnwindDump().contains(info.compMethodName, info.compClassName,
+                                                       &info.compMethodInfo->args))
+                {
+                    opts.dspUnwind = true;
+                }
+
+                if (JitConfig.JitEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+                {
+                    opts.dspEHTable = true;
+                }
             }
         }
 
