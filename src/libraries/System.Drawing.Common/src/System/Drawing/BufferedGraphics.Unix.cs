@@ -28,42 +28,31 @@
 //
 //
 
-
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Drawing
 {
-    public sealed class BufferedGraphics : IDisposable
+    public sealed partial class BufferedGraphics
     {
         private Rectangle size;
         private Bitmap membmp = null;
-        private Graphics target = null;
         private Graphics source = null;
 
-        private BufferedGraphics()
+        internal BufferedGraphics(Graphics targetGraphics, IntPtr targetDc, Rectangle targetRectangle)
         {
-
-        }
-
-        internal BufferedGraphics(Graphics targetGraphics, Rectangle targetRectangle)
-        {
+            _targetGraphics = targetGraphics;
+            _targetDC = targetDc;
             size = targetRectangle;
-            target = targetGraphics;
             membmp = new Bitmap(size.Width, size.Height);
-        }
-
-        ~BufferedGraphics()
-        {
-            Dispose(false);
         }
 
         public Graphics Graphics
         {
             get
             {
-                if (source == null)
+                if (source == null && membmp != null)
                 {
                     source = Graphics.FromImage(membmp);
                 }
@@ -74,15 +63,6 @@ namespace System.Drawing
 
         public void Dispose()
         {
-            Dispose(true);
-            System.GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (disposing == false)
-                return;
-
             if (membmp != null)
             {
                 membmp.Dispose();
@@ -95,12 +75,7 @@ namespace System.Drawing
                 source = null;
             }
 
-            target = null;
-        }
-
-        public void Render()
-        {
-            Render(target);
+            _targetGraphics = null;
         }
 
         public void Render(Graphics target)
@@ -111,10 +86,9 @@ namespace System.Drawing
             target.DrawImage(membmp, size);
         }
 
-        public void Render(IntPtr targetDC)
+        private void RenderInternal(HandleRef refTargetDC)
         {
             throw new NotImplementedException();
         }
     }
 }
-
