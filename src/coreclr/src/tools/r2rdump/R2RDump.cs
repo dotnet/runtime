@@ -34,6 +34,7 @@ namespace R2RDump
 
         private ArgumentSyntax ParseCommandLine(string[] args)
         {
+            bool verbose = false;
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
                 syntax.ApplicationName = "R2RDump";
@@ -43,7 +44,7 @@ namespace R2RDump
                 syntax.DefineOption("h|help", ref _help, "Help message for R2RDump");
                 syntax.DefineOptionList("i|in", ref _inputFilenames, "Input file(s) to dump. Expects them to by ReadyToRun images");
                 syntax.DefineOption("o|out", ref _outputFilename, "Output file path. Dumps everything to the specified file except help message and exception messages");
-                syntax.DefineOption("v|verbose|raw", ref _raw, "Dump the raw bytes of each section or runtime function");
+                syntax.DefineOption("raw", ref _raw, "Dump the raw bytes of each section or runtime function");
                 syntax.DefineOption("header", ref _header, "Dump R2R header");
                 syntax.DefineOption("d|disasm", ref _disasm, "Show disassembly of methods or runtime functions");
                 syntax.DefineOptionList("q|query", ref _queries, "Query method by exact name, signature, row id or token");
@@ -53,8 +54,17 @@ namespace R2RDump
                 syntax.DefineOption("types", ref _types, "Dump available types");
                 syntax.DefineOption("unwind", ref _unwind, "Dump unwindInfo");
                 syntax.DefineOption("gc", ref _gc, "Dump gcInfo and slot table");
-                syntax.DefineOption("diff", ref _diff, "Compare two R2R images (not yet implemented)"); // not yet implemented
+                syntax.DefineOption("v|verbose", ref verbose, "Dump raw bytes, disassembly, unwindInfo and gcInfo");
+                syntax.DefineOption("diff", ref _diff, "Compare two R2R images (not yet implemented)");
             });
+
+            if (verbose)
+            {
+                _raw = true;
+                _disasm = true;
+                _unwind = true;
+                _gc = true;
+            }
 
             return argSyntax;
         }
@@ -169,6 +179,7 @@ namespace R2RDump
             }
             if (_raw)
             {
+                _writer.WriteLine("Raw Bytes:");
                 DumpBytes(r2r, rtf.StartAddress, (uint)rtf.Size);
             }
             if (_unwind)
