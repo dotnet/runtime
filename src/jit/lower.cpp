@@ -320,7 +320,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 node->ClearUnusedValue();
                 // Make sure the types are identical, since the node type is changed to VOID
                 // CodeGen relies on op2's type to determine the instruction size.
-                assert(node->gtGetOp2()->TypeGet() == node->TypeGet());
+                // Note that the node type cannot be a small int but the data operand can.
+                assert(genActualType(node->gtGetOp2()->TypeGet()) == node->TypeGet());
                 node->SetOper(GT_LOCKADD);
                 node->gtType = TYP_VOID;
                 CheckImmedAndMakeContained(node, node->gtGetOp2());
