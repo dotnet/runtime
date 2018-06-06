@@ -6564,8 +6564,16 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
     if (!(access & CORINFO_ACCESS_ADDRESS))
     {
-        op1 = gtNewOperNode(GT_IND, lclTyp, op1);
-        op1->gtFlags |= GTF_GLOB_REF;
+        if (varTypeIsStruct(lclTyp))
+        {
+            // Constructor adds GTF_GLOB_REF.  Note that this is *not* GTF_EXCEPT.
+            op1 = gtNewObjNode(pFieldInfo->structType, op1);
+        }
+        else
+        {
+            op1 = gtNewOperNode(GT_IND, lclTyp, op1);
+            op1->gtFlags |= GTF_GLOB_REF;
+        }
     }
 
     return op1;
