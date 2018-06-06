@@ -70,7 +70,6 @@ namespace System.Resources
         }
     }
 
-
     public sealed class ResourceReader : IResourceReader
     {
         // A reasonable default buffer size for reading from files, especially
@@ -453,7 +452,6 @@ namespace System.Resources
                 {
                     throw new FormatException(SR.Format(SR.BadImageFormat_ResourcesDataInvalidOffset, dataPos));
                 }
-
                 ResourceTypeCode junk;
                 if (_version == 1)
                     return LoadObjectV1(dataPos);
@@ -495,7 +493,6 @@ namespace System.Resources
                 if (typeCode == ResourceTypeCode.String) // ignore Null
                     s = _store.ReadString();
             }
-
             return s;
         }
 
@@ -749,8 +746,6 @@ namespace System.Resources
             throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
         }
 
-
-
         // Reads in the header information for a .resources file.  Verifies some
         // of the assumptions about this resource set, and builds the class table
         // for the default resource file format.
@@ -974,7 +969,6 @@ namespace System.Resources
             return _typeTable[typeIndex];
         }
 
-
         public void GetResourceData(string resourceName, out string resourceType, out byte[] resourceData)
         {
             if (resourceName == null)
@@ -1065,8 +1059,6 @@ namespace System.Resources
                 }
             }
         }
-
-
 
         internal sealed class ResourceEnumerator : IDictionaryEnumerator
         {
