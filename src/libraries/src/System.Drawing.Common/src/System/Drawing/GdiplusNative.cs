@@ -14,7 +14,7 @@ namespace System.Drawing
 {
     // Raw function imports for gdiplus
     // Functions are loaded manually in order to accomodate different shared library names on Unix.
-    internal partial class SafeNativeMethods
+    internal unsafe partial class SafeNativeMethods
     {
         internal partial class Gdip
         {
@@ -509,13 +509,13 @@ namespace System.Drawing
             private static FunctionWrapper<GdipPathIterRewind_delegate> GdipPathIterRewind_ptr;
             internal static int GdipPathIterRewind(HandleRef pathIter) => GdipPathIterRewind_ptr.Delegate(pathIter);
 
-            private delegate int GdipPathIterEnumerate_delegate(HandleRef pathIter, out int resultCount, IntPtr memoryPts, [In] [Out] byte[] types, int count);
+            private delegate int GdipPathIterEnumerate_delegate(HandleRef pathIter, out int resultCount, PointF* points, byte* types, int count);
             private static FunctionWrapper<GdipPathIterEnumerate_delegate> GdipPathIterEnumerate_ptr;
-            internal static int GdipPathIterEnumerate(HandleRef pathIter, out int resultCount, IntPtr memoryPts, [In] [Out] byte[] types, int count) => GdipPathIterEnumerate_ptr.Delegate(pathIter, out resultCount, memoryPts, types, count);
+            internal static int GdipPathIterEnumerate(HandleRef pathIter, out int resultCount, PointF* points, byte* types, int count) => GdipPathIterEnumerate_ptr.Delegate(pathIter, out resultCount, points, types, count);
 
-            private delegate int GdipPathIterCopyData_delegate(HandleRef pathIter, out int resultCount, IntPtr memoryPts, [In] [Out] byte[] types, int startIndex, int endIndex);
+            private delegate int GdipPathIterCopyData_delegate(HandleRef pathIter, out int resultCount, PointF* memoryPts, byte* types, int startIndex, int endIndex);
             private static FunctionWrapper<GdipPathIterCopyData_delegate> GdipPathIterCopyData_ptr;
-            internal static int GdipPathIterCopyData(HandleRef pathIter, out int resultCount, IntPtr memoryPts, [In] [Out] byte[] types, int startIndex, int endIndex) => GdipPathIterCopyData_ptr.Delegate(pathIter, out resultCount, memoryPts, types, startIndex, endIndex);
+            internal static int GdipPathIterCopyData(HandleRef pathIter, out int resultCount, PointF* points, byte* types, int startIndex, int endIndex) => GdipPathIterCopyData_ptr.Delegate(pathIter, out resultCount, points, types, startIndex, endIndex);
 
             private delegate int GdipCreateHatchBrush_delegate(int hatchstyle, int forecol, int backcol, out IntPtr brush);
             private static FunctionWrapper<GdipCreateHatchBrush_delegate> GdipCreateHatchBrush_ptr;
@@ -1259,21 +1259,21 @@ namespace System.Drawing
             private static FunctionWrapper<GdipInvertMatrix_delegate> GdipInvertMatrix_ptr;
             internal static int GdipInvertMatrix(HandleRef matrix) => GdipInvertMatrix_ptr.Delegate(matrix);
 
-            private delegate int GdipTransformMatrixPoints_delegate(HandleRef matrix, HandleRef pts, int count);
+            private delegate int GdipTransformMatrixPoints_delegate(HandleRef matrix, PointF* pts, int count);
             private static FunctionWrapper<GdipTransformMatrixPoints_delegate> GdipTransformMatrixPoints_ptr;
-            internal static int GdipTransformMatrixPoints(HandleRef matrix, HandleRef pts, int count) => GdipTransformMatrixPoints_ptr.Delegate(matrix, pts, count);
+            internal static int GdipTransformMatrixPoints(HandleRef matrix, PointF* pts, int count) => GdipTransformMatrixPoints_ptr.Delegate(matrix, pts, count);
 
-            private delegate int GdipTransformMatrixPointsI_delegate(HandleRef matrix, HandleRef pts, int count);
+            private delegate int GdipTransformMatrixPointsI_delegate(HandleRef matrix, Point* pts, int count);
             private static FunctionWrapper<GdipTransformMatrixPointsI_delegate> GdipTransformMatrixPointsI_ptr;
-            internal static int GdipTransformMatrixPointsI(HandleRef matrix, HandleRef pts, int count) => GdipTransformMatrixPointsI_ptr.Delegate(matrix, pts, count);
+            internal static int GdipTransformMatrixPointsI(HandleRef matrix, Point* pts, int count) => GdipTransformMatrixPointsI_ptr.Delegate(matrix, pts, count);
 
-            private delegate int GdipVectorTransformMatrixPoints_delegate(HandleRef matrix, HandleRef pts, int count);
+            private delegate int GdipVectorTransformMatrixPoints_delegate(HandleRef matrix, PointF* pts, int count);
             private static FunctionWrapper<GdipVectorTransformMatrixPoints_delegate> GdipVectorTransformMatrixPoints_ptr;
-            internal static int GdipVectorTransformMatrixPoints(HandleRef matrix, HandleRef pts, int count) => GdipVectorTransformMatrixPoints_ptr.Delegate(matrix, pts, count);
+            internal static int GdipVectorTransformMatrixPoints(HandleRef matrix, PointF* pts, int count) => GdipVectorTransformMatrixPoints_ptr.Delegate(matrix, pts, count);
 
-            private delegate int GdipVectorTransformMatrixPointsI_delegate(HandleRef matrix, HandleRef pts, int count);
+            private delegate int GdipVectorTransformMatrixPointsI_delegate(HandleRef matrix, Point* pts, int count);
             private static FunctionWrapper<GdipVectorTransformMatrixPointsI_delegate> GdipVectorTransformMatrixPointsI_ptr;
-            internal static int GdipVectorTransformMatrixPointsI(HandleRef matrix, HandleRef pts, int count) => GdipVectorTransformMatrixPointsI_ptr.Delegate(matrix, pts, count);
+            internal static int GdipVectorTransformMatrixPointsI(HandleRef matrix, Point* pts, int count) => GdipVectorTransformMatrixPointsI_ptr.Delegate(matrix, pts, count);
 
             private delegate int GdipGetMatrixElements_delegate(HandleRef matrix, IntPtr m);
             private static FunctionWrapper<GdipGetMatrixElements_delegate> GdipGetMatrixElements_ptr;

@@ -183,45 +183,35 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        private PathData _GetPathData()
+        private unsafe PathData _GetPathData()
         {
-            int ptSize = Marshal.SizeOf(typeof(GPPOINTF));
+            int count = PointCount;
 
-            int numPts = PointCount;
-
-            PathData pathData = new PathData() { Types = new byte[numPts] };
-
-            IntPtr memoryPathData = Marshal.AllocHGlobal(3 * IntPtr.Size);
-            IntPtr memoryPoints = Marshal.AllocHGlobal(checked(ptSize * numPts));
-            try
+            PathData pathData = new PathData()
             {
-                GCHandle typesHandle = GCHandle.Alloc(pathData.Types, GCHandleType.Pinned);
-                try
-                {
-                    IntPtr typesPtr = typesHandle.AddrOfPinnedObject();
+                Types = new byte[count],
+                Points = new PointF[count]
+            };
 
-                    Marshal.StructureToPtr(numPts, memoryPathData, false);
-                    Marshal.StructureToPtr(memoryPoints, (IntPtr)((long)memoryPathData + IntPtr.Size), false);
-                    Marshal.StructureToPtr(typesPtr, (IntPtr)((long)memoryPathData + 2 * IntPtr.Size), false);
+            if (count == 0)
+                return pathData;
 
-                    int status = SafeNativeMethods.Gdip.GdipGetPathData(new HandleRef(this, nativePath), memoryPathData);
-
-                    if (status != SafeNativeMethods.Gdip.Ok)
-                    {
-                        throw SafeNativeMethods.Gdip.StatusException(status);
-                    }
-
-                    pathData.Points = SafeNativeMethods.Gdip.ConvertGPPOINTFArrayF(memoryPoints, numPts);
-                }
-                finally
-                {
-                    typesHandle.Free();
-                }
-            }
-            finally
+            fixed (byte* t = pathData.Types)
+            fixed (PointF* p = pathData.Points)
             {
-                Marshal.FreeHGlobal(memoryPathData);
-                Marshal.FreeHGlobal(memoryPoints);
+                GpPathData data = new GpPathData
+                {
+                    Count = count,
+                    Points = p,
+                    Types = t
+                };
+
+                int status = SafeNativeMethods.Gdip.GdipGetPathData(new HandleRef(this, nativePath), &data);
+
+                if (status != SafeNativeMethods.Gdip.Ok)
+                {
+                    throw SafeNativeMethods.Gdip.StatusException(status);
+                }
             }
 
             return pathData;
@@ -1094,29 +1084,22 @@ namespace System.Drawing.Drawing2D
                 return types;
             }
         }
-        public PointF[] PathPoints
+
+        public unsafe PointF[] PathPoints
         {
             get
             {
-                int count = PointCount;
-                int size = Marshal.SizeOf(typeof(GPPOINTF));
-                IntPtr buf = Marshal.AllocHGlobal(checked(count * size));
-                try
+                PointF[] points = new PointF[PointCount];
+                fixed(PointF* p = points)
                 {
-                    int status = SafeNativeMethods.Gdip.GdipGetPathPoints(new HandleRef(this, nativePath), new HandleRef(null, buf), count);
+                    int status = SafeNativeMethods.Gdip.GdipGetPathPoints(new HandleRef(this, nativePath), p, points.Length);
 
                     if (status != SafeNativeMethods.Gdip.Ok)
                     {
                         throw SafeNativeMethods.Gdip.StatusException(status);
                     }
-
-                    PointF[] points = SafeNativeMethods.Gdip.ConvertGPPOINTFArrayF(buf, count);
-                    return points;
                 }
-                finally
-                {
-                    Marshal.FreeHGlobal(buf);
-                }
+                return points;
             }
         }
     }
