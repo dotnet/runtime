@@ -28,62 +28,28 @@
 //
 //
 
-
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Drawing
 {
-    public sealed class BufferedGraphicsContext : IDisposable
+    public sealed partial class BufferedGraphicsContext : IDisposable
     {
-        private Size max_buffer;
-
-        public BufferedGraphicsContext()
+        private BufferedGraphics AllocBuffer(Graphics targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
         {
-            max_buffer = Size.Empty;
-        }
-
-#if !NETCORE
-        ~BufferedGraphicsContext ()
-        {
-        }
-#endif
-
-        public BufferedGraphics Allocate(Graphics targetGraphics, Rectangle targetRectangle)
-        {
-            BufferedGraphics graphics = new BufferedGraphics(targetGraphics, targetRectangle);
+            BufferedGraphics graphics = new BufferedGraphics(targetGraphics, targetDC, targetRectangle);
             return graphics;
         }
 
-        public BufferedGraphics Allocate(IntPtr targetDC, Rectangle targetRectangle)
+        private void Dispose(bool disposing)
         {
-            throw new NotImplementedException();
-        }
-
-        public void Dispose()
-        {
-            System.GC.SuppressFinalize(this);
+            // Do nothing on Unix.
         }
 
         public void Invalidate()
         {
         }
-
-        public Size MaximumBuffer
-        {
-            get { return max_buffer; }
-            set
-            {
-                if (value.Width <= 0 || value.Height <= 0)
-                {
-                    throw new ArgumentException("The height or width of the size is less than or equal to zero.");
-                }
-
-                max_buffer = value;
-            }
-        }
-
     }
 }
 

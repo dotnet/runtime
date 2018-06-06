@@ -31,6 +31,8 @@
     <Compile Include="System\Drawing\Bitmap.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
+    <Compile Include="System\Drawing\BufferedGraphics.cs" />
+    <Compile Include="System\Drawing\BufferedGraphicsContext.cs" />
     <Compile Include="System\Drawing\Brushes.cs" />
     <Compile Include="System\Drawing\CharacterRange.cs" />
     <Compile Include="System\Drawing\ColorTranslator.cs" />
