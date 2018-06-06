@@ -33,11 +33,11 @@ namespace System.Reflection
         // If you modify any of these fields, you must also update the 
         // AssemblyBaseObject structure in object.h
         //
-        private String _Name;                  // Name
+        private string _Name;                  // Name
         private byte[] _PublicKey;
         private byte[] _PublicKeyToken;
         private CultureInfo _CultureInfo;
-        private String _CodeBase;              // Potential location to get the file
+        private string _CodeBase;              // Potential location to get the file
         private Version _Version;
 
         private StrongNameKeyPair _StrongNameKeyPair;
@@ -61,7 +61,7 @@ namespace System.Reflection
         // Set and get the name of the assembly. If this is a weak Name
         // then it optionally contains a site. For strong assembly names, 
         // the name partitions up the strong name's namespace
-        public String Name
+        public string Name
         {
             get { return _Name; }
             set { _Name = value; }
@@ -92,7 +92,7 @@ namespace System.Reflection
             }
         }
 
-        public String CultureName
+        public string CultureName
         {
             get
             {
@@ -104,13 +104,13 @@ namespace System.Reflection
             }
         }
 
-        public String CodeBase
+        public string CodeBase
         {
             get { return _CodeBase; }
             set { _CodeBase = value; }
         }
 
-        public String EscapedCodeBase
+        public string EscapedCodeBase
         {
             get
             {
@@ -164,7 +164,7 @@ namespace System.Reflection
 
 
         // Make a copy of this assembly name.
-        public Object Clone()
+        public object Clone()
         {
             AssemblyName name = new AssemblyName();
             name.Init(_Name,
@@ -187,7 +187,7 @@ namespace System.Reflection
          * if the file contains an assembly manifest. This method causes
          * the file to be opened and closed.
          */
-        public static AssemblyName GetAssemblyName(String assemblyFile)
+        public static AssemblyName GetAssemblyName(string assemblyFile)
         {
             if (assemblyFile == null)
                 throw new ArgumentNullException(nameof(assemblyFile));
@@ -272,7 +272,7 @@ namespace System.Reflection
             set { _StrongNameKeyPair = value; }
         }
 
-        public String FullName
+        public string FullName
         {
             get
             {
@@ -285,9 +285,9 @@ namespace System.Reflection
         }
 
         // Returns the stringized version of the assembly name.
-        public override String ToString()
+        public override string ToString()
         {
-            String s = FullName;
+            string s = FullName;
             if (s == null)
                 return base.ToString();
             else
@@ -299,12 +299,12 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
-        public void OnDeserialization(Object sender)
+        public void OnDeserialization(object sender)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public AssemblyName(String assemblyName)
+        public AssemblyName(string assemblyName)
         {
             if (assemblyName == null)
                 throw new ArgumentNullException(nameof(assemblyName));
@@ -390,14 +390,14 @@ namespace System.Reflection
             return ProcessorArchitecture.None;
         }
 
-        internal void Init(String name,
+        internal void Init(string name,
                            byte[] publicKey,
                            byte[] publicKeyToken,
                            Version version,
                            CultureInfo cultureInfo,
                            AssemblyHashAlgorithm hashAlgorithm,
                            AssemblyVersionCompatibility versionCompatibility,
-                           String codeBase,
+                           string codeBase,
                            AssemblyNameFlags flags,
                            StrongNameKeyPair keyPair) // Null if ref, matching Assembly if def
         {
@@ -429,12 +429,12 @@ namespace System.Reflection
         // This call opens and closes the file, but does not add the
         // assembly to the domain.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern AssemblyName nGetFileInformation(String s);
+        internal static extern AssemblyName nGetFileInformation(string s);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern byte[] nGetPublicKeyToken();
 
-        internal static String EscapeCodeBase(String codebase)
+        internal static string EscapeCodeBase(string codebase)
         {
             if (codebase == null)
                 return string.Empty;
@@ -500,7 +500,7 @@ namespace System.Reflection
                             c_MaxUnicodeCharsReallocate * c_MaxUTF_8BytesPerUnicodeChar);
 
                         // This is the only exception that built in UriParser can throw after a Uri ctor.
-                        // Should not happen unless the app tries to feed an invalid Unicode String
+                        // Should not happen unless the app tries to feed an invalid Unicode string
                         if (numberOfBytes == 0)
                             throw new FormatException(SR.Arg_FormatException);
 

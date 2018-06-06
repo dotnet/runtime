@@ -430,7 +430,7 @@ namespace System.Resources
         }
 
         // Perf optimization - Don't use Reflection for most cases with
-        // our .resources files.  This makes our code run faster and we can
+        // our .resources files.  This makes our code run faster and we can avoid
         // creating a ResourceReader via Reflection.  This would incur
         // a security check (since the link-time check on the constructor that
         // takes a String is turned into a full demand with a stack walk)
