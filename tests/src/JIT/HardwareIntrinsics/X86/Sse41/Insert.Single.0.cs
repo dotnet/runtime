@@ -109,7 +109,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             var random = new Random();
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)0; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)(random.NextDouble()); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
         }
 
@@ -119,10 +119,10 @@ namespace JIT.HardwareIntrinsics.X86
 
             var random = new Random();
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)0; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)(random.NextDouble()); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _fld), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)0; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)(random.NextDouble()); }
             _dataTable = new SimpleUnaryOpTest__DataTable<Single, Single>(_data, new Single[RetElementCount], LargestVectorSize);
         }
 
@@ -302,7 +302,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             for (var i = 0; i < RetElementCount; i++)
             {
-                if ((i == 0 ? BitConverter.SingleToInt32Bits(result[i]) != BitConverter.SingleToInt32Bits((float)2) : BitConverter.SingleToInt32Bits(result[i]) != BitConverter.SingleToInt32Bits((float)0)))
+                if ((i == 0 ? BitConverter.SingleToInt32Bits(result[i]) != BitConverter.SingleToInt32Bits(2.0f) : BitConverter.SingleToInt32Bits(result[i]) != BitConverter.SingleToInt32Bits(firstOp[i])))
                 {
                     Succeeded = false;
                     break;
