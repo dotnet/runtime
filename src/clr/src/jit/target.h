@@ -334,7 +334,6 @@ typedef unsigned char   regNumberSmall;
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
-  #define TINY_REGNUM_BITS         6       // number used in a tiny instrdesc (same)
 
   #define REGSIZE_BYTES            4       // number of bytes in one register
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
@@ -598,7 +597,6 @@ typedef unsigned char   regNumberSmall;
 #endif // !UNIX_AMD64_ABI
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
-  #define TINY_REGNUM_BITS         6       // number used in a tiny instrdesc (same)
   #define REGMASK_BITS             32      // number of bits in a REGNUM_MASK
   #define REGSIZE_BYTES            8       // number of bytes in one register
   #define XMM_REGSIZE_BYTES        16      // XMM register size in bytes
@@ -957,7 +955,6 @@ typedef unsigned char   regNumberSmall;
   #define LAST_FP_ARGREG           REG_F15
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
-  #define TINY_REGNUM_BITS         4       // number of bits we will use for a tiny instr desc (may not use float)
   #define REGMASK_BITS             64      // number of bits in a REGNUM_MASK
   #define REGSIZE_BYTES            4       // number of bytes in one register
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
@@ -1264,7 +1261,6 @@ typedef unsigned char   regNumberSmall;
   #define LAST_FP_ARGREG           REG_V15
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
-  #define TINY_REGNUM_BITS         5       // number of bits we will use for a tiny instr desc (may not use float)
   #define REGMASK_BITS             64      // number of bits in a REGNUM_MASK
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
   #define FP_REGSIZE_BYTES         16      // number of bytes in one FP/SIMD register
