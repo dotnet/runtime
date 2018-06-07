@@ -20,6 +20,8 @@
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
+#elif HAVE_SYS_POLL_H
+#include <sys/poll.h>
 #endif
 #include <errno.h>
 #include <netdb.h>
@@ -46,7 +48,9 @@
 #endif
 #if !HAVE_IN_PKTINFO
 #include <net/if.h>
+#if HAVE_GETIFADDRS
 #include <ifaddrs.h>
+#endif
 #endif
 
 #if HAVE_KQUEUE
@@ -782,7 +786,7 @@ static int32_t GetIPv4PacketInformation(struct cmsghdr* controlMessage, struct I
     ConvertInAddrToByteArray(&packetInfo->Address.Address[0], NUM_BYTES_IN_IPV4_ADDRESS, &pktinfo->ipi_addr);
 #if HAVE_IN_PKTINFO
     packetInfo->InterfaceIndex = (int32_t)pktinfo->ipi_ifindex;
-#else
+#elif HAVE_GETIFADDRS
     packetInfo->InterfaceIndex = 0;
 
     struct ifaddrs* addrs;
@@ -800,6 +804,9 @@ static int32_t GetIPv4PacketInformation(struct cmsghdr* controlMessage, struct I
         }
         freeifaddrs(addrs_head);
     }
+#else
+    // assume the first interface, we have no other methods
+    packetInfo->InterfaceIndex = 0;
 #endif
 
     return 1;
@@ -2247,7 +2254,32 @@ static int32_t WaitForSocketEventsInner(int32_t port, struct SocketEvent* buffer
 }
 
 #else
-#error Asynchronous sockets require epoll or kqueue support.
+#warning epoll/kqueue not detected; building with stub socket events support
+static const size_t SocketEventBufferElementSize = sizeof(struct pollfd);
+
+static enum SocketEvents GetSocketEvents(int16_t filter, uint16_t flags)
+{
+    return SocketEvents_SA_NONE;
+}
+static int32_t CloseSocketEventPortInner(int32_t port)
+{
+    return Error_ENOSYS;
+}
+static int32_t CreateSocketEventPortInner(int32_t* port)
+{
+    return Error_ENOSYS;
+}
+static int32_t TryChangeSocketEventRegistrationInner(
+    int32_t port, int32_t socket, enum SocketEvents currentEvents, enum SocketEvents newEvents,
+uintptr_t data)
+{
+    return Error_ENOSYS;
+}
+static int32_t WaitForSocketEventsInner(int32_t port, struct SocketEvent* buffer, int32_t* count)
+{
+    return Error_ENOSYS;
+}
+
 #endif
 
 int32_t SystemNative_CreateSocketEventPort(intptr_t* port)
