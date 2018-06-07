@@ -130,8 +130,6 @@ namespace Microsoft.Win32
                                                            KEY_CREATE_SUB_KEY)
                                                           &
                                                           (~SYNCHRONIZE));
-        internal const int KEY_WOW64_64KEY = 0x0100;     //
-        internal const int KEY_WOW64_32KEY = 0x0200;     //
         internal const int REG_OPTION_NON_VOLATILE = 0x0000;     // (default) keys are persisted beyond reboot/unload
         internal const int REG_OPTION_VOLATILE = 0x0001;     // All keys created by the function are volatile
         internal const int REG_OPTION_CREATE_LINK = 0x0002;     // They key is a symbolic link

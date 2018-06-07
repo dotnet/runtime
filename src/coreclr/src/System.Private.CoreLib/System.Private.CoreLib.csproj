@@ -118,10 +118,10 @@
   <Import Project="$(MSBuildThisFileDirectory)..\..\clr.defines.targets" />
   <!-- Sources -->
   <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
-    <Compile Condition="'$(FeatureICastable)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
   </ItemGroup>
@@ -310,7 +310,6 @@
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.CoreClrOverrides.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.Central.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\CurrentSystemTimeZone.Cache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Object.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Array.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />
@@ -541,8 +540,6 @@
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\Win32Native.cs" />
     <Compile Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\Registry.cs" />
     <Compile Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryKey.cs" />
-    <Compile Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryValueKind.cs" />
-    <Compile Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryView.cs" />
     <Compile Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />
   </ItemGroup>
   <ItemGroup>
