@@ -966,7 +966,6 @@ namespace System.ComponentModel
         ///     Handles INotifyPropertyChanged.PropertyChange events from components.
         ///     If event pertains to this property, issue a ValueChanged event.
         /// </summary>
-        /// </internalonly>
         internal void OnINotifyPropertyChanged(object component, PropertyChangedEventArgs e)
         {
             if (String.IsNullOrEmpty(e.PropertyName) ||

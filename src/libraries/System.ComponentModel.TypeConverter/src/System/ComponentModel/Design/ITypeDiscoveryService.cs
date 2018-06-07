@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 
 namespace System.ComponentModel.Design
@@ -14,11 +13,11 @@ namespace System.ComponentModel.Design
     public interface ITypeDiscoveryService
     {
         /// <summary>
-        ///     Retrieves the list of available types. If baseType is null, all
-        ///     types are returned. Otherwise, only types deriving from the
-        ///     specified base type are returned. If bool excludeGlobalTypes is false, 
-        ///     types from all referenced assemblies are checked. Otherwise,
-        ///     only types from non-GAC referenced assemblies are checked. 
+        /// Retrieves the list of available types. If baseType is null, all
+        /// types are returned. Otherwise, only types deriving from the
+        /// specified base type are returned. If bool excludeGlobalTypes is false, 
+        /// types from all referenced assemblies are checked. Otherwise,
+        /// only types from non-GAC referenced assemblies are checked. 
         /// </summary>
         ICollection GetTypes(Type baseType, bool excludeGlobalTypes);
     }

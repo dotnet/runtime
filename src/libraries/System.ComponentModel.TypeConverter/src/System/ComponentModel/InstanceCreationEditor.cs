@@ -2,26 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32;
-using System.Collections;
-using System.ComponentModel.Design.Serialization;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using System.Security.Permissions;
-
 namespace System.ComponentModel
 {
     /// <summary>
-    ///     An InstanceCreationEditor allows the user to create an instance of a particular type of property from a dropdown
-    ///     Within the PropertyGrid.  Usually, the text specified by InstanceCreationEditor.Text will be displayed on the 
-    ///     dropdown from the PropertyGrid as a link or button.  When clicked, the InstanceCreationEditor.CreateInstance
-    ///     method will be called with the Type of the object to create.
+    /// An InstanceCreationEditor allows the user to create an instance of a particular type of property from a dropdown
+    /// Within the PropertyGrid. Usually, the text specified by InstanceCreationEditor.Text will be displayed on the 
+    /// dropdown from the PropertyGrid as a link or button. When clicked, the InstanceCreationEditor.CreateInstance
+    /// method will be called with the Type of the object to create.
     /// </summary>
     public abstract class InstanceCreationEditor
     {
-        /// <summary>
-        /// </summary>
         public virtual string Text => SR.InstanceCreationEditorDefaultText;
 
         /// <summary>
@@ -32,8 +22,3 @@ namespace System.ComponentModel
         public abstract object CreateInstance(ITypeDescriptorContext context, Type instanceType);
     }
 }
-
-
-
-
-

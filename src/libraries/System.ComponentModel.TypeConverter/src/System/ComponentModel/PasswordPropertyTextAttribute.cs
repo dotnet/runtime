@@ -2,47 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Security.Permissions;
-
 namespace System.ComponentModel
 {
     /// <summary>
-    ///     If this attribute is placed on a property or a type, its text representation in a property window
-    ///     will appear as dots or asterisks to indicate a password field.  This indication in no way
-    ///     represents any type of encryption or security.
+    /// If this attribute is placed on a property or a type, its text representation in a property window
+    /// will appear as dots or asterisks to indicate a password field. This indication in no way
+    /// represents any type of encryption or security.
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public sealed class PasswordPropertyTextAttribute : Attribute
     {
         /// <summary>
-        ///     Sets the System.ComponentModel.Design.PasswordPropertyText
-        ///     attribute by default to true.
+        /// Sets the System.ComponentModel.Design.PasswordPropertyText
+        /// attribute by default to true.
         /// </summary>
         public static readonly PasswordPropertyTextAttribute Yes = new PasswordPropertyTextAttribute(true);
 
         /// <summary>
-        ///     Sets the System.ComponentModel.Design.PasswordPropertyText
-        ///     attribute by default to false.
+        /// Sets the System.ComponentModel.Design.PasswordPropertyText
+        /// attribute by default to false.
         /// </summary>
         public static readonly PasswordPropertyTextAttribute No = new PasswordPropertyTextAttribute(false);
 
-
         /// <summary>
-        ///     Sets the System.ComponentModel.Design.PasswordPropertyText
-        ///     attribute by default to false.
+        /// Sets the System.ComponentModel.Design.PasswordPropertyText
+        /// attribute by default to false.
         /// </summary>
         public static readonly PasswordPropertyTextAttribute Default = No;
 
         /// <summary>
-        ///    Creates a default PasswordPropertyTextAttribute.
+        /// Creates a default PasswordPropertyTextAttribute.
         /// </summary>
         public PasswordPropertyTextAttribute() : this(false)
         {
         }
 
         /// <summary>
-        ///    Creates a PasswordPropertyTextAttribute with the given password value.
+        /// Creates a PasswordPropertyTextAttribute with the given password value.
         /// </summary>
         public PasswordPropertyTextAttribute(bool password)
         {
@@ -50,12 +46,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Gets a value indicating if the property this attribute is defined for should be shown as password text.
+        /// Gets a value indicating if the property this attribute is defined for should be shown as password text.
         /// </summary>
         public bool Password { get; }
 
         /// <summary>
-        ///     Overload for object equality
+        /// Overload for object equality
         /// </summary>
         public override bool Equals(object o)
         {
@@ -67,19 +63,13 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Returns the hashcode for this object.
+        /// Returns the hashcode for this object.
         /// </summary>
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
         /// <summary>
-        ///     Gets a value indicating whether this attribute is set to true by default.
+        /// Gets a value indicating whether this attribute is set to true by default.
         /// </summary>
-        public override bool IsDefaultAttribute()
-        {
-            return Equals(Default);
-        }
+        public override bool IsDefaultAttribute() => Equals(Default);
     }
 }

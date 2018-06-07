@@ -4,41 +4,30 @@
 
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization;
-using System.Security;
-using System.Security.Permissions;
 using System.Collections;
-using System.ComponentModel;
-using System.Diagnostics;
-using System;
-using Microsoft.Win32;
 using System.IO;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Design
 {
     /// <summary>
-    ///    <para>
-    ///       Provides support for design-time license context serialization.
-    ///    </para>
+    /// Provides support for design-time license context serialization.
     /// </summary>
     public class DesigntimeLicenseContextSerializer
     {
-        // not creatable...
-        //
+        // Not creatable.
         private DesigntimeLicenseContextSerializer()
         {
         }
 
         /// <summary>
-        ///    <para>
-        ///       Serializes the licenses within the specified design-time license context
-        ///       using the specified key and output stream.
-        ///    </para>
+        /// Serializes the licenses within the specified design-time license context
+        /// using the specified key and output stream.
         /// </summary>
         public static void Serialize(Stream o, string cryptoKey, DesigntimeLicenseContext context)
         {
             IFormatter formatter = new BinaryFormatter();
-            formatter.Serialize(o, new object[] { cryptoKey, context.savedLicenseKeys });
+            formatter.Serialize(o, new object[] { cryptoKey, context._savedLicenseKeys });
         }
 
         [SuppressMessage("Microsoft.Security", "CA2107:ReviewDenyAndPermitOnlyUsage")] // Use of PermitOnly here is appropriate. 
@@ -48,12 +37,11 @@ namespace System.ComponentModel.Design
 
             object obj = formatter.Deserialize(o);
 
-            if (obj is object[])
+            if (obj is object[] value)
             {
-                object[] value = (object[])obj;
                 if (value[0] is string && (string)value[0] == cryptoKey)
                 {
-                    context.savedLicenseKeys = (Hashtable)value[1];
+                    context._savedLicenseKeys = (Hashtable)value[1];
                 }
             }
         }

@@ -5,69 +5,69 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Provides an interface that provides custom type information for an object.</para>
+    /// Provides an interface that provides custom type information for an object.
     /// </summary>
     public interface ICustomTypeDescriptor
     {
         /// <summary>
-        /// <para>Gets a collection of type <see cref='System.Attribute'/> with the attributes 
-        ///    for this object.</para>
+        /// Gets a collection of type <see cref='System.Attribute'/> with the attributes 
+        /// for this object.
         /// </summary>
         AttributeCollection GetAttributes();
 
         /// <summary>
-        ///    <para>Gets the class name of this object.</para>
+        /// Gets the class name of this object.
         /// </summary>
         string GetClassName();
 
         /// <summary>
-        ///    <para>Gets the name of this object.</para>
+        /// Gets the name of this object.
         /// </summary>
         string GetComponentName();
 
         /// <summary>
-        ///    <para>Gets a type converter for this object.</para>
+        /// Gets a type converter for this object.
         /// </summary>
         TypeConverter GetConverter();
 
         /// <summary>
-        ///    <para>Gets the default event for this object.</para>
+        /// Gets the default event for this object.
         /// </summary>
         EventDescriptor GetDefaultEvent();
 
         /// <summary>
-        ///    <para>Gets the default property for this object.</para>
+        /// Gets the default property for this object.
         /// </summary>
         PropertyDescriptor GetDefaultProperty();
 
         /// <summary>
-        ///    <para>Gets an editor of the specified type for this object.</para>
+        /// Gets an editor of the specified type for this object.
         /// </summary>
         object GetEditor(Type editorBaseType);
 
         /// <summary>
-        ///    <para>Gets the events for this instance of a component.</para>
+        /// Gets the events for this instance of a component.
         /// </summary>
         EventDescriptorCollection GetEvents();
 
         /// <summary>
-        ///    <para>Gets the events for this instance of a component using the attribute array as a
-        ///       filter.</para>
+        /// Gets the events for this instance of a component using the attribute array as a
+        /// filter.
         /// </summary>
         EventDescriptorCollection GetEvents(Attribute[] attributes);
 
         /// <summary>
-        ///    <para>Gets the properties for this instance of a component.</para>
+        /// Gets the properties for this instance of a component.
         /// </summary>
         PropertyDescriptorCollection GetProperties();
 
         /// <summary>
-        ///    <para>Gets the properties for this instance of a component using the attribute array as a filter.</para>
+        /// Gets the properties for this instance of a component using the attribute array as a filter.
         /// </summary>
         PropertyDescriptorCollection GetProperties(Attribute[] attributes);
 
         /// <summary>
-        ///    <para>Gets the object that directly depends on this value being edited.</para>
+        /// Gets the object that directly depends on this value being edited.
         /// </summary>
         object GetPropertyOwner(PropertyDescriptor pd);
     }

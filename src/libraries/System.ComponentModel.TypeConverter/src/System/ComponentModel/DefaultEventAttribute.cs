@@ -5,17 +5,13 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Specifies the default event for a
-    ///       component.</para>
+    /// Specifies the default event for a component.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class DefaultEventAttribute : Attribute
     {
         /// <summary>
-        ///    <para>
-        ///       Initializes
-        ///       a new instance of the <see cref='System.ComponentModel.DefaultEventAttribute'/> class.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultEventAttribute'/> class.
         /// </summary>
         public DefaultEventAttribute(string name)
         {
@@ -23,31 +19,22 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///       Gets the name of the default event for
-        ///       the component this attribute is bound to.
-        ///    </para>
+        /// Gets the name of the default event for the component this attribute is bound to.
         /// </summary>
         public string Name { get; }
 
         /// <summary>
-        ///    <para>
-        ///       Specifies the default value for the <see cref='System.ComponentModel.DefaultEventAttribute'/>, which is
-        ///    <see langword='null'/>.
-        ///       This <see langword='static '/>field is read-only.
-        ///    </para>
+        /// Specifies the default value for the <see cref='System.ComponentModel.DefaultEventAttribute'/>, which is
+        /// <see langword='null'/>.
+        /// This <see langword='static '/>field is read-only.
         /// </summary>
         public static readonly DefaultEventAttribute Default = new DefaultEventAttribute(null);
 
         public override bool Equals(object obj)
         {
-            DefaultEventAttribute other = obj as DefaultEventAttribute;
-            return (other != null) && other.Name == Name;
+            return (obj is DefaultEventAttribute other) && other.Name == Name;
         }
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
     }
 }
