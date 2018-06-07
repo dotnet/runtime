@@ -74,9 +74,11 @@ namespace R2RDump
         public IEnumerable<InterruptibleRange> InterruptibleRanges { get; }
         public GcSlotTable SlotTable { get; }
         public int Size { get; }
+        public int Offset { get; }
 
         public GcInfo(byte[] image, int offset, Machine machine, ushort majorVersion)
         {
+            Offset = offset;
             GcInfoTypes gcInfoTypes = new GcInfoTypes(machine);
 
             SecurityObjectStackSlot = -1;
