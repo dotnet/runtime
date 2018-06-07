@@ -1165,7 +1165,11 @@ namespace System.Diagnostics.Tracing
                     }
 
 #if FEATURE_MANAGED_ETW
-                    if (m_eventData[eventId].EnabledForETW || m_eventData[eventId].EnabledForEventPipe)
+                    if (m_eventData[eventId].EnabledForETW
+#if FEATURE_PERFTRACING
+                            || m_eventData[eventId].EnabledForEventPipe
+#endif // FEATURE_PERFTRACING
+                        )
                     {
                         if (!SelfDescribingEvents)
                         {
@@ -1865,7 +1869,11 @@ namespace System.Diagnostics.Tracing
                     }
 
 #if FEATURE_MANAGED_ETW
-                    if (m_eventData[eventId].EnabledForETW || m_eventData[eventId].EnabledForEventPipe)
+                    if (m_eventData[eventId].EnabledForETW
+#if FEATURE_PERFTRACING
+                            || m_eventData[eventId].EnabledForEventPipe
+#endif // FEATURE_PERFTRACING
+                        )
                     {
                         if (!SelfDescribingEvents)
                         {
@@ -2339,7 +2347,9 @@ namespace System.Diagnostics.Tracing
             public EventTags Tags;
             public bool EnabledForAnyListener;      // true if any dispatcher has this event turned on
             public bool EnabledForETW;              // is this event on for ETW?
+#if FEATURE_PERFTRACING
             public bool EnabledForEventPipe;        // is this event on for EventPipe?
+#endif
 
             public bool HasRelatedActivityID;       // Set if the event method's first parameter is a Guid named 'relatedActivityId'
 #pragma warning disable 0649
@@ -2625,7 +2635,11 @@ namespace System.Diagnostics.Tracing
         private bool AnyEventEnabled()
         {
             for (int i = 0; i < m_eventData.Length; i++)
-                if (m_eventData[i].EnabledForETW || m_eventData[i].EnabledForEventPipe || m_eventData[i].EnabledForAnyListener)
+                if (m_eventData[i].EnabledForETW || m_eventData[i].EnabledForAnyListener
+#if FEATURE_PERFTRACING
+                        || m_eventData[i].EnabledForEventPipe
+#endif // FEATURE_PERFTRACING
+                    )
                     return true;
             return false;
         }
