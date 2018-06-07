@@ -215,9 +215,7 @@ namespace System
             if (numBytes == 0)
                 return Empty;
 
-#if PLATFORM_UNIX
-            return Encoding.UTF8.GetString(pb, numBytes);
-#else
+#if PLATFORM_WINDOWS
             int numCharsRequired = Interop.Kernel32.MultiByteToWideChar(Interop.Kernel32.CP_ACP, Interop.Kernel32.MB_PRECOMPOSED, pb, numBytes, (char*)null, 0);
             if (numCharsRequired == 0)
                 throw new ArgumentException(SR.Arg_InvalidANSIString);
@@ -230,6 +228,8 @@ namespace System
             if (numCharsRequired == 0)
                 throw new ArgumentException(SR.Arg_InvalidANSIString);
             return newString;
+#else
+            return Encoding.UTF8.GetString(pb, numBytes);
 #endif
         }
 
