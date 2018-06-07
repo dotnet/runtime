@@ -23,7 +23,7 @@ set(NATIVEHTTP_SOURCES
     pal_versioninfo.cpp
 )
 
-include_directories(SYSTEM ${CURL_INCLUDE_DIR})
+include_directories(${CURL_INCLUDE_DIR})
 
 add_library(System.Net.Http.Native
     SHARED
