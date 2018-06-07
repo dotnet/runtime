@@ -41,23 +41,16 @@ elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL x86 OR CMAKE_SYSTEM_PROCESSOR STREQUAL i
 elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
     add_definitions(-DBIT64=1)
     add_definitions(-D_ARM64_)
-    # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
-    # we have to set the triple by adding a compiler argument
-    add_compile_options(-target aarch64-linux-gnu)
 elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
     add_definitions(-DBIT32=1)
     add_definitions(-D_ARM_)
     add_definitions(-D_FILE_OFFSET_BITS=64)
-    # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
-    # we have to set the triple by adding a compiler argument
   if(ARM_SOFTFP)
-    add_compile_options(-target armv7-linux-gnueabi)
     add_compile_options(-mfloat-abi=softfp)
-  else ()
-    add_compile_options(-target armv7-linux-gnueabihf)
   endif ()
     add_compile_options(-mthumb)
     add_compile_options(-mfpu=vfpv3)
+    add_compile_options(-march=armv7-a)
 elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
     add_definitions(-DBIT32=1)
     add_definitions(-D_ARM_)

@@ -2,10 +2,10 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [LinuxCodeName] [--skipunmount]"
+    echo "Usage: $0 [BuildArch] [LinuxCodeName] [lldbx.y] [--skipunmount]"
     echo "BuildArch can be: arm(default), armel, arm64, x86"
-    echo "LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
-    echo "lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8, lldb3.9, no-lldb"
+    echo "LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, xenial, zesty, alpine. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
+    echo "lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8, lldb3.9, lldb4.0, no-lldb. Ignored for alpine"
     echo "--skipunmount - optional, will skip the unmount of rootfs folder."
     exit 1
 }
@@ -22,20 +22,35 @@ __SkipUnmount=0
 # base development support
 __UbuntuPackages="build-essential"
 
+__AlpinePackages="alpine-base"
+__AlpinePackages+=" build-base"
+__AlpinePackages+=" linux-headers"
+__AlpinePackages+=" lldb-dev"
+__AlpinePackages+=" llvm-dev"
+
 # symlinks fixer
 __UbuntuPackages+=" symlinks"
 
 # CoreCLR and CoreFX dependencies
-__UbuntuPackages+=" gettext"
-__UbuntuPackages+=" libunwind8-dev"
-__UbuntuPackages+=" liblttng-ust-dev"
 __UbuntuPackages+=" libicu-dev"
+__UbuntuPackages+=" liblttng-ust-dev"
+__UbuntuPackages+=" libunwind8-dev"
+
+__AlpinePackages+=" gettext-dev"
+__AlpinePackages+=" icu-dev"
+__AlpinePackages+=" libunwind-dev"
+__AlpinePackages+=" lttng-ust-dev"
 
 # CoreFX dependencies
 __UbuntuPackages+=" libcurl4-openssl-dev"
 __UbuntuPackages+=" libkrb5-dev"
 __UbuntuPackages+=" libssl-dev"
 __UbuntuPackages+=" zlib1g-dev"
+
+__AlpinePackages+=" curl-dev"
+__AlpinePackages+=" krb5-dev"
+__AlpinePackages+=" openssl-dev"
+__AlpinePackages+=" zlib-dev"
 
 __UnprocessedBuildArgs=
 for i in "$@" ; do
@@ -48,10 +63,14 @@ for i in "$@" ; do
         arm)
             __BuildArch=arm
             __UbuntuArch=armhf
+            __AlpineArch=armhf
+            __QEMUArch=arm
             ;;
         arm64)
             __BuildArch=arm64
             __UbuntuArch=arm64
+            __AlpineArch=aarch64
+            __QEMUArch=aarch64
             ;;
         armel)
             __BuildArch=armel
@@ -73,6 +92,9 @@ for i in "$@" ; do
         lldb3.9)
             __LLDB_Package="liblldb-3.9-dev"
             ;;
+        lldb4.0)
+            __LLDB_Package="liblldb-4.0-dev"
+            ;;
         no-lldb)
             unset __LLDB_Package
             ;;
@@ -91,6 +113,11 @@ for i in "$@" ; do
                 __LinuxCodeName=xenial
             fi
             ;;
+        zesty)
+            if [ "$__LinuxCodeName" != "jessie" ]; then
+                __LinuxCodeName=zesty
+            fi
+            ;;
         jessie)
             __LinuxCodeName=jessie
             __UbuntuRepo="http://ftp.debian.org/debian/"
@@ -104,6 +131,10 @@ for i in "$@" ; do
             __LinuxCodeName=
             __UbuntuRepo=
             __Tizen=tizen
+            ;;
+        alpine)
+            __LinuxCodeName=alpine
+            __UbuntuRepo=
             ;;
         --skipunmount)
             __SkipUnmount=1
@@ -132,7 +163,22 @@ if [ -d "$__RootfsDir" ]; then
     rm -rf $__RootfsDir
 fi
 
-if [[ -n $__LinuxCodeName ]]; then
+if [[ "$__LinuxCodeName" == "alpine" ]]; then
+    __ApkToolsVersion=2.9.1
+    __AlpineVersion=3.7
+    __ApkToolsDir=$(mktemp -d)
+    wget https://github.com/alpinelinux/apk-tools/releases/download/v$__ApkToolsVersion/apk-tools-$__ApkToolsVersion-x86_64-linux.tar.gz -P $__ApkToolsDir
+    tar -xf $__ApkToolsDir/apk-tools-$__ApkToolsVersion-x86_64-linux.tar.gz -C $__ApkToolsDir
+    mkdir -p $__RootfsDir/usr/bin
+    cp -v /usr/bin/qemu-$__QEMUArch-static $__RootfsDir/usr/bin
+    $__ApkToolsDir/apk-tools-$__ApkToolsVersion/apk \
+      -X http://dl-cdn.alpinelinux.org/alpine/v$__AlpineVersion/main \
+      -X http://dl-cdn.alpinelinux.org/alpine/v$__AlpineVersion/community \
+      -X http://dl-cdn.alpinelinux.org/alpine/edge/testing \
+      -U --allow-untrusted --root $__RootfsDir --arch $__AlpineArch --initdb \
+      add $__AlpinePackages
+    rm -r $__ApkToolsDir
+elif [[ -n $__LinuxCodeName ]]; then
     qemu-debootstrap --arch $__UbuntuArch $__LinuxCodeName $__RootfsDir $__UbuntuRepo
     cp $__CrossDir/$__BuildArch/sources.list.$__LinuxCodeName $__RootfsDir/etc/apt/sources.list
     chroot $__RootfsDir apt-get update
