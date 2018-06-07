@@ -29,7 +29,7 @@ class WaitAnyEx
         try
         {
             Console.WriteLine("Waiting...");
-            int i = WaitHandle.WaitAny(wh, 10000);
+            int i = WaitHandle.WaitAny(wh, 30000);
             Console.WriteLine("WaitAny did not throw an " +
                 "exception, i = " + i);
         }
@@ -49,10 +49,9 @@ class WaitAnyEx
 
     private void AbandonAllMutexes()
     {
-        Mutex m = new Mutex();
         foreach(WaitHandle w in wh)
         {
-            if(w.GetType() == m.GetType())
+            if(w is Mutex)
                 w.WaitOne();
         }
         myMRE.Set();
