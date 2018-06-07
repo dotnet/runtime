@@ -19,6 +19,22 @@ namespace System.Net.Test.Common
             private const string CertificatePassword = "testcertificate";
             private const string TestDataFolder = "TestData";
 
+            private const int MutexTimeout = 120 * 1000;
+            private static readonly Mutex s_importPfxMutex;
+
+            static Certificates()
+            {
+                if (PlatformDetection.IsUap)
+                {
+                    // UWP doesn't support Global mutexes.
+                    s_importPfxMutex = new Mutex(false, "Local\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate");
+                }
+                else if (PlatformDetection.IsWindows)
+                {
+                    s_importPfxMutex = new Mutex(false, "Global\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate");
+                }
+            }
+
             public static X509Certificate2 GetServerCertificate() => GetCertificate("testservereku.contoso.com.pfx");
 
             public static X509Certificate2 GetClientCertificate() => GetCertificate("testclienteku.contoso.com.pfx");
@@ -47,6 +63,13 @@ namespace System.Net.Test.Common
 
             private static X509Certificate2 GetCertificate(string certificateFileName)
             {
+                // On Windows, applications should not import PFX files in parallel to avoid a known system-level
+                // race condition bug in native code which can cause crashes/corruption of the certificate state.
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.True(s_importPfxMutex.WaitOne(MutexTimeout), "Cannot acquire the global certificate mutex.");
+                }
+
                 try
                 {
                     return new X509Certificate2(
@@ -58,6 +81,13 @@ namespace System.Net.Test.Common
                 {
                     Debug.Fail(nameof(Configuration.Certificates.GetCertificate) + " threw " + ex.ToString());
                     throw;
+                }
+                finally
+                {
+                    if (PlatformDetection.IsWindows)
+                    {
+                        s_importPfxMutex.ReleaseMutex();
+                    }
                 }
             }
         }
