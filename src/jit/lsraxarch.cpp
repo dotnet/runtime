@@ -148,11 +148,11 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_LIST:
         case GT_ARGPLACE:
         case GT_NO_OP:
+        case GT_START_NONGC:
             srcCount = 0;
             assert(dstCount == 0);
             break;
 
-        case GT_START_NONGC:
         case GT_PROF_HOOK:
             srcCount = 0;
             assert(dstCount == 0);
