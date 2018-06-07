@@ -175,7 +175,7 @@ namespace Internal.Runtime.Augments
         ** Returns true if the thread died, or false if the wait timed out. If
         ** Timeout.Infinite is given as the parameter, no timeout will occur.
         **
-        ** Exceptions: ArgumentException if timeout < 0.
+        ** Exceptions: ArgumentException if timeout < -1 (Timeout.Infinite).
         **             ThreadInterruptedException if the thread is interrupted while waiting.
         **             ThreadStateException if the thread has not been started yet.
         =========================================================================*/
