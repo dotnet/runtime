@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Text;
+
 namespace R2RDump
 {
     struct NativeParser
@@ -10,12 +13,14 @@ namespace R2RDump
         /// The current index of the image byte array
         /// </summary>
         public uint Offset { get; set; }
+        public byte LowHashcode { get; }
 
         byte[] _image;
 
-        public NativeParser(byte[] image, uint offset)
+        public NativeParser(byte[] image, uint offset, byte lowHashcode = 0)
         {
             Offset = offset;
+            LowHashcode = lowHashcode;
             _image = image;
         }
 
@@ -36,7 +41,8 @@ namespace R2RDump
 
         public NativeParser GetParserFromRelativeOffset()
         {
-            return new NativeParser(_image, GetRelativeOffset());
+            byte lowHashcode = GetByte();
+            return new NativeParser(_image, GetRelativeOffset(), lowHashcode);
         }
 
         public byte GetByte()
@@ -76,8 +82,9 @@ namespace R2RDump
         private uint _baseOffset;
         private uint _bucketMask;
         private byte _entryIndexSize;
+        private uint _endOffset;
 
-        public NativeHashtable(byte[] image, NativeParser parser)
+        public NativeHashtable(byte[] image, NativeParser parser, uint endOffset)
         {
             uint header = parser.GetByte();
             _baseOffset = parser.Offset;
@@ -92,6 +99,46 @@ namespace R2RDump
             if (entryIndexSize > 2)
                 throw new System.BadImageFormatException();
             _entryIndexSize = entryIndexSize;
+
+            _endOffset = endOffset;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            SortedDictionary<uint, byte> entries = new SortedDictionary<uint, byte>();
+            AllEntriesEnumerator allEntriesEnum = EnumerateAllEntries();
+            NativeParser curParser = allEntriesEnum.GetNext();
+            while (!curParser.IsNull())
+            {
+                entries[curParser.Offset] = curParser.LowHashcode;
+                curParser = allEntriesEnum.GetNext();
+            }
+            entries[_endOffset] = 0;
+
+            sb.AppendLine($"NativeHashtable Size: {entries.Count - 1}");
+            sb.AppendLine($"EntryIndexSize: {_entryIndexSize}");
+            int curOffset = -1;
+            foreach (KeyValuePair<uint, byte> entry in entries)
+            {
+                int nextOffset = (int)entry.Key;
+                if (curOffset != -1)
+                {
+                    for (int i = curOffset; i < nextOffset; i++)
+                    {
+                        sb.Append($"{_image[i]:X2} ");
+                    }
+                    sb.AppendLine();
+                }
+                if (nextOffset != _endOffset)
+                {
+                    sb.Append($"0x{entry.Value:X2} -> ");
+                }
+                curOffset = nextOffset;
+            }
+
+            return sb.ToString();
         }
 
         //
@@ -132,7 +179,6 @@ namespace R2RDump
                 {
                     while (_parser.Offset < _endOffset)
                     {
-                        byte lowHashcode = _parser.GetByte();
                         return _parser.GetParserFromRelativeOffset();
                     }
 

@@ -180,7 +180,7 @@ namespace R2RDump
             R2RSection instMethodEntryPointSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS];
             int instMethodEntryPointsOffset = GetOffset(instMethodEntryPointSection.RelativeVirtualAddress);
             NativeParser parser = new NativeParser(Image, (uint)instMethodEntryPointsOffset);
-            NativeHashtable instMethodEntryPoints = new NativeHashtable(Image, parser);
+            NativeHashtable instMethodEntryPoints = new NativeHashtable(Image, parser, (uint)(instMethodEntryPointsOffset + instMethodEntryPointSection.Size));
             NativeHashtable.AllEntriesEnumerator allEntriesEnum = instMethodEntryPoints.EnumerateAllEntries();
             NativeParser curParser = allEntriesEnum.GetNext();
             while (!curParser.IsNull())
@@ -259,7 +259,7 @@ namespace R2RDump
             R2RSection availableTypesSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES];
             int availableTypesOffset = GetOffset(availableTypesSection.RelativeVirtualAddress);
             NativeParser parser = new NativeParser(Image, (uint)availableTypesOffset);
-            NativeHashtable availableTypes = new NativeHashtable(Image, parser);
+            NativeHashtable availableTypes = new NativeHashtable(Image, parser, (uint)(availableTypesOffset + availableTypesSection.Size));
             NativeHashtable.AllEntriesEnumerator allEntriesEnum = availableTypes.EnumerateAllEntries();
             NativeParser curParser = allEntriesEnum.GetNext();
             while (!curParser.IsNull())
