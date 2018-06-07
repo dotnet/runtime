@@ -148,41 +148,12 @@ namespace R2RDump
             if (_raw)
             {
                 DumpBytes(r2r, section.RelativeVirtualAddress, (uint)section.Size);
+                _writer.WriteLine();
             }
-
             if (_sectionContents)
             {
-                switch (section.Type)
-                {
-                    case R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES:
-                        uint availableTypesSectionOffset = (uint)r2r.GetOffset(section.RelativeVirtualAddress);
-                        NativeParser availableTypesParser = new NativeParser(r2r.Image, availableTypesSectionOffset);
-                        NativeHashtable availableTypes = new NativeHashtable(r2r.Image, availableTypesParser, (uint)(availableTypesSectionOffset + section.Size));
-                        _writer.WriteLine(availableTypes.ToString());
-                        DumpAvailableTypes(r2r);
-                        break;
-                    case R2RSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS:
-                        NativeArray methodEntryPoints = new NativeArray(r2r.Image, (uint)r2r.GetOffset(section.RelativeVirtualAddress));
-                        _writer.WriteLine(methodEntryPoints.ToString());
-                        break;
-                    case R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS:
-                        uint instanceSectionOffset = (uint)r2r.GetOffset(section.RelativeVirtualAddress);
-                        NativeParser instanceParser = new NativeParser(r2r.Image, instanceSectionOffset);
-                        NativeHashtable instMethodEntryPoints = new NativeHashtable(r2r.Image, instanceParser, (uint)(instanceSectionOffset + section.Size));
-                        _writer.WriteLine(instMethodEntryPoints.ToString());
-                        break;
-                    case R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS:
-                        int offset = r2r.GetOffset(section.RelativeVirtualAddress);
-                        int endOffset = offset + section.Size;
-                        int rtfIndex = 0;
-                        while (offset < endOffset)
-                        {
-                            uint rva = NativeReader.ReadUInt32(r2r.Image, ref offset);
-                            _writer.WriteLine($"{rtfIndex}: 0x{rva:X8}");
-                            rtfIndex++;
-                        }
-                        break;
-                }
+                DumpSectionContents(r2r, section);
+                _writer.WriteLine();
             }
         }
 
@@ -271,13 +242,52 @@ namespace R2RDump
             _writer.WriteLine();
         }
 
-        private void DumpAvailableTypes(R2RReader r2r)
+        private void DumpSectionContents(R2RReader r2r, R2RSection section)
         {
-            foreach (string name in r2r.AvailableTypes)
+            switch (section.Type)
             {
-                _writer.WriteLine(name);
+                case R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES:
+                    uint availableTypesSectionOffset = (uint)r2r.GetOffset(section.RelativeVirtualAddress);
+                    NativeParser availableTypesParser = new NativeParser(r2r.Image, availableTypesSectionOffset);
+                    NativeHashtable availableTypes = new NativeHashtable(r2r.Image, availableTypesParser, (uint)(availableTypesSectionOffset + section.Size));
+                    _writer.WriteLine(availableTypes.ToString());
+
+                    foreach (string name in r2r.AvailableTypes)
+                    {
+                        _writer.WriteLine(name);
+                    }
+                    break;
+                case R2RSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS:
+                    NativeArray methodEntryPoints = new NativeArray(r2r.Image, (uint)r2r.GetOffset(section.RelativeVirtualAddress));
+                    _writer.Write(methodEntryPoints.ToString());
+                    break;
+                case R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS:
+                    uint instanceSectionOffset = (uint)r2r.GetOffset(section.RelativeVirtualAddress);
+                    NativeParser instanceParser = new NativeParser(r2r.Image, instanceSectionOffset);
+                    NativeHashtable instMethodEntryPoints = new NativeHashtable(r2r.Image, instanceParser, (uint)(instanceSectionOffset + section.Size));
+                    _writer.Write(instMethodEntryPoints.ToString());
+                    break;
+                case R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS:
+                    int rtfOffset = r2r.GetOffset(section.RelativeVirtualAddress);
+                    int rtfEndOffset = rtfOffset + section.Size;
+                    int rtfIndex = 0;
+                    while (rtfOffset < rtfEndOffset)
+                    {
+                        uint rva = NativeReader.ReadUInt32(r2r.Image, ref rtfOffset);
+                        _writer.WriteLine($"{rtfIndex}: 0x{rva:X8}");
+                        rtfIndex++;
+                    }
+                    break;
+                case R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER:
+                    _writer.WriteLine(r2r.CompileIdentifier);
+                    break;
+                case R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS:
+                    foreach (R2RImportSection importSection in r2r.ImportSections)
+                    {
+                        _writer.WriteLine(importSection.ToString());
+                    }
+                    break;
             }
-            _writer.WriteLine();
         }
 
         // <summary>

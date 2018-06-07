@@ -76,7 +76,14 @@ namespace R2RDump
         /// <summary>
         /// The available types from READYTORUN_SECTION_AVAILABLE_TYPES
         /// </summary>
-        public List<string> AvailableTypes { get; }
+        public IList<string> AvailableTypes { get; }
+
+        /// <summary>
+        /// The compile identifier string from READYTORUN_SECTION_COMPILER_IDENTIFIER
+        /// </summary>
+        public string CompileIdentifier { get; }
+
+        public IList<R2RImportSection> ImportSections { get; }
 
         /// <summary>
         /// Initializes the fields of the R2RHeader and R2RMethods
@@ -129,6 +136,11 @@ namespace R2RDump
 
                     AvailableTypes = new List<string>();
                     ParseAvailableTypes();
+
+                    CompileIdentifier = ParseCompilerIdentifier();
+
+                    ImportSections = new List<R2RImportSection>();
+                    ParseImportSections();
                 }
             }
         }
@@ -269,6 +281,33 @@ namespace R2RDump
                 TypeDefinitionHandle typeDefHandle = MetadataTokens.TypeDefinitionHandle((int)rid);
                 AvailableTypes.Add(GetTypeDefFullName(_mdReader, typeDefHandle));
                 curParser = allEntriesEnum.GetNext();
+            }
+        }
+
+        private string ParseCompilerIdentifier()
+        {
+            R2RSection compilerIdentifierSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER];
+            byte[] identifier = new byte[compilerIdentifierSection.Size];
+            int identifierOffset = GetOffset(compilerIdentifierSection.RelativeVirtualAddress);
+            Array.Copy(Image, identifierOffset, identifier, 0, compilerIdentifierSection.Size);
+            return Encoding.UTF8.GetString(identifier);
+        }
+
+        private void ParseImportSections()
+        {
+            R2RSection importSectionsSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS];
+            int offset = GetOffset(importSectionsSection.RelativeVirtualAddress);
+            int endOffset = offset + importSectionsSection.Size;
+            while (offset < endOffset)
+            {
+                int rva = NativeReader.ReadInt32(Image, ref offset);
+                int size = NativeReader.ReadInt32(Image, ref offset);
+                ushort flags = NativeReader.ReadUInt16(Image, ref offset);
+                byte type = NativeReader.ReadByte(Image, ref offset);
+                byte entrySize = NativeReader.ReadByte(Image, ref offset);
+                int sig = NativeReader.ReadInt32(Image, ref offset);
+                int data = NativeReader.ReadInt32(Image, ref offset);
+                ImportSections.Add(new R2RImportSection(rva, size, flags, type, entrySize, sig, data));
             }
         }
 
