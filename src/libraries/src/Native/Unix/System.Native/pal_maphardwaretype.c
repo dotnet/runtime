@@ -76,8 +76,10 @@ uint16_t MapHardwareType(uint16_t nativeType)
             return NetworkInterfaceType_Atm;
         case IFT_MODEM:
             return NetworkInterfaceType_GenericModem;
+#if defined(IFT_IEEE1394)
         case IFT_IEEE1394:
             return NetworkInterfaceType_HighPerformanceSerialBus;
+#endif
         default:
             return NetworkInterfaceType_Unknown;
     }
