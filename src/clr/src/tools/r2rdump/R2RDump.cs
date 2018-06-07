@@ -54,7 +54,7 @@ namespace R2RDump
                 syntax.DefineOption("types", ref _types, "Dump available types");
                 syntax.DefineOption("unwind", ref _unwind, "Dump unwindInfo");
                 syntax.DefineOption("gc", ref _gc, "Dump gcInfo and slot table");
-                syntax.DefineOption("v|verbose", ref verbose, "Dump raw bytes, disassembly, unwindInfo and gcInfo");
+                syntax.DefineOption("v|verbose", ref verbose, "Dump raw bytes, disassembly, unwindInfo, gcInfo and section contents");
                 syntax.DefineOption("diff", ref _diff, "Compare two R2R images (not yet implemented)");
             });
 
@@ -64,6 +64,7 @@ namespace R2RDump
                 _disasm = true;
                 _unwind = true;
                 _gc = true;
+                _types = true;
             }
 
             return argSyntax;
@@ -146,6 +147,11 @@ namespace R2RDump
             if (_raw)
             {
                 DumpBytes(r2r, section.RelativeVirtualAddress, (uint)section.Size);
+            }
+            if (_types)
+            {
+                _writer.WriteLine();
+                DumpAvailableTypes(r2r);
             }
         }
 
@@ -236,7 +242,6 @@ namespace R2RDump
 
         private void DumpAvailableTypes(R2RReader r2r)
         {
-            WriteDivider("Available Types");
             foreach (string name in r2r.AvailableTypes)
             {
                 _writer.WriteLine(name);
@@ -353,16 +358,15 @@ namespace R2RDump
                 {
                     DumpHeader(r2r, false);
                 }
+                if (_types)
+                {
+                    DumpSection(r2r, r2r.R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES]);
+                }
 
                 QuerySection(r2r, _sections);
                 QueryRuntimeFunction(r2r, _runtimeFunctions);
                 QueryMethod(r2r, "R2R Methods by Query", _queries, true);
                 QueryMethod(r2r, "R2R Methods by Keyword", _keywords, false);
-            }
-
-            if (_types)
-            {
-                DumpAvailableTypes(r2r);
             }
 
             _writer.WriteLine("=============================================================");
