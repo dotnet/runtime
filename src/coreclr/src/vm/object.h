@@ -841,6 +841,8 @@ public:
     OBJECTREF    m_Array[1];
 };
 
+#define OFFSETOF__PtrArray__m_Array_              ARRAYBASE_SIZE
+
 /* a TypedByRef is a structure that is used to implement VB's BYREF variants.  
    it is basically a tuple of an address of some data along with a TypeHandle
    that indicates the type of the address */
@@ -2111,151 +2113,6 @@ typedef WeakReferenceObject* WEAKREFERENCEREF;
 STRINGREF AllocateString(SString sstr);
 CHARARRAYREF AllocateCharArray(DWORD dwArrayLength);
 
-
-class TransparentProxyObject : public Object
-{
-    friend class MscorlibBinder;
-    friend class CheckAsmOffsets;
-
-public:
-    MethodTable * GetMethodTableBeingProxied()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _pMT;
-    }
-    void SetMethodTableBeingProxied(MethodTable * pMT)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _pMT = pMT;
-    }
-
-    MethodTable * GetInterfaceMethodTable()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _pInterfaceMT;
-    }
-    void SetInterfaceMethodTable(MethodTable * pInterfaceMT)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _pInterfaceMT = pInterfaceMT;
-    }
-
-    void * GetStub()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _stub;
-    }
-    void SetStub(void * pStub)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _stub = pStub;
-    }
-
-    OBJECTREF GetStubData()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _stubData;
-    }
-    void SetStubData(OBJECTREF stubData)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetObjectReference(&_stubData, stubData, GetAppDomain());
-    }
-
-    OBJECTREF GetRealProxy()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _rp;
-    }
-    void SetRealProxy(OBJECTREF realProxy)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetObjectReference(&_rp, realProxy, GetAppDomain());
-    }
-
-    static int GetOffsetOfRP() { LIMITED_METHOD_CONTRACT; return offsetof(TransparentProxyObject, _rp); }
-    
-protected:
-    TransparentProxyObject()
-    {LIMITED_METHOD_CONTRACT;}; // don't instantiate this class directly
-    ~TransparentProxyObject(){LIMITED_METHOD_CONTRACT;};
-
-private:
-    OBJECTREF       _rp;
-    OBJECTREF       _stubData;
-    MethodTable*    _pMT;
-    MethodTable*    _pInterfaceMT;
-    void*           _stub;
-};
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<TransparentProxyObject> TRANSPARENTPROXYREF;
-#else
-typedef TransparentProxyObject*     TRANSPARENTPROXYREF;
-#endif
-
-
-class RealProxyObject : public Object
-{
-    friend class MscorlibBinder;
-
-public:
-    DWORD GetOptFlags()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _optFlags;
-    }
-    VOID SetOptFlags(DWORD flags)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _optFlags = flags;
-    }
-
-    DWORD GetDomainID()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _domainID;
-    }
-
-    TRANSPARENTPROXYREF GetTransparentProxy()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (TRANSPARENTPROXYREF&)_tp;
-    }
-    void SetTransparentProxy(TRANSPARENTPROXYREF tp)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetObjectReference(&_tp, (OBJECTREF)tp, GetAppDomain());
-    }
-
-    static int GetOffsetOfIdentity() { LIMITED_METHOD_CONTRACT; return offsetof(RealProxyObject, _identity); }
-    static int GetOffsetOfServerObject() { LIMITED_METHOD_CONTRACT; return offsetof(RealProxyObject, _serverObject); }
-    static int GetOffsetOfServerIdentity() { LIMITED_METHOD_CONTRACT; return offsetof(RealProxyObject, _srvIdentity); }
-
-protected:
-    RealProxyObject()
-    {
-        LIMITED_METHOD_CONTRACT;
-    }; // don't instantiate this class directly
-    ~RealProxyObject(){ LIMITED_METHOD_CONTRACT; };
-
-private:
-    OBJECTREF       _tp;
-    OBJECTREF       _identity;
-    OBJECTREF       _serverObject;
-    DWORD           _flags;
-    DWORD           _optFlags;
-    DWORD           _domainID;
-    OBJECTHANDLE    _srvIdentity;
-};
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<RealProxyObject> REALPROXYREF;
-#else
-typedef RealProxyObject*     REALPROXYREF;
-#endif
-
-
 #ifdef FEATURE_COMINTEROP
 
 //-------------------------------------------------------------
@@ -2714,6 +2571,10 @@ private:
     OBJECTREF   _invocationList;
     INT_PTR     _invocationCount;
 };
+
+#define OFFSETOF__DelegateObject__target          OBJECT_SIZE /* m_pMethTab */
+#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */ + TARGET_POINTER_SIZE /* _methodBase */)
+#define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<DelegateObject> DELEGATEREF;
