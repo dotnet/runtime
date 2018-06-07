@@ -107,7 +107,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
 
             if (getEmitter()->isLowRegister(reg) && (imm_hi16 == 0xffff) && ((imm_lo16 & 0x8000) == 0x8000))
             {
-                getEmitter()->emitIns_R_R(INS_sxth, EA_2BYTE, reg, reg);
+                getEmitter()->emitIns_R_R(INS_sxth, EA_4BYTE, reg, reg);
             }
             else
             {
