@@ -35,18 +35,16 @@ namespace R2RDump
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine($"\t\t{{");
-            sb.AppendLine($"\t\t\tCodeOffset: {CodeOffset}");
-            sb.AppendLine($"\t\t\tUnwindOp: {UnwindOp}");
-            sb.AppendLine($"\t\t\tOpInfo: {OpInfo}");
-            sb.AppendLine($"\t\t}}");
-            sb.AppendLine($"\t\t{{");
-            sb.AppendLine($"\t\t\tOffsetLow: {OffsetLow}");
-            sb.AppendLine($"\t\t\tUnwindOp: {UnwindOp}");
-            sb.AppendLine($"\t\t\tOffsetHigh: {OffsetHigh}");
-            sb.AppendLine($"\t\t}}");
+            sb.AppendLine($"\t\tCodeOffset: {CodeOffset}");
+            sb.AppendLine($"\t\tUnwindOp: {UnwindOp}");
+            sb.AppendLine($"\t\tOpInfo: {OpInfo}");
+            sb.AppendLine();
+            sb.AppendLine($"\t\tOffsetLow: {OffsetLow}");
+            sb.AppendLine($"\t\tUnwindOp: {UnwindOp}");
+            sb.AppendLine($"\t\tOffsetHigh: {OffsetHigh}");
+            sb.AppendLine();
             sb.AppendLine($"\t\tFrameOffset: {FrameOffset}");
-            sb.AppendLine($"\t\t------------------");
+            sb.AppendLine($"\t\t--------------------");
 
             return sb.ToString();
         }
