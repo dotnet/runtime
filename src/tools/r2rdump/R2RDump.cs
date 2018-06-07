@@ -23,10 +23,11 @@ namespace R2RDump
         private IReadOnlyList<string> _sections = Array.Empty<string>();
         private bool _diff;
         private IntPtr _disassembler;
-        private bool _types;
         private bool _unwind;
         private bool _gc;
+        private bool _sectionContents;
         private TextWriter _writer;
+        private Dictionary<R2RSection.SectionType, bool> _selectedSections = new Dictionary<R2RSection.SectionType, bool>();
 
         private R2RDump()
         {
@@ -51,9 +52,9 @@ namespace R2RDump
                 syntax.DefineOptionList("k|keyword", ref _keywords, "Search method by keyword");
                 syntax.DefineOptionList("r|runtimefunction", ref _runtimeFunctions, ArgStringToInt, "Get one runtime function by id or relative virtual address");
                 syntax.DefineOptionList("s|section", ref _sections, "Get section by keyword");
-                syntax.DefineOption("types", ref _types, "Dump available types");
                 syntax.DefineOption("unwind", ref _unwind, "Dump unwindInfo");
                 syntax.DefineOption("gc", ref _gc, "Dump gcInfo and slot table");
+                syntax.DefineOption("sc", ref _sectionContents, "Dump section contents");
                 syntax.DefineOption("v|verbose", ref verbose, "Dump raw bytes, disassembly, unwindInfo, gcInfo and section contents");
                 syntax.DefineOption("diff", ref _diff, "Compare two R2R images (not yet implemented)");
             });
@@ -64,7 +65,7 @@ namespace R2RDump
                 _disasm = true;
                 _unwind = true;
                 _gc = true;
-                _types = true;
+                _sectionContents = true;
             }
 
             return argSyntax;
@@ -148,10 +149,40 @@ namespace R2RDump
             {
                 DumpBytes(r2r, section.RelativeVirtualAddress, (uint)section.Size);
             }
-            if (_types)
+
+            if (_sectionContents)
             {
-                _writer.WriteLine();
-                DumpAvailableTypes(r2r);
+                switch (section.Type)
+                {
+                    case R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES:
+                        uint availableTypesSectionOffset = (uint)r2r.GetOffset(section.RelativeVirtualAddress);
+                        NativeParser availableTypesParser = new NativeParser(r2r.Image, availableTypesSectionOffset);
+                        NativeHashtable availableTypes = new NativeHashtable(r2r.Image, availableTypesParser, (uint)(availableTypesSectionOffset + section.Size));
+                        _writer.WriteLine(availableTypes.ToString());
+                        DumpAvailableTypes(r2r);
+                        break;
+                    case R2RSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS:
+                        NativeArray methodEntryPoints = new NativeArray(r2r.Image, (uint)r2r.GetOffset(section.RelativeVirtualAddress));
+                        _writer.WriteLine(methodEntryPoints.ToString());
+                        break;
+                    case R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS:
+                        uint instanceSectionOffset = (uint)r2r.GetOffset(section.RelativeVirtualAddress);
+                        NativeParser instanceParser = new NativeParser(r2r.Image, instanceSectionOffset);
+                        NativeHashtable instMethodEntryPoints = new NativeHashtable(r2r.Image, instanceParser, (uint)(instanceSectionOffset + section.Size));
+                        _writer.WriteLine(instMethodEntryPoints.ToString());
+                        break;
+                    case R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS:
+                        int offset = r2r.GetOffset(section.RelativeVirtualAddress);
+                        int endOffset = offset + section.Size;
+                        int rtfIndex = 0;
+                        while (offset < endOffset)
+                        {
+                            uint rva = NativeReader.ReadUInt32(r2r.Image, ref offset);
+                            _writer.WriteLine($"{rtfIndex}: 0x{rva:X8}");
+                            rtfIndex++;
+                        }
+                        break;
+                }
             }
         }
 
@@ -357,10 +388,6 @@ namespace R2RDump
                 if (_header)
                 {
                     DumpHeader(r2r, false);
-                }
-                if (_types)
-                {
-                    DumpSection(r2r, r2r.R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES]);
                 }
 
                 QuerySection(r2r, _sections);
