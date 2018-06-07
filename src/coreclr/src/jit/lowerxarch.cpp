@@ -2418,6 +2418,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                     break;
                 }
             }
+            break;
         }
 
         case HW_Category_SIMDScalar:
@@ -2533,6 +2534,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             case HW_Category_SimpleSIMD:
             case HW_Category_SIMDScalar:
+            case HW_Category_Scalar:
             {
                 switch (intrinsicId)
                 {
@@ -2593,9 +2595,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
             default:
             {
-                // TODO-XArch-CQ: Assert that this is unreached after we have ensured the relevant node types are
-                // handled.
-                //                https://github.com/dotnet/coreclr/issues/16497
+                unreached();
                 break;
             }
         }
@@ -2633,6 +2633,112 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         // TODO-XArch-CQ: For commutative nodes, either operand can be reg-optional.
                         //                https://github.com/dotnet/coreclr/issues/6361
+                    }
+                    break;
+                }
+
+                case HW_Category_IMM:
+                {
+                    // We don't currently have any IMM intrinsics which are also commutative
+                    assert(!isCommutative);
+                    bool supportsRegOptional = false;
+
+                    switch (intrinsicId)
+                    {
+                        case NI_SSE2_ShiftLeftLogical:
+                        case NI_SSE2_ShiftRightArithmetic:
+                        case NI_SSE2_ShiftRightLogical:
+                        case NI_AVX2_ShiftLeftLogical:
+                        case NI_AVX2_ShiftRightArithmetic:
+                        case NI_AVX2_ShiftRightLogical:
+                        {
+                            // These intrinsics can have op2 be imm or reg/mem
+
+                            if (!HWIntrinsicInfo::isImmOp(intrinsicId, op2))
+                            {
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op2);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    op2->SetRegOptional();
+                                }
+                            }
+                            break;
+                        }
+
+                        case NI_SSE2_Shuffle:
+                        case NI_SSE2_ShuffleHigh:
+                        case NI_SSE2_ShuffleLow:
+                        {
+                            // These intrinsics have op2 as an imm and op1 as a reg/mem
+
+                            if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                            {
+                                MakeSrcContained(node, op1);
+                            }
+                            else if (supportsRegOptional)
+                            {
+                                op1->SetRegOptional();
+                            }
+                            break;
+                        }
+
+                        case NI_AVX_Permute:
+                        {
+                            // These intrinsics can have op2 be imm or reg/mem
+                            // They also can have op1 be reg/mem and op2 be imm
+
+                            if (HWIntrinsicInfo::isImmOp(intrinsicId, op2))
+                            {
+                                if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op1);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    op1->SetRegOptional();
+                                }
+                            }
+                            else if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                            {
+                                MakeSrcContained(node, op2);
+                            }
+                            else if (supportsRegOptional)
+                            {
+                                op2->SetRegOptional();
+                            }
+                            break;
+                        }
+
+                        default:
+                        {
+                            break;
+                        }
+                    }
+
+                    break;
+                }
+
+                case HW_Category_Special:
+                {
+                    if (intrinsicId == NI_SSE2_CompareLessThan)
+                    {
+                        bool supportsRegOptional = false;
+
+                        if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                        {
+                            MakeSrcContained(node, op2);
+                        }
+                        else if (supportsRegOptional)
+                        {
+                            op2->SetRegOptional();
+                        }
+                    }
+                    else
+                    {
+                        unreached();
                     }
                     break;
                 }
@@ -2707,13 +2813,82 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             op3->SetRegOptional();
                         }
                     }
+                    else
+                    {
+                        bool supportsRegOptional = false;
+
+                        switch (intrinsicId)
+                        {
+                            case NI_SSE41_BlendVariable:
+                            case NI_AVX_BlendVariable:
+                            case NI_AVX2_BlendVariable:
+                            {
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op2);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    op2->SetRegOptional();
+                                }
+                                break;
+                            }
+
+                            default:
+                            {
+                                unreached();
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                case HW_Category_IMM:
+                {
+                    bool supportsRegOptional = false;
+
+                    switch (intrinsicId)
+                    {
+                        case NI_SSE_Shuffle:
+                        case NI_SSE2_Insert:
+                        case NI_SSE2_Shuffle:
+                        case NI_SSSE3_AlignRight:
+                        case NI_SSE41_Blend:
+                        case NI_SSE41_DotProduct:
+                        case NI_SSE41_Insert:
+                        case NI_SSE41_MultipleSumAbsoluteDifferences:
+                        case NI_AVX_Blend:
+                        case NI_AVX_Compare:
+                        case NI_AVX_CompareScalar:
+                        case NI_AVX_DotProduct:
+                        case NI_AVX_Insert:
+                        case NI_AVX_Permute2x128:
+                        case NI_AVX_Shuffle:
+                        case NI_AVX2_Permute2x128:
+                        {
+                            if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                            {
+                                MakeSrcContained(node, op2);
+                            }
+                            else if (supportsRegOptional)
+                            {
+                                op2->SetRegOptional();
+                            }
+                            break;
+                        }
+
+                        default:
+                        {
+                            break;
+                        }
+                    }
+
+                    break;
                 }
 
                 default:
                 {
-                    // TODO-XArch-CQ: Assert that this is unreached after we have ensured the relevant node types are
-                    // handled.
-                    //                https://github.com/dotnet/coreclr/issues/16497
+                    unreached();
                     break;
                 }
             }
