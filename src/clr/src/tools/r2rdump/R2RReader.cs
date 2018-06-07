@@ -202,9 +202,8 @@ namespace R2RDump
                         }
                     }
 
-                    uint id = curParser.GetUnsigned();
-                    id = id >> 1;
-                    R2RMethod method = new R2RMethod(_mdReader, rid, (int)id, args, tokens);
+                    int id = GetEntryPointIdFromOffset((int)curParser.Offset);
+                    R2RMethod method = new R2RMethod(_mdReader, rid, id, args, tokens);
                     if (method.EntryPointRuntimeFunctionId >= 0 && method.EntryPointRuntimeFunctionId < isEntryPoint.Length)
                     {
                         isEntryPoint[method.EntryPointRuntimeFunctionId] = true;
