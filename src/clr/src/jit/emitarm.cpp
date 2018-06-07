@@ -2199,12 +2199,12 @@ void emitter::emitIns_R_R(
 
         case INS_sxtb:
         case INS_uxtb:
-            assert(size == EA_1BYTE);
+            assert(size == EA_4BYTE);
             goto EXTEND_COMMON;
 
         case INS_sxth:
         case INS_uxth:
-            assert(size == EA_2BYTE);
+            assert(size == EA_4BYTE);
         EXTEND_COMMON:
             assert(insDoesNotSetFlags(flags));
             if (isLowRegister(reg1) && isLowRegister(reg2))
@@ -2638,12 +2638,12 @@ void emitter::emitIns_R_R_I(instruction ins,
 
         case INS_sxtb:
         case INS_uxtb:
-            assert(size == EA_1BYTE);
+            assert(size == EA_4BYTE);
             goto EXTEND_COMMON;
 
         case INS_sxth:
         case INS_uxth:
-            assert(size == EA_2BYTE);
+            assert(size == EA_4BYTE);
         EXTEND_COMMON:
             assert(insOptsNone(opt));
             assert(insDoesNotSetFlags(flags));
