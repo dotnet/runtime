@@ -5267,6 +5267,17 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 		mono_loader_unlock ();
 }
 
+static ErrorCode
+ensure_runtime_is_suspended (void)
+{
+	if (suspend_count == 0)
+		return ERR_NOT_SUSPENDED;
+
+	wait_for_suspend ();
+
+	return ERR_NONE;
+}
+
 /*
  * Start single stepping of thread THREAD
  */
@@ -5285,10 +5296,9 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 	StackFrame **frames = NULL;
 	int nframes = 0;
 
-	if (suspend_count == 0)
-		return ERR_NOT_SUSPENDED;
-
-	wait_for_suspend ();
+	int err = ensure_runtime_is_suspended ();
+	if (err)
+		return err;
 
 	// FIXME: Multiple requests
 	if (the_ss_req) {
