@@ -415,11 +415,9 @@ namespace System
                 case StringComparison.Ordinal:
                     return CompareOrdinalHelper(strA, indexA, lengthA, strB, indexB, lengthB);
 
-                case StringComparison.OrdinalIgnoreCase:
-                    return CompareInfo.CompareOrdinalIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB);
-
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
+                    Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase); // CheckStringComparison validated these earlier
+                    return CompareInfo.CompareOrdinalIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB);
             }
         }
 
