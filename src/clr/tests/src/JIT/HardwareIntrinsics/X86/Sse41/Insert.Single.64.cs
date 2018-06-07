@@ -19,9 +19,9 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void InsertUInt32129()
+        private static void InsertSingle64()
         {
-            var test = new SimpleUnaryOpTest__InsertUInt32129();
+            var test = new SimpleUnaryOpTest__InsertSingle64();
             
             try
             {
@@ -30,7 +30,7 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates basic functionality works, using Unsafe.Read
                 test.RunBasicScenario_UnsafeRead();
 
-                if (Sse2.IsSupported)
+                if (Sse.IsSupported)
                 {
                     // Validates basic functionality works, using Load
                     test.RunBasicScenario_Load();
@@ -42,7 +42,7 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                if (Sse2.IsSupported)
+                if (Sse.IsSupported)
                 {
                     // Validates calling via reflection works, using Load
                     test.RunReflectionScenario_Load();
@@ -57,7 +57,7 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
-                if (Sse2.IsSupported)
+                if (Sse.IsSupported)
                 {
                     // Validates passing a local works, using Load
                     test.RunLclVarScenario_Load();
@@ -90,40 +90,40 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class SimpleUnaryOpTest__InsertUInt32129
+    public sealed unsafe class SimpleUnaryOpTest__InsertSingle64
     {
         private static readonly int LargestVectorSize = 16;
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<UInt32>>() / sizeof(UInt32);
-        private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<UInt32>>() / sizeof(UInt32);
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Single>>() / sizeof(Single);
+        private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Single>>() / sizeof(Single);
 
-        private static UInt32[] _data = new UInt32[Op1ElementCount];
+        private static Single[] _data = new Single[Op1ElementCount];
 
-        private static Vector128<UInt32> _clsVar;
+        private static Vector128<Single> _clsVar;
 
-        private Vector128<UInt32> _fld;
+        private Vector128<Single> _fld;
 
-        private SimpleUnaryOpTest__DataTable<UInt32, UInt32> _dataTable;
+        private SimpleUnaryOpTest__DataTable<Single, Single> _dataTable;
 
-        static SimpleUnaryOpTest__InsertUInt32129()
+        static SimpleUnaryOpTest__InsertSingle64()
         {
             var random = new Random();
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (uint)(random.Next(0, int.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt32>, byte>(ref _clsVar), ref Unsafe.As<UInt32, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<UInt32>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)(random.NextDouble()); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
         }
 
-        public SimpleUnaryOpTest__InsertUInt32129()
+        public SimpleUnaryOpTest__InsertSingle64()
         {
             Succeeded = true;
 
             var random = new Random();
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (uint)(random.Next(0, int.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt32>, byte>(ref _fld), ref Unsafe.As<UInt32, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<UInt32>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)(random.NextDouble()); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _fld), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (uint)(random.Next(0, int.MaxValue)); }
-            _dataTable = new SimpleUnaryOpTest__DataTable<UInt32, UInt32>(_data, new UInt32[RetElementCount], LargestVectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)(random.NextDouble()); }
+            _dataTable = new SimpleUnaryOpTest__DataTable<Single, Single>(_data, new Single[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => Sse41.IsSupported;
@@ -133,9 +133,9 @@ namespace JIT.HardwareIntrinsics.X86
         public void RunBasicScenario_UnsafeRead()
         {
             var result = Sse41.Insert(
-                Unsafe.Read<Vector128<UInt32>>(_dataTable.inArrayPtr),
-                (uint)2,
-                129
+                Unsafe.Read<Vector128<Single>>(_dataTable.inArrayPtr),
+                (float)2,
+                64
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -145,9 +145,9 @@ namespace JIT.HardwareIntrinsics.X86
         public void RunBasicScenario_Load()
         {
             var result = Sse41.Insert(
-                Sse2.LoadVector128((UInt32*)(_dataTable.inArrayPtr)),
-                (uint)2,
-                129
+                Sse.LoadVector128((Single*)(_dataTable.inArrayPtr)),
+                (float)2,
+                64
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -157,9 +157,9 @@ namespace JIT.HardwareIntrinsics.X86
         public void RunBasicScenario_LoadAligned()
         {
             var result = Sse41.Insert(
-                Sse2.LoadAlignedVector128((UInt32*)(_dataTable.inArrayPtr)),
-                (uint)2,
-                129
+                Sse.LoadAlignedVector128((Single*)(_dataTable.inArrayPtr)),
+                (float)2,
+                64
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -168,40 +168,40 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_UnsafeRead()
         {
-            var result = typeof(Sse41).GetMethod(nameof(Sse41.Insert), new Type[] { typeof(Vector128<UInt32>), typeof(UInt32), typeof(byte) })
+            var result = typeof(Sse41).GetMethod(nameof(Sse41.Insert), new Type[] { typeof(Vector128<Single>), typeof(Single), typeof(byte) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.Read<Vector128<UInt32>>(_dataTable.inArrayPtr),
-                                        (uint)2,
-                                        (byte)129
+                                        Unsafe.Read<Vector128<Single>>(_dataTable.inArrayPtr),
+                                        (float)2,
+                                        (byte)64
                                      });
 
-            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<UInt32>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Single>)(result));
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_Load()
         {
-            var result = typeof(Sse41).GetMethod(nameof(Sse41.Insert), new Type[] { typeof(Vector128<UInt32>), typeof(UInt32), typeof(byte) })
+            var result = typeof(Sse41).GetMethod(nameof(Sse41.Insert), new Type[] { typeof(Vector128<Single>), typeof(Single), typeof(byte) })
                                      .Invoke(null, new object[] {
-                                        Sse2.LoadVector128((UInt32*)(_dataTable.inArrayPtr)),
-                                        (uint)2,
-                                        (byte)129
+                                        Sse.LoadVector128((Single*)(_dataTable.inArrayPtr)),
+                                        (float)2,
+                                        (byte)64
                                      });
 
-            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<UInt32>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Single>)(result));
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_LoadAligned()
         {
-            var result = typeof(Sse41).GetMethod(nameof(Sse41.Insert), new Type[] { typeof(Vector128<UInt32>), typeof(UInt32), typeof(byte) })
+            var result = typeof(Sse41).GetMethod(nameof(Sse41.Insert), new Type[] { typeof(Vector128<Single>), typeof(Single), typeof(byte) })
                                      .Invoke(null, new object[] {
-                                        Sse2.LoadAlignedVector128((UInt32*)(_dataTable.inArrayPtr)),
-                                        (uint)2,
-                                        (byte)129
+                                        Sse.LoadAlignedVector128((Single*)(_dataTable.inArrayPtr)),
+                                        (float)2,
+                                        (byte)64
                                      });
 
-            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<UInt32>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Single>)(result));
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
@@ -209,8 +209,8 @@ namespace JIT.HardwareIntrinsics.X86
         {
             var result = Sse41.Insert(
                 _clsVar,
-                (uint)2,
-                129
+                (float)2,
+                64
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -219,8 +219,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_UnsafeRead()
         {
-            var firstOp = Unsafe.Read<Vector128<UInt32>>(_dataTable.inArrayPtr);
-            var result = Sse41.Insert(firstOp, (uint)2, 129);
+            var firstOp = Unsafe.Read<Vector128<Single>>(_dataTable.inArrayPtr);
+            var result = Sse41.Insert(firstOp, (float)2, 64);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(firstOp, _dataTable.outArrayPtr);
@@ -228,8 +228,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_Load()
         {
-            var firstOp = Sse2.LoadVector128((UInt32*)(_dataTable.inArrayPtr));
-            var result = Sse41.Insert(firstOp, (uint)2, 129);
+            var firstOp = Sse.LoadVector128((Single*)(_dataTable.inArrayPtr));
+            var result = Sse41.Insert(firstOp, (float)2, 64);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(firstOp, _dataTable.outArrayPtr);
@@ -237,8 +237,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_LoadAligned()
         {
-            var firstOp = Sse2.LoadAlignedVector128((UInt32*)(_dataTable.inArrayPtr));
-            var result = Sse41.Insert(firstOp, (uint)2, 129);
+            var firstOp = Sse.LoadAlignedVector128((Single*)(_dataTable.inArrayPtr));
+            var result = Sse41.Insert(firstOp, (float)2, 64);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(firstOp, _dataTable.outArrayPtr);
@@ -246,8 +246,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclFldScenario()
         {
-            var test = new SimpleUnaryOpTest__InsertUInt32129();
-            var result = Sse41.Insert(test._fld, (uint)2, 129);
+            var test = new SimpleUnaryOpTest__InsertSingle64();
+            var result = Sse41.Insert(test._fld, (float)2, 64);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld, _dataTable.outArrayPtr);
@@ -255,7 +255,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunFldScenario()
         {
-            var result = Sse41.Insert(_fld, (uint)2, 129);
+            var result = Sse41.Insert(_fld, (float)2, 64);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld, _dataTable.outArrayPtr);
@@ -275,34 +275,34 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(Vector128<UInt32> firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector128<Single> firstOp, void* result, [CallerMemberName] string method = "")
         {
-            UInt32[] inArray = new UInt32[Op1ElementCount];
-            UInt32[] outArray = new UInt32[RetElementCount];
+            Single[] inArray = new Single[Op1ElementCount];
+            Single[] outArray = new Single[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<UInt32, byte>(ref inArray[0]), firstOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt32, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<UInt32>>());
+            Unsafe.WriteUnaligned(ref Unsafe.As<Single, byte>(ref inArray[0]), firstOp);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Single>>());
 
             ValidateResult(inArray, outArray, method);
         }
 
         private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
         {
-            UInt32[] inArray = new UInt32[Op1ElementCount];
-            UInt32[] outArray = new UInt32[RetElementCount];
+            Single[] inArray = new Single[Op1ElementCount];
+            Single[] outArray = new Single[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt32, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector128<UInt32>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt32, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<UInt32>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector128<Single>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Single>>());
 
             ValidateResult(inArray, outArray, method);
         }
 
-        private void ValidateResult(UInt32[] firstOp, UInt32[] result, [CallerMemberName] string method = "")
+        private void ValidateResult(Single[] firstOp, Single[] result, [CallerMemberName] string method = "")
         {
 
             for (var i = 0; i < RetElementCount; i++)
             {
-                if ((i == 1 ? result[i] != 2 : result[i] != firstOp[i]))
+                if ((i == 0 ? BitConverter.SingleToInt32Bits(result[i]) != BitConverter.SingleToInt32Bits(2.0f) : BitConverter.SingleToInt32Bits(result[i]) != BitConverter.SingleToInt32Bits(firstOp[i])))
                 {
                     Succeeded = false;
                     break;
@@ -311,7 +311,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!Succeeded)
             {
-                Console.WriteLine($"{nameof(Sse41)}.{nameof(Sse41.Insert)}<UInt32>(Vector128<UInt32><9>): {method} failed:");
+                Console.WriteLine($"{nameof(Sse41)}.{nameof(Sse41.Insert)}<Single>(Vector128<Single><9>): {method} failed:");
                 Console.WriteLine($"  firstOp: ({string.Join(", ", firstOp)})");
                 Console.WriteLine($"   result: ({string.Join(", ", result)})");
                 Console.WriteLine();

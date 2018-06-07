@@ -129,6 +129,7 @@ IF_DEF(RRW_MRD_CNS, IS_GM_RD|IS_R1_RW,          DSP_CNS)  // r/w    reg , read [
 IF_DEF(RWR_RRD_MRD, IS_GM_RD|IS_R1_WR|IS_R2_RD, DSP)      // write  reg , read reg2 , read [mem]
 IF_DEF(RWR_MRD_CNS, IS_GM_RD|IS_R1_WR,          DSP_CNS)  // write  reg , read [mem], const
 IF_DEF(RWR_RRD_MRD_CNS, IS_GM_RD|IS_R1_WR|IS_R2_RD, DSP_CNS) // write  reg , read reg2 , read [mem], const
+IF_DEF(RWR_RRD_MRD_RRD, IS_GM_RD|IS_R1_WR|IS_R2_RD|IS_R3_RD, DSP_CNS) // write  reg , read reg2 , read [mem], read reg3
 IF_DEF(RWR_MRD_OFF, IS_GM_RD|IS_R1_WR,          DSP)      // write  reg , offset mem
 
 IF_DEF(MRD_RRD,     IS_GM_RD|IS_R1_RD,          DSP)      // read  [mem], read  reg
@@ -159,6 +160,7 @@ IF_DEF(RRW_SRD_CNS, IS_SF_RD|IS_R1_RW,          CNS )     // r/w    reg , read [
 IF_DEF(RWR_RRD_SRD, IS_SF_RD|IS_R1_WR|IS_R2_RD, NONE)     // write  reg , read  reg2, read [stk]
 IF_DEF(RWR_SRD_CNS, IS_SF_RD|IS_R1_WR,          CNS )     // write  reg , read [stk], const
 IF_DEF(RWR_RRD_SRD_CNS, IS_SF_RD|IS_R1_WR|IS_R2_RD, CNS ) // write  reg , read  reg2, read [stk], const
+IF_DEF(RWR_RRD_SRD_RRD, IS_SF_RD|IS_R1_WR|IS_R2_RD|IS_R3_RD, CNS ) // write  reg , read  reg2, read [stk], read reg3
 
 IF_DEF(SRD_RRD,     IS_SF_RD|IS_R1_RD,          NONE)     // read  [stk], read  reg
 IF_DEF(SWR_RRD,     IS_SF_WR|IS_R1_RD,          NONE)     // write [stk], read  reg
@@ -187,6 +189,7 @@ IF_DEF(RRW_ARD_CNS, IS_AM_RD|IS_R1_RW,          AMD_CNS)  // r/w    reg , read [
 IF_DEF(RWR_RRD_ARD, IS_AM_RD|IS_R1_WR|IS_R2_RD, AMD )     // write  reg , read  reg2, read [adr]
 IF_DEF(RWR_ARD_CNS, IS_AM_RD|IS_R1_WR,          AMD_CNS)  // write  reg , read [adr], const
 IF_DEF(RWR_RRD_ARD_CNS, IS_AM_RD|IS_R1_WR|IS_R2_RD, AMD_CNS) // write  reg , read  reg2, read [adr], const
+IF_DEF(RWR_RRD_ARD_RRD, IS_AM_RD|IS_R1_WR|IS_R2_RD|IS_R3_RD, AMD_CNS) // write  reg , read  reg2, read [adr], read reg3
 
 IF_DEF(ARD_RRD,     IS_AM_RD|IS_R1_RD,          AMD )     // read  [adr], read  reg
 IF_DEF(AWR_RRD,     IS_AM_WR|IS_R1_RD,          AMD )     // write [adr], read  reg

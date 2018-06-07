@@ -109,7 +109,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             var random = new Random();
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (uint)0; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (uint)(random.Next(0, int.MaxValue)); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt32>, byte>(ref _clsVar), ref Unsafe.As<UInt32, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<UInt32>>());
         }
 
@@ -119,10 +119,10 @@ namespace JIT.HardwareIntrinsics.X86
 
             var random = new Random();
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (uint)0; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (uint)(random.Next(0, int.MaxValue)); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt32>, byte>(ref _fld), ref Unsafe.As<UInt32, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<UInt32>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (uint)0; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (uint)(random.Next(0, int.MaxValue)); }
             _dataTable = new SimpleUnaryOpTest__DataTable<UInt32, UInt32>(_data, new UInt32[RetElementCount], LargestVectorSize);
         }
 
@@ -302,7 +302,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             for (var i = 0; i < RetElementCount; i++)
             {
-                if ((i == 1 ? result[i] != 2 : result[i] != 0))
+                if ((i == 1 ? result[i] != 2 : result[i] != firstOp[i]))
                 {
                     Succeeded = false;
                     break;
