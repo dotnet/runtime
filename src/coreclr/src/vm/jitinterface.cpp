@@ -8331,7 +8331,7 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
             static const char * const tailCallType[] = {
                 "optimized tail call", "recursive loop", "helper assisted tailcall"
             };
-            _ASSERTE(tailCallResult >= 0 && (size_t)tailCallResult < sizeof(tailCallType) / sizeof(tailCallType[0]));
+            _ASSERTE(tailCallResult >= 0 && (size_t)tailCallResult < _countof(tailCallType));
             LOG((LF_JIT, LL_INFO100000,
                  "While compiling '%S', %Splicit tail call from '%S' to '%S' generated as a %s.\n",
                  currentMethodName.GetUnicode(), fIsTailPrefix ? W("ex") : W("im"),
@@ -10090,24 +10090,43 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
 
     JIT_TO_EE_TRANSITION();
 
-    InlinedCallFrame::GetEEInfo(&pEEInfoOut->inlinedCallFrameInfo);
+    if (!IsReadyToRunCompilation())
+    {
+        InlinedCallFrame::GetEEInfo(&pEEInfoOut->inlinedCallFrameInfo);
 
-    // Offsets into the Thread structure
-    pEEInfoOut->offsetOfThreadFrame = Thread::GetOffsetOfCurrentFrame();
-    pEEInfoOut->offsetOfGCState     = Thread::GetOffsetOfGCFlag();
+        // Offsets into the Thread structure
+        pEEInfoOut->offsetOfThreadFrame = Thread::GetOffsetOfCurrentFrame();
+        pEEInfoOut->offsetOfGCState     = Thread::GetOffsetOfGCFlag();
+    }
+    else
+    {
+        // inlinedCallFrameInfo is not used for R2R compilation
+        ZeroMemory(&pEEInfoOut->inlinedCallFrameInfo, sizeof(pEEInfoOut->inlinedCallFrameInfo));
+
+        pEEInfoOut->offsetOfThreadFrame = (DWORD)-1;
+        pEEInfoOut->offsetOfGCState     = (DWORD)-1;
+    }
+
+#ifndef CROSSBITNESS_COMPILE
+    // The assertions must hold in every non-crossbitness scenario
+    _ASSERTE(OFFSETOF__DelegateObject__target       == DelegateObject::GetOffsetOfTarget());
+    _ASSERTE(OFFSETOF__DelegateObject__methodPtr    == DelegateObject::GetOffsetOfMethodPtr());
+    _ASSERTE(OFFSETOF__DelegateObject__methodPtrAux == DelegateObject::GetOffsetOfMethodPtrAux());
+    _ASSERTE(OFFSETOF__PtrArray__m_Array_           == PtrArray::GetDataOffset());
+#endif
 
     // Delegate offsets
-    pEEInfoOut->offsetOfDelegateInstance    = DelegateObject::GetOffsetOfTarget();
-    pEEInfoOut->offsetOfDelegateFirstTarget = DelegateObject::GetOffsetOfMethodPtr();
+    pEEInfoOut->offsetOfDelegateInstance    = OFFSETOF__DelegateObject__target;
+    pEEInfoOut->offsetOfDelegateFirstTarget = OFFSETOF__DelegateObject__methodPtr;
 
     // Secure delegate offsets
-    pEEInfoOut->offsetOfSecureDelegateIndirectCell = DelegateObject::GetOffsetOfMethodPtrAux();
+    pEEInfoOut->offsetOfSecureDelegateIndirectCell = OFFSETOF__DelegateObject__methodPtrAux;
 
     // Remoting offsets
-    pEEInfoOut->offsetOfTransparentProxyRP = TransparentProxyObject::GetOffsetOfRP();
-    pEEInfoOut->offsetOfRealProxyServer    = RealProxyObject::GetOffsetOfServerObject();
+    pEEInfoOut->offsetOfTransparentProxyRP = (DWORD)-1;
+    pEEInfoOut->offsetOfRealProxyServer    = (DWORD)-1;
 
-    pEEInfoOut->offsetOfObjArrayData       = (DWORD)PtrArray::GetDataOffset();
+    pEEInfoOut->offsetOfObjArrayData       = OFFSETOF__PtrArray__m_Array_;
 
     pEEInfoOut->sizeOfReversePInvokeFrame  = (DWORD)-1;
 
