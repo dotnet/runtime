@@ -7605,7 +7605,6 @@ mono_TypedReference_MakeTypedReferenceInternal (MonoObject *target, MonoArray *f
 	MonoType *ftype = NULL;
 	guint8 *p = NULL;
 	int i;
-	ERROR_DECL (error);
 
 	memset (&res, 0, sizeof (res));
 

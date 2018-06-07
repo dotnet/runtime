@@ -611,7 +611,7 @@ mono_object_hash (MonoObject* obj)
 		mono_monitor_inflate (obj);
 		lw.sync = obj->synchronisation;
 	} else if (lock_word_is_flat (lw)) {
-		int id = mono_thread_info_get_small_id ();
+		int const id = mono_thread_info_get_small_id ();
 		if (lock_word_get_owner (lw) == id)
 			mono_monitor_inflate_owned (obj, id);
 		else
@@ -967,7 +967,7 @@ static inline gint32
 mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_interruption)
 {
 	LockWord lw;
-	int id = mono_thread_info_get_small_id ();
+	int const id = mono_thread_info_get_small_id ();
 
 	LOCK_DEBUG (g_message("%s: (%d) Trying to lock object %p (%d ms)", __func__, id, obj, ms));
 
@@ -1270,16 +1270,15 @@ ves_icall_System_Threading_Monitor_Monitor_test_synchronised (MonoObject *obj)
  * any extra struct locking
  */
 
-void
-ves_icall_System_Threading_Monitor_Monitor_pulse (MonoObject *obj)
+static void
+mono_monitor_pulse (MonoObject *obj, const char *func, gboolean all)
 {
-	int id;
+	int const id = mono_thread_info_get_small_id ();
 	LockWord lw;
 	MonoThreadsSync *mon;
 
-	LOCK_DEBUG (g_message ("%s: (%d) Pulsing %p", __func__, mono_thread_info_get_small_id (), obj));
+	LOCK_DEBUG (g_message ("%s: (%d) Pulsing %p", func, id, obj));
 	
-	id = mono_thread_info_get_small_id ();
 	lw.sync = obj->synchronisation;
 
 	if (!mono_monitor_ensure_owned (lw, id))
@@ -1292,46 +1291,28 @@ ves_icall_System_Threading_Monitor_Monitor_pulse (MonoObject *obj)
 
 	mon = lock_word_get_inflated_lock (lw);
 
-	LOCK_DEBUG (g_message ("%s: (%d) %d threads waiting", __func__, mono_thread_info_get_small_id (), g_slist_length (mon->wait_list)));
+	LOCK_DEBUG (g_message ("%s: (%d) %d threads waiting", func, id, g_slist_length (mon->wait_list)));
 
-	if (mon->wait_list != NULL) {
-		LOCK_DEBUG (g_message ("%s: (%d) signalling and dequeuing handle %p", __func__, mono_thread_info_get_small_id (), mon->wait_list->data));
-	
-		mono_w32event_set (mon->wait_list->data);
-		mon->wait_list = g_slist_remove (mon->wait_list, mon->wait_list->data);
-	}
+	do {
+		if (mon->wait_list != NULL) {
+			LOCK_DEBUG (g_message ("%s: (%d) signalling and dequeuing handle %p", func, id, mon->wait_list->data));
+
+			mono_w32event_set (mon->wait_list->data);
+			mon->wait_list = g_slist_remove (mon->wait_list, mon->wait_list->data);
+		}
+	} while (all && mon->wait_list);
+}
+
+void
+ves_icall_System_Threading_Monitor_Monitor_pulse (MonoObject *obj)
+{
+	mono_monitor_pulse (obj, __func__, FALSE);
 }
 
 void
 ves_icall_System_Threading_Monitor_Monitor_pulse_all (MonoObject *obj)
 {
-	int id;
-	LockWord lw;
-	MonoThreadsSync *mon;
-	
-	LOCK_DEBUG (g_message("%s: (%d) Pulsing all %p", __func__, mono_thread_info_get_small_id (), obj));
-
-	id = mono_thread_info_get_small_id ();
-	lw.sync = obj->synchronisation;
-
-	if (!mono_monitor_ensure_owned (lw, id))
-		return;
-
-	if (!lock_word_is_inflated (lw)) {
-		/* No threads waiting. A wait would have inflated the lock */
-		return;
-	}
-
-	mon = lock_word_get_inflated_lock (lw);
-
-	LOCK_DEBUG (g_message ("%s: (%d) %d threads waiting", __func__, mono_thread_info_get_small_id (), g_slist_length (mon->wait_list)));
-
-	while (mon->wait_list != NULL) {
-		LOCK_DEBUG (g_message ("%s: (%d) signalling and dequeuing handle %p", __func__, mono_thread_info_get_small_id (), mon->wait_list->data));
-	
-		mono_w32event_set (mon->wait_list->data);
-		mon->wait_list = g_slist_remove (mon->wait_list, mon->wait_list->data);
-	}
+	mono_monitor_pulse (obj, __func__, TRUE);
 }
 
 MonoBoolean
@@ -1345,9 +1326,9 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	gboolean success = FALSE;
 	gint32 regain;
 	MonoInternalThread *thread = mono_thread_internal_current ();
-	int id = mono_thread_info_get_small_id ();
+	int const id = mono_thread_info_get_small_id ();
 
-	LOCK_DEBUG (g_message ("%s: (%d) Trying to wait for %p with timeout %dms", __func__, mono_thread_info_get_small_id (), obj, ms));
+	LOCK_DEBUG (g_message ("%s: (%d) Trying to wait for %p with timeout %dms", __func__, id, obj, ms));
 
 	lw.sync = obj->synchronisation;
 
@@ -1373,7 +1354,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 		return FALSE;
 	}
 	
-	LOCK_DEBUG (g_message ("%s: (%d) queuing handle %p", __func__, mono_thread_info_get_small_id (), event));
+	LOCK_DEBUG (g_message ("%s: (%d) queuing handle %p", __func__, id, event));
 
 	/* This looks superfluous */
 	if (mono_thread_current_check_pending_interrupt ()) {
@@ -1391,7 +1372,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	mono_memory_write_barrier ();
 	mono_monitor_exit_inflated (obj);
 
-	LOCK_DEBUG (g_message ("%s: (%d) Unlocked %p lock %p", __func__, mono_thread_info_get_small_id (), obj, mon));
+	LOCK_DEBUG (g_message ("%s: (%d) Unlocked %p lock %p", __func__, id, obj, mon));
 
 	/* There's no race between unlocking mon and waiting for the
 	 * event, because auto reset events are sticky, and this event
@@ -1421,7 +1402,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 
 	mon->nest = nest;
 
-	LOCK_DEBUG (g_message ("%s: (%d) Regained %p lock %p", __func__, mono_thread_info_get_small_id (), obj, mon));
+	LOCK_DEBUG (g_message ("%s: (%d) Regained %p lock %p", __func__, id, obj, mon));
 
 	if (ret == MONO_W32HANDLE_WAIT_RET_TIMEOUT) {
 		/* Poll the event again, just in case it was signalled
@@ -1447,10 +1428,10 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	 */
 	
 	if (ret == MONO_W32HANDLE_WAIT_RET_SUCCESS_0) {
-		LOCK_DEBUG (g_message ("%s: (%d) Success", __func__, mono_thread_info_get_small_id ()));
+		LOCK_DEBUG (g_message ("%s: (%d) Success", __func__, id));
 		success = TRUE;
 	} else {
-		LOCK_DEBUG (g_message ("%s: (%d) Wait failed, dequeuing handle %p", __func__, mono_thread_info_get_small_id (), event));
+		LOCK_DEBUG (g_message ("%s: (%d) Wait failed, dequeuing handle %p", __func__, id, event));
 		/* No pulse, so we have to remove ourself from the
 		 * wait queue
 		 */
