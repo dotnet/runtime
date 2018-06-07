@@ -413,6 +413,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\FormattableStringFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IAsyncStateMachine.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ICastable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IndexerNameAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\INotifyCompletion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs" />
@@ -725,18 +726,20 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.OutputDebugString.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.RegistryValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.RegistryView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SecurityOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetEndOfFile.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetEnvironmentVariable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.TimeZone.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Normaliz\Interop.Idna.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Normaliz\Interop.Normalization.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.TimeZone.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Ole32\Interop.CoCreateGuid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\OleAut32\Interop.SysFreeString.cs" />
@@ -744,6 +747,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\RegistryView.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\RegistryValueKind.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Windows.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'" />
