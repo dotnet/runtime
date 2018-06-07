@@ -3,11 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
+#include "pal_compiler.h"
 
 /*
 A structure that holds the input and output values for the zlib functions.
 */
-struct PAL_ZStream
+typedef struct PAL_ZStream
 {
     uint8_t* nextIn;  // next input byte
     uint8_t* nextOut; // next output byte should be put there
@@ -19,12 +20,12 @@ struct PAL_ZStream
 
     uint32_t availIn;  // number of bytes available at nextIn
     uint32_t availOut; // remaining free space at nextOut
-};
+} PAL_ZStream;
 
 /*
 Allowed flush values for the Deflate and Inflate functions.
 */
-enum PAL_FlushCode : int32_t
+enum PAL_FlushCode
 {
     PAL_Z_NOFLUSH = 0,
     PAL_Z_FINISH = 4,
@@ -33,7 +34,7 @@ enum PAL_FlushCode : int32_t
 /*
 Error codes from the zlib functions.
 */
-enum PAL_ErrorCode : int32_t
+enum PAL_ErrorCode
 {
     PAL_Z_OK = 0,
     PAL_Z_STREAMEND = 1,
@@ -47,7 +48,7 @@ enum PAL_ErrorCode : int32_t
 /*
 Compression levels
 */
-enum PAL_CompressionLevel : int32_t
+enum PAL_CompressionLevel
 {
     PAL_Z_NOCOMPRESSION = 0,
     PAL_Z_BESTSPEED = 1,
@@ -57,7 +58,7 @@ enum PAL_CompressionLevel : int32_t
 /*
 Compression strategy
 */
-enum PAL_CompressionStrategy : int32_t
+enum PAL_CompressionStrategy
 {
     PAL_Z_DEFAULTSTRATEGY = 0
 };
@@ -65,7 +66,7 @@ enum PAL_CompressionStrategy : int32_t
 /*
 The deflate compression method (the only one supported in this version)
 */
-enum PAL_CompressionMethod : int32_t
+enum PAL_CompressionMethod
 {
     PAL_Z_DEFLATED = 8
 };
@@ -75,7 +76,7 @@ Initializes the PAL_ZStream so the Deflate function can be invoked on it.
 
 Returns a PAL_ErrorCode indicating success or an error number on failure.
 */
-extern "C" int32_t CompressionNative_DeflateInit2_(
+DLLEXPORT int32_t CompressionNative_DeflateInit2_(
     PAL_ZStream* stream, int32_t level, int32_t method, int32_t windowBits, int32_t memLevel, int32_t strategy);
 
 /*
@@ -84,21 +85,21 @@ compressed bytes in nextOut.
 
 Returns a PAL_ErrorCode indicating success or an error number on failure.
 */
-extern "C" int32_t CompressionNative_Deflate(PAL_ZStream* stream, int32_t flush);
+DLLEXPORT int32_t CompressionNative_Deflate(PAL_ZStream* stream, int32_t flush);
 
 /*
 All dynamically allocated data structures for this stream are freed.
 
 Returns a PAL_ErrorCode indicating success or an error number on failure.
 */
-extern "C" int32_t CompressionNative_DeflateEnd(PAL_ZStream* stream);
+DLLEXPORT int32_t CompressionNative_DeflateEnd(PAL_ZStream* stream);
 
 /*
 Initializes the PAL_ZStream so the Inflate function can be invoked on it.
 
 Returns a PAL_ErrorCode indicating success or an error number on failure.
 */
-extern "C" int32_t CompressionNative_InflateInit2_(PAL_ZStream* stream, int32_t windowBits);
+DLLEXPORT int32_t CompressionNative_InflateInit2_(PAL_ZStream* stream, int32_t windowBits);
 
 /*
 Inflates (uncompresses) the bytes in the PAL_ZStream's nextIn buffer and puts the
@@ -106,14 +107,14 @@ uncompressed bytes in nextOut.
 
 Returns a PAL_ErrorCode indicating success or an error number on failure.
 */
-extern "C" int32_t CompressionNative_Inflate(PAL_ZStream* stream, int32_t flush);
+DLLEXPORT int32_t CompressionNative_Inflate(PAL_ZStream* stream, int32_t flush);
 
 /*
 All dynamically allocated data structures for this stream are freed.
 
 Returns a PAL_ErrorCode indicating success or an error number on failure.
 */
-extern "C" int32_t CompressionNative_InflateEnd(PAL_ZStream* stream);
+DLLEXPORT int32_t CompressionNative_InflateEnd(PAL_ZStream* stream);
 
 /*
 Update a running CRC-32 with the bytes buffer[0..len-1] and return the
@@ -121,4 +122,4 @@ updated CRC-32.
 
 Returns the updated CRC-32.
 */
-extern "C" uint32_t CompressionNative_Crc32(uint32_t crc, uint8_t* buffer, int32_t len);
+DLLEXPORT uint32_t CompressionNative_Crc32(uint32_t crc, uint8_t* buffer, int32_t len);
