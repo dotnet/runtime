@@ -58,6 +58,75 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
+        public static void TestAddNullValue_ConcurrentDictionaryOfString_null()
+        {
+            // using ConcurrentDictionary<TKey, TValue> class
+            ConcurrentDictionary<string, string> dict1 = new ConcurrentDictionary<string, string>();
+            dict1["key"] = null;
+        }
+
+        [Fact]
+        public static void TestAddNullValue_IDictionaryOfString_null()
+        {
+            // using IDictionary<TKey, TValue> interface
+            IDictionary<string, string> dict2 = new ConcurrentDictionary<string, string>();
+            dict2["key"] = null;
+            dict2.Add("key2", null);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Missing bug fix in https://github.com/dotnet/corefx/pull/28115")]
+        public static void TestAddNullValue_IDictionary_ReferenceType_null()
+        {
+            // using IDictionary interface
+            IDictionary dict3 = new ConcurrentDictionary<string, string>();
+            dict3["key"] = null;
+            dict3.Add("key2", null);
+        }
+
+        [Fact]
+        public static void TestAddNullValue_IDictionary_ValueType_null_indexer()
+        {
+            // using IDictionary interface and value type values
+            Action action = () =>
+            {
+                IDictionary dict4 = new ConcurrentDictionary<string, int>();
+                dict4["key"] = null;
+            };
+            Assert.Throws<ArgumentException>(action);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Missing bug fix in https://github.com/dotnet/corefx/pull/28115")]
+        public static void TestAddNullValue_IDictionary_ValueType_null_add()
+        {
+            Action action = () =>
+            {
+                IDictionary dict5 = new ConcurrentDictionary<string, int>();
+                dict5.Add("key", null);
+            };
+            Assert.Throws<ArgumentException>(action);
+        }
+
+        [Fact]
+        public static void TestAddValueOfDifferentType()
+        {
+            Action action = () =>
+            {
+                IDictionary dict = new ConcurrentDictionary<string, string>();
+                dict["key"] = 1;
+            };
+            Assert.Throws<ArgumentException>(action);
+
+            action = () =>
+            {
+                IDictionary dict = new ConcurrentDictionary<string, string>();
+                dict.Add("key", 1);
+            };
+            Assert.Throws<ArgumentException>(action);
+        }
+
+        [Fact]
         public static void TestAdd1()
         {
             TestAdd1(1, 1, 1, 10000);
@@ -646,7 +715,7 @@ namespace System.Collections.Concurrent.Tests
 
             // Duplicate keys.
             AssertExtensions.Throws<ArgumentException>(null, () => new ConcurrentDictionary<int, int>(new[] { new KeyValuePair<int, int>(1, 1), new KeyValuePair<int, int>(1, 2) }));
-            
+
             Assert.Throws<ArgumentNullException>(
                () => new ConcurrentDictionary<int, int>(1, null, EqualityComparer<int>.Default));
             // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null collection is passed");
