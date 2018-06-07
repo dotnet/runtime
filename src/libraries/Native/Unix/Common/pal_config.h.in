@@ -6,6 +6,9 @@
 #cmakedefine01 HAVE_FTRUNCATE64
 #cmakedefine01 HAVE_POSIX_FADVISE64
 #cmakedefine01 HAVE_FLOCK64
+#cmakedefine01 HAVE_F_DUPFD_CLOEXEC
+#cmakedefine01 HAVE_O_CLOEXEC
+#cmakedefine01 HAVE_GETIFADDRS
 #cmakedefine01 HAVE_STAT64
 #cmakedefine01 HAVE_PIPE2
 #cmakedefine01 HAVE_STAT_BIRTHTIME
@@ -33,6 +36,7 @@
 #cmakedefine01 HAVE_FDS_BITS
 #cmakedefine01 HAVE_PRIVATE_FDS_BITS
 #cmakedefine01 HAVE_STATFS
+#cmakedefine01 HAVE_SYS_POLL_H
 #cmakedefine01 HAVE_EPOLL
 #cmakedefine01 HAVE_ACCEPT4
 #cmakedefine01 HAVE_KQUEUE
