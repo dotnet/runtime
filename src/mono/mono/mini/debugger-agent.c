@@ -4116,11 +4116,25 @@ event_requests_cleanup (void)
  *
  * Ensure DebuggerTlsData fields are filled out.
  */
-static void ss_calculate_framecount (DebuggerTlsData *tls, MonoContext *ctx)
+static void
+ss_calculate_framecount (DebuggerTlsData *tls, MonoContext *ctx, gboolean force_use_ctx)
 {
-	if (!tls->context.valid)
+	if (force_use_ctx || !tls->context.valid)
 		mono_thread_state_init_from_monoctx (&tls->context, ctx);
 	compute_frame_info (tls->thread, tls);
+}
+
+/*
+ * ss_discard_frame_data:
+ *
+ * Discard frame data and invalidate any context
+ */
+static void
+ss_discard_frame_context (void *de_tls) {
+	DebuggerTlsData *tls = de_tls;
+	tls->context.valid = FALSE;
+	tls->async_state.valid = FALSE;
+	invalidate_frames (tls);
 }
 
 static gboolean
@@ -4156,8 +4170,7 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	gboolean hit = TRUE;
 
 	if ((req->filter & STEP_FILTER_STATIC_CTOR)) {
-		mono_thread_state_init_from_monoctx (&tls->context, ctx);
-		compute_frame_info (tls->thread, tls);
+		ss_calculate_framecount (tls, ctx, TRUE);
 
 		gboolean ret = FALSE;
 		gboolean method_in_stack = FALSE;
@@ -4183,9 +4196,7 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 		}
 		g_assert (method_in_stack);
 
-		tls->context.valid = FALSE;
-		tls->async_state.valid = FALSE;
-		invalidate_frames (tls);
+		ss_discard_frame_context (tls);
 
 		if (ret)
 			return FALSE;
@@ -4207,7 +4218,7 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	if ((req->depth == STEP_DEPTH_OVER || req->depth == STEP_DEPTH_OUT) && hit && !req->async_stepout_method) {
 		gboolean is_step_out = req->depth == STEP_DEPTH_OUT;
 
-		ss_calculate_framecount (tls, ctx);
+		ss_calculate_framecount (tls, ctx, FALSE);
 
 		// Because functions can call themselves recursively, we need to make sure we're stopping at the right stack depth.
 		// In case of step out, the target is the frame *enclosing* the one where the request was made.
@@ -4220,7 +4231,7 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	}
 
 	if (req->depth == STEP_DEPTH_INTO && req->size == STEP_SIZE_MIN && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) && req->start_method) {
-		ss_calculate_framecount (tls, ctx);
+		ss_calculate_framecount (tls, ctx, FALSE);
 		if (req->start_method == method && req->nframes && tls->frame_count == req->nframes) { //Check also frame count(could be recursion)
 			DEBUG_PRINTF (1, "[%p] Seq point at nonempty stack %x while stepping in, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
 			return FALSE;
@@ -4252,7 +4263,7 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 		req->last_method = method;
 		hit = FALSE;
 	} else if (loc && method == req->last_method && loc->row == req->last_line) {
-		ss_calculate_framecount (tls, ctx);
+		ss_calculate_framecount (tls, ctx, FALSE);
 		if (tls->frame_count == req->nframes) { // If the frame has changed we're clearly not on the same source line.
 			DEBUG_PRINTF (1, "[%p] Same source line (%d), continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), loc->row);
 			hit = FALSE;
@@ -4504,10 +4515,8 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 			if (ss_req->async_id == 0)
 				continue;
 
-			tls->context.valid = FALSE;
-			tls->async_state.valid = FALSE;
-			invalidate_frames (tls);
-			ss_calculate_framecount(tls, ctx);
+			ss_discard_frame_context (tls);
+			ss_calculate_framecount (tls, ctx, FALSE);
 			//make sure we have enough data to get current async method instance id
 			if (tls->frame_count == 0 || !ensure_jit (tls->frames [0]))
 				continue;
@@ -4527,10 +4536,8 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 		//Update stepping request to new thread/frame_count that we are continuing on
 		//so continuing with normal stepping works as expected
 		if (ss_req->async_stepout_method || ss_req->async_id) {
-			tls->context.valid = FALSE;
-			tls->async_state.valid = FALSE;
-			invalidate_frames (tls);
-			ss_calculate_framecount (tls, ctx);
+			ss_discard_frame_context (tls);
+			ss_calculate_framecount (tls, ctx, FALSE);
 			ss_req->thread = mono_thread_internal_current ();
 			ss_req->nframes = tls->frame_count;
 		}
@@ -5239,9 +5246,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 		/*
 		 * The ctx/frame info computed above will become invalid when we continue.
 		 */
-		tls->context.valid = FALSE;
-		tls->async_state.valid = FALSE;
-		invalidate_frames (tls);
+		ss_discard_frame_context (tls);
 	}
 
 	if (enable_global) {
