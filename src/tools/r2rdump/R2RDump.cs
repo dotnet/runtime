@@ -156,6 +156,16 @@ namespace R2RDump
         {
             WriteSubDivider();
             _writer.WriteLine(method.ToString());
+            if (_gc)
+            {
+                _writer.WriteLine("GcInfo:");
+                _writer.Write(method.GcInfo);
+                if (_raw)
+                {
+                    DumpBytes(r2r, method.GcInfo.Offset, (uint)method.GcInfo.Size);
+                }
+            }
+            _writer.WriteLine();
 
             foreach (RuntimeFunction runtimeFunction in method.RuntimeFunctions)
             {
@@ -189,15 +199,6 @@ namespace R2RDump
                 if (_raw)
                 {
                     DumpBytes(r2r, rtf.UnwindRVA, (uint)rtf.UnwindInfo.Size);
-                }
-            }
-            if (_gc)
-            {
-                _writer.WriteLine("GcInfo:");
-                _writer.Write(rtf.GcInfo);
-                if (_raw)
-                {
-                    DumpBytes(r2r, rtf.UnwindRVA + rtf.UnwindInfo.Size, (uint)rtf.GcInfo.Size);
                 }
             }
             _writer.WriteLine();
