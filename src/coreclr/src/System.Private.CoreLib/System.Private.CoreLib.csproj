@@ -534,7 +534,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterConverter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterServices.cs" />
   </ItemGroup>
   <ItemGroup>
