@@ -4819,20 +4819,14 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
         internal __DTString(ReadOnlySpan<char> str, DateTimeFormatInfo dtfi)
         {
+            Debug.Assert(dtfi != null, "Expected non-null DateTimeFormatInfo");
+
             Index = -1;
             Value = str;
 
             m_current = '\0';
-            if (dtfi != null)
-            {
-                m_info = dtfi.CompareInfo;
-                m_checkDigitToken = ((dtfi.FormatFlags & DateTimeFormatFlags.UseDigitPrefixInTokens) != 0);
-            }
-            else
-            {
-                m_info = CultureInfo.CurrentCulture.CompareInfo;
-                m_checkDigitToken = false;
-            }
+            m_info = dtfi.CompareInfo;
+            m_checkDigitToken = ((dtfi.FormatFlags & DateTimeFormatFlags.UseDigitPrefixInTokens) != 0);
         }
 
         internal CompareInfo CompareInfo
