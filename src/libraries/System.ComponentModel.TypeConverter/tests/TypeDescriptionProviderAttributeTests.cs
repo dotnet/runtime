@@ -8,22 +8,34 @@ namespace System.ComponentModel.Tests
 {
     public class TypeDescriptionProviderAttributeTests
     {
-        [Fact]
-        public void GetTypeName_FromString()
+        [Theory]
+        [InlineData("")]
+        [InlineData("typeName")]
+        public void Ctor_String(string typeName)
         {
-            var name = "name";
-            var attribute = new TypeDescriptionProviderAttribute(name);
-
-            Assert.Equal(name, attribute.TypeName);
+            var attribute = new TypeDescriptionProviderAttribute(typeName);
+            Assert.Equal(typeName, attribute.TypeName);
         }
 
         [Fact]
-        public void GetTypeName_FromAttribute()
+        public void Ctor_NullTypeName_ThrowsArgumentNullException()
         {
-            var type = typeof(TypeDescriptionProviderAttribute);
-            var attribute = new TypeDescriptionProviderAttribute(type);
+            AssertExtensions.Throws<ArgumentNullException>("typeName", () => new TypeDescriptionProviderAttribute((string)null));
+        }
 
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(TypeDescriptionProviderAttribute))]
+        public void Ctor_Type(Type type)
+        {
+            var attribute = new TypeDescriptionProviderAttribute(type);
             Assert.Equal(type.AssemblyQualifiedName, attribute.TypeName);
+        }
+
+        [Fact]
+        public void Ctor_NullType_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("type", () => new TypeDescriptionProviderAttribute((Type)null));
         }
     }
 }

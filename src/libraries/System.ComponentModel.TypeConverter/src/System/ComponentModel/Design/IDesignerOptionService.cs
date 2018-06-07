@@ -2,29 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.ComponentModel;
-
-using System.Diagnostics;
-
 namespace System.ComponentModel.Design
 {
     /// <summary>
-    ///    <para>
-    ///       Provides access
-    ///       to get and set option values for a designer.
-    ///    </para>
+    /// Provides access to get and set option values for a designer.
     /// </summary>
     public interface IDesignerOptionService
     {
         /// <summary>
-        ///    <para>Gets the value of an option defined in this package.</para>
+        /// Gets the value of an option defined in this package.
         /// </summary>
         object GetOptionValue(string pageName, string valueName);
 
         /// <summary>
-        ///    <para>Sets the value of an option defined in this package.</para>
+        /// Sets the value of an option defined in this package.
         /// </summary>
         void SetOptionValue(string pageName, string valueName, object value);
     }
 }
-

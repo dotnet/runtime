@@ -2,26 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-using System.Security.Permissions;
-
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    Use this attribute to specify typical properties on components that can be bound 
-    ///    to application settings.
+    /// Use this attribute to specify typical properties on components that can be bound 
+    /// to application settings.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property)]
     public sealed class SettingsBindableAttribute : Attribute
     {
         /// <summary>
-        ///       Specifies that a property is appropriate to bind settings to. 
+        /// Specifies that a property is appropriate to bind settings to. 
         /// </summary>
         public static readonly SettingsBindableAttribute Yes = new SettingsBindableAttribute(true);
 
         /// <summary>
-        ///       Specifies that a property is not appropriate to bind settings to. 
+        /// Specifies that a property is not appropriate to bind settings to. 
         /// </summary>
         public static readonly SettingsBindableAttribute No = new SettingsBindableAttribute(false);
 
@@ -31,7 +27,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Gets a value indicating whether a property is appropriate to bind settings to.
+        /// Gets a value indicating whether a property is appropriate to bind settings to.
         /// </summary>
         public bool Bindable { get; }
 
@@ -42,17 +38,9 @@ namespace System.ComponentModel
                 return true;
             }
 
-            if (obj != null && obj is SettingsBindableAttribute)
-            {
-                return (((SettingsBindableAttribute)obj).Bindable == Bindable);
-            }
-
-            return false;
+            return obj is SettingsBindableAttribute other && other.Bindable == Bindable;
         }
 
-        public override int GetHashCode()
-        {
-            return Bindable.GetHashCode();
-        }
+        public override int GetHashCode() => Bindable.GetHashCode();
     }
 }

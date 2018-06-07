@@ -2,59 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32;
-using System;
 using System.Collections;
 using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Security.Permissions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Design
 {
     /// <summary>
-    ///    <para>
-    ///       Represents a Windows
-    ///       menu or toolbar item.
-    ///    </para>
+    /// Represents a Windows menu or toolbar item.
     /// </summary>
     public class MenuCommand
     {
         // Events that we suface or call on
-        //
-        private EventHandler _execHandler;
+        private readonly EventHandler _execHandler;
 
         private int _status;
         private IDictionary _properties;
 
         /// <summary>
-        ///     Indicates that the given command is enabled.  An enabled command may
-        ///     be selected by the user (it's not greyed out).
+        /// Indicates that the given command is enabled. An enabled command may
+        /// be selected by the user (it's not greyed out).
         /// </summary>
         private const int ENABLED = 0x02;  //tagOLECMDF.OLECMDF_ENABLED;
 
         /// <summary>
-        ///     Indicates that the given command is not visible on the command bar.
+        /// Indicates that the given command is not visible on the command bar.
         /// </summary>
         private const int INVISIBLE = 0x10;
 
         /// <summary>
-        ///     Indicates that the given command is checked in the "on" state.
+        /// Indicates that the given command is checked in the "on" state.
         /// </summary>
         private const int CHECKED = 0x04; // tagOLECMDF.OLECMDF_LATCHED;
 
         /// <summary>
-        ///     Indicates that the given command is supported.  Marking a command
-        ///     as supported indicates that the shell will not look any further up
-        ///     the command target chain.
+        /// Indicates that the given command is supported. Marking a command
+        /// as supported indicates that the shell will not look any further up
+        /// the command target chain.
         /// </summary>
         private const int SUPPORTED = 0x01; // tagOLECMDF.OLECMDF_SUPPORTED
 
-
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of <see cref='System.ComponentModel.Design.MenuCommand'/>.
-        ///    </para>
+        /// Initializes a new instance of <see cref='System.ComponentModel.Design.MenuCommand'/>.
         /// </summary>
         public MenuCommand(EventHandler handler, CommandID command)
         {
@@ -64,36 +53,21 @@ namespace System.ComponentModel.Design
         }
 
         /// <summary>
-        ///    <para> Gets or sets a value indicating whether this menu item is checked.</para>
+        /// Gets or sets a value indicating whether this menu item is checked.
         /// </summary>
         public virtual bool Checked
         {
-            get
-            {
-                return (_status & CHECKED) != 0;
-            }
-
-            set
-            {
-                SetStatus(CHECKED, value);
-            }
+            get => (_status & CHECKED) != 0;
+            set => SetStatus(CHECKED, value);
         }
 
         /// <summary>
-        ///    <para> Gets or
-        ///       sets a value indicating whether this menu item is available.</para>
+        /// Gets or sets a value indicating whether this menu item is available.
         /// </summary>
         public virtual bool Enabled
         {
-            get
-            {
-                return (_status & ENABLED) != 0;
-            }
-
-            set
-            {
-                SetStatus(ENABLED, value);
-            }
+            get => (_status & ENABLED) != 0;
+            set => SetStatus(ENABLED, value);
         }
 
         private void SetStatus(int mask, bool value)
@@ -116,60 +90,39 @@ namespace System.ComponentModel.Design
             }
         }
 
-        /// <summary>
-        /// </summary>
         public virtual IDictionary Properties => _properties ?? (_properties = new HybridDictionary());
 
-
         /// <summary>
-        ///    <para> Gets or sets a value
-        ///       indicating whether this menu item is supported.</para>
+        /// Gets or sets a value indicating whether this menu item is supported.
         /// </summary>
         public virtual bool Supported
         {
-            get
-            {
-                return (_status & SUPPORTED) != 0;
-            }
-            set
-            {
-                SetStatus(SUPPORTED, value);
-            }
+            get => (_status & SUPPORTED) != 0;
+            set => SetStatus(SUPPORTED, value);
         }
 
         /// <summary>
-        ///    <para> Gets or sets a value
-        ///       indicating if this menu item is visible.</para>
+        /// Gets or sets a value indicating if this menu item is visible.
         /// </summary>
         public virtual bool Visible
         {
-            get
-            {
-                return (_status & INVISIBLE) == 0;
-            }
-            set
-            {
-                SetStatus(INVISIBLE, !value);
-            }
+            get => (_status & INVISIBLE) == 0;
+            set => SetStatus(INVISIBLE, !value);
         }
 
         /// <summary>
-        ///    <para>
-        ///       Occurs when the menu command changes.
-        ///    </para>
+        /// Occurs when the menu command changes.
         /// </summary>
         public event EventHandler CommandChanged;
         
 
         /// <summary>
-        /// <para>Gets the <see cref='System.ComponentModel.Design.CommandID'/> associated with this menu command.</para>
+        /// Gets the <see cref='System.ComponentModel.Design.CommandID'/> associated with this menu command.
         /// </summary>
         public virtual CommandID CommandID { get; }
 
         /// <summary>
-        ///    <para>
-        ///       Invokes a menu item.
-        ///    </para>
+        /// Invokes a menu item.
         /// </summary>
         public virtual void Invoke()
         {
@@ -190,35 +143,25 @@ namespace System.ComponentModel.Design
         }
 
         /// <summary>
-        ///    <para>
-        ///       Invokes a menu item.  The default implementation of this method ignores 
-        ///       the argument, but deriving classes may override this method.
-        ///    </para>
+        /// Invokes a menu item. The default implementation of this method ignores 
+        /// the argument, but deriving classes may override this method.
         /// </summary>
-        public virtual void Invoke(object arg)
-        {
-            Invoke();
-        }
+        public virtual void Invoke(object arg) => Invoke();
 
         /// <summary>
-        ///    <para>
-        ///       Gets the OLE command status code for this menu item.
-        ///    </para>
+        /// Gets the OLE command status code for this menu item.
         /// </summary>
         public virtual int OleStatus => _status;
 
         /// <summary>
-        ///    <para>Provides notification and is called in response to 
-        ///       a <see cref='System.ComponentModel.Design.MenuCommand.CommandChanged'/> event.</para>
+        /// Provides notification and is called in response to 
+        /// a <see cref='System.ComponentModel.Design.MenuCommand.CommandChanged'/> event.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers")] // Safe: FullTrust LinkDemand to instantiate an object of this class.
-        protected virtual void OnCommandChanged(EventArgs e)
-        {
-            CommandChanged?.Invoke(this, e);
-        }
+        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers")] // Safe: FullTrust LinkDemand to instantiate an object of this class.
+        protected virtual void OnCommandChanged(EventArgs e) => CommandChanged?.Invoke(this, e);
 
         /// <summary>
-        ///    Overrides object's ToString().
+        /// Overrides object's ToString().
         /// </summary>
         public override string ToString()
         {

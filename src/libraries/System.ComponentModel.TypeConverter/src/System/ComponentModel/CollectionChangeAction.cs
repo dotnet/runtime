@@ -5,22 +5,22 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Specifies how the collection is changed.</para>
+    /// Specifies how the collection is changed.
     /// </summary>
     public enum CollectionChangeAction
     {
         /// <summary>
-        ///    <para> Specifies that an element is added to the collection.</para>
+        /// Specifies that an element is added to the collection.
         /// </summary>
         Add = 1,
 
         /// <summary>
-        ///    <para>Specifies that an element is removed from the collection.</para>
+        /// Specifies that an element is removed from the collection.
         /// </summary>
         Remove = 2,
 
         /// <summary>
-        ///    <para>Specifies that the entire collection has changed.</para>
+        /// Specifies that the entire collection has changed.
         /// </summary>
         Refresh = 3
     }

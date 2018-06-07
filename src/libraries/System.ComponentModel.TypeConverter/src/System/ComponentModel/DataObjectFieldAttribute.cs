@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Security.Permissions;
-
 namespace System.ComponentModel
 {
     /// <summary>
@@ -49,17 +46,13 @@ namespace System.ComponentModel
                 return true;
             }
 
-            DataObjectFieldAttribute other = obj as DataObjectFieldAttribute;
-            return (other != null) &&
+            return (obj is DataObjectFieldAttribute other) &&
                 (other.IsIdentity == IsIdentity) &&
                 (other.IsNullable == IsNullable) &&
                 (other.Length == Length) &&
                 (other.PrimaryKey == PrimaryKey);
         }
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
     }
 }

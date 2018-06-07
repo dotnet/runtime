@@ -23,10 +23,7 @@ namespace System.ComponentModel
         /// Adds the specified component to the <see cref='System.ComponentModel.Container'/>
         /// The component is unnamed.
         /// </summary>
-        public virtual void Add(IComponent component)
-        {
-            Add(component, null);
-        }
+        public virtual void Add(IComponent component) => Add(component, null);
 
         // Adds a component to the container.
         /// <summary>
@@ -54,9 +51,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    // Validate that new components
-                    // have either a null name or a unique one.
-                    //
+                    // Validate that new components have either a null name or a unique one.
                     ValidateName(component, name);
 
                     if (_sites.Length == _siteCount)
@@ -86,17 +81,17 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Disposes of the container.  A call to the Dispose method indicates that
+        /// Disposes of the container. A call to the Dispose method indicates that
         /// the user of the container has no further need for it.
         ///
         /// The implementation of Dispose must:
         ///
         /// (1) Remove any references the container is holding to other components.
-        ///     This is typically accomplished by assigning null to any fields that
-        ///     contain references to other components.
+        /// This is typically accomplished by assigning null to any fields that
+        /// contain references to other components.
         ///
         /// (2) Release any system resources that are associated with the container,
-        ///     such as file handles, window handles, or database connections.
+        /// such as file handles, window handles, or database connections.
         ///
         /// (3) Dispose of child components by calling the Dispose method of each.
         ///
@@ -279,12 +274,12 @@ namespace System.ComponentModel
             /// </summary>
             public string Name
             {
-                get { return _name; }
+                get => _name;
                 set
                 {
                     if (value == null || _name == null || !value.Equals(_name))
                     {
-                       ((Container)Container).ValidateName(Component, value);
+                        ((Container)Container).ValidateName(Component, value);
                         _name = value;
                     }
                 }

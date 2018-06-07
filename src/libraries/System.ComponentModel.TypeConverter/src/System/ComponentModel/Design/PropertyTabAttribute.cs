@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Security.Permissions;
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods", Scope = "member", Target = "System.ComponentModel.PropertyTabAttribute.get_TabClasses():System.Type[]")]
+
+[assembly: SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods", Scope = "member", Target = "System.ComponentModel.PropertyTabAttribute.get_TabClasses():System.Type[]")]
 
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para> Identifies the property tab or tabs that should be displayed for the
-    ///       specified class or classes.</para>
+    /// Identifies the property tab or tabs that should be displayed for the
+    /// specified class or classes.
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public class PropertyTabAttribute : Attribute
@@ -21,10 +20,8 @@ namespace System.ComponentModel
         private string[] _tabClassNames;
 
         /// <summary>
-        ///    <para>
-        ///       Basic constructor that creates a PropertyTabAttribute.  Use this ctor to derive from this
-        ///       attribute and specify multiple tab types by calling InitializeArrays.
-        ///    </para>
+        /// Basic constructor that creates a PropertyTabAttribute. Use this ctor to derive from this
+        /// attribute and specify multiple tab types by calling InitializeArrays.
         /// </summary>
         public PropertyTabAttribute()
         {
@@ -33,30 +30,24 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///       Basic constructor that creates a property tab attribute that will create a tab
-        ///       of the specified type.
-        ///    </para>
+        /// Basic constructor that creates a property tab attribute that will create a tab
+        /// of the specified type.
         /// </summary>
         public PropertyTabAttribute(Type tabClass) : this(tabClass, PropertyTabScope.Component)
         {
         }
 
         /// <summary>
-        ///    <para>
-        ///       Basic constructor that creates a property tab attribute that will create a tab
-        ///       of the specified type.
-        ///    </para>
+        /// Basic constructor that creates a property tab attribute that will create a tab
+        /// of the specified type.
         /// </summary>
         public PropertyTabAttribute(string tabClassName) : this(tabClassName, PropertyTabScope.Component)
         {
         }
 
         /// <summary>
-        ///    <para>
-        ///       Basic constructor that creates a property tab attribute that will create a tab
-        ///       of the specified type.
-        ///    </para>
+        /// Basic constructor that creates a property tab attribute that will create a tab
+        /// of the specified type.
         /// </summary>
         public PropertyTabAttribute(Type tabClass, PropertyTabScope tabScope)
         {
@@ -68,12 +59,9 @@ namespace System.ComponentModel
             TabScopes = new PropertyTabScope[] { tabScope };
         }
 
-
         /// <summary>
-        ///    <para>
-        ///       Basic constructor that creates a property tab attribute that will create a tab
-        ///       of the specified type.
-        ///    </para>
+        /// Basic constructor that creates a property tab attribute that will create a tab
+        /// of the specified type.
         /// </summary>
         public PropertyTabAttribute(string tabClassName, PropertyTabScope tabScope)
         {
@@ -86,7 +74,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Gets the types of tab that this attribute specifies.</para>
+        /// Gets the types of tab that this attribute specifies.
         /// </summary>
         public Type[] TabClasses
         {
@@ -134,17 +122,13 @@ namespace System.ComponentModel
             }
         }
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         protected string[] TabClassNames => (string[]) _tabClassNames?.Clone();
 
         /// <summary>
-        /// <para>Gets the scopes of tabs for this System.ComponentModel.Design.PropertyTabAttribute, from System.ComponentModel.Design.PropertyTabScope.</para>
+        /// Gets the scopes of tabs for this System.ComponentModel.Design.PropertyTabAttribute, from System.ComponentModel.Design.PropertyTabScope.
         /// </summary>
         public PropertyTabScope[] TabScopes { get; private set; }
 
-        /// <internalonly/>
         public override bool Equals(object other)
         {
             if (other is PropertyTabAttribute)
@@ -154,7 +138,6 @@ namespace System.ComponentModel
             return false;
         }
 
-        /// <internalonly/>
         public bool Equals(PropertyTabAttribute other)
         {
             if (other == (object)this)
@@ -180,19 +163,12 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        ///    <para>
-        ///       Returns the hashcode for this object.
-        ///    </para>
+        /// Returns the hashcode for this object.
         /// </summary>
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
         /// <summary>
-        ///    <para>
-        ///       Utiliity function to set the types of tab classes this PropertyTabAttribute specifies.
-        ///    </para>
+        /// Utiliity function to set the types of tab classes this PropertyTabAttribute specifies.
         /// </summary>
         protected void InitializeArrays(string[] tabClassNames, PropertyTabScope[] tabScopes)
         {
@@ -200,15 +176,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///       Utiliity function to set the types of tab classes this PropertyTabAttribute specifies.
-        ///    </para>
+        /// Utiliity function to set the types of tab classes this PropertyTabAttribute specifies.
         /// </summary>
         protected void InitializeArrays(Type[] tabClasses, PropertyTabScope[] tabScopes)
         {
             InitializeArrays(null, tabClasses, tabScopes);
         }
-
 
         private void InitializeArrays(string[] tabClassNames, Type[] tabClasses, PropertyTabScope[] tabScopes)
         {
@@ -257,5 +230,3 @@ namespace System.ComponentModel
         }
     }
 }
-
-

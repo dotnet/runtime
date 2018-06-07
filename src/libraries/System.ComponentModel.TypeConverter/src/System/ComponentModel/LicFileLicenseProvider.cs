@@ -2,25 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
-using System.Security.Permissions;
 
 namespace System.ComponentModel
 {
     /// <summary>
-    /// <para>Provides an implementation of a <see cref='System.ComponentModel.LicenseProvider'/>. The provider works in
-    ///    a similar fashion to Microsoft .NET Framework standard licensing module.</para>
+    /// Provides an implementation of a <see cref='System.ComponentModel.LicenseProvider'/>. The provider works in
+    /// a similar fashion to Microsoft .NET Framework standard licensing module.
     /// </summary>
     public class LicFileLicenseProvider : LicenseProvider
     {
         /// <summary>
-        /// <para>Determines if the key retrieved by the <see cref='System.ComponentModel.LicFileLicenseProvider.GetLicense'/> method is valid 
-        ///    for the specified type.</para>
+        /// Determines if the key retrieved by the <see cref='System.ComponentModel.LicFileLicenseProvider.GetLicense'/> method is valid 
+        /// for the specified type.
         /// </summary>
         protected virtual bool IsKeyValid(string key, Type type)
         {
@@ -33,18 +30,16 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        ///    Creates a key for the specified type.
+        /// Creates a key for the specified type.
         /// </summary>
         protected virtual string GetKey(Type type)
         {
             // This string should not be localized.
-            //
             return string.Format(CultureInfo.InvariantCulture, "{0} is a licensed component.", type.FullName);
         }
 
-
         /// <summary>
-        ///    <para>Gets a license for the instance of the component and determines if it is valid.</para>
+        /// Gets a license for the instance of the component and determines if it is valid.
         /// </summary>
         public override License GetLicense(LicenseContext context, Type type, object instance, bool allowExceptions)
         {
@@ -107,7 +102,7 @@ namespace System.ComponentModel
 
         private class LicFileLicense : License
         {
-            private LicFileLicenseProvider _owner;
+            private readonly LicFileLicenseProvider _owner;
 
             public LicFileLicense(LicFileLicenseProvider owner, string key)
             {
