@@ -35,7 +35,7 @@ class WaitAnyEx
             Console.WriteLine("Waiting...");
             int i = WaitHandle.WaitAny(
                 new WaitHandle[]{myMutex,
-                new ManualResetEvent(false)}, 10000);
+                new ManualResetEvent(false)}, 30000);
             Console.WriteLine("WaitAny did not throw an " +
                 "exception, i = " + i);
         }
