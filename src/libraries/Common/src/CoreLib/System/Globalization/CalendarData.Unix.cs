@@ -134,14 +134,105 @@ namespace System.Globalization
             {
                 List<string> datePatternsList = callbackContext.Results;
 
-                datePatterns = new string[datePatternsList.Count];
                 for (int i = 0; i < datePatternsList.Count; i++)
                 {
-                    datePatterns[i] = NormalizeDatePattern(datePatternsList[i]);
+                    datePatternsList[i] = NormalizeDatePattern(datePatternsList[i]);
                 }
+
+                if (dataType == CalendarDataType.ShortDates)
+                    FixDefaultShortDatePattern(datePatternsList);
+
+                datePatterns = datePatternsList.ToArray();
             }
 
             return result;
+        }
+
+        // FixDefaultShortDatePattern will convert the default short date pattern from using 'yy' to using 'yyyy'
+        // And will ensure the original pattern still exist in the list.
+        // doing that will have the short date pattern format the year as 4-digit number and not just 2-digit number.
+        // Example: June 5, 2018 will be formatted to something like 6/5/2018 instead of 6/5/18 fro en-US culture.
+        private static void FixDefaultShortDatePattern(List<string> shortDatePatterns)
+        {
+            if (shortDatePatterns.Count == 0)
+                return;
+
+            string s = shortDatePatterns[0];
+
+            // We are not expecting any pattern have length more than 100.
+            // We have to do this check to prevent stack overflow as we allocate the buffer on the stack.
+            if (s.Length > 100)
+                return;
+
+            Span<char> modifiedPattern = stackalloc char[s.Length + 2];
+            int index = 0;
+
+            while (index < s.Length)
+            {
+                if (s[index] == '\'')
+                {
+                    do 
+                    {
+                        modifiedPattern[index] = s[index];
+                        index++;
+                    } while (index < s.Length && s[index] != '\'');
+
+                    if (index >= s.Length)
+                        return;                 
+                }
+                else if (s[index] == 'y')
+                {
+                    modifiedPattern[index] = 'y';
+                    break;
+                }
+
+                modifiedPattern[index] = s[index];
+                index++;
+            }
+
+            if (index >= s.Length - 1 || s[index + 1] != 'y')
+            {
+                // not a 'yy' pattern
+                return;
+            }
+
+            if (index + 2 < s.Length && s[index + 2] == 'y')
+            {
+                // we have 'yyy' then nothing to do
+                return;
+            }
+
+            // we are sure now we have 'yy' pattern
+
+            Debug.Assert(index + 3 < modifiedPattern.Length);
+
+            modifiedPattern[index + 1] = 'y'; // second y
+            modifiedPattern[index + 2] = 'y'; // third y
+            modifiedPattern[index + 3] = 'y'; // fourth y
+
+            index += 2;
+
+            // Now, copy the rest of the pattern to the destination buffer
+            while (index < s.Length)
+            {
+                modifiedPattern[index + 2] = s[index];
+                index++;
+            }
+
+            shortDatePatterns[0] = modifiedPattern.ToString();
+
+            for (int i = 1; i < shortDatePatterns.Count; i++)
+            {
+                if (shortDatePatterns[i] == shortDatePatterns[0])
+                {
+                    // Found match in the list to the new constructed pattern, then replace it with the original modified pattern
+                    shortDatePatterns[i] = s;
+                    return;
+                }
+            }
+
+            // if we come here means the newly constructed pattern not found on the list, then add the original pattern
+            shortDatePatterns.Add(s);
         }
 
         /// <summary>
