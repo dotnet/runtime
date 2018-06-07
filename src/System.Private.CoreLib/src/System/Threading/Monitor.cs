@@ -105,7 +105,7 @@ namespace System.Threading
         ** becomes equivalent to Enter.
         **
         ** Exceptions: ArgumentNullException if object is null.
-        **             ArgumentException if timeout < 0.
+        **             ArgumentException if timeout < -1 (Timeout.Infinite).
         =========================================================================*/
         // The JIT should inline this method to allow check of lockTaken argument to be optimized out
         // in the typical case. Note that the method has to be transparent for inlining to be allowed by the VM.
