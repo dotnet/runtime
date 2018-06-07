@@ -2,18 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//
-// Support for dynamic interface casting. Specifically implementing this interface on a type will allow the
-// type to support interfaces (for the purposes of casting and interface dispatch) that do not appear in its
-// interface map.
-//
-
 using System;
 
 namespace System.Runtime.CompilerServices
 {
+    /// <summary>
+    /// Support for dynamic interface casting. Specifically implementing this interface on a type will allow the
+    /// type to support interfaces (for the purposes of casting and interface dispatch) that do not appear in its
+    /// interface map.
+    /// </summary>
     public interface ICastable
     {
         // This is called if casting this object to the given interface type would otherwise fail. Casting
@@ -60,23 +57,5 @@ namespace System.Runtime.CompilerServices
         // The results of this lookup are cached so computation of the result is not as perf-sensitive as
         // IsInstanceOfInterface.
         RuntimeTypeHandle GetImplType(RuntimeTypeHandle interfaceType);
-    }
-
-    /// <summary>
-    /// Helpers that allows VM to call into ICastable methods without having to deal with RuntimeTypeHandle.
-    /// RuntimeTypeHandle is a struct and is always passed in stack in x86, which our VM call helpers don't
-    /// particularly like.
-    /// </summary>
-    internal class ICastableHelpers
-    {
-        internal static bool IsInstanceOfInterface(ICastable castable, RuntimeType type, out Exception castError)
-        {
-            return castable.IsInstanceOfInterface(new RuntimeTypeHandle(type), out castError);
-        }
-
-        internal static RuntimeType GetImplType(ICastable castable, RuntimeType interfaceType)
-        {
-            return castable.GetImplType(new RuntimeTypeHandle(interfaceType)).GetRuntimeType();
-        }
     }
 }

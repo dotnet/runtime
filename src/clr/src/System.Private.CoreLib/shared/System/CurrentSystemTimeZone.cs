@@ -17,12 +17,8 @@
 **
 ============================================================*/
 
-using System;
-using System.Text;
 using System.Collections;
 using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System
 {
@@ -193,5 +189,29 @@ namespace System
                 return new TimeSpan(TimeZone.CalculateUtcOffset(time, GetDaylightChanges(time.Year)).Ticks + m_ticksOffset);
             }
         }
+
+        private DaylightTime GetCachedDaylightChanges(int year)
+        {
+            Object objYear = (Object)year;
+
+            if (!m_CachedDaylightChanges.Contains(objYear))
+            {
+                DaylightTime currentDaylightChanges = CreateDaylightChanges(year);
+                lock (m_CachedDaylightChanges)
+                {
+                    if (!m_CachedDaylightChanges.Contains(objYear))
+                    {
+                        m_CachedDaylightChanges.Add(objYear, currentDaylightChanges);
+                    }
+                }
+            }
+
+            return (DaylightTime)m_CachedDaylightChanges[objYear];
+        }
+
+        // The per-year information is cached in in this instance value. As a result it can
+        // be cleaned up by CultureInfo.ClearCachedData, which will clear the instance of this object
+        private readonly Hashtable m_CachedDaylightChanges = new Hashtable();
+
     } // class CurrentSystemTimeZone
 }
