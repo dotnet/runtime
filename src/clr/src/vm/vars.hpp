@@ -79,7 +79,6 @@ class LoaderHeap;
 class IGCHeap;
 class Object;
 class StringObject;
-class TransparentProxyObject;
 class ArrayClass;
 class MethodTable;
 class MethodDesc;
@@ -158,7 +157,6 @@ class OBJECTREF {
         class ArrayBase* m_asArray;
         class PtrArray* m_asPtrArray;
         class DelegateObject* m_asDelegate;
-        class TransparentProxyObject* m_asTP;
 
         class ReflectClassBaseObject* m_asReflectClass;
         class ExecutionContextObject* m_asExecutionContext;
