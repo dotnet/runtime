@@ -453,7 +453,6 @@ mono_native_state_add_epilogue (JsonWriter *writer)
 	mono_json_writer_indent_pop (writer);
 	mono_json_writer_indent (writer);
 	mono_json_writer_object_end (writer);
-	mono_json_writer_printf (writer, "\n");
 }
 
 void
