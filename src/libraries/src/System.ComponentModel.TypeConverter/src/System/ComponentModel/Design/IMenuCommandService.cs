@@ -5,63 +5,50 @@
 namespace System.ComponentModel.Design
 {
     /// <summary>
-    ///    <para>Provides an interface for a designer to add menu items to the Visual Studio
-    ///       7.0 menu.</para>
+    /// Provides an interface for a designer to add menu items to the Visual Studio
+    /// 7.0 menu.
     /// </summary>
-
     public interface IMenuCommandService
     {
         /// <summary>
-        /// <para>Gets or sets an array of type <see cref='System.ComponentModel.Design.DesignerVerb'/> 
-        /// that indicates the verbs that are currently available.</para>
+        /// Gets or sets an array of type <see cref='System.ComponentModel.Design.DesignerVerb'/> 
+        /// that indicates the verbs that are currently available.
         /// </summary>
         DesignerVerbCollection Verbs { get; }
 
         /// <summary>
-        ///    <para>
-        ///       Adds a menu command to the document.
-        ///    </para>
+        /// Adds a menu command to the document.
         /// </summary>
         void AddCommand(MenuCommand command);
 
         /// <summary>
-        ///    <para>
-        ///       Adds a verb to the set of global verbs.
-        ///    </para>
+        /// Adds a verb to the set of global verbs.
         /// </summary>
         void AddVerb(DesignerVerb verb);
 
         /// <summary>
-        ///    <para>
-        ///       Searches for the given command ID and returns
-        ///       the <see cref='System.ComponentModel.Design.MenuCommand'/>
-        ///       associated with it.
-        ///    </para>
+        /// Searches for the given command ID and returns the <see cref='System.ComponentModel.Design.MenuCommand'/>
+        /// associated with it.
         /// </summary>
         MenuCommand FindCommand(CommandID commandID);
 
         /// <summary>
-        ///    <para>Invokes a command on the local form or in the global environment.</para>
+        /// Invokes a command on the local form or in the global environment.
         /// </summary>
         bool GlobalInvoke(CommandID commandID);
 
         /// <summary>
-        ///    <para>
-        ///       Removes the specified <see cref='System.ComponentModel.Design.MenuCommand'/> from the document.
-        ///    </para>
+        /// Removes the specified <see cref='System.ComponentModel.Design.MenuCommand'/> from the document.
         /// </summary>
         void RemoveCommand(MenuCommand command);
 
         /// <summary>
-        ///    <para>
-        ///       Removes the specified verb from the document.
-        ///    </para>
+        /// Removes the specified verb from the document.
         /// </summary>
         void RemoveVerb(DesignerVerb verb);
 
         /// <summary>
-        ///    <para>Shows the context menu with the specified command ID at the specified
-        ///       location.</para>
+        /// Shows the context menu with the specified command ID at the specified location.
         /// </summary>
         void ShowContextMenu(CommandID menuID, int x, int y);
     }

@@ -2,22 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Reflection;
-using System.Security.Permissions;
-using System.Security;
 using System.Diagnostics;
 
 namespace System
 {
-    // from Misc/SecurityUtils.cs
     internal static class SecurityUtils
     {
         /// <summary>
-        ///     This helper method provides safe access to Activator.CreateInstance.
-        ///     NOTE: This overload will work only with public .ctors. 
+        /// This helper method provides safe access to Activator.CreateInstance.
+        /// NOTE: This overload will work only with public .ctors. 
         /// </summary>
         internal static object SecureCreateInstance(Type type)
         {
@@ -25,8 +19,8 @@ namespace System
         }
 
         /// <summary>
-        ///     This helper method provides safe access to Activator.CreateInstance.
-        ///     Set allowNonPublic to true if you want non public ctors to be used. 
+        /// This helper method provides safe access to Activator.CreateInstance.
+        /// Set allowNonPublic to true if you want non public ctors to be used. 
         /// </summary>
         internal static object SecureCreateInstance(Type type, object[] args)
         {

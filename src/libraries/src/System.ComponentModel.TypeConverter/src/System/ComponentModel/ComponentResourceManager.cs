@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Resources;
-using System.Security.Permissions;
 
 namespace System.ComponentModel
 {
@@ -30,10 +28,9 @@ namespace System.ComponentModel
         {
         }
 
-
         /// <summary>
-        ///     The culture of the main assembly's neutral resources. If someone is asking for this culture's resources,
-        ///     we don't need to walk up the parent chain.
+        /// The culture of the main assembly's neutral resources. If someone is asking for this culture's resources,
+        /// we don't need to walk up the parent chain.
         /// </summary>
         private CultureInfo NeutralResourcesCulture
         {
@@ -49,23 +46,20 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     This method examines all the resources for the current culture.
-        ///     When it finds a resource with a key in the format of 
-        ///     &quot;[objectName].[property name]&quot; it will apply that resource's value
-        ///     to the corresponding property on the object.  If there is no matching
-        ///     property the resource will be ignored.
+        /// This method examines all the resources for the current culture.
+        /// When it finds a resource with a key in the format of 
+        /// &quot;[objectName].[property name]&quot; it will apply that resource's value
+        /// to the corresponding property on the object. If there is no matching
+        /// property the resource will be ignored.
         /// </summary>
-        public void ApplyResources(object value, string objectName)
-        {
-            ApplyResources(value, objectName, null);
-        }
+        public void ApplyResources(object value, string objectName) => ApplyResources(value, objectName, null);
 
         /// <summary>
-        ///     This method examines all the resources for the provided culture.
-        ///     When it finds a resource with a key in the format of 
-        ///     &quot;[objectName].[property name]&quot; or &quot;[objectName]-[property name]&quot; it will apply that resource's value
-        ///     to the corresponding property on the object.  If there is no matching
-        ///     property the resource will be ignored.
+        /// This method examines all the resources for the provided culture.
+        /// When it finds a resource with a key in the format of 
+        /// &quot;[objectName].[property name]&quot; or &quot;[objectName]-[property name]&quot; it will apply that resource's value
+        /// to the corresponding property on the object. If there is no matching
+        /// property the resource will be ignored.
         /// </summary>
         public virtual void ApplyResources(object value, string objectName, CultureInfo culture)
         {
@@ -83,9 +77,9 @@ namespace System.ComponentModel
             }
 
             // The general case here will be to always use the same culture, so optimize for
-            // that.  The resourceSets hashtable uses culture as a key.  It's value is
+            // that. The resourceSets hashtable uses culture as a key. It's value is
             // a sorted dictionary that contains ALL the culture values (so it traverses up
-            // the parent culture chain) for that culture.  This means that if ApplyResources
+            // the parent culture chain) for that culture. This means that if ApplyResources
             // is called with different cultures there could be some redundancy in the
             // table, but it allows the normal case of calling with a single culture to 
             // be much faster.
@@ -97,9 +91,8 @@ namespace System.ComponentModel
 
             if (_resourceSets == null)
             {
-                ResourceSet dummy;
                 _resourceSets = new Hashtable();
-                resources = FillResources(culture, out dummy);
+                resources = FillResources(culture, out ResourceSet dummy);
                 _resourceSets[culture] = resources;
             }
             else
@@ -107,8 +100,7 @@ namespace System.ComponentModel
                 resources = (SortedList<string, object>)_resourceSets[culture];
                 if (resources == null || (resources.Comparer.Equals(StringComparer.OrdinalIgnoreCase) != IgnoreCase))
                 {
-                    ResourceSet dummy;
-                    resources = FillResources(culture, out dummy);
+                    resources = FillResources(culture, out ResourceSet dummy);
                     _resourceSets[culture] = resources;
                 }
             }
@@ -150,16 +142,14 @@ namespace System.ComponentModel
                 }
 
                 // Character after objectName.Length should be a "." or a '-', or else we should continue.
-                //
                 int idx = objectName.Length;
                 if (key.Length <= idx || (key[idx] != '.' && key[idx] != '-'))
                 {
                     continue;
                 }
 
-                // Bypass type descriptor if we are not in design mode.  TypeDescriptor does an attribute
+                // Bypass type descriptor if we are not in design mode. TypeDescriptor does an attribute
                 // scan which is quite expensive.
-                //
                 string propName = key.Substring(idx + 1);
 
                 if (componentReflect)
@@ -200,9 +190,8 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Recursive routine that creates a resource hashtable
-        ///     populated with resources for culture and all parent
-        ///     cultures.
+        /// Recursive routine that creates a resource hashtable populated with
+        /// resources for culture and all parent cultures.
         /// </summary>
         private SortedList<string, object> FillResources(CultureInfo culture, out ResourceSet resourceSet)
         {
@@ -211,7 +200,6 @@ namespace System.ComponentModel
 
             // Traverse parents first, so we always replace more
             // specific culture values with less specific.
-            //
             if (!culture.Equals(CultureInfo.InvariantCulture) && !culture.Equals(NeutralResourcesCulture))
             {
                 sd = FillResources(culture.Parent, out parentResourceSet);
@@ -219,7 +207,6 @@ namespace System.ComponentModel
             else
             {
                 // We're at the bottom, so create the sorted dictionary
-                // 
                 if (IgnoreCase)
                 {
                     sd = new SortedList<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -230,19 +217,18 @@ namespace System.ComponentModel
                 }
             }
 
-            // Now walk culture's resource set.  Another thing we
+            // Now walk culture's resource set. Another thing we
             // do here is ask ResourceManager to traverse up the 
-            // parent chain.  We do NOT want to do this because
+            // parent chain. We do NOT want to do this because
             // we are trawling up the parent chain ourselves, but by
             // passing in true for the second parameter the resource
             // manager will cache the culture it did find, so when we 
             // do recurse all missing resources will be filled in
-            // so we are very fast.  That's why we remember what our
+            // so we are very fast. That's why we remember what our
             // parent resource set's instance was -- if they are the
             // same, we're looking at a cache we've already applied.
-            //
             resourceSet = GetResourceSet(culture, true, true);
-            if (resourceSet != null && !object.ReferenceEquals(resourceSet, parentResourceSet))
+            if (resourceSet != null && !ReferenceEquals(resourceSet, parentResourceSet))
             {
                 foreach (DictionaryEntry de in resourceSet)
                 {

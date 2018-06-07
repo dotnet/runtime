@@ -6,20 +6,11 @@ namespace System.Timers
 {
     public class ElapsedEventArgs : EventArgs
     {
-        private readonly DateTime _signalTime;
-
         internal ElapsedEventArgs(long fileTime)
         {
-            _signalTime = DateTime.FromFileTime(fileTime);
+            SignalTime = DateTime.FromFileTime(fileTime);
         }
 
-        public DateTime SignalTime
-        {
-            get
-            {
-                return _signalTime;
-            }
-        }
+        public DateTime SignalTime { get; }
     }
 }
-

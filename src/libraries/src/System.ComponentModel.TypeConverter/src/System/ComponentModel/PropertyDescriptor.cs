@@ -362,7 +362,7 @@ namespace System.ComponentModel
 
         /// <summary>
         ///     Try to keep this reasonable in [....] with Equals(). Specifically, 
-        ///     if A.Equals(B) returns true, A & B should have the same hash code.
+        ///     if A.Equals(B) returns true, A &amp; B should have the same hash code.
         /// </summary>
         public override int GetHashCode()
         {
