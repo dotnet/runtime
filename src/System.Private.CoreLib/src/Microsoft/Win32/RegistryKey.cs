@@ -1121,7 +1121,12 @@ namespace Microsoft.Win32
     }
 
     [Flags]
-    internal enum RegistryValueOptions
+#if REGISTRY_ASSEMBLY
+    public
+#else
+    internal
+#endif
+    enum RegistryValueOptions
     {
         None = 0,
         DoNotExpandEnvironmentNames = 1
