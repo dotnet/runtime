@@ -44,7 +44,6 @@ namespace R2RDump
         public R2RMethod Method { get; }
 
         public UnwindInfo UnwindInfo { get; }
-        public GcInfo GcInfo { get; }
 
         public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, R2RMethod method, UnwindInfo unwindInfo, GcInfo gcInfo)
         {
@@ -53,8 +52,15 @@ namespace R2RDump
             UnwindRVA = unwindRva;
             Method = method;
             UnwindInfo = unwindInfo;
-            GcInfo = gcInfo;
-            Size = gcInfo.CodeLength;
+            if (endRva != -1)
+            {
+                Size = endRva - startRva;
+            }
+            else if (gcInfo != null)
+            {
+                Size = gcInfo.CodeLength;
+            }
+            method.GcInfo = gcInfo;
         }
 
         public override string ToString()
@@ -71,6 +77,7 @@ namespace R2RDump
             {
                 sb.AppendLine($"Size: {Size} bytes");
             }
+            sb.AppendLine($"UnwindRVA: 0x{UnwindRVA:X8}");
 
             return sb.ToString();
         }
@@ -94,16 +101,6 @@ namespace R2RDump
         public string SignatureString { get; }
 
         public bool IsGeneric { get; }
-
-        /*/// <summary>
-        /// The return type of the method
-        /// </summary>
-        public string ReturnType { get; }
-
-        /// <summary>
-        /// The argument types of the method
-        /// </summary>
-        public string[] ArgTypes { get; }*/
 
         public MethodSignature<string> Signature { get; }
 
@@ -131,6 +128,8 @@ namespace R2RDump
         /// The id of the entrypoint runtime function
         /// </summary>
         public int EntryPointRuntimeFunctionId { get; }
+
+        public GcInfo GcInfo { get; set; }
 
         /// <summary>
         /// Maps all the generic parameters to the type in the instance
