@@ -572,15 +572,25 @@ protected:
     struct instrDesc
     {
     private:
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
-        // The assembly instruction
+// The assembly instruction
+#if defined(_TARGET_XARCH_)
+        static_assert_no_msg(INS_count <= 1024);
+        instruction _idIns : 10;
+#elif defined(_TARGET_ARM64_)
+        static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
 #else  // !(defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_))
-        // The assembly instruction
+        static_assert_no_msg(INS_count <= 256);
         instruction _idIns : 8;
 #endif // !(defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_))
-        // The format for the instruction
+       // The format for the instruction
+#if defined(_TARGET_XARCH_)
+        static_assert_no_msg(IF_COUNT <= 128);
+        insFormat _idInsFmt : 7;
+#else
+        static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
+#endif
 
     public:
         instruction idIns() const
@@ -589,8 +599,8 @@ protected:
         }
         void idIns(instruction ins)
         {
+            assert((ins != INS_invalid) && (ins < INS_count));
             _idIns = ins;
-            assert(_idIns == ins);
         }
 
         insFormat idInsFmt() const
@@ -602,16 +612,9 @@ protected:
 #if defined(_TARGET_ARM64_)
             noway_assert(insFmt != IF_NONE); // Only the x86 emitter uses IF_NONE, it is invalid for ARM64 (and ARM32)
 #endif
+            assert(insFmt < IF_COUNT);
             _idInsFmt = insFmt;
-            assert(_idInsFmt == insFmt);
         }
-
-        /*
-            The idReg1 and idReg2 fields hold the first and second register
-            operand(s), whenever these are present. Note that the size of
-            these fields ranges from 3 to 6 bits, and care needs to be taken
-            to make sure all of these fields stay reasonably packed.
-         */
 
         void idSetRelocFlags(emitAttr attr)
         {
@@ -621,24 +624,21 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   16 bits
+        // x86:   17 bits
         // amd64: 17 bits
         // arm:   16 bits
         // arm64: 17 bits
 
     private:
-#ifdef _TARGET_XARCH_
-        unsigned _idCodeSize : 4; // size of instruction in bytes
-#endif
-
 #if defined(_TARGET_XARCH_)
-        opSize _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16, 5=32
-                              // At this point we have fully consumed first DWORD so that next field
-                              // doesn't cross a byte boundary.
+        unsigned _idCodeSize : 4; // size of instruction in bytes
+        opSize   _idOpSize : 3;   // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16, 5=32
+                                  // At this point we have fully consumed first DWORD so that next field
+                                  // doesn't cross a byte boundary.
 #elif defined(_TARGET_ARM64_)
 // Moved the definition of '_idOpSize' later so that we don't cross a 32-bit boundary when laying out bitfields
 #else  // ARM
-        opSize _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
+        opSize      _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
 #endif // ARM
 
         // On Amd64, this is where the second DWORD begins
@@ -651,6 +651,11 @@ protected:
         // The instrDescCGCA struct's member keeping the GC-ness of the first return register is _idcSecondRetRegGCType.
         GCtype _idGCref : 2; // GCref operand? (value is a "GCtype")
 
+        // The idReg1 and idReg2 fields hold the first and second register
+        // operand(s), whenever these are present. Note that currently the
+        // size of these fields is 6 bits on all targets, and care needs to
+        // be taken to make sure all of these fields stay reasonably packed.
+
         // Note that we use the _idReg1 and _idReg2 fields to hold
         // the live gcrefReg mask for the call instructions on x86/x64
         //
@@ -660,22 +665,11 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   30 bits
+        // x86:   38 bits
         // amd64: 38 bits
         // arm:   32 bits
         // arm64: 31 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
-
-        //
-        // On x86/arm platforms we have used 32 bits so far (4 bytes)
-        // On amd64 we have used 38 bits so far (4 bytes + 6 bits)
-        //
-
-        //
-        // For amd64 we just can't fit anything useful into a single DWORD
-        // So we eliminate the notion of 'tiny', and have small (2 DWORDS)
-        // or not small (which is bigger, just like x86)
-        //
 
         unsigned _idSmallDsc : 1;  // is this a "small" descriptor?
         unsigned _idLargeCns : 1;  // does a large constant     follow?
@@ -707,7 +701,7 @@ protected:
 // For Arm64, we have used 17 bits from the second DWORD.
 #define ID_EXTRA_BITFIELD_BITS (17)
 #elif defined(_TARGET_XARCH_)
-                              // For xarch, we have used 14 bits from the second DWORD.
+                                   // For xarch, we have used 14 bits from the second DWORD.
 #define ID_EXTRA_BITFIELD_BITS (14)
 #else
 #error Unsupported or unset target architecture
@@ -715,7 +709,7 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   38 bits
+        // x86:   46 bits
         // amd64: 46 bits
         // arm:   48 bits
         // arm64: 49 bits
@@ -727,7 +721,7 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   40 bits
+        // x86:   48 bits
         // amd64: 48 bits
         // arm:   50 bits
         // arm64: 51 bits
@@ -743,7 +737,7 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size:
-        // x86:   24 bits
+        // x86:   16 bits
         // amd64: 16 bits
         // arm:   14 bits
         // arm64: 13 bits
@@ -772,20 +766,6 @@ protected:
     private:
 #endif // DEBUG
 
-        //
-        // This is the end of the smallest instrDesc we can allocate for all
-        //   platforms.
-        // Non-DEBUG sizes:
-        //   x86: 32 bits, and it is called the 'tiny' descriptor.
-        //   amd64/arm/arm64: 64 bits, and it is called the 'small' descriptor.
-        // DEBUG sizes (includes one pointer):
-        //   x86:   2 DWORDs, 64 bits
-        //   amd64: 4 DWORDs, 128 bits
-        //   arm:   3 DWORDs, 96 bits
-        //   arm64: 4 DWORDs, 128 bits
-        // There should no padding or alignment issues on any platform or
-        //   configuration (including DEBUG which has 1 extra pointer).
-        //
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 //
@@ -794,7 +774,7 @@ protected:
 // Non-DEBUG sizes:
 //   x86/amd64/arm/arm64: 64 bits
 // DEBUG sizes (includes one pointer):
-//   x86:   2 DWORDs, 64 bits
+//   x86:   2 DWORDs, 96 bits
 //   amd64: 4 DWORDs, 128 bits
 //   arm:   3 DWORDs, 96 bits
 //   arm64: 4 DWORDs, 128 bits
