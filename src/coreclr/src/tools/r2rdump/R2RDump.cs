@@ -11,20 +11,21 @@ namespace R2RDump
 {
     class R2RDump
     {
-        private bool _help = false;
+        private bool _help;
         private IReadOnlyList<string> _inputFilenames = Array.Empty<string>();
         private string _outputFilename = null;
-        private bool _raw = false;
-        private bool _header = false;
-        private bool _disasm = false;
+        private bool _raw;
+        private bool _header;
+        private bool _disasm;
         private IReadOnlyList<string> _queries = Array.Empty<string>();
         private IReadOnlyList<string> _keywords = Array.Empty<string>();
         private IReadOnlyList<int> _runtimeFunctions = Array.Empty<int>();
         private IReadOnlyList<string> _sections = Array.Empty<string>();
-        private bool _diff = false;
+        private bool _diff;
         private long _disassembler;
-        private bool _types = false;
-        private bool _unwind = false;
+        private bool _types;
+        private bool _unwind;
+        private bool _gc;
         private TextWriter _writer;
 
         private R2RDump()
@@ -33,6 +34,7 @@ namespace R2RDump
 
         private ArgumentSyntax ParseCommandLine(string[] args)
         {
+            bool verbose = false;
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
                 syntax.ApplicationName = "R2RDump";
@@ -42,7 +44,7 @@ namespace R2RDump
                 syntax.DefineOption("h|help", ref _help, "Help message for R2RDump");
                 syntax.DefineOptionList("i|in", ref _inputFilenames, "Input file(s) to dump. Expects them to by ReadyToRun images");
                 syntax.DefineOption("o|out", ref _outputFilename, "Output file path. Dumps everything to the specified file except help message and exception messages");
-                syntax.DefineOption("v|verbose|raw", ref _raw, "Dump the raw bytes of each section or runtime function");
+                syntax.DefineOption("raw", ref _raw, "Dump the raw bytes of each section or runtime function");
                 syntax.DefineOption("header", ref _header, "Dump R2R header");
                 syntax.DefineOption("d|disasm", ref _disasm, "Show disassembly of methods or runtime functions");
                 syntax.DefineOptionList("q|query", ref _queries, "Query method by exact name, signature, row id or token");
@@ -51,8 +53,18 @@ namespace R2RDump
                 syntax.DefineOptionList("s|section", ref _sections, "Get section by keyword");
                 syntax.DefineOption("types", ref _types, "Dump available types");
                 syntax.DefineOption("unwind", ref _unwind, "Dump unwindInfo");
-                syntax.DefineOption("diff", ref _diff, "Compare two R2R images (not yet implemented)"); // not yet implemented
+                syntax.DefineOption("gc", ref _gc, "Dump gcInfo and slot table");
+                syntax.DefineOption("v|verbose", ref verbose, "Dump raw bytes, disassembly, unwindInfo and gcInfo");
+                syntax.DefineOption("diff", ref _diff, "Compare two R2R images (not yet implemented)");
             });
+
+            if (verbose)
+            {
+                _raw = true;
+                _disasm = true;
+                _unwind = true;
+                _gc = true;
+            }
 
             return argSyntax;
         }
@@ -144,6 +156,16 @@ namespace R2RDump
         {
             WriteSubDivider();
             _writer.WriteLine(method.ToString());
+            if (_gc)
+            {
+                _writer.WriteLine("GcInfo:");
+                _writer.Write(method.GcInfo);
+                if (_raw)
+                {
+                    DumpBytes(r2r, method.GcInfo.Offset, (uint)method.GcInfo.Size);
+                }
+            }
+            _writer.WriteLine();
 
             foreach (RuntimeFunction runtimeFunction in method.RuntimeFunctions)
             {
@@ -167,12 +189,17 @@ namespace R2RDump
             }
             if (_raw)
             {
+                _writer.WriteLine("Raw Bytes:");
                 DumpBytes(r2r, rtf.StartAddress, (uint)rtf.Size);
             }
             if (_unwind)
             {
                 _writer.WriteLine("UnwindInfo:");
                 _writer.Write(rtf.UnwindInfo);
+                if (_raw)
+                {
+                    DumpBytes(r2r, rtf.UnwindRVA, (uint)rtf.UnwindInfo.Size);
+                }
             }
             _writer.WriteLine();
         }

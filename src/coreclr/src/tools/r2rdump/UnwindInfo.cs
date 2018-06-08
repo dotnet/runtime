@@ -88,7 +88,9 @@ namespace R2RDump
 
             PersonalityRoutineRVA = NativeReader.ReadUInt32(image, ref offset);
 
-            Size = _offsetofUnwindCode + CountOfUnwindCodes * _sizeofUnwindCode + sizeof(uint);
+            Size = _offsetofUnwindCode + CountOfUnwindCodes * _sizeofUnwindCode;
+            int alignmentPad = ((Size + sizeof(int) - 1) & ~(sizeof(int) - 1)) - Size;
+            Size += (alignmentPad + sizeof(uint));
         }
 
         public override string ToString()
@@ -109,7 +111,7 @@ namespace R2RDump
                 sb.Append(UnwindCode[i].ToString());
             }
             sb.AppendLine($"{tab}PersonalityRoutineRVA: 0x{PersonalityRoutineRVA:X8}");
-            sb.AppendLine($"{tab}Size: {Size}");
+            sb.AppendLine($"{tab}Size: {Size} bytes");
 
             return sb.ToString();
         }
