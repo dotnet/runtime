@@ -24,7 +24,6 @@ using System.Threading;
 public class InterlockedExchange5
 {
     private const int c_THREADARRAT_SIZE = 10;      // how many threads to spawn
-    private const int c_WAITTHREADSCOMPLETE = 2000; // how long main thread should sleep
     private static int resource = 10;               // resources to be consumed
     private static Object location = 0;             // mutex being managed thru Exchange
     private static int entry = 0;                   // threads granted entry to the mutex
@@ -83,10 +82,11 @@ public class InterlockedExchange5
                 threads[i].Start();
             }
 
-            // after all threads are spawned, put the spawining thread 
-            // to sleep for long enough that the spawned threads have 
-            // time to complete
-            Thread.Sleep(c_WAITTHREADSCOMPLETE);
+            // Wait for all threads to complete
+            for (int i = 0; i < threads.Length; i++)
+            {
+                threads[i].Join();
+            }
 
             // entries + denials should equal original value of resource (10)
             if (entry + deny == 10)
