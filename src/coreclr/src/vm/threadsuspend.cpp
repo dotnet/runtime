@@ -5050,30 +5050,34 @@ void Thread::CommitGCStressInstructionUpdate()
     }
     CONTRACTL_END;
 
-    if (HasPendingGCStressInstructionUpdate())
+    BYTE* pbDestCode = NULL;
+    BYTE* pbSrcCode = NULL;
+
+    if (TryClearGCStressInstructionUpdate(&pbDestCode, &pbSrcCode))
     {
+        assert(pbDestCode != NULL);
+        assert(pbSrcCode != NULL);
+
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
 
-        *m_pbDestCode = *m_pbSrcCode;
+        *pbDestCode = *pbSrcCode;
 
 #elif defined(_TARGET_ARM_)
 
-        if (GetARMInstructionLength(m_pbDestCode) == 2)
-            *(WORD*)m_pbDestCode  = *(WORD*)m_pbSrcCode;
+        if (GetARMInstructionLength(pbDestCode) == 2)
+            *(WORD*)pbDestCode  = *(WORD*)pbSrcCode;
         else
-            *(DWORD*)m_pbDestCode = *(DWORD*)m_pbSrcCode;
+            *(DWORD*)pbDestCode = *(DWORD*)pbSrcCode;
 
 #elif defined(_TARGET_ARM64_)
 
-        *(DWORD*)m_pbDestCode = *(DWORD*)m_pbSrcCode;
+        *(DWORD*)pbDestCode = *(DWORD*)pbSrcCode;
 
 #else
 
-        *m_pbDestCode = *m_pbSrcCode;
+        *pbDestCode = *pbSrcCode;
 
 #endif
-
-        ClearGCStressInstructionUpdate();
     }
 }
 
