@@ -200,7 +200,6 @@ namespace System.Threading.Tasks
 
         // A private flag that would be set (only) by the debugger
         // When true the Async Causality logging trace is enabled as well as a dictionary to relate operation ids with Tasks
-        // [FriendAccessAllowed]
         internal static bool s_asyncDebuggingEnabled; //false by default
 
         // This dictonary relates the task id, from an operation id located in the Async Causality log to the actual
@@ -210,7 +209,6 @@ namespace System.Threading.Tasks
 
         // These methods are a way to access the dictionary both from this class and for other classes that also
         // activate dummy tasks. Specifically the AsyncTaskMethodBuilder and AsyncTaskMethodBuilder<>
-        // [FriendAccessAllowed]
         internal static bool AddToActiveTasks(Task task)
         {
             Debug.Assert(task != null, "Null Task objects can't be added to the ActiveTasks collection");
@@ -222,7 +220,6 @@ namespace System.Threading.Tasks
             return true;
         }
 
-        // [FriendAccessAllowed]
         internal static void RemoveFromActiveTasks(int taskId)
         {
             lock (s_activeTasksLock)
