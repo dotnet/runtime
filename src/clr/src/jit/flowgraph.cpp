@@ -24492,32 +24492,44 @@ void Compiler::fgCloneFinally()
             // We better have found at least one call finally.
             assert(firstCallFinallyBlock != nullptr);
 
-            // If there is more than one callfinally, move the one we are
-            // going to retarget to be first in the callfinally range.
+            // If there is more than one callfinally, we'd like to move
+            // the one we are going to retarget to be first in the callfinally,
+            // but only if it's targeted by the last block in the try range.
             if (firstCallFinallyBlock != normalCallFinallyBlock)
             {
-                JITDUMP("Moving callfinally BB%02u to be first in line, before BB%02u\n", normalCallFinallyBlock->bbNum,
-                        firstCallFinallyBlock->bbNum);
-
-                BasicBlock* const firstToMove      = normalCallFinallyBlock;
-                BasicBlock* const lastToMove       = normalCallFinallyBlock->bbNext;
                 BasicBlock* const placeToMoveAfter = firstCallFinallyBlock->bbPrev;
 
-                fgUnlinkRange(firstToMove, lastToMove);
-                fgMoveBlocksAfter(firstToMove, lastToMove, placeToMoveAfter);
+                if ((placeToMoveAfter->bbJumpKind == BBJ_ALWAYS) &&
+                    (placeToMoveAfter->bbJumpDest == normalCallFinallyBlock))
+                {
+                    JITDUMP("Moving callfinally BB%02u to be first in line, before BB%02u\n",
+                            normalCallFinallyBlock->bbNum, firstCallFinallyBlock->bbNum);
+
+                    BasicBlock* const firstToMove = normalCallFinallyBlock;
+                    BasicBlock* const lastToMove  = normalCallFinallyBlock->bbNext;
+
+                    fgUnlinkRange(firstToMove, lastToMove);
+                    fgMoveBlocksAfter(firstToMove, lastToMove, placeToMoveAfter);
 
 #ifdef DEBUG
-                // Sanity checks
-                fgDebugCheckBBlist(false, false);
-                fgVerifyHandlerTab();
+                    // Sanity checks
+                    fgDebugCheckBBlist(false, false);
+                    fgVerifyHandlerTab();
 #endif // DEBUG
 
-                assert(nextBlock == lastBlock->bbNext);
+                    assert(nextBlock == lastBlock->bbNext);
 
-                // Update where the callfinally range begins, since we might
-                // have altered this with callfinally rearrangement, and/or
-                // the range begin might have been pretty loose to begin with.
-                firstCallFinallyRangeBlock = normalCallFinallyBlock;
+                    // Update where the callfinally range begins, since we might
+                    // have altered this with callfinally rearrangement, and/or
+                    // the range begin might have been pretty loose to begin with.
+                    firstCallFinallyRangeBlock = normalCallFinallyBlock;
+                }
+                else
+                {
+                    JITDUMP("Can't move callfinally BB%02u to be first in line"
+                            " -- last finally block BB%02u doesn't jump to it\n",
+                            normalCallFinallyBlock->bbNum, placeToMoveAfter->bbNum);
+                }
             }
         }
 
@@ -24690,6 +24702,9 @@ void Compiler::fgCloneFinally()
                     {
                         // We can't retarget this call since it
                         // returns somewhere else.
+                        JITDUMP("Can't retarget callfinally in BB%02u as it jumps to BB%02u, not BB%02u\n",
+                                currentBlock->bbNum, postTryFinallyBlock->bbNum, normalCallFinallyReturn->bbNum);
+
                         retargetedAllCalls = false;
                     }
                 }
