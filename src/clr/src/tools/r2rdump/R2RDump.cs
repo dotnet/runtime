@@ -170,7 +170,7 @@ namespace R2RDump
                 _writer.Write(method.GcInfo);
                 if (_raw)
                 {
-                    DumpBytes(r2r, method.GcInfo.Offset, (uint)method.GcInfo.Size);
+                    DumpBytes(r2r, method.GcInfo.Offset, (uint)method.GcInfo.Size, false);
                 }
             }
             _writer.WriteLine();
@@ -212,9 +212,11 @@ namespace R2RDump
         /// <summary>
         /// Prints a formatted string containing a block of bytes from the relative virtual address and size
         /// </summary>
-        public void DumpBytes(R2RReader r2r, int rva, uint size)
+        public void DumpBytes(R2RReader r2r, int rva, uint size, bool convertToOffset = true)
         {
-            uint start = (uint)r2r.GetOffset(rva);
+            int start = rva;
+            if (convertToOffset)
+                start = r2r.GetOffset(rva);
             if (start > r2r.Image.Length || start + size > r2r.Image.Length)
             {
                 throw new IndexOutOfRangeException();
