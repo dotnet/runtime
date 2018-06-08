@@ -401,35 +401,46 @@ mono_runtime_posix_install_handlers (void)
 {
 
 	sigset_t signal_set;
-
-	if (mini_get_debug_options ()->handle_sigint)
+	sigemptyset (&signal_set);
+	if (mini_get_debug_options ()->handle_sigint) {
 		add_signal_handler (SIGINT, mono_sigint_signal_handler, SA_RESTART);
+		sigaddset (&signal_set, SIGINT);
+	}
 
 	add_signal_handler (SIGFPE, mono_sigfpe_signal_handler, 0);
+	sigaddset (&signal_set, SIGFPE);
 	add_signal_handler (SIGQUIT, sigquit_signal_handler, SA_RESTART);
+	sigaddset (&signal_set, SIGQUIT);
 	add_signal_handler (SIGILL, mono_sigill_signal_handler, 0);
+	sigaddset (&signal_set, SIGILL);
 	add_signal_handler (SIGBUS, mono_sigsegv_signal_handler, 0);
-	if (mono_jit_trace_calls != NULL)
+	sigaddset (&signal_set, SIGBUS);
+	if (mono_jit_trace_calls != NULL) {
 		add_signal_handler (SIGUSR2, sigusr2_signal_handler, SA_RESTART);
+		sigaddset (&signal_set, SIGUSR2);
+	}
 
 	/* it seems to have become a common bug for some programs that run as parents
 	 * of many processes to block signal delivery for real time signals.
 	 * We try to detect and work around their breakage here.
 	 */
-	sigemptyset (&signal_set);
 	if (mono_gc_get_suspend_signal () != -1)
 		sigaddset (&signal_set, mono_gc_get_suspend_signal ());
 	if (mono_gc_get_restart_signal () != -1)
 		sigaddset (&signal_set, mono_gc_get_restart_signal ());
 	sigaddset (&signal_set, SIGCHLD);
-	sigprocmask (SIG_UNBLOCK, &signal_set, NULL);
 
 	signal (SIGPIPE, SIG_IGN);
+	sigaddset (&signal_set, SIGPIPE);
 
 	add_signal_handler (SIGABRT, sigabrt_signal_handler, 0);
+	sigaddset (&signal_set, SIGABRT);
 
 	/* catch SIGSEGV */
 	add_signal_handler (SIGSEGV, mono_sigsegv_signal_handler, 0);
+	sigaddset (&signal_set, SIGSEGV);
+
+	sigprocmask (SIG_UNBLOCK, &signal_set, NULL);
 }
 
 #ifndef HOST_DARWIN
