@@ -672,37 +672,6 @@ static void ids_cleanup (void);
 
 static void suspend_init (void);
 
-typedef struct {
-	/*
-	 * Method where to start single stepping
-	 */
-	MonoMethod *method;
-
-	/*
-	* If ctx is set, tls must belong to the same thread.
-	*/
-	MonoContext *ctx;
-	DebuggerTlsData *tls;
-
-	/*
-	 * Stopped at a throw site
-	*/
-	gboolean step_to_catch;
-
-	/*
-	 * Sequence point to start from.
-	*/
-	SeqPoint sp;
-	MonoSeqPointInfo *info;
-
-	/*
-	 * Frame data, will be freed at the end of ss_start if provided
-	 */
-	StackFrame **frames;
-	int nframes;
-} SingleStepArgs;
-
-
 static void ss_start (SingleStepReq *ss_req, SingleStepArgs *args);
 static ErrorCode ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilter filter, EventRequest *req);
 static void ss_destroy (SingleStepReq *req);
@@ -5094,7 +5063,7 @@ static void
 ss_args_destroy (SingleStepArgs *ss_args)
 {
 	if (ss_args->frames)
-		free_frames (ss_args->frames, ss_args->nframes);
+		free_frames ((StackFrame**)ss_args->frames, ss_args->nframes);
 }
 
 /*
@@ -5128,7 +5097,7 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 
 	DebuggerTlsData *tls = ss_args->tls;
 	MonoMethod *method = ss_args->method;
-	StackFrame **frames = ss_args->frames;
+	StackFrame **frames = (StackFrame**)ss_args->frames;
 	int nframes = ss_args->nframes;
 	SeqPoint *sp = &ss_args->sp;
 
@@ -5447,7 +5416,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 	args->tls = tls;
 	args->step_to_catch = step_to_catch;
 	args->info = info;
-	args->frames = frames;
+	args->frames = (DbgEngineStackFrame**)frames;
 	args->nframes = nframes;
 
 	return ERR_NONE;
