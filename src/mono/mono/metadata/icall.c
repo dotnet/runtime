@@ -138,15 +138,6 @@ is_generic_parameter (MonoType *type)
 	return !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR);
 }
 
-static void
-mono_class_init_checked (MonoClass *klass, MonoError *error)
-{
-	error_init (error);
-
-	if (!mono_class_init (klass))
-		mono_error_set_for_class_failure (error, klass);
-}
-
 #ifndef HOST_WIN32
 static inline void
 mono_icall_make_platform_path (gchar *path)

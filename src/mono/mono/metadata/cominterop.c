@@ -169,7 +169,6 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf);
 static gpointer
 cominterop_get_ccw_checked (MonoObject *object, MonoClass *itf, MonoError *error);
 
-
 static MonoObject*
 cominterop_get_ccw_object (MonoCCWInterface* ccw_entry, gboolean verify);
 
@@ -1575,7 +1574,6 @@ static gboolean cominterop_can_support_dispatch (MonoClass* klass)
 static void*
 cominterop_get_idispatch_for_object (MonoObject* object, MonoError *error)
 {
-	error_init (error);
 	if (!object)
 		return NULL;
 
@@ -1661,43 +1659,31 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetObjectForCCW (void* pUnk)
 }
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_GetIDispatchForObjectInternal (MonoObject* object)
+ves_icall_System_Runtime_InteropServices_Marshal_GetIDispatchForObjectInternal (MonoObjectHandle object, MonoError *error)
 {
 #ifndef DISABLE_COM
-	ERROR_DECL (error);
-	void* idisp = cominterop_get_idispatch_for_object (object, error);
-	mono_error_set_pending_exception (error);
-	return idisp;
+	return cominterop_get_idispatch_for_object (MONO_HANDLE_RAW (object), error);
 #else
 	g_assert_not_reached ();
 #endif
 }
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_GetCCW (MonoObject* object, MonoReflectionType* type)
+ves_icall_System_Runtime_InteropServices_Marshal_GetCCW (MonoObjectHandle object, MonoReflectionTypeHandle ref_type, MonoError *error)
 {
 #ifndef DISABLE_COM
-	ERROR_DECL (error);
-	MonoClass* klass = NULL;
-	void* itf = NULL;
+	g_assert (!MONO_HANDLE_IS_NULL (ref_type));
+	MonoType * const type = MONO_HANDLE_GETVAL (ref_type, type);
 	g_assert (type);
-	g_assert (type->type);
-	klass = mono_type_get_class (type->type);
+	MonoClass * const klass = mono_type_get_class (type);
 	g_assert (klass);
-	if (!mono_class_init (klass)) {
-		mono_error_set_for_class_failure (error, klass);
-		mono_error_set_pending_exception (error);
+	if (!mono_class_init_checked (klass, error))
 		return NULL;
-	}
-
-	itf = cominterop_get_ccw_checked (object, klass, error);
-	mono_error_set_pending_exception (error);
-	return itf;
+	return cominterop_get_ccw_checked (MONO_HANDLE_RAW (object), klass, error);
 #else
 	g_assert_not_reached ();
 #endif
 }
-
 
 MonoBoolean
 ves_icall_System_Runtime_InteropServices_Marshal_IsComObject (MonoObject* object)
@@ -1739,11 +1725,10 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal (MonoO
 }
 
 guint32
-ves_icall_System_Runtime_InteropServices_Marshal_GetComSlotForMethodInfoInternal (MonoReflectionMethod *m)
+ves_icall_System_Runtime_InteropServices_Marshal_GetComSlotForMethodInfoInternal (MonoReflectionMethodHandle m, MonoError *error)
 {
 #ifndef DISABLE_COM
-	ERROR_DECL (error);
-	int slot = cominterop_get_com_slot_for_method (m->method, error);
+	int const slot = cominterop_get_com_slot_for_method (MONO_HANDLE_GETVAL (m, method), error);
 	mono_error_assert_ok (error);
 	return slot;
 #else
@@ -1752,31 +1737,22 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetComSlotForMethodInfoInternal
 }
 
 /* Only used for COM RCWs */
-MonoObject *
-ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type)
+MonoObjectHandle
+ves_icall_System_ComObject_CreateRCW (MonoReflectionTypeHandle ref_type, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoClass *klass;
-	MonoDomain *domain;
-	MonoObject *obj;
-	
-	domain = mono_object_domain (type);
-	klass = mono_class_from_mono_type (type->type);
+	MonoDomain * const domain = MONO_HANDLE_DOMAIN (ref_type);
+	MonoType * const type = MONO_HANDLE_GETVAL (ref_type, type);
+	MonoClass * const klass = mono_class_from_mono_type (type);
 
-	/* call mono_object_new_alloc_specific_checked instead of mono_object_new
-	 * because we want to actually create object. mono_object_new checks
-	 * to see if type is import and creates transparent proxy. this method
+	/* Call mono_object_new_alloc_by_vtable instead of mono_object_new_by_vtable
+	 * because we want to actually create object. mono_object_new_by_vtable checks
+	 * to see if type is import and creates transparent proxy. This method
 	 * is called by the corresponding real proxy to create the real RCW.
 	 * Constructor does not need to be called. Will be called later.
-	*/
+	 */
 	MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
-	if (mono_error_set_pending_exception (error))
-		return NULL;
-	obj = mono_object_new_alloc_specific_checked (vtable, error);
-	if (mono_error_set_pending_exception (error))
-		return NULL;
-
-	return obj;
+	return_val_if_nok (error, NULL);
+	return mono_object_new_alloc_by_vtable (vtable, error);
 }
 
 static gboolean    
@@ -1850,22 +1826,17 @@ mono_cominterop_release_all_rcws (void)
 }
 
 gpointer
-ves_icall_System_ComObject_GetInterfaceInternal (MonoComObject* obj, MonoReflectionType* type, MonoBoolean throw_exception)
+ves_icall_System_ComObject_GetInterfaceInternal (MonoComObjectHandle obj, MonoReflectionTypeHandle ref_type, MonoBoolean throw_exception, MonoError *error)
 {
 #ifndef DISABLE_COM
-	ERROR_DECL (error);
-	MonoClass *klass = mono_type_get_class (type->type);
-	if (!mono_class_init (klass)) {
-		mono_error_set_for_class_failure (error, klass);
-		mono_error_set_pending_exception (error);
+	MonoType * const type = MONO_HANDLE_GETVAL (ref_type, type);
+	MonoClass * const klass = mono_class_from_mono_type (type);
+	if (!mono_class_init_checked (klass, error))
 		return NULL;
-	}
 
-	gpointer itf = cominterop_get_interface_checked (obj, klass, error);
-	if (throw_exception)
-		mono_error_set_pending_exception (error);
-	else
-		mono_error_cleanup (error);
+	ERROR_DECL (error_ignored);
+	gpointer const itf = cominterop_get_interface_checked (MONO_HANDLE_RAW (obj), klass, throw_exception ? error : error_ignored);
+	mono_error_cleanup (error_ignored);
 	return itf;
 #else
 	g_assert_not_reached ();

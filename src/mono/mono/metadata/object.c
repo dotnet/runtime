@@ -5306,10 +5306,6 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 
 // FIXME these will move to header soon
 static MonoObjectHandle
-mono_object_new_alloc_by_vtable (MonoVTable *vtable, MonoError *error);
-
-// FIXME these will move to header soon
-static MonoObjectHandle
 mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error);
 
 /**
@@ -5549,6 +5545,9 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 static MonoObjectHandle
 mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
 {
+	// This function handles remoting and COM.
+	// mono_object_new_alloc_by_vtable does not.
+
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoObjectHandle o = MONO_HANDLE_NEW (MonoObject, NULL);
@@ -5649,7 +5648,7 @@ mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error)
 	return object_new_common_tail (o, vtable->klass, error);
 }
 
-static MonoObjectHandle
+MonoObjectHandle
 mono_object_new_alloc_by_vtable (MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;

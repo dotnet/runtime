@@ -4344,6 +4344,19 @@ leave_no_init_pending:
 	return !mono_class_has_failure (klass);
 }
 
+gboolean
+mono_class_init_checked (MonoClass *klass, MonoError *error)
+{
+	error_init (error);
+
+	gboolean const success = mono_class_init (klass);
+
+	if (!success)
+		mono_error_set_for_class_failure (error, klass);
+
+	return success;
+}
+
 #ifndef DISABLE_COM
 /*
  * COM initialization is delayed until needed.
@@ -5450,4 +5463,3 @@ mono_classes_cleanup (void)
 	global_interface_bitset = NULL;
 	mono_os_mutex_destroy (&classes_mutex);
 }
-
