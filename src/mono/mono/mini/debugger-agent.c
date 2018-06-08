@@ -5090,7 +5090,12 @@ is_last_non_empty (SeqPoint* sp, MonoSeqPointInfo *info)
 	return TRUE;
 }
 
-
+static void
+ss_args_destroy (SingleStepArgs *ss_args)
+{
+	if (ss_args->frames)
+		free_frames (ss_args->frames, ss_args->nframes);
+}
 
 /*
  * ss_start:
@@ -5182,7 +5187,7 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 					mono_debug_free_method_async_debug_info (asyncMethod);
 					if (locked)
 						mono_loader_unlock ();
-					return;
+					goto cleanup;
 				}
 			}
 			//If we are at end of async method and doing step-in or step-over...
@@ -5200,7 +5205,7 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 					mono_debug_free_method_async_debug_info (asyncMethod);
 					if (locked)
 						mono_loader_unlock ();
-					return;
+					goto cleanup;
 				}
 			}
 		}
@@ -5321,6 +5326,9 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 
 	if (locked)
 		mono_loader_unlock ();
+
+cleanup:
+	ss_args_destroy (ss_args);
 }
 
 static ErrorCode
@@ -5487,9 +5495,6 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 	the_ss_req = ss_req;
 
 	ss_start (ss_req, &args);
-
-	if (args.frames)
-		free_frames (args.frames, args.nframes);
 
 	return ERR_NONE;
 }
