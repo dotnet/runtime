@@ -4687,7 +4687,24 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* stmt, Ge
     // Prepare the tree for replacement so any side effects can be extracted.
     GenTree* sideEffList = optPrepareTreeForReplacement(test, nullptr);
 
-    while (sideEffList)
+    // Transform the relop's operands to be both zeroes.
+    ValueNum vnZero             = vnStore->VNZeroForType(TYP_INT);
+    relop->gtOp.gtOp1           = gtNewIconNode(0);
+    relop->gtOp.gtOp1->gtVNPair = ValueNumPair(vnZero, vnZero);
+    relop->gtOp.gtOp2           = gtNewIconNode(0);
+    relop->gtOp.gtOp2->gtVNPair = ValueNumPair(vnZero, vnZero);
+
+    // Update the oper and restore the value numbers.
+    ValueNum vnCns       = relop->gtVNPair.GetConservative();
+    ValueNum vnLib       = relop->gtVNPair.GetLiberal();
+    bool     evalsToTrue = (vnStore->CoercedConstantValue<INT64>(vnCns) != 0);
+    relop->SetOper(evalsToTrue ? GT_EQ : GT_NE);
+    relop->gtVNPair = ValueNumPair(vnLib, vnCns);
+
+    // Insert side effects back after they were removed from the JTrue stmt.
+    // It is important not to allow duplicates exist in the IR, that why we delete
+    // these side effects from the JTrue stmt before insert them back here.
+    while (sideEffList != nullptr)
     {
         GenTree* newStmt;
         if (sideEffList->OperGet() == GT_COMMA)
@@ -4700,23 +4717,10 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* stmt, Ge
             newStmt     = fgInsertStmtNearEnd(block, sideEffList);
             sideEffList = nullptr;
         }
-
+        // fgMorphBlockStmt could potentially affect stmts after the current one,
+        // for example when it decides to fgRemoveRestOfBlock.
         fgMorphBlockStmt(block, newStmt->AsStmt() DEBUGARG(__FUNCTION__));
     }
-
-    // Transform the relop's operands to be both zeroes.
-    ValueNum vnZero             = vnStore->VNZeroForType(TYP_INT);
-    relop->gtOp.gtOp1           = gtNewIconNode(0);
-    relop->gtOp.gtOp1->gtVNPair = ValueNumPair(vnZero, vnZero);
-    relop->gtOp.gtOp2           = gtNewIconNode(0);
-    relop->gtOp.gtOp2->gtVNPair = ValueNumPair(vnZero, vnZero);
-
-    // Update the oper and restore the value numbers.
-    ValueNum vnCns       = relop->gtVNPair.GetConservative();
-    ValueNum vnLib       = relop->gtVNPair.GetLiberal();
-    bool     evalsToTrue = vnStore->CoercedConstantValue<INT64>(vnCns) != 0;
-    relop->SetOper(evalsToTrue ? GT_EQ : GT_NE);
-    relop->gtVNPair = ValueNumPair(vnLib, vnCns);
 
     return test;
 }
@@ -4821,6 +4825,8 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Gen
 
     // Successful propagation, mark as assertion propagated and skip
     // sub-tree (with side-effects) visits.
+    // TODO #18291: at that moment stmt could be already removed from the stmt list.
+
     optAssertionProp_Update(newTree, tree, stmt);
 
     JITDUMP("After constant propagation on [%06u]:\n", tree->gtTreeID);

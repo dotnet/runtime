@@ -9918,10 +9918,8 @@ void Compiler::fgRemoveStmt(BasicBlock* block,
            statement boundaries. Or should we leave a GT_NO_OP in its place? */
     }
 
-    /* Is it the first statement in the list? */
-
     GenTreeStmt* firstStmt = block->firstStmt();
-    if (firstStmt == stmt)
+    if (firstStmt == stmt) // Is it the first statement in the list?
     {
         if (firstStmt->gtNext == nullptr)
         {
@@ -9935,26 +9933,21 @@ void Compiler::fgRemoveStmt(BasicBlock* block,
             block->bbTreeList         = tree->gtNext;
             block->bbTreeList->gtPrev = tree->gtPrev;
         }
-        goto DONE;
     }
-
-    /* Is it the last statement in the list? */
-
-    if (stmt == block->lastStmt())
+    else if (stmt == block->lastStmt()) // Is it the last statement in the list?
     {
         stmt->gtPrev->gtNext      = nullptr;
         block->bbTreeList->gtPrev = stmt->gtPrev;
-        goto DONE;
     }
+    else // The statement is in the middle.
+    {
+        assert(stmt->gtPrevStmt != nullptr && stmt->gtNext != nullptr);
 
-    tree = stmt->gtPrevStmt;
-    noway_assert(tree);
+        tree = stmt->gtPrevStmt;
 
-    tree->gtNext         = stmt->gtNext;
-    stmt->gtNext->gtPrev = tree;
-
-DONE:
-    fgStmtRemoved = true;
+        tree->gtNext         = stmt->gtNext;
+        stmt->gtNext->gtPrev = tree;
+    }
 
     noway_assert(!optValnumCSE_phase);
 
@@ -9965,6 +9958,8 @@ DONE:
             DecLclVarRefCountsVisitor::WalkTree(this, stmt->gtStmtExpr);
         }
     }
+
+    fgStmtRemoved = true;
 
 #ifdef DEBUG
     if (verbose)
