@@ -193,12 +193,10 @@ public class MutexWaitOne1
     private void NeverReleaseMutex()
     {
         m_Mutex.WaitOne();
-   //     Thread.Sleep(c_DEFAULT_SLEEP_TIME);
     }
 
     private void DisposeMutex()
     {
-   //     Thread.Sleep(c_DEFAULT_SLEEP_TIME);
         ((IDisposable)m_Mutex).Dispose();
     }
     #endregion

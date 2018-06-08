@@ -49,9 +49,6 @@ public class InterlockedCompareExchange1
             threadA.Start();
             // Block calling thread until spawned Thread A completes
             threadA.Join();
-            // Once Thread A completes, block 
-            // calling thread until Thread B completes as well
-            threadB.Join();
             // now, the final value of globalValue and state should be -0.1
             if (globalValue != -0.1 && state != -0.1)
             {
@@ -131,10 +128,10 @@ public class InterlockedCompareExchange1
             if (i == 10)
             {
                 threadB.Start();
+                threadB.Join();
             }
             state = Interlocked.CompareExchange(ref globalValue, -0.1, 10.0);
             i++;
-            Thread.Sleep(10);
         }
     }
     public void changeGlobal()
