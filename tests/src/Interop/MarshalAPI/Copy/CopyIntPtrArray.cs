@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using System;
 using System.IO;
 using System.Reflection;
@@ -58,32 +59,20 @@ public class CopyIntPtrArrayTest
         {
             Marshal.Copy(array, 0, IntPtr.Zero, 0);
 
-            Assert.ErrorWriteLine("Failed null values test.");
-            Assert.ErrorWriteLine("No exception from Copy when passed null as parameter.");
+            Assert.Fail("Failed null values test. No exception from Copy when passed null as parameter.");
         }
         catch (ArgumentNullException)
         {            
-        }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed null values test.");
-            Assert.ErrorWriteLine("Exception occurred: {0}", ex);
         }
 
         try
         {
             Marshal.Copy(IntPtr.Zero, array, 0, 0);
 
-            Assert.ErrorWriteLine("Failed null values test.");
-            Assert.ErrorWriteLine("No exception from Copy when passed null as parameter.");
+            Assert.Fail("Failed null values test. No exception from Copy when passed null as parameter.");
         }
         catch (ArgumentNullException)
         {            
-        }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed null values test.");
-            Assert.ErrorWriteLine("Exception occurred: {0}", ex);
         }
     }
 
@@ -97,49 +86,31 @@ public class CopyIntPtrArrayTest
         {
             Marshal.Copy(TestArray, 0, ptr, TestArray.Length + 1);
 
-            Assert.ErrorWriteLine("Failed out of range values test.");
-            Assert.ErrorWriteLine("No exception from Copy when trying to copy more elements than the TestArray has.");
+            Assert.Fail("Failed out of range values test. No exception from Copy when trying to copy more elements than the TestArray has.");
         }
         catch (ArgumentOutOfRangeException)
         {            
-        }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed out of range values test.");
-            Assert.ErrorWriteLine("Exception occurred: {0}", ex);
         }
 
         try //try to copy from an out of bound startIndex
         {
             Marshal.Copy(TestArray, TestArray.Length + 1, ptr, 1);
 
-            Assert.ErrorWriteLine("Failed out of range values test.");
-            Assert.ErrorWriteLine("No exception from Copy when trying to copy from an out of bound startIndex.");
+            Assert.Fail("Failed out of range values test. No exception from Copy when trying to copy from an out of bound startIndex.");
         }
         catch (ArgumentOutOfRangeException)
         {            
-        }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed out of range values test.");
-            Assert.ErrorWriteLine("Exception occurred: {0}", ex);
         }
 
         try //try to copy from a positive startIndex, with length taking it out of bounds
         {
             Marshal.Copy(TestArray, 2, ptr, TestArray.Length);
 
-            Assert.ErrorWriteLine("Failed out of range values test.");
-            Assert.ErrorWriteLine("No exception from Copy when trying to copy from a positive startIndex, with length taking it out of bounds.");
+            Assert.Fail("Failed out of range values test. No exception from Copy when trying to copy from a positive startIndex, with length taking it out of bounds.");
         }
         catch (ArgumentOutOfRangeException)
         {
             
-        }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed out of range values test.");
-            Assert.ErrorWriteLine("Exception occurred: {0}", ex);
         }
 
         Marshal.FreeCoTaskMem(ptr);
@@ -151,7 +122,7 @@ public class CopyIntPtrArrayTest
 
         IntPtr ptr = Marshal.AllocCoTaskMem(sizeOfArray);
 
-        try //try to copy the entire array
+        //try to copy the entire array
         {
             Marshal.Copy(TestArray, 0, ptr, TestArray.Length);
 
@@ -161,17 +132,11 @@ public class CopyIntPtrArrayTest
 
             if (!IsArrayEqual(TestArray, array))
             {
-                Assert.ErrorWriteLine("Failed copy round trip test");
-                Assert.ErrorWriteLine("Original array and round trip copied arrays do not match.");
+                Assert.Fail("Failed copy round trip test. Original array and round trip copied arrays do not match.");
             }
         }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed copy round trip test.");
-            Assert.ErrorWriteLine("Exception occurred: {0}", ex);
-        }
 
-        try //try to copy part of the array
+        //try to copy part of the array
         {
             Marshal.Copy(TestArray, 2, ptr, TestArray.Length - 4);
 
@@ -181,44 +146,39 @@ public class CopyIntPtrArrayTest
 
             if (!IsSubArrayEqual(TestArray, array, 2, TestArray.Length - 4))
             {
-                Assert.ErrorWriteLine("Failed copy round trip test");
-                Assert.ErrorWriteLine("Original array and round trip partially copied arrays do not match.");
+                Assert.Fail("Failed copy round trip test. Original array and round trip partially copied arrays do not match.");
             }
-        }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed copy round trip test.");
-            Assert.ErrorWriteLine("Exception occurred: {0}", ex);
         }
 
         Marshal.FreeCoTaskMem(ptr);
     }
 
-    public bool RunTests()
+    public void RunTests()
     {        
         NullValueTests();        
         OutOfRangeTests();        
         CopyRoundTripTests();
-        return true;
     }
 
-    public bool Initialize()
+    public CopyIntPtrArrayTest()
     {        
         TestArray = new IntPtr[10];
         for (int i = 0; i < TestArray.Length; i++)
             TestArray[i] = new IntPtr(i);
-        return true;
     }
 
     public static int Main(String[] unusedArgs)
     {
-        CopyIntPtrArrayTest test = new CopyIntPtrArrayTest();
-        test.Initialize();
+        try
+        {
+            new CopyIntPtrArrayTest().RunTests();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Test failure: " + e.Message);
+            return 101;
+        }
 
-        if (test.RunTests())
-            return 100;
-
-        return 99;
+        return 100;
     }
-
 }
