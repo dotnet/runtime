@@ -453,8 +453,7 @@ namespace System
 
         // Returns the hash code for this Decimal.
         //
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern override int GetHashCode();
+        public override int GetHashCode() => GetHashCode(ref this);
 
         // Compares two Decimal values for equality. Returns true if the two
         // Decimal values are equal, or false if they are not equal.
