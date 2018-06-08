@@ -692,7 +692,7 @@ typedef struct {
 	/*
 	 * Sequence point to start from.
 	*/
-	SeqPoint* sp;
+	SeqPoint sp;
 	MonoSeqPointInfo *info;
 
 	/*
@@ -4581,7 +4581,7 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 			.ctx = ctx,
 			.tls = tls,
 			.step_to_catch = FALSE,
-			.sp = &sp,
+			.sp = sp,
 			.info = info,
 			.frames = NULL,
 			.nframes = 0
@@ -4840,7 +4840,7 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 		.ctx = ctx,
 		.tls = tls,
 		.step_to_catch = FALSE,
-		.sp = &sp,
+		.sp = sp,
 		.info = info,
 		.frames = NULL,
 		.nframes = 0
@@ -5125,7 +5125,7 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 	MonoMethod *method = ss_args->method;
 	StackFrame **frames = ss_args->frames;
 	int nframes = ss_args->nframes;
-	SeqPoint *sp = ss_args->sp;
+	SeqPoint *sp = &ss_args->sp;
 
 	/*
 	 * Implement single stepping using breakpoints if possible.
@@ -5334,16 +5334,10 @@ ensure_runtime_is_suspended (void)
 	return ERR_NONE;
 }
 
-/*
- * Start single stepping of thread THREAD
- */
 static ErrorCode
-ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilter filter, EventRequest *req)
+ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 {
-	DebuggerTlsData *tls;
 	MonoSeqPointInfo *info = NULL;
-	SeqPoint *sp = NULL;
-	SeqPoint local_sp;
 	gboolean found_sp;
 	MonoMethod *method = NULL;
 	MonoDebugMethodInfo *minfo;
@@ -5352,6 +5346,111 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 	StackFrame **frames = NULL;
 	int nframes = 0;
 
+	mono_loader_lock ();
+	DebuggerTlsData *tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls, ss_req->thread);
+	mono_loader_unlock ();
+	g_assert (tls);
+	if (!tls->context.valid) {
+		DEBUG_PRINTF (1, "Received a single step request on a thread with no managed frames.");
+		return ERR_INVALID_ARGUMENT;
+	}
+
+	if (tls->restore_state.valid && MONO_CONTEXT_GET_IP (&tls->context.ctx) != MONO_CONTEXT_GET_IP (&tls->restore_state.ctx)) {
+		/*
+		 * Need to start single stepping from restore_state and not from the current state
+		 */
+		set_ip = TRUE;
+		frames = compute_frame_info_from (ss_req->thread, tls, &tls->restore_state, &nframes);
+	}
+
+	ss_req->start_sp = ss_req->last_sp = MONO_CONTEXT_GET_SP (&tls->context.ctx);
+
+	if (tls->has_catch_frame) {
+		StackFrameInfo frame;
+
+		/*
+		 * We are stopped at a throw site. Stepping should go to the catch site.
+		 */
+		frame = tls->catch_frame;
+		g_assert (frame.type == FRAME_TYPE_MANAGED || frame.type == FRAME_TYPE_INTERP);
+
+		/*
+		 * Find the seq point corresponding to the landing site ip, which is the first seq
+		 * point after ip.
+		 */
+		found_sp = mono_find_next_seq_point_for_native_offset (frame.domain, frame.method, frame.native_offset, &info, &args->sp);
+		if (!found_sp)
+			no_seq_points_found (frame.method, frame.native_offset);
+		g_assert (found_sp);
+
+		method = frame.method;
+
+		step_to_catch = TRUE;
+		/* This make sure the seq point is not skipped by process_single_step () */
+		ss_req->last_sp = NULL;
+	}
+
+	if (!step_to_catch) {
+		StackFrame *frame = NULL;
+
+		if (set_ip) {
+			if (frames && nframes)
+				frame = frames [0];
+		} else {
+			compute_frame_info (ss_req->thread, tls);
+
+			if (tls->frame_count)
+				frame = tls->frames [0];
+		}
+
+		if (ss_req->size == STEP_SIZE_LINE) {
+			if (frame) {
+				ss_req->last_method = frame->de.method;
+				ss_req->last_line = -1;
+
+				minfo = mono_debug_lookup_method (frame->de.method);
+				if (minfo && frame->il_offset != -1) {
+					MonoDebugSourceLocation *loc = mono_debug_method_lookup_location (minfo, frame->il_offset);
+
+					if (loc) {
+						ss_req->last_line = loc->row;
+						g_free (loc);
+					}
+				}
+			}
+		}
+
+		if (frame) {
+			if (!method && frame->il_offset != -1) {
+				/* FIXME: Sort the table and use a binary search */
+				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &info, &args->sp);
+				if (!found_sp)
+					no_seq_points_found (frame->de.method, frame->de.native_offset);
+				g_assert (found_sp);
+				method = frame->de.method;
+			}
+		}
+	}
+
+	ss_req->start_method = method;
+
+	args->method = method;
+	args->ctx = set_ip ? &tls->restore_state.ctx : &tls->context.ctx;
+	args->tls = tls;
+	args->step_to_catch = step_to_catch;
+	args->info = info;
+	args->frames = frames;
+	args->nframes = nframes;
+
+	return ERR_NONE;
+}
+
+/*
+ * Start single stepping of thread THREAD
+ */
+static ErrorCode
+ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilter filter, EventRequest *req)
+{
 	int err = ensure_runtime_is_suspended ();
 	if (err)
 		return err;
@@ -5380,112 +5479,17 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 		}
 	}
 
-	mono_loader_lock ();
-	tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls, thread);
-	mono_loader_unlock ();
-	g_assert (tls);
-	if (!tls->context.valid) {
-		DEBUG_PRINTF (1, "Received a single step request on a thread with no managed frames.");
-		return ERR_INVALID_ARGUMENT;
-	}
-
-	if (tls->restore_state.valid && MONO_CONTEXT_GET_IP (&tls->context.ctx) != MONO_CONTEXT_GET_IP (&tls->restore_state.ctx)) {
-		/*
-		 * Need to start single stepping from restore_state and not from the current state
-		 */
-		set_ip = TRUE;
-		frames = compute_frame_info_from (thread, tls, &tls->restore_state, &nframes);
-	}
-
-	ss_req->start_sp = ss_req->last_sp = MONO_CONTEXT_GET_SP (&tls->context.ctx);
-
-	if (tls->has_catch_frame) {
-		StackFrameInfo frame;
-
-		/*
-		 * We are stopped at a throw site. Stepping should go to the catch site.
-		 */
-		frame = tls->catch_frame;
-		g_assert (frame.type == FRAME_TYPE_MANAGED || frame.type == FRAME_TYPE_INTERP);
-
-		/*
-		 * Find the seq point corresponding to the landing site ip, which is the first seq
-		 * point after ip.
-		 */
-		found_sp = mono_find_next_seq_point_for_native_offset (frame.domain, frame.method, frame.native_offset, &info, &local_sp);
-		sp = (found_sp)? &local_sp : NULL;
-		if (!sp)
-			no_seq_points_found (frame.method, frame.native_offset);
-		g_assert (sp);
-
-		method = frame.method;
-
-		step_to_catch = TRUE;
-		/* This make sure the seq point is not skipped by process_single_step () */
-		ss_req->last_sp = NULL;
-	}
-
-	if (!step_to_catch) {
-		StackFrame *frame = NULL;
-
-		if (set_ip) {
-			if (frames && nframes)
-				frame = frames [0];
-		} else {
-			compute_frame_info (thread, tls);
-
-			if (tls->frame_count)
-				frame = tls->frames [0];
-		}
-
-		if (ss_req->size == STEP_SIZE_LINE) {
-			if (frame) {
-				ss_req->last_method = frame->de.method;
-				ss_req->last_line = -1;
-
-				minfo = mono_debug_lookup_method (frame->de.method);
-				if (minfo && frame->il_offset != -1) {
-					MonoDebugSourceLocation *loc = mono_debug_method_lookup_location (minfo, frame->il_offset);
-
-					if (loc) {
-						ss_req->last_line = loc->row;
-						g_free (loc);
-					}
-				}
-			}
-		}
-
-		if (frame) {
-			if (!method && frame->il_offset != -1) {
-				/* FIXME: Sort the table and use a binary search */
-				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &info, &local_sp);
-				sp = (found_sp)? &local_sp : NULL;
-				if (!sp)
-					no_seq_points_found (frame->de.method, frame->de.native_offset);
-				g_assert (sp);
-				method = frame->de.method;
-			}
-		}
-	}
-
-	ss_req->start_method = method;
+	SingleStepArgs args;
+	err = ss_create_init_args (ss_req, &args);
+	if (err)
+		return err;
 
 	the_ss_req = ss_req;
 
-	SingleStepArgs args = {
-		.method = method,
-		.ctx = set_ip ? &tls->restore_state.ctx : &tls->context.ctx,
-		.tls = tls,
-		.step_to_catch = step_to_catch,
-		.sp = sp,
-		.info = info,
-		.frames = frames,
-		.nframes = nframes
-	};
 	ss_start (ss_req, &args);
 
-	if (frames)
-		free_frames (frames, nframes);
+	if (args.frames)
+		free_frames (args.frames, args.nframes);
 
 	return ERR_NONE;
 }
