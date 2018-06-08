@@ -9,6 +9,7 @@ using System.Security;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using CoreFXTestLibrary;
+
 public class CopyInt32ArrayTest 
 {
     private int[] TestArray = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -59,32 +60,20 @@ public class CopyInt32ArrayTest
         {
             Marshal.Copy(array, 0, IntPtr.Zero, 0);
 
-            Assert.ErrorWriteLine("Failed null values test.");
-            Assert.ErrorWriteLine("No exception from Copy when passed null as parameter.");
+            Assert.Fail("Failed null values test. No exception from Copy when passed null as parameter.");
         }
         catch (ArgumentNullException)
         {
-        }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed null values test.");
-            Assert.ErrorWriteLine("Exception occurred: {0}", ex);
         }
 
         try
         {
             Marshal.Copy(IntPtr.Zero, array, 0, 0);
 
-            Assert.ErrorWriteLine("Failed null values test.");
-            Assert.ErrorWriteLine("No exception from Copy when passed null as parameter.");
+            Assert.Fail("Failed null values test. No exception from Copy when passed null as parameter.");
         }
         catch (ArgumentNullException)
         {
-        }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed null values test.");
-            Assert.ErrorWriteLine("Exception occurred: {0}", ex);
         }
     }
 
@@ -98,46 +87,31 @@ public class CopyInt32ArrayTest
         {
             Marshal.Copy(TestArray, 0, ptr, TestArray.Length + 1);
 
-            Assert.ErrorWriteLine("Failed out of range values test.");
-            Assert.ErrorWriteLine("No exception from Copy when trying to copy more elements than the TestArray has.");
+            Assert.Fail("Failed out of range values test. No exception from Copy when trying to copy more elements than the TestArray has.");
         }
         catch (ArgumentOutOfRangeException)
         {
-        }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed out of range values test.");            
         }
 
         try //try to copy from an out of bound startIndex
         {
             Marshal.Copy(TestArray, TestArray.Length + 1, ptr, 1);
 
-            Assert.ErrorWriteLine("Failed out of range values test.");
-            Assert.ErrorWriteLine("No exception from Copy when trying to copy from an out of bound startIndex.");
+            Assert.Fail("Failed out of range values test. No exception from Copy when trying to copy from an out of bound startIndex.");
         }
         catch (ArgumentOutOfRangeException)
         {
             
-        }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed out of range values test.");            
         }
 
         try //try to copy from a positive startIndex, with length taking it out of bounds
         {
             Marshal.Copy(TestArray, 2, ptr, TestArray.Length);
 
-            Assert.ErrorWriteLine("Failed out of range values test.");
-            Assert.ErrorWriteLine("No exception from Copy when trying to copy from a positive startIndex, with length taking it out of bounds.");
+            Assert.Fail("Failed out of range values test. No exception from Copy when trying to copy from a positive startIndex, with length taking it out of bounds.");
         }
         catch (ArgumentOutOfRangeException)
         {
-        }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed out of range values test.");            
         }
 
         Marshal.FreeCoTaskMem(ptr);
@@ -149,7 +123,7 @@ public class CopyInt32ArrayTest
 
         IntPtr ptr = Marshal.AllocCoTaskMem(sizeOfArray);
 
-        try //try to copy the entire array
+        //try to copy the entire array
         {
             Marshal.Copy(TestArray, 0, ptr, TestArray.Length);
 
@@ -159,17 +133,11 @@ public class CopyInt32ArrayTest
 
             if (!IsArrayEqual(TestArray, array))
             {
-                Assert.ErrorWriteLine("Failed copy round trip test");
-                Assert.ErrorWriteLine("Original array and round trip copied arrays do not match.");
+                Assert.Fail("Failed copy round trip test. Original array and round trip copied arrays do not match.");
             }
         }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed copy round trip test.");
-            Assert.ErrorWriteLine("Exception occurred: {0}", ex);
-        }
 
-        try //try to copy part of the array
+        //try to copy part of the array
         {
             Marshal.Copy(TestArray, 2, ptr, TestArray.Length - 4);
 
@@ -179,32 +147,33 @@ public class CopyInt32ArrayTest
 
             if (!IsSubArrayEqual(TestArray, array, 2, TestArray.Length - 4))
             {
-                Assert.ErrorWriteLine("Failed copy round trip test");
-                Assert.ErrorWriteLine("Original array and round trip partially copied arrays do not match.");
+                Assert.Fail("Failed copy round trip test. Original array and round trip partially copied arrays do not match.");
             }
-        }
-        catch (Exception ex)
-        {
-            Assert.ErrorWriteLine("Failed copy round trip test.");
-            Assert.ErrorWriteLine("Exception occurred: {0}", ex);
         }
 
         Marshal.FreeCoTaskMem(ptr);
     }
 
-    public bool RunTests()
+    public void RunTests()
     {        
         NullValueTests();
         OutOfRangeTests();
         CopyRoundTripTests();
-        return true;
     }
 
     public static int Main(String[] unusedArgs)
     {
-        if (new CopyInt32ArrayTest().RunTests()) 
-            return 100;
-        return 99;
+        try
+        {
+            new CopyInt32ArrayTest().RunTests();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Test failure: " + e.Message);
+            return 101;
+        }
+
+        return 100;
     }
 
 }

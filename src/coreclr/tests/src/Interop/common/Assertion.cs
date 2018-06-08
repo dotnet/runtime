@@ -17,18 +17,6 @@ namespace CoreFXTestLibrary
     /// </summary>
     public static class Assert
     {
-                    
-
-         public static void ErrorWriteLine(string message)
-         {       
-             throw new Exception(message);
-         }
-
-         public static void ErrorWriteLine(string message,Exception ex)
-         {       
-             throw new Exception(message,ex);
-         }
-         
         /// <summary>
         ///     Asserts that the given delegate throws an <see cref="ArgumentNullException"/> with the given parameter name.
         /// </summary>
