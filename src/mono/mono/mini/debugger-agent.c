@@ -672,8 +672,38 @@ static void ids_cleanup (void);
 
 static void suspend_init (void);
 
-static void ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls, gboolean step_to_catch,
-					  StackFrame **frames, int nframes);
+typedef struct {
+	/*
+	 * Method where to start single stepping
+	 */
+	MonoMethod *method;
+
+	/*
+	* If ctx is set, tls must belong to the same thread.
+	*/
+	MonoContext *ctx;
+	DebuggerTlsData *tls;
+
+	/*
+	 * Stopped at a throw site
+	*/
+	gboolean step_to_catch;
+
+	/*
+	 * Sequence point to start from.
+	*/
+	SeqPoint* sp;
+	MonoSeqPointInfo *info;
+
+	/*
+	 * Frame data, will be freed at the end of ss_start if provided
+	 */
+	StackFrame **frames;
+	int nframes;
+} SingleStepArgs;
+
+
+static void ss_start (SingleStepReq *ss_req, SingleStepArgs *args);
 static ErrorCode ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilter filter, EventRequest *req);
 static void ss_destroy (SingleStepReq *req);
 static SingleStepReq* ss_req_acquire (void);
@@ -4546,8 +4576,17 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 		if (hit)
 			g_ptr_array_add (ss_reqs, req);
 
-		/* Start single stepping again from the current sequence point */
-		ss_start (ss_req, method, &sp, info, ctx, tls, FALSE, NULL, 0);
+		SingleStepArgs args = {
+			.method = method,
+			.ctx = ctx,
+			.tls = tls,
+			.step_to_catch = FALSE,
+			.sp = &sp,
+			.info = info,
+			.frames = NULL,
+			.nframes = 0
+		};
+		ss_start (ss_req, &args);
 	}
 	
 	if (ss_reqs->len > 0)
@@ -4796,7 +4835,17 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 		goto exit;
 
 	/* Start single stepping again from the current sequence point */
-	ss_start (ss_req, method, &sp, info, ctx, tls, FALSE, NULL, 0);
+	SingleStepArgs args = {
+		.method = method,
+		.ctx = ctx,
+		.tls = tls,
+		.step_to_catch = FALSE,
+		.sp = &sp,
+		.info = info,
+		.frames = NULL,
+		.nframes = 0
+	};
+	ss_start (ss_req, &args);
 
 	if ((ss_req->filter & STEP_FILTER_STATIC_CTOR) &&
 		(method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) &&
@@ -5041,6 +5090,8 @@ is_last_non_empty (SeqPoint* sp, MonoSeqPointInfo *info)
 	return TRUE;
 }
 
+
+
 /*
  * ss_start:
  *
@@ -5050,8 +5101,7 @@ is_last_non_empty (SeqPoint* sp, MonoSeqPointInfo *info)
  * If FRAMES is not-null, use that instead of tls->frames for placing breakpoints etc.
  */
 static void
-ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls,
-		  gboolean step_to_catch, StackFrame **frames, int nframes)
+ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 {
 	int i, j, frame_index;
 	SeqPoint *next_sp, *parent_sp = NULL;
@@ -5071,18 +5121,24 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 
 	gboolean locked = FALSE;
 
+	DebuggerTlsData *tls = ss_args->tls;
+	MonoMethod *method = ss_args->method;
+	StackFrame **frames = ss_args->frames;
+	int nframes = ss_args->nframes;
+	SeqPoint *sp = ss_args->sp;
+
 	/*
 	 * Implement single stepping using breakpoints if possible.
 	 */
-	if (step_to_catch) {
+	if (ss_args->step_to_catch) {
 		ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, method, sp->il_offset);
 	} else {
 		frame_index = 1;
 
-		if (ctx && !frames) {
+		if (ss_args->ctx && !frames) {
 			/* Need parent frames */
 			if (!tls->context.valid)
-				mono_thread_state_init_from_monoctx (&tls->context, ctx);
+				mono_thread_state_init_from_monoctx (&tls->context, ss_args->ctx);
 
 			mono_loader_lock ();
 			locked = TRUE;
@@ -5131,7 +5187,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 			}
 			//If we are at end of async method and doing step-in or step-over...
 			//Switch to step-out, so whole NotifyDebuggerOfWaitCompletion magic happens...
-			if (is_last_non_empty (sp, info)) {
+			if (is_last_non_empty (sp, ss_args->info)) {
 				ss_req->depth = STEP_DEPTH_OUT;//setting depth to step-out is important, don't inline IF, because code later depends on this
 			}
 			if (ss_req->depth == STEP_DEPTH_OUT) {
@@ -5162,7 +5218,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 				StackFrame *frame = frames [frame_index];
 
 				method = frame->de.method;
-				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &info, &local_sp);
+				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &ss_args->info, &local_sp);
 				sp = (found_sp)? &local_sp : NULL;
 				frame_index ++;
 				if (sp && sp->next_len != 0)
@@ -5177,7 +5233,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 					StackFrame *frame = frames [frame_index];
 
 					method = frame->de.method;
-					found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &info, &local_sp);
+					found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &ss_args->info, &local_sp);
 					sp = (found_sp)? &local_sp : NULL;
 					if (sp && sp->next_len != 0)
 						break;
@@ -5203,7 +5259,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 		if (sp && sp->next_len > 0) {
 			SeqPoint* next = g_new(SeqPoint, sp->next_len);
 
-			mono_seq_point_init_next (info, *sp, next);
+			mono_seq_point_init_next (ss_args->info, *sp, next);
 			for (i = 0; i < sp->next_len; i++) {
 				next_sp = &next[i];
 
@@ -5416,7 +5472,17 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 
 	the_ss_req = ss_req;
 
-	ss_start (ss_req, method, sp, info, set_ip ? &tls->restore_state.ctx : &tls->context.ctx, tls, step_to_catch, frames, nframes);
+	SingleStepArgs args = {
+		.method = method,
+		.ctx = set_ip ? &tls->restore_state.ctx : &tls->context.ctx,
+		.tls = tls,
+		.step_to_catch = step_to_catch,
+		.sp = sp,
+		.info = info,
+		.frames = frames,
+		.nframes = nframes
+	};
+	ss_start (ss_req, &args);
 
 	if (frames)
 		free_frames (frames, nframes);
