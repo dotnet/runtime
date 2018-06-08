@@ -62,7 +62,8 @@ llvm_common_libs:=$(shell $(llvm_config) --libs analysis core bitwriter $(LLVM_C
 llvm_libs_for_old:=$(shell $(llvm_config) --libs mcjit jit)
 llvm_libs_for_new:=$(shell $(llvm_config) --libs orcjit)
 
-libcpp_flag:=$(if $(findstring -stdlib=libc++,$(LLVM_CXXFLAGS)),-lstdc++,-lc++)
+libcpp_flag:=$(if $(findstring -stdlib=libc++,$(LLVM_CXXFLAGS_INTERNAL)),-lc++,-lstdc++)
+
 llvm_libs_from_config:=$(libcpp_flag) $(llvm_common_libs) $(llvm_libs_for_old) $(llvm_libs_for_new)
 
 LLVM_LDFLAGS_INTERNAL:=$(llvm_libs_from_config) $(llvm_system_libs) $(shell $(llvm_config) --ldflags) 
