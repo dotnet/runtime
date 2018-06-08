@@ -10,6 +10,8 @@ namespace R2RDump
 {
     class NativeReader
     {
+        private const int BITS_PER_BYTE = 8;
+
         /// <summary>
         /// Extracts a 64bit value from the image byte array
         /// </summary>
@@ -83,7 +85,7 @@ namespace R2RDump
         /// </summary>
         /// <param name="image">PE image</param>
         /// <param name="start">Start index of the value</param>
-        /// /// <remarks>
+        /// <remarks>
         /// The <paramref name="start"/> gets incremented by the size of the value
         /// </remarks>
         public static byte ReadByte(byte[] image, ref int start)
@@ -91,6 +93,74 @@ namespace R2RDump
             byte val = image[start];
             start += sizeof(byte);
             return val;
+        }
+
+        // <summary>
+        /// Extracts bits from the image byte array
+        /// </summary>
+        /// <remarks>
+        /// The <paramref name="start"/> and <paramref name="bitOffset"/> get incremented by the size of the value
+        /// </remarks>
+        public static int ReadBits(byte[] image, int numBits, ref int bitOffset)
+        {
+            int start = bitOffset / BITS_PER_BYTE;
+            int bits = bitOffset % BITS_PER_BYTE;
+            int val = image[start] >> bits;
+            bits += numBits;
+            if (bits > BITS_PER_BYTE)
+            {
+                start++;
+                bits -= BITS_PER_BYTE;
+                if (bits > 0)
+                {
+                    int extraBits = image[start] << (numBits - bits);
+                    val ^= extraBits;
+                }
+            }
+            val &= (1 << numBits) - 1;
+            bitOffset += numBits;
+            return val;
+        }
+
+        // <summary>
+        /// Decode variable length numbers
+        /// </summary>
+        /// <remarks>
+        /// The <paramref name="start"/> and <paramref name="bitOffset"/> get incremented by the size of the value
+        /// </remarks>
+        public static uint DecodeVarLengthUnsigned(byte[] image, int len, ref int bitOffset)
+        {
+            uint numEncodings = (uint)(1 << len);
+            uint result = 0;
+            for (int shift = 0; ; shift += len)
+            {
+                uint currentChunk = (uint)ReadBits(image, len + 1, ref bitOffset);
+                result |= (currentChunk & (numEncodings - 1)) << shift;
+                if ((currentChunk & numEncodings) == 0)
+                {
+                    // Extension bit is not set, we're done.
+                    return result;
+                }
+            }
+        }
+
+        public static int DecodeVarLengthSigned(byte[] image, int len, ref int bitOffset)
+        {
+            int numEncodings = (1 << len);
+            int result = 0;
+            for (int shift = 0; ; shift += len)
+            {
+                int currentChunk = ReadBits(image, len + 1, ref bitOffset);
+                result |= (currentChunk & (numEncodings - 1)) << shift;
+                if ((currentChunk & numEncodings) == 0)
+                {
+                    // Extension bit is not set, sign-extend and we're done.
+                    int sbits = BITS_PER_BYTE - (shift + len);
+                    result <<= sbits;
+                    result >>= sbits;   // This provides the sign extension
+                    return result;
+                }
+            }
         }
 
         public static uint DecodeUnsigned(byte[] image, uint offset, ref uint pValue)
