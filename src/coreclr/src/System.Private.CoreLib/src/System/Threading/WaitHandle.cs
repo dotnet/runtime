@@ -34,7 +34,7 @@ namespace System.Threading
         private IntPtr waitHandle;  // !!! DO NOT MOVE THIS FIELD. (See defn of WAITHANDLEREF in object.h - has hard-coded access to this field.)
 #pragma warning restore 414
 
-        internal volatile SafeWaitHandle safeWaitHandle;
+        internal volatile SafeWaitHandle _waitHandle;
 
         internal bool hasThreadAffinity;
 
@@ -63,7 +63,7 @@ namespace System.Threading
 
         private void Init()
         {
-            safeWaitHandle = null;
+            _waitHandle = null;
             waitHandle = InvalidHandle;
             hasThreadAffinity = false;
         }
@@ -72,7 +72,7 @@ namespace System.Threading
         [Obsolete("Use the SafeWaitHandle property instead.")]
         public virtual IntPtr Handle
         {
-            get { return safeWaitHandle == null ? InvalidHandle : safeWaitHandle.DangerousGetHandle(); }
+            get { return _waitHandle == null ? InvalidHandle : _waitHandle.DangerousGetHandle(); }
             set
             {
                 if (value == InvalidHandle)
@@ -83,15 +83,15 @@ namespace System.Threading
                     // ideally do these things:
                     // *) Expose a settable SafeHandle property on WaitHandle.
                     // *) Expose a settable OwnsHandle property on SafeHandle.
-                    if (safeWaitHandle != null)
+                    if (_waitHandle != null)
                     {
-                        safeWaitHandle.SetHandleAsInvalid();
-                        safeWaitHandle = null;
+                        _waitHandle.SetHandleAsInvalid();
+                        _waitHandle = null;
                     }
                 }
                 else
                 {
-                    safeWaitHandle = new SafeWaitHandle(value, true);
+                    _waitHandle = new SafeWaitHandle(value, true);
                 }
                 waitHandle = value;
             }
@@ -101,11 +101,11 @@ namespace System.Threading
         {
             get
             {
-                if (safeWaitHandle == null)
+                if (_waitHandle == null)
                 {
-                    safeWaitHandle = new SafeWaitHandle(InvalidHandle, false);
+                    _waitHandle = new SafeWaitHandle(InvalidHandle, false);
                 }
-                return safeWaitHandle;
+                return _waitHandle;
             }
 
             set
@@ -120,13 +120,13 @@ namespace System.Threading
                 {
                     if (value == null)
                     {
-                        safeWaitHandle = null;
+                        _waitHandle = null;
                         waitHandle = InvalidHandle;
                     }
                     else
                     {
-                        safeWaitHandle = value;
-                        waitHandle = safeWaitHandle.DangerousGetHandle();
+                        _waitHandle = value;
+                        waitHandle = _waitHandle.DangerousGetHandle();
                     }
                 }
             }
@@ -143,7 +143,7 @@ namespace System.Threading
         // don't need to do a linktime check here.
         internal void SetHandleInternal(SafeWaitHandle handle)
         {
-            safeWaitHandle = handle;
+            _waitHandle = handle;
             waitHandle = handle.DangerousGetHandle();
         }
 
@@ -185,7 +185,7 @@ namespace System.Threading
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread-safety.")]
         private bool WaitOne(long timeout, bool exitContext)
         {
-            return InternalWaitOne(safeWaitHandle, timeout, hasThreadAffinity, exitContext);
+            return InternalWaitOne(_waitHandle, timeout, hasThreadAffinity, exitContext);
         }
 
         internal static bool InternalWaitOne(SafeHandle waitableSafeHandle, long millisecondsTimeout, bool hasThreadAffinity, bool exitContext)
@@ -207,13 +207,13 @@ namespace System.Threading
         {
             // version of waitone without fast application switch (FAS) support
             // This is required to support the Wait which FAS needs (otherwise recursive dependency comes in)
-            if (safeWaitHandle == null)
+            if (_waitHandle == null)
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
             }
 
             long timeout = -1;
-            int ret = WaitOneNative(safeWaitHandle, (uint)timeout, hasThreadAffinity, false);
+            int ret = WaitOneNative(_waitHandle, (uint)timeout, hasThreadAffinity, false);
             if (ret == WAIT_ABANDONED)
             {
                 ThrowAbandonedMutexException();
@@ -467,7 +467,7 @@ namespace System.Threading
             }
 
             //NOTE: This API is not supporting Pause/Resume as it's not exposed in CoreCLR (not in WP or SL)
-            int ret = SignalAndWaitOne(toSignal.safeWaitHandle, toWaitOn.safeWaitHandle, millisecondsTimeout,
+            int ret = SignalAndWaitOne(toSignal._waitHandle, toWaitOn._waitHandle, millisecondsTimeout,
                                 toWaitOn.hasThreadAffinity, exitContext);
 
             if (WAIT_ABANDONED == ret)
@@ -508,9 +508,9 @@ namespace System.Threading
 
         protected virtual void Dispose(bool explicitDisposing)
         {
-            if (safeWaitHandle != null)
+            if (_waitHandle != null)
             {
-                safeWaitHandle.Close();
+                _waitHandle.Close();
             }
         }
 
