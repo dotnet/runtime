@@ -23,7 +23,6 @@ public:
     static FCDECL2_IV(void, InitSingle, DECIMAL *_this, float value);
     static FCDECL2_IV(void, InitDouble, DECIMAL *_this, double value);
     static FCDECL2(INT32, DoCompare, DECIMAL * d1, DECIMAL * d2);
-    static FCDECL1(INT32, GetHashCode, DECIMAL *d);
 
     static FCDECL3(void, DoAddSubThrow, DECIMAL * d1, DECIMAL * d2, UINT8 bSign);
     static FCDECL2(void, DoDivideThrow, DECIMAL * d1, DECIMAL * d2);

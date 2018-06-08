@@ -99,33 +99,6 @@ FCIMPL1(void, COMDecimal::DoFloor, DECIMAL * d)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, COMDecimal::GetHashCode, DECIMAL *d)
-{
-    FCALL_CONTRACT;
-
-    ENSURE_OLEAUT32_LOADED();
-
-    _ASSERTE(d != NULL);
-    double dbl;
-    VarR8FromDec(d, &dbl);
-    if (dbl == 0.0) {
-        // Ensure 0 and -0 have the same hash code
-        return 0;
-    }
-    // conversion to double is lossy and produces rounding errors so we mask off the lowest 4 bits
-    // 
-    // For example these two numerically equal decimals with different internal representations produce
-    // slightly different results when converted to double:
-    //
-    // decimal a = new decimal(new int[] { 0x76969696, 0x2fdd49fa, 0x409783ff, 0x00160000 });
-    //                     => (decimal)1999021.176470588235294117647000000000 => (double)1999021.176470588
-    // decimal b = new decimal(new int[] { 0x3f0f0f0f, 0x1e62edcc, 0x06758d33, 0x00150000 }); 
-    //                     => (decimal)1999021.176470588235294117647000000000 => (double)1999021.1764705882
-    //
-    return ((((int *)&dbl)[0]) & 0xFFFFFFF0) ^ ((int *)&dbl)[1];
-}
-FCIMPLEND
-
 FCIMPL3(void, COMDecimal::DoMultiply, DECIMAL * d1, DECIMAL * d2, CLR_BOOL * overflowed)
 {
     FCALL_CONTRACT;
