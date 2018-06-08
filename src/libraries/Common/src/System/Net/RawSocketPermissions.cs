@@ -23,7 +23,7 @@ namespace System.Net
         {
             try
             {
-                new Socket(addressFamily, SocketType.Raw, ProtocolType.Icmp).Dispose();
+                new Socket(addressFamily, SocketType.Raw, addressFamily == AddressFamily.InterNetwork ? ProtocolType.Icmp : ProtocolType.IcmpV6).Dispose();
                 return true;
             }
             catch
