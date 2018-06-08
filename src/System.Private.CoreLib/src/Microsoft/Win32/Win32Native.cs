@@ -173,9 +173,6 @@ namespace Microsoft.Win32
         internal const uint CREATE_EVENT_MANUAL_RESET = 0x1;
         internal const uint CREATE_EVENT_INITIAL_SET = 0x2;
 
-        // CreateMutexEx: flags
-        internal const uint CREATE_MUTEX_INITIAL_OWNER = 0x1;
-
         internal const int LMEM_FIXED = 0x0000;
         internal const int LMEM_ZEROINIT = 0x0040;
         internal const int LPTR = (LMEM_FIXED | LMEM_ZEROINIT);
@@ -308,15 +305,6 @@ namespace Microsoft.Win32
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
         internal static extern SafeWaitHandle OpenEvent(uint desiredAccess, bool inheritHandle, string name);
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern SafeWaitHandle CreateMutexEx(SECURITY_ATTRIBUTES lpSecurityAttributes, string name, uint flags, uint desiredAccess);
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern SafeWaitHandle OpenMutex(uint desiredAccess, bool inheritHandle, string name);
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool ReleaseMutex(SafeWaitHandle handle);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         internal static extern bool CloseHandle(IntPtr handle);

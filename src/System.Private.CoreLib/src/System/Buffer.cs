@@ -6,28 +6,26 @@
 #define HAS_CUSTOM_BLOCKS
 #endif
 
-namespace System
-{
-    //Only contains static methods.  Does not require serialization
-
-    using System;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Versioning;
-    using System.Diagnostics;
-    using System.Security;
-    using System.Runtime;
-    using Internal.Runtime.CompilerServices;
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Diagnostics;
+using System.Security;
+using System.Runtime;
+using Internal.Runtime.CompilerServices;
 
 #if BIT64
-    using nint = System.Int64;
-    using nuint = System.UInt64;
+using nint = System.Int64;
+using nuint = System.UInt64;
 #else // BIT64
-    using nint = System.Int32;
-    using nuint = System.UInt32;
+using nint = System.Int32;
+using nuint = System.UInt32;
 #endif // BIT64
 
+namespace System
+{
     public static class Buffer
     {
         // Copies from one primitive array to another primitive array without

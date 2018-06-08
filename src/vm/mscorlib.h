@@ -982,7 +982,7 @@ DEFINE_FIELD_U(m_handle,               WeakReferenceObject,    m_Handle)
 DEFINE_CLASS(WEAKREFERENCE,         System,                 WeakReference)
 
 DEFINE_CLASS_U(Threading,              WaitHandle,             WaitHandleBase)
-DEFINE_FIELD_U(safeWaitHandle,         WaitHandleBase,         m_safeHandle)
+DEFINE_FIELD_U(_waitHandle,         WaitHandleBase,         m_safeHandle)
 DEFINE_FIELD_U(waitHandle,             WaitHandleBase,         m_handle)
 DEFINE_FIELD_U(hasThreadAffinity,      WaitHandleBase,         m_hasThreadAffinity)
 

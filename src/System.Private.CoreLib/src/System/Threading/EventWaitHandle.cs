@@ -213,14 +213,14 @@ namespace System.Threading
         }
         public bool Reset()
         {
-            bool res = Win32Native.ResetEvent(safeWaitHandle);
+            bool res = Win32Native.ResetEvent(_waitHandle);
             if (!res)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             return res;
         }
         public bool Set()
         {
-            bool res = Win32Native.SetEvent(safeWaitHandle);
+            bool res = Win32Native.SetEvent(_waitHandle);
 
             if (!res)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
