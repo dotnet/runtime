@@ -155,11 +155,32 @@ namespace Internal.Cryptography.Pal.AnyOS
                         }
                     }
                 }
+                else
+                {
+                    decrypted = GetAsnSequenceWithContentNoValidation(decrypted);
+                }
 
                 exception = null;
                 return new ContentInfo(
                     new Oid(contentType),
                     decrypted);
+            }
+
+            private static byte[] GetAsnSequenceWithContentNoValidation(ReadOnlySpan<byte> content)
+            {
+                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+                {
+                    // Content may be invalid ASN.1 data.
+                    // We will encode it as octet string to bypass validation
+                    writer.WriteOctetString(content);
+                    byte[] encoded = writer.Encode();
+
+                    // and replace octet string tag (0x04) with sequence tag (0x30 or constructed 0x10)
+                    Debug.Assert(encoded[0] == 0x04);
+                    encoded[0] = 0x30;
+
+                    return encoded;
+                }
             }
 
             private static byte[] DecryptContent(
