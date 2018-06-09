@@ -113,10 +113,7 @@ namespace System.Drawing
         {
             int state;
 
-            var dstf = new GPRECT(dstrect);
-            var srcf = new GPRECT(srcrect);
-
-            int status = SafeNativeMethods.Gdip.GdipBeginContainerI(new HandleRef(this, NativeGraphics), ref dstf, ref srcf, unchecked((int)unit), out state);
+            int status = SafeNativeMethods.Gdip.GdipBeginContainerI(new HandleRef(this, NativeGraphics), ref dstrect, ref srcrect, unit, out state);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return new GraphicsContainer(state);
@@ -126,15 +123,11 @@ namespace System.Drawing
         {
             int state;
 
-            var dstf = new GPRECTF(dstrect);
-            var srcf = new GPRECTF(srcrect);
-
-            int status = SafeNativeMethods.Gdip.GdipBeginContainer(new HandleRef(this, NativeGraphics), ref dstf, ref srcf, unchecked((int)unit), out state);
+            int status = SafeNativeMethods.Gdip.GdipBeginContainer(new HandleRef(this, NativeGraphics), ref dstrect, ref srcrect, unit, out state);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return new GraphicsContainer(state);
         }
-
 
         public void Clear(Color color)
         {
@@ -1027,7 +1020,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            int status = SafeNativeMethods.Gdip.GdipDrawPath(NativeGraphics, pen.NativePen, path.nativePath);
+            int status = SafeNativeMethods.Gdip.GdipDrawPath(NativeGraphics, pen.NativePen, path._nativePath);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1449,7 +1442,7 @@ namespace System.Drawing
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            int status = SafeNativeMethods.Gdip.GdipFillPath(NativeGraphics, brush.NativeBrush, path.nativePath);
+            int status = SafeNativeMethods.Gdip.GdipFillPath(NativeGraphics, brush.NativeBrush, path._nativePath);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1865,11 +1858,10 @@ namespace System.Drawing
         {
             get
             {
-                var rect = new GPRECTF();
-                int status = SafeNativeMethods.Gdip.GdipGetVisibleClipBounds(new HandleRef(this, NativeGraphics), ref rect);
+                int status = SafeNativeMethods.Gdip.GdipGetVisibleClipBounds(new HandleRef(this, NativeGraphics), out RectangleF rect);
                 SafeNativeMethods.Gdip.CheckStatus(status);
 
-                return rect.ToRectangleF();
+                return rect;
             }
         }
 

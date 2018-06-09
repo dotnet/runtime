@@ -4,7 +4,6 @@
 
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
-using System.Drawing.Internal;
 using System.Drawing.Text;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
@@ -44,11 +43,8 @@ namespace System.Drawing
         {
             get
             {
-                var rect = new GPRECTF();
-                int status = Gdip.GdipGetClipBounds(new HandleRef(this, NativeGraphics), ref rect);
-                Gdip.CheckStatus(status);
-
-                return rect.ToRectangleF();
+                Gdip.CheckStatus(Gdip.GdipGetClipBounds(new HandleRef(this, NativeGraphics), out RectangleF rect));
+                return rect;
             }
         }
 
@@ -59,21 +55,15 @@ namespace System.Drawing
         {
             get
             {
-                int mode = 0;
-                int status = Gdip.GdipGetCompositingMode(new HandleRef(this, NativeGraphics), out mode);
-                Gdip.CheckStatus(status);
-
-                return (CompositingMode)mode;
+                Gdip.CheckStatus(Gdip.GdipGetCompositingMode(new HandleRef(this, NativeGraphics), out CompositingMode mode));
+                return mode;
             }
             set
             {
                 if (value < CompositingMode.SourceOver || value > CompositingMode.SourceCopy)
-                {
-                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(CompositingMode));
-                }
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(CompositingMode));
 
-                int status = Gdip.GdipSetCompositingMode(new HandleRef(this, NativeGraphics), unchecked((int)value));
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetCompositingMode(new HandleRef(this, NativeGraphics), value));
             }
         }
 
@@ -81,21 +71,15 @@ namespace System.Drawing
         {
             get
             {
-                CompositingQuality cq;
-                int status = Gdip.GdipGetCompositingQuality(new HandleRef(this, NativeGraphics), out cq);
-                Gdip.CheckStatus(status);
-
+                Gdip.CheckStatus(Gdip.GdipGetCompositingQuality(new HandleRef(this, NativeGraphics), out CompositingQuality cq));
                 return cq;
             }
             set
             {
                 if (value < CompositingQuality.Invalid || value > CompositingQuality.AssumeLinear)
-                {
-                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(CompositingQuality));
-                }
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(CompositingQuality));
 
-                int status = Gdip.GdipSetCompositingQuality(new HandleRef(this, NativeGraphics), value);
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetCompositingQuality(new HandleRef(this, NativeGraphics), value));
             }
         }
 
@@ -103,11 +87,8 @@ namespace System.Drawing
         {
             get
             {
-                var dpi = new float[] { 0.0f };
-                int status = Gdip.GdipGetDpiX(new HandleRef(this, NativeGraphics), dpi);
-                Gdip.CheckStatus(status);
-
-                return dpi[0];
+                Gdip.CheckStatus(Gdip.GdipGetDpiX(new HandleRef(this, NativeGraphics), out float dpi));
+                return dpi;
             }
         }
 
@@ -115,11 +96,8 @@ namespace System.Drawing
         {
             get
             {
-                var dpi = new float[] { 0.0f };
-                int status = Gdip.GdipGetDpiY(new HandleRef(this, NativeGraphics), dpi);
-                Gdip.CheckStatus(status);
-
-                return dpi[0];
+                Gdip.CheckStatus(Gdip.GdipGetDpiY(new HandleRef(this, NativeGraphics), out float dpi));
+                return dpi;
             }
         }
 
@@ -130,18 +108,13 @@ namespace System.Drawing
         {
             get
             {
-                int mode = 0;
-                int status = Gdip.GdipGetInterpolationMode(new HandleRef(this, NativeGraphics), out mode);
-                Gdip.CheckStatus(status);
-
-                return (InterpolationMode)mode;
+                Gdip.CheckStatus(Gdip.GdipGetInterpolationMode(new HandleRef(this, NativeGraphics), out InterpolationMode mode));
+                return mode;
             }
             set
             {
                 if (value < InterpolationMode.Invalid || value > InterpolationMode.HighQualityBicubic)
-                {
-                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(InterpolationMode));
-                }
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(InterpolationMode));
 
                 // GDI+ interprets the value of InterpolationMode and sets a value accordingly.
                 // Libgdiplus does not, so do this manually here.
@@ -160,8 +133,7 @@ namespace System.Drawing
                         break;
                 }
 
-                int status = Gdip.GdipSetInterpolationMode(new HandleRef(this, NativeGraphics), unchecked((int)value));
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetInterpolationMode(new HandleRef(this, NativeGraphics), value));
             }
         }
 
@@ -169,11 +141,8 @@ namespace System.Drawing
         {
             get
             {
-                int isEmpty;
-                int status = Gdip.GdipIsClipEmpty(new HandleRef(this, NativeGraphics), out isEmpty);
-                Gdip.CheckStatus(status);
-
-                return isEmpty != 0;
+                Gdip.CheckStatus(Gdip.GdipIsClipEmpty(new HandleRef(this, NativeGraphics), out bool isEmpty));
+                return isEmpty;
             }
         }
 
@@ -181,11 +150,8 @@ namespace System.Drawing
         {
             get
             {
-                int isEmpty;
-                int status = Gdip.GdipIsVisibleClipEmpty(new HandleRef(this, NativeGraphics), out isEmpty);
-                Gdip.CheckStatus(status);
-
-                return isEmpty != 0;
+                Gdip.CheckStatus(Gdip.GdipIsVisibleClipEmpty(new HandleRef(this, NativeGraphics), out bool isEmpty));
+                return isEmpty;
             }
         }
 
@@ -193,23 +159,16 @@ namespace System.Drawing
         {
             get
             {
-                var scale = new float[] { 0.0f };
-                int status = Gdip.GdipGetPageScale(new HandleRef(this, NativeGraphics), scale);
-                Gdip.CheckStatus(status);
-
-                return scale[0];
+                Gdip.CheckStatus(Gdip.GdipGetPageScale(new HandleRef(this, NativeGraphics), out float scale));
+                return scale;
             }
-
             set
             {
                 // Libgdiplus doesn't perform argument validation, so do this here for compatability.
                 if (value <= 0 || value > 1000000032)
-                {
                     throw new ArgumentException(SR.GdiplusInvalidParameter);
-                }
 
-                int status = Gdip.GdipSetPageScale(new HandleRef(this, NativeGraphics), value);
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetPageScale(new HandleRef(this, NativeGraphics), value));
             }
         }
 
@@ -217,28 +176,20 @@ namespace System.Drawing
         {
             get
             {
-                int unit = 0;
-                int status = Gdip.GdipGetPageUnit(new HandleRef(this, NativeGraphics), out unit);
-                Gdip.CheckStatus(status);
-
-                return (GraphicsUnit)unit;
+                Gdip.CheckStatus(Gdip.GdipGetPageUnit(new HandleRef(this, NativeGraphics), out GraphicsUnit unit));
+                return unit;
             }
             set
             {
                 if (value < GraphicsUnit.World || value > GraphicsUnit.Millimeter)
-                {
-                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(GraphicsUnit));
-                }
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(GraphicsUnit));
 
                 // GDI+ doesn't allow GraphicsUnit.World as a valid value for PageUnit.
                 // Libgdiplus doesn't perform argument validation, so do this here.
                 if (value == GraphicsUnit.World)
-                {
                     throw new ArgumentException(SR.GdiplusInvalidParameter);
-                }
 
-                int status = Gdip.GdipSetPageUnit(new HandleRef(this, NativeGraphics), unchecked((int)value));
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetPageUnit(new HandleRef(this, NativeGraphics), value));
             }
         }
 
@@ -246,28 +197,20 @@ namespace System.Drawing
         {
             get
             {
-                PixelOffsetMode mode = 0;
-                int status = Gdip.GdipGetPixelOffsetMode(new HandleRef(this, NativeGraphics), out mode);
-                Gdip.CheckStatus(status);
-
+                Gdip.CheckStatus(Gdip.GdipGetPixelOffsetMode(new HandleRef(this, NativeGraphics), out PixelOffsetMode mode));
                 return mode;
             }
             set
             {
                 if (value < PixelOffsetMode.Invalid || value > PixelOffsetMode.Half)
-                {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(PixelOffsetMode));
-                }
 
                 // GDI+ doesn't allow PixelOffsetMode.Invalid as a valid value for PixelOffsetMode.
                 // Libgdiplus doesn't perform argument validation, so do this here.
                 if (value == PixelOffsetMode.Invalid)
-                {
                     throw new ArgumentException(SR.GdiplusInvalidParameter);
-                }
 
-                int status = Gdip.GdipSetPixelOffsetMode(new HandleRef(this, NativeGraphics), value);
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetPixelOffsetMode(new HandleRef(this, NativeGraphics), value));
             }
         }
 
@@ -275,16 +218,12 @@ namespace System.Drawing
         {
             get
             {
-                int x, y;
-                int status = Gdip.GdipGetRenderingOrigin(new HandleRef(this, NativeGraphics), out x, out y);
-                Gdip.CheckStatus(status);
-
+                Gdip.CheckStatus(Gdip.GdipGetRenderingOrigin(new HandleRef(this, NativeGraphics), out int x, out int y));
                 return new Point(x, y);
             }
             set
             {
-                int status = Gdip.GdipSetRenderingOrigin(new HandleRef(this, NativeGraphics), value.X, value.Y);
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetRenderingOrigin(new HandleRef(this, NativeGraphics), value.X, value.Y));
             }
         }
 
@@ -292,18 +231,13 @@ namespace System.Drawing
         {
             get
             {
-                SmoothingMode mode = 0;
-                int status = Gdip.GdipGetSmoothingMode(new HandleRef(this, NativeGraphics), out mode);
-                Gdip.CheckStatus(status);
-
+                Gdip.CheckStatus(Gdip.GdipGetSmoothingMode(new HandleRef(this, NativeGraphics), out SmoothingMode mode));
                 return mode;
             }
             set
             {
                 if (value < SmoothingMode.Invalid || value > SmoothingMode.AntiAlias)
-                {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(SmoothingMode));
-                }
 
                 // GDI+ interprets the value of SmoothingMode and sets a value accordingly.
                 // Libgdiplus does not, so do this manually here.
@@ -322,8 +256,7 @@ namespace System.Drawing
                         break;
                 }
 
-                int status = Gdip.GdipSetSmoothingMode(new HandleRef(this, NativeGraphics), value);
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetSmoothingMode(new HandleRef(this, NativeGraphics), value));
             }
         }
 
@@ -331,16 +264,12 @@ namespace System.Drawing
         {
             get
             {
-                int textContrast = 0;
-                int status = Gdip.GdipGetTextContrast(new HandleRef(this, NativeGraphics), out textContrast);
-                Gdip.CheckStatus(status);
-
+                Gdip.CheckStatus(Gdip.GdipGetTextContrast(new HandleRef(this, NativeGraphics), out int textContrast));
                 return textContrast;
             }
             set
             {
-                int status = Gdip.GdipSetTextContrast(new HandleRef(this, NativeGraphics), value);
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetTextContrast(new HandleRef(this, NativeGraphics), value));
             }
         }
 
@@ -351,22 +280,15 @@ namespace System.Drawing
         {
             get
             {
-                TextRenderingHint hint = 0;
-
-                int status = Gdip.GdipGetTextRenderingHint(new HandleRef(this, NativeGraphics), out hint);
-                Gdip.CheckStatus(status);
-
+                Gdip.CheckStatus(Gdip.GdipGetTextRenderingHint(new HandleRef(this, NativeGraphics), out TextRenderingHint hint));
                 return hint;
             }
             set
             {
                 if (value < TextRenderingHint.SystemDefault || value > TextRenderingHint.ClearTypeGridFit)
-                {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(TextRenderingHint));
-                }
 
-                int status = Gdip.GdipSetTextRenderingHint(new HandleRef(this, NativeGraphics), value);
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetTextRenderingHint(new HandleRef(this, NativeGraphics), value));
             }
         }
 
@@ -378,17 +300,15 @@ namespace System.Drawing
             get
             {
                 var matrix = new Matrix();
-                int status = Gdip.GdipGetWorldTransform(new HandleRef(this, NativeGraphics),
-                                                           new HandleRef(matrix, matrix.nativeMatrix));
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipGetWorldTransform(
+                    new HandleRef(this, NativeGraphics), new HandleRef(matrix, matrix.nativeMatrix)));
 
                 return matrix;
             }
             set
             {
-                int status = Gdip.GdipSetWorldTransform(new HandleRef(this, NativeGraphics),
-                                                           new HandleRef(value, value.nativeMatrix));
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetWorldTransform(
+                    new HandleRef(this, NativeGraphics), new HandleRef(value, value.nativeMatrix)));
             }
         }
 
@@ -535,8 +455,7 @@ namespace System.Drawing
 
         public void TranslateClip(int dx, int dy)
         {
-            int status = Gdip.GdipTranslateClip(new HandleRef(this, NativeGraphics), dx, dy);
-            Gdip.CheckStatus(status);
+            Gdip.CheckStatus(Gdip.GdipTranslateClip(new HandleRef(this, NativeGraphics), dx, dy));
         }
 
         public bool IsVisible(int x, int y) => IsVisible(new Point(x, y));
@@ -546,9 +465,9 @@ namespace System.Drawing
             Gdip.CheckStatus(Gdip.GdipIsVisiblePointI(
                 new HandleRef(this, NativeGraphics),
                 point.X, point.Y,
-                out int isVisible));
+                out bool isVisible));
 
-            return isVisible != 0;
+            return isVisible;
         }
 
         public bool IsVisible(float x, float y) => IsVisible(new PointF(x, y));
@@ -558,9 +477,9 @@ namespace System.Drawing
             Gdip.CheckStatus(Gdip.GdipIsVisiblePoint(
                 new HandleRef(this, NativeGraphics),
                 point.X, point.Y,
-                out int isVisible));
+                out bool isVisible));
 
-            return isVisible != 0;
+            return isVisible;
         }
 
         public bool IsVisible(int x, int y, int width, int height)
@@ -573,9 +492,9 @@ namespace System.Drawing
             Gdip.CheckStatus(Gdip.GdipIsVisibleRectI(
                 new HandleRef(this, NativeGraphics),
                 rect.X, rect.Y, rect.Width, rect.Height,
-                out int isVisible));
+                out bool isVisible));
 
-            return isVisible != 0;
+            return isVisible;
         }
 
         public bool IsVisible(float x, float y, float width, float height)
@@ -588,9 +507,9 @@ namespace System.Drawing
             Gdip.CheckStatus(Gdip.GdipIsVisibleRect(
                 new HandleRef(this, NativeGraphics),
                 rect.X, rect.Y, rect.Width, rect.Height,
-                out int isVisible));
+                out bool isVisible));
 
-            return isVisible != 0;
+            return isVisible;
         }
 
         /// <summary>
@@ -617,14 +536,10 @@ namespace System.Drawing
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
             // with the libgdiplus backend. Simulate a nop for compatability with GDI+.
             if (matrix.nativeMatrix == IntPtr.Zero)
-            {
                 return;
-            }
 
-            int status = Gdip.GdipMultiplyWorldTransform(new HandleRef(this, NativeGraphics),
-                                                            new HandleRef(matrix, matrix.nativeMatrix),
-                                                            order);
-            Gdip.CheckStatus(status);
+            Gdip.CheckStatus(Gdip.GdipMultiplyWorldTransform(
+                new HandleRef(this, NativeGraphics), new HandleRef(matrix, matrix.nativeMatrix), order));
         }
 
         public void TranslateTransform(float dx, float dy) => TranslateTransform(dx, dy, MatrixOrder.Prepend);

@@ -244,13 +244,13 @@ namespace System.Drawing
             private static FunctionWrapper<GdipCreatePath_delegate> GdipCreatePath_ptr;
             internal static int GdipCreatePath(int brushMode, out IntPtr path) => GdipCreatePath_ptr.Delegate(brushMode, out path);
 
-            private delegate int GdipCreatePath2_delegate(HandleRef points, HandleRef types, int count, int brushMode, out IntPtr path);
+            private delegate int GdipCreatePath2_delegate(PointF* points, byte* types, int count, int brushMode, out IntPtr path);
             private static FunctionWrapper<GdipCreatePath2_delegate> GdipCreatePath2_ptr;
-            internal static int GdipCreatePath2(HandleRef points, HandleRef types, int count, int brushMode, out IntPtr path) => GdipCreatePath2_ptr.Delegate(points, types, count, brushMode, out path);
+            internal static int GdipCreatePath2(PointF* points, byte* types, int count, int brushMode, out IntPtr path) => GdipCreatePath2_ptr.Delegate(points, types, count, brushMode, out path);
 
-            private delegate int GdipCreatePath2I_delegate(HandleRef points, HandleRef types, int count, int brushMode, out IntPtr path);
+            private delegate int GdipCreatePath2I_delegate(Point* points, byte* types, int count, int brushMode, out IntPtr path);
             private static FunctionWrapper<GdipCreatePath2I_delegate> GdipCreatePath2I_ptr;
-            internal static int GdipCreatePath2I(HandleRef points, HandleRef types, int count, int brushMode, out IntPtr path) => GdipCreatePath2I_ptr.Delegate(points, types, count, brushMode, out path);
+            internal static int GdipCreatePath2I(Point* points, byte* types, int count, int brushMode, out IntPtr path) => GdipCreatePath2I_ptr.Delegate(points, types, count, brushMode, out path);
 
             private delegate int GdipClonePath_delegate(HandleRef path, out IntPtr clonepath);
             private static FunctionWrapper<GdipClonePath_delegate> GdipClonePath_ptr;
@@ -276,13 +276,13 @@ namespace System.Drawing
             private static FunctionWrapper<GdipGetPathPoints_delegate> GdipGetPathPoints_ptr;
             internal static int GdipGetPathPoints(HandleRef path, PointF* points, int count) => GdipGetPathPoints_ptr.Delegate(path, points, count);
 
-            private delegate int GdipGetPathFillMode_delegate(HandleRef path, out int fillmode);
+            private delegate int GdipGetPathFillMode_delegate(HandleRef path, out FillMode fillmode);
             private static FunctionWrapper<GdipGetPathFillMode_delegate> GdipGetPathFillMode_ptr;
-            internal static int GdipGetPathFillMode(HandleRef path, out int fillmode) => GdipGetPathFillMode_ptr.Delegate(path, out fillmode);
+            internal static int GdipGetPathFillMode(HandleRef path, out FillMode fillmode) => GdipGetPathFillMode_ptr.Delegate(path, out fillmode);
 
-            private delegate int GdipSetPathFillMode_delegate(HandleRef path, int fillmode);
+            private delegate int GdipSetPathFillMode_delegate(HandleRef path, FillMode fillmode);
             private static FunctionWrapper<GdipSetPathFillMode_delegate> GdipSetPathFillMode_ptr;
-            internal static int GdipSetPathFillMode(HandleRef path, int fillmode) => GdipSetPathFillMode_ptr.Delegate(path, fillmode);
+            internal static int GdipSetPathFillMode(HandleRef path, FillMode fillmode) => GdipSetPathFillMode_ptr.Delegate(path, fillmode);
 
             private delegate int GdipGetPathData_delegate(HandleRef path, GpPathData* pathData);
             private static FunctionWrapper<GdipGetPathData_delegate> GdipGetPathData_ptr;
@@ -312,17 +312,17 @@ namespace System.Drawing
             private static FunctionWrapper<GdipReversePath_delegate> GdipReversePath_ptr;
             internal static int GdipReversePath(HandleRef path) => GdipReversePath_ptr.Delegate(path);
 
-            private delegate int GdipGetPathLastPoint_delegate(HandleRef path, GPPOINTF lastPoint);
+            private delegate int GdipGetPathLastPoint_delegate(HandleRef path, out PointF lastPoint);
             private static FunctionWrapper<GdipGetPathLastPoint_delegate> GdipGetPathLastPoint_ptr;
-            internal static int GdipGetPathLastPoint(HandleRef path, GPPOINTF lastPoint) => GdipGetPathLastPoint_ptr.Delegate(path, lastPoint);
+            internal static int GdipGetPathLastPoint(HandleRef path, out PointF lastPoint) => GdipGetPathLastPoint_ptr.Delegate(path, out lastPoint);
 
             private delegate int GdipAddPathLine_delegate(HandleRef path, float x1, float y1, float x2, float y2);
             private static FunctionWrapper<GdipAddPathLine_delegate> GdipAddPathLine_ptr;
             internal static int GdipAddPathLine(HandleRef path, float x1, float y1, float x2, float y2) => GdipAddPathLine_ptr.Delegate(path, x1, y1, x2, y2);
 
-            private delegate int GdipAddPathLine2_delegate(HandleRef path, HandleRef memorypts, int count);
+            private delegate int GdipAddPathLine2_delegate(HandleRef path, PointF* points, int count);
             private static FunctionWrapper<GdipAddPathLine2_delegate> GdipAddPathLine2_ptr;
-            internal static int GdipAddPathLine2(HandleRef path, HandleRef memorypts, int count) => GdipAddPathLine2_ptr.Delegate(path, memorypts, count);
+            internal static int GdipAddPathLine2(HandleRef path, PointF* points, int count) => GdipAddPathLine2_ptr.Delegate(path, points, count);
 
             private delegate int GdipAddPathArc_delegate(HandleRef path, float x, float y, float width, float height, float startAngle, float sweepAngle);
             private static FunctionWrapper<GdipAddPathArc_delegate> GdipAddPathArc_ptr;
@@ -332,37 +332,37 @@ namespace System.Drawing
             private static FunctionWrapper<GdipAddPathBezier_delegate> GdipAddPathBezier_ptr;
             internal static int GdipAddPathBezier(HandleRef path, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) => GdipAddPathBezier_ptr.Delegate(path, x1, y1, x2, y2, x3, y3, x4, y4);
 
-            private delegate int GdipAddPathBeziers_delegate(HandleRef path, HandleRef memorypts, int count);
+            private delegate int GdipAddPathBeziers_delegate(HandleRef path, PointF* points, int count);
             private static FunctionWrapper<GdipAddPathBeziers_delegate> GdipAddPathBeziers_ptr;
-            internal static int GdipAddPathBeziers(HandleRef path, HandleRef memorypts, int count) => GdipAddPathBeziers_ptr.Delegate(path, memorypts, count);
+            internal static int GdipAddPathBeziers(HandleRef path, PointF* points, int count) => GdipAddPathBeziers_ptr.Delegate(path, points, count);
 
-            private delegate int GdipAddPathCurve_delegate(HandleRef path, HandleRef memorypts, int count);
+            private delegate int GdipAddPathCurve_delegate(HandleRef path, PointF* points, int count);
             private static FunctionWrapper<GdipAddPathCurve_delegate> GdipAddPathCurve_ptr;
-            internal static int GdipAddPathCurve(HandleRef path, HandleRef memorypts, int count) => GdipAddPathCurve_ptr.Delegate(path, memorypts, count);
+            internal static int GdipAddPathCurve(HandleRef path, PointF* points, int count) => GdipAddPathCurve_ptr.Delegate(path, points, count);
 
-            private delegate int GdipAddPathCurve2_delegate(HandleRef path, HandleRef memorypts, int count, float tension);
+            private delegate int GdipAddPathCurve2_delegate(HandleRef path, PointF* points, int count, float tension);
             private static FunctionWrapper<GdipAddPathCurve2_delegate> GdipAddPathCurve2_ptr;
-            internal static int GdipAddPathCurve2(HandleRef path, HandleRef memorypts, int count, float tension) => GdipAddPathCurve2_ptr.Delegate(path, memorypts, count, tension);
+            internal static int GdipAddPathCurve2(HandleRef path, PointF* points, int count, float tension) => GdipAddPathCurve2_ptr.Delegate(path, points, count, tension);
 
-            private delegate int GdipAddPathCurve3_delegate(HandleRef path, HandleRef memorypts, int count, int offset, int numberOfSegments, float tension);
+            private delegate int GdipAddPathCurve3_delegate(HandleRef path, PointF* points, int count, int offset, int numberOfSegments, float tension);
             private static FunctionWrapper<GdipAddPathCurve3_delegate> GdipAddPathCurve3_ptr;
-            internal static int GdipAddPathCurve3(HandleRef path, HandleRef memorypts, int count, int offset, int numberOfSegments, float tension) => GdipAddPathCurve3_ptr.Delegate(path, memorypts, count, offset, numberOfSegments, tension);
+            internal static int GdipAddPathCurve3(HandleRef path, PointF* points, int count, int offset, int numberOfSegments, float tension) => GdipAddPathCurve3_ptr.Delegate(path, points, count, offset, numberOfSegments, tension);
 
-            private delegate int GdipAddPathClosedCurve_delegate(HandleRef path, HandleRef memorypts, int count);
+            private delegate int GdipAddPathClosedCurve_delegate(HandleRef path, PointF* points, int count);
             private static FunctionWrapper<GdipAddPathClosedCurve_delegate> GdipAddPathClosedCurve_ptr;
-            internal static int GdipAddPathClosedCurve(HandleRef path, HandleRef memorypts, int count) => GdipAddPathClosedCurve_ptr.Delegate(path, memorypts, count);
+            internal static int GdipAddPathClosedCurve(HandleRef path, PointF* points, int count) => GdipAddPathClosedCurve_ptr.Delegate(path, points, count);
 
-            private delegate int GdipAddPathClosedCurve2_delegate(HandleRef path, HandleRef memorypts, int count, float tension);
+            private delegate int GdipAddPathClosedCurve2_delegate(HandleRef path, PointF* points, int count, float tension);
             private static FunctionWrapper<GdipAddPathClosedCurve2_delegate> GdipAddPathClosedCurve2_ptr;
-            internal static int GdipAddPathClosedCurve2(HandleRef path, HandleRef memorypts, int count, float tension) => GdipAddPathClosedCurve2_ptr.Delegate(path, memorypts, count, tension);
+            internal static int GdipAddPathClosedCurve2(HandleRef path, PointF* points, int count, float tension) => GdipAddPathClosedCurve2_ptr.Delegate(path, points, count, tension);
 
             private delegate int GdipAddPathRectangle_delegate(HandleRef path, float x, float y, float width, float height);
             private static FunctionWrapper<GdipAddPathRectangle_delegate> GdipAddPathRectangle_ptr;
             internal static int GdipAddPathRectangle(HandleRef path, float x, float y, float width, float height) => GdipAddPathRectangle_ptr.Delegate(path, x, y, width, height);
 
-            private delegate int GdipAddPathRectangles_delegate(HandleRef path, HandleRef rects, int count);
+            private delegate int GdipAddPathRectangles_delegate(HandleRef path, RectangleF* rects, int count);
             private static FunctionWrapper<GdipAddPathRectangles_delegate> GdipAddPathRectangles_ptr;
-            internal static int GdipAddPathRectangles(HandleRef path, HandleRef rects, int count) => GdipAddPathRectangles_ptr.Delegate(path, rects, count);
+            internal static int GdipAddPathRectangles(HandleRef path, RectangleF* rects, int count) => GdipAddPathRectangles_ptr.Delegate(path, rects, count);
 
             private delegate int GdipAddPathEllipse_delegate(HandleRef path, float x, float y, float width, float height);
             private static FunctionWrapper<GdipAddPathEllipse_delegate> GdipAddPathEllipse_ptr;
@@ -372,29 +372,29 @@ namespace System.Drawing
             private static FunctionWrapper<GdipAddPathPie_delegate> GdipAddPathPie_ptr;
             internal static int GdipAddPathPie(HandleRef path, float x, float y, float width, float height, float startAngle, float sweepAngle) => GdipAddPathPie_ptr.Delegate(path, x, y, width, height, startAngle, sweepAngle);
 
-            private delegate int GdipAddPathPolygon_delegate(HandleRef path, HandleRef memorypts, int count);
+            private delegate int GdipAddPathPolygon_delegate(HandleRef path, PointF* points, int count);
             private static FunctionWrapper<GdipAddPathPolygon_delegate> GdipAddPathPolygon_ptr;
-            internal static int GdipAddPathPolygon(HandleRef path, HandleRef memorypts, int count) => GdipAddPathPolygon_ptr.Delegate(path, memorypts, count);
+            internal static int GdipAddPathPolygon(HandleRef path, PointF* points, int count) => GdipAddPathPolygon_ptr.Delegate(path, points, count);
 
             private delegate int GdipAddPathPath_delegate(HandleRef path, HandleRef addingPath, bool connect);
             private static FunctionWrapper<GdipAddPathPath_delegate> GdipAddPathPath_ptr;
             internal static int GdipAddPathPath(HandleRef path, HandleRef addingPath, bool connect) => GdipAddPathPath_ptr.Delegate(path, addingPath, connect);
 
-            private delegate int GdipAddPathString_delegate(HandleRef path, [MarshalAs(UnmanagedType.LPWStr)]string s, int length, HandleRef fontFamily, int style, float emSize, ref GPRECTF layoutRect, HandleRef format);
+            private delegate int GdipAddPathString_delegate(HandleRef path, [MarshalAs(UnmanagedType.LPWStr)]string s, int length, HandleRef fontFamily, int style, float emSize, ref RectangleF layoutRect, HandleRef format);
             private static FunctionWrapper<GdipAddPathString_delegate> GdipAddPathString_ptr;
-            internal static int GdipAddPathString(HandleRef path, string s, int length, HandleRef fontFamily, int style, float emSize, ref GPRECTF layoutRect, HandleRef format) => GdipAddPathString_ptr.Delegate(path, s, length, fontFamily, style, emSize, ref layoutRect, format);
+            internal static int GdipAddPathString(HandleRef path, string s, int length, HandleRef fontFamily, int style, float emSize, ref RectangleF layoutRect, HandleRef format) => GdipAddPathString_ptr.Delegate(path, s, length, fontFamily, style, emSize, ref layoutRect, format);
 
-            private delegate int GdipAddPathStringI_delegate(HandleRef path, [MarshalAs(UnmanagedType.LPWStr)]string s, int length, HandleRef fontFamily, int style, float emSize, ref GPRECT layoutRect, HandleRef format);
+            private delegate int GdipAddPathStringI_delegate(HandleRef path, [MarshalAs(UnmanagedType.LPWStr)]string s, int length, HandleRef fontFamily, int style, float emSize, ref Rectangle layoutRect, HandleRef format);
             private static FunctionWrapper<GdipAddPathStringI_delegate> GdipAddPathStringI_ptr;
-            internal static int GdipAddPathStringI(HandleRef path, string s, int length, HandleRef fontFamily, int style, float emSize, ref GPRECT layoutRect, HandleRef format) => GdipAddPathStringI_ptr.Delegate(path, s, length, fontFamily, style, emSize, ref layoutRect, format);
+            internal static int GdipAddPathStringI(HandleRef path, string s, int length, HandleRef fontFamily, int style, float emSize, ref Rectangle layoutRect, HandleRef format) => GdipAddPathStringI_ptr.Delegate(path, s, length, fontFamily, style, emSize, ref layoutRect, format);
 
             private delegate int GdipAddPathLineI_delegate(HandleRef path, int x1, int y1, int x2, int y2);
             private static FunctionWrapper<GdipAddPathLineI_delegate> GdipAddPathLineI_ptr;
             internal static int GdipAddPathLineI(HandleRef path, int x1, int y1, int x2, int y2) => GdipAddPathLineI_ptr.Delegate(path, x1, y1, x2, y2);
 
-            private delegate int GdipAddPathLine2I_delegate(HandleRef path, HandleRef memorypts, int count);
+            private delegate int GdipAddPathLine2I_delegate(HandleRef path, Point* points, int count);
             private static FunctionWrapper<GdipAddPathLine2I_delegate> GdipAddPathLine2I_ptr;
-            internal static int GdipAddPathLine2I(HandleRef path, HandleRef memorypts, int count) => GdipAddPathLine2I_ptr.Delegate(path, memorypts, count);
+            internal static int GdipAddPathLine2I(HandleRef path, Point* points, int count) => GdipAddPathLine2I_ptr.Delegate(path, points, count);
 
             private delegate int GdipAddPathArcI_delegate(HandleRef path, int x, int y, int width, int height, float startAngle, float sweepAngle);
             private static FunctionWrapper<GdipAddPathArcI_delegate> GdipAddPathArcI_ptr;
@@ -404,37 +404,37 @@ namespace System.Drawing
             private static FunctionWrapper<GdipAddPathBezierI_delegate> GdipAddPathBezierI_ptr;
             internal static int GdipAddPathBezierI(HandleRef path, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4) => GdipAddPathBezierI_ptr.Delegate(path, x1, y1, x2, y2, x3, y3, x4, y4);
 
-            private delegate int GdipAddPathBeziersI_delegate(HandleRef path, HandleRef memorypts, int count);
+            private delegate int GdipAddPathBeziersI_delegate(HandleRef path, Point* points, int count);
             private static FunctionWrapper<GdipAddPathBeziersI_delegate> GdipAddPathBeziersI_ptr;
-            internal static int GdipAddPathBeziersI(HandleRef path, HandleRef memorypts, int count) => GdipAddPathBeziersI_ptr.Delegate(path, memorypts, count);
+            internal static int GdipAddPathBeziersI(HandleRef path, Point* points, int count) => GdipAddPathBeziersI_ptr.Delegate(path, points, count);
 
-            private delegate int GdipAddPathCurveI_delegate(HandleRef path, HandleRef memorypts, int count);
+            private delegate int GdipAddPathCurveI_delegate(HandleRef path, Point* points, int count);
             private static FunctionWrapper<GdipAddPathCurveI_delegate> GdipAddPathCurveI_ptr;
-            internal static int GdipAddPathCurveI(HandleRef path, HandleRef memorypts, int count) => GdipAddPathCurveI_ptr.Delegate(path, memorypts, count);
+            internal static int GdipAddPathCurveI(HandleRef path, Point* points, int count) => GdipAddPathCurveI_ptr.Delegate(path, points, count);
 
-            private delegate int GdipAddPathCurve2I_delegate(HandleRef path, HandleRef memorypts, int count, float tension);
+            private delegate int GdipAddPathCurve2I_delegate(HandleRef path, Point* points, int count, float tension);
             private static FunctionWrapper<GdipAddPathCurve2I_delegate> GdipAddPathCurve2I_ptr;
-            internal static int GdipAddPathCurve2I(HandleRef path, HandleRef memorypts, int count, float tension) => GdipAddPathCurve2I_ptr.Delegate(path, memorypts, count, tension);
+            internal static int GdipAddPathCurve2I(HandleRef path, Point* points, int count, float tension) => GdipAddPathCurve2I_ptr.Delegate(path, points, count, tension);
 
-            private delegate int GdipAddPathCurve3I_delegate(HandleRef path, HandleRef memorypts, int count, int offset, int numberOfSegments, float tension);
+            private delegate int GdipAddPathCurve3I_delegate(HandleRef path, Point* points, int count, int offset, int numberOfSegments, float tension);
             private static FunctionWrapper<GdipAddPathCurve3I_delegate> GdipAddPathCurve3I_ptr;
-            internal static int GdipAddPathCurve3I(HandleRef path, HandleRef memorypts, int count, int offset, int numberOfSegments, float tension) => GdipAddPathCurve3I_ptr.Delegate(path, memorypts, count, offset, numberOfSegments, tension);
+            internal static int GdipAddPathCurve3I(HandleRef path, Point* points, int count, int offset, int numberOfSegments, float tension) => GdipAddPathCurve3I_ptr.Delegate(path, points, count, offset, numberOfSegments, tension);
 
-            private delegate int GdipAddPathClosedCurveI_delegate(HandleRef path, HandleRef memorypts, int count);
+            private delegate int GdipAddPathClosedCurveI_delegate(HandleRef path, Point* points, int count);
             private static FunctionWrapper<GdipAddPathClosedCurveI_delegate> GdipAddPathClosedCurveI_ptr;
-            internal static int GdipAddPathClosedCurveI(HandleRef path, HandleRef memorypts, int count) => GdipAddPathClosedCurveI_ptr.Delegate(path, memorypts, count);
+            internal static int GdipAddPathClosedCurveI(HandleRef path, Point* points, int count) => GdipAddPathClosedCurveI_ptr.Delegate(path, points, count);
 
-            private delegate int GdipAddPathClosedCurve2I_delegate(HandleRef path, HandleRef memorypts, int count, float tension);
+            private delegate int GdipAddPathClosedCurve2I_delegate(HandleRef path, Point* points, int count, float tension);
             private static FunctionWrapper<GdipAddPathClosedCurve2I_delegate> GdipAddPathClosedCurve2I_ptr;
-            internal static int GdipAddPathClosedCurve2I(HandleRef path, HandleRef memorypts, int count, float tension) => GdipAddPathClosedCurve2I_ptr.Delegate(path, memorypts, count, tension);
+            internal static int GdipAddPathClosedCurve2I(HandleRef path, Point* points, int count, float tension) => GdipAddPathClosedCurve2I_ptr.Delegate(path, points, count, tension);
 
             private delegate int GdipAddPathRectangleI_delegate(HandleRef path, int x, int y, int width, int height);
             private static FunctionWrapper<GdipAddPathRectangleI_delegate> GdipAddPathRectangleI_ptr;
             internal static int GdipAddPathRectangleI(HandleRef path, int x, int y, int width, int height) => GdipAddPathRectangleI_ptr.Delegate(path, x, y, width, height);
 
-            private delegate int GdipAddPathRectanglesI_delegate(HandleRef path, HandleRef rects, int count);
+            private delegate int GdipAddPathRectanglesI_delegate(HandleRef path, Rectangle* rects, int count);
             private static FunctionWrapper<GdipAddPathRectanglesI_delegate> GdipAddPathRectanglesI_ptr;
-            internal static int GdipAddPathRectanglesI(HandleRef path, HandleRef rects, int count) => GdipAddPathRectanglesI_ptr.Delegate(path, rects, count);
+            internal static int GdipAddPathRectanglesI(HandleRef path, Rectangle* rects, int count) => GdipAddPathRectanglesI_ptr.Delegate(path, rects, count);
 
             private delegate int GdipAddPathEllipseI_delegate(HandleRef path, int x, int y, int width, int height);
             private static FunctionWrapper<GdipAddPathEllipseI_delegate> GdipAddPathEllipseI_ptr;
@@ -444,9 +444,9 @@ namespace System.Drawing
             private static FunctionWrapper<GdipAddPathPieI_delegate> GdipAddPathPieI_ptr;
             internal static int GdipAddPathPieI(HandleRef path, int x, int y, int width, int height, float startAngle, float sweepAngle) => GdipAddPathPieI_ptr.Delegate(path, x, y, width, height, startAngle, sweepAngle);
 
-            private delegate int GdipAddPathPolygonI_delegate(HandleRef path, HandleRef memorypts, int count);
+            private delegate int GdipAddPathPolygonI_delegate(HandleRef path, Point* points, int count);
             private static FunctionWrapper<GdipAddPathPolygonI_delegate> GdipAddPathPolygonI_ptr;
-            internal static int GdipAddPathPolygonI(HandleRef path, HandleRef memorypts, int count) => GdipAddPathPolygonI_ptr.Delegate(path, memorypts, count);
+            internal static int GdipAddPathPolygonI(HandleRef path, Point* points, int count) => GdipAddPathPolygonI_ptr.Delegate(path, points, count);
 
             private delegate int GdipFlattenPath_delegate(HandleRef path, HandleRef matrixfloat, float flatness);
             private static FunctionWrapper<GdipFlattenPath_delegate> GdipFlattenPath_ptr;
@@ -456,33 +456,33 @@ namespace System.Drawing
             private static FunctionWrapper<GdipWidenPath_delegate> GdipWidenPath_ptr;
             internal static int GdipWidenPath(HandleRef path, HandleRef pen, HandleRef matrix, float flatness) => GdipWidenPath_ptr.Delegate(path, pen, matrix, flatness);
 
-            private delegate int GdipWarpPath_delegate(HandleRef path, HandleRef matrix, HandleRef points, int count, float srcX, float srcY, float srcWidth, float srcHeight, WarpMode warpMode, float flatness);
+            private delegate int GdipWarpPath_delegate(HandleRef path, HandleRef matrix, PointF* points, int count, float srcX, float srcY, float srcWidth, float srcHeight, WarpMode warpMode, float flatness);
             private static FunctionWrapper<GdipWarpPath_delegate> GdipWarpPath_ptr;
-            internal static int GdipWarpPath(HandleRef path, HandleRef matrix, HandleRef points, int count, float srcX, float srcY, float srcWidth, float srcHeight, WarpMode warpMode, float flatness) => GdipWarpPath_ptr.Delegate(path, matrix, points, count, srcX, srcY, srcWidth, srcHeight, warpMode, flatness);
+            internal static int GdipWarpPath(HandleRef path, HandleRef matrix, PointF* points, int count, float srcX, float srcY, float srcWidth, float srcHeight, WarpMode warpMode, float flatness) => GdipWarpPath_ptr.Delegate(path, matrix, points, count, srcX, srcY, srcWidth, srcHeight, warpMode, flatness);
 
             private delegate int GdipTransformPath_delegate(HandleRef path, HandleRef matrix);
             private static FunctionWrapper<GdipTransformPath_delegate> GdipTransformPath_ptr;
             internal static int GdipTransformPath(HandleRef path, HandleRef matrix) => GdipTransformPath_ptr.Delegate(path, matrix);
 
-            private delegate int GdipGetPathWorldBounds_delegate(HandleRef path, ref GPRECTF gprectf, HandleRef matrix, HandleRef pen);
+            private delegate int GdipGetPathWorldBounds_delegate(HandleRef path, out RectangleF gprectf, HandleRef matrix, HandleRef pen);
             private static FunctionWrapper<GdipGetPathWorldBounds_delegate> GdipGetPathWorldBounds_ptr;
-            internal static int GdipGetPathWorldBounds(HandleRef path, ref GPRECTF gprectf, HandleRef matrix, HandleRef pen) => GdipGetPathWorldBounds_ptr.Delegate(path, ref gprectf, matrix, pen);
+            internal static int GdipGetPathWorldBounds(HandleRef path, out RectangleF gprectf, HandleRef matrix, HandleRef pen) => GdipGetPathWorldBounds_ptr.Delegate(path, out gprectf, matrix, pen);
 
-            private delegate int GdipIsVisiblePathPoint_delegate(HandleRef path, float x, float y, HandleRef graphics, out int boolean);
+            private delegate int GdipIsVisiblePathPoint_delegate(HandleRef path, float x, float y, HandleRef graphics, out bool result);
             private static FunctionWrapper<GdipIsVisiblePathPoint_delegate> GdipIsVisiblePathPoint_ptr;
-            internal static int GdipIsVisiblePathPoint(HandleRef path, float x, float y, HandleRef graphics, out int boolean) => GdipIsVisiblePathPoint_ptr.Delegate(path, x, y, graphics, out boolean);
+            internal static int GdipIsVisiblePathPoint(HandleRef path, float x, float y, HandleRef graphics, out bool result) => GdipIsVisiblePathPoint_ptr.Delegate(path, x, y, graphics, out result);
 
-            private delegate int GdipIsVisiblePathPointI_delegate(HandleRef path, int x, int y, HandleRef graphics, out int boolean);
+            private delegate int GdipIsVisiblePathPointI_delegate(HandleRef path, int x, int y, HandleRef graphics, out bool result);
             private static FunctionWrapper<GdipIsVisiblePathPointI_delegate> GdipIsVisiblePathPointI_ptr;
-            internal static int GdipIsVisiblePathPointI(HandleRef path, int x, int y, HandleRef graphics, out int boolean) => GdipIsVisiblePathPointI_ptr.Delegate(path, x, y, graphics, out boolean);
+            internal static int GdipIsVisiblePathPointI(HandleRef path, int x, int y, HandleRef graphics, out bool result) => GdipIsVisiblePathPointI_ptr.Delegate(path, x, y, graphics, out result);
 
-            private delegate int GdipIsOutlineVisiblePathPoint_delegate(HandleRef path, float x, float y, HandleRef pen, HandleRef graphics, out int boolean);
+            private delegate int GdipIsOutlineVisiblePathPoint_delegate(HandleRef path, float x, float y, HandleRef pen, HandleRef graphics, out bool result);
             private static FunctionWrapper<GdipIsOutlineVisiblePathPoint_delegate> GdipIsOutlineVisiblePathPoint_ptr;
-            internal static int GdipIsOutlineVisiblePathPoint(HandleRef path, float x, float y, HandleRef pen, HandleRef graphics, out int boolean) => GdipIsOutlineVisiblePathPoint_ptr.Delegate(path, x, y, pen, graphics, out boolean);
+            internal static int GdipIsOutlineVisiblePathPoint(HandleRef path, float x, float y, HandleRef pen, HandleRef graphics, out bool result) => GdipIsOutlineVisiblePathPoint_ptr.Delegate(path, x, y, pen, graphics, out result);
 
-            private delegate int GdipIsOutlineVisiblePathPointI_delegate(HandleRef path, int x, int y, HandleRef pen, HandleRef graphics, out int boolean);
+            private delegate int GdipIsOutlineVisiblePathPointI_delegate(HandleRef path, int x, int y, HandleRef pen, HandleRef graphics, out bool result);
             private static FunctionWrapper<GdipIsOutlineVisiblePathPointI_delegate> GdipIsOutlineVisiblePathPointI_ptr;
-            internal static int GdipIsOutlineVisiblePathPointI(HandleRef path, int x, int y, HandleRef pen, HandleRef graphics, out int boolean) => GdipIsOutlineVisiblePathPointI_ptr.Delegate(path, x, y, pen, graphics, out boolean);
+            internal static int GdipIsOutlineVisiblePathPointI(HandleRef path, int x, int y, HandleRef pen, HandleRef graphics, out bool result) => GdipIsOutlineVisiblePathPointI_ptr.Delegate(path, x, y, pen, graphics, out result);
 
             private delegate int GdipDeleteBrush_delegate(HandleRef brush);
             private static FunctionWrapper<GdipDeleteBrush_delegate> GdipDeleteBrush_ptr;
@@ -684,13 +684,13 @@ namespace System.Drawing
             private static FunctionWrapper<GdipDrawRectangleI_delegate> GdipDrawRectangleI_ptr;
             internal static int GdipDrawRectangleI(HandleRef graphics, HandleRef pen, int x, int y, int width, int height) => GdipDrawRectangleI_ptr.Delegate(graphics, pen, x, y, width, height);
 
-            private delegate int GdipDrawRectangles_delegate(HandleRef graphics, HandleRef pen, HandleRef rects, int count);
+            private delegate int GdipDrawRectangles_delegate(HandleRef graphics, HandleRef pen, RectangleF* rects, int count);
             private static FunctionWrapper<GdipDrawRectangles_delegate> GdipDrawRectangles_ptr;
-            internal static int GdipDrawRectangles(HandleRef graphics, HandleRef pen, HandleRef rects, int count) => GdipDrawRectangles_ptr.Delegate(graphics, pen, rects, count);
+            internal static int GdipDrawRectangles(HandleRef graphics, HandleRef pen, RectangleF* rects, int count) => GdipDrawRectangles_ptr.Delegate(graphics, pen, rects, count);
 
-            private delegate int GdipDrawRectanglesI_delegate(HandleRef graphics, HandleRef pen, HandleRef rects, int count);
+            private delegate int GdipDrawRectanglesI_delegate(HandleRef graphics, HandleRef pen, Rectangle* rects, int count);
             private static FunctionWrapper<GdipDrawRectanglesI_delegate> GdipDrawRectanglesI_ptr;
-            internal static int GdipDrawRectanglesI(HandleRef graphics, HandleRef pen, HandleRef rects, int count) => GdipDrawRectanglesI_ptr.Delegate(graphics, pen, rects, count);
+            internal static int GdipDrawRectanglesI(HandleRef graphics, HandleRef pen, Rectangle* rects, int count) => GdipDrawRectanglesI_ptr.Delegate(graphics, pen, rects, count);
 
             private delegate int GdipDrawEllipse_delegate(HandleRef graphics, HandleRef pen, float x, float y, float width, float height);
             private static FunctionWrapper<GdipDrawEllipse_delegate> GdipDrawEllipse_ptr;
@@ -708,57 +708,57 @@ namespace System.Drawing
             private static FunctionWrapper<GdipDrawPieI_delegate> GdipDrawPieI_ptr;
             internal static int GdipDrawPieI(HandleRef graphics, HandleRef pen, int x, int y, int width, int height, float startAngle, float sweepAngle) => GdipDrawPieI_ptr.Delegate(graphics, pen, x, y, width, height, startAngle, sweepAngle);
 
-            private delegate int GdipDrawPolygon_delegate(HandleRef graphics, HandleRef pen, HandleRef points, int count);
+            private delegate int GdipDrawPolygon_delegate(HandleRef graphics, HandleRef pen, PointF* points, int count);
             private static FunctionWrapper<GdipDrawPolygon_delegate> GdipDrawPolygon_ptr;
-            internal static int GdipDrawPolygon(HandleRef graphics, HandleRef pen, HandleRef points, int count) => GdipDrawPolygon_ptr.Delegate(graphics, pen, points, count);
+            internal static int GdipDrawPolygon(HandleRef graphics, HandleRef pen, PointF* points, int count) => GdipDrawPolygon_ptr.Delegate(graphics, pen, points, count);
 
-            private delegate int GdipDrawPolygonI_delegate(HandleRef graphics, HandleRef pen, HandleRef points, int count);
+            private delegate int GdipDrawPolygonI_delegate(HandleRef graphics, HandleRef pen, Point* points, int count);
             private static FunctionWrapper<GdipDrawPolygonI_delegate> GdipDrawPolygonI_ptr;
-            internal static int GdipDrawPolygonI(HandleRef graphics, HandleRef pen, HandleRef points, int count) => GdipDrawPolygonI_ptr.Delegate(graphics, pen, points, count);
+            internal static int GdipDrawPolygonI(HandleRef graphics, HandleRef pen, Point* points, int count) => GdipDrawPolygonI_ptr.Delegate(graphics, pen, points, count);
 
             private delegate int GdipDrawPath_delegate(HandleRef graphics, HandleRef pen, HandleRef path);
             private static FunctionWrapper<GdipDrawPath_delegate> GdipDrawPath_ptr;
             internal static int GdipDrawPath(HandleRef graphics, HandleRef pen, HandleRef path) => GdipDrawPath_ptr.Delegate(graphics, pen, path);
 
-            private delegate int GdipDrawCurve_delegate(HandleRef graphics, HandleRef pen, HandleRef points, int count);
+            private delegate int GdipDrawCurve_delegate(HandleRef graphics, HandleRef pen, PointF* points, int count);
             private static FunctionWrapper<GdipDrawCurve_delegate> GdipDrawCurve_ptr;
-            internal static int GdipDrawCurve(HandleRef graphics, HandleRef pen, HandleRef points, int count) => GdipDrawCurve_ptr.Delegate(graphics, pen, points, count);
+            internal static int GdipDrawCurve(HandleRef graphics, HandleRef pen, PointF* points, int count) => GdipDrawCurve_ptr.Delegate(graphics, pen, points, count);
 
-            private delegate int GdipDrawCurveI_delegate(HandleRef graphics, HandleRef pen, HandleRef points, int count);
+            private delegate int GdipDrawCurveI_delegate(HandleRef graphics, HandleRef pen, Point* points, int count);
             private static FunctionWrapper<GdipDrawCurveI_delegate> GdipDrawCurveI_ptr;
-            internal static int GdipDrawCurveI(HandleRef graphics, HandleRef pen, HandleRef points, int count) => GdipDrawCurveI_ptr.Delegate(graphics, pen, points, count);
+            internal static int GdipDrawCurveI(HandleRef graphics, HandleRef pen, Point* points, int count) => GdipDrawCurveI_ptr.Delegate(graphics, pen, points, count);
 
-            private delegate int GdipDrawCurve2_delegate(HandleRef graphics, HandleRef pen, HandleRef points, int count, float tension);
+            private delegate int GdipDrawCurve2_delegate(HandleRef graphics, HandleRef pen, PointF* points, int count, float tension);
             private static FunctionWrapper<GdipDrawCurve2_delegate> GdipDrawCurve2_ptr;
-            internal static int GdipDrawCurve2(HandleRef graphics, HandleRef pen, HandleRef points, int count, float tension) => GdipDrawCurve2_ptr.Delegate(graphics, pen, points, count, tension);
+            internal static int GdipDrawCurve2(HandleRef graphics, HandleRef pen, PointF* points, int count, float tension) => GdipDrawCurve2_ptr.Delegate(graphics, pen, points, count, tension);
 
-            private delegate int GdipDrawCurve2I_delegate(HandleRef graphics, HandleRef pen, HandleRef points, int count, float tension);
+            private delegate int GdipDrawCurve2I_delegate(HandleRef graphics, HandleRef pen, Point* points, int count, float tension);
             private static FunctionWrapper<GdipDrawCurve2I_delegate> GdipDrawCurve2I_ptr;
-            internal static int GdipDrawCurve2I(HandleRef graphics, HandleRef pen, HandleRef points, int count, float tension) => GdipDrawCurve2I_ptr.Delegate(graphics, pen, points, count, tension);
+            internal static int GdipDrawCurve2I(HandleRef graphics, HandleRef pen, Point* points, int count, float tension) => GdipDrawCurve2I_ptr.Delegate(graphics, pen, points, count, tension);
 
-            private delegate int GdipDrawCurve3_delegate(HandleRef graphics, HandleRef pen, HandleRef points, int count, int offset, int numberOfSegments, float tension);
+            private delegate int GdipDrawCurve3_delegate(HandleRef graphics, HandleRef pen, PointF* points, int count, int offset, int numberOfSegments, float tension);
             private static FunctionWrapper<GdipDrawCurve3_delegate> GdipDrawCurve3_ptr;
-            internal static int GdipDrawCurve3(HandleRef graphics, HandleRef pen, HandleRef points, int count, int offset, int numberOfSegments, float tension) => GdipDrawCurve3_ptr.Delegate(graphics, pen, points, count, offset, numberOfSegments, tension);
+            internal static int GdipDrawCurve3(HandleRef graphics, HandleRef pen, PointF* points, int count, int offset, int numberOfSegments, float tension) => GdipDrawCurve3_ptr.Delegate(graphics, pen, points, count, offset, numberOfSegments, tension);
 
-            private delegate int GdipDrawCurve3I_delegate(HandleRef graphics, HandleRef pen, HandleRef points, int count, int offset, int numberOfSegments, float tension);
+            private delegate int GdipDrawCurve3I_delegate(HandleRef graphics, HandleRef pen, Point* points, int count, int offset, int numberOfSegments, float tension);
             private static FunctionWrapper<GdipDrawCurve3I_delegate> GdipDrawCurve3I_ptr;
-            internal static int GdipDrawCurve3I(HandleRef graphics, HandleRef pen, HandleRef points, int count, int offset, int numberOfSegments, float tension) => GdipDrawCurve3I_ptr.Delegate(graphics, pen, points, count, offset, numberOfSegments, tension);
+            internal static int GdipDrawCurve3I(HandleRef graphics, HandleRef pen, Point* points, int count, int offset, int numberOfSegments, float tension) => GdipDrawCurve3I_ptr.Delegate(graphics, pen, points, count, offset, numberOfSegments, tension);
 
-            private delegate int GdipDrawClosedCurve_delegate(HandleRef graphics, HandleRef pen, HandleRef points, int count);
+            private delegate int GdipDrawClosedCurve_delegate(HandleRef graphics, HandleRef pen, PointF* points, int count);
             private static FunctionWrapper<GdipDrawClosedCurve_delegate> GdipDrawClosedCurve_ptr;
-            internal static int GdipDrawClosedCurve(HandleRef graphics, HandleRef pen, HandleRef points, int count) => GdipDrawClosedCurve_ptr.Delegate(graphics, pen, points, count);
+            internal static int GdipDrawClosedCurve(HandleRef graphics, HandleRef pen, PointF* points, int count) => GdipDrawClosedCurve_ptr.Delegate(graphics, pen, points, count);
 
-            private delegate int GdipDrawClosedCurveI_delegate(HandleRef graphics, HandleRef pen, HandleRef points, int count);
+            private delegate int GdipDrawClosedCurveI_delegate(HandleRef graphics, HandleRef pen, Point* points, int count);
             private static FunctionWrapper<GdipDrawClosedCurveI_delegate> GdipDrawClosedCurveI_ptr;
-            internal static int GdipDrawClosedCurveI(HandleRef graphics, HandleRef pen, HandleRef points, int count) => GdipDrawClosedCurveI_ptr.Delegate(graphics, pen, points, count);
+            internal static int GdipDrawClosedCurveI(HandleRef graphics, HandleRef pen, Point* points, int count) => GdipDrawClosedCurveI_ptr.Delegate(graphics, pen, points, count);
 
-            private delegate int GdipDrawClosedCurve2_delegate(HandleRef graphics, HandleRef pen, HandleRef points, int count, float tension);
+            private delegate int GdipDrawClosedCurve2_delegate(HandleRef graphics, HandleRef pen, PointF* points, int count, float tension);
             private static FunctionWrapper<GdipDrawClosedCurve2_delegate> GdipDrawClosedCurve2_ptr;
-            internal static int GdipDrawClosedCurve2(HandleRef graphics, HandleRef pen, HandleRef points, int count, float tension) => GdipDrawClosedCurve2_ptr.Delegate(graphics, pen, points, count, tension);
+            internal static int GdipDrawClosedCurve2(HandleRef graphics, HandleRef pen, PointF* points, int count, float tension) => GdipDrawClosedCurve2_ptr.Delegate(graphics, pen, points, count, tension);
 
-            private delegate int GdipDrawClosedCurve2I_delegate(HandleRef graphics, HandleRef pen, HandleRef points, int count, float tension);
+            private delegate int GdipDrawClosedCurve2I_delegate(HandleRef graphics, HandleRef pen, Point* points, int count, float tension);
             private static FunctionWrapper<GdipDrawClosedCurve2I_delegate> GdipDrawClosedCurve2I_ptr;
-            internal static int GdipDrawClosedCurve2I(HandleRef graphics, HandleRef pen, HandleRef points, int count, float tension) => GdipDrawClosedCurve2I_ptr.Delegate(graphics, pen, points, count, tension);
+            internal static int GdipDrawClosedCurve2I(HandleRef graphics, HandleRef pen, Point* points, int count, float tension) => GdipDrawClosedCurve2I_ptr.Delegate(graphics, pen, points, count, tension);
 
             private delegate int GdipGraphicsClear_delegate(HandleRef graphics, int argb);
             private static FunctionWrapper<GdipGraphicsClear_delegate> GdipGraphicsClear_ptr;
@@ -772,21 +772,21 @@ namespace System.Drawing
             private static FunctionWrapper<GdipFillRectangleI_delegate> GdipFillRectangleI_ptr;
             internal static int GdipFillRectangleI(HandleRef graphics, HandleRef brush, int x, int y, int width, int height) => GdipFillRectangleI_ptr.Delegate(graphics, brush, x, y, width, height);
 
-            private delegate int GdipFillRectangles_delegate(HandleRef graphics, HandleRef brush, HandleRef rects, int count);
+            private delegate int GdipFillRectangles_delegate(HandleRef graphics, HandleRef brush, RectangleF* rects, int count);
             private static FunctionWrapper<GdipFillRectangles_delegate> GdipFillRectangles_ptr;
-            internal static int GdipFillRectangles(HandleRef graphics, HandleRef brush, HandleRef rects, int count) => GdipFillRectangles_ptr.Delegate(graphics, brush, rects, count);
+            internal static int GdipFillRectangles(HandleRef graphics, HandleRef brush, RectangleF* rects, int count) => GdipFillRectangles_ptr.Delegate(graphics, brush, rects, count);
 
-            private delegate int GdipFillRectanglesI_delegate(HandleRef graphics, HandleRef brush, HandleRef rects, int count);
+            private delegate int GdipFillRectanglesI_delegate(HandleRef graphics, HandleRef brush, Rectangle* rects, int count);
             private static FunctionWrapper<GdipFillRectanglesI_delegate> GdipFillRectanglesI_ptr;
-            internal static int GdipFillRectanglesI(HandleRef graphics, HandleRef brush, HandleRef rects, int count) => GdipFillRectanglesI_ptr.Delegate(graphics, brush, rects, count);
+            internal static int GdipFillRectanglesI(HandleRef graphics, HandleRef brush, Rectangle* rects, int count) => GdipFillRectanglesI_ptr.Delegate(graphics, brush, rects, count);
 
-            private delegate int GdipFillPolygon_delegate(HandleRef graphics, HandleRef brush, HandleRef points, int count, int brushMode);
+            private delegate int GdipFillPolygon_delegate(HandleRef graphics, HandleRef brush, PointF* points, int count, FillMode brushMode);
             private static FunctionWrapper<GdipFillPolygon_delegate> GdipFillPolygon_ptr;
-            internal static int GdipFillPolygon(HandleRef graphics, HandleRef brush, HandleRef points, int count, int brushMode) => GdipFillPolygon_ptr.Delegate(graphics, brush, points, count, brushMode);
+            internal static int GdipFillPolygon(HandleRef graphics, HandleRef brush, PointF* points, int count, FillMode brushMode) => GdipFillPolygon_ptr.Delegate(graphics, brush, points, count, brushMode);
 
-            private delegate int GdipFillPolygonI_delegate(HandleRef graphics, HandleRef brush, HandleRef points, int count, int brushMode);
+            private delegate int GdipFillPolygonI_delegate(HandleRef graphics, HandleRef brush, Point* points, int count, FillMode brushMode);
             private static FunctionWrapper<GdipFillPolygonI_delegate> GdipFillPolygonI_ptr;
-            internal static int GdipFillPolygonI(HandleRef graphics, HandleRef brush, HandleRef points, int count, int brushMode) => GdipFillPolygonI_ptr.Delegate(graphics, brush, points, count, brushMode);
+            internal static int GdipFillPolygonI(HandleRef graphics, HandleRef brush, Point* points, int count, FillMode brushMode) => GdipFillPolygonI_ptr.Delegate(graphics, brush, points, count, brushMode);
 
             private delegate int GdipFillEllipse_delegate(HandleRef graphics, HandleRef brush, float x, float y, float width, float height);
             private static FunctionWrapper<GdipFillEllipse_delegate> GdipFillEllipse_ptr;
@@ -808,21 +808,21 @@ namespace System.Drawing
             private static FunctionWrapper<GdipFillPath_delegate> GdipFillPath_ptr;
             internal static int GdipFillPath(HandleRef graphics, HandleRef brush, HandleRef path) => GdipFillPath_ptr.Delegate(graphics, brush, path);
 
-            private delegate int GdipFillClosedCurve_delegate(HandleRef graphics, HandleRef brush, HandleRef points, int count);
+            private delegate int GdipFillClosedCurve_delegate(HandleRef graphics, HandleRef brush, PointF* points, int count);
             private static FunctionWrapper<GdipFillClosedCurve_delegate> GdipFillClosedCurve_ptr;
-            internal static int GdipFillClosedCurve(HandleRef graphics, HandleRef brush, HandleRef points, int count) => GdipFillClosedCurve_ptr.Delegate(graphics, brush, points, count);
+            internal static int GdipFillClosedCurve(HandleRef graphics, HandleRef brush, PointF* points, int count) => GdipFillClosedCurve_ptr.Delegate(graphics, brush, points, count);
 
-            private delegate int GdipFillClosedCurveI_delegate(HandleRef graphics, HandleRef brush, HandleRef points, int count);
+            private delegate int GdipFillClosedCurveI_delegate(HandleRef graphics, HandleRef brush, Point* points, int count);
             private static FunctionWrapper<GdipFillClosedCurveI_delegate> GdipFillClosedCurveI_ptr;
-            internal static int GdipFillClosedCurveI(HandleRef graphics, HandleRef brush, HandleRef points, int count) => GdipFillClosedCurveI_ptr.Delegate(graphics, brush, points, count);
+            internal static int GdipFillClosedCurveI(HandleRef graphics, HandleRef brush, Point* points, int count) => GdipFillClosedCurveI_ptr.Delegate(graphics, brush, points, count);
 
-            private delegate int GdipFillClosedCurve2_delegate(HandleRef graphics, HandleRef brush, HandleRef points, int count, float tension, int mode);
+            private delegate int GdipFillClosedCurve2_delegate(HandleRef graphics, HandleRef brush, PointF* points, int count, float tension, FillMode mode);
             private static FunctionWrapper<GdipFillClosedCurve2_delegate> GdipFillClosedCurve2_ptr;
-            internal static int GdipFillClosedCurve2(HandleRef graphics, HandleRef brush, HandleRef points, int count, float tension, int mode) => GdipFillClosedCurve2_ptr.Delegate(graphics, brush, points, count, tension, mode);
+            internal static int GdipFillClosedCurve2(HandleRef graphics, HandleRef brush, PointF* points, int count, float tension, FillMode mode) => GdipFillClosedCurve2_ptr.Delegate(graphics, brush, points, count, tension, mode);
 
-            private delegate int GdipFillClosedCurve2I_delegate(HandleRef graphics, HandleRef brush, HandleRef points, int count, float tension, int mode);
+            private delegate int GdipFillClosedCurve2I_delegate(HandleRef graphics, HandleRef brush, Point* points, int count, float tension, FillMode mode);
             private static FunctionWrapper<GdipFillClosedCurve2I_delegate> GdipFillClosedCurve2I_ptr;
-            internal static int GdipFillClosedCurve2I(HandleRef graphics, HandleRef brush, HandleRef points, int count, float tension, int mode) => GdipFillClosedCurve2I_ptr.Delegate(graphics, brush, points, count, tension, mode);
+            internal static int GdipFillClosedCurve2I(HandleRef graphics, HandleRef brush, Point* points, int count, float tension, FillMode mode) => GdipFillClosedCurve2I_ptr.Delegate(graphics, brush, points, count, tension, mode);
 
             private delegate int GdipDrawImage_delegate(HandleRef graphics, HandleRef image, float x, float y);
             private static FunctionWrapper<GdipDrawImage_delegate> GdipDrawImage_ptr;
@@ -840,13 +840,13 @@ namespace System.Drawing
             private static FunctionWrapper<GdipDrawImageRectI_delegate> GdipDrawImageRectI_ptr;
             internal static int GdipDrawImageRectI(HandleRef graphics, HandleRef image, int x, int y, int width, int height) => GdipDrawImageRectI_ptr.Delegate(graphics, image, x, y, width, height);
 
-            private delegate int GdipDrawImagePoints_delegate(HandleRef graphics, HandleRef image, HandleRef points, int count);
+            private delegate int GdipDrawImagePoints_delegate(HandleRef graphics, HandleRef image, PointF* points, int count);
             private static FunctionWrapper<GdipDrawImagePoints_delegate> GdipDrawImagePoints_ptr;
-            internal static int GdipDrawImagePoints(HandleRef graphics, HandleRef image, HandleRef points, int count) => GdipDrawImagePoints_ptr.Delegate(graphics, image, points, count);
+            internal static int GdipDrawImagePoints(HandleRef graphics, HandleRef image, PointF* points, int count) => GdipDrawImagePoints_ptr.Delegate(graphics, image, points, count);
 
-            private delegate int GdipDrawImagePointsI_delegate(HandleRef graphics, HandleRef image, HandleRef points, int count);
+            private delegate int GdipDrawImagePointsI_delegate(HandleRef graphics, HandleRef image, Point* points, int count);
             private static FunctionWrapper<GdipDrawImagePointsI_delegate> GdipDrawImagePointsI_ptr;
-            internal static int GdipDrawImagePointsI(HandleRef graphics, HandleRef image, HandleRef points, int count) => GdipDrawImagePointsI_ptr.Delegate(graphics, image, points, count);
+            internal static int GdipDrawImagePointsI(HandleRef graphics, HandleRef image, Point* points, int count) => GdipDrawImagePointsI_ptr.Delegate(graphics, image, points, count);
 
             private delegate int GdipDrawImagePointRect_delegate(HandleRef graphics, HandleRef image, float x, float y, float srcx, float srcy, float srcwidth, float srcheight, int srcunit);
             private static FunctionWrapper<GdipDrawImagePointRect_delegate> GdipDrawImagePointRect_ptr;
@@ -856,69 +856,69 @@ namespace System.Drawing
             private static FunctionWrapper<GdipDrawImagePointRectI_delegate> GdipDrawImagePointRectI_ptr;
             internal static int GdipDrawImagePointRectI(HandleRef graphics, HandleRef image, int x, int y, int srcx, int srcy, int srcwidth, int srcheight, int srcunit) => GdipDrawImagePointRectI_ptr.Delegate(graphics, image, x, y, srcx, srcy, srcwidth, srcheight, srcunit);
 
-            private delegate int GdipDrawImageRectRect_delegate(HandleRef graphics, HandleRef image, float dstx, float dsty, float dstwidth, float dstheight, float srcx, float srcy, float srcwidth, float srcheight, int srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata);
+            private delegate int GdipDrawImageRectRect_delegate(HandleRef graphics, HandleRef image, float dstx, float dsty, float dstwidth, float dstheight, float srcx, float srcy, float srcwidth, float srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata);
             private static FunctionWrapper<GdipDrawImageRectRect_delegate> GdipDrawImageRectRect_ptr;
-            internal static int GdipDrawImageRectRect(HandleRef graphics, HandleRef image, float dstx, float dsty, float dstwidth, float dstheight, float srcx, float srcy, float srcwidth, float srcheight, int srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata) => GdipDrawImageRectRect_ptr.Delegate(graphics, image, dstx, dsty, dstwidth, dstheight, srcx, srcy, srcwidth, srcheight, srcunit, imageAttributes, callback, callbackdata);
+            internal static int GdipDrawImageRectRect(HandleRef graphics, HandleRef image, float dstx, float dsty, float dstwidth, float dstheight, float srcx, float srcy, float srcwidth, float srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata) => GdipDrawImageRectRect_ptr.Delegate(graphics, image, dstx, dsty, dstwidth, dstheight, srcx, srcy, srcwidth, srcheight, srcunit, imageAttributes, callback, callbackdata);
 
-            private delegate int GdipDrawImageRectRectI_delegate(HandleRef graphics, HandleRef image, int dstx, int dsty, int dstwidth, int dstheight, int srcx, int srcy, int srcwidth, int srcheight, int srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata);
+            private delegate int GdipDrawImageRectRectI_delegate(HandleRef graphics, HandleRef image, int dstx, int dsty, int dstwidth, int dstheight, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata);
             private static FunctionWrapper<GdipDrawImageRectRectI_delegate> GdipDrawImageRectRectI_ptr;
-            internal static int GdipDrawImageRectRectI(HandleRef graphics, HandleRef image, int dstx, int dsty, int dstwidth, int dstheight, int srcx, int srcy, int srcwidth, int srcheight, int srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata) => GdipDrawImageRectRectI_ptr.Delegate(graphics, image, dstx, dsty, dstwidth, dstheight, srcx, srcy, srcwidth, srcheight, srcunit, imageAttributes, callback, callbackdata);
+            internal static int GdipDrawImageRectRectI(HandleRef graphics, HandleRef image, int dstx, int dsty, int dstwidth, int dstheight, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata) => GdipDrawImageRectRectI_ptr.Delegate(graphics, image, dstx, dsty, dstwidth, dstheight, srcx, srcy, srcwidth, srcheight, srcunit, imageAttributes, callback, callbackdata);
 
-            private delegate int GdipDrawImagePointsRect_delegate(HandleRef graphics, HandleRef image, HandleRef points, int count, float srcx, float srcy, float srcwidth, float srcheight, int srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata);
+            private delegate int GdipDrawImagePointsRect_delegate(HandleRef graphics, HandleRef image, PointF* points, int count, float srcx, float srcy, float srcwidth, float srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata);
             private static FunctionWrapper<GdipDrawImagePointsRect_delegate> GdipDrawImagePointsRect_ptr;
-            internal static int GdipDrawImagePointsRect(HandleRef graphics, HandleRef image, HandleRef points, int count, float srcx, float srcy, float srcwidth, float srcheight, int srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata) => GdipDrawImagePointsRect_ptr.Delegate(graphics, image, points, count, srcx, srcy, srcwidth, srcheight, srcunit, imageAttributes, callback, callbackdata);
+            internal static int GdipDrawImagePointsRect(HandleRef graphics, HandleRef image, PointF* points, int count, float srcx, float srcy, float srcwidth, float srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata) => GdipDrawImagePointsRect_ptr.Delegate(graphics, image, points, count, srcx, srcy, srcwidth, srcheight, srcunit, imageAttributes, callback, callbackdata);
 
-            private delegate int GdipDrawImagePointsRectI_delegate(HandleRef graphics, HandleRef image, HandleRef points, int count, int srcx, int srcy, int srcwidth, int srcheight, int srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata);
+            private delegate int GdipDrawImagePointsRectI_delegate(HandleRef graphics, HandleRef image, Point* points, int count, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata);
             private static FunctionWrapper<GdipDrawImagePointsRectI_delegate> GdipDrawImagePointsRectI_ptr;
-            internal static int GdipDrawImagePointsRectI(HandleRef graphics, HandleRef image, HandleRef points, int count, int srcx, int srcy, int srcwidth, int srcheight, int srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata) => GdipDrawImagePointsRectI_ptr.Delegate(graphics, image, points, count, srcx, srcy, srcwidth, srcheight, srcunit, imageAttributes, callback, callbackdata);
+            internal static int GdipDrawImagePointsRectI(HandleRef graphics, HandleRef image, Point* points, int count, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcunit, HandleRef imageAttributes, Graphics.DrawImageAbort callback, HandleRef callbackdata) => GdipDrawImagePointsRectI_ptr.Delegate(graphics, image, points, count, srcx, srcy, srcwidth, srcheight, srcunit, imageAttributes, callback, callbackdata);
 
-            private delegate int GdipEnumerateMetafileDestPoint_delegate(HandleRef graphics, HandleRef metafile, GPPOINTF destPoint, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            private delegate int GdipEnumerateMetafileDestPoint_delegate(HandleRef graphics, HandleRef metafile, ref PointF destPoint, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
             private static FunctionWrapper<GdipEnumerateMetafileDestPoint_delegate> GdipEnumerateMetafileDestPoint_ptr;
-            internal static int GdipEnumerateMetafileDestPoint(HandleRef graphics, HandleRef metafile, GPPOINTF destPoint, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileDestPoint_ptr.Delegate(graphics, metafile, destPoint, callback, callbackdata, imageattributes);
+            internal static int GdipEnumerateMetafileDestPoint(HandleRef graphics, HandleRef metafile, ref PointF destPoint, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileDestPoint_ptr.Delegate(graphics, metafile, ref destPoint, callback, callbackdata, imageattributes);
 
-            private delegate int GdipEnumerateMetafileDestPointI_delegate(HandleRef graphics, HandleRef metafile, GPPOINT destPoint, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            private delegate int GdipEnumerateMetafileDestPointI_delegate(HandleRef graphics, HandleRef metafile, ref Point destPoint, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
             private static FunctionWrapper<GdipEnumerateMetafileDestPointI_delegate> GdipEnumerateMetafileDestPointI_ptr;
-            internal static int GdipEnumerateMetafileDestPointI(HandleRef graphics, HandleRef metafile, GPPOINT destPoint, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileDestPointI_ptr.Delegate(graphics, metafile, destPoint, callback, callbackdata, imageattributes);
+            internal static int GdipEnumerateMetafileDestPointI(HandleRef graphics, HandleRef metafile, ref Point destPoint, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileDestPointI_ptr.Delegate(graphics, metafile, ref destPoint, callback, callbackdata, imageattributes);
 
-            private delegate int GdipEnumerateMetafileDestRect_delegate(HandleRef graphics, HandleRef metafile, ref GPRECTF destRect, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            private delegate int GdipEnumerateMetafileDestRect_delegate(HandleRef graphics, HandleRef metafile, ref RectangleF destRect, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
             private static FunctionWrapper<GdipEnumerateMetafileDestRect_delegate> GdipEnumerateMetafileDestRect_ptr;
-            internal static int GdipEnumerateMetafileDestRect(HandleRef graphics, HandleRef metafile, ref GPRECTF destRect, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileDestRect_ptr.Delegate(graphics, metafile, ref destRect, callback, callbackdata, imageattributes);
+            internal static int GdipEnumerateMetafileDestRect(HandleRef graphics, HandleRef metafile, ref RectangleF destRect, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileDestRect_ptr.Delegate(graphics, metafile, ref destRect, callback, callbackdata, imageattributes);
 
-            private delegate int GdipEnumerateMetafileDestRectI_delegate(HandleRef graphics, HandleRef metafile, ref GPRECT destRect, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            private delegate int GdipEnumerateMetafileDestRectI_delegate(HandleRef graphics, HandleRef metafile, ref Rectangle destRect, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
             private static FunctionWrapper<GdipEnumerateMetafileDestRectI_delegate> GdipEnumerateMetafileDestRectI_ptr;
-            internal static int GdipEnumerateMetafileDestRectI(HandleRef graphics, HandleRef metafile, ref GPRECT destRect, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileDestRectI_ptr.Delegate(graphics, metafile, ref destRect, callback, callbackdata, imageattributes);
+            internal static int GdipEnumerateMetafileDestRectI(HandleRef graphics, HandleRef metafile, ref Rectangle destRect, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileDestRectI_ptr.Delegate(graphics, metafile, ref destRect, callback, callbackdata, imageattributes);
 
-            private delegate int GdipEnumerateMetafileDestPoints_delegate(HandleRef graphics, HandleRef metafile, IntPtr destPoints, int count, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            private delegate int GdipEnumerateMetafileDestPoints_delegate(HandleRef graphics, HandleRef metafile, PointF* destPoints, int count, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
             private static FunctionWrapper<GdipEnumerateMetafileDestPoints_delegate> GdipEnumerateMetafileDestPoints_ptr;
-            internal static int GdipEnumerateMetafileDestPoints(HandleRef graphics, HandleRef metafile, IntPtr destPoints, int count, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileDestPoints_ptr.Delegate(graphics, metafile, destPoints, count, callback, callbackdata, imageattributes);
+            internal static int GdipEnumerateMetafileDestPoints(HandleRef graphics, HandleRef metafile, PointF* destPoints, int count, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileDestPoints_ptr.Delegate(graphics, metafile, destPoints, count, callback, callbackdata, imageattributes);
 
-            private delegate int GdipEnumerateMetafileDestPointsI_delegate(HandleRef graphics, HandleRef metafile, IntPtr destPoints, int count, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            private delegate int GdipEnumerateMetafileDestPointsI_delegate(HandleRef graphics, HandleRef metafile, Point* destPoints, int count, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
             private static FunctionWrapper<GdipEnumerateMetafileDestPointsI_delegate> GdipEnumerateMetafileDestPointsI_ptr;
-            internal static int GdipEnumerateMetafileDestPointsI(HandleRef graphics, HandleRef metafile, IntPtr destPoints, int count, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileDestPointsI_ptr.Delegate(graphics, metafile, destPoints, count, callback, callbackdata, imageattributes);
+            internal static int GdipEnumerateMetafileDestPointsI(HandleRef graphics, HandleRef metafile, Point* destPoints, int count, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileDestPointsI_ptr.Delegate(graphics, metafile, destPoints, count, callback, callbackdata, imageattributes);
 
-            private delegate int GdipEnumerateMetafileSrcRectDestPoint_delegate(HandleRef graphics, HandleRef metafile, GPPOINTF destPoint, ref GPRECTF srcRect, int pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            private delegate int GdipEnumerateMetafileSrcRectDestPoint_delegate(HandleRef graphics, HandleRef metafile, ref PointF destPoint, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
             private static FunctionWrapper<GdipEnumerateMetafileSrcRectDestPoint_delegate> GdipEnumerateMetafileSrcRectDestPoint_ptr;
-            internal static int GdipEnumerateMetafileSrcRectDestPoint(HandleRef graphics, HandleRef metafile, GPPOINTF destPoint, ref GPRECTF srcRect, int pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileSrcRectDestPoint_ptr.Delegate(graphics, metafile, destPoint, ref srcRect, pageUnit, callback, callbackdata, imageattributes);
+            internal static int GdipEnumerateMetafileSrcRectDestPoint(HandleRef graphics, HandleRef metafile, ref PointF destPoint, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileSrcRectDestPoint_ptr.Delegate(graphics, metafile, ref destPoint, ref srcRect, pageUnit, callback, callbackdata, imageattributes);
 
-            private delegate int GdipEnumerateMetafileSrcRectDestPointI_delegate(HandleRef graphics, HandleRef metafile, GPPOINT destPoint, ref GPRECT srcRect, int pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            private delegate int GdipEnumerateMetafileSrcRectDestPointI_delegate(HandleRef graphics, HandleRef metafile, ref Point destPoint, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
             private static FunctionWrapper<GdipEnumerateMetafileSrcRectDestPointI_delegate> GdipEnumerateMetafileSrcRectDestPointI_ptr;
-            internal static int GdipEnumerateMetafileSrcRectDestPointI(HandleRef graphics, HandleRef metafile, GPPOINT destPoint, ref GPRECT srcRect, int pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileSrcRectDestPointI_ptr.Delegate(graphics, metafile, destPoint, ref srcRect, pageUnit, callback, callbackdata, imageattributes);
+            internal static int GdipEnumerateMetafileSrcRectDestPointI(HandleRef graphics, HandleRef metafile, ref Point destPoint, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileSrcRectDestPointI_ptr.Delegate(graphics, metafile, ref destPoint, ref srcRect, pageUnit, callback, callbackdata, imageattributes);
 
-            private delegate int GdipEnumerateMetafileSrcRectDestRect_delegate(HandleRef graphics, HandleRef metafile, ref GPRECTF destRect, ref GPRECTF srcRect, int pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            private delegate int GdipEnumerateMetafileSrcRectDestRect_delegate(HandleRef graphics, HandleRef metafile, ref RectangleF destRect, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
             private static FunctionWrapper<GdipEnumerateMetafileSrcRectDestRect_delegate> GdipEnumerateMetafileSrcRectDestRect_ptr;
-            internal static int GdipEnumerateMetafileSrcRectDestRect(HandleRef graphics, HandleRef metafile, ref GPRECTF destRect, ref GPRECTF srcRect, int pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileSrcRectDestRect_ptr.Delegate(graphics, metafile, ref destRect, ref srcRect, pageUnit, callback, callbackdata, imageattributes);
+            internal static int GdipEnumerateMetafileSrcRectDestRect(HandleRef graphics, HandleRef metafile, ref RectangleF destRect, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileSrcRectDestRect_ptr.Delegate(graphics, metafile, ref destRect, ref srcRect, pageUnit, callback, callbackdata, imageattributes);
 
-            private delegate int GdipEnumerateMetafileSrcRectDestRectI_delegate(HandleRef graphics, HandleRef metafile, ref GPRECT destRect, ref GPRECT srcRect, int pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            private delegate int GdipEnumerateMetafileSrcRectDestRectI_delegate(HandleRef graphics, HandleRef metafile, ref Rectangle destRect, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
             private static FunctionWrapper<GdipEnumerateMetafileSrcRectDestRectI_delegate> GdipEnumerateMetafileSrcRectDestRectI_ptr;
-            internal static int GdipEnumerateMetafileSrcRectDestRectI(HandleRef graphics, HandleRef metafile, ref GPRECT destRect, ref GPRECT srcRect, int pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileSrcRectDestRectI_ptr.Delegate(graphics, metafile, ref destRect, ref srcRect, pageUnit, callback, callbackdata, imageattributes);
+            internal static int GdipEnumerateMetafileSrcRectDestRectI(HandleRef graphics, HandleRef metafile, ref Rectangle destRect, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileSrcRectDestRectI_ptr.Delegate(graphics, metafile, ref destRect, ref srcRect, pageUnit, callback, callbackdata, imageattributes);
 
-            private delegate int GdipEnumerateMetafileSrcRectDestPoints_delegate(HandleRef graphics, HandleRef metafile, IntPtr destPoints, int count, ref GPRECTF srcRect, int pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            private delegate int GdipEnumerateMetafileSrcRectDestPoints_delegate(HandleRef graphics, HandleRef metafile, PointF* destPoints, int count, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
             private static FunctionWrapper<GdipEnumerateMetafileSrcRectDestPoints_delegate> GdipEnumerateMetafileSrcRectDestPoints_ptr;
-            internal static int GdipEnumerateMetafileSrcRectDestPoints(HandleRef graphics, HandleRef metafile, IntPtr destPoints, int count, ref GPRECTF srcRect, int pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileSrcRectDestPoints_ptr.Delegate(graphics, metafile, destPoints, count, ref srcRect, pageUnit, callback, callbackdata, imageattributes);
+            internal static int GdipEnumerateMetafileSrcRectDestPoints(HandleRef graphics, HandleRef metafile, PointF* destPoints, int count, ref RectangleF srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileSrcRectDestPoints_ptr.Delegate(graphics, metafile, destPoints, count, ref srcRect, pageUnit, callback, callbackdata, imageattributes);
 
-            private delegate int GdipEnumerateMetafileSrcRectDestPointsI_delegate(HandleRef graphics, HandleRef metafile, IntPtr destPoints, int count, ref GPRECT srcRect, int pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
+            private delegate int GdipEnumerateMetafileSrcRectDestPointsI_delegate(HandleRef graphics, HandleRef metafile, Point* destPoints, int count, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes);
             private static FunctionWrapper<GdipEnumerateMetafileSrcRectDestPointsI_delegate> GdipEnumerateMetafileSrcRectDestPointsI_ptr;
-            internal static int GdipEnumerateMetafileSrcRectDestPointsI(HandleRef graphics, HandleRef metafile, IntPtr destPoints, int count, ref GPRECT srcRect, int pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileSrcRectDestPointsI_ptr.Delegate(graphics, metafile, destPoints, count, ref srcRect, pageUnit, callback, callbackdata, imageattributes);
+            internal static int GdipEnumerateMetafileSrcRectDestPointsI(HandleRef graphics, HandleRef metafile, Point* destPoints, int count, ref Rectangle srcRect, GraphicsUnit pageUnit, Graphics.EnumerateMetafileProc callback, HandleRef callbackdata, HandleRef imageattributes) => GdipEnumerateMetafileSrcRectDestPointsI_ptr.Delegate(graphics, metafile, destPoints, count, ref srcRect, pageUnit, callback, callbackdata, imageattributes);
 
             private delegate int GdipPlayMetafileRecord_delegate(HandleRef graphics, EmfPlusRecordType recordType, int flags, int dataSize, byte[] data);
             private static FunctionWrapper<GdipPlayMetafileRecord_delegate> GdipPlayMetafileRecord_ptr;
@@ -1022,17 +1022,17 @@ namespace System.Drawing
             private static FunctionWrapper<GdipCreateFontFromLogfontW_delegate> GdipCreateFontFromLogfontW_ptr;
             internal static int GdipCreateFontFromLogfontW(HandleRef hdc, [In] [Out] object lf, out IntPtr font) => GdipCreateFontFromLogfontW_ptr.Delegate(hdc, lf, out font);
 
-            private delegate int GdipDrawString_delegate(HandleRef graphics, [MarshalAs(UnmanagedType.LPWStr)]string textString, int length, HandleRef font, ref GPRECTF layoutRect, HandleRef stringFormat, HandleRef brush);
+            private delegate int GdipDrawString_delegate(HandleRef graphics, [MarshalAs(UnmanagedType.LPWStr)]string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, HandleRef brush);
             private static FunctionWrapper<GdipDrawString_delegate> GdipDrawString_ptr;
-            internal static int GdipDrawString(HandleRef graphics, string textString, int length, HandleRef font, ref GPRECTF layoutRect, HandleRef stringFormat, HandleRef brush) => GdipDrawString_ptr.Delegate(graphics, textString, length, font, ref layoutRect, stringFormat, brush);
+            internal static int GdipDrawString(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, HandleRef brush) => GdipDrawString_ptr.Delegate(graphics, textString, length, font, ref layoutRect, stringFormat, brush);
 
-            private delegate int GdipMeasureString_delegate(HandleRef graphics, [MarshalAs(UnmanagedType.LPWStr)]string textString, int length, HandleRef font, ref GPRECTF layoutRect, HandleRef stringFormat, ref GPRECTF boundingBox, out int codepointsFitted, out int linesFilled);
+            private delegate int GdipMeasureString_delegate(HandleRef graphics, [MarshalAs(UnmanagedType.LPWStr)]string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, ref RectangleF boundingBox, out int codepointsFitted, out int linesFilled);
             private static FunctionWrapper<GdipMeasureString_delegate> GdipMeasureString_ptr;
-            internal static int GdipMeasureString(HandleRef graphics, string textString, int length, HandleRef font, ref GPRECTF layoutRect, HandleRef stringFormat, ref GPRECTF boundingBox, out int codepointsFitted, out int linesFilled) => GdipMeasureString_ptr.Delegate(graphics, textString, length, font, ref layoutRect, stringFormat, ref boundingBox, out codepointsFitted, out linesFilled);
+            internal static int GdipMeasureString(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, ref RectangleF boundingBox, out int codepointsFitted, out int linesFilled) => GdipMeasureString_ptr.Delegate(graphics, textString, length, font, ref layoutRect, stringFormat, ref boundingBox, out codepointsFitted, out linesFilled);
 
-            private delegate int GdipMeasureCharacterRanges_delegate(HandleRef graphics, [MarshalAs(UnmanagedType.LPWStr)]string textString, int length, HandleRef font, ref GPRECTF layoutRect, HandleRef stringFormat, int characterCount, [In] [Out] IntPtr[] region);
+            private delegate int GdipMeasureCharacterRanges_delegate(HandleRef graphics, [MarshalAs(UnmanagedType.LPWStr)]string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, int characterCount, [In] [Out] IntPtr[] region);
             private static FunctionWrapper<GdipMeasureCharacterRanges_delegate> GdipMeasureCharacterRanges_ptr;
-            internal static int GdipMeasureCharacterRanges(HandleRef graphics, string textString, int length, HandleRef font, ref GPRECTF layoutRect, HandleRef stringFormat, int characterCount, [In] [Out] IntPtr[] region) => GdipMeasureCharacterRanges_ptr.Delegate(graphics, textString, length, font, ref layoutRect, stringFormat, characterCount, region);
+            internal static int GdipMeasureCharacterRanges(HandleRef graphics, string textString, int length, HandleRef font, ref RectangleF layoutRect, HandleRef stringFormat, int characterCount, [In] [Out] IntPtr[] region) => GdipMeasureCharacterRanges_ptr.Delegate(graphics, textString, length, font, ref layoutRect, stringFormat, characterCount, region);
         }
     }
 }

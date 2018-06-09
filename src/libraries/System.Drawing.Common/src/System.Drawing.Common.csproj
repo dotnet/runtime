@@ -132,8 +132,6 @@
     <Compile Include="System\Drawing\Gdiplus.cs" />
     <Compile Include="System\Drawing\NativeMethods.cs" />
     <Compile Include="System\Drawing\UnsafeNativeMethods.cs" />
-    <Compile Include="System\Drawing\Internal\GPPOINT.cs" />
-    <Compile Include="System\Drawing\Internal\GPPOINTF.cs" />
     <Compile Include="System\Drawing\Internal\GPRECT.cs" />
     <Compile Include="System\Drawing\Internal\GPRECTF.cs" />
     <Compile Include="System\Drawing\Internal\ISystemEventTracker.cs" />
@@ -230,7 +228,7 @@
     <Compile Include="System\Drawing\Imaging\Metafile.Windows.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileHeader.Windows.cs" />
     <Compile Include="System\Drawing\Imaging\MetaHeader.Windows.cs" />
-    <Compile Include="System\Drawing\Internal\GpPathData.cs" />	
+    <Compile Include="System\Drawing\Internal\GpPathData.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
     <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
     <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
