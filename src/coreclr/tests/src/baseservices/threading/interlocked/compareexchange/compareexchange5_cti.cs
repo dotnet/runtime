@@ -51,9 +51,6 @@ public class InterlockedCompareExchange5
             threadA.Start();
             // Block spawning thread until Thread A completes
             threadA.Join();
-            // Once Thread A completes, block spawning thread 
-            // until Thread B completes as well
-            threadB.Join();
             // now, the final values of
             // globalValue and state should be "changedValue"
             if (globalValue.ToString() != "changedValue" && state != (object)("changedValue"))
@@ -88,9 +85,6 @@ public class InterlockedCompareExchange5
             threadA.Start();
             // Block spawning thread until Thread A completes
             threadA.Join();
-            // Once Thread A completes, block spawning thread 
-            // until Thread B completes as well
-            threadB.Join();
             // now, the final values of
             // globalValue and state should NOT be -100
             if (((myClass)globalValue).a != -100 && ((myClass)state).a != -100)
@@ -183,6 +177,7 @@ public class InterlockedCompareExchange5
             if (i == 10)
             {
                 threadB.Start();
+                threadB.Join();
             }
             // first ten iterations, globalValue does not
             // equal comparand, so it keeps returning 
@@ -196,7 +191,6 @@ public class InterlockedCompareExchange5
             // here we use the object overload
             state = Interlocked.CompareExchange(ref globalValue, value, comparand);
             i++;
-            Thread.Sleep(10);
         }
     }
     public void changeGlobal()
@@ -221,6 +215,7 @@ public class InterlockedCompareExchange5
             if (i == 10)
             {
                 threadB.Start();
+                threadB.Join();
             }
             // first ten iterations, globalValue does not
             // equal comparand, so it keeps returning 
@@ -234,7 +229,6 @@ public class InterlockedCompareExchange5
             // here we use the object overload
             state = Interlocked.CompareExchange(ref globalValue, value, comparand);
             i++;
-            Thread.Sleep(10);
         }
     }
     public void changeGlobal2()
