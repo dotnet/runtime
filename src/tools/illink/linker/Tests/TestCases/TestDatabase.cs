@@ -86,6 +86,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesByPrefix ("Symbols.");
 		}
 
+		public static IEnumerable<TestCaseData> AdvancedTests ()
+		{
+			return NUnitCasesByPrefix ("Advanced.");
+		}
+
 		public static TestCaseCollector CreateCollector ()
 		{
 			string rootSourceDirectory;

@@ -336,6 +336,7 @@
     <Compile Include="Symbols\ReferencesWithMixedSymbolTypesAndSymbolLinkingEnabled.cs" />
     <Compile Include="Symbols\ReferenceWithMdb.cs" />
     <Compile Include="Symbols\ReferenceWithMdbAndSymbolLinkingEnabled.cs" />
+    <Compile Include="Advanced\PreserveDependencyMethod.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />

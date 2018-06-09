@@ -253,6 +253,10 @@ namespace Mono.Linker.Steps {
 			Tracer.Push (provider);
 			try {
 				foreach (CustomAttribute ca in provider.CustomAttributes) {
+					if (IsUserDependencyMarker (ca.AttributeType)) {
+						MarkUserDependency (provider as MethodReference, ca);
+						continue;
+					}
 
 					if (_context.KeepUsedAttributeTypesOnly) {
 						_lateMarkedAttributes.Enqueue (new AttributeProviderPair (ca, provider));
@@ -266,6 +270,151 @@ namespace Mono.Linker.Steps {
 			} finally {
 				Tracer.Pop ();
 			}
+		}
+
+		protected virtual bool IsUserDependencyMarker (TypeReference type)
+		{
+			return type.Name == "PreserveDependencyAttribute" &&
+				       type.Namespace == "System.Runtime.CompilerServices";
+		}
+
+		protected virtual void MarkUserDependency (MethodReference context, CustomAttribute ca)
+		{
+			var args = ca.ConstructorArguments;
+			if (args.Count == 2 && args[1].Value is string condition) {
+				switch (condition) {
+				case "":
+				case null:
+					break;
+				case "DEBUG":
+					if (!_context.KeepMembersForDebugger)
+						return;
+
+					break;
+				default:
+					// Don't have yet a way to match the general condition so everything is excluded
+					return;
+				}
+			}
+
+			if (args.Count >= 1 && args[0].Value is string dependency) {
+				string member = null;
+				string type = null;
+				string[] signature = null;
+				TypeDefinition td = null;
+
+				var sign_start = dependency.IndexOf ('(');
+				var sign_end = dependency.LastIndexOf (')');
+				if (sign_start > 0 && sign_end > sign_start) {
+					var parameters = dependency.Substring (sign_start + 1, sign_end - sign_start - 1).Replace (" ", "");
+					signature = string.IsNullOrEmpty (parameters) ? Array.Empty<string> () : parameters.Split (',');
+					var idx = dependency.LastIndexOf ('.', sign_start);
+					if (idx > 0) {
+						member = dependency.Substring (idx + 1, sign_start - idx - 1).TrimEnd ();
+						type = dependency.Substring (0, idx);
+					} else {
+						member = dependency.Substring (0, sign_start - 1);
+						td = context.DeclaringType.Resolve ();
+					}
+				} else if (sign_start < 0) {
+					var idx = dependency.LastIndexOf ('.');
+					if (idx > 0) {
+						member = dependency.Substring (idx + 1);
+						type = dependency.Substring (0, idx);
+					} else {
+						member = dependency;
+						td = context.DeclaringType.Resolve ();
+					}
+				}
+
+				if (td == null) {
+					if (type == null) {
+						_context.Logger.LogMessage (MessageImportance.Low, $"Could not resolve '{dependency}' dependency");
+						return;
+					}
+
+					td = FindType (context.Module.Assembly, type);
+					if (td == null) {
+						_context.Logger.LogMessage (MessageImportance.Low, $"Could not find '{dependency}' dependency");
+						return;
+					}
+				}
+
+				if (MarkDependencyMethod (td, member, signature))
+					return;
+
+				if (MarkDependencyField (td, member))
+					return;
+
+				_context.Logger.LogMessage (MessageImportance.High, $"Could not resolve dependency member '{member}' declared in type '{dependency}'");
+			}
+		}
+
+		static TypeDefinition FindType (AssemblyDefinition assembly, string fullName)
+		{
+			fullName = fullName.ToCecilName ();
+
+			var type = assembly.MainModule.GetType (fullName);
+			return type?.Resolve ();
+		}
+
+		bool MarkDependencyMethod (TypeDefinition type, string name, string[] signature)
+		{
+			bool marked = false;
+			int arity;
+
+			int arity_marker = name.IndexOf ('`');
+			if (arity_marker < 1 || !int.TryParse (name.Substring (arity_marker + 1), out arity)) {
+				arity = 0;
+			} else {
+				name = name.Substring (0, arity_marker);
+			}
+			                               
+			foreach (var m in type.Methods) {
+				if (m.Name != name)
+					continue;
+
+				if (m.GenericParameters.Count != arity)
+					continue;
+
+				if (signature == null) {
+					MarkMethod (m);
+					marked = true;
+					continue;
+				}
+
+				var mp = m.Parameters;
+				if (mp.Count != signature.Length)
+					continue;
+
+				int i = 0;
+				for (; i < signature.Length; ++i) {
+					if (mp [i].ParameterType.FullName != signature [i].Trim ().ToCecilName ()) {
+						i = -1;
+						break;
+					}
+				}
+
+				if (i < 0)
+					continue;
+
+				MarkMethod (m);
+				marked = true;
+			}
+
+			return marked;
+		}
+
+		bool MarkDependencyField (TypeDefinition type, string name)
+		{
+			foreach (var f in type.Fields) {
+				if (f.Name == name) {
+					MarkField (f);
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		void LazyMarkCustomAttributes (ICustomAttributeProvider provider, AssemblyDefinition assembly)
@@ -303,15 +452,17 @@ namespace Mono.Linker.Steps {
 
 		protected virtual bool ShouldMarkCustomAttribute (CustomAttribute ca, ICustomAttributeProvider provider)
 		{
+			var attr_type = ca.AttributeType;
+
 			if (_context.KeepUsedAttributeTypesOnly) {
-				switch (ca.AttributeType.FullName) {
+				switch (attr_type.FullName) {
 				// [ThreadStatic] and [ContextStatic] are required by the runtime
 				case "System.ThreadStaticAttribute":
 				case "System.ContextStaticAttribute":
 					return true;
 				}
 				
-				if (!Annotations.IsMarked (ca.AttributeType.Resolve ()))
+				if (!Annotations.IsMarked (attr_type.Resolve ()))
 					return false;
 			}
 
@@ -872,7 +1023,7 @@ namespace Mono.Linker.Steps {
 
 		void MarkTypeWithDebuggerDisplayAttribute (TypeDefinition type, CustomAttribute attribute)
 		{
-			if (_context.KeepMembersForDebuggerAttributes) {
+			if (_context.KeepMembersForDebugger) {
 
 				string displayString = (string) attribute.ConstructorArguments[0].Value;
 
@@ -926,7 +1077,7 @@ namespace Mono.Linker.Steps {
 
 		void MarkTypeWithDebuggerTypeProxyAttribute (TypeDefinition type, CustomAttribute attribute)
 		{
-			if (_context.KeepMembersForDebuggerAttributes) {
+			if (_context.KeepMembersForDebugger) {
 				object constructorArgument = attribute.ConstructorArguments[0].Value;
 				TypeReference proxyTypeReference = constructorArgument as TypeReference;
 				if (proxyTypeReference == null) {

@@ -195,5 +195,10 @@ namespace Mono.Linker
 
 			return method;
 		}
+
+		public static string ToCecilName (this string fullTypeName)
+		{
+			return fullTypeName.Replace ('+', '/');
+		}
 	}
 }
