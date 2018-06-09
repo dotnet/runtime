@@ -54,7 +54,7 @@ namespace System.Drawing
             }
 
             IntPtr region = IntPtr.Zero;
-            int status = SafeNativeMethods.Gdip.GdipCreateRegionPath(new HandleRef(path, path.nativePath), out region);
+            int status = SafeNativeMethods.Gdip.GdipCreateRegionPath(new HandleRef(path, path._nativePath), out region);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             SetNativeRegion(region);
@@ -175,7 +175,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(path));
             }
 
-            int status = SafeNativeMethods.Gdip.GdipCombineRegionPath(new HandleRef(this, _nativeRegion), new HandleRef(path, path.nativePath), CombineMode.Intersect);
+            int status = SafeNativeMethods.Gdip.GdipCombineRegionPath(new HandleRef(this, _nativeRegion), new HandleRef(path, path._nativePath), CombineMode.Intersect);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -211,7 +211,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(path));
             }
 
-            int status = SafeNativeMethods.Gdip.GdipCombineRegionPath(new HandleRef(this, _nativeRegion), new HandleRef(path, path.nativePath), CombineMode.Union);
+            int status = SafeNativeMethods.Gdip.GdipCombineRegionPath(new HandleRef(this, _nativeRegion), new HandleRef(path, path._nativePath), CombineMode.Union);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -247,7 +247,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(path));
             }
 
-            int status = SafeNativeMethods.Gdip.GdipCombineRegionPath(new HandleRef(this, _nativeRegion), new HandleRef(path, path.nativePath), CombineMode.Xor);
+            int status = SafeNativeMethods.Gdip.GdipCombineRegionPath(new HandleRef(this, _nativeRegion), new HandleRef(path, path._nativePath), CombineMode.Xor);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -283,7 +283,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(path));
             }
 
-            int status = SafeNativeMethods.Gdip.GdipCombineRegionPath(new HandleRef(this, _nativeRegion), new HandleRef(path, path.nativePath),
+            int status = SafeNativeMethods.Gdip.GdipCombineRegionPath(new HandleRef(this, _nativeRegion), new HandleRef(path, path._nativePath),
                                                        CombineMode.Exclude);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -321,7 +321,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(path));
             }
 
-            int status = SafeNativeMethods.Gdip.GdipCombineRegionPath(new HandleRef(this, _nativeRegion), new HandleRef(path, path.nativePath), CombineMode.Complement);
+            int status = SafeNativeMethods.Gdip.GdipCombineRegionPath(new HandleRef(this, _nativeRegion), new HandleRef(path, path._nativePath), CombineMode.Complement);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
