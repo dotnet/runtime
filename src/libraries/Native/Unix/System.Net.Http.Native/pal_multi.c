@@ -9,56 +9,56 @@
 #include <assert.h>
 #include <poll.h>
 
-static_assert((int)PAL_CURLM_CALL_MULTI_PERFORM == (int)CURLM_CALL_MULTI_PERFORM, "");
-static_assert((int)PAL_CURLM_OK == (int)CURLM_OK, "");
-static_assert((int)PAL_CURLM_BAD_HANDLE == (int)CURLM_BAD_HANDLE, "");
-static_assert((int)PAL_CURLM_BAD_EASY_HANDLE == (int)CURLM_BAD_EASY_HANDLE, "");
-static_assert((int)PAL_CURLM_OUT_OF_MEMORY == (int)CURLM_OUT_OF_MEMORY, "");
-static_assert((int)PAL_CURLM_INTERNAL_ERROR == (int)CURLM_INTERNAL_ERROR, "");
-static_assert((int)PAL_CURLM_BAD_SOCKET == (int)CURLM_BAD_SOCKET, "");
-static_assert((int)PAL_CURLM_UNKNOWN_OPTION == (int)CURLM_UNKNOWN_OPTION, "");
+c_static_assert(PAL_CURLM_CALL_MULTI_PERFORM == CURLM_CALL_MULTI_PERFORM);
+c_static_assert(PAL_CURLM_OK == CURLM_OK);
+c_static_assert(PAL_CURLM_BAD_HANDLE == CURLM_BAD_HANDLE);
+c_static_assert(PAL_CURLM_BAD_EASY_HANDLE == CURLM_BAD_EASY_HANDLE);
+c_static_assert(PAL_CURLM_OUT_OF_MEMORY == CURLM_OUT_OF_MEMORY);
+c_static_assert(PAL_CURLM_INTERNAL_ERROR == CURLM_INTERNAL_ERROR);
+c_static_assert(PAL_CURLM_BAD_SOCKET == CURLM_BAD_SOCKET);
+c_static_assert(PAL_CURLM_UNKNOWN_OPTION == CURLM_UNKNOWN_OPTION);
 #if HAVE_CURLM_ADDED_ALREADY
-static_assert((int)PAL_CURLM_ADDED_ALREADY == (int)CURLM_ADDED_ALREADY, "");
+c_static_assert(PAL_CURLM_ADDED_ALREADY == CURLM_ADDED_ALREADY);
 #endif
-static_assert((int)PAL_CURLMOPT_PIPELINING == (int)CURLMOPT_PIPELINING, "");
+c_static_assert(PAL_CURLMOPT_PIPELINING == CURLMOPT_PIPELINING);
 #ifdef CURLMOPT_MAX_HOST_CONNECTIONS
-static_assert((int)PAL_CURLMOPT_MAX_HOST_CONNECTIONS == (int)CURLMOPT_MAX_HOST_CONNECTIONS, "");
+c_static_assert(PAL_CURLMOPT_MAX_HOST_CONNECTIONS == CURLMOPT_MAX_HOST_CONNECTIONS);
 #endif
 #if HAVE_CURLPIPE_MULTIPLEX
-static_assert((int)PAL_CURLPIPE_MULTIPLEX == (int)CURLPIPE_MULTIPLEX, "");
+c_static_assert(PAL_CURLPIPE_MULTIPLEX == CURLPIPE_MULTIPLEX);
 #endif
 
-static_assert((int)PAL_CURLMSG_DONE == (int)CURLMSG_DONE, "");
+c_static_assert(PAL_CURLMSG_DONE == CURLMSG_DONE);
 
-extern "C" CURLM* HttpNative_MultiCreate()
+CURLM* HttpNative_MultiCreate()
 {
     return curl_multi_init();
 }
 
-extern "C" int32_t HttpNative_MultiDestroy(CURLM* multiHandle)
+int32_t HttpNative_MultiDestroy(CURLM* multiHandle)
 {
     return curl_multi_cleanup(multiHandle);
 }
 
-extern "C" int32_t HttpNative_MultiAddHandle(CURLM* multiHandle, CURL* easyHandle)
+int32_t HttpNative_MultiAddHandle(CURLM* multiHandle, CURL* easyHandle)
 {
     return curl_multi_add_handle(multiHandle, easyHandle);
 }
 
-extern "C" int32_t HttpNative_MultiRemoveHandle(CURLM* multiHandle, CURL* easyHandle)
+int32_t HttpNative_MultiRemoveHandle(CURLM* multiHandle, CURL* easyHandle)
 {
     return curl_multi_remove_handle(multiHandle, easyHandle);
 }
 
-extern "C" int32_t HttpNative_MultiWait(CURLM* multiHandle,
+int32_t HttpNative_MultiWait(CURLM* multiHandle,
                                         intptr_t extraFileDescriptor,
                                         int32_t* isExtraFileDescriptorActive,
                                         int32_t* isTimeout)
 {
-    assert(isExtraFileDescriptorActive != nullptr);
-    assert(isTimeout != nullptr);
+    assert(isExtraFileDescriptorActive != NULL);
+    assert(isTimeout != NULL);
 
-    curl_waitfd extraFds = {.fd = ToFileDescriptor(extraFileDescriptor), .events = CURL_WAIT_POLLIN, .revents = 0};
+    struct curl_waitfd extraFds = {.fd = ToFileDescriptor(extraFileDescriptor), .events = CURL_WAIT_POLLIN, .revents = 0};
 
     // Even with our cancellation mechanism, we specify a timeout so that
     // just in case something goes wrong we can recover gracefully.  This timeout is relatively long.
@@ -90,7 +90,7 @@ extern "C" int32_t HttpNative_MultiWait(CURLM* multiHandle,
         }
         else
         {
-            pollfd pfd = { .fd = ToFileDescriptor(extraFileDescriptor),.events = POLLIN,.revents = 0 };
+            struct pollfd pfd = { .fd = ToFileDescriptor(extraFileDescriptor),.events = POLLIN,.revents = 0 };
             poll(&pfd, 1, 0);
 
             //
@@ -104,24 +104,24 @@ extern "C" int32_t HttpNative_MultiWait(CURLM* multiHandle,
     return result;
 }
 
-extern "C" int32_t HttpNative_MultiPerform(CURLM* multiHandle)
+int32_t HttpNative_MultiPerform(CURLM* multiHandle)
 {
     int running_handles;
     return curl_multi_perform(multiHandle, &running_handles);
 }
 
-extern "C" int32_t HttpNative_MultiInfoRead(CURLM* multiHandle, int32_t* message, CURL** easyHandle, int32_t* result)
+int32_t HttpNative_MultiInfoRead(CURLM* multiHandle, int32_t* message, CURL** easyHandle, int32_t* result)
 {
-    assert(message != nullptr);
-    assert(easyHandle != nullptr);
-    assert(result != nullptr);
+    assert(message != NULL);
+    assert(easyHandle != NULL);
+    assert(result != NULL);
 
     int msgs_in_queue;
     CURLMsg* curlMessage = curl_multi_info_read(multiHandle, &msgs_in_queue);
-    if (curlMessage == nullptr)
+    if (curlMessage == NULL)
     {
         *message = 0;
-        *easyHandle = nullptr;
+        *easyHandle = NULL;
         *result = 0;
 
         return 0;
@@ -134,12 +134,12 @@ extern "C" int32_t HttpNative_MultiInfoRead(CURLM* multiHandle, int32_t* message
     return 1;
 }
 
-extern "C" const char* HttpNative_MultiGetErrorString(PAL_CURLMcode code)
+const char* HttpNative_MultiGetErrorString(PAL_CURLMcode code)
 {
-    return curl_multi_strerror(static_cast<CURLMcode>(code));
+    return curl_multi_strerror((CURLMcode)code);
 }
 
-extern "C" int32_t HttpNative_MultiSetOptionLong(CURLM* handle, PAL_CURLMoption option, int64_t value)
+int32_t HttpNative_MultiSetOptionLong(CURLM* handle, PAL_CURLMoption option, int64_t value)
 {
-    return curl_multi_setopt(handle, static_cast<CURLMoption>(option), value);
+    return curl_multi_setopt(handle, (CURLMoption)option, value);
 }
