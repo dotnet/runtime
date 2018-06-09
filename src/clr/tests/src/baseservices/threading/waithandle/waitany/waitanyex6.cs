@@ -55,13 +55,17 @@ class WaitAnyEx
         try
         {
             Console.WriteLine("Waiting...");
-            i = WaitHandle.WaitAny(wh, 5000);
             if(0 == iPosToAbandon)
-                Console.WriteLine("WaitAny didn't return an " +
-                    "AbandonedMutexException");
+            {
+                i = WaitHandle.WaitAny(wh, 30000);
+                Console.WriteLine("WaitAny did not throw AbandonedMutexException. Result: {0}", i);
+            }
             else
+            {
+                i = WaitHandle.WaitAny(wh, 10000);
                 // Expected to pass
                 iRet = 100;
+            }
         }
         catch(AbandonedMutexException)
         {
