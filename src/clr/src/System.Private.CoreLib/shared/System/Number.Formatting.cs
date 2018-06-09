@@ -251,6 +251,8 @@ namespace System
         private const int CharStackBufferSize = 32;
         private const string PosNumberFormat = "#";
 
+        private static readonly string[] s_singleDigitStringCache = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+
         private static readonly string[] s_posCurrencyFormats =
         {
             "$#", "#$", "$ #", "# $"
@@ -1095,6 +1097,13 @@ namespace System
         private static unsafe string UInt32ToDecStr(uint value, int digits)
         {
             int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+
+            // For single-digit values that are very common, especially 0 and 1, just return cached strings.
+            if (bufferLength == 1)
+            {
+                return s_singleDigitStringCache[value];
+            }
+
             string result = string.FastAllocateString(bufferLength);
             fixed (char* buffer = result)
             {
@@ -1339,6 +1348,13 @@ namespace System
                 digits = 1;
 
             int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+
+            // For single-digit values that are very common, especially 0 and 1, just return cached strings.
+            if (bufferLength == 1)
+            {
+                return s_singleDigitStringCache[value];
+            }
+
             string result = string.FastAllocateString(bufferLength);
             fixed (char* buffer = result)
             {
