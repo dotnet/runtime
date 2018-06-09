@@ -3438,7 +3438,6 @@ private:
     void Close();
     void ClearGCRoots();
     void ClearGCHandles();
-    void HandleAsyncPinHandles();
     void UnwindThreads();
     // Return TRUE if EE is stopped
     // Return FALSE if more work is needed

@@ -1273,7 +1273,7 @@ interface IMoniker;
 typedef VOID (WINAPI *LPOVERLAPPED_COMPLETION_ROUTINE)( 
     DWORD dwErrorCode,
     DWORD dwNumberOfBytesTransfered,
-    LPVOID lpOverlapped);
+    LPOVERLAPPED lpOverlapped);
 
 //
 // Debug APIs

@@ -44,7 +44,6 @@
 #include "caparser.h"
 #include "appdomain.inl"
 #include "rcwwalker.h"
-#include "windowsruntimebufferhelper.h"
 #include "winrttypenameconverter.h"
 #include "typestring.h"
 
@@ -1085,25 +1084,13 @@ VOID SimpleComCallWrapper::Cleanup()
     m_pWrap = NULL;
     m_pMT = NULL;
 
-    if (HasOverlappedRef())
+    if (m_pCPList)
     {
-        if (m_operlappedPtr)
-        {
-            WindowsRuntimeBufferHelper::ReleaseOverlapped(m_operlappedPtr);
-            m_operlappedPtr = NULL;            
-        }
-        UnMarkOverlappedRef();
-    }
-    else
-    {         
-        if (m_pCPList)  // enum_HasOverlappedRef
-        {
-            for (UINT i = 0; i < m_pCPList->Size(); i++)
-                delete (*m_pCPList)[i];
+        for (UINT i = 0; i < m_pCPList->Size(); i++)
+            delete (*m_pCPList)[i];
 
-            delete m_pCPList;
-            m_pCPList = NULL;
-        }
+        delete m_pCPList;
+        m_pCPList = NULL;
     }
     
     // if this object was made agile, then we will have stashed away the original handle
@@ -1426,8 +1413,6 @@ void SimpleComCallWrapper::SetUpCPList()
     
     CQuickArray<MethodTable *> SrcItfList;
         
-    _ASSERTE(!HasOverlappedRef());
-
     // If the list has already been set up, then return.
     if (m_pCPList)
         return;
@@ -1450,8 +1435,6 @@ void SimpleComCallWrapper::SetUpCPListHelper(MethodTable **apSrcItfMTs, int cSrc
         PRECONDITION(CheckPointer(apSrcItfMTs));
     }
     CONTRACTL_END;
-
-    _ASSERTE(!HasOverlappedRef());
         
     CPListHolder pCPList = NULL;
     ComCallWrapper *pWrap = GetMainWrapper();
@@ -2046,9 +2029,7 @@ BOOL SimpleComCallWrapper::FindConnectionPoint(REFIID riid, IConnectionPoint **p
         PRECONDITION(CheckPointer(ppCP));
     }
     CONTRACTL_END;
-    
-    _ASSERTE(!HasOverlappedRef());
-
+ 
     // If the connection point list hasn't been set up yet, then set it up now.
     if (!m_pCPList)
         SetUpCPList();
@@ -2084,8 +2065,6 @@ void SimpleComCallWrapper::EnumConnectionPoints(IEnumConnectionPoints **ppEnumCP
         PRECONDITION(CheckPointer(ppEnumCP));
     }
     CONTRACTL_END;
-
-    _ASSERTE(!HasOverlappedRef());
 
     // If the connection point list hasn't been set up yet, then set it up now.
     if (!m_pCPList)

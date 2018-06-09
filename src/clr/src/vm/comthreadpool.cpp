@@ -559,7 +559,6 @@ struct BindIoCompletion_Args
     DWORD ErrorCode;
     DWORD numBytesTransferred;
     LPOVERLAPPED lpOverlapped;
-    BOOL *pfProcessed;
 };
 
 void SetAsyncResultProperties(
@@ -589,7 +588,6 @@ VOID BindIoCompletionCallBack_Worker(LPVOID args)
     OVERLAPPEDDATAREF overlapped = ObjectToOVERLAPPEDDATAREF(OverlappedDataObject::GetOverlapped(lpOverlapped));
 
     GCPROTECT_BEGIN(overlapped);
-    *(((BindIoCompletion_Args *)args)->pfProcessed) = TRUE;
     // we set processed to TRUE, now it's our responsibility to guarantee proper cleanup
 
 #ifdef _DEBUG
@@ -597,7 +595,7 @@ VOID BindIoCompletionCallBack_Worker(LPVOID args)
     LogCall(pMeth,"IOCallback");
 #endif
 
-    if (overlapped->m_iocb != NULL)
+    if (overlapped->m_callback != NULL)
     {
         // Caution: the args are not protected, we have to garantee there's no GC from here till
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__IOCB_HELPER__PERFORM_IOCOMPLETION_CALLBACK);
@@ -612,7 +610,7 @@ VOID BindIoCompletionCallBack_Worker(LPVOID args)
     else
     {
         // no user delegate to callback
-        _ASSERTE((overlapped->m_iocbHelper == NULL) || !"This is benign, but should be optimized");
+        _ASSERTE((overlapped->m_callback == NULL) || !"This is benign, but should be optimized");
 
 
         SetAsyncResultProperties(overlapped, ErrorCode, numBytesTransferred);
@@ -652,33 +650,8 @@ void __stdcall BindIoCompletionCallbackStubEx(DWORD ErrorCode,
 
     GCX_COOP();
 
-    // NOTE: there is a potential race between the time we retrieve the app domain pointer,
-    // and the time which this thread enters the domain.
-    //
-    // To solve the race, we rely on the fact that there is a thread sync (via GC)
-    // between releasing an app domain's handle, and destroying the app domain.  Thus
-    // it is important that we not go into preemptive gc mode in that window.
-    //
-
-    //IMPORTANT - do not gc protect overlapped here - it belongs to another appdomain
-    //so if it stops being pinned it should be able to go away
-    OVERLAPPEDDATAREF overlapped = ObjectToOVERLAPPEDDATAREF(OverlappedDataObject::GetOverlapped(lpOverlapped));
-    AppDomainFromIDHolder appDomain(ADID(overlapped->GetAppDomainId()), TRUE);
-    BOOL fProcessed = FALSE;
-    if (!appDomain.IsUnloaded())
-    {
-        // this holder resets our thread's security state when exiting this scope, 
-        // but only if setStack is TRUE.
-        Thread* pHolderThread = NULL;
-        if (setStack)
-        {
-            pHolderThread = pThread; 
-        }
-
-        BindIoCompletion_Args args = {ErrorCode, numBytesTransferred, lpOverlapped, &fProcessed};
-        appDomain.Release();
-        ManagedThreadBase::ThreadPool(ADID(overlapped->GetAppDomainId()), BindIoCompletionCallBack_Worker, &args);
-    }
+    BindIoCompletion_Args args = {ErrorCode, numBytesTransferred, lpOverlapped};
+    ManagedThreadBase::ThreadPool((ADID)DefaultADID, BindIoCompletionCallBack_Worker, &args);
 
     LOG((LF_INTEROP, LL_INFO10000, "Leaving IO_CallBackStub thread 0x%x retCode 0x%x, overlap 0x%x\n",  pThread, ErrorCode, lpOverlapped));
         // We should have released all locks.
@@ -751,7 +724,7 @@ FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorPostQueuedCompletionStatus, LPOVERLAPP
     HELPER_METHOD_FRAME_BEGIN_RET_1(overlapped); // Eventually calls BEGIN_SO_INTOLERANT_CODE_NOTHROW
 
     // OS doesn't signal handle, so do it here
-    overlapped->Internal = 0;
+    lpOverlapped->Internal = 0;
 
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadPoolIOEnqueue))
         FireEtwThreadPoolIOEnqueue(lpOverlapped, OBJECTREFToObject(overlapped), false, GetClrInstanceId());
