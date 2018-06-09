@@ -16,11 +16,11 @@ endif(CMAKE_STATIC_LIB_LINK)
 
 
 set(NATIVEHTTP_SOURCES
-    pal_curlinit.cpp
-    pal_easy.cpp
-    pal_multi.cpp
-    pal_slist.cpp
-    pal_versioninfo.cpp
+    pal_curlinit.c
+    pal_easy.c
+    pal_multi.c
+    pal_slist.c
+    pal_versioninfo.c
 )
 
 include_directories(${CURL_INCLUDE_DIR})
