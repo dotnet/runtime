@@ -26,11 +26,23 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new EventWaitHandle(true, (EventResetMode)12345));
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]  // names aren't supported on Unix
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Full framework throws argument exception on long names")]
         [Fact]
         public void Ctor_InvalidNames()
         {
             AssertExtensions.Throws<ArgumentException>("name", null, () => new EventWaitHandle(true, EventResetMode.AutoReset, new string('a', 1000)));
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)]  // names aren't supported on Unix
+        [Theory]
+        [MemberData(nameof(GetValidNames))]
+        public void Ctor_ValidNames(string name)
+        {
+            bool createdNew;
+            using (var ewh = new EventWaitHandle(true, EventResetMode.AutoReset, name, out createdNew))
+            {
+                Assert.True(createdNew);
+            }
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // names aren't supported on Unix
@@ -101,11 +113,10 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // OpenExisting not supported on Unix
-        [Fact]
-        public void OpenExisting_Windows()
+        [Theory]
+        [MemberData(nameof(GetValidNames))]
+        public void OpenExisting_Windows(string name)
         {
-            string name = Guid.NewGuid().ToString("N");
-
             EventWaitHandle resultHandle;
             Assert.False(EventWaitHandle.TryOpenExisting(name, out resultHandle));
             Assert.Null(resultHandle);
@@ -146,7 +157,6 @@ namespace System.Threading.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => EventWaitHandle.OpenExisting(null));
             AssertExtensions.Throws<ArgumentException>("name", null, () => EventWaitHandle.OpenExisting(string.Empty));
-            AssertExtensions.Throws<ArgumentException>("name", null, () => EventWaitHandle.OpenExisting(new string('a', 10000)));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // OpenExisting not supported on Unix
@@ -224,5 +234,14 @@ namespace System.Threading.Tests
             return SuccessExitCode;
         }
 
+        public static TheoryData<string> GetValidNames()
+        {
+            var names  =  new TheoryData<string>() { Guid.NewGuid().ToString("N") };
+
+            if (!PlatformDetection.IsFullFramework)
+                names.Add(Guid.NewGuid().ToString("N") + new string('a', 1000));
+
+            return names;
+        }
     }
 }
