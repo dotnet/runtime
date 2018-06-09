@@ -223,7 +223,7 @@ namespace Mono.Linker {
 								p.RemoveStep (typeof (BlacklistStep));
 							break;
 					case 'v':
-						context.KeepMembersForDebuggerAttributes = bool.Parse (GetParam ());
+						context.KeepMembersForDebugger = bool.Parse (GetParam ());
 						break;
 					default:
 						Usage ("Unknown option: `" + token [1] + "'");
@@ -384,7 +384,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("   -d                  Add a directory where the linker will look for assemblies");
 			Console.WriteLine ("   -b                  Generate debug symbols for each linked module (true or false)");
 			Console.WriteLine ("   -g                  Generate a new unique guid for each linked module (true or false)");
-			Console.WriteLine ("   -v                  Keep memebers needed by debugger attributes (true or false)");
+			Console.WriteLine ("   -v                  Keep members needed by debugger (true or false)");
 			Console.WriteLine ("   -l                  List of i18n assemblies to copy to the output directory");
 			Console.WriteLine ("                         separated with a comma: none,all,cjk,mideast,other,rare,west");
 			Console.WriteLine ("                         default is all");

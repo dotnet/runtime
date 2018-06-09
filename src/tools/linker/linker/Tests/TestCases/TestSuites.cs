@@ -12,6 +12,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.AdvancedTests))]
+		public void AdvancedTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.VirtualMethodsTests))]
 		public void VirtualMethodTests (TestCase testCase)
 		{
