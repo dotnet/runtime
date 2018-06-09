@@ -1036,17 +1036,15 @@ namespace System
         /// </remarks>
         private static AdjustmentRule TZif_CreateAdjustmentRuleForPosixFormat(string posixFormat, DateTime startTransitionDate, TimeSpan timeZoneBaseUtcOffset)
         {
-            string standardName;
-            string standardOffset;
-            string daylightSavingsName;
-            string daylightSavingsOffset;
-            string start;
-            string startTime;
-            string end;
-            string endTime;
-
-            if (TZif_ParsePosixFormat(posixFormat, out standardName, out standardOffset, out daylightSavingsName,
-                out daylightSavingsOffset, out start, out startTime, out end, out endTime))
+            if (TZif_ParsePosixFormat(posixFormat,
+                out ReadOnlySpan<char> standardName,
+                out ReadOnlySpan<char> standardOffset,
+                out ReadOnlySpan<char> daylightSavingsName,
+                out ReadOnlySpan<char> daylightSavingsOffset,
+                out ReadOnlySpan<char> start,
+                out ReadOnlySpan<char> startTime,
+                out ReadOnlySpan<char> end,
+                out ReadOnlySpan<char> endTime))
             {
                 // a valid posixFormat has at least standardName and standardOffset
 
@@ -1057,7 +1055,7 @@ namespace System
                     baseOffset = TZif_CalculateTransitionOffsetFromBase(baseOffset, timeZoneBaseUtcOffset);
 
                     // having a daylightSavingsName means there is a DST rule
-                    if (!string.IsNullOrEmpty(daylightSavingsName))
+                    if (!daylightSavingsName.IsEmpty)
                     {
                         TimeSpan? parsedDaylightSavings = TZif_ParseOffsetString(daylightSavingsOffset);
                         TimeSpan daylightSavingsTimeSpan;
@@ -1141,7 +1139,7 @@ namespace System
             return result;
         }
 
-        private static DateTime ParseTimeOfDay(string time)
+        private static DateTime ParseTimeOfDay(ReadOnlySpan<char> time)
         {
             DateTime timeOfDay;
             TimeSpan? timeOffset = TZif_ParseOffsetString(time);
@@ -1172,9 +1170,9 @@ namespace System
             return timeOfDay;
         }
 
-        private static TransitionTime TZif_CreateTransitionTimeFromPosixRule(string date, string time)
+        private static TransitionTime TZif_CreateTransitionTimeFromPosixRule(ReadOnlySpan<char> date, ReadOnlySpan<char> time)
         {
-            if (string.IsNullOrEmpty(date))
+            if (date.IsEmpty)
             {
                 return default(TransitionTime);
             }
@@ -1190,7 +1188,7 @@ namespace System
                 DayOfWeek day;
                 if (!TZif_ParseMDateRule(date, out month, out week, out day))
                 {
-                    throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_UnparseablePosixMDateString, date));
+                    throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_UnparseablePosixMDateString, date.ToString()));
                 }
 
                 return TransitionTime.CreateFloatingDateRule(ParseTimeOfDay(time), month, week, day);
@@ -1221,10 +1219,10 @@ namespace System
                     // while in non leap year the rule will start at Mar 2.
                     // 
                     // If we need to support n format, we'll have to have a floating adjustment rule support this case.
-                    
+
                     throw new InvalidTimeZoneException(SR.InvalidTimeZone_NJulianDayNotSupported);
                 }
-                
+
                 // Julian day
                 TZif_ParseJulianDay(date, out int month, out int day);
                 return TransitionTime.CreateFixedDateRule(ParseTimeOfDay(time), month, day);
@@ -1237,12 +1235,12 @@ namespace System
         /// <returns>
         /// true if the parsing succeeded; otherwise, false.
         /// </returns>
-        private static void TZif_ParseJulianDay(string date, out int month, out int day)
+        private static void TZif_ParseJulianDay(ReadOnlySpan<char> date, out int month, out int day)
         {
             // Jn
             // This specifies the Julian day, with n between 1 and 365.February 29 is never counted, even in leap years.
+            Debug.Assert(!date.IsEmpty);
             Debug.Assert(date[0] == 'J');
-            Debug.Assert(!String.IsNullOrEmpty(date));
             month = day = 0;
 
             int index = 1;
@@ -1272,7 +1270,7 @@ namespace System
             {
                 i++;
             }
-            
+
             Debug.Assert(i > 0 && i < days.Length);
 
             month = i;
@@ -1285,19 +1283,20 @@ namespace System
         /// <returns>
         /// true if the parsing succeeded; otherwise, false.
         /// </returns>
-        private static bool TZif_ParseMDateRule(string dateRule, out int month, out int week, out DayOfWeek dayOfWeek)
+        private static bool TZif_ParseMDateRule(ReadOnlySpan<char> dateRule, out int month, out int week, out DayOfWeek dayOfWeek)
         {
             if (dateRule[0] == 'M')
             {
-                int firstDotIndex = dateRule.IndexOf('.');
-                if (firstDotIndex > 0)
+                int monthWeekDotIndex = dateRule.IndexOf('.');
+                if (monthWeekDotIndex > 0)
                 {
-                    int secondDotIndex = dateRule.IndexOf('.', firstDotIndex + 1);
-                    if (secondDotIndex > 0)
+                    ReadOnlySpan<char> weekDaySpan = dateRule.Slice(monthWeekDotIndex + 1);
+                    int weekDayDotIndex = weekDaySpan.IndexOf('.');
+                    if (weekDayDotIndex > 0)
                     {
-                        if (int.TryParse(dateRule.AsSpan(1, firstDotIndex - 1), out month) &&
-                            int.TryParse(dateRule.AsSpan(firstDotIndex + 1, secondDotIndex - firstDotIndex - 1), out week) &&
-                            int.TryParse(dateRule.AsSpan(secondDotIndex + 1), out int day))
+                        if (int.TryParse(dateRule.Slice(1, monthWeekDotIndex - 1), out month) &&
+                            int.TryParse(weekDaySpan.Slice(0, weekDayDotIndex), out week) &&
+                            int.TryParse(weekDaySpan.Slice(weekDayDotIndex + 1), out int day))
                         {
                             dayOfWeek = (DayOfWeek)day;
                             return true;
@@ -1313,15 +1312,15 @@ namespace System
         }
 
         private static bool TZif_ParsePosixFormat(
-            string posixFormat,
-            out string standardName,
-            out string standardOffset,
-            out string daylightSavingsName,
-            out string daylightSavingsOffset,
-            out string start,
-            out string startTime,
-            out string end,
-            out string endTime)
+            ReadOnlySpan<char> posixFormat,
+            out ReadOnlySpan<char> standardName,
+            out ReadOnlySpan<char> standardOffset,
+            out ReadOnlySpan<char> daylightSavingsName,
+            out ReadOnlySpan<char> daylightSavingsOffset,
+            out ReadOnlySpan<char> start,
+            out ReadOnlySpan<char> startTime,
+            out ReadOnlySpan<char> end,
+            out ReadOnlySpan<char> endTime)
         {
             standardName = null;
             standardOffset = null;
@@ -1337,7 +1336,7 @@ namespace System
             standardOffset = TZif_ParsePosixOffset(posixFormat, ref index);
 
             daylightSavingsName = TZif_ParsePosixName(posixFormat, ref index);
-            if (!string.IsNullOrEmpty(daylightSavingsName))
+            if (!daylightSavingsName.IsEmpty)
             {
                 daylightSavingsOffset = TZif_ParsePosixOffset(posixFormat, ref index);
 
@@ -1354,10 +1353,10 @@ namespace System
                 }
             }
 
-            return !string.IsNullOrEmpty(standardName) && !string.IsNullOrEmpty(standardOffset);
+            return !standardName.IsEmpty && !standardOffset.IsEmpty;
         }
 
-        private static string TZif_ParsePosixName(string posixFormat, ref int index)
+        private static ReadOnlySpan<char> TZif_ParsePosixName(ReadOnlySpan<char> posixFormat, ref int index)
         {
             bool isBracketEnclosed = index < posixFormat.Length && posixFormat[index] == '<';
             if (isBracketEnclosed)
@@ -1365,7 +1364,7 @@ namespace System
                 // move past the opening bracket
                 index++;
 
-                string result = TZif_ParsePosixString(posixFormat, ref index, c => c == '>');
+                ReadOnlySpan<char> result = TZif_ParsePosixString(posixFormat, ref index, c => c == '>');
 
                 // move past the closing bracket
                 if (index < posixFormat.Length && posixFormat[index] == '>')
@@ -1384,10 +1383,10 @@ namespace System
             }
         }
 
-        private static string TZif_ParsePosixOffset(string posixFormat, ref int index) =>
+        private static ReadOnlySpan<char> TZif_ParsePosixOffset(ReadOnlySpan<char> posixFormat, ref int index) =>
             TZif_ParsePosixString(posixFormat, ref index, c => !char.IsDigit(c) && c != '+' && c != '-' && c != ':');
 
-        private static void TZif_ParsePosixDateTime(string posixFormat, ref int index, out string date, out string time)
+        private static void TZif_ParsePosixDateTime(ReadOnlySpan<char> posixFormat, ref int index, out ReadOnlySpan<char> date, out ReadOnlySpan<char> time)
         {
             time = null;
 
@@ -1399,13 +1398,13 @@ namespace System
             }
         }
 
-        private static string TZif_ParsePosixDate(string posixFormat, ref int index) =>
+        private static ReadOnlySpan<char> TZif_ParsePosixDate(ReadOnlySpan<char> posixFormat, ref int index) =>
             TZif_ParsePosixString(posixFormat, ref index, c => c == '/' || c == ',');
 
-        private static string TZif_ParsePosixTime(string posixFormat, ref int index) =>
+        private static ReadOnlySpan<char> TZif_ParsePosixTime(ReadOnlySpan<char> posixFormat, ref int index) =>
             TZif_ParsePosixString(posixFormat, ref index, c => c == ',');
 
-        private static string TZif_ParsePosixString(string posixFormat, ref int index, Func<char, bool> breakCondition)
+        private static ReadOnlySpan<char> TZif_ParsePosixString(ReadOnlySpan<char> posixFormat, ref int index, Func<char, bool> breakCondition)
         {
             int startIndex = index;
             for (; index < posixFormat.Length; index++)
@@ -1417,7 +1416,7 @@ namespace System
                 }
             }
 
-            return posixFormat.Substring(startIndex, index - startIndex);
+            return posixFormat.Slice(startIndex, index - startIndex);
         }
 
         // Returns the Substring from zoneAbbreviations starting at index and ending at '\0'
