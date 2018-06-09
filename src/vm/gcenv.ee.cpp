@@ -1371,17 +1371,13 @@ void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* s
     OverlappedDataObject *pOverlapped = (OverlappedDataObject *)object;
     if (pOverlapped->m_userObject != NULL)
     {
-        //callback(OBJECTREF_TO_UNCHECKED_OBJECTREF(pOverlapped->m_userObject), (ScanContext *)lp1, GC_CALL_PINNED);
-        if (pOverlapped->m_isArray)
+        if (pOverlapped->m_userObject->GetGCSafeMethodTable() == g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]->GetMethodTable())
         {
             // OverlappedDataObject is very special.  An async pin handle keeps it alive.
             // During GC, we also make sure
             // 1. m_userObject itself does not move if m_userObject is not array
             // 2. Every object pointed by m_userObject does not move if m_userObject is array
-            // We do not want to pin m_userObject if it is array.  But m_userObject may be updated
-            // during relocation phase before OverlappedDataObject is doing relocation.
-            // m_userObjectInternal is used to track the location of the m_userObject before it is updated.
-            pOverlapped->m_userObjectInternal = static_cast<void*>(OBJECTREFToObject(pOverlapped->m_userObject));
+            // We do not want to pin m_userObject if it is array.
             ArrayBase* pUserObject = (ArrayBase*)OBJECTREFToObject(pOverlapped->m_userObject);
             Object **ppObj = (Object**)pUserObject->GetDataPtr(TRUE);
             size_t num = pUserObject->GetNumComponents();
@@ -1394,11 +1390,6 @@ void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* s
         {
             callback(&OBJECTREF_TO_UNCHECKED_OBJECTREF(pOverlapped->m_userObject), (ScanContext *)sc, GC_CALL_PINNED);
         }
-    }
-
-    if (pOverlapped->GetAppDomainId() != DefaultADID && pOverlapped->GetAppDomainIndex().m_dwIndex == DefaultADID)
-    {
-        OverlappedDataObject::MarkCleanupNeededFromGC();
     }
 }
 
@@ -1419,7 +1410,7 @@ void GCToEEInterface::WalkAsyncPinned(Object* object, void* context, void (*call
     {
         Object * pUserObject = OBJECTREFToObject(pOverlapped->m_userObject);
         callback(object, pUserObject, context);
-        if (pOverlapped->m_isArray)
+        if (pOverlapped->m_userObject->GetGCSafeMethodTable() == g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]->GetMethodTable())
         {
             ArrayBase* pUserArrayObject = (ArrayBase*)pUserObject;
             Object **pObj = (Object**)pUserArrayObject->GetDataPtr(TRUE);

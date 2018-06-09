@@ -1297,7 +1297,6 @@ ThreadpoolMgr::CallbackForInitiateDrainageOfCompletionPortQueue(
     }
 
     FastInterlockAnd(&g_fCompletionPortDrainNeeded, 0);
-    OverlappedDataObject::FinishCleanup(!fTryNextTime);
 #endif // !FEATURE_PAL
 }
 
@@ -3459,7 +3458,9 @@ Top:
         // abstraction level for managed IO we can remove the IODequeues fired here
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadPoolIODequeue)
                 && !AreEtwIOQueueEventsSpeciallyHandled((LPOVERLAPPED_COMPLETION_ROUTINE)key) && pOverlapped != NULL)
-            FireEtwThreadPoolIODequeue(pOverlapped, (BYTE*)pOverlapped - offsetof(OverlappedDataObject, Internal), GetClrInstanceId());
+        {
+            FireEtwThreadPoolIODequeue(pOverlapped, OverlappedDataObject::GetOverlappedForTracing(pOverlapped), GetClrInstanceId());
+        }
 
         bool enterRetirement;
 
@@ -3766,7 +3767,7 @@ LPOVERLAPPED ThreadpoolMgr::CompletionPortDispatchWorkWithinAppDomain(
         overlapped = ObjectToOVERLAPPEDDATAREF(OverlappedDataObject::GetOverlapped(lpOverlapped));
     }  
 
-    if (ManagedCallback && (overlapped->GetAppDomainId() == adid)) 
+    if (ManagedCallback) 
     {           
         _ASSERTE(*pKey != 0);  // should be a valid function address
         
@@ -3775,7 +3776,6 @@ LPOVERLAPPED ThreadpoolMgr::CompletionPortDispatchWorkWithinAppDomain(
             //Application Bug.
             return NULL;
         }
-    
     } 
     else 
     {

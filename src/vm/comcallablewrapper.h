@@ -1493,7 +1493,7 @@ private:
         enum_IsObjectTP                        = 0x8,
         enum_IsAgile                           = 0x10,
         enum_IsPegged                          = 0x80,
-        enum_HasOverlappedRef                  = 0x100,
+        // unused                              = 0x100,
         enum_CustomQIRespondsToIMarshal        = 0x200,
         enum_CustomQIRespondsToIMarshal_Inited = 0x400,
     }; 
@@ -1795,14 +1795,7 @@ public:
             
         FastInterlockAnd((ULONG*)&m_flags, ~enum_IsPegged);
     }
-    
-    inline BOOL HasOverlappedRef()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_flags & enum_HasOverlappedRef;
-    }    
-    
+        
     // Used for the creation and deletion of simple wrappers
     static SimpleComCallWrapper* CreateSimpleWrapper();
 
@@ -2161,14 +2154,6 @@ public:
         return pWeakRef;
     }
 
-    void StoreOverlappedPointer(LPOVERLAPPED lpOverlapped)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        this->m_operlappedPtr = lpOverlapped;
-        MarkOverlappedRef();
-    }
-
     // Returns TRUE if the ICustomQI implementation returns Handled or Failed for IID_IMarshal.
     BOOL CustomQIRespondsToIMarshal();
 
@@ -2210,14 +2195,7 @@ private:
     // QI for well known interfaces from within the runtime based on an IID.
     IUnknown* QIStandardInterface(REFIID riid);
 
-    // These values are never used at the same time, so we can save a few bytes for each CCW by using a union.
-    // Use the inline methods HasOverlappedRef(), MarkOverlappedRef(), and UnMarkOverlappedRef() to differentiate
-    // how this union is to be interpreted.
-    union
-    {
-        CQuickArray<ConnectionPoint*>*  m_pCPList;
-        LPOVERLAPPED m_operlappedPtr;
-    };
+    CQuickArray<ConnectionPoint*>*  m_pCPList;
     
     // syncblock for the ObjecRef
     SyncBlock*                      m_pSyncBlock;
@@ -2250,21 +2228,7 @@ private:
 
     // This maintains both COM ref and Jupiter ref in 64-bit
     LONGLONG                        m_llRefCount;
-    
-    inline void MarkOverlappedRef()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        FastInterlockOr((ULONG*)&m_flags, enum_HasOverlappedRef);
-    }
-    
-    inline void UnMarkOverlappedRef()
-    {
-        LIMITED_METHOD_CONTRACT;
-        
-        FastInterlockAnd((ULONG*)&m_flags, ~enum_HasOverlappedRef);
-    }
-};
+ };
 
 inline OBJECTHANDLE ComCallWrapper::GetObjectHandle()
 {

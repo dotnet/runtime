@@ -873,7 +873,13 @@ SetFileAttributesW(
 #define SetFileAttributes SetFileAttributesA
 #endif
 
-typedef LPVOID LPOVERLAPPED;  // diff from winbase.h
+typedef struct _OVERLAPPED {
+    ULONG_PTR Internal;
+    ULONG_PTR InternalHigh;
+    DWORD Offset;
+    DWORD OffsetHigh;
+    HANDLE  hEvent;
+} OVERLAPPED, *LPOVERLAPPED;
 
 PALIMPORT
 BOOL
