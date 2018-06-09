@@ -414,20 +414,6 @@ namespace System.IO
         /// <summary>
         /// Raises the event to each handler in the list.
         /// </summary>
-        private void NotifyRenameEventArgs(WatcherChangeTypes action, string name, string oldName)
-        {
-            // filter if there's no handler or neither new name or old name match a specified pattern
-            RenamedEventHandler handler = _onRenamedHandler;
-            if (handler != null &&
-                (MatchPattern(name) || MatchPattern(oldName)))
-            {
-                handler(this, new RenamedEventArgs(action, _directory, name, oldName));
-            }
-        }
-
-        /// <summary>
-        /// Raises the event to each handler in the list.
-        /// </summary>
         private void NotifyRenameEventArgs(WatcherChangeTypes action, ReadOnlySpan<char> name, ReadOnlySpan<char> oldName)
         {
             // filter if there's no handler or neither new name or old name match a specified pattern

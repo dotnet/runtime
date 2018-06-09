@@ -397,51 +397,6 @@ namespace System.IO
             }
         }
 
-        public static bool DirectoryExists(string fullPath)
-        {
-            Interop.ErrorInfo ignored;
-            return DirectoryExists(fullPath, out ignored);
-        }
-
-        private static bool DirectoryExists(string fullPath, out Interop.ErrorInfo errorInfo)
-        {
-            return FileExists(fullPath, Interop.Sys.FileTypes.S_IFDIR, out errorInfo);
-        }
-
-        public static bool FileExists(string fullPath)
-        {
-            Interop.ErrorInfo ignored;
-
-            // Input allows trailing separators in order to match Windows behavior
-            // Unix does not accept trailing separators, so must be trimmed
-            return FileExists(PathInternal.TrimEndingDirectorySeparator(fullPath), Interop.Sys.FileTypes.S_IFREG, out ignored);
-        }
-
-        private static bool FileExists(string fullPath, int fileType, out Interop.ErrorInfo errorInfo)
-        {
-            Debug.Assert(fileType == Interop.Sys.FileTypes.S_IFREG || fileType == Interop.Sys.FileTypes.S_IFDIR);
-
-            Interop.Sys.FileStatus fileinfo;
-            errorInfo = default(Interop.ErrorInfo);
-
-            // First use stat, as we want to follow symlinks.  If that fails, it could be because the symlink
-            // is broken, we don't have permissions, etc., in which case fall back to using LStat to evaluate
-            // based on the symlink itself.
-            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0 &&
-                Interop.Sys.LStat(fullPath, out fileinfo) < 0)
-            {
-                errorInfo = Interop.Sys.GetLastErrorInfo();
-                return false;
-            }
-
-            // Something exists at this path.  If the caller is asking for a directory, return true if it's
-            // a directory and false for everything else.  If the caller is asking for a file, return false for
-            // a directory and true for everything else.
-            return
-                (fileType == Interop.Sys.FileTypes.S_IFDIR) ==
-                ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
-        }
-
         /// <summary>Determines whether the specified directory name should be ignored.</summary>
         /// <param name="name">The name to evaluate.</param>
         /// <returns>true if the name is "." or ".."; otherwise, false.</returns>

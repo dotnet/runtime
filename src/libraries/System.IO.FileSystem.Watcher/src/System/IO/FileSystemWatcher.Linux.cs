@@ -530,7 +530,7 @@ namespace System.IO
                 try
                 {
                     // Previous event information
-                    string previousEventName = null;
+                    ReadOnlySpan<char> previousEventName = ReadOnlySpan<char>.Empty;
                     WatchedDirectory previousEventParent = null;
                     uint previousEventCookie = 0;
 
@@ -549,7 +549,7 @@ namespace System.IO
                         }
 
                         uint mask = nextEvent.mask;
-                        string expandedName = null;
+                        ReadOnlySpan<char> expandedName = ReadOnlySpan<char>.Empty;
                         WatchedDirectory associatedDirectoryEntry = null;
 
                         // An overflow event means that we can't trust our state without restarting since we missed events and 
@@ -585,7 +585,7 @@ namespace System.IO
                         }
 
                         // To match Windows, ignore all changes that happen on the root folder itself
-                        if (string.IsNullOrEmpty(expandedName))
+                        if (expandedName.IsEmpty)
                         {
                             watcher = null;
                             continue;
@@ -600,7 +600,7 @@ namespace System.IO
                         // Renames come in the form of two events: IN_MOVED_FROM and IN_MOVED_TO.
                         // In general, these should come as a sequence, one immediately after the other.
                         // So, we delay raising an event for IN_MOVED_FROM until we see what comes next.
-                        if (previousEventName != null && ((mask & (uint)Interop.Sys.NotifyEvents.IN_MOVED_TO) == 0 || previousEventCookie != nextEvent.cookie))
+                        if (!previousEventName.IsEmpty && ((mask & (uint)Interop.Sys.NotifyEvents.IN_MOVED_TO) == 0 || previousEventCookie != nextEvent.cookie))
                         {
                             // IN_MOVED_FROM without an immediately-following corresponding IN_MOVED_TO.
                             // We have to assume that it was moved outside of our root watch path, which
@@ -614,7 +614,7 @@ namespace System.IO
                                 // parent and previousEventName is the name of the directory to be removed.
                                 foreach (WatchedDirectory child in previousEventParent.Children)
                                 {
-                                    if (child.Name == previousEventName)
+                                    if (previousEventName.Equals(child.Name, StringComparison.Ordinal))
                                     {
                                         RemoveWatchedDirectory(child);
                                         break;
@@ -724,7 +724,7 @@ namespace System.IO
                                     // ago and treated it as a deletion), in which case this is considered a creation.
                                     watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Created, expandedName);
                                 }
-                                previousEventName = null;
+                                previousEventName = ReadOnlySpan<char>.Empty;
                                 previousEventParent = null;
                                 previousEventCookie = 0;
                                 break;

@@ -82,12 +82,11 @@ internal static partial class Interop
         /// <param name="eventFlags">The events for the corresponding path.</param>
         /// <param name="eventIds">The machine-and-disk-drive-unique Event ID for the specific event.</param>
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate void FSEventStreamCallback(
+        internal unsafe delegate void FSEventStreamCallback(
             FSEventStreamRef streamReference,
             IntPtr clientCallBackInfo,
             size_t numEvents,
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
-            String[] eventPaths,
+            byte** eventPaths,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
             FSEventStreamEventFlags[] eventFlags,
             [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
