@@ -1026,6 +1026,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(pen));
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
+
             int status = SafeNativeMethods.Gdip.GdipDrawPath(_nativeGraphics, pen.NativePen, path.nativePath);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -1447,6 +1448,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(brush));
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
+
             int status = SafeNativeMethods.Gdip.GdipFillPath(_nativeGraphics, brush.NativeBrush, path.nativePath);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
