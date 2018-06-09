@@ -18161,7 +18161,7 @@ RelativePath=CoreMangLib\cti\system\string\StringFormat1\StringFormat1.cmd
 WorkingDir=CoreMangLib\cti\system\string\StringFormat1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_FAIL;10115
+Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 
 [StringFormat2.cmd_2483]
@@ -18169,7 +18169,7 @@ RelativePath=CoreMangLib\cti\system\string\StringFormat2\StringFormat2.cmd
 WorkingDir=CoreMangLib\cti\system\string\StringFormat2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_FAIL;10115
+Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 
 [StringGetEnumerator.cmd_2484]
