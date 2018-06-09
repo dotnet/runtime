@@ -30,8 +30,8 @@ class WaitAnyEx
         try
         {
             Console.WriteLine("Waiting...");
-            i = WaitHandle.WaitAny(wh, 5000);
-            Console.WriteLine("WaitAny did not throw AbandonedMutexExcpetion");
+            i = WaitHandle.WaitAny(wh, 30000);
+            Console.WriteLine("WaitAny did not throw AbandonedMutexException. Result: {0}", i);
         }
         catch(AbandonedMutexException)
         {
@@ -49,11 +49,10 @@ class WaitAnyEx
 
     private void AbandonOneAndRelease()
     {
-        Mutex m = new Mutex();
         bool bSet = false;
         foreach(WaitHandle w in wh)
         {
-            if(w.GetType() == m.GetType())
+            if(w is Mutex)
             {
                 w.WaitOne();
                 if(bSet)

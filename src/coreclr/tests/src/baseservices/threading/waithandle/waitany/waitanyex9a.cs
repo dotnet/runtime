@@ -78,10 +78,9 @@ class WaitAnyEx
 
     private void AbandonAllMutexesWait()
     {
-        Mutex m = new Mutex();
         foreach(WaitHandle w in wh)
         {
-            if(w.GetType() == m.GetType())
+            if(w is Mutex)
                 w.WaitOne();
         }
         myMRE.Set();

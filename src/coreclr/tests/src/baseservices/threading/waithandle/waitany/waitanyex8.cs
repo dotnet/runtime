@@ -34,7 +34,7 @@ class WaitAnyEx
         try
         {
             Console.WriteLine("Waiting...");
-            int i = WaitHandle.WaitAny(wh, 5000);
+            int i = WaitHandle.WaitAny(wh, 30000);
             Console.WriteLine("WaitAny did not throw an " +
                 "exception, i = " + i);
         }
