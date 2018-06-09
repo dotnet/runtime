@@ -5,7 +5,6 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Drawing.Internal;
 using System.Internal;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -316,86 +315,6 @@ namespace System.Drawing
                 }
 
                 return new ExternalException(SR.GdiplusUnknown, E_UNEXPECTED);
-            }
-
-            //----------------------------------------------------------------------------------------
-            // Helper function:  Convert PointF[] to native memory block GpPointF*
-            //----------------------------------------------------------------------------------------
-            internal static IntPtr ConvertPointToMemory(PointF[] points)
-            {
-                if (points == null)
-                    throw new ArgumentNullException(nameof(points));
-
-                int size = Marshal.SizeOf(typeof(GPPOINTF));
-                int count = points.Length;
-                IntPtr memory = Marshal.AllocHGlobal(checked(count * size));
-
-                for (int index = 0; index < count; index++)
-                {
-                    Marshal.StructureToPtr(new GPPOINTF(points[index]), (IntPtr)(checked((long)memory + index * size)), false);
-                }
-
-                return memory;
-            }
-
-            //----------------------------------------------------------------------------------------
-            // Helper function:  Convert Point[] to native memory block GpPoint*
-            //----------------------------------------------------------------------------------------
-            internal static IntPtr ConvertPointToMemory(Point[] points)
-            {
-                if (points == null)
-                    throw new ArgumentNullException(nameof(points));
-
-                int size = Marshal.SizeOf(typeof(GPPOINT));
-                int count = points.Length;
-                IntPtr memory = Marshal.AllocHGlobal(checked(count * size));
-
-                for (int index = 0; index < count; index++)
-                {
-                    Marshal.StructureToPtr(new GPPOINT(points[index]), (IntPtr)(checked((long)memory + index * size)), false);
-                }
-
-                return memory;
-            }
-
-            //----------------------------------------------------------------------------------------
-            // Helper function:  Convert RectangleF[] to native memory block GpRectF*
-            //----------------------------------------------------------------------------------------
-            internal static IntPtr ConvertRectangleToMemory(RectangleF[] rect)
-            {
-                if (rect == null)
-                    throw new ArgumentNullException(nameof(rect));
-
-                int size = Marshal.SizeOf(typeof(GPRECTF));
-                int count = rect.Length;
-                IntPtr memory = Marshal.AllocHGlobal(checked(count * size));
-
-                for (int index = 0; index < count; index++)
-                {
-                    Marshal.StructureToPtr(new GPRECTF(rect[index]), (IntPtr)(checked((long)memory + index * size)), false);
-                }
-
-                return memory;
-            }
-
-            //----------------------------------------------------------------------------------------
-            // Helper function:  Convert Rectangle[] to native memory block GpRect*
-            //----------------------------------------------------------------------------------------
-            internal static IntPtr ConvertRectangleToMemory(Rectangle[] rect)
-            {
-                if (rect == null)
-                    throw new ArgumentNullException(nameof(rect));
-
-                int size = Marshal.SizeOf(typeof(GPRECT));
-                int count = rect.Length;
-                IntPtr memory = Marshal.AllocHGlobal(checked(count * size));
-
-                for (int index = 0; index < count; index++)
-                {
-                    Marshal.StructureToPtr(new GPRECT(rect[index]), (IntPtr)(checked((long)memory + index * size)), false);
-                }
-
-                return memory;
             }
         }
 

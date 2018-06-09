@@ -588,49 +588,38 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outlines of a series of rectangles.
         /// </summary>
-        public void DrawRectangles(Pen pen, RectangleF[] rects)
+        public unsafe void DrawRectangles(Pen pen, RectangleF[] rects)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
 
-            IntPtr buf = Gdip.ConvertRectangleToMemory(rects);
-
-            try
+            fixed (RectangleF* r = rects)
             {
                 CheckErrorStatus(Gdip.GdipDrawRectangles(
                     new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf), rects.Length));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    r, rects.Length));
             }
         }
 
         /// <summary>
         /// Draws the outlines of a series of rectangles.
         /// </summary>
-        public void DrawRectangles(Pen pen, Rectangle[] rects)
+        public unsafe void DrawRectangles(Pen pen, Rectangle[] rects)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
 
-            IntPtr buf = Gdip.ConvertRectangleToMemory(rects);
-
-            try
+            fixed (Rectangle* r = rects)
             {
                 CheckErrorStatus(Gdip.GdipDrawRectanglesI(
                     new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf), rects.Length));
+                    r, rects.Length));
             }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
-            }
+
         }
 
         /// <summary>
@@ -728,51 +717,36 @@ namespace System.Drawing
         /// <summary>
         /// Draws the outline of a polygon defined by an array of points.
         /// </summary>
-        public void DrawPolygon(Pen pen, PointF[] points)
+        public unsafe void DrawPolygon(Pen pen, PointF[] points)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-            try
+            fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawPolygon(
-                    new HandleRef(this, NativeGraphics),
-                    new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf),
-                    points.Length));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
+                    p, points.Length));
             }
         }
 
         /// <summary>
         /// Draws the outline of a polygon defined by an array of points.
         /// </summary>
-        public void DrawPolygon(Pen pen, Point[] points)
+        public unsafe void DrawPolygon(Pen pen, Point[] points)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-
-            try
+            fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawPolygonI(
-                    new HandleRef(this, NativeGraphics),
-                    new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf),
-                    points.Length));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
+                    p, points.Length));
             }
         }
 
@@ -795,51 +769,39 @@ namespace System.Drawing
         /// <summary>
         /// Draws a curve defined by an array of points.
         /// </summary>
-        public void DrawCurve(Pen pen, PointF[] points)
+        public unsafe void DrawCurve(Pen pen, PointF[] points)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-            try
+            fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawCurve(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf),
-                    points.Length));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    p, points.Length));
             }
         }
 
         /// <summary>
         /// Draws a curve defined by an array of points.
         /// </summary>
-        public void DrawCurve(Pen pen, PointF[] points, float tension)
+        public unsafe void DrawCurve(Pen pen, PointF[] points, float tension)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-            try
+            fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawCurve2(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf),
-                    points.Length,
+                    p, points.Length,
                     tension));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 
@@ -851,217 +813,161 @@ namespace System.Drawing
         /// <summary>
         /// Draws a curve defined by an array of points.
         /// </summary>
-        public void DrawCurve(Pen pen, PointF[] points, int offset, int numberOfSegments, float tension)
+        public unsafe void DrawCurve(Pen pen, PointF[] points, int offset, int numberOfSegments, float tension)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-
-            try
+            fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawCurve3(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf),
-                    points.Length,
+                    p, points.Length,
                     offset,
                     numberOfSegments,
                     tension));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 
         /// <summary>
         /// Draws a curve defined by an array of points.
         /// </summary>
-        public void DrawCurve(Pen pen, Point[] points)
+        public unsafe void DrawCurve(Pen pen, Point[] points)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-
-            try
+            fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawCurveI(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf),
-                    points.Length));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    p, points.Length));
             }
         }
 
         /// <summary>
         /// Draws a curve defined by an array of points.
         /// </summary>
-        public void DrawCurve(Pen pen, Point[] points, float tension)
+        public unsafe void DrawCurve(Pen pen, Point[] points, float tension)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-
-            try
+            fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawCurve2I(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf),
-                    points.Length,
+                    p, points.Length,
                     tension));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 
         /// <summary>
         /// Draws a curve defined by an array of points.
         /// </summary>
-        public void DrawCurve(Pen pen, Point[] points, int offset, int numberOfSegments, float tension)
+        public unsafe void DrawCurve(Pen pen, Point[] points, int offset, int numberOfSegments, float tension)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-
-            try
+            fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawCurve3I(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf),
-                    points.Length,
+                    p, points.Length,
                     offset,
                     numberOfSegments,
                     tension));
             }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
-            }
         }
 
         /// <summary>
         /// Draws a closed curve defined by an array of points.
         /// </summary>
-        public void DrawClosedCurve(Pen pen, PointF[] points)
+        public unsafe void DrawClosedCurve(Pen pen, PointF[] points)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-
-            try
+            fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawClosedCurve(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf),
-                    points.Length));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    p, points.Length));
             }
         }
 
         /// <summary>
         /// Draws a closed curve defined by an array of points.
         /// </summary>
-        public void DrawClosedCurve(Pen pen, PointF[] points, float tension, FillMode fillmode)
+        public unsafe void DrawClosedCurve(Pen pen, PointF[] points, float tension, FillMode fillmode)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-
-            try
+            fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawClosedCurve2(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf),
-                    points.Length,
+                    p, points.Length,
                     tension));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 
         /// <summary>
         /// Draws a closed curve defined by an array of points.
         /// </summary>
-        public void DrawClosedCurve(Pen pen, Point[] points)
+        public unsafe void DrawClosedCurve(Pen pen, Point[] points)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-
-            try
+            fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawClosedCurveI(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf),
-                    points.Length));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    p, points.Length));
             }
         }
 
         /// <summary>
         /// Draws a closed curve defined by an array of points.
         /// </summary>
-        public void DrawClosedCurve(Pen pen, Point[] points, float tension, FillMode fillmode)
+        public unsafe void DrawClosedCurve(Pen pen, Point[] points, float tension, FillMode fillmode)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-
-            try
+            fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipDrawClosedCurve2I(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(pen, pen.NativePen),
-                    new HandleRef(this, buf),
-                    points.Length,
+                    p, points.Length,
                     tension));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 
@@ -1120,50 +1026,38 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interiors of a series of rectangles with a <see cref='Brush'/>.
         /// </summary>
-        public void FillRectangles(Brush brush, RectangleF[] rects)
+        public unsafe void FillRectangles(Brush brush, RectangleF[] rects)
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
 
-            IntPtr buf = Gdip.ConvertRectangleToMemory(rects);
-            try
+            fixed (RectangleF* r = rects)
             {
                 CheckErrorStatus(Gdip.GdipFillRectangles(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(brush, brush.NativeBrush),
-                    new HandleRef(this, buf),
-                    rects.Length));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    r, rects.Length));
             }
         }
 
         /// <summary>
         /// Fills the interiors of a series of rectangles with a <see cref='Brush'/>.
         /// </summary>
-        public void FillRectangles(Brush brush, Rectangle[] rects)
+        public unsafe void FillRectangles(Brush brush, Rectangle[] rects)
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
 
-            IntPtr buf = Gdip.ConvertRectangleToMemory(rects);
-            try
+            fixed (Rectangle* r = rects)
             {
                 CheckErrorStatus(Gdip.GdipFillRectanglesI(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(brush, brush.NativeBrush),
-                    new HandleRef(this, buf),
-                    rects.Length));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    r, rects.Length));
             }
         }
 
@@ -1178,26 +1072,20 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a polygon defined by an array of points.
         /// </summary>
-        public void FillPolygon(Brush brush, PointF[] points, FillMode fillMode)
+        public unsafe void FillPolygon(Brush brush, PointF[] points, FillMode fillMode)
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-            try
+            fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipFillPolygon(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(brush, brush.NativeBrush),
-                    new HandleRef(this, buf),
-                    points.Length,
-                    (int)fillMode));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    p, points.Length,
+                    fillMode));
             }
         }
 
@@ -1212,26 +1100,20 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a polygon defined by an array of points.
         /// </summary>
-        public void FillPolygon(Brush brush, Point[] points, FillMode fillMode)
+        public unsafe void FillPolygon(Brush brush, Point[] points, FillMode fillMode)
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-            try
+            fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipFillPolygonI(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(brush, brush.NativeBrush),
-                    new HandleRef(this, buf),
-                    points.Length,
-                    (int)fillMode));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    p, points.Length,
+                    fillMode));
             }
         }
 
@@ -1338,25 +1220,19 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior a closed curve defined by an array of points.
         /// </summary>
-        public void FillClosedCurve(Brush brush, PointF[] points)
+        public unsafe void FillClosedCurve(Brush brush, PointF[] points)
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-            try
+            fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipFillClosedCurve(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(brush, brush.NativeBrush),
-                    new HandleRef(this, buf),
-                    points.Length));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    p, points.Length));
             }
         }
 
@@ -1368,52 +1244,40 @@ namespace System.Drawing
             FillClosedCurve(brush, points, fillmode, 0.5f);
         }
 
-        public void FillClosedCurve(Brush brush, PointF[] points, FillMode fillmode, float tension)
+        public unsafe void FillClosedCurve(Brush brush, PointF[] points, FillMode fillmode, float tension)
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-            try
+            fixed (PointF* p = points)
             {
                 CheckErrorStatus(Gdip.GdipFillClosedCurve2(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(brush, brush.NativeBrush),
-                    new HandleRef(this, buf),
-                    points.Length,
+                    p, points.Length,
                     tension,
-                    (int)fillmode));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    fillmode));
             }
         }
 
         /// <summary>
         /// Fills the interior a closed curve defined by an array of points.
         /// </summary>
-        public void FillClosedCurve(Brush brush, Point[] points)
+        public unsafe void FillClosedCurve(Brush brush, Point[] points)
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-            try
+            fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipFillClosedCurveI(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(brush, brush.NativeBrush),
-                    new HandleRef(this, buf),
-                    points.Length));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    p, points.Length));
             }
         }
 
@@ -1422,27 +1286,21 @@ namespace System.Drawing
             FillClosedCurve(brush, points, fillmode, 0.5f);
         }
 
-        public void FillClosedCurve(Brush brush, Point[] points, FillMode fillmode, float tension)
+        public unsafe void FillClosedCurve(Brush brush, Point[] points, FillMode fillmode, float tension)
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(points);
-            try
+            fixed (Point* p = points)
             {
                 CheckErrorStatus(Gdip.GdipFillClosedCurve2I(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(brush, brush.NativeBrush),
-                    new HandleRef(this, buf),
-                    points.Length,
+                    p, points.Length,
                     tension,
-                    (int)fillmode));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                    fillmode));
             }
         }
 
@@ -1499,14 +1357,12 @@ namespace System.Drawing
             if (font == null)
                 throw new ArgumentNullException(nameof(font));
 
-            GPRECTF grf = new GPRECTF(layoutRectangle);
-
             CheckErrorStatus(Gdip.GdipDrawString(
                 new HandleRef(this, NativeGraphics),
                 s,
                 s.Length,
                 new HandleRef(font, font.NativeFont),
-                ref grf,
+                ref layoutRectangle,
                 new HandleRef(format, format?.nativeFormat ?? IntPtr.Zero),
                 new HandleRef(brush, brush.NativeBrush)));
         }
@@ -1529,21 +1385,21 @@ namespace System.Drawing
             if (font == null)
                 throw new ArgumentNullException(nameof(font));
 
-            GPRECTF grfLayout = new GPRECTF(0, 0, layoutArea.Width, layoutArea.Height);
-            GPRECTF grfboundingBox = new GPRECTF();
+            RectangleF layout = new RectangleF(0, 0, layoutArea.Width, layoutArea.Height);
+            RectangleF boundingBox = new RectangleF();
 
             Gdip.CheckStatus(Gdip.GdipMeasureString(
                 new HandleRef(this, NativeGraphics),
                 text,
                 text.Length,
                 new HandleRef(font, font.NativeFont),
-                ref grfLayout,
+                ref layout,
                 new HandleRef(stringFormat, stringFormat?.nativeFormat ?? IntPtr.Zero),
-                ref grfboundingBox,
+                ref boundingBox,
                 out charactersFitted,
                 out linesFilled));
 
-            return grfboundingBox.SizeF;
+            return boundingBox.Size;
         }
 
         public SizeF MeasureString(string text, Font font, PointF origin, StringFormat stringFormat)
@@ -1553,21 +1409,21 @@ namespace System.Drawing
             if (font == null)
                 throw new ArgumentNullException(nameof(font));
 
-            GPRECTF grf = new GPRECTF(origin.X, origin.Y, 0, 0);
-            GPRECTF grfboundingBox = new GPRECTF();
+            RectangleF layout = new RectangleF(origin.X, origin.Y, 0, 0);
+            RectangleF boundingBox = new RectangleF();
 
             Gdip.CheckStatus(Gdip.GdipMeasureString(
                 new HandleRef(this, NativeGraphics),
                 text,
                 text.Length,
                 new HandleRef(font, font.NativeFont),
-                ref grf,
+                ref layout,
                 new HandleRef(stringFormat, stringFormat?.nativeFormat ?? IntPtr.Zero),
-                ref grfboundingBox,
+                ref boundingBox,
                 out int a,
                 out int b));
 
-            return grfboundingBox.SizeF;
+            return boundingBox.Size;
         }
 
         public SizeF MeasureString(string text, Font font, SizeF layoutArea) => MeasureString(text, font, layoutArea, null);
@@ -1579,21 +1435,21 @@ namespace System.Drawing
             if (font == null)
                 throw new ArgumentNullException(nameof(font));
 
-            GPRECTF grfLayout = new GPRECTF(0, 0, layoutArea.Width, layoutArea.Height);
-            GPRECTF grfboundingBox = new GPRECTF();
+            RectangleF layout = new RectangleF(0, 0, layoutArea.Width, layoutArea.Height);
+            RectangleF boundingBox = new RectangleF();
 
             Gdip.CheckStatus(Gdip.GdipMeasureString(
                 new HandleRef(this, NativeGraphics),
                 text,
                 text.Length,
                 new HandleRef(font, font.NativeFont),
-                ref grfLayout,
+                ref layout,
                 new HandleRef(stringFormat, stringFormat?.nativeFormat ?? IntPtr.Zero),
-                ref grfboundingBox,
+                ref boundingBox,
                 out int a,
                 out int b));
 
-            return grfboundingBox.SizeF;
+            return boundingBox.Size;
         }
 
         public SizeF MeasureString(string text, Font font)
@@ -1623,7 +1479,6 @@ namespace System.Drawing
                 out int count));
 
             IntPtr[] gpRegions = new IntPtr[count];
-            GPRECTF grf = new GPRECTF(layoutRect);
             Region[] regions = new Region[count];
 
             for (int f = 0; f < count; f++)
@@ -1637,7 +1492,7 @@ namespace System.Drawing
                 text,
                 text.Length,
                 new HandleRef(font, font.NativeFont),
-                ref grf,
+                ref layoutRect,
                 new HandleRef(stringFormat, stringFormat?.nativeFormat ?? IntPtr.Zero),
                 count,
                 gpRegions));
@@ -1840,7 +1695,7 @@ namespace System.Drawing
         //  @notes Perspective blt only works for bitmap images.
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public void DrawImage(Image image, PointF[] destPoints)
+        public unsafe void DrawImage(Image image, PointF[] destPoints)
         {
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
@@ -1851,26 +1706,20 @@ namespace System.Drawing
             if (count != 3 && count != 4)
                 throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidLength));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(destPoints);
-            try
+            fixed (PointF* p = destPoints)
             {
                 int status = Gdip.GdipDrawImagePoints(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(image, image.nativeImage),
-                    new HandleRef(this, buf),
-                    count);
+                    p, count);
 
                 IgnoreMetafileErrors(image, ref status);
                 CheckErrorStatus(status);
             }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
-            }
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public void DrawImage(Image image, Point[] destPoints)
+        public unsafe void DrawImage(Image image, Point[] destPoints)
         {
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
@@ -1881,21 +1730,15 @@ namespace System.Drawing
             if (count != 3 && count != 4)
                 throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidLength));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(destPoints);
-            try
+            fixed (Point* p = destPoints)
             {
                 int status = Gdip.GdipDrawImagePointsI(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(image, image.nativeImage),
-                    new HandleRef(this, buf),
-                    count);
+                    p, count);
 
                 IgnoreMetafileErrors(image, ref status);
                 CheckErrorStatus(status);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 
@@ -1944,7 +1787,7 @@ namespace System.Drawing
                 new HandleRef(image, image.nativeImage),
                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                 srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height,
-                (int)srcUnit,
+                srcUnit,
                 NativeMethods.NullHandleRef,
                 null,
                 NativeMethods.NullHandleRef);
@@ -1964,7 +1807,7 @@ namespace System.Drawing
                 new HandleRef(image, image.nativeImage),
                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                 srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height,
-                (int)srcUnit,
+                srcUnit,
                 NativeMethods.NullHandleRef,
                 null,
                 NativeMethods.NullHandleRef);
@@ -1974,7 +1817,7 @@ namespace System.Drawing
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public void DrawImage(Image image, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit)
+        public unsafe void DrawImage(Image image, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit)
         {
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
@@ -1985,26 +1828,20 @@ namespace System.Drawing
             if (count != 3 && count != 4)
                 throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidLength));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(destPoints);
-            try
+            fixed (PointF* p = destPoints)
             {
                 int status = Gdip.GdipDrawImagePointsRect(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(image, image.nativeImage),
-                    new HandleRef(this, buf),
-                    destPoints.Length,
+                    p, destPoints.Length,
                     srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height,
-                    (int)srcUnit,
+                    srcUnit,
                     NativeMethods.NullHandleRef,
                     null,
                     NativeMethods.NullHandleRef);
 
                 IgnoreMetafileErrors(image, ref status);
                 CheckErrorStatus(status);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 
@@ -2027,7 +1864,7 @@ namespace System.Drawing
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public void DrawImage(
+        public unsafe void DrawImage(
             Image image,
             PointF[] destPoints,
             RectangleF srcRect,
@@ -2045,26 +1882,20 @@ namespace System.Drawing
             if (count != 3 && count != 4)
                 throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidLength));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(destPoints);
-            try
+            fixed (PointF* p = destPoints)
             {
                 int status = Gdip.GdipDrawImagePointsRect(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(image, image.nativeImage),
-                    new HandleRef(this, buf),
-                    destPoints.Length,
+                    p, destPoints.Length,
                     srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height,
-                    (int)srcUnit,
+                    srcUnit,
                     new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero),
                     callback,
                     new HandleRef(null, (IntPtr)callbackData));
 
                 IgnoreMetafileErrors(image, ref status);
                 CheckErrorStatus(status);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 
@@ -2098,7 +1929,7 @@ namespace System.Drawing
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public void DrawImage(
+        public unsafe void DrawImage(
             Image image,
             Point[] destPoints,
             Rectangle srcRect,
@@ -2116,26 +1947,20 @@ namespace System.Drawing
             if (count != 3 && count != 4)
                 throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidLength));
 
-            IntPtr buf = Gdip.ConvertPointToMemory(destPoints);
-            try
+            fixed (Point* p = destPoints)
             {
                 int status = Gdip.GdipDrawImagePointsRectI(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(image, image.nativeImage),
-                    new HandleRef(this, buf),
-                    destPoints.Length,
+                    p, destPoints.Length,
                     srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height,
-                    (int)srcUnit,
+                    srcUnit,
                     new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero),
                     callback,
                     new HandleRef(null, (IntPtr)callbackData));
 
                 IgnoreMetafileErrors(image, ref status);
                 CheckErrorStatus(status);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 
@@ -2203,7 +2028,7 @@ namespace System.Drawing
                 new HandleRef(image, image.nativeImage),
                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                 srcX, srcY, srcWidth, srcHeight,
-                (int)srcUnit,
+                srcUnit,
                 new HandleRef(imageAttrs, imageAttrs?.nativeImageAttributes ?? IntPtr.Zero),
                 callback,
                 new HandleRef(null, callbackData));
@@ -2275,7 +2100,7 @@ namespace System.Drawing
                 new HandleRef(image, image.nativeImage),
                 destRect.X, destRect.Y, destRect.Width, destRect.Height,
                 srcX, srcY, srcWidth, srcHeight,
-                (int)srcUnit,
+                srcUnit,
                 new HandleRef(imageAttrs, imageAttrs?.nativeImageAttributes ?? IntPtr.Zero),
                 callback,
                 new HandleRef(null, callbackData));
@@ -2308,7 +2133,7 @@ namespace System.Drawing
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileDestPoint(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
-                new GPPOINTF(destPoint),
+                ref destPoint,
                 callback,
                 new HandleRef(null, callbackData),
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
@@ -2338,7 +2163,7 @@ namespace System.Drawing
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileDestPointI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
-                new GPPOINT(destPoint),
+                ref destPoint,
                 callback,
                 new HandleRef(null, callbackData),
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
@@ -2365,12 +2190,10 @@ namespace System.Drawing
             IntPtr callbackData,
             ImageAttributes imageAttr)
         {
-            GPRECTF grf = new GPRECTF(destRect);
-
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileDestRect(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
-                ref grf,
+                ref destRect,
                 callback,
                 new HandleRef(null, callbackData),
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
@@ -2397,12 +2220,10 @@ namespace System.Drawing
             IntPtr callbackData,
             ImageAttributes imageAttr)
         {
-            GPRECT gprect = new GPRECT(destRect);
-
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileDestRectI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
-                ref gprect,
+                ref destRect,
                 callback,
                 new HandleRef(null, callbackData),
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
@@ -2426,7 +2247,7 @@ namespace System.Drawing
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
-        public void EnumerateMetafile(
+        public unsafe void EnumerateMetafile(
             Metafile metafile,
             PointF[] destPoints,
             EnumerateMetafileProc callback,
@@ -2438,22 +2259,15 @@ namespace System.Drawing
             if (destPoints.Length != 3)
                 throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidParallelogram));
 
-            IntPtr points = Gdip.ConvertPointToMemory(destPoints);
-
-            try
+            fixed (PointF* p = destPoints)
             {
                 Gdip.CheckStatus(Gdip.GdipEnumerateMetafileDestPoints(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
-                    points,
-                    destPoints.Length,
+                    p, destPoints.Length,
                     callback,
                     new HandleRef(null, callbackData),
                     new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(points);
             }
         }
 
@@ -2471,7 +2285,7 @@ namespace System.Drawing
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
-        public void EnumerateMetafile(
+        public unsafe void EnumerateMetafile(
             Metafile metafile,
             Point[] destPoints,
             EnumerateMetafileProc callback,
@@ -2483,23 +2297,16 @@ namespace System.Drawing
             if (destPoints.Length != 3)
                 throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidParallelogram));
 
-            IntPtr points = Gdip.ConvertPointToMemory(destPoints);
-
-            try
+            fixed (Point* p = destPoints)
             {
                 Gdip.CheckStatus(Gdip.GdipEnumerateMetafileDestPointsI(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
-                    points,
-                    destPoints.Length,
+                    p, destPoints.Length,
                     callback,
                     new HandleRef(null, callbackData),
                     new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
             }
-            finally
-            {
-                Marshal.FreeHGlobal(points);
-            }
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
@@ -2536,14 +2343,12 @@ namespace System.Drawing
             IntPtr callbackData,
             ImageAttributes imageAttr)
         {
-            GPRECTF grf = new GPRECTF(srcRect);
-
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileSrcRectDestPoint(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
-                new GPPOINTF(destPoint),
-                ref grf,
-                (int)unit,
+                ref destPoint,
+                ref srcRect,
+                unit,
                 callback,
                 new HandleRef(null, callbackData),
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
@@ -2583,15 +2388,12 @@ namespace System.Drawing
             IntPtr callbackData,
             ImageAttributes imageAttr)
         {
-            GPPOINT gppoint = new GPPOINT(destPoint);
-            GPRECT gprect = new GPRECT(srcRect);
-
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileSrcRectDestPointI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
-                gppoint,
-                ref gprect,
-                (int)unit,
+                ref destPoint,
+                ref srcRect,
+                unit,
                 callback,
                 new HandleRef(null, callbackData),
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
@@ -2631,15 +2433,12 @@ namespace System.Drawing
             IntPtr callbackData,
             ImageAttributes imageAttr)
         {
-            GPRECTF grfdest = new GPRECTF(destRect);
-            GPRECTF grfsrc = new GPRECTF(srcRect);
-
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileSrcRectDestRect(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
-                ref grfdest,
-                ref grfsrc,
-                (int)unit,
+                ref destRect,
+                ref srcRect,
+                unit,
                 callback,
                 new HandleRef(null, callbackData),
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
@@ -2679,15 +2478,12 @@ namespace System.Drawing
             IntPtr callbackData,
             ImageAttributes imageAttr)
         {
-            GPRECT gpDest = new GPRECT(destRect);
-            GPRECT gpSrc = new GPRECT(srcRect);
-
             Gdip.CheckStatus(Gdip.GdipEnumerateMetafileSrcRectDestRectI(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
-                ref gpDest,
-                ref gpSrc,
-                (int)unit,
+                ref destRect,
+                ref srcRect,
+                unit,
                 callback,
                 new HandleRef(null, callbackData),
                 new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
@@ -2718,7 +2514,7 @@ namespace System.Drawing
 
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public void EnumerateMetafile(
+        public unsafe void EnumerateMetafile(
             Metafile metafile,
             PointF[] destPoints,
             RectangleF srcRect,
@@ -2732,25 +2528,19 @@ namespace System.Drawing
             if (destPoints.Length != 3)
                 throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidParallelogram));
 
-            IntPtr buffer = Gdip.ConvertPointToMemory(destPoints);
-            try
+            fixed (PointF* p = destPoints)
             {
                 GPRECTF grf = new GPRECTF(srcRect);
 
                 Gdip.CheckStatus(Gdip.GdipEnumerateMetafileSrcRectDestPoints(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
-                    buffer,
-                    destPoints.Length,
-                    ref grf,
-                    (int)unit,
+                    p, destPoints.Length,
+                    ref srcRect,
+                    unit,
                     callback,
                     new HandleRef(null, callbackData),
                     new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buffer);
             }
         }
 
@@ -2779,7 +2569,7 @@ namespace System.Drawing
 
         [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public void EnumerateMetafile(
+        public unsafe void EnumerateMetafile(
             Metafile metafile,
             Point[] destPoints,
             Rectangle srcRect,
@@ -2793,24 +2583,17 @@ namespace System.Drawing
             if (destPoints.Length != 3)
                 throw new ArgumentException(SR.Format(SR.GdiplusDestPointsInvalidParallelogram));
 
-            IntPtr buffer = Gdip.ConvertPointToMemory(destPoints);
-            try
+            fixed (Point* p = destPoints)
             {
-                GPRECT gpSrc = new GPRECT(srcRect);
                 Gdip.CheckStatus(Gdip.GdipEnumerateMetafileSrcRectDestPointsI(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
-                    buffer,
-                    destPoints.Length,
-                    ref gpSrc,
-                    (int)unit,
+                    p, destPoints.Length,
+                    ref srcRect,
+                    unit,
                     callback,
                     new HandleRef(null, callbackData),
                     new HandleRef(imageAttr, imageAttr?.nativeImageAttributes ?? IntPtr.Zero)));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buffer);
             }
         }
 
@@ -2895,10 +2678,9 @@ namespace System.Drawing
                 if (PrintingHelper is PrintPreviewGraphics ppGraphics)
                     return ppGraphics.VisibleClipBounds;
 
-                GPRECTF rect = new GPRECTF();
-                Gdip.CheckStatus(Gdip.GdipGetVisibleClipBounds(new HandleRef(this, NativeGraphics), ref rect));
+                Gdip.CheckStatus(Gdip.GdipGetVisibleClipBounds(new HandleRef(this, NativeGraphics), out RectangleF rect));
 
-                return rect.ToRectangleF();
+                return rect;
             }
         }
 
@@ -2970,11 +2752,8 @@ namespace System.Drawing
         {
             GraphicsContext context = new GraphicsContext(this);
 
-            GPRECTF dstf = new GPRECTF(dstrect);
-            GPRECTF srcf = new GPRECTF(srcrect);
-
             int status = Gdip.GdipBeginContainer(
-                new HandleRef(this, NativeGraphics), ref dstf, ref srcf, (int)unit, out int state);
+                new HandleRef(this, NativeGraphics), ref dstrect, ref srcrect, unit, out int state);
 
             if (status != Gdip.Ok)
             {
@@ -3018,11 +2797,8 @@ namespace System.Drawing
         {
             GraphicsContext context = new GraphicsContext(this);
 
-            GPRECT gpDest = new GPRECT(dstrect);
-            GPRECT gpSrc = new GPRECT(srcrect);
-
             int status = Gdip.GdipBeginContainerI(
-                new HandleRef(this, NativeGraphics), ref gpDest, ref gpSrc, (int)unit, out int state);
+                new HandleRef(this, NativeGraphics), ref dstrect, ref srcrect, unit, out int state);
 
             if (status != Gdip.Ok)
             {
