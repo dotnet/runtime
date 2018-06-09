@@ -13,8 +13,7 @@ namespace System.Drawing.Drawing2D
 
         public Matrix()
         {
-            IntPtr nativeMatrix;
-            int status = SafeNativeMethods.Gdip.GdipCreateMatrix(out nativeMatrix);
+            int status = SafeNativeMethods.Gdip.GdipCreateMatrix(out IntPtr nativeMatrix);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -24,8 +23,7 @@ namespace System.Drawing.Drawing2D
 
         public Matrix(float m11, float m12, float m21, float m22, float dx, float dy)
         {
-            IntPtr nativeMatrix;
-            int status = SafeNativeMethods.Gdip.GdipCreateMatrix2(m11, m12, m21, m22, dx, dy, out nativeMatrix);
+            int status = SafeNativeMethods.Gdip.GdipCreateMatrix2(m11, m12, m21, m22, dx, dy, out IntPtr nativeMatrix);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -49,8 +47,7 @@ namespace System.Drawing.Drawing2D
             try
             {
                 GPRECTF gprectf = new GPRECTF(rect);
-                IntPtr nativeMatrix;
-                int status = SafeNativeMethods.Gdip.GdipCreateMatrix3(ref gprectf, new HandleRef(null, buf), out nativeMatrix);
+                int status = SafeNativeMethods.Gdip.GdipCreateMatrix3(ref gprectf, new HandleRef(null, buf), out IntPtr nativeMatrix);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {
@@ -81,8 +78,7 @@ namespace System.Drawing.Drawing2D
             try
             {
                 GPRECT gprect = new GPRECT(rect);
-                IntPtr nativeMatrix;
-                int status = SafeNativeMethods.Gdip.GdipCreateMatrix3I(ref gprect, new HandleRef(null, buf), out nativeMatrix);
+                int status = SafeNativeMethods.Gdip.GdipCreateMatrix3I(ref gprect, new HandleRef(null, buf), out IntPtr nativeMatrix);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {
@@ -116,15 +112,14 @@ namespace System.Drawing.Drawing2D
 
         public Matrix Clone()
         {
-            IntPtr clonedMatrix;
-            int status = SafeNativeMethods.Gdip.GdipCloneMatrix(new HandleRef(this, nativeMatrix), out clonedMatrix);
+            int status = SafeNativeMethods.Gdip.GdipCloneMatrix(new HandleRef(this, nativeMatrix), out IntPtr clonedMatrix);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
 
             return new Matrix(clonedMatrix);
         }
-    
+
         public float[] Elements
         {
             get
@@ -367,7 +362,8 @@ namespace System.Drawing.Drawing2D
         public override bool Equals(object obj)
         {
             Matrix matrix2 = obj as Matrix;
-            if (matrix2 == null) return false;
+            if (matrix2 == null)
+                return false;
 
 
             int status = SafeNativeMethods.Gdip.GdipIsMatrixEqual(new HandleRef(this, nativeMatrix),

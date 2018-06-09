@@ -12,19 +12,18 @@ namespace System.Drawing.Drawing2D
 {
     public sealed class GraphicsPath : MarshalByRefObject, ICloneable, IDisposable
     {
-        internal IntPtr nativePath;
+        internal IntPtr _nativePath;
 
         public GraphicsPath() : this(FillMode.Alternate) { }
 
         public GraphicsPath(FillMode fillMode)
         {
-            IntPtr nativePath;
-            int status = SafeNativeMethods.Gdip.GdipCreatePath(unchecked((int)fillMode), out nativePath);
+            int status = SafeNativeMethods.Gdip.GdipCreatePath(unchecked((int)fillMode), out IntPtr nativePath);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
 
-            this.nativePath = nativePath;
+            _nativePath = nativePath;
         }
 
         public GraphicsPath(PointF[] pts, byte[] types) : this(pts, types, FillMode.Alternate) { }
@@ -40,25 +39,26 @@ namespace System.Drawing.Drawing2D
             int count = types.Length;
             IntPtr ptbuf = SafeNativeMethods.Gdip.ConvertPointToMemory(pts);
             IntPtr typebuf = Marshal.AllocHGlobal(count);
-            IntPtr nativePath = IntPtr.Zero;
             try
             {
                 Marshal.Copy(types, 0, typebuf, count);
 
-                int status = SafeNativeMethods.Gdip.GdipCreatePath2(new HandleRef(null, ptbuf), new HandleRef(null, typebuf), count,
-                                                     unchecked((int)fillMode), out nativePath);
-
+                int status = SafeNativeMethods.Gdip.GdipCreatePath2(
+                    new HandleRef(null, ptbuf),
+                    new HandleRef(null, typebuf),
+                    count,
+                    unchecked((int)fillMode),
+                    out IntPtr nativePath);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
+                _nativePath = nativePath;
             }
             finally
             {
                 Marshal.FreeHGlobal(ptbuf);
                 Marshal.FreeHGlobal(typebuf);
             }
-
-            this.nativePath = nativePath;
         }
 
         public GraphicsPath(Point[] pts, byte[] types) : this(pts, types, FillMode.Alternate) { }
@@ -74,29 +74,32 @@ namespace System.Drawing.Drawing2D
             int count = types.Length;
             IntPtr ptbuf = SafeNativeMethods.Gdip.ConvertPointToMemory(pts);
             IntPtr typebuf = Marshal.AllocHGlobal(count);
-            IntPtr nativePath = IntPtr.Zero;
             try
             {
                 Marshal.Copy(types, 0, typebuf, count);
 
-                int status = SafeNativeMethods.Gdip.GdipCreatePath2I(new HandleRef(null, ptbuf), new HandleRef(null, typebuf), count,
-                                                      unchecked((int)fillMode), out nativePath);
+                int status = SafeNativeMethods.Gdip.GdipCreatePath2I(
+                    new HandleRef(null, ptbuf),
+                    new HandleRef(null, typebuf),
+                    count,
+                    unchecked((int)fillMode),
+                    out IntPtr nativePath);
+
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
+
+                _nativePath = nativePath;
             }
             finally
             {
                 Marshal.FreeHGlobal(ptbuf);
                 Marshal.FreeHGlobal(typebuf);
             }
-
-            this.nativePath = nativePath;
         }
 
         public object Clone()
         {
-            IntPtr clonedPath = IntPtr.Zero;
-            int status = SafeNativeMethods.Gdip.GdipClonePath(new HandleRef(this, nativePath), out clonedPath);
+            int status = SafeNativeMethods.Gdip.GdipClonePath(new HandleRef(this, _nativePath), out IntPtr clonedPath);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -109,7 +112,7 @@ namespace System.Drawing.Drawing2D
             if (nativePath == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(nativePath));
 
-            this.nativePath = nativePath;
+            _nativePath = nativePath;
         }
 
         public void Dispose()
@@ -120,14 +123,14 @@ namespace System.Drawing.Drawing2D
 
         private void Dispose(bool disposing)
         {
-            if (nativePath != IntPtr.Zero)
+            if (_nativePath != IntPtr.Zero)
             {
                 try
                 {
 #if DEBUG
                     int status =
 #endif
-                    SafeNativeMethods.Gdip.GdipDeletePath(new HandleRef(this, nativePath));
+                    SafeNativeMethods.Gdip.GdipDeletePath(new HandleRef(this, _nativePath));
 #if DEBUG
                     Debug.Assert(status == SafeNativeMethods.Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
 #endif        
@@ -143,7 +146,7 @@ namespace System.Drawing.Drawing2D
                 }
                 finally
                 {
-                    nativePath = IntPtr.Zero;
+                    _nativePath = IntPtr.Zero;
                 }
             }
         }
@@ -152,7 +155,7 @@ namespace System.Drawing.Drawing2D
 
         public void Reset()
         {
-            int status = SafeNativeMethods.Gdip.GdipResetPath(new HandleRef(this, nativePath));
+            int status = SafeNativeMethods.Gdip.GdipResetPath(new HandleRef(this, _nativePath));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -162,7 +165,7 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                int status = SafeNativeMethods.Gdip.GdipGetPathFillMode(new HandleRef(this, nativePath), out int fillmode);
+                int status = SafeNativeMethods.Gdip.GdipGetPathFillMode(new HandleRef(this, _nativePath), out int fillmode);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
@@ -176,7 +179,7 @@ namespace System.Drawing.Drawing2D
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(FillMode));
                 }
 
-                int status = SafeNativeMethods.Gdip.GdipSetPathFillMode(new HandleRef(this, nativePath), (int)value);
+                int status = SafeNativeMethods.Gdip.GdipSetPathFillMode(new HandleRef(this, _nativePath), (int)value);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
@@ -206,7 +209,7 @@ namespace System.Drawing.Drawing2D
                     Types = t
                 };
 
-                int status = SafeNativeMethods.Gdip.GdipGetPathData(new HandleRef(this, nativePath), &data);
+                int status = SafeNativeMethods.Gdip.GdipGetPathData(new HandleRef(this, _nativePath), &data);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {
@@ -221,7 +224,7 @@ namespace System.Drawing.Drawing2D
 
         public void StartFigure()
         {
-            int status = SafeNativeMethods.Gdip.GdipStartPathFigure(new HandleRef(this, nativePath));
+            int status = SafeNativeMethods.Gdip.GdipStartPathFigure(new HandleRef(this, _nativePath));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -229,7 +232,7 @@ namespace System.Drawing.Drawing2D
 
         public void CloseFigure()
         {
-            int status = SafeNativeMethods.Gdip.GdipClosePathFigure(new HandleRef(this, nativePath));
+            int status = SafeNativeMethods.Gdip.GdipClosePathFigure(new HandleRef(this, _nativePath));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -237,7 +240,7 @@ namespace System.Drawing.Drawing2D
 
         public void CloseAllFigures()
         {
-            int status = SafeNativeMethods.Gdip.GdipClosePathFigures(new HandleRef(this, nativePath));
+            int status = SafeNativeMethods.Gdip.GdipClosePathFigures(new HandleRef(this, _nativePath));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -245,7 +248,7 @@ namespace System.Drawing.Drawing2D
 
         public void SetMarkers()
         {
-            int status = SafeNativeMethods.Gdip.GdipSetPathMarker(new HandleRef(this, nativePath));
+            int status = SafeNativeMethods.Gdip.GdipSetPathMarker(new HandleRef(this, _nativePath));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -253,7 +256,7 @@ namespace System.Drawing.Drawing2D
 
         public void ClearMarkers()
         {
-            int status = SafeNativeMethods.Gdip.GdipClearPathMarkers(new HandleRef(this, nativePath));
+            int status = SafeNativeMethods.Gdip.GdipClearPathMarkers(new HandleRef(this, _nativePath));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -261,7 +264,7 @@ namespace System.Drawing.Drawing2D
 
         public void Reverse()
         {
-            int status = SafeNativeMethods.Gdip.GdipReversePath(new HandleRef(this, nativePath));
+            int status = SafeNativeMethods.Gdip.GdipReversePath(new HandleRef(this, _nativePath));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -270,7 +273,7 @@ namespace System.Drawing.Drawing2D
         public PointF GetLastPoint()
         {
             GPPOINTF gppt = new GPPOINTF();
-            int status = SafeNativeMethods.Gdip.GdipGetPathLastPoint(new HandleRef(this, nativePath), gppt);
+            int status = SafeNativeMethods.Gdip.GdipGetPathLastPoint(new HandleRef(this, _nativePath), gppt);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -286,12 +289,11 @@ namespace System.Drawing.Drawing2D
 
         public bool IsVisible(PointF pt, Graphics graphics)
         {
-            int status = SafeNativeMethods.Gdip.GdipIsVisiblePathPoint(new HandleRef(this, nativePath),
-                                                        pt.X,
-                                                        pt.Y,
-                                                        new HandleRef(graphics, (graphics != null) ?
-                                                            graphics.NativeGraphics : IntPtr.Zero),
-                                                        out int isVisible);
+            int status = SafeNativeMethods.Gdip.GdipIsVisiblePathPoint(
+                new HandleRef(this, _nativePath),
+                pt.X, pt.Y,
+                new HandleRef(graphics, (graphics != null) ? graphics.NativeGraphics : IntPtr.Zero),
+                out int isVisible);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -307,12 +309,11 @@ namespace System.Drawing.Drawing2D
 
         public bool IsVisible(Point pt, Graphics graphics)
         {
-            int status = SafeNativeMethods.Gdip.GdipIsVisiblePathPointI(new HandleRef(this, nativePath),
-                                                         pt.X,
-                                                         pt.Y,
-                                                         new HandleRef(graphics, (graphics != null) ?
-                                                             graphics.NativeGraphics : IntPtr.Zero),
-                                                         out int isVisible);
+            int status = SafeNativeMethods.Gdip.GdipIsVisiblePathPointI(
+                new HandleRef(this, _nativePath),
+                pt.X, pt.Y,
+                new HandleRef(graphics, (graphics != null) ? graphics.NativeGraphics : IntPtr.Zero),
+                out int isVisible);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -334,13 +335,12 @@ namespace System.Drawing.Drawing2D
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
 
-            int status = SafeNativeMethods.Gdip.GdipIsOutlineVisiblePathPoint(new HandleRef(this, nativePath),
-                                                               pt.X,
-                                                               pt.Y,
-                                                               new HandleRef(pen, pen.NativePen),
-                                                               new HandleRef(graphics, (graphics != null) ?
-                                                                   graphics.NativeGraphics : IntPtr.Zero),
-                                                               out int isVisible);
+            int status = SafeNativeMethods.Gdip.GdipIsOutlineVisiblePathPoint(
+                new HandleRef(this, _nativePath),
+                pt.X, pt.Y,
+                new HandleRef(pen, pen.NativePen),
+                new HandleRef(graphics, (graphics != null) ? graphics.NativeGraphics : IntPtr.Zero),
+                out int isVisible);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -362,13 +362,12 @@ namespace System.Drawing.Drawing2D
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
 
-            int status = SafeNativeMethods.Gdip.GdipIsOutlineVisiblePathPointI(new HandleRef(this, nativePath),
-                                                                pt.X,
-                                                                pt.Y,
-                                                                new HandleRef(pen, pen.NativePen),
-                                                                new HandleRef(graphics, (graphics != null) ?
-                                                                    graphics.NativeGraphics : IntPtr.Zero),
-                                                                out int isVisible);
+            int status = SafeNativeMethods.Gdip.GdipIsOutlineVisiblePathPointI(
+                new HandleRef(this, _nativePath),
+                pt.X, pt.Y,
+                new HandleRef(pen, pen.NativePen),
+                new HandleRef(graphics, (graphics != null) ? graphics.NativeGraphics : IntPtr.Zero),
+                out int isVisible);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -380,7 +379,7 @@ namespace System.Drawing.Drawing2D
 
         public void AddLine(float x1, float y1, float x2, float y2)
         {
-            int status = SafeNativeMethods.Gdip.GdipAddPathLine(new HandleRef(this, nativePath), x1, y1, x2, y2);
+            int status = SafeNativeMethods.Gdip.GdipAddPathLine(new HandleRef(this, _nativePath), x1, y1, x2, y2);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -390,10 +389,11 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathLine2(new HandleRef(this, nativePath), new HandleRef(null, buf), points.Length);
+                int status = SafeNativeMethods.Gdip.GdipAddPathLine2(new HandleRef(this, _nativePath), new HandleRef(null, buf), points.Length);
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -407,7 +407,7 @@ namespace System.Drawing.Drawing2D
 
         public void AddLine(int x1, int y1, int x2, int y2)
         {
-            int status = SafeNativeMethods.Gdip.GdipAddPathLineI(new HandleRef(this, nativePath), x1, y1, x2, y2);
+            int status = SafeNativeMethods.Gdip.GdipAddPathLineI(new HandleRef(this, _nativePath), x1, y1, x2, y2);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -417,10 +417,11 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathLine2I(new HandleRef(this, nativePath), new HandleRef(null, buf), points.Length);
+                int status = SafeNativeMethods.Gdip.GdipAddPathLine2I(new HandleRef(this, _nativePath), new HandleRef(null, buf), points.Length);
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -435,11 +436,13 @@ namespace System.Drawing.Drawing2D
             AddArc(rect.X, rect.Y, rect.Width, rect.Height, startAngle, sweepAngle);
         }
 
-        public void AddArc(float x, float y, float width, float height,
-                           float startAngle, float sweepAngle)
+        public void AddArc(float x, float y, float width, float height, float startAngle, float sweepAngle)
         {
-            int status = SafeNativeMethods.Gdip.GdipAddPathArc(new HandleRef(this, nativePath), x, y, width, height,
-                                                startAngle, sweepAngle);
+            int status = SafeNativeMethods.Gdip.GdipAddPathArc(
+                new HandleRef(this, _nativePath),
+                x, y, width, height,
+                startAngle,
+                sweepAngle);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -450,11 +453,13 @@ namespace System.Drawing.Drawing2D
             AddArc(rect.X, rect.Y, rect.Width, rect.Height, startAngle, sweepAngle);
         }
 
-        public void AddArc(int x, int y, int width, int height,
-                           float startAngle, float sweepAngle)
+        public void AddArc(int x, int y, int width, int height, float startAngle, float sweepAngle)
         {
-            int status = SafeNativeMethods.Gdip.GdipAddPathArcI(new HandleRef(this, nativePath), x, y, width, height,
-                                                 startAngle, sweepAngle);
+            int status = SafeNativeMethods.Gdip.GdipAddPathArcI(
+                new HandleRef(this, _nativePath),
+                x, y, width, height,
+                startAngle,
+                sweepAngle);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -465,11 +470,11 @@ namespace System.Drawing.Drawing2D
             AddBezier(pt1.X, pt1.Y, pt2.X, pt2.Y, pt3.X, pt3.Y, pt4.X, pt4.Y);
         }
 
-        public void AddBezier(float x1, float y1, float x2, float y2,
-                              float x3, float y3, float x4, float y4)
+        public void AddBezier(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
         {
-            int status = SafeNativeMethods.Gdip.GdipAddPathBezier(new HandleRef(this, nativePath), x1, y1, x2, y2,
-                                                   x3, y3, x4, y4);
+            int status = SafeNativeMethods.Gdip.GdipAddPathBezier(
+                new HandleRef(this, _nativePath),
+                x1, y1, x2, y2, x3, y3, x4, y4);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -479,10 +484,11 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathBeziers(new HandleRef(this, nativePath), new HandleRef(null, buf), points.Length);
+                int status = SafeNativeMethods.Gdip.GdipAddPathBeziers(new HandleRef(this, _nativePath), new HandleRef(null, buf), points.Length);
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -497,11 +503,11 @@ namespace System.Drawing.Drawing2D
             AddBezier(pt1.X, pt1.Y, pt2.X, pt2.Y, pt3.X, pt3.Y, pt4.X, pt4.Y);
         }
 
-        public void AddBezier(int x1, int y1, int x2, int y2,
-                              int x3, int y3, int x4, int y4)
+        public void AddBezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4)
         {
-            int status = SafeNativeMethods.Gdip.GdipAddPathBezierI(new HandleRef(this, nativePath), x1, y1, x2, y2,
-                                                    x3, y3, x4, y4);
+            int status = SafeNativeMethods.Gdip.GdipAddPathBezierI(
+                new HandleRef(this, _nativePath),
+                x1, y1, x2, y2, x3, y3, x4, y4);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -511,10 +517,11 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathBeziersI(new HandleRef(this, nativePath), new HandleRef(null, buf), points.Length);
+                int status = SafeNativeMethods.Gdip.GdipAddPathBeziersI(new HandleRef(this, _nativePath), new HandleRef(null, buf), points.Length);
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -524,17 +531,22 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        /*
-         * Add cardinal splines to the path object
-         */
+        /// <summary>
+        /// Add cardinal splines to the path object
+        /// </summary>
         public void AddCurve(PointF[] points)
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathCurve(new HandleRef(this, nativePath), new HandleRef(null, buf), points.Length);
+                int status = SafeNativeMethods.Gdip.GdipAddPathCurve(
+                    new HandleRef(this, _nativePath),
+                    new HandleRef(null, buf),
+                    points.Length);
+
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -548,11 +560,16 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathCurve2(new HandleRef(this, nativePath), new HandleRef(null, buf),
-                                                   points.Length, tension);
+                int status = SafeNativeMethods.Gdip.GdipAddPathCurve2(
+                    new HandleRef(this, _nativePath),
+                    new HandleRef(null, buf),
+                    points.Length,
+                    tension);
+
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -566,12 +583,18 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathCurve3(new HandleRef(this, nativePath), new HandleRef(null, buf),
-                                                   points.Length, offset,
-                                                   numberOfSegments, tension);
+                int status = SafeNativeMethods.Gdip.GdipAddPathCurve3(
+                    new HandleRef(this, _nativePath),
+                    new HandleRef(null, buf),
+                    points.Length,
+                    offset,
+                    numberOfSegments,
+                    tension);
+
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -585,10 +608,12 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathCurveI(new HandleRef(this, nativePath), new HandleRef(null, buf), points.Length);
+                int status = SafeNativeMethods.Gdip.GdipAddPathCurveI(new HandleRef(this, _nativePath), new HandleRef(null, buf), points.Length);
+
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -602,11 +627,16 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathCurve2I(new HandleRef(this, nativePath), new HandleRef(null, buf),
-                                                    points.Length, tension);
+                int status = SafeNativeMethods.Gdip.GdipAddPathCurve2I(
+                    new HandleRef(this, _nativePath),
+                    new HandleRef(null, buf),
+                    points.Length,
+                    tension);
+
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -620,12 +650,18 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathCurve3I(new HandleRef(this, nativePath), new HandleRef(null, buf),
-                                                    points.Length, offset,
-                                                    numberOfSegments, tension);
+                int status = SafeNativeMethods.Gdip.GdipAddPathCurve3I(
+                    new HandleRef(this, _nativePath),
+                    new HandleRef(null, buf),
+                    points.Length,
+                    offset,
+                    numberOfSegments,
+                    tension);
+
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -639,10 +675,11 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathClosedCurve(new HandleRef(this, nativePath), new HandleRef(null, buf), points.Length);
+                int status = SafeNativeMethods.Gdip.GdipAddPathClosedCurve(new HandleRef(this, _nativePath), new HandleRef(null, buf), points.Length);
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -656,10 +693,16 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathClosedCurve2(new HandleRef(this, nativePath), new HandleRef(null, buf), points.Length, tension);
+                int status = SafeNativeMethods.Gdip.GdipAddPathClosedCurve2(
+                    new HandleRef(this, _nativePath),
+                    new HandleRef(null, buf),
+                    points.Length,
+                    tension);
+
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -673,10 +716,11 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathClosedCurveI(new HandleRef(this, nativePath), new HandleRef(null, buf), points.Length);
+                int status = SafeNativeMethods.Gdip.GdipAddPathClosedCurveI(new HandleRef(this, _nativePath), new HandleRef(null, buf), points.Length);
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -690,10 +734,16 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathClosedCurve2I(new HandleRef(this, nativePath), new HandleRef(null, buf), points.Length, tension);
+                int status = SafeNativeMethods.Gdip.GdipAddPathClosedCurve2I(
+                    new HandleRef(this, _nativePath),
+                    new HandleRef(null, buf),
+                    points.Length,
+                    tension);
+
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -705,8 +755,9 @@ namespace System.Drawing.Drawing2D
 
         public void AddRectangle(RectangleF rect)
         {
-            int status = SafeNativeMethods.Gdip.GdipAddPathRectangle(new HandleRef(this, nativePath), rect.X, rect.Y,
-                                                      rect.Width, rect.Height);
+            int status = SafeNativeMethods.Gdip.GdipAddPathRectangle(
+                new HandleRef(this, _nativePath),
+                rect.X, rect.Y, rect.Width, rect.Height);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -716,10 +767,11 @@ namespace System.Drawing.Drawing2D
         {
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertRectangleToMemory(rects);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathRectangles(new HandleRef(this, nativePath), new HandleRef(null, buf), rects.Length);
+                int status = SafeNativeMethods.Gdip.GdipAddPathRectangles(new HandleRef(this, _nativePath), new HandleRef(null, buf), rects.Length);
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -731,8 +783,9 @@ namespace System.Drawing.Drawing2D
 
         public void AddRectangle(Rectangle rect)
         {
-            int status = SafeNativeMethods.Gdip.GdipAddPathRectangleI(new HandleRef(this, nativePath), rect.X, rect.Y,
-                                                       rect.Width, rect.Height);
+            int status = SafeNativeMethods.Gdip.GdipAddPathRectangleI(
+                new HandleRef(this, _nativePath),
+                rect.X, rect.Y, rect.Width, rect.Height);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -742,10 +795,11 @@ namespace System.Drawing.Drawing2D
         {
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertRectangleToMemory(rects);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathRectanglesI(new HandleRef(this, nativePath), new HandleRef(null, buf), rects.Length);
+                int status = SafeNativeMethods.Gdip.GdipAddPathRectanglesI(new HandleRef(this, _nativePath), new HandleRef(null, buf), rects.Length);
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -762,7 +816,7 @@ namespace System.Drawing.Drawing2D
 
         public void AddEllipse(float x, float y, float width, float height)
         {
-            int status = SafeNativeMethods.Gdip.GdipAddPathEllipse(new HandleRef(this, nativePath), x, y, width, height);
+            int status = SafeNativeMethods.Gdip.GdipAddPathEllipse(new HandleRef(this, _nativePath), x, y, width, height);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -772,7 +826,7 @@ namespace System.Drawing.Drawing2D
 
         public void AddEllipse(int x, int y, int width, int height)
         {
-            int status = SafeNativeMethods.Gdip.GdipAddPathEllipseI(new HandleRef(this, nativePath), x, y, width, height);
+            int status = SafeNativeMethods.Gdip.GdipAddPathEllipseI(new HandleRef(this, _nativePath), x, y, width, height);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -783,21 +837,25 @@ namespace System.Drawing.Drawing2D
             AddPie(rect.X, rect.Y, rect.Width, rect.Height, startAngle, sweepAngle);
         }
 
-        public void AddPie(float x, float y, float width, float height,
-                           float startAngle, float sweepAngle)
+        public void AddPie(float x, float y, float width, float height, float startAngle, float sweepAngle)
         {
-            int status = SafeNativeMethods.Gdip.GdipAddPathPie(new HandleRef(this, nativePath), x, y, width, height,
-                                                startAngle, sweepAngle);
+            int status = SafeNativeMethods.Gdip.GdipAddPathPie(
+                new HandleRef(this, _nativePath),
+                x, y, width, height,
+                startAngle,
+                sweepAngle);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        public void AddPie(int x, int y, int width, int height,
-                           float startAngle, float sweepAngle)
+        public void AddPie(int x, int y, int width, int height, float startAngle, float sweepAngle)
         {
-            int status = SafeNativeMethods.Gdip.GdipAddPathPieI(new HandleRef(this, nativePath), x, y, width, height,
-                                                 startAngle, sweepAngle);
+            int status = SafeNativeMethods.Gdip.GdipAddPathPieI(
+                new HandleRef(this, _nativePath),
+                x, y, width, height,
+                startAngle,
+                sweepAngle);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -807,10 +865,11 @@ namespace System.Drawing.Drawing2D
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathPolygon(new HandleRef(this, nativePath), new HandleRef(null, buf), points.Length);
+                int status = SafeNativeMethods.Gdip.GdipAddPathPolygon(new HandleRef(this, _nativePath), new HandleRef(null, buf), points.Length);
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -820,19 +879,18 @@ namespace System.Drawing.Drawing2D
             }
         }
 
-        // int version
-        /// <include file='doc\GraphicsPath.uex' path='docs/doc[@for="GraphicsPath.AddPolygon1"]/*' />
-        /// <devdoc>
-        ///    Adds a polygon to the current figure.
-        /// </devdoc>
+        /// <summary>
+        /// Adds a polygon to the current figure.
+        /// </summary>
         public void AddPolygon(Point[] points)
         {
             if (points == null)
                 throw new ArgumentNullException(nameof(points));
+
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipAddPathPolygonI(new HandleRef(this, nativePath), new HandleRef(null, buf), points.Length);
+                int status = SafeNativeMethods.Gdip.GdipAddPathPolygonI(new HandleRef(this, _nativePath), new HandleRef(null, buf), points.Length);
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -847,77 +905,77 @@ namespace System.Drawing.Drawing2D
             if (addingPath == null)
                 throw new ArgumentNullException(nameof(addingPath));
 
-            int status = SafeNativeMethods.Gdip.GdipAddPathPath(new HandleRef(this, nativePath), new HandleRef(addingPath, addingPath.nativePath), connect);
+            int status = SafeNativeMethods.Gdip.GdipAddPathPath(new HandleRef(this, _nativePath), new HandleRef(addingPath, addingPath._nativePath), connect);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize,
-                              PointF origin, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, PointF origin, StringFormat format)
         {
             GPRECTF rectf = new GPRECTF(origin.X, origin.Y, 0, 0);
 
-            int status = SafeNativeMethods.Gdip.GdipAddPathString(new HandleRef(this, nativePath),
-                                                   s,
-                                                   s.Length,
-                                                   new HandleRef(family, (family != null) ? family.NativeFamily : IntPtr.Zero),
-                                                   style,
-                                                   emSize,
-                                                   ref rectf,
-                                                   new HandleRef(format, (format != null) ? format.nativeFormat : IntPtr.Zero));
+            int status = SafeNativeMethods.Gdip.GdipAddPathString(
+                new HandleRef(this, _nativePath),
+                s,
+                s.Length,
+                new HandleRef(family, family?.NativeFamily ?? IntPtr.Zero),
+                style,
+                emSize,
+                ref rectf,
+                new HandleRef(format, format?.nativeFormat ?? IntPtr.Zero));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize,
-                              Point origin, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, Point origin, StringFormat format)
         {
             var rect = new GPRECT(origin.X, origin.Y, 0, 0);
 
-            int status = SafeNativeMethods.Gdip.GdipAddPathStringI(new HandleRef(this, nativePath),
-                                                    s,
-                                                    s.Length,
-                                                    new HandleRef(family, (family != null) ? family.NativeFamily : IntPtr.Zero),
-                                                    style,
-                                                    emSize,
-                                                    ref rect,
-                                                    new HandleRef(format, (format != null) ? format.nativeFormat : IntPtr.Zero));
+            int status = SafeNativeMethods.Gdip.GdipAddPathStringI(
+                new HandleRef(this, _nativePath),
+                s,
+                s.Length,
+                new HandleRef(family, family?.NativeFamily ?? IntPtr.Zero),
+                style,
+                emSize,
+                ref rect,
+                new HandleRef(format, format?.nativeFormat ?? IntPtr.Zero));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize,
-                              RectangleF layoutRect, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat format)
         {
             GPRECTF rectf = new GPRECTF(layoutRect);
-            int status = SafeNativeMethods.Gdip.GdipAddPathString(new HandleRef(this, nativePath),
-                                                   s,
-                                                   s.Length,
-                                                   new HandleRef(family, (family != null) ? family.NativeFamily : IntPtr.Zero),
-                                                   style,
-                                                   emSize,
-                                                   ref rectf,
-                                                   new HandleRef(format, (format != null) ? format.nativeFormat : IntPtr.Zero));
+            int status = SafeNativeMethods.Gdip.GdipAddPathString(
+                new HandleRef(this, _nativePath),
+                s,
+                s.Length,
+                new HandleRef(family, family?.NativeFamily ?? IntPtr.Zero),
+                style,
+                emSize,
+                ref rectf,
+                new HandleRef(format, format?.nativeFormat ?? IntPtr.Zero));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize,
-                              Rectangle layoutRect, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat format)
         {
             GPRECT rect = new GPRECT(layoutRect);
-            int status = SafeNativeMethods.Gdip.GdipAddPathStringI(new HandleRef(this, nativePath),
-                                                   s,
-                                                   s.Length,
-                                                   new HandleRef(family, (family != null) ? family.NativeFamily : IntPtr.Zero),
-                                                   style,
-                                                   emSize,
-                                                   ref rect,
-                                                   new HandleRef(format, (format != null) ? format.nativeFormat : IntPtr.Zero));
+            int status = SafeNativeMethods.Gdip.GdipAddPathStringI(
+                new HandleRef(this, _nativePath),
+                s,
+                s.Length,
+                new HandleRef(family, family?.NativeFamily ?? IntPtr.Zero),
+                style,
+                emSize,
+                ref rect,
+                new HandleRef(format, format?.nativeFormat ?? IntPtr.Zero));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -927,18 +985,18 @@ namespace System.Drawing.Drawing2D
         {
             if (matrix == null)
                 throw new ArgumentNullException(nameof(matrix));
-
             if (matrix.nativeMatrix == IntPtr.Zero)
                 return;
 
-            int status = SafeNativeMethods.Gdip.GdipTransformPath(new HandleRef(this, nativePath),
-                                                   new HandleRef(matrix, matrix.nativeMatrix));
+            int status = SafeNativeMethods.Gdip.GdipTransformPath(
+                new HandleRef(this, _nativePath),
+                new HandleRef(matrix, matrix.nativeMatrix));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        public RectangleF GetBounds() => GetBounds(null);   
+        public RectangleF GetBounds() => GetBounds(null);
 
         public RectangleF GetBounds(Matrix matrix) => GetBounds(matrix, null);
 
@@ -946,18 +1004,11 @@ namespace System.Drawing.Drawing2D
         {
             GPRECTF gprectf = new GPRECTF();
 
-            IntPtr nativeMatrix = IntPtr.Zero, nativePen = IntPtr.Zero;
-
-            if (matrix != null)
-                nativeMatrix = matrix.nativeMatrix;
-
-            if (pen != null)
-                nativePen = pen.NativePen;
-
-            int status = SafeNativeMethods.Gdip.GdipGetPathWorldBounds(new HandleRef(this, nativePath),
-                                                        ref gprectf,
-                                                        new HandleRef(matrix, nativeMatrix),
-                                                        new HandleRef(pen, nativePen));
+            int status = SafeNativeMethods.Gdip.GdipGetPathWorldBounds(
+                new HandleRef(this, _nativePath),
+                ref gprectf,
+                new HandleRef(matrix, matrix?.nativeMatrix ?? IntPtr.Zero),
+                new HandleRef(pen, pen?.NativePen ?? IntPtr.Zero));
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -971,9 +1022,10 @@ namespace System.Drawing.Drawing2D
 
         public void Flatten(Matrix matrix, float flatness)
         {
-            int status = SafeNativeMethods.Gdip.GdipFlattenPath(new HandleRef(this, nativePath),
-                                                           new HandleRef(matrix, (matrix == null) ? IntPtr.Zero : matrix.nativeMatrix),
-                                                           flatness);
+            int status = SafeNativeMethods.Gdip.GdipFlattenPath(
+                new HandleRef(this, _nativePath),
+                new HandleRef(matrix, matrix?.nativeMatrix ?? IntPtr.Zero),
+                flatness);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -981,24 +1033,19 @@ namespace System.Drawing.Drawing2D
 
         public void Widen(Pen pen)
         {
-            float flatness = (float)2.0 / (float)3.0;
+            const float flatness = (float)2.0 / (float)3.0;
             Widen(pen, null, flatness);
         }
 
         public void Widen(Pen pen, Matrix matrix)
         {
-            float flatness = (float)2.0 / (float)3.0;
+            const float flatness = (float)2.0 / (float)3.0;
             Widen(pen, matrix, flatness);
         }
 
         public void Widen(Pen pen, Matrix matrix, float flatness)
         {
-            IntPtr nativeMatrix;
-
-            if (matrix == null)
-                nativeMatrix = IntPtr.Zero;
-            else
-                nativeMatrix = matrix.nativeMatrix;
+            IntPtr nativeMatrix = matrix?.nativeMatrix ?? IntPtr.Zero;
 
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
@@ -1007,15 +1054,16 @@ namespace System.Drawing.Drawing2D
             // when there is nothing in the path, so we have to check 
             // before calling the widen method and do nothing if we dont have
             // anything in the path
-            SafeNativeMethods.Gdip.GdipGetPointCount(new HandleRef(this, nativePath), out int pointCount);
+            SafeNativeMethods.Gdip.GdipGetPointCount(new HandleRef(this, _nativePath), out int pointCount);
 
             if (pointCount == 0)
                 return;
 
-            int status = SafeNativeMethods.Gdip.GdipWidenPath(new HandleRef(this, nativePath),
-                                new HandleRef(pen, pen.NativePen),
-                                new HandleRef(matrix, nativeMatrix),
-                                flatness);
+            int status = SafeNativeMethods.Gdip.GdipWidenPath(
+                new HandleRef(this, _nativePath),
+                new HandleRef(pen, pen.NativePen),
+                new HandleRef(matrix, nativeMatrix),
+                flatness);
 
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
@@ -1024,7 +1072,7 @@ namespace System.Drawing.Drawing2D
         public void Warp(PointF[] destPoints, RectangleF srcRect) => Warp(destPoints, srcRect, null);
 
         public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix matrix) => Warp(destPoints, srcRect, matrix, WarpMode.Perspective);
-        
+
         public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix matrix, WarpMode warpMode)
         {
             Warp(destPoints, srcRect, matrix, warpMode, 0.25f);
@@ -1038,16 +1086,15 @@ namespace System.Drawing.Drawing2D
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(destPoints);
             try
             {
-                int status = SafeNativeMethods.Gdip.GdipWarpPath(new HandleRef(this, nativePath),
-                                              new HandleRef(matrix, (matrix == null) ? IntPtr.Zero : matrix.nativeMatrix),
-                                              new HandleRef(null, buf),
-                                              destPoints.Length,
-                                              srcRect.X,
-                                              srcRect.Y,
-                                              srcRect.Width,
-                                              srcRect.Height,
-                                              warpMode,
-                                              flatness);
+                int status = SafeNativeMethods.Gdip.GdipWarpPath(
+                    new HandleRef(this, _nativePath),
+                    new HandleRef(matrix, (matrix == null) ? IntPtr.Zero : matrix.nativeMatrix),
+                    new HandleRef(null, buf),
+                    destPoints.Length,
+                    srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height,
+                    warpMode,
+                    flatness);
+
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
             }
@@ -1061,7 +1108,7 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                int status = SafeNativeMethods.Gdip.GdipGetPointCount(new HandleRef(this, nativePath), out int count);
+                int status = SafeNativeMethods.Gdip.GdipGetPointCount(new HandleRef(this, _nativePath), out int count);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
@@ -1069,6 +1116,7 @@ namespace System.Drawing.Drawing2D
                 return count;
             }
         }
+
         public byte[] PathTypes
         {
             get
@@ -1076,7 +1124,7 @@ namespace System.Drawing.Drawing2D
                 int count = PointCount;
                 byte[] types = new byte[count];
 
-                int status = SafeNativeMethods.Gdip.GdipGetPathTypes(new HandleRef(this, nativePath), types, count);
+                int status = SafeNativeMethods.Gdip.GdipGetPathTypes(new HandleRef(this, _nativePath), types, count);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                     throw SafeNativeMethods.Gdip.StatusException(status);
@@ -1090,9 +1138,9 @@ namespace System.Drawing.Drawing2D
             get
             {
                 PointF[] points = new PointF[PointCount];
-                fixed(PointF* p = points)
+                fixed (PointF* p = points)
                 {
-                    int status = SafeNativeMethods.Gdip.GdipGetPathPoints(new HandleRef(this, nativePath), p, points.Length);
+                    int status = SafeNativeMethods.Gdip.GdipGetPathPoints(new HandleRef(this, _nativePath), p, points.Length);
 
                     if (status != SafeNativeMethods.Gdip.Ok)
                     {
