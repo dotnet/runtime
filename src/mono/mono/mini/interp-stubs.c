@@ -133,15 +133,14 @@ stub_get_remoting_invoke (gpointer imethod, MonoError *error)
 	return NULL;
 }
 
-static gpointer
-stub_create_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error)
+static void
+stub_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data)
 {
 	g_assert_not_reached ();
-	return NULL;
 }
 
 static void
-stub_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data)
+stub_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error)
 {
 	g_assert_not_reached ();
 }
@@ -158,7 +157,6 @@ mono_interp_stub_init (void)
 	c.runtime_invoke = stub_runtime_invoke;
 	c.init_delegate = stub_init_delegate;
 	c.get_remoting_invoke = stub_get_remoting_invoke;
-	c.create_trampoline = stub_create_trampoline;
 	c.set_resume_state = stub_set_resume_state;
 	c.run_finally = stub_run_finally;
 	c.run_filter = stub_run_filter;
@@ -175,5 +173,6 @@ mono_interp_stub_init (void)
 	c.frame_get_parent = stub_frame_get_parent;
 	c.start_single_stepping = stub_start_single_stepping;
 	c.stop_single_stepping = stub_stop_single_stepping;
+	c.delegate_ctor = stub_delegate_ctor;
 	mini_install_interp_callbacks (&c);
 }

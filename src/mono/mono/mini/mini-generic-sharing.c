@@ -1426,6 +1426,15 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	return res;
 }
 
+static gboolean
+signature_equal_pinvoke (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
+{
+	/* mono_metadata_signature_equal () doesn't do this check */
+	if (sig1->pinvoke != sig2->pinvoke)
+		return FALSE;
+	return mono_metadata_signature_equal (sig1, sig2);
+}
+
 /*
  * mini_get_interp_in_wrapper:
  *
@@ -1452,7 +1461,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 
 	gshared_lock ();
 	if (!cache)
-		cache = g_hash_table_new_full ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal, NULL, NULL);
+		cache = g_hash_table_new_full ((GHashFunc)mono_signature_hash, (GEqualFunc)signature_equal_pinvoke, NULL, NULL);
 	res = g_hash_table_lookup (cache, sig);
 	gshared_unlock ();
 	if (res) {

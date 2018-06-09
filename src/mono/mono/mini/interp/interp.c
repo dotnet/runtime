@@ -117,6 +117,7 @@ static gboolean interp_init_done = FALSE;
 static char* dump_frame (InterpFrame *inv);
 static MonoArray *get_trace_ips (MonoDomain *domain, InterpFrame *top);
 static void interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *start_with_ip, MonoException *filter_exception, int exit_at_finally, InterpFrame *base_frame);
+static InterpMethod* lookup_method_pointer (gpointer addr);
 
 typedef void (*ICallMethod) (InterpFrame *frame);
 
@@ -276,14 +277,15 @@ lookup_imethod (MonoDomain *domain, MonoMethod *method)
 }
 
 static gpointer
-interp_get_remoting_invoke (gpointer imethod, MonoError *error)
+interp_get_remoting_invoke (gpointer addr, MonoError *error)
 {
 #ifndef DISABLE_REMOTING
-	InterpMethod *imethod_cast = (InterpMethod*) imethod;
+	InterpMethod *imethod = lookup_method_pointer (addr);
 
+	g_assert (imethod);
 	g_assert (mono_use_interpreter);
 
-	MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke (imethod_cast->method, error);
+	MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke (imethod->method, error);
 	return_val_if_nok (error, NULL);
 	return mono_interp_get_imethod (mono_domain_get (), remoting_invoke_method, error);
 #else
@@ -330,14 +332,6 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 	rtm->prof_flags = mono_profiler_get_call_instrumentation_flags (rtm->method);
 
 	return rtm;
-}
-
-static gpointer
-interp_create_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error)
-{
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		method = mono_marshal_get_synchronized_wrapper (method);
-	return mono_interp_get_imethod (domain, method, error);
 }
 
 /*
@@ -1220,13 +1214,45 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 #endif
 }
 
+/*
+ * interp_init_delegate:
+ *
+ *   Initialize del->interp_method.
+ */
 static void
 interp_init_delegate (MonoDelegate *del)
 {
-	if (del->method)
-		return;
-	/* shouldn't need a write barrier because we don't write a MonoObject into the field */
-	del->method = ((InterpMethod *) del->method_ptr)->method;
+	if (del->interp_method) {
+		/* Delegate created by a call to ves_icall_mono_delegate_ctor_interp () */
+		del->method = ((InterpMethod *)del->interp_method)->method;
+	} else if (del->method) {
+		/* Delegate created dynamically */
+		ERROR_DECL (error);
+		del->interp_method = mono_interp_get_imethod (del->object.vtable->domain, del->method, error);
+		mono_error_assert_ok (error);
+	} else {
+		/* Created from JITted code */
+		g_assert (del->method_ptr);
+		del->interp_method = lookup_method_pointer (del->method_ptr);
+		g_assert (del->interp_method);
+	}
+}
+
+static void
+interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error)
+{
+	/*
+	 * addr is the result of an LDFTN opcode, i.e. an InterpMethod
+	 */
+	InterpMethod *imethod = (InterpMethod*)addr;
+
+	g_assert (imethod->method);
+	gpointer entry = mini_get_interp_callbacks ()->create_method_pointer (imethod->method, error);
+	return_if_nok (error);
+
+	MONO_HANDLE_SETVAL (MONO_HANDLE_CAST (MonoDelegate, this_obj), interp_method, gpointer, imethod);
+
+	mono_delegate_ctor (this_obj, target, entry, error);
 }
 
 /*
@@ -1800,7 +1826,7 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 }
 
 static MONO_NEVER_INLINE stackval *
-do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpFrame *frame, InterpMethod *rmethod)
+do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpFrame *frame, InterpMethod *rmethod, MonoError *error)
 {
 	MonoMethodSignature *sig;
 	MonoFtnDesc ftndesc;
@@ -1816,7 +1842,6 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 	 */
 	if (!rmethod->jit_wrapper) {
 		MonoMethod *method = rmethod->method;
-		ERROR_DECL (error);
 
 		sig = mono_method_signature (method);
 		g_assert (sig);
@@ -1828,8 +1853,8 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 		mono_error_assert_ok (error);
 
 		gpointer addr = mono_jit_compile_method_jit_only (method, error);
+		return_val_if_nok (error, NULL);
 		g_assert (addr);
-		mono_error_assert_ok (error);
 
 		rmethod->jit_addr = addr;
 		rmethod->jit_sig = sig;
@@ -2314,6 +2339,29 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 }
 #endif
 
+static InterpMethod*
+lookup_method_pointer (gpointer addr)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitDomainInfo *info = domain_jit_info (domain);
+	InterpMethod *res = NULL;
+
+	mono_domain_lock (domain);
+	if (info->interp_method_pointer_hash)
+		res = g_hash_table_lookup (info->interp_method_pointer_hash, addr);
+	mono_domain_unlock (domain);
+
+	return res;
+}
+
+#ifndef MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED
+static void
+interp_no_native_to_managed (void)
+{
+	g_error ("interpreter: native-to-managed transition not available on this platform");
+}
+#endif
+
 /*
  * interp_create_method_pointer:
  *
@@ -2323,16 +2371,21 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 static gpointer
 interp_create_method_pointer (MonoMethod *method, MonoError *error)
 {
+#ifndef MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED
+	return interp_no_native_to_managed;
+#else
 	gpointer addr, entry_func, entry_wrapper;
-	InterpMethod *rmethod = mono_interp_get_imethod (mono_domain_get (), method, error);
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitDomainInfo *info;
+	InterpMethod *imethod = mono_interp_get_imethod (domain, method, error);
 
 	/* HACK: method_ptr of delegate should point to a runtime method*/
 	if (method->wrapper_type && (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD ||
 				(method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)))
-		return rmethod;
+		return imethod;
 
-	if (rmethod->jit_entry)
-		return rmethod->jit_entry;
+	if (imethod->jit_entry)
+		return imethod->jit_entry;
 
 	MonoMethodSignature *sig = mono_method_signature (method);
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
@@ -2377,7 +2430,7 @@ interp_create_method_pointer (MonoMethod *method, MonoError *error)
 	/* This is the argument passed to the interp_in wrapper by the static rgctx trampoline */
 	MonoFtnDesc *ftndesc = g_new0 (MonoFtnDesc, 1);
 	ftndesc->addr = entry_func;
-	ftndesc->arg = rmethod;
+	ftndesc->arg = imethod;
 	mono_error_assert_ok (error);
 
 	/*
@@ -2387,10 +2440,18 @@ interp_create_method_pointer (MonoMethod *method, MonoError *error)
 
 	addr = mono_create_ftnptr_arg_trampoline (ftndesc, entry_wrapper);
 
+	info = domain_jit_info (domain);
+	mono_domain_lock (domain);
+	if (!info->interp_method_pointer_hash)
+		info->interp_method_pointer_hash = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (info->interp_method_pointer_hash, addr, imethod);
+	mono_domain_unlock (domain);
+
 	mono_memory_barrier ();
-	rmethod->jit_entry = addr;
+	imethod->jit_entry = addr;
 
 	return addr;
+#endif
 }
 
 #if COUNT_OPS
@@ -2872,9 +2933,14 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 		}
 		MINT_IN_CASE(MINT_JIT_CALL) {
 			InterpMethod *rmethod = rtm->data_items [* (guint16 *)(ip + 1)];
+			ERROR_DECL (error);
 			frame->ip = ip;
 			ip += 2;
-			sp = do_jit_call (sp, vt_sp, context, frame, rmethod);
+			sp = do_jit_call (sp, vt_sp, context, frame, rmethod, error);
+			if (!is_ok (error)) {
+				MonoException *ex = mono_error_convert_to_exception (error);
+				THROW_EX (ex, ip);
+			}
 
 			if (context->has_resume_state) {
 				/*
@@ -5184,6 +5250,24 @@ array_constructed:
 			THROW_EX_GENERAL (*(MonoException**)(frame->locals + exvar_offset), ip - 1, TRUE);
 			MINT_IN_BREAK;
 	   }
+	   MINT_IN_CASE(MINT_LD_DELEGATE_METHOD_PTR) {
+		   MonoDelegate *del;
+
+		   --sp;
+		   del = (MonoDelegate*)sp->data.p;
+		   if (!del->interp_method) {
+			   /* Not created from interpreted code */
+			   ERROR_DECL (error);
+			   g_assert (del->method);
+			   del->interp_method = mono_interp_get_imethod (del->object.vtable->domain, del->method, error);
+			   mono_error_assert_ok (error);
+		   }
+		   g_assert (del->interp_method);
+		   sp->data.p = del->interp_method;
+		   ++sp;
+		   ip += 1;
+		   MINT_IN_BREAK;
+	   }
 		MINT_IN_DEFAULT
 			g_print ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname[*ip], ip-rtm->code);
 			THROW_EX (mono_get_exception_execution_engine ("Unimplemented opcode"), ip);
@@ -5553,8 +5637,8 @@ mono_ee_interp_init (const char *opts)
 	c.create_method_pointer = interp_create_method_pointer;
 	c.runtime_invoke = interp_runtime_invoke;
 	c.init_delegate = interp_init_delegate;
+	c.delegate_ctor = interp_delegate_ctor;
 	c.get_remoting_invoke = interp_get_remoting_invoke;
-	c.create_trampoline = interp_create_trampoline;
 	c.set_resume_state = interp_set_resume_state;
 	c.run_finally = interp_run_finally;
 	c.run_filter = interp_run_filter;

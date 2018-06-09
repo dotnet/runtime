@@ -11177,6 +11177,18 @@ mono_ldptr:
 			mono_emit_jit_icall (cfg, mono_jit_set_domain, args);
 			break;
 		}
+		case MONO_CEE_MONO_LD_DELEGATE_METHOD_PTR: {
+			MonoInst *addr;
+
+			CHECK_STACK (1);
+			--sp;
+			addr = *sp;
+
+			dreg = alloc_preg (cfg);
+			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, sp [0]->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
+			*sp++ = ins;
+			break;
+		}
 		case MONO_CEE_MONO_CALLI_EXTRA_ARG: {
 			MonoInst *addr;
 			MonoMethodSignature *fsig;

@@ -558,6 +558,7 @@ OPDEF(MINT_JIT_CALL, "mono_jit_call", 2, MintOpNoArgs)
 OPDEF(MINT_SDB_INTR_LOC, "sdb_intr_loc", 1, MintOpNoArgs)
 OPDEF(MINT_SDB_SEQ_POINT, "sdb_seq_point", 1, MintOpNoArgs)
 OPDEF(MINT_SDB_BREAKPOINT, "sdb_breakpoint", 1, MintOpNoArgs)
+OPDEF(MINT_LD_DELEGATE_METHOD_PTR, "ld_delegate_method_ptr", 1, MintOpNoArgs)
 
 OPDEF(MINT_START_ABORT_PROT, "start_abort_protected", 1, MintOpNoArgs)
 OPDEF(MINT_END_ABORT_PROT, "end_abort_protected", 1, MintOpNoArgs)

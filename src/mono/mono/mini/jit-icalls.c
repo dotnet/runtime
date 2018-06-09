@@ -1514,6 +1514,19 @@ ves_icall_mono_delegate_ctor (MonoObject *this_obj_raw, MonoObject *target_raw, 
 	HANDLE_FUNCTION_RETURN ();
 }
 
+void
+ves_icall_mono_delegate_ctor_interp (MonoObject *this_obj_raw, MonoObject *target_raw, gpointer addr)
+{
+	HANDLE_FUNCTION_ENTER ();
+	ERROR_DECL (error);
+	MONO_HANDLE_DCL (MonoObject, this_obj);
+	MONO_HANDLE_DCL (MonoObject, target);
+
+	mini_get_interp_callbacks ()->delegate_ctor (this_obj, target, addr, error);
+	mono_error_set_pending_exception (error);
+	HANDLE_FUNCTION_RETURN ();
+}
+
 gpointer
 mono_fill_class_rgctx (MonoVTable *vtable, int index)
 {

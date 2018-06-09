@@ -54,6 +54,8 @@ typedef struct
 	/* Maps MonoMethod -> 	MonoMethodRuntimeGenericContext */
 	GHashTable *mrgctx_hash;
 	GHashTable *method_rgctx_hash;
+	/* Maps gpointer -> InterpMethod */
+	GHashTable *interp_method_pointer_hash;
 } MonoJitDomainInfo;
 
 #define domain_jit_info(domain) ((MonoJitDomainInfo*)((domain)->runtime_info))
@@ -227,6 +229,13 @@ typedef struct MonoDebugOptions {
 
 	// Internal testing feature.
 	gboolean test_tailcall_require;
+
+	/*
+	 * Internal testing feature
+	 * Testing feature, skip loading the Nth aot loadable method.
+	 */
+	gboolean aot_skip_set;
+	int aot_skip;
 } MonoDebugOptions;
 
 

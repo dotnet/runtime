@@ -1456,7 +1456,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	error_init (error);
 
 	if (mono_use_interpreter) {
-		gpointer ret = mini_get_interp_callbacks ()->create_trampoline (domain, method, error);
+		gpointer ret = mini_get_interp_callbacks ()->create_method_pointer (method, error);
 		if (!mono_error_ok (error))
 			return NULL;
 		return ret;
