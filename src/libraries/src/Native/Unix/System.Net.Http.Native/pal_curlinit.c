@@ -6,9 +6,10 @@
 #include "pal_curlinit.h"
 
 #include <pthread.h>
+#include <stdbool.h>
 #include <curl/curl.h>
 
-extern "C" int32_t HttpNative_EnsureCurlIsInitialized()
+int32_t HttpNative_EnsureCurlIsInitialized(void)
 {
     static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
     static bool initializationAttempted = false;
