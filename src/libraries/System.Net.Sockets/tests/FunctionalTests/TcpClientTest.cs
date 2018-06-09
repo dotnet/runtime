@@ -313,6 +313,21 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        public void Ttl_Set_GetEqualsSet(AddressFamily af)
+        {
+            using (TcpClient client = new TcpClient(af))
+            {
+                short newTtl = client.Client.Ttl;
+                // Change default ttl.
+                newTtl += (short)((newTtl < 255) ? 1 : -1);
+                client.Client.Ttl = newTtl;
+                Assert.Equal(newTtl, client.Client.Ttl);
+            }
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Roundtrip_ReceiveBufferSize_GetEqualsSet()
