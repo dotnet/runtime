@@ -2943,21 +2943,7 @@ void EEClass::Save(DataImage *image, MethodTable *pMT)
 
     LOG((LF_ZAP, LL_INFO10000, "EEClass::Save %s (%p)\n", m_szDebugClassName, this));
 
-    // Optimize packable fields before saving into ngen image (the packable fields are located at the end of
-    // the EEClass or sub-type instance and packing will transform them into a space-efficient format which
-    // should reduce the result returned by the GetSize() call below). Packing will fail if the compression
-    // algorithm would result in an increase in size. We track this in the m_fFieldsArePacked data member
-    // which we use to determine whether to access the fields in their packed or unpacked format.
-    // Special case: we don't attempt to pack fields for the System.Threading.OverlappedData class since a
-    // host can change the size of this at runtime. This requires modifying one of the packable fields and we
-    // don't support updates to such fields if they were successfully packed.
-    if (g_pOverlappedDataClass == NULL)
-    {
-        g_pOverlappedDataClass = MscorlibBinder::GetClass(CLASS__OVERLAPPEDDATA);
-        _ASSERTE(g_pOverlappedDataClass);
-    }
-    if (this != g_pOverlappedDataClass->GetClass())
-        m_fFieldsArePacked = GetPackedFields()->PackFields();
+    m_fFieldsArePacked = GetPackedFields()->PackFields();
 
     DWORD cbSize = GetSize();
 

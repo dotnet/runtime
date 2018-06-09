@@ -1012,8 +1012,6 @@ void EEStartupHelper(COINITIEE fFlags)
         // Now we really have fully initialized the garbage collector
         SetGarbageCollectorFullyInitialized();
 
-        InitializePinHandleTable();
-
 #ifdef DEBUGGING_SUPPORTED
         // Make a call to publish the DefaultDomain for the debugger
         // This should be done before assemblies/modules are loaded into it (i.e. SystemDomain::Init)

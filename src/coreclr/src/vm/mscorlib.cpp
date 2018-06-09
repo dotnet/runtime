@@ -86,10 +86,6 @@
 #include "multicorejit.h"
 #endif
 
-#ifdef FEATURE_COMINTEROP
-#include "windowsruntimebufferhelper.h"
-#endif
-
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
 #include "nativeeventsource.h"
 #include "eventpipe.h"

@@ -16,118 +16,50 @@
 #ifndef _OVERLAPPED_H
 #define _OVERLAPPED_H
 
+struct NATIVEOVERLAPPED_AND_HANDLE
+{
+    OVERLAPPED m_overlapped;
+    OBJECTHANDLE m_handle;
+};
+
 // This should match the managed Overlapped object.
 // If you make any change here, you need to change the managed part Overlapped.
 class OverlappedDataObject : public Object
 {
 public:
-    OBJECTREF m_asyncResult;
-    OBJECTREF m_iocb;
-    OBJECTREF m_iocbHelper;
-    OBJECTREF m_overlapped;
-    OBJECTREF m_userObject;
-
-    //
-    // NOTE!  WCF directly accesses m_pinSelf from managed code, using a hard-coded negative
-    // offset from the Internal member, below.  They need this so they can modify the
-    // contents of m_userObject; after such modification, they need to update this handle
-    // to be in the correct GC generation.
-    //
-    // If you need to add or remove fields between this one and Internal, be sure that
-    // you also fix the hard-coded offsets in ndp\cdf\src\WCF\ServiceModel\System\ServiceModel\Channels\OverlappedContext.cs.
-    //
-    OBJECTHANDLE m_pinSelf;
-
     // OverlappedDataObject is very special.  An async pin handle keeps it alive.
     // During GC, we also make sure
     // 1. m_userObject itself does not move if m_userObject is not array
     // 2. Every object pointed by m_userObject does not move if m_userObject is array
-    // We do not want to pin m_userObject if it is array.  But m_userObject may be updated
-    // during relocation phase before OverlappedDataObject is doing relocation.
-    // m_userObjectInternal is used to track the location of the m_userObject before it is updated.
-    void *m_userObjectInternal;
-    DWORD m_AppDomainId;
-    unsigned char m_isArray;
-    unsigned char m_toBeCleaned;
+    OBJECTREF m_asyncResult;
+    OBJECTREF m_callback;
+    OBJECTREF m_overlapped;
+    OBJECTREF m_userObject;
+    LPOVERLAPPED m_pNativeOverlapped;
+    ULONG_PTR m_eventHandle;
+    int m_offsetLow;
+    int m_offsetHigh;
 
-    ULONG_PTR  Internal;
-    ULONG_PTR  InternalHigh;
-    int     OffsetLow;
-    int     OffsetHigh;
-    ULONG_PTR  EventHandle;
-
-    static OverlappedDataObject* GetOverlapped (LPOVERLAPPED nativeOverlapped)
+#ifndef DACCESS_COMPILE
+    static OverlappedDataObject* GetOverlapped(LPOVERLAPPED nativeOverlapped)
     {
         LIMITED_METHOD_CONTRACT;
         STATIC_CONTRACT_SO_TOLERANT;
         
         _ASSERTE (nativeOverlapped != NULL);
-        _ASSERTE (GCHeapUtilities::GetGCHeap()->IsHeapPointer((BYTE *) nativeOverlapped));
-        
-        return (OverlappedDataObject*)((BYTE*)nativeOverlapped - offsetof(OverlappedDataObject, Internal));
+        return (OverlappedDataObject*)OBJECTREFToObject(ObjectFromHandle(((NATIVEOVERLAPPED_AND_HANDLE*)nativeOverlapped)->m_handle));
     }
 
-    DWORD GetAppDomainId()
-    {
-        return m_AppDomainId;
-    }
-
-    void HandleAsyncPinHandle();
-
-    void FreeAsyncPinHandles();
-
-    BOOL HasCompleted()
+    // Return the raw OverlappedDataObject* without going into cooperative mode for tracing
+    static OverlappedDataObject* GetOverlappedForTracing(LPOVERLAPPED nativeOverlapped)
     {
         LIMITED_METHOD_CONTRACT;
-#ifndef FEATURE_PAL        
-        return HasOverlappedIoCompleted((LPOVERLAPPED) &Internal);
-#else // !FEATURE_PAL
-        return FALSE;
-#endif // !FEATURE_PAL
+        STATIC_CONTRACT_SO_TOLERANT;
+
+        _ASSERTE(nativeOverlapped != NULL);
+        return *(OverlappedDataObject**)(((NATIVEOVERLAPPED_AND_HANDLE*)nativeOverlapped)->m_handle);
     }
-
-private:
-    static LONG s_CleanupRequestCount;
-    static BOOL s_CleanupInProgress;
-    static BOOL s_GCDetectsCleanup;
-    static BOOL s_CleanupFreeHandle;
-
-public:
-    static void RequestCleanup()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        FastInterlockIncrement(&s_CleanupRequestCount);
-        if (!s_CleanupInProgress)
-        {
-            StartCleanup();
-        }
-    }
-    static void StartCleanup();
-
-    static void FinishCleanup(bool wasDrained);
-
-    static void MarkCleanupNeededFromGC()
-    {
-        LIMITED_METHOD_CONTRACT;
-        s_GCDetectsCleanup = TRUE;
-    }
-
-    static BOOL CleanupNeededFromGC()
-    {
-        return s_GCDetectsCleanup;
-    }
-
-    static void RequestCleanupFromGC()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (s_GCDetectsCleanup)
-        {
-            s_GCDetectsCleanup = FALSE;
-            RequestCleanup();
-        }
-    }
+#endif // DACCESS_COMPILE
 };
 
 #ifdef USE_CHECKED_OBJECTREFS
@@ -145,12 +77,8 @@ typedef OverlappedDataObject* OVERLAPPEDDATAREF;
 #endif
 
 FCDECL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, DWORD* numBytes);
-FCDECL1(void*, AllocateNativeOverlapped, OverlappedDataObject* overlapped);
+FCDECL1(LPOVERLAPPED, AllocateNativeOverlapped, OverlappedDataObject* overlapped);
 FCDECL1(void, FreeNativeOverlapped, LPOVERLAPPED lpOverlapped);
 FCDECL1(OverlappedDataObject*, GetOverlappedFromNative, LPOVERLAPPED lpOverlapped);
-
-void InitializePinHandleTable();
-void AddMTForPinHandle(OBJECTREF obj);
-void BashMTForPinnedObject(OBJECTREF obj);
 
 #endif

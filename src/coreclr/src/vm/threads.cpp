@@ -8546,7 +8546,6 @@ BOOL Thread::HaveExtraWorkForFinalizer()
     LIMITED_METHOD_CONTRACT;
 
     return m_ThreadTasks
-        || OverlappedDataObject::CleanupNeededFromGC()
         || ThreadpoolMgr::HaveTimerInfosToFlush()
         || ExecutionManager::IsCacheCleanupRequired()
         || Thread::CleanupNeededForFinalizedThread()
@@ -8605,8 +8604,6 @@ void Thread::DoExtraWorkForFinalizer()
     {
         ExecutionManager::ClearCaches();
     }
-
-    OverlappedDataObject::RequestCleanupFromGC();
 
     // If there were any TimerInfos waiting to be released, they'll get flushed now
     ThreadpoolMgr::FlushQueueOfTimerInfos();

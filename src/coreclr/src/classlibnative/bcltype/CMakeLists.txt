@@ -12,7 +12,6 @@ set(BCLTYPE_SOURCES
     decimal.cpp
     diyfp.cpp
     grisu3.cpp
-    windowsruntimebufferhelper.cpp
     number.cpp
     oavariant.cpp
     objectnative.cpp
