@@ -1993,33 +1993,6 @@
   <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
     <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
   </data>
-  <data name="ConcurrentDictionary_ArrayIncorrectType" xml:space="preserve">
-    <value>The array is multidimensional, or the type parameter for the set cannot be cast automatically to the type of the destination array.</value>
-  </data>
-  <data name="ConcurrentDictionary_ArrayNotLargeEnough" xml:space="preserve">
-    <value>The index is equal to or greater than the length of the array, or the number of elements in the dictionary is greater than the available space from index to the end of the destination array.</value>
-  </data>
-  <data name="ConcurrentDictionary_CapacityMustNotBeNegative" xml:space="preserve">
-    <value>The capacity argument must be greater than or equal to zero.</value>
-  </data>
-  <data name="ConcurrentDictionary_ConcurrencyLevelMustBePositive" xml:space="preserve">
-    <value>The concurrencyLevel argument must be positive.</value>
-  </data>
-  <data name="ConcurrentDictionary_IndexIsNegative" xml:space="preserve">
-    <value>The index argument is less than zero.</value>
-  </data>
-  <data name="ConcurrentDictionary_ItemKeyIsNull" xml:space="preserve">
-    <value>TKey is a reference type and item.Key is null.</value>
-  </data>
-  <data name="ConcurrentDictionary_KeyAlreadyExisted" xml:space="preserve">
-    <value>The key already existed in the dictionary.</value>
-  </data>
-  <data name="ConcurrentDictionary_TypeOfKeyIncorrect" xml:space="preserve">
-    <value>The key was of an incorrect type for this dictionary.</value>
-  </data>
-  <data name="ConcurrentDictionary_TypeOfValueIncorrect" xml:space="preserve">
-    <value>The value was of an incorrect type for this dictionary.</value>
-  </data>
   <data name="event_Barrier_PhaseFinished" xml:space="preserve">
     <value>Barrier finishing phase {1}.</value>
   </data>
@@ -2028,9 +2001,6 @@
   </data>
   <data name="event_ConcurrentBag_TryTakeSteals" xml:space="preserve">
     <value>ConcurrentBag stealing in TryTake.</value>
-  </data>
-  <data name="event_ConcurrentDictionary_AcquiringAllLocks" xml:space="preserve">
-    <value>ConcurrentDictionary acquiring all locks on {0} bucket(s).</value>
   </data>
   <data name="event_ConcurrentStack_FastPopFailed" xml:space="preserve">
     <value>Pop from ConcurrentStack spun {0} time(s).</value>
@@ -3690,9 +3660,6 @@
   </data>
   <data name="ConcurrentStack_PushPopRange_StartOutOfRange" xml:space="preserve">
     <value>The startIndex argument must be greater than or equal to zero.</value>
-  </data>
-  <data name="ConcurrentDictionary_SourceContainsDuplicateKeys" xml:space="preserve">
-    <value>The source argument contains duplicate keys.</value>
   </data>
   <data name="NotSupported_SignatureType" xml:space="preserve">
     <value>This method is not supported on signature types.</value>
