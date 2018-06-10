@@ -1602,7 +1602,28 @@ namespace System.Tests
             }
         }
 
-        static decimal[] GetRandomData(out BigDecimal[] bigDecimals)
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have the fix for this bug")]
+        public static new void GetHashCode()
+        {
+            var dict = new Dictionary<string, (int hash, string value)>();
+            foreach (decimal d in GetRandomData(out _, hash: true))
+            {
+                string value = d.ToString(CultureInfo.InvariantCulture);
+                string key = value[value.Length - 1] == '0' && value.Contains('.') ? value.AsSpan().TrimEnd('0').TrimEnd('.').ToString() : value;
+                int hash = d.GetHashCode();
+                if (!dict.TryGetValue(key, out var ex))
+                {
+                    dict.Add(key, (hash, value));
+                }
+                else if (ex.hash != hash)
+                {
+                    throw new Xunit.Sdk.XunitException($"Decimal {key} has multiple hash codes: {ex.hash} ({ex.value}) and {hash} ({value})");
+                }
+            }
+        }
+
+        static decimal[] GetRandomData(out BigDecimal[] bigDecimals, bool hash = false)
         {
             // some static data to test the limits
             var list = new List<decimal> { new decimal(0, 0, 0, true, 0), decimal.Zero, decimal.MinusOne, decimal.One, decimal.MinValue, decimal.MaxValue,
@@ -1621,9 +1642,26 @@ namespace System.Tests
                             if (!unique.Add(d.ToString(CultureInfo.InvariantCulture)))
                                 continue; // skip duplicates
                             list.Add(d);
+
+                            if (hash)
+                            {
+                                // generate all possible variants of the number up-to max decimal scale
+                                for (byte lastScale = scale; lastScale < 28;)
+                                {
+                                    d *= 1.0m;
+                                    unsafe
+                                    {
+                                        byte curScale = (byte)(*(uint*)&d >> BigDecimal.ScaleShift);
+                                        if (curScale <= lastScale)
+                                            break;
+                                        lastScale = curScale;
+                                    }
+                                    list.Add(d);
+                                }
+                            }
                         }
             decimal[] decimalValues = list.ToArray();
-            bigDecimals = Array.ConvertAll(decimalValues, d => new BigDecimal(d));
+            bigDecimals = hash ? null : Array.ConvertAll(decimalValues, d => new BigDecimal(d));
             return decimalValues;
 
             // While the decimals are random in general,
