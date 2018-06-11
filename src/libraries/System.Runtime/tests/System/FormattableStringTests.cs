@@ -31,5 +31,30 @@ namespace System.Tests
                     return SuccessExitCode;
                 }).Dispose();
         }
+
+        [Fact]
+        public static void ToString_ReturnsSameAsStringTargetTyped()
+        {
+            double d = 123.456;
+            string text1 = $"This will be formatted using current culture {d}";
+            string text2 = ((FormattableString)$"This will be formatted using current culture {d}").ToString();
+            Assert.Equal(text1, text2);
+        }
+
+        [Fact]
+        public static void IFormattableToString_UsesSuppliedFormatProvider()
+        {
+            RemoteInvoke(() =>
+            {
+                CultureInfo.CurrentCulture = new CultureInfo("nl"); // would be 123,456 in Dutch
+                double d = 123.456;
+                string expected = string.Format(CultureInfo.InvariantCulture, "Invariant culture is used {0}", d);
+                string actual = ((IFormattable)((FormattableString)$"Invariant culture is used {d}")).ToString(null, CultureInfo.InvariantCulture);
+                Assert.Equal(expected, actual);
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
     }
 }
