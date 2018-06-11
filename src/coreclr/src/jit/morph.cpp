@@ -2737,10 +2737,19 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     unsigned nonRegPassedStructSlots = 0;
     bool     reMorphing              = call->AreArgsComplete();
     bool     callHasRetBuffArg       = call->HasRetBufArg();
+    bool     callIsVararg            = call->IsVarargs();
 
-#ifndef _TARGET_X86_ // i.e. _TARGET_AMD64_ or _TARGET_ARM_
-    bool callIsVararg = call->IsVarargs();
-#endif
+#ifdef _TARGET_UNIX_
+    if (callIsVararg)
+    {
+        // Currently native varargs is not implemented on non windows targets.
+        //
+        // Note that some targets like Arm64 Unix should not need much work as
+        // the ABI is the same. While other targets may only need small changes
+        // such as amd64 Unix, which just expects RAX to pass numFPArguments.
+        NYI("Morphing Vararg call not yet implemented on non Windows targets.");
+    }
+#endif // _TARGET_UNIX_
 
 #ifdef UNIX_AMD64_ABI
     // If fgMakeOutgoingStructArgCopy is called and copies are generated, hasStackArgCopy is set
