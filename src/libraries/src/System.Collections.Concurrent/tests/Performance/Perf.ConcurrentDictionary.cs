@@ -111,5 +111,56 @@ namespace System.Collections.Concurrent.Tests
                 }
             }
         }
+
+        private static bool s_isEmptyResultNotUsed;
+
+        [Benchmark(InnerIterationCount = 1_000_000)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void IsEmpty(bool isEmpty)
+        {
+            var d = new ConcurrentDictionary<long, long>();
+            if (!isEmpty)
+            {
+                d.TryAdd(42, 84);
+            }
+
+            s_isEmptyResultNotUsed = true;
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                long size = Benchmark.InnerIterationCount;
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < size; i++)
+                    {
+                        s_isEmptyResultNotUsed &= d.IsEmpty;
+                    }
+                }
+            }
+        }
+
+        private static int s_sumNotUsed;
+
+        [Benchmark(InnerIterationCount = 1_000_000)]
+        public void Count()
+        {
+            var d = new ConcurrentDictionary<long, long>();
+            for (int i = 0; i < 1000; i++)
+            {
+                d.TryAdd(i, i);
+            }
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                long size = Benchmark.InnerIterationCount;
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < size; i++)
+                    {
+                        s_sumNotUsed += d.Count;
+                    }
+                }
+            }
+        }
     }
 }

@@ -30,7 +30,8 @@ namespace System
 
         private static string ExpandEnvironmentVariablesCore(string name)
         {
-            StringBuilder result = StringBuilderCache.Acquire();
+            Span<char> initialBuffer = stackalloc char[128];
+            var result = new ValueStringBuilder(initialBuffer);
 
             int lastPos = 0, pos;
             while (lastPos < name.Length && (pos = name.IndexOf('%', lastPos + 1)) >= 0)
@@ -46,12 +47,12 @@ namespace System
                         continue;
                     }
                 }
-                result.Append(name.Substring(lastPos, pos - lastPos));
+                result.Append(name.AsSpan(lastPos, pos - lastPos));
                 lastPos = pos;
             }
-            result.Append(name.Substring(lastPos));
+            result.Append(name.AsSpan(lastPos));
 
-            return StringBuilderCache.GetStringAndRelease(result);
+            return result.ToString();
         }
 
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)

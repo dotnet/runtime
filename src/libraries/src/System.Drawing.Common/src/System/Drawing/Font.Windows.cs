@@ -107,7 +107,7 @@ namespace System.Drawing
         {
             if (float.IsNaN(emSize) || float.IsInfinity(emSize) || emSize <= 0)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidBoundArgument, "emSize", emSize, 0, "System.Single.MaxValue"), "emSize");
+                throw new ArgumentException(SR.Format(SR.InvalidBoundArgument, nameof(emSize), emSize, 0, "System.Single.MaxValue"), nameof(emSize));
             }
 
             Initialize(familyName, emSize, style, unit, gdiCharSet, gdiVerticalFont);

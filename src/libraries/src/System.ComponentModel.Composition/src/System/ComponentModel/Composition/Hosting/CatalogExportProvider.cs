@@ -75,7 +75,7 @@ namespace System.ComponentModel.Composition.Hosting
             Requires.NotNull(catalog, nameof(catalog));
             if (compositionOptions > (CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService))
             {
-                throw new ArgumentOutOfRangeException("compositionOptions");
+                throw new ArgumentOutOfRangeException(nameof(compositionOptions));
             }
 
             _catalog = catalog;
@@ -855,10 +855,10 @@ namespace System.ComponentModel.Composition.Hosting
                 if (resurrectedExports.Any())
                 {
                     OnExportsChanging(
-                        new ExportsChangeEventArgs(resurrectedExports, new ExportDefinition[0], localAtomicComposition));
+                        new ExportsChangeEventArgs(resurrectedExports, Array.Empty<ExportDefinition>(), localAtomicComposition));
 
                     localAtomicComposition.AddCompleteAction(() => OnExportsChanged(
-                        new ExportsChangeEventArgs(resurrectedExports, new ExportDefinition[0], null)));
+                        new ExportsChangeEventArgs(resurrectedExports, Array.Empty<ExportDefinition>(), null)));
                 }
 
                 localAtomicComposition.Complete();

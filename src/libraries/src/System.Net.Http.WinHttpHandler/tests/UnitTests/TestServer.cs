@@ -16,6 +16,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public const string ExpectedResponseBody = "This is the response body.";
         public const string FakeServerEndpoint = "http://www.contoso.com/";
         public const string FakeSecureServerEndpoint = "https://www.contoso.com/";
+        public static readonly byte[] ExpectedResponseBodyBytes = Encoding.UTF8.GetBytes(ExpectedResponseBody);
 
         private static MemoryStream requestBody = null;
         private static MemoryStream responseBody = null;
@@ -132,23 +133,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             }
             else
             {
-                using (var memoryStream = new MemoryStream())
-                {
-                    Stream compressedStream = null;
-                    if (compressionKind == DecompressionMethods.Deflate)
-                    {
-                        compressedStream = new DeflateStream(memoryStream, CompressionMode.Compress);
-                    }
-                    else
-                    {
-                        compressedStream = new GZipStream(memoryStream, CompressionMode.Compress);
-                    }
-
-                    compressedStream.Write(responseBodyBytes, 0, responseBodyBytes.Length);
-                    compressedStream.Dispose();
-
-                    compressedBytes = memoryStream.ToArray();
-                }
+                compressedBytes = CompressBytes(responseBodyBytes, compressionKind == DecompressionMethods.GZip);
             }
 
             ResponseBody = compressedBytes;
@@ -168,6 +153,27 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             responseBody = new MemoryStream();
             responseHeaders = null;
             dataAvailablePercentage = 1.0;
+        }
+
+        public static byte[] CompressBytes(byte[] bytes, bool useGZip)
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                Stream compressedStream = null;
+                if (useGZip)
+                {
+                    compressedStream = new GZipStream(memoryStream, CompressionMode.Compress);
+                }
+                else
+                {
+                    compressedStream = new DeflateStream(memoryStream, CompressionMode.Compress);
+                }
+
+                compressedStream.Write(bytes, 0, bytes.Length);
+                compressedStream.Dispose();
+
+                return memoryStream.ToArray();
+            }
         }
     }
 }

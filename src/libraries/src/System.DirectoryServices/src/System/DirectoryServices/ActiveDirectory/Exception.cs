@@ -185,7 +185,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 if (_errors == null)
-                    return new SyncFromAllServersErrorInformation[0];
+                    return Array.Empty<SyncFromAllServersErrorInformation>();
 
                 SyncFromAllServersErrorInformation[] tempError = new SyncFromAllServersErrorInformation[_errors.Length];
                 for (int i = 0; i < _errors.Length; i++)

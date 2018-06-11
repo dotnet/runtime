@@ -8,7 +8,6 @@ namespace System.Drawing.Tests
 {
     public class BufferedGraphicsContextTests
     {
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Fact]
         public void Ctor_Default()
         {
@@ -19,7 +18,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]   
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Allocate_ValidTargetGraphics_Success()
         {
             using (var context = new BufferedGraphicsContext())
@@ -33,7 +32,20 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        public void Allocate_SmallRectWithTargetGraphics_Success()
+        {
+            using (var context = new BufferedGraphicsContext())
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (BufferedGraphics bufferedGraphics = context.Allocate(graphics, new Rectangle(0, 0, context.MaximumBuffer.Width - 1, context.MaximumBuffer.Height - 1)))
+            {
+                Assert.NotNull(bufferedGraphics.Graphics);
+
+                context.Invalidate();
+            }
+        }
+
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Allocate_LargeRectWithTargetGraphics_Success()
         {
@@ -73,7 +85,30 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        public void Allocate_SmallRectWithTargetHdc_Success()
+        {
+            using (var context = new BufferedGraphicsContext())
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                try
+                {
+                    IntPtr hdc = graphics.GetHdc();
+                    using (BufferedGraphics bufferedGraphics = context.Allocate(hdc, new Rectangle(0, 0, context.MaximumBuffer.Width - 1, context.MaximumBuffer.Height - 1)))
+                    {
+                        Assert.NotNull(bufferedGraphics.Graphics);
+                    }
+
+                    context.Invalidate();
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Allocate_LargeRectWithTargetHdc_Success()
         {
@@ -192,7 +227,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
@@ -204,7 +238,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]

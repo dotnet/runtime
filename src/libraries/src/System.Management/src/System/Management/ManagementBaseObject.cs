@@ -502,7 +502,7 @@ namespace System.Management
         public Object GetPropertyValue(string propertyName)
         { 
             if (null == propertyName)
-                throw new ArgumentNullException ("propertyName");
+                throw new ArgumentNullException (nameof(propertyName));
 
             // Check for system properties
             if (propertyName.StartsWith ("__", StringComparison.Ordinal))
@@ -739,7 +739,7 @@ namespace System.Management
         public bool CompareTo(ManagementBaseObject otherObject, ComparisonSettings settings)
         {
             if (null == otherObject)
-                throw new ArgumentNullException ("otherObject");
+                throw new ArgumentNullException (nameof(otherObject));
 
             bool result = false;
 
@@ -823,7 +823,7 @@ namespace System.Management
             object propertyValue)
         {
             if (null == propertyName)
-                throw new ArgumentNullException ("propertyName");
+                throw new ArgumentNullException (nameof(propertyName));
 
             // Check for system properties
             if (propertyName.StartsWith ("__", StringComparison.Ordinal))

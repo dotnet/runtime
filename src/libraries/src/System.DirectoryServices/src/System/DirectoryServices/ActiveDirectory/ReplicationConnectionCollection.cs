@@ -15,7 +15,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(ReplicationConnection connection)
         {
             if (connection == null)
-                throw new ArgumentNullException("connection");
+                throw new ArgumentNullException(nameof(connection));
 
             if (!connection.existingConnection)
                 throw new InvalidOperationException(SR.Format(SR.ConnectionNotCommitted , connection.Name));
@@ -38,7 +38,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(ReplicationConnection connection)
         {
             if (connection == null)
-                throw new ArgumentNullException("connection");
+                throw new ArgumentNullException(nameof(connection));
 
             if (!connection.existingConnection)
                 throw new InvalidOperationException(SR.Format(SR.ConnectionNotCommitted , connection.Name));

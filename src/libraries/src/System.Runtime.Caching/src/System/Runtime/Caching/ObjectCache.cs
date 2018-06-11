@@ -33,7 +33,7 @@ namespace System.Runtime.Caching
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (Interlocked.CompareExchange(ref s_host, value, null) != null)
                 {

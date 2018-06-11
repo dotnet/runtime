@@ -97,7 +97,7 @@ namespace System.Data.SqlClient.SNI
             }
             else
             {
-                inSecurityBufferArray = new SecurityBuffer[] { };
+                inSecurityBufferArray = Array.Empty<SecurityBuffer>();
             }
 
             int tokenSize = NegotiateStreamPal.QueryMaxTokenSize(securityPackage);

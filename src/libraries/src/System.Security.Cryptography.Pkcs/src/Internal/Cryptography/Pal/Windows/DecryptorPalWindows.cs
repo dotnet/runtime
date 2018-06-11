@@ -5,17 +5,21 @@
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography.Pkcs;
-
+using System.Security.Cryptography.Pkcs.Asn1;
 using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal.Windows
 {
     internal sealed partial class DecryptorPalWindows : DecryptorPal
     {
-        private DecryptorPalWindows(SafeCryptMsgHandle hCryptMsg, RecipientInfoCollection recipientInfos)
+        private DecryptorPalWindows(
+            SafeCryptMsgHandle hCryptMsg,
+            RecipientInfoCollection recipientInfos,
+            AlgorithmIdentifierAsn contentEncryptionAlgorithm)
             : base(recipientInfos)
         {
             _hCryptMsg = hCryptMsg;
+            _contentEncryptionAlgorithm = contentEncryptionAlgorithm;
         }
 
         public sealed override void Dispose()
@@ -28,5 +32,6 @@ namespace Internal.Cryptography.Pal.Windows
         }
 
         private SafeCryptMsgHandle _hCryptMsg;
+        private AlgorithmIdentifierAsn _contentEncryptionAlgorithm;
     }
 }

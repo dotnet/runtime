@@ -389,7 +389,7 @@ namespace System.DirectoryServices
 
             if (access < PropertyAccess.Read || access > PropertyAccess.Write)
             {
-                throw new InvalidEnumArgumentException("access", (int)access, typeof(PropertyAccess));
+                throw new InvalidEnumArgumentException(nameof(access), (int)access, typeof(PropertyAccess));
             }
 
             switch (access)
@@ -413,7 +413,7 @@ namespace System.DirectoryServices
                     // internal logic.
                     //
                     Debug.Fail("Invalid PropertyAccess value");
-                    throw new ArgumentException("access");
+                    throw new ArgumentException(nameof(access));
             }
             return accessMask;
         }
@@ -454,7 +454,7 @@ namespace System.DirectoryServices
         {
             if (inheritanceType < ActiveDirectorySecurityInheritance.None || inheritanceType > ActiveDirectorySecurityInheritance.Children)
             {
-                throw new InvalidEnumArgumentException("inheritanceType", (int)inheritanceType, typeof(ActiveDirectorySecurityInheritance));
+                throw new InvalidEnumArgumentException(nameof(inheritanceType), (int)inheritanceType, typeof(ActiveDirectorySecurityInheritance));
             }
 
             return ITToIF[(int)inheritanceType];
@@ -464,7 +464,7 @@ namespace System.DirectoryServices
         {
             if (inheritanceType < ActiveDirectorySecurityInheritance.None || inheritanceType > ActiveDirectorySecurityInheritance.Children)
             {
-                throw new InvalidEnumArgumentException("inheritanceType", (int)inheritanceType, typeof(ActiveDirectorySecurityInheritance));
+                throw new InvalidEnumArgumentException(nameof(inheritanceType), (int)inheritanceType, typeof(ActiveDirectorySecurityInheritance));
             }
 
             return ITToPF[(int)inheritanceType];
@@ -509,7 +509,7 @@ namespace System.DirectoryServices
                         // internal logic.
                         //
                         Debug.Fail("Invalid PropagationFlags value");
-                        throw new ArgumentException("propagationFlags");
+                        throw new ArgumentException(nameof(propagationFlags));
                 }
             }
 

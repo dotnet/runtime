@@ -113,7 +113,7 @@ namespace System.Runtime.CompilerServices
                     // We're targeting a custom scheduler, so queue a task.
                     else
                     {
-                        Task.Factory.StartNew(continuation, default(CancellationToken), TaskCreationOptions.PreferFairness, scheduler);
+                        Task.Factory.StartNew(continuation, default, TaskCreationOptions.PreferFairness, scheduler);
                     }
                 }
             }

@@ -62,9 +62,20 @@ namespace System.IO.Tests
             testFile.Create().Dispose();
 
             if (invalidPath.Contains('\0'.ToString()))
+            {
                 Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalidPath));
+            }
             else
-                Assert.ThrowsAny<IOException>(() => Move(testFile.FullName, invalidPath));
+            {
+                if (PlatformDetection.IsInAppContainer)
+                {
+                    AssertExtensions.ThrowsAny<IOException, UnauthorizedAccessException>(() => Move(testFile.FullName, invalidPath));
+                }
+                else
+                {
+                    Assert.ThrowsAny<IOException>(() => Move(testFile.FullName, invalidPath));
+                }
+            }
         }
 
         [Fact]

@@ -57,7 +57,7 @@ namespace System.Net.Http.Headers
         {
             if (_entityTag == null)
             {
-                return HttpRuleParser.DateToString(_date.Value);
+                return HttpDateParser.DateToString(_date.Value);
             }
             return _entityTag.ToString();
         }
@@ -154,7 +154,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                if (!HttpRuleParser.TryStringToDate(input.Substring(current), out date))
+                if (!HttpDateParser.TryStringToDate(input.Substring(current), out date))
                 {
                     return 0;
                 }

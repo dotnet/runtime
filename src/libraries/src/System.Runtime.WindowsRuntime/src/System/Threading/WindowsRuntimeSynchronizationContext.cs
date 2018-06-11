@@ -48,7 +48,7 @@ namespace System.Threading
 
     #region class WinRTSynchronizationContextFactory
 
-    internal sealed class WinRTSynchronizationContextFactory : WinRTSynchronizationContextFactoryBase
+    internal sealed class WinRTSynchronizationContextFactory
     {
         //
         // It's important that we always return the same SynchronizationContext object for any particular ICoreDispatcher
@@ -63,7 +63,8 @@ namespace System.Threading
         private static readonly ConditionalWeakTable<IDispatcherQueue, WinRTDispatcherQueueBasedSynchronizationContext> s_dispatcherQueueContextCache =
             new ConditionalWeakTable<IDispatcherQueue, WinRTDispatcherQueueBasedSynchronizationContext>();
 
-        public override SynchronizationContext Create(object dispatcherObj)
+        // System.Private.Corelib will call WinRTSynchronizationContextFactory.Create() via reflection
+        public static SynchronizationContext Create(object dispatcherObj)
         {
             Debug.Assert(dispatcherObj != null);
             Debug.Assert(dispatcherObj is CoreDispatcher || dispatcherObj is IDispatcherQueue);

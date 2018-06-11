@@ -314,11 +314,11 @@ namespace System
 
         public enum TestEnum
         {
-            e0,
-            e1,
-            e2,
-            e3,
-            e4,
+            E0,
+            E1,
+            E2,
+            E3,
+            E4,
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

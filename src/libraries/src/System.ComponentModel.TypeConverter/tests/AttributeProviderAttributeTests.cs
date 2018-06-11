@@ -8,32 +8,52 @@ namespace System.ComponentModel.Tests
 {
     public class AttributeProviderAttributeTests
     {
-        [Fact]
-        public static void GetPropertyName()
+        [Theory]
+        [InlineData("type", "property")]
+        [InlineData("", "")]
+        public void Ctor_TypeName_PropertyName(string typeName, string propertyName)
         {
-            var typeName = "type";
-            var propertyName = "property";
             var attribute = new AttributeProviderAttribute(typeName, propertyName);
-
+            Assert.Equal(typeName, attribute.TypeName);
             Assert.Equal(propertyName, attribute.PropertyName);
         }
 
         [Fact]
-        public static void GetTypeName_SetByString()
+        public void Ctor_NullPropertyName_ThrowsArgumentNullException()
         {
-            var typeName = "type";
-            var attribute = new AttributeProviderAttribute(typeName);
+            AssertExtensions.Throws<ArgumentNullException>("propertyName", () => new AttributeProviderAttribute("typeName", null));
+        }
 
+        [Theory]
+        [InlineData("type")]
+        [InlineData("")]
+        public void Ctor_TypeName(string typeName)
+        {
+            var attribute = new AttributeProviderAttribute(typeName);
             Assert.Equal(typeName, attribute.TypeName);
+            Assert.Null(attribute.PropertyName);
         }
 
         [Fact]
-        public static void GetTypeName_SetByType()
+        public void Ctor_NullTypeName_ThrowsArgumentNullException()
         {
-            var type = typeof(AttributeProviderAttribute);
-            var attribute = new AttributeProviderAttribute(type);
+            AssertExtensions.Throws<ArgumentNullException>("typeName", () => new AttributeProviderAttribute((string)null));
+            AssertExtensions.Throws<ArgumentNullException>("typeName", () => new AttributeProviderAttribute((string)null, "propertyName"));
+        }
 
+        [Theory]
+        [InlineData(typeof(AttributeProviderAttribute))]
+        public void Ctor_Type(Type type)
+        {
+            var attribute = new AttributeProviderAttribute(type);
             Assert.Equal(type.AssemblyQualifiedName, attribute.TypeName);
+            Assert.Null(attribute.PropertyName);
+        }
+
+        [Fact]
+        public void Ctor_NullType_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("type", () => new AttributeProviderAttribute((Type)null));
         }
     }
 }

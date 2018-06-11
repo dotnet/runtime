@@ -5,8 +5,8 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    /// <para>Represents the method that will handle the <see cref='System.ComponentModel.TypeDescriptor.Refresh'/> event
-    ///    raised when a <see cref='System.Type'/> or component is changed during design time.</para>
+    /// Represents the method that will handle the <see cref='System.ComponentModel.TypeDescriptor.Refresh'/> event
+    /// raised when a <see cref='System.Type'/> or component is changed during design time.
     /// </summary>
     public delegate void RefreshEventHandler(RefreshEventArgs e);
 }

@@ -38,7 +38,7 @@ namespace System.Drawing.Printing.Tests
         };
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
         public void Ctor_Default_Success()
         {
             using (var document = new PrintDocument())
@@ -50,7 +50,7 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
         public void DefaultPageSettings_SetValue_ReturnsExpected()
         {
             using (var document = new PrintDocument())
@@ -64,7 +64,6 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DefaultPageSettings_Null_ReturnsExpected()
         {
             using (var document = new PrintDocument())
@@ -125,7 +124,7 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
         public void PrinterSettings_SetValue_ReturnsExpected()
         {
             using (var document = new PrintDocument())
@@ -149,7 +148,7 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
         public void BeginPrint_SetValue_ReturnsExpected()
         {
             bool flag = false;
@@ -212,7 +211,7 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.GdiplusIsAvailable, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
         public void QueryPageSettings_SetValue_ReturnsExpected()
         {
             bool flag = false;

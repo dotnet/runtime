@@ -87,7 +87,7 @@ namespace System.Diagnostics.Tracing
         private PropertyValue(object value)
         {
             _reference = value;
-            _scalar = default(Scalar);
+            _scalar = default;
             _scalarLength = 0;
         }
 

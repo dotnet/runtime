@@ -4,44 +4,15 @@
 
 namespace System.ComponentModel
 {
-    /// <summary>
-    ///    <para>[To be supplied.]</para>
-    /// </summary>
     public enum ListChangedType
     {
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         Reset,
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         ItemAdded,
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         ItemDeleted,
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         ItemMoved,
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         ItemChanged,
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         PropertyDescriptorAdded,
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         PropertyDescriptorDeleted,
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         PropertyDescriptorChanged
     }
 }
-
-

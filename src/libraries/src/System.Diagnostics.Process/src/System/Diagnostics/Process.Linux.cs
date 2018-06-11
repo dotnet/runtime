@@ -145,6 +145,11 @@ namespace System.Diagnostics
         {
             if (_processInfo.HandleCount <= 0 && _haveProcessId)
             {
+                // Don't get information for a PID that exited and has possibly been recycled.
+                if (GetWaitState().GetExited(out _, refresh: false))
+                {
+                    return;
+                }
                 string path = Interop.procfs.GetFileDescriptorDirectoryPathForProcess(_processId);
                 if (Directory.Exists(path))
                 {
@@ -166,7 +171,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveId);
+                EnsureState(State.HaveNonExitedId);
 
                 IntPtr set;
                 if (Interop.Sys.SchedGetAffinity(_processId, out set) != 0)
@@ -178,7 +183,7 @@ namespace System.Diagnostics
             }
             set
             {
-                EnsureState(State.HaveId);
+                EnsureState(State.HaveNonExitedId);
 
                 if (Interop.Sys.SchedSetAffinity(_processId, ref value) != 0)
                 {
@@ -247,7 +252,7 @@ namespace System.Diagnostics
         /// <summary>Reads the stats information for this process from the procfs file system.</summary>
         private Interop.procfs.ParsedStat GetStat()
         {
-            EnsureState(State.HaveId);
+            EnsureState(State.HaveNonExitedId);
             Interop.procfs.ParsedStat stat;
             if (!Interop.procfs.TryReadStatFile(_processId, out stat, new ReusableTextReader()))
             {

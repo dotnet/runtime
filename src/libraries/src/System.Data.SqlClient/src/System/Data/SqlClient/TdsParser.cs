@@ -7506,7 +7506,6 @@ namespace System.Data.SqlClient
             }
         }
 
-        private static readonly IEnumerable<MSS.SqlDataRecord> s_tvpEmptyValue = new MSS.SqlDataRecord[0];
         private void WriteSmiParameter(SqlParameter param, int paramIndex, bool sendDefault, TdsParserStateObject stateObj)
         {
             //
@@ -7533,7 +7532,7 @@ namespace System.Data.SqlClient
                 // Value for TVP default is empty list, not NULL
                 if (SqlDbType.Structured == metaData.SqlDbType && metaData.IsMultiValued)
                 {
-                    value = s_tvpEmptyValue;
+                    value = Array.Empty<MSS.SqlDataRecord>();
                     typeCode = MSS.ExtendedClrTypeCode.IEnumerableOfSqlDataRecord;
                 }
                 else

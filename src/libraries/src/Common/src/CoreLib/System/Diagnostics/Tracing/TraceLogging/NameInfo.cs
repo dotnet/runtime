@@ -42,10 +42,6 @@ namespace System.Diagnostics.Tracing
         internal readonly int identity;
         internal readonly byte[] nameMetadata;
 
-#if FEATURE_PERFTRACING
-        private readonly object eventHandleCreationLock = new object();
-#endif
-
         public NameInfo(string name, EventTags tags, int typeMetadataSize)
         {
             this.name = name;
@@ -82,14 +78,14 @@ namespace System.Diagnostics.Tracing
         }
 
 #if FEATURE_PERFTRACING
-        public IntPtr GetOrCreateEventHandle(EventProvider provider, ConcurrentDictionary<int, IntPtr> eventHandleMap, EventDescriptor descriptor, TraceLoggingEventTypes eventTypes)
+        public IntPtr GetOrCreateEventHandle(EventProvider provider, TraceLoggingEventHandleTable eventHandleTable, EventDescriptor descriptor, TraceLoggingEventTypes eventTypes)
         {
-            IntPtr eventHandle = IntPtr.Zero;
-            if(!eventHandleMap.TryGetValue(descriptor.EventId, out eventHandle))
+            IntPtr eventHandle;
+            if ((eventHandle = eventHandleTable[descriptor.EventId]) == IntPtr.Zero)
             {
-                lock (eventHandleCreationLock)
+                lock (eventHandleTable)
                 {
-                    if (!eventHandleMap.TryGetValue(descriptor.EventId, out eventHandle))
+                    if ((eventHandle = eventHandleTable[descriptor.EventId]) == IntPtr.Zero)
                     {
                         byte[] metadataBlob = EventPipeMetadataGenerator.Instance.GenerateEventMetadata(
                             descriptor.EventId,
@@ -115,6 +111,9 @@ namespace System.Diagnostics.Tracing
                                     metadataLength);
                             }
                         }
+
+                        // Cache the event handle.
+                        eventHandleTable.SetEventHandle(descriptor.EventId, eventHandle);
                     }
                 }
             }

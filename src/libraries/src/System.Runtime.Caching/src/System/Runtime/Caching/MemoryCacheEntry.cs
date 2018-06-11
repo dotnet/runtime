@@ -115,7 +115,7 @@ namespace System.Runtime.Caching
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             _utcCreated = DateTime.UtcNow;
             _value = value;

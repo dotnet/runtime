@@ -30,8 +30,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-
-using System;
 using System.ComponentModel.Design.Serialization;
 using Xunit;
 
@@ -184,6 +182,22 @@ namespace System.ComponentModel.Tests
                 Assert.NotNull(ex.Message);
                 Assert.Equal("context", ex.ParamName);
             }
+        }
+
+        [Fact]
+        public void Append_NoItems_Success()
+        {
+            var stack = new ContextStack();
+            stack.Append("value");
+            Assert.Equal("value", stack[0]);
+        }
+
+        [Fact]
+        public void Indexer_GetWithoutItems_ReturnsNull()
+        {
+            var stack = new ContextStack();
+            Assert.Null(stack[1]);
+            Assert.Null(stack[typeof(int)]);
         }
 
         public interface IFoo

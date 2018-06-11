@@ -219,7 +219,7 @@ namespace System.Drawing
         public void Save(string filename, ImageFormat format)
         {
             if (format == null)
-                throw new ArgumentNullException("format");
+                throw new ArgumentNullException(nameof(format));
 
             ImageCodecInfo codec = format.FindEncoder();
 
@@ -236,9 +236,9 @@ namespace System.Drawing
         public void Save(string filename, ImageCodecInfo encoder, EncoderParameters encoderParams)
         {
             if (filename == null)
-                throw new ArgumentNullException("filename");
+                throw new ArgumentNullException(nameof(filename));
             if (encoder == null)
-                throw new ArgumentNullException("encoder");
+                throw new ArgumentNullException(nameof(encoder));
 
             IntPtr encoderParamsMemory = IntPtr.Zero;
 
@@ -310,7 +310,7 @@ namespace System.Drawing
         public void Save(Stream stream, ImageFormat format)
         {
             if (format == null)
-                throw new ArgumentNullException("format");
+                throw new ArgumentNullException(nameof(format));
 
             ImageCodecInfo codec = format.FindEncoder();
             Save(stream, codec, null);
@@ -324,11 +324,11 @@ namespace System.Drawing
         {
             if (stream == null)
             {
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             }
             if (encoder == null)
             {
-                throw new ArgumentNullException("encoder");
+                throw new ArgumentNullException(nameof(encoder));
             }
 
             IntPtr encoderParamsMemory = IntPtr.Zero;
@@ -406,7 +406,7 @@ namespace System.Drawing
 
             if (image == null)
             {
-                throw new ArgumentNullException("image");
+                throw new ArgumentNullException(nameof(image));
             }
             if (encoderParams != null)
             {

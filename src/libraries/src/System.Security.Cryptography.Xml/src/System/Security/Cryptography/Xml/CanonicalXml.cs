@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Xml
 
             XmlDocument doc = Utils.GetOwnerDocument(nodeList);
             if (doc == null)
-                throw new ArgumentException("nodeList");
+                throw new ArgumentException(nameof(nodeList));
 
             _c14nDoc = new CanonicalXmlDocument(false, includeComments);
             _c14nDoc.XmlResolver = resolver;

@@ -198,7 +198,7 @@ namespace System.Runtime.InteropServices
             SpaceCheck(ptr, sizeofT);
 
             // return *(T*) (_ptr + byteOffset);
-            T value = default(T);
+            T value = default;
             bool mustCallRelease = false;
             try
             {

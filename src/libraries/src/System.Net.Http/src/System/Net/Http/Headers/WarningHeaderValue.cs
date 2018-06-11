@@ -88,7 +88,7 @@ namespace System.Net.Http.Headers
             if (_date.HasValue)
             {
                 sb.Append(" \"");
-                sb.Append(HttpRuleParser.DateToString(_date.Value));
+                sb.Append(HttpDateParser.DateToString(_date.Value));
                 sb.Append('\"');
             }
 
@@ -301,7 +301,7 @@ namespace System.Net.Http.Headers
                 }
 
                 DateTimeOffset temp;
-                if (!HttpRuleParser.TryStringToDate(input.Substring(dateStartIndex, current - dateStartIndex), out temp))
+                if (!HttpDateParser.TryStringToDate(input.Substring(dateStartIndex, current - dateStartIndex), out temp))
                 {
                     return false;
                 }

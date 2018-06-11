@@ -39,6 +39,25 @@ namespace System
                 Assert.Equal(expectedParamName, exception.ParamName);
         }
 
+        public static void Throws<T>(string netCoreParamName, string netFxParamName, Func<object> testCode)
+            where T : ArgumentException
+        {
+            T exception = Assert.Throws<T>(testCode);
+
+            if (netFxParamName == null && IsFullFramework)
+            {
+                // Param name varies between NETFX versions -- skip checking it
+                return;
+            }
+
+            string expectedParamName =
+                IsFullFramework ?
+                netFxParamName : netCoreParamName;
+
+            if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
+                Assert.Equal(expectedParamName, exception.ParamName);
+        }
+
         public static T Throws<T>(string paramName, Action action)
             where T : ArgumentException
         {
@@ -91,13 +110,18 @@ namespace System
             where TNetCoreExceptionType : Exception
             where TNetFxExceptionType : Exception
         {
+            return Throws(typeof(TNetCoreExceptionType), typeof(TNetFxExceptionType), action);
+        }
+
+        public static Exception Throws(Type netCoreExceptionType, Type netFxExceptionType, Action action)
+        {
             if (IsFullFramework)
             {
-                return Throws<TNetFxExceptionType>(action);
+                return Assert.Throws(netFxExceptionType, action);
             }
             else
             {
-                return Throws<TNetCoreExceptionType>(action);
+                return Assert.Throws(netCoreExceptionType, action);
             }
         }
 

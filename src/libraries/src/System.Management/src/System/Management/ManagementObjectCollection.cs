@@ -203,10 +203,10 @@ namespace System.Management
                 throw new ObjectDisposedException(name);
 
             if (null == array)
-                throw new ArgumentNullException ("array");
+                throw new ArgumentNullException (nameof(array));
 
             if ((index < array.GetLowerBound (0)) || (index > array.GetUpperBound(0)))
-                throw new ArgumentOutOfRangeException ("index");
+                throw new ArgumentOutOfRangeException (nameof(index));
 
             // Since we don't know the size until we've enumerated
             // we'll have to dump the objects in a list first then
@@ -227,7 +227,7 @@ namespace System.Management
                 numObjects++;
 
                 if (numObjects > capacity)
-                    throw new ArgumentException (null, "index");
+                    throw new ArgumentException (null, nameof(index));
             }
 
             // If we get here we are OK. Now copy the list to the array

@@ -17,9 +17,9 @@ namespace System.Net.Http
     internal static class ConnectHelper
     {
         /// <summary>Pool of event args to use to establish connections.</summary>
-        private static readonly ConcurrentQueue<ConnectEventArgs>.Segment s_connectEventArgs =
-            new ConcurrentQueue<ConnectEventArgs>.Segment(
-                ConcurrentQueue<ConnectEventArgs>.Segment.RoundUpToPowerOf2(Math.Max(2, Environment.ProcessorCount)));
+        private static readonly ConcurrentQueueSegment<ConnectEventArgs> s_connectEventArgs =
+            new ConcurrentQueueSegment<ConnectEventArgs>(
+                ConcurrentQueueSegment<ConnectEventArgs>.RoundUpToPowerOf2(Math.Max(2, Environment.ProcessorCount)));
 
         /// <summary>
         /// Helper type used by HttpClientHandler when wrapping SocketsHttpHandler to map its

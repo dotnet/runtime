@@ -22,7 +22,7 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            var dayAbbrev = DayAbbreviations[(int)value.DayOfWeek];
+            uint dayAbbrev = s_dayAbbreviations[(int)value.DayOfWeek];
 
             destination[0] = (byte)dayAbbrev;
             dayAbbrev >>= 8;
@@ -35,7 +35,7 @@ namespace System.Buffers.Text
             FormattingHelpers.WriteTwoDecimalDigits((uint)value.Day, destination, 5);
             destination[7] = Utf8Constants.Space;
 
-            var monthAbbrev = MonthAbbreviations[value.Month - 1];
+            uint monthAbbrev = s_monthAbbreviations[value.Month - 1];
             destination[8] = (byte)monthAbbrev;
             monthAbbrev >>= 8;
             destination[9] = (byte)monthAbbrev;

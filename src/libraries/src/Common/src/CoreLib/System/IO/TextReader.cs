@@ -251,7 +251,7 @@ namespace System.IO
             return ReadAsyncInternal(new Memory<char>(buffer, index, count), default).AsTask();
         }
 
-        public virtual ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
+        public virtual ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
             new ValueTask<int>(MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 ReadAsync(array.Array, array.Offset, array.Count) :
                 Task<int>.Factory.StartNew(state =>
@@ -289,7 +289,7 @@ namespace System.IO
             return ReadBlockAsyncInternal(new Memory<char>(buffer, index, count), default).AsTask();
         }
 
-        public virtual ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
+        public virtual ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
             new ValueTask<int>(MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 ReadBlockAsync(array.Array, array.Offset, array.Count) :
                 Task<int>.Factory.StartNew(state =>

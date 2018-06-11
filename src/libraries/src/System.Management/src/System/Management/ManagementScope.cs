@@ -828,7 +828,7 @@ namespace System.Management
                     HandleIdentifierChange(this,null);
                 }
                 else
-                    throw new ArgumentNullException ("value");
+                    throw new ArgumentNullException (nameof(value));
             }
         }
     
@@ -871,7 +871,7 @@ namespace System.Management
                     HandleIdentifierChange(this,null);
                 }
                 else
-                    throw new ArgumentNullException ("value");
+                    throw new ArgumentNullException (nameof(value));
             }
         }
 
@@ -1541,7 +1541,7 @@ namespace System.Management
 
             if (destinationType == null) 
             {
-                throw new ArgumentNullException("destinationType");
+                throw new ArgumentNullException(nameof(destinationType));
             }
 
             if (value is ManagementScope && destinationType == typeof(InstanceDescriptor)) 

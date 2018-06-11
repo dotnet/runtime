@@ -8,11 +8,11 @@ namespace System.Security.Cryptography
 {
     partial class RandomNumberGeneratorImplementation
     {
-        private static void GetBytes(ref byte pbBuffer, int count)
+        private static unsafe void GetBytes(byte* pbBuffer, int count)
         {
             Debug.Assert(count > 0);
 
-            Interop.BCrypt.NTSTATUS status = Interop.BCrypt.BCryptGenRandom(ref pbBuffer, count);
+            Interop.BCrypt.NTSTATUS status = Interop.BCrypt.BCryptGenRandom(IntPtr.Zero, pbBuffer, count, Interop.BCrypt.BCRYPT_USE_SYSTEM_PREFERRED_RNG);
             if (status != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
                 throw Interop.BCrypt.CreateCryptographicException(status);
         }

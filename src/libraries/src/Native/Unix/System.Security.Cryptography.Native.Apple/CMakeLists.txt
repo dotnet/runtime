@@ -14,7 +14,7 @@ set(NATIVECRYPTO_SOURCES
     pal_hmac.cpp
     pal_keyagree.cpp
     pal_keychain.cpp
-    pal_random.cpp
+    pal_random.c
     pal_rsa.cpp
     pal_sec.cpp
     pal_seckey.cpp

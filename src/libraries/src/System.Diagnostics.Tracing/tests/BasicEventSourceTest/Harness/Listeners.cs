@@ -303,7 +303,6 @@ namespace BasicEventSourceTests
         private EventListener _listener;
         private Action<EventSource> _onEventSourceCreated;
 
-#if FEATURE_ETLEVENTS
         public event EventHandler<EventSourceCreatedEventArgs> EventSourceCreated
         {
             add
@@ -331,11 +330,9 @@ namespace BasicEventSourceTests
                     this._listener.EventWritten -= value;
             }
         }
-#endif
 
         public EventListenerListener(bool useEventsToListen = false)
         {
-#if FEATURE_ETLEVENTS
             if (useEventsToListen)
             {
                 _listener = new HelperEventListener(null);
@@ -344,7 +341,6 @@ namespace BasicEventSourceTests
                 _listener.EventWritten += mListenerEventWritten;
             }
             else
-#endif
             {
                 _listener = new HelperEventListener(this);
             }
@@ -421,10 +417,8 @@ namespace BasicEventSourceTests
 
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
-#if FEATURE_ETLEVENTS
                 // OnEventWritten is abstract in netfx <= 461
                 base.OnEventWritten(eventData);
-#endif
                 _forwardTo?.OnEvent?.Invoke(new EventListenerEvent(eventData));
             }
         }

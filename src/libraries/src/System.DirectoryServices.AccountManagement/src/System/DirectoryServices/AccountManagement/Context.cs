@@ -381,7 +381,7 @@ namespace System.DirectoryServices.AccountManagement
                 throw new ArgumentException(SR.ContextBadUserPwdCombo);
 
             if ((options & ~(ContextOptions.Signing | ContextOptions.Negotiate | ContextOptions.Sealing | ContextOptions.SecureSocketLayer | ContextOptions.SimpleBind | ContextOptions.ServerBind)) != 0)
-                throw new InvalidEnumArgumentException("options", (int)options, typeof(ContextOptions));
+                throw new InvalidEnumArgumentException(nameof(options), (int)options, typeof(ContextOptions));
 
             if (contextType == ContextType.Machine && ((options & ~ContextOptions.Negotiate) != 0))
             {
@@ -403,7 +403,7 @@ namespace System.DirectoryServices.AccountManagement
 #endif
                 )
             {
-                throw new InvalidEnumArgumentException("contextType", (int)contextType, typeof(ContextType));
+                throw new InvalidEnumArgumentException(nameof(contextType), (int)contextType, typeof(ContextType));
             }
 
             if ((contextType == ContextType.Machine) && (container != null))

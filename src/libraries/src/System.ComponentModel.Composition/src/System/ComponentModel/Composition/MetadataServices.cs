@@ -29,7 +29,7 @@ namespace System.ComponentModel.Composition
 
         public static T GetValue<T>(this IDictionary<string, object> metadata, string key)
         {
-            Assumes.NotNull(metadata, "metadata");
+            Assumes.NotNull(metadata, nameof(metadata));
 
             object untypedValue = null;
             if (!metadata.TryGetValue(key, out untypedValue))

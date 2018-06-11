@@ -29,7 +29,7 @@ namespace System.Net
         private Uri _requestUri;
         private string _originVerb = HttpMethod.Get.Method;
 
-        // We allow getting and setting this (to preserve app-compat). But we don't do anything with it 
+        // We allow getting and setting this (to preserve app-compat). But we don't do anything with it
         // as the underlying System.Net.Http API doesn't support it.
         private int _continueTimeout = DefaultContinueTimeout;
 
@@ -421,7 +421,6 @@ namespace System.Net
             }
         }
 
-
         public bool KeepAlive { get; set; } = true;
 
         public bool UnsafeAuthenticatedConnectionSharing
@@ -442,7 +441,6 @@ namespace System.Net
                 }
             }
         }
-
 
         public DecompressionMethods AutomaticDecompression
         {
@@ -566,7 +564,6 @@ namespace System.Net
             }
         }
 
-
         /*
             Accessor:   Expect
 
@@ -652,7 +649,6 @@ namespace System.Net
         }
 
         public static new RequestCachePolicy DefaultCachePolicy { get; set; } = new RequestCachePolicy(RequestCacheLevel.BypassCache);
-
 
         public DateTime IfModifiedSince
         {
@@ -756,7 +752,6 @@ namespace System.Net
                 _clientCertificates = value;
             }
         }
-
 
         // HTTP Version
         /// <devdoc>
@@ -1321,7 +1316,6 @@ namespace System.Net
 
         public void AddRange(string rangeSpecifier, long from, long to)
         {
-
             //
             // Do some range checking before assembling the header
             //
@@ -1371,7 +1365,6 @@ namespace System.Net
 
         private bool AddRange(string rangeSpecifier, string from, string to)
         {
-
             string curRange = _webHeaderCollection[HttpKnownHeaderNames.Range];
 
             if ((curRange == null) || (curRange.Length == 0))
@@ -1394,7 +1387,6 @@ namespace System.Net
             _webHeaderCollection[HttpKnownHeaderNames.Range] = curRange;
             return true;
         }
-
 
         private bool RequestSubmitted
         {
@@ -1450,7 +1442,14 @@ namespace System.Net
                 {
                     return DateTime.MinValue; // MinValue means header is not present
                 }
-                return HttpDateParse.StringToDate(headerValue);
+                if (HttpDateParser.TryStringToDate(headerValue, out DateTimeOffset dateTimeOffset))
+                {
+                    return dateTimeOffset.LocalDateTime;
+                }
+                else
+                {
+                    throw new ProtocolViolationException(SR.net_baddate);
+                }
 #if DEBUG
             }
 #endif
@@ -1465,17 +1464,10 @@ namespace System.Net
                 if (dateTime == DateTime.MinValue)
                     SetSpecialHeaders(headerName, null); // remove header
                 else
-                    SetSpecialHeaders(headerName, DateToString(dateTime));
+                    SetSpecialHeaders(headerName, HttpDateParser.DateToString(dateTime.ToUniversalTime()));
 #if DEBUG
             }
 #endif
-        }
-
-        // convert Date to String using RFC 1123 pattern
-        private static string DateToString(DateTime D)
-        {
-            DateTimeFormatInfo dateFormat = new DateTimeFormatInfo();
-            return D.ToUniversalTime().ToString("R", dateFormat);
         }
 
         private bool TryGetHostUri(string hostName, out Uri hostUri)

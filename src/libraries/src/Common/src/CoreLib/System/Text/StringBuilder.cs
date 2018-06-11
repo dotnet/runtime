@@ -353,7 +353,7 @@ namespace System.Text
             return Capacity;
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             AssertInvariants();
 
@@ -558,6 +558,138 @@ namespace System.Text
         }
 
         /// <summary>
+        /// GetChunks returns ChunkEnumerator that follows the IEnumerable pattern and
+        /// thus can be used in a C# 'foreach' statements to retreive the data in the StringBuilder
+        /// as chunks (ReadOnlyMemory) of characters.  An example use is:
+        /// 
+        ///      foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
+        ///         foreach(char c in chunk.Span)
+        ///             { /* operation on c }
+        ///
+        /// It is undefined what happens if the StringBuilder is modified while the chunk
+        /// enumeration is incomplete.  StringBuilder is also not thread-safe, so operating
+        /// on it with concurrent threads is illegal.  Finally the ReadOnlyMemory chunks returned 
+        /// are NOT guarenteed to remain unchanged if the StringBuilder is modified, so do 
+        /// not cache them for later use either.  This API's purpose is efficiently extracting
+        /// the data of a CONSTANT StringBuilder.  
+        /// 
+        /// Creating a ReadOnlySpan from a ReadOnlyMemory  (the .Span property) is expensive 
+        /// compared to the fetching of the character, so create a local variable for the SPAN 
+        /// if you need to use it in a nested for statement.  For example 
+        /// 
+        ///    foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
+        ///    {
+        ///         var span = chunk.Span;
+        ///         for(int i = 0; i < span.Length; i++)
+        ///             { /* operation on span[i] */ }
+        ///    }
+        /// </summary>
+        public ChunkEnumerator GetChunks() => new ChunkEnumerator(this);
+
+        /// <summary>
+        /// ChunkEnumerator supports both the IEnumerable and IEnumerator pattern so foreach 
+        /// works (see GetChunks).  It needs to be public (so the compiler can use it 
+        /// when building a foreach statement) but users typically don't use it explicitly.
+        /// (which is why it is a nested type). 
+        /// </summary>
+        public struct ChunkEnumerator
+        {
+            private readonly StringBuilder _firstChunk; // The first Stringbuilder chunk (which is the end of the logical string)
+            private StringBuilder _currentChunk;        // The chunk that this enumerator is currently returning (Current).  
+            private readonly ManyChunkInfo _manyChunks; // Only used for long string builders with many chunks (see constructor)
+
+            /// <summary>
+            /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator  
+            /// </summary>
+            [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] // Only here to make foreach work
+            public ChunkEnumerator GetEnumerator() { return this;  }
+
+            /// <summary>
+            /// Implements the IEnumerator pattern.
+            /// </summary>
+            public bool MoveNext()
+            {
+                if (_currentChunk == _firstChunk)
+                    return false;
+
+                if (_manyChunks != null)
+                    return _manyChunks.MoveNext(ref _currentChunk);
+
+                StringBuilder next = _firstChunk;
+                while (next.m_ChunkPrevious != _currentChunk)
+                    next = next.m_ChunkPrevious;
+                _currentChunk = next;
+                return true;
+            }
+
+            /// <summary>
+            /// Implements the IEnumerator pattern.
+            /// </summary>
+            public ReadOnlyMemory<char> Current => new ReadOnlyMemory<char>(_currentChunk.m_ChunkChars, 0, _currentChunk.m_ChunkLength);
+
+            #region private
+            internal ChunkEnumerator(StringBuilder stringBuilder)
+            {
+                Debug.Assert(stringBuilder != null);
+                _firstChunk = stringBuilder;
+                _currentChunk = null;   // MoveNext will find the last chunk if we do this.  
+                _manyChunks = null;
+
+                // There is a performance-vs-allocation tradeoff.   Because the chunks
+                // are a linked list with each chunk pointing to its PREDECESSOR, walking
+                // the list FORWARD is not efficient.   If there are few chunks (< 8) we
+                // simply scan from the start each time, and tolerate the N*N behavior. 
+                // However above this size, we allocate an array to hold pointers to all
+                // the chunks and we can be efficient for large N.    
+                int chunkCount = ChunkCount(stringBuilder);
+                if (8 < chunkCount)
+                    _manyChunks = new ManyChunkInfo(stringBuilder, chunkCount);
+            }
+
+            private static int ChunkCount(StringBuilder stringBuilder)
+            {
+                int ret = 0;
+                while (stringBuilder != null)
+                {
+                    ret++;
+                    stringBuilder = stringBuilder.m_ChunkPrevious;
+                }
+                return ret;
+            }
+
+            /// <summary>
+            /// Used to hold all the chunks indexes when you have many chunks. 
+            /// </summary>
+            private class ManyChunkInfo
+            {
+                private readonly StringBuilder[] _chunks;    // These are in normal order (first chunk first) 
+                private int _chunkPos;
+
+                public bool MoveNext(ref StringBuilder current)
+                {
+                    int pos = ++_chunkPos;
+                    if (_chunks.Length <= pos)
+                        return false;
+                    current = _chunks[pos];
+                    return true;
+                }
+
+                public ManyChunkInfo(StringBuilder stringBuilder, int chunkCount)
+                {
+                    _chunks = new StringBuilder[chunkCount];
+                    while (0 <= --chunkCount)
+                    {
+                        Debug.Assert(stringBuilder != null);
+                        _chunks[chunkCount] = stringBuilder;
+                        stringBuilder = stringBuilder.m_ChunkPrevious;
+                    }
+                    _chunkPos = -1;
+                }
+            }
+#endregion
+        }
+
+        /// <summary>
         /// Appends a character 0 or more times to the end of this builder.
         /// </summary>
         /// <param name="value">The character to append.</param>
@@ -655,7 +787,7 @@ namespace System.Text
         /// Appends a string to the end of this builder.
         /// </summary>
         /// <param name="value">The string to append.</param>
-        public StringBuilder Append(String value)
+        public StringBuilder Append(string value)
         {
             if (value != null)
             {
@@ -910,7 +1042,7 @@ namespace System.Text
         /// <param name="index">The index to insert in this builder.</param>
         /// <param name="value">The string to insert.</param>
         /// <param name="count">The number of times to insert the string.</param>
-        public StringBuilder Insert(int index, String value, int count)
+        public StringBuilder Insert(int index, string value, int count)
         {
             if (count < 0)
             {
@@ -1189,7 +1321,7 @@ namespace System.Text
 
         #endregion
 
-        public StringBuilder Insert(int index, String value)
+        public StringBuilder Insert(int index, string value)
         {
             if ((uint)index > (uint)Length)
             {
@@ -1319,13 +1451,13 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder AppendFormat(String format, Object arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
+        public StringBuilder AppendFormat(string format, Object arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
 
-        public StringBuilder AppendFormat(String format, Object arg0, Object arg1) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
+        public StringBuilder AppendFormat(string format, Object arg0, Object arg1) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
 
-        public StringBuilder AppendFormat(String format, Object arg0, Object arg1, Object arg2) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
+        public StringBuilder AppendFormat(string format, Object arg0, Object arg1, Object arg2) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
 
-        public StringBuilder AppendFormat(String format, params Object[] args)
+        public StringBuilder AppendFormat(string format, params Object[] args)
         {
             if (args == null)
             {
@@ -1338,13 +1470,13 @@ namespace System.Text
             return AppendFormatHelper(null, format, new ParamsArray(args));
         }
 
-        public StringBuilder AppendFormat(IFormatProvider provider, String format, Object arg0) => AppendFormatHelper(provider, format, new ParamsArray(arg0));
+        public StringBuilder AppendFormat(IFormatProvider provider, string format, Object arg0) => AppendFormatHelper(provider, format, new ParamsArray(arg0));
 
-        public StringBuilder AppendFormat(IFormatProvider provider, String format, Object arg0, Object arg1) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1));
+        public StringBuilder AppendFormat(IFormatProvider provider, string format, Object arg0, Object arg1) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1));
 
-        public StringBuilder AppendFormat(IFormatProvider provider, String format, Object arg0, Object arg1, Object arg2) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
+        public StringBuilder AppendFormat(IFormatProvider provider, string format, Object arg0, Object arg1, Object arg2) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
 
-        public StringBuilder AppendFormat(IFormatProvider provider, String format, params Object[] args)
+        public StringBuilder AppendFormat(IFormatProvider provider, string format, params Object[] args)
         {
             if (args == null)
             {
@@ -1366,7 +1498,7 @@ namespace System.Text
         private const int IndexLimit = 1000000; // Note:            0 <= ArgIndex < IndexLimit
         private const int WidthLimit = 1000000; // Note:  -WidthLimit <  ArgAlign < WidthLimit
 
-        internal StringBuilder AppendFormatHelper(IFormatProvider provider, String format, ParamsArray args)
+        internal StringBuilder AppendFormatHelper(IFormatProvider provider, string format, ParamsArray args)
         {
             if (format == null)
             {
@@ -1503,7 +1635,7 @@ namespace System.Text
                 // Start of parsing of optional formatting parameter.
                 //
                 Object arg = args[index];
-                String itemFormat = null;
+                string itemFormat = null;
                 ReadOnlySpan<char> itemFormatSpan = default; // used if itemFormat is null
                 // Is current character a colon? which indicates start of formatting parameter.
                 if (ch == ':')
@@ -1573,7 +1705,7 @@ namespace System.Text
                 if (ch != '}') FormatError();
                 // Construct the output for this arg hole.
                 pos++;
-                String s = null;
+                string s = null;
                 if (cf != null)
                 {
                     if (itemFormatSpan.Length != 0 && itemFormat == null)
@@ -1616,7 +1748,7 @@ namespace System.Text
                     }
                 }
                 // Append it to the final output of the Format String.
-                if (s == null) s = String.Empty;
+                if (s == null) s = string.Empty;
                 int pad = width - s.Length;
                 if (!leftJustify && pad > 0) Append(' ', pad);
                 Append(s);
@@ -1635,7 +1767,7 @@ namespace System.Text
         /// If <paramref name="newValue"/> is <c>null</c>, instances of <paramref name="oldValue"/>
         /// are removed from this builder.
         /// </remarks>
-        public StringBuilder Replace(String oldValue, String newValue) => Replace(oldValue, newValue, 0, Length);
+        public StringBuilder Replace(string oldValue, string newValue) => Replace(oldValue, newValue, 0, Length);
 
         /// <summary>
         /// Determines if the contents of this builder are equal to the contents of another builder.
@@ -1724,7 +1856,7 @@ namespace System.Text
         /// If <paramref name="newValue"/> is <c>null</c>, instances of <paramref name="oldValue"/>
         /// are removed from this builder.
         /// </remarks>
-        public StringBuilder Replace(String oldValue, String newValue, int startIndex, int count)
+        public StringBuilder Replace(string oldValue, string newValue, int startIndex, int count)
         {
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)

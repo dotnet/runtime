@@ -37,7 +37,7 @@ namespace System.Drawing.Drawing2D
         {
             if (plgpts == null)
             {
-                throw new ArgumentNullException("plgpts");
+                throw new ArgumentNullException(nameof(plgpts));
             }
             if (plgpts.Length != 3)
             {
@@ -69,7 +69,7 @@ namespace System.Drawing.Drawing2D
         {
             if (plgpts == null)
             {
-                throw new ArgumentNullException("plgpts");
+                throw new ArgumentNullException(nameof(plgpts));
             }
             if (plgpts.Length != 3)
             {
@@ -261,134 +261,81 @@ namespace System.Drawing.Drawing2D
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        public void TransformPoints(PointF[] pts)
+        public unsafe void TransformPoints(PointF[] pts)
         {
             if (pts == null)
-                throw new ArgumentNullException("pts");
-            IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(pts);
+                throw new ArgumentNullException(nameof(pts));
 
-            try
+            fixed (PointF* p = pts)
             {
-                int status = SafeNativeMethods.Gdip.GdipTransformMatrixPoints(new HandleRef(this, nativeMatrix),
-                    new HandleRef(null, buf),
+                int status = SafeNativeMethods.Gdip.GdipTransformMatrixPoints(
+                    new HandleRef(this, nativeMatrix),
+                    p,
                     pts.Length);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {
                     throw SafeNativeMethods.Gdip.StatusException(status);
                 }
-
-                PointF[] newPts = SafeNativeMethods.Gdip.ConvertGPPOINTFArrayF(buf, pts.Length);
-
-                for (int i = 0; i < pts.Length; i++)
-                {
-                    pts[i] = newPts[i];
-                }
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 
-        public void TransformPoints(Point[] pts)
+        public unsafe void TransformPoints(Point[] pts)
         {
             if (pts == null)
-                throw new ArgumentNullException("pts");
-            IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(pts);
+                throw new ArgumentNullException(nameof(pts));
 
-            try
+            fixed (Point* p = pts)
             {
-                int status = SafeNativeMethods.Gdip.GdipTransformMatrixPointsI(new HandleRef(this, nativeMatrix),
-                    new HandleRef(null, buf),
+                int status = SafeNativeMethods.Gdip.GdipTransformMatrixPointsI(
+                    new HandleRef(this, nativeMatrix),
+                    p,
                     pts.Length);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {
                     throw SafeNativeMethods.Gdip.StatusException(status);
                 }
-
-                // must do an in-place copy because we only have a reference
-                Point[] newPts = SafeNativeMethods.Gdip.ConvertGPPOINTArray(buf, pts.Length);
-
-                for (int i = 0; i < pts.Length; i++)
-                {
-                    pts[i] = newPts[i];
-                }
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 
-        public void TransformVectors(PointF[] pts)
+        public unsafe void TransformVectors(PointF[] pts)
         {
             if (pts == null)
-            {
-                throw new ArgumentNullException("pts");
-            }
+                throw new ArgumentNullException(nameof(pts));
 
-            IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(pts);
-
-            try
+            fixed (PointF* p = pts)
             {
-                int status = SafeNativeMethods.Gdip.GdipVectorTransformMatrixPoints(new HandleRef(this, nativeMatrix),
-                    new HandleRef(null, buf),
+                int status = SafeNativeMethods.Gdip.GdipVectorTransformMatrixPoints(
+                    new HandleRef(this, nativeMatrix),
+                    p,
                     pts.Length);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {
                     throw SafeNativeMethods.Gdip.StatusException(status);
                 }
-
-                // must do an in-place copy because we only have a reference
-                PointF[] newPts = SafeNativeMethods.Gdip.ConvertGPPOINTFArrayF(buf, pts.Length);
-
-                for (int i = 0; i < pts.Length; i++)
-                {
-                    pts[i] = newPts[i];
-                }
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 
         public void VectorTransformPoints(Point[] pts) => TransformVectors(pts);
 
-        public void TransformVectors(Point[] pts)
+        public unsafe void TransformVectors(Point[] pts)
         {
             if (pts == null)
-            {
-                throw new ArgumentNullException("pts");
-            }
+                throw new ArgumentNullException(nameof(pts));
 
-            IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(pts);
-
-            try
+            fixed (Point* p = pts)
             {
-                int status = SafeNativeMethods.Gdip.GdipVectorTransformMatrixPointsI(new HandleRef(this, nativeMatrix),
-                    new HandleRef(null, buf),
+                int status = SafeNativeMethods.Gdip.GdipVectorTransformMatrixPointsI(
+                    new HandleRef(this, nativeMatrix),
+                    p,
                     pts.Length);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {
                     throw SafeNativeMethods.Gdip.StatusException(status);
                 }
-
-                // must do an in-place copy because we only have a reference
-                Point[] newPts = SafeNativeMethods.Gdip.ConvertGPPOINTArray(buf, pts.Length);
-
-                for (int i = 0; i < pts.Length; i++)
-                {
-                    pts[i] = newPts[i];
-                }
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
             }
         }
 

@@ -36,9 +36,9 @@ namespace System.Data.ProviderBase
 
         public DbMetaDataFactory(Stream xmlStream, string serverVersion, string normalizedServerVersion)
         {
-            ADP.CheckArgumentNull(xmlStream, "xmlStream");
-            ADP.CheckArgumentNull(serverVersion, "serverVersion");
-            ADP.CheckArgumentNull(normalizedServerVersion, "normalizedServerVersion");
+            ADP.CheckArgumentNull(xmlStream, nameof(xmlStream));
+            ADP.CheckArgumentNull(serverVersion, nameof(serverVersion));
+            ADP.CheckArgumentNull(normalizedServerVersion, nameof(normalizedServerVersion));
 
             LoadDataSetFromXml(xmlStream);
 

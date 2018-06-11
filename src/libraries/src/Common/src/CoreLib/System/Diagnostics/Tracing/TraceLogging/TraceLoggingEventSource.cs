@@ -24,7 +24,6 @@ using System.Resources;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Collections.ObjectModel;
-using System.Collections.Concurrent;
 
 #if !ES_BUILD_AGAINST_DOTNET_V35
 using Contract = System.Diagnostics.Contracts.Contract;
@@ -49,7 +48,7 @@ namespace System.Diagnostics.Tracing
 #endif
 
 #if FEATURE_PERFTRACING
-        private ConcurrentDictionary<int, IntPtr> m_eventHandleMap = new ConcurrentDictionary<int, IntPtr>();
+        private readonly TraceLoggingEventHandleTable m_eventHandleTable = new TraceLoggingEventHandleTable();
 #endif
 
         /// <summary>
@@ -437,7 +436,7 @@ namespace System.Diagnostics.Tracing
             EventDescriptor descriptor = new EventDescriptor(identity, level, opcode, (long)keywords);
 
 #if FEATURE_PERFTRACING
-            IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_provider, m_eventHandleMap, descriptor, eventTypes);
+            IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
             Debug.Assert(eventHandle != IntPtr.Zero);
 #else
             IntPtr eventHandle = IntPtr.Zero;
@@ -447,11 +446,11 @@ namespace System.Diagnostics.Tracing
             var scratch = stackalloc byte[eventTypes.scratchSize];
             var descriptors = stackalloc EventData[eventTypes.dataCount + 3];
             for(int i = 0; i < eventTypes.dataCount + 3; i++)
-                descriptors[i] = default(EventData);
+                descriptors[i] = default;
 
             var pins = stackalloc GCHandle[pinCount];
             for (int i = 0; i < pinCount; i++)
-                pins[i] = default(GCHandle);
+                pins[i] = default;
 
             fixed (byte*
                 pMetadata0 = this.providerMetadata,
@@ -552,7 +551,7 @@ namespace System.Diagnostics.Tracing
                 }
 
 #if FEATURE_PERFTRACING
-                    IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_provider, m_eventHandleMap, descriptor, eventTypes);
+                    IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
                     Debug.Assert(eventHandle != IntPtr.Zero);
 #else
                     IntPtr eventHandle = IntPtr.Zero;
@@ -563,7 +562,7 @@ namespace System.Diagnostics.Tracing
                 var descriptorsLength = eventTypes.dataCount + eventTypes.typeInfos.Length * 2 + 3;
                 var descriptors = stackalloc EventData[descriptorsLength];
                 for(int i = 0; i < descriptorsLength; i++)
-                    descriptors[i] = default(EventData);
+                    descriptors[i] = default;
 
                 fixed (byte*
                     pMetadata0 = this.providerMetadata,
@@ -621,7 +620,7 @@ namespace System.Diagnostics.Tracing
                     }
 
 #if FEATURE_PERFTRACING
-                    IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_provider, m_eventHandleMap, descriptor, eventTypes);
+                    IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
                     Debug.Assert(eventHandle != IntPtr.Zero);
 #else
                     IntPtr eventHandle = IntPtr.Zero;
@@ -632,11 +631,11 @@ namespace System.Diagnostics.Tracing
                     var scratch = stackalloc byte[eventTypes.scratchSize];
                     var descriptors = stackalloc EventData[eventTypes.dataCount + 3];
                     for(int i=0; i<eventTypes.dataCount + 3; i++)
-                        descriptors[i] = default(EventData);
+                        descriptors[i] = default;
 
                     var pins = stackalloc GCHandle[pinCount];
                     for (int i = 0; i < pinCount; i++)
-                        pins[i] = default(GCHandle);
+                        pins[i] = default;
 
                     fixed (byte*
                         pMetadata0 = this.providerMetadata,

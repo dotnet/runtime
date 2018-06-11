@@ -39,15 +39,17 @@ namespace System.Net.Http
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (GZipEnabled)
+            if (GZipEnabled && !request.Headers.AcceptEncoding.Contains(s_gzipHeaderValue))
             {
                 request.Headers.AcceptEncoding.Add(s_gzipHeaderValue);
             }
-            if (DeflateEnabled)
+
+            if (DeflateEnabled && !request.Headers.AcceptEncoding.Contains(s_deflateHeaderValue))
             {
                 request.Headers.AcceptEncoding.Add(s_deflateHeaderValue);
             }
-            if (BrotliEnabled)
+
+            if (BrotliEnabled && !request.Headers.AcceptEncoding.Contains(s_brotliHeaderValue))
             {
                 request.Headers.AcceptEncoding.Add(s_brotliHeaderValue);
             }

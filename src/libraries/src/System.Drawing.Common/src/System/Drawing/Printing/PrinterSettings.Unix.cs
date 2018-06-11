@@ -249,7 +249,7 @@ namespace System.Drawing.Printing
 
                 if (printer_resolutions == null)
                 {
-                    printer_resolutions = new PrinterSettings.PrinterResolutionCollection(new PrinterResolution[] { });
+                    printer_resolutions = new PrinterSettings.PrinterResolutionCollection(Array.Empty<PrinterResolution>());
                     PrintingServices.LoadPrinterResolutions(printer_name, this);
                 }
 

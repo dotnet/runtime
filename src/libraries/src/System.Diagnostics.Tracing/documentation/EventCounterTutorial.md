@@ -19,7 +19,7 @@ public sealed class MinimalEventCounterSource : EventSource
     public static MinimalEventCounterSource Log = new MinimalEventCounterSource();
     private EventCounter requestCounter;
 
-    private MinimalEventCounterSource()
+    private MinimalEventCounterSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat) 
     {
         this.requestCounter = new EventCounter("request", this);
     }

@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Transactions.Tests
 {
-    public class NonMsdtcPromoterTests
+    public class NonMsdtcPromoterTests : IDisposable
     {
         public static string PromotedTokenString1 = "Promoted Token String Number 1";
         public static byte[] PromotedToken1 = StringToByteArray(PromotedTokenString1);
@@ -28,6 +28,14 @@ namespace System.Transactions.Tests
         {
             // reset the testFailures count back to 0 for each test case.
             VerifySoftDependencies();
+
+            // Make sure we start with Transaction.Current = null.
+            Transaction.Current = null;
+        }
+
+        public void Dispose()
+        {
+            Transaction.Current = null;
         }
 
         private static void VerifySoftDependencies()

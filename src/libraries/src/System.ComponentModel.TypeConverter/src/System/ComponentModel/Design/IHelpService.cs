@@ -5,48 +5,43 @@
 namespace System.ComponentModel.Design
 {
     /// <summary>
-    ///    <para> 
-    ///       Provides the Integrated Development Environment (IDE) help
-    ///       system with contextual information for the current task.</para>
+    /// Provides the Integrated Development Environment (IDE) help
+    /// system with contextual information for the current task.
     /// </summary>
     public interface IHelpService
     {
         /// <summary>
-        ///    <para>Adds a context attribute to the document.</para>
+        /// Adds a context attribute to the document.
         /// </summary>
         void AddContextAttribute(string name, string value, HelpKeywordType keywordType);
 
         /// <summary>
-        ///     Clears all existing context attributes from the document.
+        /// Clears all existing context attributes from the document.
         /// </summary>
         void ClearContextAttributes();
 
         /// <summary>
-        ///     Creates a Local IHelpService to manage subcontexts.
+        /// Creates a Local IHelpService to manage subcontexts.
         /// </summary>
         IHelpService CreateLocalContext(HelpContextType contextType);
 
         /// <summary>
-        ///    <para>
-        ///       Removes a previously added context attribute.
-        ///    </para>
+        /// Removes a previously added context attribute.
         /// </summary>
         void RemoveContextAttribute(string name, string value);
 
         /// <summary>
-        ///     Removes a context that was created with CreateLocalContext
+        /// Removes a context that was created with CreateLocalContext
         /// </summary>
         void RemoveLocalContext(IHelpService localContext);
 
         /// <summary>
-        ///    <para>Shows the help topic that corresponds to the specified keyword.</para>
+        /// Shows the help topic that corresponds to the specified keyword.
         /// </summary>
         void ShowHelpFromKeyword(string helpKeyword);
 
         /// <summary>
-        ///    <para>
-        ///       Shows the help topic that corresponds with the specified Url and topic navigation ID.
-        ///    </para>
+        /// Shows the help topic that corresponds with the specified Url and topic navigation ID.
         /// </summary>
         void ShowHelpFromUrl(string helpUrl);
     }

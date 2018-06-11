@@ -955,6 +955,7 @@ namespace System.Drawing.Tests
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ActiveIssue(21886, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue(29858, TestPlatforms.Windows)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MakeTransparent_GrayscalePixelFormat_ThrowsArgumentException()
         {

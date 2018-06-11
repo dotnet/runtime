@@ -116,7 +116,7 @@
     <value>The type description provider {0} has returned null from {1} which is illegal.</value>
   </data>
   <data name="TypeDescriptorUnsupportedRemoteObject" xml:space="preserve">
-    <value>The object {0} is being remoted by a proxy that does not support interface discovery.  This type of remoted object is not supported.</value>
+    <value>The object {0} is being remoted by a proxy that does not support interface discovery. This type of remoted object is not supported.</value>
   </data>
   <data name="TypeDescriptorExpectedElementType" xml:space="preserve">
     <value>Expected types in the collection to be of type {0}.</value>
@@ -188,7 +188,7 @@
     <value>Null is not a valid value for {0}.</value>
   </data>
   <data name="DuplicateComponentName" xml:space="preserve">
-    <value>Duplicate component name '{0}'.  Component names must be unique and case-insensitive.</value>
+    <value>Duplicate component name '{0}'. Component names must be unique and case-insensitive.</value>
   </data>
   <data name="MaskedTextProviderPasswordAndPromptCharError" xml:space="preserve">
     <value>The PasswordChar and PromptChar values cannot be the same.</value>
