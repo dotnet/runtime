@@ -48428,14 +48428,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[varargsupport_r.cmd_6076]
-RelativePath=baseservices\varargs\varargsupport_r\varargsupport_r.cmd
-WorkingDir=baseservices\varargs\varargsupport_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [_il_relcatchfault_tail.cmd_6077]
 RelativePath=JIT\Methodical\Invoke\SEH\_il_relcatchfault_tail\_il_relcatchfault_tail.cmd
 WorkingDir=JIT\Methodical\Invoke\SEH\_il_relcatchfault_tail
@@ -74407,14 +74399,6 @@ HostStyle=0
 [NestedBaseClass03.cmd_9338]
 RelativePath=Loader\classloader\generics\Instantiation\Positive\NestedBaseClass03\NestedBaseClass03.cmd
 WorkingDir=Loader\classloader\generics\Instantiation\Positive\NestedBaseClass03
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
-[varargsupport.cmd_9339]
-RelativePath=baseservices\varargs\varargsupport\varargsupport.cmd
-WorkingDir=baseservices\varargs\varargsupport
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS

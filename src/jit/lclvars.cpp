@@ -598,6 +598,18 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
                 isHfaArg = varTypeIsFloating(hfaType);
             }
         }
+        else if (info.compIsVarArgs)
+        {
+#ifdef _TARGET_UNIX_
+            // Currently native varargs is not implemented on non windows targets.
+            //
+            // Note that some targets like Arm64 Unix should not need much work as
+            // the ABI is the same. While other targets may only need small changes
+            // such as amd64 Unix, which just expects RAX to pass numFPArguments.
+            NYI("InitUserArgs for Vararg callee is not yet implemented on non Windows targets.");
+#endif
+        }
+
         if (isHfaArg)
         {
             // We have an HFA argument, so from here on out treat the type as a float or double.

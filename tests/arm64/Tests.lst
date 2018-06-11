@@ -4612,22 +4612,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[varargsupport.cmd_576]
-RelativePath=baseservices\varargs\varargsupport\varargsupport.cmd
-WorkingDir=baseservices\varargs\varargsupport
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
-[varargsupport_r.cmd_577]
-RelativePath=baseservices\varargs\varargsupport_r\varargsupport_r.cmd
-WorkingDir=baseservices\varargs\varargsupport_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
-HostStyle=0
-
 [Co9600Ctor.cmd_578]
 RelativePath=CoreMangLib\components\stopwatch\Co9600Ctor\Co9600Ctor.cmd
 WorkingDir=CoreMangLib\components\stopwatch\Co9600Ctor
