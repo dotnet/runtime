@@ -81,9 +81,7 @@ namespace System.Text
                 // Both MultiByteToWideChar and the UTF8Encoding instance used on Unix-like
                 // platforms default to replacing invalid characters with the Unicode replacement
                 // character U+FFFD.
-#if PLATFORM_UNIX
-                convertedChars = Encoding.UTF8.GetChars((byte*)newBuffer, newLength, pChunkChars, newLength);
-#else
+#if PLATFORM_WINDOWS
                 convertedChars = Interop.Kernel32.MultiByteToWideChar(
                     Interop.Kernel32.CP_ACP,
                     Interop.Kernel32.MB_PRECOMPOSED,
@@ -91,6 +89,8 @@ namespace System.Text
                     newLength,
                     pChunkChars,
                     newLength);
+#else
+                convertedChars = Encoding.UTF8.GetChars((byte*)newBuffer, newLength, pChunkChars, newLength);
 #endif
             }
 
