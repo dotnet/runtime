@@ -341,7 +341,7 @@ namespace System.Management
                 // If we got an error code back, assume there are NO qualifiers for this object/property/method
                 if(status < 0)
                 {
-                    qualifierNames = new String[]{};
+                    qualifierNames = Array.Empty<String>();
                 }
                 else
                 {

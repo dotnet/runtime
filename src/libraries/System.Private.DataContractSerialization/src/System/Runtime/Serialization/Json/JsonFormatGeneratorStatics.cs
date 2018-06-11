@@ -97,7 +97,7 @@ namespace System.Runtime.Serialization
 
         public static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??
                                                                  (s_extensionDataObjectCtor =
-                                                                     typeof (ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, null, new Type[] {}, null));
+                                                                     typeof (ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, null, Array.Empty<Type>(), null));
 
         public static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??
                                                             (s_extensionDataProperty = typeof (IExtensibleDataObject).GetProperty("ExtensionData"));

@@ -526,7 +526,7 @@ namespace System.Drawing.Design {
                     break;
 
                 case "Filter":
-                    if (value == null) value = new ToolboxItemFilterAttribute[0];
+                    if (value == null) value = Array.Empty<ToolboxItemFilterAttribute>();
 
                     break;
 

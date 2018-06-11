@@ -846,7 +846,7 @@ namespace Microsoft.Win32
                     }
                     else
                     {
-                        current.DynamicInvoke(new object[0]);
+                        current.DynamicInvoke(Array.Empty<object>());
                     }
                 }
                 catch (Exception t)
