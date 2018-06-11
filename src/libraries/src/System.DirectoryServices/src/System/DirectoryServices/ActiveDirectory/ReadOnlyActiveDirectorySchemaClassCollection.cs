@@ -26,7 +26,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(ActiveDirectorySchemaClass schemaClass)
         {
             if (schemaClass == null)
-                throw new ArgumentNullException("schemaClass");
+                throw new ArgumentNullException(nameof(schemaClass));
 
             for (int i = 0; i < InnerList.Count; i++)
             {
@@ -42,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(ActiveDirectorySchemaClass schemaClass)
         {
             if (schemaClass == null)
-                throw new ArgumentNullException("schemaClass");
+                throw new ArgumentNullException(nameof(schemaClass));
 
             for (int i = 0; i < InnerList.Count; i++)
             {

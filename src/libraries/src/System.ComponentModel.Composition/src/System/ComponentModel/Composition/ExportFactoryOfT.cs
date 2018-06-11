@@ -12,7 +12,7 @@ namespace System.ComponentModel.Composition
         {
             if (exportLifetimeContextCreator == null)
             {
-                throw new ArgumentNullException("exportLifetimeContextCreator");
+                throw new ArgumentNullException(nameof(exportLifetimeContextCreator));
             }
 
             _exportLifetimeContextCreator = exportLifetimeContextCreator;

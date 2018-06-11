@@ -62,7 +62,7 @@ namespace System.DirectoryServices.Protocols
 
             var objClassAttr = new DirectoryAttribute()
             {
-                Name = "objectClass"
+                Name = nameof(objectClass)
             };
             objClassAttr.Add(objectClass);
             Attributes.Add(objClassAttr);

@@ -2660,7 +2660,7 @@ namespace System.Configuration
                 // Remove newness, so we won't write again
                 sectionUpdates.IsNew = false;
 
-                Debug.Assert(locationPathApplies, "locationPathApplies");
+                Debug.Assert(locationPathApplies, nameof(locationPathApplies));
                 string[] movedSectionNames = sectionUpdates.GetMovedSectionNames();
                 if (movedSectionNames != null)
                 {

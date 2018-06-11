@@ -518,7 +518,7 @@ namespace Microsoft.Win32
         {
             if (interval <= 0)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidLowBoundArgument, "interval", interval.ToString(System.Threading.Thread.CurrentThread.CurrentCulture), "0"));
+                throw new ArgumentException(SR.Format(SR.InvalidLowBoundArgument, nameof(interval), interval.ToString(System.Threading.Thread.CurrentThread.CurrentCulture), "0"));
             }
 
             EnsureSystemEvents(true, true);

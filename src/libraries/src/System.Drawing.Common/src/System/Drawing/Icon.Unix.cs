@@ -239,7 +239,7 @@ namespace System.Drawing
         public Icon(Type type, string resource)
         {
             if (resource == null)
-                throw new ArgumentException("resource");
+                throw new ArgumentException(nameof(resource));
 
             // For compatibility with the .NET Framework
             if (type == null)
@@ -331,7 +331,7 @@ namespace System.Drawing
         public static Icon FromHandle(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
-                throw new ArgumentException("handle");
+                throw new ArgumentException(nameof(handle));
 
             return new Icon(handle);
         }
@@ -512,7 +512,7 @@ namespace System.Drawing
         public void Save(Stream outputStream)
         {
             if (outputStream == null)
-                throw new NullReferenceException("outputStream");
+                throw new NullReferenceException(nameof(outputStream));
 
             // save every icons available
             Save(outputStream, -1, -1);
@@ -707,7 +707,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(stream));
 
             if (stream.Length == 0)
-                throw new System.ArgumentException("The argument 'stream' must be a picture that can be used as a Icon", "stream");
+                throw new System.ArgumentException("The argument 'stream' must be a picture that can be used as a Icon", nameof(stream));
 
             //read the icon header
             BinaryReader reader = new BinaryReader(stream);
@@ -715,11 +715,11 @@ namespace System.Drawing
             //iconDir = new IconDir ();
             iconDir.idReserved = reader.ReadUInt16();
             if (iconDir.idReserved != 0) //must be 0
-                throw new System.ArgumentException("Invalid Argument", "stream");
+                throw new System.ArgumentException("Invalid Argument", nameof(stream));
 
             iconDir.idType = reader.ReadUInt16();
             if (iconDir.idType != 1) //must be 1
-                throw new System.ArgumentException("Invalid Argument", "stream");
+                throw new System.ArgumentException("Invalid Argument", nameof(stream));
 
             ushort dirEntryCount = reader.ReadUInt16();
             imageData = new ImageData[dirEntryCount];
@@ -863,7 +863,7 @@ namespace System.Drawing
                 if (nread != xorSize)
                 {
                     string msg = string.Format("{0} data length expected {1}, read {2}", "XOR", xorSize, nread);
-                    throw new ArgumentException(msg, "stream");
+                    throw new ArgumentException(msg, nameof(stream));
                 }
 
                 //Determine the AND array size
@@ -874,7 +874,7 @@ namespace System.Drawing
                 if (nread != andSize)
                 {
                     string msg = string.Format("{0} data length expected {1}, read {2}", "AND", andSize, nread);
-                    throw new ArgumentException(msg, "stream");
+                    throw new ArgumentException(msg, nameof(stream));
                 }
 
                 imageData[j] = iidata;

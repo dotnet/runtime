@@ -91,7 +91,7 @@ namespace System.Drawing
                     {
                         if (value < 0 || value >= FrameCount)
                         {
-                            throw new ArgumentException(SR.Format(SR.InvalidFrame), "value");
+                            throw new ArgumentException(SR.Format(SR.InvalidFrame), nameof(value));
                         }
 
                         if (Animated)

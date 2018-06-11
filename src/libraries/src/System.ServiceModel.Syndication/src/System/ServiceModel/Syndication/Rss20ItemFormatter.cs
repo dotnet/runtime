@@ -34,12 +34,12 @@ namespace System.ServiceModel.Syndication
         {
             if (itemTypeToCreate == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("itemTypeToCreate");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(itemTypeToCreate));
             }
             if (!typeof(SyndicationItem).IsAssignableFrom(itemTypeToCreate))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("itemTypeToCreate",
-                    SR.Format(SR.InvalidObjectTypePassed, "itemTypeToCreate", "SyndicationItem"));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(nameof(itemTypeToCreate),
+                    SR.Format(SR.InvalidObjectTypePassed, nameof(itemTypeToCreate), "SyndicationItem"));
             }
             _feedSerializer = new Rss20FeedFormatter();
             _feedSerializer.PreserveAttributeExtensions = _preserveAttributeExtensions = true;
@@ -111,7 +111,7 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
             }
             return reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
         }
@@ -127,7 +127,7 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
             }
             SyndicationFeedFormatter.TraceItemReadBegin();
             ReadItem(reader);
@@ -139,7 +139,7 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
             }
             SyndicationFeedFormatter.TraceItemWriteBegin();
             WriteItem(writer);
@@ -161,7 +161,7 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
             }
             SyndicationFeedFormatter.TraceItemWriteBegin();
             writer.WriteStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);

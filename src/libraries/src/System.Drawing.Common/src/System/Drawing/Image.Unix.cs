@@ -79,7 +79,7 @@ namespace System.Drawing
         internal static Image LoadFromStream(Stream stream, bool keepAlive)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
 
             Image img = CreateFromHandle(InitFromStream(stream));
             return img;
@@ -330,7 +330,7 @@ namespace System.Drawing
                 if (encoder == null)
                 {
                     string msg = string.Format("No codec available for saving format '{0}'.", format.Guid);
-                    throw new ArgumentException(msg, "format");
+                    throw new ArgumentException(msg, nameof(format));
                 }
             }
             Save(filename, encoder, null);
@@ -414,7 +414,7 @@ namespace System.Drawing
         public void SetPropertyItem(PropertyItem propitem)
         {
             if (propitem == null)
-                throw new ArgumentNullException("propitem");
+                throw new ArgumentNullException(nameof(propitem));
 
             int nItemSize = Marshal.SizeOf(propitem.Value[0]);
             int size = nItemSize * propitem.Value.Length;
@@ -496,7 +496,7 @@ namespace System.Drawing
         {
             if (palette == null)
             {
-                throw new ArgumentNullException("palette");
+                throw new ArgumentNullException(nameof(palette));
             }
             IntPtr palette_data = palette.ConvertToMemory();
             if (palette_data == IntPtr.Zero)

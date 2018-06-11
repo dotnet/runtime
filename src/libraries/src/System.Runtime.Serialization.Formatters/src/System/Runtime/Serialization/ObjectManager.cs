@@ -316,7 +316,7 @@ namespace System.Runtime.Serialization
                     }
                     if (Nullable.GetUnderlyingType(parentField.FieldType) != null)
                     {
-                        fieldsTemp[currentFieldIndex] = parentField.FieldType.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
+                        fieldsTemp[currentFieldIndex] = parentField.FieldType.GetField(nameof(value), BindingFlags.NonPublic | BindingFlags.Instance);
                         currentFieldIndex++;
                     }
 

@@ -105,7 +105,7 @@ namespace System.Data.Odbc
 
             if (null == command)
             {
-                throw ADP.ArgumentNull("command");
+                throw ADP.ArgumentNull(nameof(command));
             }
             switch (command.CommandType)
             {

@@ -24,7 +24,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(ReplicationFailure failure)
         {
             if (failure == null)
-                throw new ArgumentNullException("failure");
+                throw new ArgumentNullException(nameof(failure));
 
             return InnerList.Contains(failure);
         }
@@ -32,7 +32,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(ReplicationFailure failure)
         {
             if (failure == null)
-                throw new ArgumentNullException("failure");
+                throw new ArgumentNullException(nameof(failure));
 
             return InnerList.IndexOf(failure);
         }

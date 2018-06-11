@@ -86,12 +86,12 @@ namespace System.DirectoryServices.ActiveDirectory
             // validate siteName
             if (siteName == null)
             {
-                throw new ArgumentNullException("siteName");
+                throw new ArgumentNullException(nameof(siteName));
             }
 
             if (siteName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
 
             // the dc is really being moved to a different site 
@@ -386,7 +386,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     else
                     {
                         if (!Partitions.Contains(partition))
-                            throw new ArgumentException(SR.ServerNotAReplica, "partition");
+                            throw new ArgumentException(SR.ServerNotAReplica, nameof(partition));
                     }
                 }
 
@@ -644,7 +644,7 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr errorInfo = (IntPtr)0;
 
             if (!Partitions.Contains(partition))
-                throw new ArgumentException(SR.ServerNotAReplica, "partition");
+                throw new ArgumentException(SR.ServerNotAReplica, nameof(partition));
 
             // we want to return the dn instead of DNS guid
             // call DsReplicaSyncAllW
@@ -741,7 +741,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (result != 0)
                 {
                     if (!Partitions.Contains(partition))
-                        throw new ArgumentException(SR.ServerNotAReplica, "partition");
+                        throw new ArgumentException(SR.ServerNotAReplica, nameof(partition));
 
                     string serverDownName = null;
                     // this is the error returned when the server that we want to sync from is down

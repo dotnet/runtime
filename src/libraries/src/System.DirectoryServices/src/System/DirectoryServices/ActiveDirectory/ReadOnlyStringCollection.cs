@@ -36,7 +36,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -54,7 +54,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             for (int i = 0; i < InnerList.Count; i++)

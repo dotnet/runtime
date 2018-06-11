@@ -25,11 +25,11 @@ namespace System.Data.Odbc
         {
             if (null == connection)
             {
-                throw ADP.ArgumentNull("connection");
+                throw ADP.ArgumentNull(nameof(connection));
             }
             if (null == constr)
             {
-                throw ADP.ArgumentNull("constr");
+                throw ADP.ArgumentNull(nameof(constr));
             }
 
             ODBC32.RetCode retcode;
