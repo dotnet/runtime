@@ -11,4 +11,17 @@
       </ProjectReference>
     </ItemGroup>
   </Target>
+
+  <!--
+  Hack workaround for not restoring each project. Instead, we turn off all the targets
+  that require a `project.assets.json`, since ours will be empty anyway.
+  -->
+  <Target Name="_ClearResolvePackageAssets"
+          BeforeTargets="AssignProjectConfiguration">
+
+    <PropertyGroup>
+      <ResolvePackageDependenciesForBuildDependsOn></ResolvePackageDependenciesForBuildDependsOn>
+    </PropertyGroup>
+    
+  </Target>
 </Project> 

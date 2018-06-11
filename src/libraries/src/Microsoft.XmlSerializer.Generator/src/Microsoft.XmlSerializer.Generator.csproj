@@ -14,5 +14,5 @@
   <ItemGroup>
     <Compile Include="Sgen.cs" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project=".\GenerateThisAssemblyCs.targets" />
 </Project>
