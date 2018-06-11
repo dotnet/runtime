@@ -53,6 +53,7 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ExcessiveLengthTypeArgs))]
         [MemberData(nameof(ExcessiveLengthOpenGenericTypeArgs))]
         [MemberData(nameof(ByRefTypeArgs))]
+        [MemberData(nameof(ByRefLikeTypeArgs))]
         [MemberData(nameof(PointerTypeArgs))]
         [MemberData(nameof(ManagedPointerTypeArgs))]
         public void CantBeFunc(Type[] typeArgs)
@@ -74,6 +75,7 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ExcessiveLengthTypeArgs))]
         [MemberData(nameof(ExcessiveLengthOpenGenericTypeArgs))]
         [MemberData(nameof(ByRefTypeArgs))]
+        [MemberData(nameof(ByRefLikeTypeArgs))]
         [MemberData(nameof(PointerTypeArgs))]
         [MemberData(nameof(ManagedPointerTypeArgs))]
         public void CantBeAction(Type[] typeArgs)

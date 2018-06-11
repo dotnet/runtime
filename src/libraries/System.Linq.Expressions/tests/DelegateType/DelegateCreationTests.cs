@@ -52,6 +52,11 @@ namespace System.Linq.Expressions.Tests
             yield return new object[] { Enumerable.Repeat(typeof(double).MakeByRefType(), 20).ToArray() };
         }
 
+        protected static IEnumerable<object> ByRefLikeTypeArgs()
+        {
+            yield return new object[] { new[] { typeof(Span<char>) } };
+        }
+
         protected static IEnumerable<object> PointerTypeArgs()
         {
             yield return new object[] { new[] { typeof(int).MakePointerType() } };
