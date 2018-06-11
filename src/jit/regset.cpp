@@ -95,6 +95,11 @@ void RegSet::verifyRegistersUsed(regMaskTP regMask)
         return;
     }
 
+    if (regMask == RBM_NONE)
+    {
+        return;
+    }
+
     // TODO-Cleanup: we need to identify the places where the registers
     //               are not marked as used when this is called.
     rsSetRegsModified(regMask);
