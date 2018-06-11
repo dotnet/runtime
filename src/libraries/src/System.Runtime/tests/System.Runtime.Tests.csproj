@@ -108,6 +108,7 @@
     <Compile Include="System\SByteTests.cs" />
     <Compile Include="System\SingleTests.cs" />
     <Compile Include="System\StackOverflowExceptionTests.cs" />
+    <Compile Include="System\StringComparerTests.cs" />
     <Compile Include="System\StringGetHashCodeTests.cs" />
     <Compile Include="System\String.SplitTests.cs" />
     <Compile Include="System\SystemExceptionTests.cs" />
@@ -176,6 +177,7 @@
     <Compile Include="System\Runtime\NgenServicingAttributesTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\AttributesTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.cs" />
+    <Compile Include="System\Runtime\CompilerServices\FormattableStringFactoryTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\StrongBoxTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.cs" />
     <Compile Include="System\Runtime\ExceptionServices\HandleProcessCorruptedStateExceptions.cs" />
@@ -208,6 +210,7 @@
     <Compile Include="System\Collections\Generic\KeyValuePairTests.netcoreapp.cs" />
     <Compile Include="System\LazyTests.netcoreapp.cs" />
     <Compile Include="System\SByteTests.netcoreapp.cs" />
+    <Compile Include="System\StringComparerTests.netcoreapp.cs" />
     <Compile Include="System\StringTests.netcoreapp.cs" />
     <Compile Include="System\TimeSpanTests.netcoreapp.cs" />
     <Compile Include="System\TypeTests.netcoreapp.cs" />
