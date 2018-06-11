@@ -8,7 +8,7 @@ using System.Text;
 
 namespace R2RDump
 {
-    class GcInfoTypes
+    public class GcInfoTypes
     {
         private Machine _target;
 
@@ -196,8 +196,11 @@ namespace R2RDump
 
     public class GcStackSlot
     {
-        public int SpOffset { get; }
-        public GcStackSlotBase Base { get; }
+        public int SpOffset { get; set; }
+        public GcStackSlotBase Base { get; set; }
+
+        public GcStackSlot() { }
+
         public GcStackSlot(int spOffset, GcStackSlotBase stackSlotBase)
         {
             SpOffset = spOffset;

@@ -8,7 +8,7 @@ using System.Text;
 
 namespace R2RDump
 {
-    struct R2RSection
+    public struct R2RSection
     {
         public enum SectionType
         {
@@ -28,17 +28,17 @@ namespace R2RDump
         /// <summary>
         /// The ReadyToRun section type
         /// </summary>
-        public SectionType Type { get; }
+        public SectionType Type { get; set; }
 
         /// <summary>
         /// The RVA to the section
         /// </summary>
-        public int RelativeVirtualAddress { get; }
+        public int RelativeVirtualAddress { get; set; }
 
         /// <summary>
         /// The size of the section
         /// </summary>
-        public int Size { get; }
+        public int Size { get; set; }
 
         public R2RSection(SectionType type, int rva, int size)
         {
