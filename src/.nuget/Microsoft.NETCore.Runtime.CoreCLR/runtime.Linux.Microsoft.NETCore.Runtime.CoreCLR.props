@@ -21,8 +21,8 @@
     <NativeBinary Condition="'$(_PlatformDoesNotSupportSosPlugin)' != 'true'" Include="$(BinDir)libsosplugin.so" />
     <NativeBinary Include="$(BinDir)System.Globalization.Native.so" />
     <NativeBinary Include="$(BinDir)sosdocsunix.txt" />
-    <NativeBinary Include="$(BinDir)System.Private.CoreLib.dll" />
     <NativeBinary Condition="'$(_PlatformDoesNotSupportCreatedump)' != 'true'" Include="$(BinDir)createdump" />
+    <CrossGenBinary Include="$(BinDir)System.Private.CoreLib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen" />
     <CrossArchitectureSpecificToolFile Condition="'$(HasCrossTargetComponents)' == 'true'" Include="$(BinDir)$(CrossTargetComponentFolder)\crossgen" />
