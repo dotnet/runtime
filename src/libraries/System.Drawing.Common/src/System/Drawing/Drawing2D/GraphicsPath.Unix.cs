@@ -75,7 +75,7 @@ namespace System.Drawing.Drawing2D
         public GraphicsPath(Point[] pts, byte[] types, FillMode fillMode)
         {
             if (pts == null)
-                throw new ArgumentNullException("pts");
+                throw new ArgumentNullException(nameof(pts));
             if (pts.Length != types.Length)
                 throw new ArgumentException("Invalid parameter passed. Number of points and types must be same.");
 
@@ -86,7 +86,7 @@ namespace System.Drawing.Drawing2D
         public GraphicsPath(PointF[] pts, byte[] types, FillMode fillMode)
         {
             if (pts == null)
-                throw new ArgumentNullException("pts");
+                throw new ArgumentNullException(nameof(pts));
             if (pts.Length != types.Length)
                 throw new ArgumentException("Invalid parameter passed. Number of points and types must be same.");
 
@@ -300,7 +300,7 @@ namespace System.Drawing.Drawing2D
         public void AddBeziers(params Point[] points)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
             int status = SafeNativeMethods.Gdip.GdipAddPathBeziersI(nativePath, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -308,7 +308,7 @@ namespace System.Drawing.Drawing2D
         public void AddBeziers(PointF[] points)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
             int status = SafeNativeMethods.Gdip.GdipAddPathBeziers(nativePath, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -378,9 +378,9 @@ namespace System.Drawing.Drawing2D
         public void AddLines(Point[] points)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
             if (points.Length == 0)
-                throw new ArgumentException("points");
+                throw new ArgumentException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathLine2I(nativePath, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -389,9 +389,9 @@ namespace System.Drawing.Drawing2D
         public void AddLines(PointF[] points)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
             if (points.Length == 0)
-                throw new ArgumentException("points");
+                throw new ArgumentException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathLine2(nativePath, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -425,7 +425,7 @@ namespace System.Drawing.Drawing2D
         public void AddPolygon(Point[] points)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathPolygonI(nativePath, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -434,7 +434,7 @@ namespace System.Drawing.Drawing2D
         public void AddPolygon(PointF[] points)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathPolygon(nativePath, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -461,9 +461,9 @@ namespace System.Drawing.Drawing2D
         public void AddRectangles(Rectangle[] rects)
         {
             if (rects == null)
-                throw new ArgumentNullException("rects");
+                throw new ArgumentNullException(nameof(rects));
             if (rects.Length == 0)
-                throw new ArgumentException("rects");
+                throw new ArgumentException(nameof(rects));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathRectanglesI(nativePath, rects, rects.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -472,9 +472,9 @@ namespace System.Drawing.Drawing2D
         public void AddRectangles(RectangleF[] rects)
         {
             if (rects == null)
-                throw new ArgumentNullException("rects");
+                throw new ArgumentNullException(nameof(rects));
             if (rects.Length == 0)
-                throw new ArgumentException("rects");
+                throw new ArgumentException(nameof(rects));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathRectangles(nativePath, rects, rects.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -486,7 +486,7 @@ namespace System.Drawing.Drawing2D
         public void AddPath(GraphicsPath addingPath, bool connect)
         {
             if (addingPath == null)
-                throw new ArgumentNullException("addingPath");
+                throw new ArgumentNullException(nameof(addingPath));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathPath(nativePath, addingPath.nativePath, connect);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -507,7 +507,7 @@ namespace System.Drawing.Drawing2D
         public void AddClosedCurve(Point[] points)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathClosedCurveI(nativePath, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -516,7 +516,7 @@ namespace System.Drawing.Drawing2D
         public void AddClosedCurve(PointF[] points)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathClosedCurve(nativePath, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -525,7 +525,7 @@ namespace System.Drawing.Drawing2D
         public void AddClosedCurve(Point[] points, float tension)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathClosedCurve2I(nativePath, points, points.Length, tension);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -534,7 +534,7 @@ namespace System.Drawing.Drawing2D
         public void AddClosedCurve(PointF[] points, float tension)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathClosedCurve2(nativePath, points, points.Length, tension);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -546,7 +546,7 @@ namespace System.Drawing.Drawing2D
         public void AddCurve(Point[] points)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathCurveI(nativePath, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -555,7 +555,7 @@ namespace System.Drawing.Drawing2D
         public void AddCurve(PointF[] points)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathCurve(nativePath, points, points.Length);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -564,7 +564,7 @@ namespace System.Drawing.Drawing2D
         public void AddCurve(Point[] points, float tension)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathCurve2I(nativePath, points, points.Length, tension);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -573,7 +573,7 @@ namespace System.Drawing.Drawing2D
         public void AddCurve(PointF[] points, float tension)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathCurve2(nativePath, points, points.Length, tension);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -582,7 +582,7 @@ namespace System.Drawing.Drawing2D
         public void AddCurve(Point[] points, int offset, int numberOfSegments, float tension)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathCurve3I(nativePath, points, points.Length,
                             offset, numberOfSegments, tension);
@@ -593,7 +593,7 @@ namespace System.Drawing.Drawing2D
         public void AddCurve(PointF[] points, int offset, int numberOfSegments, float tension)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
 
             int status = SafeNativeMethods.Gdip.GdipAddPathCurve3(nativePath, points, points.Length,
                             offset, numberOfSegments, tension);
@@ -616,7 +616,7 @@ namespace System.Drawing.Drawing2D
         public void Transform(Matrix matrix)
         {
             if (matrix == null)
-                throw new ArgumentNullException("matrix");
+                throw new ArgumentNullException(nameof(matrix));
 
             int status = SafeNativeMethods.Gdip.GdipTransformPath(nativePath, matrix.nativeMatrix);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -641,7 +641,7 @@ namespace System.Drawing.Drawing2D
         public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat format)
         {
             if (family == null)
-                throw new ArgumentException("family");
+                throw new ArgumentException(nameof(family));
 
             IntPtr sformat = (format == null) ? IntPtr.Zero : format.nativeFormat;
             // note: the NullReferenceException on s.Length is the expected (MS) exception
@@ -652,7 +652,7 @@ namespace System.Drawing.Drawing2D
         public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat format)
         {
             if (family == null)
-                throw new ArgumentException("family");
+                throw new ArgumentException(nameof(family));
 
             IntPtr sformat = (format == null) ? IntPtr.Zero : format.nativeFormat;
             // note: the NullReferenceException on s.Length is the expected (MS) exception
@@ -755,7 +755,7 @@ namespace System.Drawing.Drawing2D
         public bool IsOutlineVisible(int x, int y, Pen pen, Graphics graphics)
         {
             if (pen == null)
-                throw new ArgumentNullException("pen");
+                throw new ArgumentNullException(nameof(pen));
 
             bool result;
             IntPtr g = (graphics == null) ? IntPtr.Zero : graphics.nativeObject;
@@ -769,7 +769,7 @@ namespace System.Drawing.Drawing2D
         public bool IsOutlineVisible(float x, float y, Pen pen, Graphics graphics)
         {
             if (pen == null)
-                throw new ArgumentNullException("pen");
+                throw new ArgumentNullException(nameof(pen));
 
             bool result;
             IntPtr g = (graphics == null) ? IntPtr.Zero : graphics.nativeObject;
@@ -868,7 +868,7 @@ namespace System.Drawing.Drawing2D
         public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix matrix, WarpMode warpMode, float flatness)
         {
             if (destPoints == null)
-                throw new ArgumentNullException("destPoints");
+                throw new ArgumentNullException(nameof(destPoints));
 
             IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.nativeMatrix;
 
@@ -891,7 +891,7 @@ namespace System.Drawing.Drawing2D
         public void Widen(Pen pen, Matrix matrix, float flatness)
         {
             if (pen == null)
-                throw new ArgumentNullException("pen");
+                throw new ArgumentNullException(nameof(pen));
             if (PointCount == 0)
                 return;
             IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.nativeMatrix;

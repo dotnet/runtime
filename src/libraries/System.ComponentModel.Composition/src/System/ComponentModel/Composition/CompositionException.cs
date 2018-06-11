@@ -94,7 +94,7 @@ namespace System.ComponentModel.Composition
         internal CompositionException(string message, Exception innerException, IEnumerable<CompositionError> errors)
                     : base(message, innerException)
         {
-            Requires.NullOrNotNullElements(errors, "errors");
+            Requires.NullOrNotNullElements(errors, nameof(errors));
             _errors = new ReadOnlyCollection<CompositionError>(errors == null ? Array.Empty<CompositionError>() : errors.ToArray<CompositionError>());
         }
 

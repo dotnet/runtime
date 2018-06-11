@@ -21,7 +21,7 @@ namespace System.IO
         internal FileInfo(string originalPath, string fullPath = null, string fileName = null, bool isNormalized = false)
         {
             // Want to throw the original argument name
-            OriginalPath = originalPath ?? throw new ArgumentNullException("fileName");
+            OriginalPath = originalPath ?? throw new ArgumentNullException(nameof(fileName));
 
             fullPath = fullPath ?? originalPath;
             Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath), "should be fully qualified if normalized");

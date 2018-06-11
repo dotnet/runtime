@@ -74,13 +74,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             // check that the argument is not null
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             // target should ConfigurationSet or DirectoryServer
             if ((context.ContextType != DirectoryContextType.ConfigurationSet) &&
                 (context.ContextType != DirectoryContextType.DirectoryServer))
             {
-                throw new ArgumentException(SR.TargetShouldBeServerORConfigSet, "context");
+                throw new ArgumentException(SR.TargetShouldBeServerORConfigSet, nameof(context));
             }
 
             // target should be an adam config set or server
@@ -164,7 +164,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (partitionName == null)
             {
-                throw new ArgumentNullException("partitionName");
+                throw new ArgumentNullException(nameof(partitionName));
             }
 
             return FindOneAdamInstance(Name, _context, partitionName, null);
@@ -180,7 +180,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (siteName == null)
             {
-                throw new ArgumentNullException("siteName");
+                throw new ArgumentNullException(nameof(siteName));
             }
 
             return FindOneAdamInstance(Name, _context, partitionName, siteName);
@@ -199,7 +199,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (partitionName == null)
             {
-                throw new ArgumentNullException("partitionName");
+                throw new ArgumentNullException(nameof(partitionName));
             }
 
             return FindAdamInstances(_context, partitionName, null);
@@ -215,7 +215,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (siteName == null)
             {
-                throw new ArgumentNullException("siteName");
+                throw new ArgumentNullException(nameof(siteName));
             }
 
             return FindAdamInstances(_context, partitionName, siteName);
@@ -243,7 +243,7 @@ namespace System.DirectoryServices.ActiveDirectory
             CheckIfDisposed();
             if (securityLevel < ReplicationSecurityLevel.NegotiatePassThrough || securityLevel > ReplicationSecurityLevel.MutualAuthentication)
             {
-                throw new InvalidEnumArgumentException("securityLevel", (int)securityLevel, typeof(ReplicationSecurityLevel));
+                throw new InvalidEnumArgumentException(nameof(securityLevel), (int)securityLevel, typeof(ReplicationSecurityLevel));
             }
 
             try
@@ -420,7 +420,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (!Utils.CheckCapability(rootDSE, Capability.ActiveDirectoryApplicationMode))
                 {
                     directoryEntryMgr.RemoveIfExists(directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.RootDSE));
-                    throw new ArgumentException(SR.TargetShouldBeServerORConfigSet, "context");
+                    throw new ArgumentException(SR.TargetShouldBeServerORConfigSet, nameof(context));
                 }
 
                 string dnsHostName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DnsHostName);
@@ -513,12 +513,12 @@ namespace System.DirectoryServices.ActiveDirectory
             // can expect valid context (non-null)
             if (partitionName != null && partitionName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "partitionName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partitionName));
             }
 
             if (siteName != null && siteName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
 
             ArrayList ntdsaNames = Utils.GetReplicaList(context, partitionName, siteName, false /* isDefaultNC */, true /* isADAM */, false /* mustBeGC */);
@@ -536,12 +536,12 @@ namespace System.DirectoryServices.ActiveDirectory
             // can expect valid context (non-null)
             if (partitionName != null && partitionName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "partitionName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partitionName));
             }
 
             if (siteName != null && siteName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
 
             ArrayList adamInstanceList = new ArrayList();

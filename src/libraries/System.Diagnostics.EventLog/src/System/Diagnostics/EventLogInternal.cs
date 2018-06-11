@@ -1062,7 +1062,7 @@ namespace System.Diagnostics
             string currentMachineName = this.machineName;
 
             if (action < OverflowAction.DoNotOverwrite || action > OverflowAction.OverwriteOlder)
-                throw new InvalidEnumArgumentException("action", (int)action, typeof(OverflowAction));
+                throw new InvalidEnumArgumentException(nameof(action), (int)action, typeof(OverflowAction));
             // this is a long because in the if statement we may need to store values as
             // large as UInt32.MaxValue - 1.  This would overflow an int.
             long retentionvalue = (long)action;

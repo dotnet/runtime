@@ -304,7 +304,7 @@ namespace System.Management
                     HandleIdentifierChange(this, null);
                 }
                 else
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
             }
         }
 
@@ -337,7 +337,7 @@ namespace System.Management
                     HandleIdentifierChange(this, null);
                 }
                 else
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
             }
         }
 
@@ -371,7 +371,7 @@ namespace System.Management
                     HandleIdentifierChange(this, null);
                 }
                 else
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
             } 
         }
 

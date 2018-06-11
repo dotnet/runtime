@@ -24,7 +24,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (adamInstance == null)
             {
-                throw new ArgumentNullException("adamInstance");
+                throw new ArgumentNullException(nameof(adamInstance));
             }
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -42,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (adamInstance == null)
             {
-                throw new ArgumentNullException("adamInstance");
+                throw new ArgumentNullException(nameof(adamInstance));
             }
 
             for (int i = 0; i < InnerList.Count; i++)

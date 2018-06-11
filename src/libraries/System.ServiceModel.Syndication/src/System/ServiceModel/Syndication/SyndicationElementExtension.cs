@@ -26,7 +26,7 @@ namespace System.ServiceModel.Syndication
         {
             if (xmlReader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("xmlReader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(xmlReader));
             }
             SyndicationFeedFormatter.MoveToStartElement(xmlReader);
             _outerName = xmlReader.LocalName;
@@ -62,7 +62,7 @@ namespace System.ServiceModel.Syndication
         {
             if (dataContractExtension == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("dataContractExtension");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(dataContractExtension));
             }
             if (outerName == string.Empty)
             {
@@ -82,7 +82,7 @@ namespace System.ServiceModel.Syndication
         {
             if (xmlSerializerExtension == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("xmlSerializerExtension");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(xmlSerializerExtension));
             }
             if (serializer == null)
             {
@@ -133,7 +133,7 @@ namespace System.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("serializer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(serializer));
             }
             if (_extensionData != null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
             {
@@ -149,7 +149,7 @@ namespace System.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("serializer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(serializer));
             }
             if (_extensionData != null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
             {
@@ -183,7 +183,7 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
             }
             if (_extensionDataWriter != null)
             {

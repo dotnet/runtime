@@ -38,7 +38,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     value != TopLevelNameStatus.NewlyCreated &&
                     value != TopLevelNameStatus.AdminDisabled &&
                     value != TopLevelNameStatus.ConflictDisabled)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(TopLevelNameStatus));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(TopLevelNameStatus));
 
                 _status = value;
             }

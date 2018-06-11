@@ -18,7 +18,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         public LazyMemberInfo(MemberInfo member)
         {
             Requires.NotNull(member, nameof(member));
-            EnsureSupportedMemberType(member.MemberType, "member");
+            EnsureSupportedMemberType(member.MemberType, nameof(member));
 
             _accessorsCreator = null;
             _memberType = member.MemberType;
@@ -42,13 +42,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public LazyMemberInfo(MemberTypes memberType, params MemberInfo[] accessors)
         {
-            EnsureSupportedMemberType(memberType, "memberType");
+            EnsureSupportedMemberType(memberType, nameof(memberType));
             Requires.NotNull(accessors, nameof(accessors));
             
             string errorMessage;
             if (!LazyMemberInfo.AreAccessorsValid(memberType, accessors, out errorMessage))
             {
-                throw new ArgumentException(errorMessage, "accessors");
+                throw new ArgumentException(errorMessage, nameof(accessors));
             }
 
             _memberType = memberType;
@@ -58,7 +58,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public LazyMemberInfo(MemberTypes memberType, Func<MemberInfo[]> accessorsCreator)
         {
-            EnsureSupportedMemberType(memberType, "memberType");
+            EnsureSupportedMemberType(memberType, nameof(memberType));
             Requires.NotNull(accessorsCreator, nameof(accessorsCreator));
 
             _memberType = memberType;

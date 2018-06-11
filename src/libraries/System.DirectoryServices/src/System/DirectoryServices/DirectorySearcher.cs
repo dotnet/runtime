@@ -178,7 +178,7 @@ namespace System.DirectoryServices
                 // prevent integer overflow
                 if (value.TotalSeconds > Int32.MaxValue)
                 {
-                    throw new ArgumentException(SR.TimespanExceedMax, "value");
+                    throw new ArgumentException(SR.TimespanExceedMax, nameof(value));
                 }
 
                 _clientTimeout = value;
@@ -260,7 +260,7 @@ namespace System.DirectoryServices
                     value != ReferralChasingOption.Subordinate &&
                     value != ReferralChasingOption.External &&
                     value != ReferralChasingOption.All)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(ReferralChasingOption));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ReferralChasingOption));
 
                 _referralChasing = value;
             }
@@ -276,7 +276,7 @@ namespace System.DirectoryServices
             set
             {
                 if (value < SearchScope.Base || value > SearchScope.Subtree)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(SearchScope));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(SearchScope));
 
                 // user explicitly set SearchScope to something other than Base and also want to do ASQ, it is not supported
                 if (_attributeScopeQuerySpecified == true && value != SearchScope.Base)
@@ -302,7 +302,7 @@ namespace System.DirectoryServices
                 // prevent integer overflow
                 if (value.TotalSeconds > Int32.MaxValue)
                 {
-                    throw new ArgumentException(SR.TimespanExceedMax, "value");
+                    throw new ArgumentException(SR.TimespanExceedMax, nameof(value));
                 }
 
                 _serverPageTimeLimit = value;
@@ -321,7 +321,7 @@ namespace System.DirectoryServices
                 // prevent integer overflow
                 if (value.TotalSeconds > Int32.MaxValue)
                 {
-                    throw new ArgumentException(SR.TimespanExceedMax, "value");
+                    throw new ArgumentException(SR.TimespanExceedMax, nameof(value));
                 }
 
                 _serverTimeLimit = value;
@@ -455,7 +455,7 @@ namespace System.DirectoryServices
             set
             {
                 if (value < DereferenceAlias.Never || value > DereferenceAlias.Always)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(DereferenceAlias));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(DereferenceAlias));
 
                 _derefAlias = value;
             }
@@ -473,7 +473,7 @@ namespace System.DirectoryServices
             {
                 // make sure the behavior is consistent with native ADSI
                 if (value > (SecurityMasks.None | SecurityMasks.Owner | SecurityMasks.Group | SecurityMasks.Dacl | SecurityMasks.Sacl))
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(SecurityMasks));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(SecurityMasks));
 
                 _securityMask = value;
             }
@@ -490,7 +490,7 @@ namespace System.DirectoryServices
             set
             {
                 if (value < ExtendedDN.None || value > ExtendedDN.Standard)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(ExtendedDN));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ExtendedDN));
 
                 _extendedDN = value;
             }

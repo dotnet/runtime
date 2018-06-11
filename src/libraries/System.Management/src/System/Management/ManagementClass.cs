@@ -306,7 +306,7 @@ namespace System.Management
                 if ((null == value) || value.IsClass || value.IsEmpty)
                     base.Path = value;
                 else
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
             }
         }
                 
@@ -580,7 +580,7 @@ namespace System.Management
         public void GetInstances(ManagementOperationObserver watcher, EnumerationOptions options) 
         {
             if (null == watcher)
-                throw new ArgumentNullException("watcher");
+                throw new ArgumentNullException(nameof(watcher));
             
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
@@ -738,7 +738,7 @@ namespace System.Management
                                         EnumerationOptions options) 
         { 				
             if (null == watcher)
-                throw new ArgumentNullException("watcher");
+                throw new ArgumentNullException(nameof(watcher));
             
             if (null == Path)
                 throw new InvalidOperationException();
@@ -817,7 +817,7 @@ namespace System.Management
             ManagementClass newClass = null;
 
             if (null == newClassName)
-                throw new ArgumentNullException("newClassName");
+                throw new ArgumentNullException(nameof(newClassName));
             else 
             {
                 // Check the path is valid
@@ -829,11 +829,11 @@ namespace System.Management
                 }
                 catch
                 {
-                    throw new ArgumentOutOfRangeException("newClassName");
+                    throw new ArgumentOutOfRangeException(nameof(newClassName));
                 }
 
                 if (!path.IsClass)
-                    throw new ArgumentOutOfRangeException("newClassName");
+                    throw new ArgumentOutOfRangeException(nameof(newClassName));
             }
 
             if (PutButNotGot)
@@ -1133,7 +1133,7 @@ namespace System.Management
             Initialize ( true ) ;
 
             if (null == watcher)
-                throw new ArgumentNullException("watcher");
+                throw new ArgumentNullException(nameof(watcher));
             else
             {
                 EnumerationOptions o = (null != options) 
@@ -1335,7 +1335,7 @@ namespace System.Management
             if ((null == Path) || (null == Path.Path) || (0 == Path.Path.Length))
                 throw new InvalidOperationException();
             if (null == watcher)
-                throw new ArgumentNullException("watcher");
+                throw new ArgumentNullException(nameof(watcher));
             else
             {
                 Initialize ( true ) ;

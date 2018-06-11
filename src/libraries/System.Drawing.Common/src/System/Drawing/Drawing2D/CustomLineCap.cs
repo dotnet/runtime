@@ -43,7 +43,7 @@ namespace System.Drawing.Drawing2D
         internal void SetNativeLineCap(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
-                throw new ArgumentNullException("handle");
+                throw new ArgumentNullException(nameof(handle));
 
             nativeCap = new SafeCustomLineCapHandle(handle);
         }

@@ -342,7 +342,7 @@ namespace System.Management
             get 
             { 
                 if (null == methodName)
-                    throw new ArgumentNullException ("methodName");
+                    throw new ArgumentNullException (nameof(methodName));
 
                 return new MethodData(parent, methodName);
             }

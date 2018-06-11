@@ -225,7 +225,7 @@ namespace System.Runtime.Caching
         {
             if (onChangedCallback == null)
             {
-                throw new ArgumentNullException("onChangedCallback");
+                throw new ArgumentNullException(nameof(onChangedCallback));
             }
 
             if (Interlocked.CompareExchange(ref _onChangedCallback, onChangedCallback, null) != null)

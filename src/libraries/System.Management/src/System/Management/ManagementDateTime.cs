@@ -321,19 +321,19 @@ namespace System.Management
 
             if (dmtfts == null) 
             {
-                throw new System.ArgumentOutOfRangeException("dmtfTimespan");
+                throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
             if (dmtfts.Length == 0) 
             {
-                throw new System.ArgumentOutOfRangeException("dmtfTimespan");
+                throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
             if(dmtfts.Length != SIZEOFDMTFDATETIME)
             {
-                throw new System.ArgumentOutOfRangeException("dmtfTimespan");
+                throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
             if(dmtfts.Substring(21,4) != ":000")
             {
-                throw new System.ArgumentOutOfRangeException("dmtfTimespan");
+                throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
 
             System.Int64 ticks = 0;
@@ -359,12 +359,12 @@ namespace System.Management
             }
             catch
             {
-                throw new System.ArgumentOutOfRangeException("dmtfTimespan");
+                throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
 
             if( days < 0 || hours < 0 || minutes < 0 || seconds < 0 || ticks < 0 )
             {
-                throw new System.ArgumentOutOfRangeException("dmtfTimespan");
+                throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }
 
             timespan = new System.TimeSpan(days, hours, minutes, seconds, 0);

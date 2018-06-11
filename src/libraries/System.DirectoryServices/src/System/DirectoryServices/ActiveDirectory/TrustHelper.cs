@@ -140,7 +140,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     else
                     {
                         // should not happen
-                        throw new ArgumentException("attribute");
+                        throw new ArgumentException(nameof(attribute));
                     }
                 }
                 finally
@@ -255,7 +255,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        throw new ArgumentException("attribute");
+                        throw new ArgumentException(nameof(attribute));
                     }
 
                     // reconstruct the unmanaged structure to set it back
