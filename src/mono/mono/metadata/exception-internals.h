@@ -63,9 +63,15 @@ MonoExceptionHandle
 mono_exception_new_thread_interrupted (MonoError *error);
 
 MonoExceptionHandle
-mono_exception_new_thread_interrupted (MonoError *error);
+mono_exception_new_thread_abort (MonoError *error);
 
 MonoExceptionHandle
-mono_exception_new_thread_abort (MonoError *error);
+mono_exception_new_serialization (const char *msg, MonoError *error);
+
+MonoExceptionHandle
+mono_exception_new_invalid_operation (const char *msg, MonoError *error);
+
+MonoExceptionHandle
+mono_error_convert_to_exception_handle (MonoError *error);
 
 #endif

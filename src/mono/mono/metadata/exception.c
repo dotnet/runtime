@@ -520,6 +520,13 @@ mono_get_exception_invalid_operation (const char *msg)
 					"InvalidOperationException", msg);
 }
 
+MonoExceptionHandle
+mono_exception_new_invalid_operation (const char *msg, MonoError *error)
+{
+	return mono_exception_new_by_name_msg (mono_get_corlib (), "System",
+					"InvalidOperationException", msg, error);
+}
+
 /**
  * mono_get_exception_index_out_of_range:
  * \returns a new instance of the \c System.IndexOutOfRangeException
@@ -692,6 +699,14 @@ mono_exception_new_argument (const char *arg, const char *msg, MonoError *error)
 	}
 
 	return ex;
+}
+
+MonoExceptionHandle
+mono_exception_new_serialization (const char *msg, MonoError *error)
+{
+	return mono_exception_new_by_name_msg (mono_get_corlib (),
+		"System.Runtime.Serialization", "SerializationException",
+		"Could not serialize unhandled exception.", error);
 }
 
 /**
@@ -1437,4 +1452,12 @@ mono_error_set_argument_out_of_range (MonoError *error, const char *name)
 {
 	//FIXMEcoop
 	mono_error_set_exception_instance (error, mono_get_exception_argument_out_of_range (name));
+}
+
+MonoExceptionHandle
+mono_error_convert_to_exception_handle (MonoError *error)
+{
+	//FIXMEcoop mono_error_convert_to_exception is raw pointer
+	HANDLE_FUNCTION_ENTER ();
+	HANDLE_FUNCTION_RETURN_REF (MonoException, mono_error_convert_to_exception (error));
 }

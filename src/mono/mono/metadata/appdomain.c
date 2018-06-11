@@ -2296,7 +2296,6 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 					    MonoBoolean refonly,
 					    MonoError *error)
 {
-	error_init (error);
 	MonoAssembly *ass;
 	MonoReflectionAssemblyHandle refass = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	MonoDomain *domain = MONO_HANDLE_GETVAL(ad, data);
@@ -2363,7 +2362,6 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 MonoReflectionAssemblyHandle
 ves_icall_System_AppDomain_LoadAssembly (MonoAppDomainHandle ad, MonoStringHandle assRef, MonoObjectHandle evidence, MonoBoolean refOnly, MonoError *error)
 {
-	error_init (error);
 	MonoDomain *domain = MONO_HANDLE_GETVAL (ad, data);
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssembly *ass;
@@ -2419,7 +2417,6 @@ fail:
 void
 ves_icall_System_AppDomain_InternalUnload (gint32 domain_id, MonoError *error)
 {
-	error_init (error);
 	MonoDomain * domain = mono_domain_get_by_id (domain_id);
 
 	if (NULL == domain) {
@@ -2448,7 +2445,6 @@ ves_icall_System_AppDomain_InternalUnload (gint32 domain_id, MonoError *error)
 gboolean
 ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id, MonoError *error)
 {
-	error_init (error);
 	MonoDomain *domain = mono_domain_get_by_id (domain_id);
 
 	if (!domain)
@@ -2460,7 +2456,6 @@ ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id, Mono
 void
 ves_icall_System_AppDomain_DoUnhandledException (MonoExceptionHandle exc, MonoError *error)
 {
-	error_init (error);
 	mono_unhandled_exception_checked (MONO_HANDLE_CAST (MonoObject, exc), error);
 	mono_error_assert_ok (error);
 }
@@ -2470,7 +2465,6 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomainHandle ad,
 					    MonoReflectionAssemblyHandle refass, MonoArrayHandle args,
 					    MonoError *error)
 {
-	error_init (error);
 	MonoImage *image;
 	MonoMethod *method;
 

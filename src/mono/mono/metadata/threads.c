@@ -2551,7 +2551,7 @@ ves_icall_System_Threading_Thread_ResetAbort (MonoThreadObjectHandle this_obj, M
 
 	LOCK_THREAD (thread);
 	was_aborting = thread->state & ThreadState_AbortRequested;
-	is_domain_abort = thread->flags & MONO_THREAD_FLAG_APPDOMAIN_ABORT; 
+	is_domain_abort = thread->flags & MONO_THREAD_FLAG_APPDOMAIN_ABORT;
 
 	if (was_aborting && !is_domain_abort)
 		thread->state &= ~ThreadState_AbortRequested;
@@ -2592,36 +2592,31 @@ mono_thread_internal_reset_abort (MonoInternalThread *thread)
 	UNLOCK_THREAD (thread);
 }
 
-MonoObject*
-ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *this_obj)
+MonoObjectHandle
+ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThreadObjectHandle this_obj, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoInternalThread *thread = this_obj->internal_thread;
-	MonoObject *state, *deserialized = NULL;
-	MonoDomain *domain;
+	MonoInternalThread *thread = thread_handle_to_internal_ptr (this_obj);
 
 	if (!thread->abort_state_handle)
-		return NULL;
+		return MONO_HANDLE_NEW (MonoObject, NULL);
 
-	state = mono_gchandle_get_target (thread->abort_state_handle);
-	g_assert (state);
+	MonoObjectHandle state = mono_gchandle_get_target_handle (thread->abort_state_handle);
+	g_assert (!MONO_HANDLE_IS_NULL (state));
 
-	domain = mono_domain_get ();
-	if (mono_object_domain (state) == domain)
+	MonoDomain *domain = mono_domain_get ();
+	if (MONO_HANDLE_DOMAIN (state) == domain)
 		return state;
 
-	deserialized = mono_object_xdomain_representation (state, domain, error);
+	MonoObjectHandle deserialized = mono_object_xdomain_representation (state, domain, error);
+	if (!MONO_HANDLE_IS_NULL (deserialized))
+		return deserialized;
 
-	if (!deserialized) {
-		MonoException *invalid_op_exc = mono_get_exception_invalid_operation ("Thread.ExceptionState cannot access an ExceptionState from a different AppDomain");
-		if (!is_ok (error)) {
-			MonoObject *exc = (MonoObject*)mono_error_convert_to_exception (error);
-			MONO_OBJECT_SETREF (invalid_op_exc, inner_ex, exc);
-		}
-		mono_set_pending_exception (invalid_op_exc);
-		return NULL;
-	}
-
+	ERROR_DECL (error_creating_exception);
+	MonoExceptionHandle invalid_op_exc = mono_exception_new_invalid_operation (
+		"Thread.ExceptionState cannot access an ExceptionState from a different AppDomain", error_creating_exception);
+	mono_error_assert_ok (error_creating_exception);
+	if (g_assert (!is_ok (error)))
+		MONO_HANDLE_SET (invalid_op_exc, inner_ex, mono_error_convert_to_exception_handle (error));
 	return deserialized;
 }
 

@@ -157,7 +157,8 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThreadHandle thread_handle,
 void
 ves_icall_System_Threading_Thread_ResetAbort (MonoThreadObjectHandle this_obj, MonoError *error);
 
-MonoObject* ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *thread);
+MonoObjectHandle
+ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThreadObjectHandle thread, MonoError *error);
 
 void
 ves_icall_System_Threading_Thread_Suspend (MonoThreadObjectHandle this_obj, MonoError *error);
