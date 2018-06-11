@@ -45,12 +45,12 @@ namespace System.Threading
 
         public EventWaitHandle(bool initialState, EventResetMode mode, string name)
         {
+#if !PLATFORM_WINDOWS
             if (name != null)
             {
-#if PLATFORM_UNIX
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
-#endif
             }
+#endif
 
             uint eventFlags = initialState ? Win32Native.CREATE_EVENT_INITIAL_SET : 0;
             switch (mode)
@@ -88,12 +88,12 @@ namespace System.Threading
 
         internal unsafe EventWaitHandle(bool initialState, EventResetMode mode, string name, out bool createdNew, EventWaitHandleSecurity eventSecurity)
         {
+#if !PLATFORM_WINDOWS
             if (name != null)
             {
-#if PLATFORM_UNIX
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
-#endif
             }
+#endif
             Win32Native.SECURITY_ATTRIBUTES secAttrs = null;
 
             uint eventFlags = initialState ? Win32Native.CREATE_EVENT_INITIAL_SET : 0;
@@ -161,9 +161,7 @@ namespace System.Threading
 
         private static OpenExistingResult OpenExistingWorker(string name, EventWaitHandleRights rights, out EventWaitHandle result)
         {
-#if PLATFORM_UNIX
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
-#else
+#if PLATFORM_WINDOWS
             if (name == null)
             {
                 throw new ArgumentNullException(nameof(name));
@@ -192,6 +190,8 @@ namespace System.Threading
             }
             result = new EventWaitHandle(myHandle);
             return OpenExistingResult.Success;
+#else
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #endif
         }
         public bool Reset()
