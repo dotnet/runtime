@@ -9,7 +9,7 @@ using System.Text;
 
 namespace R2RDump
 {
-    struct R2RImportSection
+    public struct R2RImportSection
     {
         public enum CorCompileImportType
         {
