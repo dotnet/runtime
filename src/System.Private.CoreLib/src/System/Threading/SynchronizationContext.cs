@@ -32,17 +32,6 @@ namespace System.Threading
         RequireWaitNotification = 0x1
     };
 
-#if FEATURE_COMINTEROP && FEATURE_APPX
-    //
-    // This is implemented in System.Runtime.WindowsRuntime, allowing us to ask that assembly for a WinRT-specific SyncCtx.
-    //
-    // [FriendAccessAllowed]
-    internal abstract class WinRTSynchronizationContextFactoryBase
-    {
-        public abstract SynchronizationContext Create(object coreDispatcher);
-    }
-#endif //FEATURE_COMINTEROP
-
     public class SynchronizationContext
     {
         private SynchronizationContextProperties _props = SynchronizationContextProperties.None;
@@ -189,27 +178,33 @@ namespace System.Threading
             //
             object dispatcher = GetWinRTDispatcherForCurrentThread();
             if (dispatcher != null)
-                return GetWinRTSynchronizationContextFactory().Create(dispatcher);
+                return GetWinRTSynchronizationContext(dispatcher);
 
             return null;
         }
 
-        private static WinRTSynchronizationContextFactoryBase s_winRTContextFactory;
+        private static Func<object, SynchronizationContext> s_createSynchronizationContextDelegate = null;
 
-        private static WinRTSynchronizationContextFactoryBase GetWinRTSynchronizationContextFactory()
+        private static SynchronizationContext GetWinRTSynchronizationContext(object dispatcher)
         {
             //
             // Since we can't directly reference System.Runtime.WindowsRuntime from mscorlib, we have to get the factory via reflection.
             // It would be better if we could just implement WinRTSynchronizationContextFactory in mscorlib, but we can't, because
             // we can do very little with WinRT stuff in mscorlib.
             //
-            WinRTSynchronizationContextFactoryBase factory = s_winRTContextFactory;
-            if (factory == null)
+            Func<object, SynchronizationContext> createSynchronizationContextDelegate = s_createSynchronizationContextDelegate;
+            if (createSynchronizationContextDelegate == null)
             {
                 Type factoryType = Type.GetType("System.Threading.WinRTSynchronizationContextFactory, System.Runtime.WindowsRuntime", throwOnError: true);
-                s_winRTContextFactory = factory = (WinRTSynchronizationContextFactoryBase)Activator.CreateInstance(factoryType, true);
+                
+                // Create an instance delegate for the Create static method
+                MethodInfo createMethodInfo = factoryType.GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                createSynchronizationContextDelegate = (Func<object, SynchronizationContext>)Delegate.CreateDelegate(typeof(Func<object, SynchronizationContext>), createMethodInfo, /* throwOnBindFailure */ true);
+
+                s_createSynchronizationContextDelegate = createSynchronizationContextDelegate;
             }
-            return factory;
+
+            return s_createSynchronizationContextDelegate(dispatcher);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
