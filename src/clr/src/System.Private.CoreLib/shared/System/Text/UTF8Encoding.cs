@@ -2205,7 +2205,7 @@ namespace System.Text
 
                             // extra byte, we're already planning 2 chars for 2 of these bytes,
                             // but the big loop is testing the target against pStop, so we need
-                            // to subtract 2 more or we risk overrunning the input.  Subtract 
+                            // to subtract 2 more or we risk overrunning the input.  Subtract
                             // one here and one below.
                             pStop--;
                         }
@@ -2355,11 +2355,17 @@ namespace System.Text
         private unsafe int FallbackInvalidByteSequence(
             byte* pSrc, int ch, DecoderFallbackBuffer fallback)
         {
+            // Calling GetBytesUnknown can adjust the pSrc pointer but we need to pass the pointer before the adjustment
+            // to fallback.InternalFallback. The input pSrc to fallback.InternalFallback will only be used to calculate the
+            // index inside bytesUnknown and if we pass the adjusted pointer we can end up with negative index values.
+            // We store the original pSrc in pOriginalSrc and then pass pOriginalSrc to fallback.InternalFallback.
+            byte* pOriginalSrc = pSrc;
+
             // Get our byte[]
             byte[] bytesUnknown = GetBytesUnknown(ref pSrc, ch);
 
             // Do the actual fallback
-            int count = fallback.InternalFallback(bytesUnknown, pSrc);
+            int count = fallback.InternalFallback(bytesUnknown, pOriginalSrc);
 
             // # of fallback chars expected.
             // Note that we only get here for "long" sequences, and have already unreserved
@@ -2368,7 +2374,7 @@ namespace System.Text
         }
 
         // Note that some of these bytes may have come from a previous fallback, so we cannot
-        // just decrement the pointer and use the values we read.  In those cases we have 
+        // just decrement the pointer and use the values we read.  In those cases we have
         // to regenerate the original values.
         private unsafe byte[] GetBytesUnknown(ref byte* pSrc, int ch)
         {
