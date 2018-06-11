@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <NativeWithSymbolFile Include="@(NativeBinary)">
+      <NativeWithSymbolFile Include="@(NativeBinary);@(CrossGenBinary)">
         <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       </NativeWithSymbolFile>
       <!-- Using lib/netstandard1.0 here.  There is no TFM for this since it is a runtime itself. -->
@@ -40,8 +40,15 @@
     </ItemGroup>
 
     <ItemGroup>
+      <!-- The symbols for these files are already in place together with respective *.ni.pdb -->
+      <IlForCrossGenedFile Include="@(CrossGenBinary -> '%(RootDir)%(Directory)IL\%(Filename).dll')">
+        <TargetPath>runtimes/$(PackageTargetRuntime)/il</TargetPath>
+      </IlForCrossGenedFile>
+    </ItemGroup>
+
+    <ItemGroup>
       <File Include="@(NativeWithSymbolFile)" />
-      <File Include="@(LongNameFile)">
+      <File Include="@(LongNameFile);@(IlForCrossGenedFile)">
         <IsSymbolFile>true</IsSymbolFile>
       </File>
     </ItemGroup>
