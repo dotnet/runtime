@@ -323,7 +323,7 @@ namespace System.Xml.Xsl
                 {
                     return null;
                 }
-                return (string)_getBltIn.Invoke(_unknownDebugger, new object[] { });
+                return (string)_getBltIn.Invoke(_unknownDebugger, Array.Empty<object>());
             }
             public void OnInstructionCompile(XPathNavigator styleSheetNavigator)
             {

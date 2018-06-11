@@ -60,7 +60,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
             else
             {
-                copiedProviders = new ExportProvider[] { };
+                copiedProviders = Array.Empty<ExportProvider>();
             }
 
             _providers = copiedProviders;

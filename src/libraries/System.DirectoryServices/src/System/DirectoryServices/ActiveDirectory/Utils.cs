@@ -1087,7 +1087,7 @@ namespace System.DirectoryServices.ActiveDirectory
         //
         internal static Hashtable GetValuesWithRangeRetrieval(DirectoryEntry searchRootEntry, string filter, ArrayList propertiesWithRangeRetrieval, ArrayList propertiesWithoutRangeRetrieval, SearchScope searchScope)
         {
-            ADSearcher searcher = new ADSearcher(searchRootEntry, filter, new string[] { }, searchScope, false /* paged search */, false /* cache results */);
+            ADSearcher searcher = new ADSearcher(searchRootEntry, filter, Array.Empty<string>(), searchScope, false /* paged search */, false /* cache results */);
             SearchResult res = null;
             int rangeStart = 0;
             Hashtable results = new Hashtable();
@@ -1450,7 +1450,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 string[] propertiesToLoad2 = new string[5];
 
-                ADSearcher searcher2 = new ADSearcher(searchRootEntry, filter2, new string[] { }, SearchScope.Subtree);
+                ADSearcher searcher2 = new ADSearcher(searchRootEntry, filter2, Array.Empty<string>(), SearchScope.Subtree);
                 SearchResultCollection resCol = null;
                 bool needToContinueRangeRetrieval = false;
                 ArrayList ntdsaNamesForRangeRetrieval = new ArrayList();
