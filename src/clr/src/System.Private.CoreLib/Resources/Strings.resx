@@ -1577,7 +1577,7 @@
     <value>The unmanaged Version information is too large to persist.</value>
   </data>
   <data name="Argument_WaitHandleNameTooLong" xml:space="preserve">
-    <value>The name '{0}' can be no more than {1} characters in length.</value>
+    <value>The length of the name exceeds the maximum limit.</value>
   </data>
   <data name="Argument_WinRTSystemRuntimeType" xml:space="preserve">
     <value>Cannot marshal type '{0}' to Windows Runtime. Only 'System.RuntimeType' is supported.</value>
