@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Threading.Tasks;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
@@ -29,11 +30,9 @@ namespace System.Threading.Tasks
 
         internal AsyncInfoToTaskBridge(CancellationToken cancellationToken)
         {
-            if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, this.Task.Id, "WinRT Operation as Task", 0);
-
-            if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
-                System.Threading.Tasks.Task.AddToActiveTasks(this.Task);
+            if (AsyncCausalitySupport.LoggingOn)
+                AsyncCausalitySupport.TraceOperationCreation(this.Task, "WinRT Operation as Task");
+            AsyncCausalitySupport.AddToActiveTasks(this.Task);
 
             _ct = cancellationToken;
         }
@@ -43,7 +42,6 @@ namespace System.Threading.Tasks
         {
             get { return this; }  // "this" isn't available publicly, so we can safely use it as a syncobj
         }
-
 
         /// <summary>Registers the async operation for cancellation.</summary>
         /// <param name="asyncInfo">The asynchronous operation.</param>
@@ -87,6 +85,7 @@ namespace System.Threading.Tasks
             }
         }
 
+
         /// <summary>Bridge to Completed handler on IAsyncAction.</summary>
         internal void CompleteFromAsyncAction(IAsyncAction asyncInfo, AsyncStatus asyncStatus)
         {
@@ -120,12 +119,10 @@ namespace System.Threading.Tasks
         {
             if (asyncInfo == null)
                 throw new ArgumentNullException(nameof(asyncInfo));
+
             Contract.EndContractBlock();
             
-            if (System.Threading.Tasks.Task.s_asyncDebuggingEnabled)
-			{
-				System.Threading.Tasks.Task.RemoveFromActiveTasks(base.Task.Id);
-			}
+            AsyncCausalitySupport.RemoveFromActiveTasks(this.Task);
 
             try
             {
@@ -200,14 +197,11 @@ namespace System.Threading.Tasks
 
                     // Complete the task based on the previously retrieved results:
                     bool success = false;
-
                     switch (asyncStatus)
                     {
                         case AsyncStatus.Completed:
-                            if (AsyncCausalityTracer.LoggingOn)
-                            {
-                                AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, base.Task.Id, AsyncCausalityStatus.Completed);
-                            }
+                            if (AsyncCausalitySupport.LoggingOn)
+                                AsyncCausalitySupport.TraceOperationCompletedSuccess(this.Task);
                             success = base.TrySetResult(result);
                             break;
 
@@ -224,15 +218,13 @@ namespace System.Threading.Tasks
                     Debug.Assert(success, "Expected the outcome to be successfully transfered to the task.");
                 }
                 catch (Exception exc)
-                {                    
+                {
                     // This really shouldn't happen, but could in a variety of misuse cases
                     // such as a faulty underlying IAsyncInfo implementation.
                     Debug.Assert(false, string.Format("Unexpected exception in Complete: {0}", exc.ToString()));
-                    
-                    if (AsyncCausalityTracer.LoggingOn)
-					{
-						AsyncCausalityTracer.TraceOperationCompletion(CausalityTraceLevel.Required, base.Task.Id, AsyncCausalityStatus.Error);
-					}
+
+                    if (AsyncCausalitySupport.LoggingOn)
+                        AsyncCausalitySupport.TraceOperationCompletedError(this.Task);
 
                     // For these cases, store the exception into the task so that it makes its way
                     // back to the caller.  Only if something went horribly wrong and we can't store the exception
