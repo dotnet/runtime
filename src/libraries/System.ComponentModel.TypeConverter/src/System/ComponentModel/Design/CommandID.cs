@@ -2,29 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
-using System.Security.Permissions;
 
 namespace System.ComponentModel.Design
 {
     /// <summary>
-    ///    <para>
-    ///       Represents a
-    ///       numeric Command ID and globally unique
-    ///       ID (GUID) menu identifier that together uniquely identify a command.
-    ///    </para>
+    /// Represents a numeric Command ID and globally unique ID (GUID) menu
+    /// identifier that together uniquely identify a command.
     /// </summary>
     public class CommandID
     {
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.Design.CommandID'/>
-        ///       class. Creates a new command
-        ///       ID.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.Design.CommandID'/>
+        /// class. Creates a new command ID.
         /// </summary>
         public CommandID(Guid menuGroup, int commandID)
         {
@@ -33,53 +23,29 @@ namespace System.ComponentModel.Design
         }
 
         /// <summary>
-        ///    <para>
-        ///       Gets or sets the numeric command ID.
-        ///    </para>
+        /// Gets or sets the numeric command ID.
         /// </summary>
         public virtual int ID { get; }
 
         /// <summary>
-        ///    <para>
-        ///       Overrides Object's Equals method.
-        ///    </para>
+        /// Overrides Object's Equals method.
         /// </summary>
         public override bool Equals(object obj)
         {
-            if (!(obj is CommandID))
-            {
-                return false;
-            }
-            CommandID cid = (CommandID)obj;
-            return cid.Guid.Equals(Guid) && cid.ID == ID;
+            return obj is CommandID cid && cid.Guid.Equals(Guid) && cid.ID == ID;
         }
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
-        public override int GetHashCode()
-        {
-            return Guid.GetHashCode() << 2 | ID;
-        }
+        public override int GetHashCode() => Guid.GetHashCode() << 2 | ID;
 
         /// <summary>
-        ///    <para>
-        ///       Gets or sets the globally
-        ///       unique ID
-        ///       (GUID) of the menu group that the menu command this CommandID
-        ///       represents belongs to.
-        ///    </para>
+        /// Gets or sets the globally unique ID (GUID) of the menu group that the
+        /// menu command this CommandID represents belongs to.
         /// </summary>
         public virtual Guid Guid { get; }
 
         /// <summary>
-        ///    <para>
-        ///       Overrides Object's ToString method.
-        ///    </para>
+        /// Overrides Object's ToString method.
         /// </summary>
-        public override string ToString()
-        {
-            return Guid.ToString() + " : " + ID.ToString(CultureInfo.CurrentCulture);
-        }
+        public override string ToString() => Guid.ToString() + " : " + ID.ToString(CultureInfo.CurrentCulture);
     }
 }

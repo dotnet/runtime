@@ -8,8 +8,19 @@ namespace System.Transactions.Tests
 {
     // Ported from Mono
 
-    public class EnlistTest
+    public class EnlistTest : IDisposable
     {
+        public EnlistTest()
+        {
+            // Make sure we start with Transaction.Current = null.
+            Transaction.Current = null;
+        }
+
+        public void Dispose()
+        {
+            Transaction.Current = null;
+        }
+
         #region Vol1_Dur0
 
         /* Single volatile resource, SPC happens */

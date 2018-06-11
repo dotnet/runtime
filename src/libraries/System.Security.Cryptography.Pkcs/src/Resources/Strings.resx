@@ -214,6 +214,9 @@
   <data name="Cryptography_Cms_Signing_RequiresPrivateKey" xml:space="preserve">
     <value>A certificate with a private key is required.</value>
   </data>
+  <data name="Cryptography_Cms_Ktri_RSARequired" xml:space="preserve">
+    <value>An RSA key is required to decrypt for a RecipientInfo with a KeyTransport recipient type.</value>
+  </data>
   <data name="Cryptography_Cms_TrustFailure" xml:space="preserve">
     <value>Certificate trust could not be established. The first reported error is: {0}</value>
   </data>
@@ -285,5 +288,14 @@
   </data>
   <data name="Cryptography_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
     <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
+  </data>
+  <data name="Cryptography_Cms_NoAttributeFound" xml:space="preserve">
+    <value>Attribute not found.</value>
+  </data>
+  <data name="Cryptography_Cms_NoCertificateFound" xml:space="preserve">
+    <value>Certificate not found.</value>
+  </data>
+  <data name="Cryptography_Cms_CertificateAlreadyInCollection" xml:space="preserve">
+    <value>Certificate already present in the collection.</value>
   </data>
 </root>

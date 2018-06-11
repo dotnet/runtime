@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -52,6 +53,9 @@ namespace System.Net.Http
         internal static readonly Version HttpVersion20 = new Version(2, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
+
+        private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue("gzip");
+        private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue("deflate");
 
         [ThreadStatic]
         private static StringBuilder t_requestHeadersBuilder;
@@ -607,7 +611,8 @@ namespace System.Net.Http
         private static void AddRequestHeaders(
             SafeWinHttpHandle requestHandle,
             HttpRequestMessage requestMessage,
-            CookieContainer cookies)
+            CookieContainer cookies,
+            DecompressionMethods manuallyProcessedDecompressionMethods)
         {
             // Get a StringBuilder to use for creating the request headers.
             // We cache one in TLS to avoid creating a new one for each request.
@@ -619,6 +624,26 @@ namespace System.Net.Http
             else
             {
                 t_requestHeadersBuilder = requestHeadersBuffer = new StringBuilder();
+            }
+
+            // Normally WinHttpHandler will let native WinHTTP add 'Accept-Encoding' request headers
+            // for gzip and/or default as needed based on whether the handler should do automatic
+            // decompression of response content. But on Windows 7, WinHTTP doesn't support this feature.
+            // So, we need to manually add these headers since WinHttpHandler still supports automatic
+            // decompression (by doing it within the handler).
+            if (manuallyProcessedDecompressionMethods != DecompressionMethods.None)
+            {
+                if ((manuallyProcessedDecompressionMethods & DecompressionMethods.GZip) == DecompressionMethods.GZip &&
+                    !requestMessage.Headers.AcceptEncoding.Contains(s_gzipHeaderValue))
+                {
+                    requestMessage.Headers.AcceptEncoding.Add(s_gzipHeaderValue);
+                }
+
+                if ((manuallyProcessedDecompressionMethods & DecompressionMethods.Deflate) == DecompressionMethods.Deflate &&
+                    !requestMessage.Headers.AcceptEncoding.Contains(s_deflateHeaderValue))
+                {
+                    requestMessage.Headers.AcceptEncoding.Add(s_deflateHeaderValue);
+                }
             }
 
             // Manually add cookies.
@@ -831,7 +856,8 @@ namespace System.Net.Http
                 AddRequestHeaders(
                     state.RequestHandle,
                     state.RequestMessage,
-                    _cookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer ? _cookieContainer : null);
+                    _cookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer ? _cookieContainer : null,
+                    _doManualDecompressionCheck ? _automaticDecompression : DecompressionMethods.None);
 
                 uint proxyAuthScheme = 0;
                 uint serverAuthScheme = 0;
@@ -882,7 +908,8 @@ namespace System.Net.Http
                 uint optionData = unchecked((uint)_receiveDataTimeout.TotalMilliseconds);
                 SetWinHttpOption(state.RequestHandle, Interop.WinHttp.WINHTTP_OPTION_RECEIVE_TIMEOUT, ref optionData);
 
-                HttpResponseMessage responseMessage = WinHttpResponseParser.CreateResponseMessage(state, _doManualDecompressionCheck);
+                HttpResponseMessage responseMessage =
+                    WinHttpResponseParser.CreateResponseMessage(state, _doManualDecompressionCheck ? _automaticDecompression : DecompressionMethods.None);
                 state.Tcs.TrySetResult(responseMessage);
 
                 // HttpStatusCode cast is needed for 308 Moved Permenantly, which we support but is not included in NetStandard status codes.

@@ -197,8 +197,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [ActiveIssue(1155)]
         [MemberData(nameof(GroupJoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 - 1, KeyFactor * 2 })]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void GroupJoin_Multiple(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -227,12 +227,57 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [ActiveIssue(1155)]
         [OuterLoop]
         [MemberData(nameof(GroupJoinMultipleData), new int[] { /* Sources.OuterLoopCount */ })]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void GroupJoin_Multiple_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             GroupJoin_Multiple(left, leftCount, right, rightCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(GroupJoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 - 1, KeyFactor * 2 })]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
+        public static void GroupJoin_Multiple_LeftWithOrderingColisions(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        {
+            ParallelQuery<int> leftQuery = left.Item.AsUnordered().OrderBy(x => 0);
+            ParallelQuery<int> rightQuery = right.Item;
+            int seenNonEmpty = 0;
+            int seenEmpty = 0;
+
+            Assert.All(leftQuery.GroupJoin(rightQuery, x => x, y => y / KeyFactor, (x, y) => KeyValuePair.Create(x, y)),
+                p =>
+                {
+                    if (p.Key < (rightCount + (KeyFactor - 1)) / KeyFactor)
+                    {
+                        Assert.Equal(seenNonEmpty++, p.Key);
+
+                        int seenInner = p.Key * KeyFactor;
+                        Assert.All(p.Value, y =>
+                        {
+                            Assert.Equal(p.Key, y / KeyFactor);
+                            Assert.Equal(seenInner++, y);
+                        });
+                        Assert.Equal(Math.Min((p.Key + 1) * KeyFactor, rightCount), seenInner);
+                    }
+                    else
+                    {
+                        Assert.Equal(0, seenNonEmpty);
+                        Assert.Empty(p.Value);
+
+                        seenEmpty++;
+                    }
+                });
+            Assert.Equal(leftCount, seenNonEmpty + seenEmpty);
+        }
+
+        [Theory]
+        [OuterLoop]
+        [MemberData(nameof(GroupJoinMultipleData), new int[] { /* Sources.OuterLoopCount */ })]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
+        public static void GroupJoin_Multiple_LeftWithOrderingColisions_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        {
+            GroupJoin_Multiple_LeftWithOrderingColisions(left, leftCount, right, rightCount);
         }
 
         [Theory]
@@ -268,8 +313,8 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [ActiveIssue(1155)]
         [MemberData(nameof(GroupJoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 })]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void GroupJoin_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -298,12 +343,94 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [ActiveIssue(1155)]
         [OuterLoop]
         [MemberData(nameof(GroupJoinMultipleData), new int[] { /* Sources.OuterLoopCount */ })]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void GroupJoin_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             GroupJoin_CustomComparator(left, leftCount, right, rightCount);
+        }
+
+
+        [Theory]
+        [MemberData(nameof(GroupJoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 - 1, KeyFactor * 2 })]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
+        public static void GroupJoin_CustomComparator_LeftWithOrderingColisions(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        {
+            ParallelQuery<int> leftQuery = left.Item.AsUnordered().OrderBy(x => x / KeyFactor);
+            ParallelQuery<int> rightQuery = right.Item;
+            int seenNonEmpty = 0;
+            int seenEmpty = 0;
+            int seenLeftGroup = 0;
+            int seenLeftCount = 0;
+
+            Assert.All(leftQuery.GroupJoin(rightQuery, x => x, y => y % ElementFactor, (x, y) => KeyValuePair.Create(x, y), new ModularCongruenceComparer(KeyFactor)),
+                p =>
+                {
+                    seenLeftCount++;
+
+                    if (p.Key / KeyFactor > seenLeftGroup)
+                    {
+                        seenLeftGroup++;
+
+                        try
+                        {
+                            Assert.Equal(KeyFactor, seenEmpty + seenNonEmpty);
+                        }
+                        finally
+                        {
+                            seenEmpty = 0;
+                            seenNonEmpty = 0;
+                        }
+                    }
+                    Assert.Equal(seenLeftGroup, p.Key / KeyFactor);
+
+                    if (p.Key % KeyFactor < Math.Min(ElementFactor, rightCount))
+                    {
+                        try
+                        {
+                            Assert.Equal((seenLeftGroup * KeyFactor) + seenNonEmpty, p.Key);
+                        }
+                        finally
+                        {
+                            seenNonEmpty++;
+                        }
+
+                        int expectedInner = p.Key % ElementFactor;
+                        int seenInnerCount = 0;
+                        Assert.All(p.Value, y =>
+                        {
+                            seenInnerCount++;
+                            Assert.Equal(p.Key % KeyFactor, y % ElementFactor);
+                            try
+                            {
+                                Assert.Equal(expectedInner, y);
+                            }
+                            finally
+                            {
+                                expectedInner += ElementFactor;
+                            }
+                        });
+                        Assert.Equal((rightCount / ElementFactor) + (((rightCount % ElementFactor) > (p.Key % KeyFactor)) ? 1 : 0), seenInnerCount);
+                    }
+                    else
+                    {
+                        seenEmpty++;
+
+                        Assert.Equal(0, seenNonEmpty);
+                        Assert.Empty(p.Value);
+                    }
+                });
+            Assert.Equal(leftCount, seenLeftCount);
+        }
+
+        [Theory]
+        [OuterLoop]
+        [MemberData(nameof(GroupJoinMultipleData), new int[] { /* Sources.OuterLoopCount */ })]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
+        public static void GroupJoin_CustomComparator_LeftWithOrderingColisions_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
+        {
+            GroupJoin_CustomComparator_LeftWithOrderingColisions(left, leftCount, right, rightCount);
         }
 
         [Fact]

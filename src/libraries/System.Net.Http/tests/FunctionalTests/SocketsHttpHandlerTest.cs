@@ -27,6 +27,14 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpProtocolTests : HttpProtocolTests
     {
         protected override bool UseSocketsHttpHandler => true;
+
+        [Theory]
+        [InlineData("delete", "DELETE")]
+        [InlineData("options", "OPTIONS")]
+        [InlineData("trace", "TRACE")]
+        [InlineData("patch", "PATCH")]
+        public Task CustomMethod_SentUppercasedIfKnown_Additional(string specifiedMethod, string expectedMethod) =>
+            CustomMethod_SentUppercasedIfKnown(specifiedMethod, expectedMethod);
     }
 
     public sealed class SocketsHttpHandler_HttpProtocolTests_Dribble : HttpProtocolTests_Dribble
@@ -56,6 +64,7 @@ namespace System.Net.Http.Functional.Tests
 
     public sealed class SocketsHttpHandler_HttpClientHandler_Decompression_Tests : HttpClientHandler_Decompression_Test
     {
+        public SocketsHttpHandler_HttpClientHandler_Decompression_Tests(ITestOutputHelper output) : base(output) { }
         protected override bool UseSocketsHttpHandler => true;
     }
 
@@ -78,6 +87,49 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
         protected override bool UseSocketsHttpHandler => true;
+
+        [OuterLoop("Incurs a small delay")]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        public async Task SmallConnectionLifetimeWithMaxConnections_PendingRequestUsesDifferentConnection(int lifetimeMilliseconds)
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(lifetimeMilliseconds);
+                handler.MaxConnectionsPerServer = 1;
+
+                using (HttpClient client = new HttpClient(handler))
+                {
+                    await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                    {
+                        Task<string> request1 = client.GetStringAsync(uri);
+                        Task<string> request2 = client.GetStringAsync(uri);
+
+                        await server.AcceptConnectionAsync(async connection =>
+                        {
+                            Task secondResponse = server.AcceptConnectionAsync(connection2 =>
+                                connection2.ReadRequestHeaderAndSendCustomResponseAsync(LoopbackServer.GetConnectionCloseResponse()));
+
+                            // Wait a small amount of time before sending the first response, so the connection lifetime will expire.
+                            Debug.Assert(lifetimeMilliseconds < 100);
+                            await Task.Delay(100);
+
+                            // Second request should not have completed yet, as we haven't completed the first yet.
+                            Assert.False(request2.IsCompleted);
+                            Assert.False(secondResponse.IsCompleted);
+
+                            // Send the first response and wait for the first request to complete.
+                            await connection.ReadRequestHeaderAndSendResponseAsync();
+                            await request1;
+
+                            // Now the second request should complete.
+                            await secondResponse.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+                        });
+                    });
+                }
+            }
+        }
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
@@ -808,12 +860,6 @@ namespace System.Net.Http.Functional.Tests
     {
         protected override bool UseSocketsHttpHandler => true;
 
-        // TODO: ISSUE #27272
-        // Currently the subsequent tests sometimes fail/hang with WinHttpHandler / CurlHandler.
-        // In theory they should pass with any handler that does appropriate connection pooling.
-        // We should understand why they sometimes fail there and ideally move them to be
-        // used by all handlers this test project tests.
-
         [Fact]
         public async Task MultipleIterativeRequests_SameConnectionReused()
         {
@@ -1019,6 +1065,43 @@ namespace System.Net.Http.Functional.Tests
                 new LoopbackServer.Options { UseSsl = bool.Parse(secureString) });
                 return SuccessExitCode;
             }, secure.ToString()).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not support custom proxies.")]
+        [Fact]
+        public async Task ProxyAuth_SameConnection_Succeeds()
+        {
+            Task serverTask = LoopbackServer.CreateServerAsync(async (proxyServer, proxyUrl) =>
+            {
+                string responseBody =
+                        "HTTP/1.1 407 Proxy Auth Required\r\n" +
+                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                        "Proxy-Authenticate: Basic\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n";
+
+                using  (var handler = new HttpClientHandler())
+                {
+                    handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, new NetworkCredential("abc", "def"));
+
+                    using (var client = new HttpClient(handler))
+                    {
+                        Task<string> request = client.GetStringAsync($"http://notarealserver.com/");
+
+                        await proxyServer.AcceptConnectionAsync(async connection =>
+                        {
+                            // Get first request, no body for GET.
+                            await connection.ReadRequestHeaderAndSendCustomResponseAsync(responseBody).ConfigureAwait(false);
+                            // Client should send another request after being rejected with 407.
+                            await connection.ReadRequestHeaderAndSendResponseAsync(content:"OK").ConfigureAwait(false);
+                        });
+
+                        string response = await request;
+                        Assert.Equal("OK", response);
+                    }
+                }
+            });
+            await serverTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
         }
     }
 

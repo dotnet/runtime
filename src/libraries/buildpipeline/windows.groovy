@@ -50,7 +50,7 @@ simpleNode('Windows_NT','latest') {
             additionalArgs += ' -SkipTests'
         }
         if (params.TGroup != 'all') {
-            bat ".\\build-tests.cmd ${framework} -buildArch=${params.AGroup} -${params.CGroup}${additionalArgs} -- /p:RuntimeOS=win10 /p:ArchiveTests=${archiveTests}"
+            bat ".\\build-tests.cmd ${framework} -buildArch=${params.AGroup} -${params.CGroup}${additionalArgs} -- /p:RuntimeOS=win10 /p:ArchiveTests=${archiveTests} /p:EnableDumpling=true"
         }
         else {
             bat ".\\build-tests.cmd ${framework} -${params.CGroup}${additionalArgs}"
@@ -74,7 +74,7 @@ simpleNode('Windows_NT','latest') {
                 {
                     targetHelixQueues = ['Windows.7.Amd64.Open',
                                          'Windows.81.Amd64.Open',
-                                         'Windows.10.Amd64.ClientRS3.ES.Open',]
+                                         'Windows.10.Amd64.ClientRS4.ES.Open',]
                     if (params.AGroup == 'x64') {
                         targetHelixQueues += ['Windows.10.Nano.Amd64.Open']
                     }

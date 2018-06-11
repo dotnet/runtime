@@ -63,8 +63,8 @@ namespace System.Security.Cryptography.Pkcs
         public CmsRecipientCollection(System.Security.Cryptography.Pkcs.SubjectIdentifierType recipientIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates) { }
         public int Count { get { throw null; } }
         public System.Security.Cryptography.Pkcs.CmsRecipient this[int index] { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        public bool IsSynchronized { get { throw null; } }
+        public object SyncRoot { get { throw null; } }
         public int Add(System.Security.Cryptography.Pkcs.CmsRecipient recipient) { throw null; }
         public void CopyTo(System.Array array, int index) { }
         public void CopyTo(System.Security.Cryptography.Pkcs.CmsRecipient[] array, int index) { }
@@ -122,6 +122,7 @@ namespace System.Security.Cryptography.Pkcs
         public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo) { }
         public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo, System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraStore) { }
         public void Decrypt(System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraStore) { }
+        public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo, System.Security.Cryptography.AsymmetricAlgorithm privateKey) { }
         public byte[] Encode() { throw null; }
         public void Encrypt(System.Security.Cryptography.Pkcs.CmsRecipient recipient) { }
         public void Encrypt(System.Security.Cryptography.Pkcs.CmsRecipientCollection recipients) { }
@@ -210,8 +211,8 @@ namespace System.Security.Cryptography.Pkcs
         internal RecipientInfoCollection() { }
         public int Count { get { throw null; } }
         public System.Security.Cryptography.Pkcs.RecipientInfo this[int index] { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        public bool IsSynchronized { get { throw null; } }
+        public object SyncRoot { get { throw null; } }
         public void CopyTo(System.Array array, int index) { }
         public void CopyTo(System.Security.Cryptography.Pkcs.RecipientInfo[] array, int index) { }
         public System.Security.Cryptography.Pkcs.RecipientInfoEnumerator GetEnumerator() { throw null; }
@@ -255,6 +256,8 @@ namespace System.Security.Cryptography.Pkcs
         public void CheckSignature(bool verifySignatureOnly) => throw null;
         public void CheckSignature(System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraStore, bool verifySignatureOnly) => throw null;
         public void CheckHash() => throw null;
+        public void AddCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) => throw null;
+        public void RemoveCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) => throw null;
     }
     public sealed partial class SignerInfo
     {
@@ -265,6 +268,8 @@ namespace System.Security.Cryptography.Pkcs
         public Oid DigestAlgorithm => throw null;
         public CryptographicAttributeObjectCollection SignedAttributes => throw null;
         public CryptographicAttributeObjectCollection UnsignedAttributes => throw null;
+        public void AddUnsignedAttribute(System.Security.Cryptography.AsnEncodedData asnEncodedData) => throw null;
+        public void RemoveUnsignedAttribute(System.Security.Cryptography.AsnEncodedData asnEncodedData) => throw null;
         public SignerInfoCollection CounterSignerInfos => throw null;
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public void ComputeCounterSignature() => throw null;
@@ -300,6 +305,7 @@ namespace System.Security.Cryptography.Pkcs
         internal SubjectIdentifier() { }
         public System.Security.Cryptography.Pkcs.SubjectIdentifierType Type { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
         public object Value { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool MatchesCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { throw null; }
     }
     public sealed partial class SubjectIdentifierOrKey
     {

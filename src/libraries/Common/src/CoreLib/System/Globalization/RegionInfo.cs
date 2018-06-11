@@ -31,7 +31,7 @@ namespace System.Globalization
         //
         // Name of this region (ie: es-US): serialized, the field used for deserialization
         //
-        internal String _name;
+        internal string _name;
 
         //
         // The CultureData instance that we are going to read data from.
@@ -54,7 +54,7 @@ namespace System.Globalization
         //  In Silverlight we enforce that RegionInfos must be created with a full culture name
         //
         ////////////////////////////////////////////////////////////////////////
-        public RegionInfo(String name)
+        public RegionInfo(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -71,7 +71,7 @@ namespace System.Globalization
             _cultureData = CultureData.GetCultureDataForRegion(name, true);
             if (_cultureData == null)
                 throw new ArgumentException(
-                    String.Format(
+                    string.Format(
                         CultureInfo.CurrentCulture,
                         SR.Argument_InvalidCultureName, name), nameof(name));
 
@@ -157,7 +157,7 @@ namespace System.Globalization
         //  Returns the name of the region (ie: en-US)
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String Name
+        public virtual string Name
         {
             get
             {
@@ -173,7 +173,7 @@ namespace System.Globalization
         //  Returns the name of the region in English. (ie: United States)
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String EnglishName
+        public virtual string EnglishName
         {
             get
             {
@@ -190,7 +190,7 @@ namespace System.Globalization
         //  if the current UI language is en-US)
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String DisplayName
+        public virtual string DisplayName
         {
             get
             {
@@ -207,7 +207,7 @@ namespace System.Globalization
         //  WARNING: You need a full locale name for this to make sense.        
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String NativeName
+        public virtual string NativeName
         {
             get
             {
@@ -222,7 +222,7 @@ namespace System.Globalization
         //  Returns the two letter ISO region name (ie: US)
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String TwoLetterISORegionName
+        public virtual string TwoLetterISORegionName
         {
             get
             {
@@ -237,7 +237,7 @@ namespace System.Globalization
         //  Returns the three letter ISO region name (ie: USA)
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String ThreeLetterISORegionName
+        public virtual string ThreeLetterISORegionName
         {
             get
             {
@@ -252,7 +252,7 @@ namespace System.Globalization
         //  Returns the three letter windows region name (ie: USA)
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String ThreeLetterWindowsRegionName
+        public virtual string ThreeLetterWindowsRegionName
         {
             get
             {
@@ -324,7 +324,7 @@ namespace System.Globalization
         //  Currency Symbol for this locale, ie: Fr. or $
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String CurrencySymbol
+        public virtual string CurrencySymbol
         {
             get
             {
@@ -339,7 +339,7 @@ namespace System.Globalization
         //  ISO Currency Symbol for this locale, ie: CHF
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual String ISOCurrencySymbol
+        public virtual string ISOCurrencySymbol
         {
             get
             {
@@ -391,7 +391,7 @@ namespace System.Globalization
         //  Implements Object.ToString().  Returns the name of the Region, ie: es-US
         //
         ////////////////////////////////////////////////////////////////////////
-        public override String ToString()
+        public override string ToString()
         {
             return (Name);
         }

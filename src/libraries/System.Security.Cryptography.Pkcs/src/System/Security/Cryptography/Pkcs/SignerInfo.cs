@@ -108,6 +108,118 @@ namespace System.Security.Cryptography.Pkcs
 
         public Oid SignatureAlgorithm => new Oid(_signatureAlgorithm);
 
+        public void AddUnsignedAttribute(AsnEncodedData unsignedAttribute)
+        {
+            int myIdx = _document.SignerInfos.FindIndexForSigner(this);
+
+            if (myIdx < 0)
+            {
+                throw new CryptographicException(SR.Cryptography_Cms_SignerNotFound);
+            }
+
+            ref SignedDataAsn signedData = ref _document.GetRawData();
+            ref SignerInfoAsn mySigner = ref signedData.SignerInfos[myIdx];
+
+            int existingAttribute = mySigner.UnsignedAttributes == null ? -1 : FindAttributeIndexByOid(mySigner.UnsignedAttributes, unsignedAttribute.Oid);
+
+            if (existingAttribute == -1)
+            {
+                // create a new attribute
+                AttributeAsn newUnsignedAttr;
+                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+                {
+                    writer.PushSetOf();
+                    writer.WriteEncodedValue(unsignedAttribute.RawData);
+                    writer.PopSetOf();
+
+                    newUnsignedAttr = new AttributeAsn
+                    {
+                        AttrType = new Oid(unsignedAttribute.Oid),
+                        AttrValues = writer.Encode(),
+                    };
+                }
+
+                int newAttributeIdx;
+
+                if (mySigner.UnsignedAttributes == null)
+                {
+                    newAttributeIdx = 0;
+                    mySigner.UnsignedAttributes = new AttributeAsn[1];
+                }
+                else
+                {
+                    newAttributeIdx = mySigner.UnsignedAttributes.Length;
+                    Array.Resize(ref mySigner.UnsignedAttributes, newAttributeIdx + 1);
+                }
+
+                mySigner.UnsignedAttributes[newAttributeIdx] = newUnsignedAttr;
+            }
+            else
+            {
+                // merge with existing attribute
+                ref AttributeAsn modifiedAttr = ref mySigner.UnsignedAttributes[existingAttribute];
+
+                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+                {
+                    writer.PushSetOf();
+
+                    AsnReader reader = new AsnReader(modifiedAttr.AttrValues, AsnEncodingRules.BER);
+                    AsnReader collReader = reader.ReadSetOf();
+
+                    if (reader.HasData)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    }
+
+                    // re-add old values
+                    while (collReader.HasData)
+                    {
+                        writer.WriteEncodedValue(collReader.GetEncodedValue());
+                    }
+
+                    writer.WriteEncodedValue(unsignedAttribute.RawData);
+
+                    writer.PopSetOf();
+                    modifiedAttr.AttrValues = writer.Encode();
+                }
+            }
+
+            // Re-normalize the document
+            _document.Reencode();
+        }
+
+        public void RemoveUnsignedAttribute(AsnEncodedData unsignedAttribute)
+        {
+            int myIdx = _document.SignerInfos.FindIndexForSigner(this);
+
+            if (myIdx < 0)
+            {
+                throw new CryptographicException(SR.Cryptography_Cms_SignerNotFound);
+            }
+
+            ref SignedDataAsn signedData = ref _document.GetRawData();
+            ref SignerInfoAsn mySigner = ref signedData.SignerInfos[myIdx];
+
+            (int outerIndex, int innerIndex) = FindAttributeLocation(mySigner.UnsignedAttributes, unsignedAttribute, out bool isOnlyValue);
+
+            if (outerIndex == -1 || innerIndex == -1)
+            {
+                throw new CryptographicException(SR.Cryptography_Cms_NoAttributeFound);
+            }
+
+            if (isOnlyValue)
+            {
+                Helpers.RemoveAt(ref mySigner.UnsignedAttributes, outerIndex);
+            }
+            else
+            {
+                RemoveAttributeValueWithoutIndexChecking(ref mySigner.UnsignedAttributes[outerIndex], innerIndex);
+            }
+
+            // Re-normalize the document
+            _document.Reencode();
+        }
+
         private SignerInfoCollection GetCounterSigners(AttributeAsn[] unsignedAttrs)
         {
             // Since each "attribute" can have multiple "attribute values" there's no real
@@ -306,31 +418,7 @@ namespace System.Security.Cryptography.Pkcs
             }
             else
             {
-                ref AttributeAsn modifiedAttr = ref unsignedAttrs[removeAttrIdx];
-
-                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
-                {
-                    writer.PushSetOf();
-
-                    AsnReader reader = new AsnReader(modifiedAttr.AttrValues, writer.RuleSet);
-
-                    int i = 0;
-
-                    while (reader.HasData)
-                    {
-                        ReadOnlyMemory<byte> encodedValue = reader.GetEncodedValue();
-
-                        if (i != removeValueIndex)
-                        {
-                            writer.WriteEncodedValue(encodedValue);
-                        }
-
-                        i++;
-                    }
-
-                    writer.PopSetOf();
-                    modifiedAttr.AttrValues = writer.Encode();
-                }
+                RemoveAttributeValueWithoutIndexChecking(ref unsignedAttrs[removeAttrIdx], removeValueIndex);
             }
         }
 
@@ -660,6 +748,99 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             return new CryptographicAttributeObject(type, valueColl);
+        }
+
+        private static int FindAttributeIndexByOid(AttributeAsn[] attributes, Oid oid, int startIndex = 0)
+        {
+            for (int i = startIndex; i < attributes.Length; i++)
+            {
+                if (attributes[i].AttrType.Value == oid.Value)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static int FindAttributeValueIndexByEncodedData(ReadOnlyMemory<byte> attributeValues, ReadOnlySpan<byte> asnEncodedData, out bool isOnlyValue)
+        {
+            AsnReader reader = new AsnReader(attributeValues, AsnEncodingRules.BER);
+            AsnReader collReader = reader.ReadSetOf();
+
+            if (reader.HasData)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            for (int i = 0; collReader.HasData; i++)
+            {
+                ReadOnlySpan<byte> data = collReader.GetEncodedValue().Span;
+                if (data.SequenceEqual(asnEncodedData))
+                {
+                    isOnlyValue = i == 0 && !collReader.HasData;
+                    return i;
+                }
+            }
+
+            isOnlyValue = false;
+            return -1;
+        }
+
+        private static (int, int) FindAttributeLocation(AttributeAsn[] attributes, AsnEncodedData attribute, out bool isOnlyValue)
+        {
+            for (int outerIndex = 0; ; outerIndex++)
+            {
+                outerIndex = FindAttributeIndexByOid(attributes, attribute.Oid, outerIndex);
+
+                if (outerIndex == -1)
+                {
+                    break;
+                }
+
+                int innerIndex = FindAttributeValueIndexByEncodedData(attributes[outerIndex].AttrValues, attribute.RawData, out isOnlyValue);
+                if (innerIndex != -1)
+                {
+                    return (outerIndex, innerIndex);
+                }
+            }
+
+            isOnlyValue = false;
+            return (-1, -1);
+        }
+
+        private static void RemoveAttributeValueWithoutIndexChecking(ref AttributeAsn modifiedAttr, int removeValueIndex)
+        {
+            // Using BER rules to avoid resorting
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                writer.PushSetOf();
+
+                AsnReader reader = new AsnReader(modifiedAttr.AttrValues, writer.RuleSet);
+                AsnReader collReader = reader.ReadSetOf();
+
+                if (reader.HasData)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                int i = 0;
+
+                while (collReader.HasData)
+                {
+                    ReadOnlyMemory<byte> encodedValue = collReader.GetEncodedValue();
+
+                    if (i != removeValueIndex)
+                    {
+                        writer.WriteEncodedValue(encodedValue);
+                    }
+
+                    i++;
+                }
+
+                writer.PopSetOf();
+                modifiedAttr.AttrValues = writer.Encode();
+            }
         }
     }
 }

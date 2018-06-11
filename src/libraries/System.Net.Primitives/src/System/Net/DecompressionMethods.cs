@@ -10,6 +10,7 @@ namespace System.Net
         None = 0,
         GZip = 0x1,
         Deflate = 0x2,
-        Brotli = 0x4
+        Brotli = 0x4,
+        All = ~None
     }
 }

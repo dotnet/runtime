@@ -39,8 +39,8 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        ///     Char case conversion type used when '>' (subsequent chars to upper case) or '<' (subsequent chars to lower case)
-        ///     are specified in the mask.
+        /// Char case conversion type used when '>' (subsequent chars to upper case) or '&lt;' (subsequent chars to lower case)
+        /// are specified in the mask.
         /// </summary>
         private enum CaseConversion
         {

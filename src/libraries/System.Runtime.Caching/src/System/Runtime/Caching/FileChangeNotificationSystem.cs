@@ -92,11 +92,11 @@ namespace System.Runtime.Caching
         {
             if (filePath == null)
             {
-                throw new ArgumentNullException("filePath");
+                throw new ArgumentNullException(nameof(filePath));
             }
             if (onChangedCallback == null)
             {
-                throw new ArgumentNullException("onChangedCallback");
+                throw new ArgumentNullException(nameof(onChangedCallback));
             }
             FileInfo fileInfo = new FileInfo(filePath);
             string dir = Path.GetDirectoryName(filePath);
@@ -142,16 +142,16 @@ namespace System.Runtime.Caching
         {
             if (filePath == null)
             {
-                throw new ArgumentNullException("filePath");
+                throw new ArgumentNullException(nameof(filePath));
             }
             if (state == null)
             {
-                throw new ArgumentNullException("state");
+                throw new ArgumentNullException(nameof(state));
             }
             FileChangeEventTarget target = state as FileChangeEventTarget;
             if (target == null)
             {
-                throw new ArgumentException(SR.Invalid_state, "state");
+                throw new ArgumentException(SR.Invalid_state, nameof(state));
             }
             string dir = Path.GetDirectoryName(filePath);
             DirectoryMonitor dirMon = _dirMonitors[dir] as DirectoryMonitor;

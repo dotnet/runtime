@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -247,20 +247,20 @@ namespace System.Runtime.Caching
             if (policy.AbsoluteExpiration != ObjectCache.InfiniteAbsoluteExpiration
                 && policy.SlidingExpiration != ObjectCache.NoSlidingExpiration)
             {
-                throw new ArgumentException(SR.Invalid_expiration_combination, "policy");
+                throw new ArgumentException(SR.Invalid_expiration_combination, nameof(policy));
             }
             if (policy.SlidingExpiration < ObjectCache.NoSlidingExpiration || s_oneYear < policy.SlidingExpiration)
             {
-                throw new ArgumentOutOfRangeException("policy", RH.Format(SR.Argument_out_of_range, "SlidingExpiration", ObjectCache.NoSlidingExpiration, s_oneYear));
+                throw new ArgumentOutOfRangeException(nameof(policy), RH.Format(SR.Argument_out_of_range, "SlidingExpiration", ObjectCache.NoSlidingExpiration, s_oneYear));
             }
             if (policy.RemovedCallback != null
                 && policy.UpdateCallback != null)
             {
-                throw new ArgumentException(SR.Invalid_callback_combination, "policy");
+                throw new ArgumentException(SR.Invalid_callback_combination, nameof(policy));
             }
             if (policy.Priority != CacheItemPriority.Default && policy.Priority != CacheItemPriority.NotRemovable)
             {
-                throw new ArgumentOutOfRangeException("policy", RH.Format(SR.Argument_out_of_range, "Priority", CacheItemPriority.Default, CacheItemPriority.NotRemovable));
+                throw new ArgumentOutOfRangeException(nameof(policy), RH.Format(SR.Argument_out_of_range, "Priority", CacheItemPriority.Default, CacheItemPriority.NotRemovable));
             }
         }
 
@@ -343,15 +343,15 @@ namespace System.Runtime.Caching
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             if (name == String.Empty)
             {
-                throw new ArgumentException(SR.Empty_string_invalid, "name");
+                throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
             }
             if (String.Equals(name, "default", StringComparison.OrdinalIgnoreCase))
             {
-                throw new ArgumentException(SR.Default_is_reserved, "name");
+                throw new ArgumentException(SR.Default_is_reserved, nameof(name));
             }
             _name = name;
             Init(config);
@@ -363,15 +363,15 @@ namespace System.Runtime.Caching
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             if (name == String.Empty)
             {
-                throw new ArgumentException(SR.Empty_string_invalid, "name");
+                throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
             }
             if (String.Equals(name, "default", StringComparison.OrdinalIgnoreCase))
             {
-                throw new ArgumentException(SR.Default_is_reserved, "name");
+                throw new ArgumentException(SR.Default_is_reserved, nameof(name));
             }
             _name = name;
             _configLess = ignoreConfigSection;
@@ -393,7 +393,7 @@ namespace System.Runtime.Caching
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             DateTimeOffset absExp = ObjectCache.InfiniteAbsoluteExpiration;
             TimeSpan slidingExp = ObjectCache.NoSlidingExpiration;
@@ -405,7 +405,7 @@ namespace System.Runtime.Caching
                 ValidatePolicy(policy);
                 if (policy.UpdateCallback != null)
                 {
-                    throw new ArgumentException(SR.Update_callback_must_be_null, "policy");
+                    throw new ArgumentException(SR.Update_callback_must_be_null, nameof(policy));
                 }
                 absExp = policy.AbsoluteExpiration;
                 slidingExp = policy.SlidingExpiration;
@@ -441,19 +441,19 @@ namespace System.Runtime.Caching
             }
             if (keys == null)
             {
-                throw new ArgumentNullException("keys");
+                throw new ArgumentNullException(nameof(keys));
             }
             List<String> keysClone = new List<String>(keys);
             if (keysClone.Count == 0)
             {
-                throw new ArgumentException(RH.Format(SR.Empty_collection, "keys"));
+                throw new ArgumentException(RH.Format(SR.Empty_collection, nameof(keys)));
             }
 
             foreach (string key in keysClone)
             {
                 if (key == null)
                 {
-                    throw new ArgumentException(RH.Format(SR.Collection_contains_null_element, "keys"));
+                    throw new ArgumentException(RH.Format(SR.Collection_contains_null_element, nameof(keys)));
                 }
             }
 
@@ -510,7 +510,7 @@ namespace System.Runtime.Caching
             }
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             MemoryCacheEntry entry = GetEntry(key);
             return (entry != null) ? entry.Value : null;
@@ -617,7 +617,7 @@ namespace System.Runtime.Caching
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value, policy));
         }
@@ -657,7 +657,7 @@ namespace System.Runtime.Caching
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             Set(item.Key, item.Value, policy);
         }
@@ -670,7 +670,7 @@ namespace System.Runtime.Caching
             }
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             DateTimeOffset absExp = ObjectCache.InfiniteAbsoluteExpiration;
             TimeSpan slidingExp = ObjectCache.NoSlidingExpiration;
@@ -719,7 +719,7 @@ namespace System.Runtime.Caching
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             if (changeMonitors == null
                 && absoluteExpiration == ObjectCache.InfiniteAbsoluteExpiration
@@ -729,7 +729,7 @@ namespace System.Runtime.Caching
             }
             if (onUpdateCallback == null)
             {
-                throw new ArgumentNullException("onUpdateCallback");
+                throw new ArgumentNullException(nameof(onUpdateCallback));
             }
             if (IsDisposed)
             {
@@ -795,7 +795,7 @@ namespace System.Runtime.Caching
             }
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             if (IsDisposed)
             {
@@ -840,7 +840,7 @@ namespace System.Runtime.Caching
             }
             if (keys == null)
             {
-                throw new ArgumentNullException("keys");
+                throw new ArgumentNullException(nameof(keys));
             }
             Dictionary<string, object> values = null;
             if (!IsDisposed)
@@ -849,7 +849,7 @@ namespace System.Runtime.Caching
                 {
                     if (key == null)
                     {
-                        throw new ArgumentException(RH.Format(SR.Collection_contains_null_element, "keys"));
+                        throw new ArgumentException(RH.Format(SR.Collection_contains_null_element, nameof(keys)));
                     }
                     object value = GetInternal(key, null);
                     if (value != null)
@@ -873,7 +873,7 @@ namespace System.Runtime.Caching
         {
             if (config == null)
             {
-                throw new ArgumentNullException("config");
+                throw new ArgumentNullException(nameof(config));
             }
             if (!IsDisposed)
             {

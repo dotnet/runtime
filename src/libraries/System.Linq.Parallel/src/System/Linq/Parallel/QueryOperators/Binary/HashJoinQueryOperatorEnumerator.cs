@@ -33,14 +33,13 @@ namespace System.Linq.Parallel
     /// <typeparam name="TRightInput"></typeparam>
     /// <typeparam name="THashKey"></typeparam>
     /// <typeparam name="TOutput"></typeparam>
-    internal class HashJoinQueryOperatorEnumerator<TLeftInput, TLeftKey, TRightInput, THashKey, TOutput>
-        : QueryOperatorEnumerator<TOutput, TLeftKey>
+    internal class HashJoinQueryOperatorEnumerator<TLeftInput, TLeftKey, TRightInput, TRightKey, THashKey, TOutput, TOutputKey>
+        : QueryOperatorEnumerator<TOutput, TOutputKey>
     {
-        private readonly QueryOperatorEnumerator<Pair<TLeftInput,THashKey>, TLeftKey> _leftSource; // Left (outer) data source. For probing.
-        private readonly QueryOperatorEnumerator<Pair<TRightInput,THashKey>, int> _rightSource; // Right (inner) data source. For building.
-        private readonly Func<TLeftInput, TRightInput, TOutput> _singleResultSelector; // Single result selector.
-        private readonly Func<TLeftInput, IEnumerable<TRightInput>, TOutput> _groupResultSelector; // Group result selector.
-        private readonly IEqualityComparer<THashKey> _keyComparer; // An optional key comparison object.
+        private readonly QueryOperatorEnumerator<Pair<TLeftInput, THashKey>, TLeftKey> _leftSource; // Left (outer) data source. For probing.
+        private readonly HashLookupBuilder<TRightInput, TRightKey, THashKey> _rightLookupBuilder; // Right (inner) data source. For building.
+        private readonly Func<TLeftInput, TRightInput, TOutput> _resultSelector; // Result selector.
+        private readonly HashJoinOutputKeyBuilder<TLeftKey, TRightKey, TOutputKey> _outputKeyBuilder;
         private readonly CancellationToken _cancellationToken;
         private Mutables _mutables;
 
@@ -48,8 +47,8 @@ namespace System.Linq.Parallel
         {
             internal TLeftInput _currentLeft; // The current matching left element.
             internal TLeftKey _currentLeftKey; // The current index of the matching left element.
-            internal HashLookup<THashKey, Pair<TRightInput, ListChunk<TRightInput>>> _rightHashLookup; // The hash lookup.
-            internal ListChunk<TRightInput> _currentRightMatches; // Current right matches (if any).
+            internal HashJoinHashLookup<THashKey, TRightInput, TRightKey> _rightHashLookup; // The hash lookup.
+            internal ListChunk<Pair<TRightInput, TRightKey>> _currentRightMatches; // Current right matches (if any).
             internal int _currentRightMatchesIndex; // Current index in the set of right matches.
             internal int _outputLoopCount;
         }
@@ -59,22 +58,21 @@ namespace System.Linq.Parallel
         //
 
         internal HashJoinQueryOperatorEnumerator(
-            QueryOperatorEnumerator<Pair<TLeftInput,THashKey>, TLeftKey> leftSource,
-            QueryOperatorEnumerator<Pair<TRightInput,THashKey>, int> rightSource,
-            Func<TLeftInput, TRightInput, TOutput> singleResultSelector,
-            Func<TLeftInput, IEnumerable<TRightInput>, TOutput> groupResultSelector,
-            IEqualityComparer<THashKey> keyComparer,
+            QueryOperatorEnumerator<Pair<TLeftInput, THashKey>, TLeftKey> leftSource,
+            HashLookupBuilder<TRightInput, TRightKey, THashKey> rightLookupBuilder,
+            Func<TLeftInput, TRightInput, TOutput> resultSelector,
+            HashJoinOutputKeyBuilder<TLeftKey, TRightKey, TOutputKey> outputKeyBuilder,
             CancellationToken cancellationToken)
         {
             Debug.Assert(leftSource != null);
-            Debug.Assert(rightSource != null);
-            Debug.Assert(singleResultSelector != null || groupResultSelector != null);
+            Debug.Assert(rightLookupBuilder != null);
+            Debug.Assert(resultSelector != null);
+            Debug.Assert(outputKeyBuilder != null);
 
             _leftSource = leftSource;
-            _rightSource = rightSource;
-            _singleResultSelector = singleResultSelector;
-            _groupResultSelector = groupResultSelector;
-            _keyComparer = keyComparer;
+            _rightLookupBuilder = rightLookupBuilder;
+            _resultSelector = resultSelector;
+            _outputKeyBuilder = outputKeyBuilder;
             _cancellationToken = cancellationToken;
         }
 
@@ -90,88 +88,25 @@ namespace System.Linq.Parallel
         // as we do for inner joins.
         //
 
-        internal override bool MoveNext(ref TOutput currentElement, ref TLeftKey currentKey)
+        internal override bool MoveNext(ref TOutput currentElement, ref TOutputKey currentKey)
         {
-            Debug.Assert(_singleResultSelector != null || _groupResultSelector != null, "expected a compiled result selector");
+            Debug.Assert(_resultSelector != null, "expected a compiled result selector");
             Debug.Assert(_leftSource != null);
-            Debug.Assert(_rightSource != null);
+            Debug.Assert(_rightLookupBuilder != null);
 
             // BUILD phase: If we haven't built the hash-table yet, create that first.
             Mutables mutables = _mutables;
             if (mutables == null)
             {
                 mutables = _mutables = new Mutables();
-#if DEBUG
-                int hashLookupCount = 0;
-                int hashKeyCollisions = 0;
-#endif
-                mutables._rightHashLookup = new HashLookup<THashKey, Pair<TRightInput, ListChunk<TRightInput>>>(_keyComparer);
-
-                Pair<TRightInput, THashKey> rightPair = default(Pair<TRightInput, THashKey>);
-                int rightKeyUnused = default(int);
-                int i = 0;
-                while (_rightSource.MoveNext(ref rightPair, ref rightKeyUnused))
-                {
-                    if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                        CancellationState.ThrowIfCanceled(_cancellationToken);
-
-                    TRightInput rightElement = rightPair.First;
-                    THashKey rightHashKey = rightPair.Second;
-
-                    // We ignore null keys.
-                    if (rightHashKey != null)
-                    {
-#if DEBUG
-                        hashLookupCount++;
-#endif
-
-                        // See if we've already stored an element under the current key. If not, we
-                        // lazily allocate a pair to hold the elements mapping to the same key.
-                        const int INITIAL_CHUNK_SIZE = 2;
-                        Pair<TRightInput, ListChunk<TRightInput>> currentValue = default(Pair<TRightInput, ListChunk<TRightInput>>);
-                        if (!mutables._rightHashLookup.TryGetValue(rightHashKey, ref currentValue))
-                        {
-                            currentValue = new Pair<TRightInput, ListChunk<TRightInput>>(rightElement, null);
-
-                            if (_groupResultSelector != null)
-                            {
-                                // For group joins, we also add the element to the list. This makes
-                                // it easier later to yield the list as-is.
-                                currentValue.Second = new ListChunk<TRightInput>(INITIAL_CHUNK_SIZE);
-                                currentValue.Second.Add(rightElement);
-                            }
-
-                            mutables._rightHashLookup.Add(rightHashKey, currentValue);
-                        }
-                        else
-                        {
-                            if (currentValue.Second == null)
-                            {
-                                // Lazily allocate a list to hold all but the 1st value. We need to
-                                // re-store this element because the pair is a value type.
-                                currentValue.Second = new ListChunk<TRightInput>(INITIAL_CHUNK_SIZE);
-                                mutables._rightHashLookup[rightHashKey] = currentValue;
-                            }
-
-                            currentValue.Second.Add(rightElement);
-#if DEBUG
-                            hashKeyCollisions++;
-#endif
-                        }
-                    }
-                }
-
-#if DEBUG
-                TraceHelpers.TraceInfo("ParallelJoinQueryOperator::MoveNext - built hash table [count = {0}, collisions = {1}]",
-                    hashLookupCount, hashKeyCollisions);
-#endif
+                mutables._rightHashLookup = _rightLookupBuilder.BuildHashLookup(_cancellationToken);
             }
 
             // PROBE phase: So long as the source has a next element, return the match.
-            ListChunk<TRightInput> currentRightChunk = mutables._currentRightMatches;
+            ListChunk<Pair<TRightInput, TRightKey>> currentRightChunk = mutables._currentRightMatches;
             if (currentRightChunk != null && mutables._currentRightMatchesIndex == currentRightChunk.Count)
             {
-                currentRightChunk = mutables._currentRightMatches = currentRightChunk.Next;
+                mutables._currentRightMatches = currentRightChunk.Next;
                 mutables._currentRightMatchesIndex = 0;
             }
 
@@ -186,7 +121,7 @@ namespace System.Linq.Parallel
                         CancellationState.ThrowIfCanceled(_cancellationToken);
 
                     // Find the match in the hash table.
-                    Pair<TRightInput, ListChunk<TRightInput>> matchValue = default(Pair<TRightInput, ListChunk<TRightInput>>);
+                    HashLookupValueList<TRightInput, TRightKey> matchValue = default(HashLookupValueList<TRightInput, TRightKey>);
                     TLeftInput leftElement = leftPair.First;
                     THashKey leftHashKey = leftPair.Second;
 
@@ -195,46 +130,26 @@ namespace System.Linq.Parallel
                     {
                         if (mutables._rightHashLookup.TryGetValue(leftHashKey, ref matchValue))
                         {
-                            // We found a new match. For inner joins, we remember the list in case
-                            // there are multiple value under this same key -- the next iteration will pick
-                            // them up. For outer joins, we will use the list momentarily.
-                            if (_singleResultSelector != null)
+                            // We found a new match. We remember the list in case there are multiple
+                            // values under this same key -- the next iteration will pick them up.
+                            mutables._currentRightMatches = matchValue.Tail;
+                            Debug.Assert(mutables._currentRightMatches == null || mutables._currentRightMatches.Count > 0,
+                                            "we were expecting that the list would be either null or empty");
+                            mutables._currentRightMatchesIndex = 0;
+
+                            // Yield the value.
+                            currentElement = _resultSelector(leftElement, matchValue.Head.First);
+                            currentKey = _outputKeyBuilder.Combine(leftKey, matchValue.Head.Second);
+
+                            // If there is a list of matches, remember the left values for next time.
+                            if (matchValue.Tail != null)
                             {
-                                mutables._currentRightMatches = matchValue.Second;
-                                Debug.Assert(mutables._currentRightMatches == null || mutables._currentRightMatches.Count > 0,
-                                                "we were expecting that the list would be either null or empty");
-                                mutables._currentRightMatchesIndex = 0;
-
-                                // Yield the value.
-                                currentElement = _singleResultSelector(leftElement, matchValue.First);
-                                currentKey = leftKey;
-
-                                // If there is a list of matches, remember the left values for next time.
-                                if (matchValue.Second != null)
-                                {
-                                    mutables._currentLeft = leftElement;
-                                    mutables._currentLeftKey = leftKey;
-                                }
-
-                                return true;
+                                mutables._currentLeft = leftElement;
+                                mutables._currentLeftKey = leftKey;
                             }
-                        }
-                    }
 
-                    // For outer joins, we always yield a result.
-                    if (_groupResultSelector != null)
-                    {
-                        // Grab the matches, or create an empty list if there are none.
-                        IEnumerable<TRightInput> matches = matchValue.Second;
-                        if (matches == null)
-                        {
-                            matches = ParallelEnumerable.Empty<TRightInput>();
+                            return true;
                         }
-
-                        // Generate the current value.
-                        currentElement = _groupResultSelector(leftElement, matches);
-                        currentKey = leftKey;
-                        return true;
                     }
                 }
 
@@ -242,14 +157,14 @@ namespace System.Linq.Parallel
                 return false;
             }
 
-            // Produce the next element and increment our index within the matches.
-            Debug.Assert(_singleResultSelector != null);
+            // Produce the next element.
             Debug.Assert(mutables._currentRightMatches != null);
             Debug.Assert(0 <= mutables._currentRightMatchesIndex && mutables._currentRightMatchesIndex < mutables._currentRightMatches.Count);
 
-            currentElement = _singleResultSelector(
-                mutables._currentLeft, mutables._currentRightMatches._chunk[mutables._currentRightMatchesIndex]);
-            currentKey = mutables._currentLeftKey;
+            Pair<TRightInput, TRightKey> rightMatch = mutables._currentRightMatches._chunk[mutables._currentRightMatchesIndex];
+
+            currentElement = _resultSelector(mutables._currentLeft, rightMatch.First);
+            currentKey = _outputKeyBuilder.Combine(mutables._currentLeftKey, rightMatch.Second);
 
             mutables._currentRightMatchesIndex++;
 
@@ -258,9 +173,213 @@ namespace System.Linq.Parallel
 
         protected override void Dispose(bool disposing)
         {
-            Debug.Assert(_leftSource != null && _rightSource != null);
+            Debug.Assert(_leftSource != null && _rightLookupBuilder != null);
             _leftSource.Dispose();
-            _rightSource.Dispose();
+            _rightLookupBuilder.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// A class to create output order keys from the left and right keys.
+    /// </summary>
+    /// <typeparam name="TLeftKey"></typeparam>
+    /// <typeparam name="TRightKey"></typeparam>
+    /// <typeparam name="TOutputKey"></typeparam>
+    internal abstract class HashJoinOutputKeyBuilder<TLeftKey, TRightKey, TOutputKey>
+    {
+        public abstract TOutputKey Combine(TLeftKey leftKey, TRightKey rightKey);
+    }
+
+    /// <summary>
+    /// A key builder that simply returns the left key, ignoring the right key.
+    /// 
+    /// Used when the right source is unordered.
+    /// </summary>
+    /// <typeparam name="TLeftKey"></typeparam>
+    /// <typeparam name="TRightKey"></typeparam>
+    internal class LeftKeyOutputKeyBuilder<TLeftKey, TRightKey> : HashJoinOutputKeyBuilder<TLeftKey, TRightKey, TLeftKey>
+    {
+        public override TLeftKey Combine(TLeftKey leftKey, TRightKey rightKey)
+        {
+            return leftKey;
+        }
+    }
+
+    /// <summary>
+    /// A key builder that simply returns a left key, right key pair.
+    /// 
+    /// Used when the right source is ordered.
+    /// </summary>
+    /// <typeparam name="TLeftKey"></typeparam>
+    /// <typeparam name="TRightKey"></typeparam>
+    internal class PairOutputKeyBuilder<TLeftKey, TRightKey> : HashJoinOutputKeyBuilder<TLeftKey, TRightKey, Pair<TLeftKey, TRightKey>>
+    {
+        public override Pair<TLeftKey, TRightKey> Combine(TLeftKey leftKey, TRightKey rightKey)
+        {
+            return new Pair<TLeftKey, TRightKey>(leftKey, rightKey);
+        }
+    }
+
+    /// <summary>
+    /// Class to build a HashJoinHashLookup of right elements for use in HashJoin operations.
+    /// </summary>
+    /// <typeparam name="TElement"></typeparam>
+    /// <typeparam name="TOrderKey"></typeparam>
+    /// <typeparam name="THashKey"></typeparam>
+    internal abstract class HashLookupBuilder<TElement, TOrderKey, THashKey>
+    {
+        public abstract HashJoinHashLookup<THashKey, TElement, TOrderKey> BuildHashLookup(CancellationToken cancellationToken);
+
+        protected void BuildBaseHashLookup<TBaseBuilder, TBaseElement, TBaseOrderKey>(
+            QueryOperatorEnumerator<Pair<TBaseElement, THashKey>, TBaseOrderKey> dataSource,
+            TBaseBuilder baseHashBuilder,
+            CancellationToken cancellationToken) where TBaseBuilder : IBaseHashBuilder<TBaseElement, TBaseOrderKey>
+        {
+            Debug.Assert(dataSource != null);
+
+#if DEBUG
+            int hashLookupCount = 0;
+            int hashKeyCollisions = 0;
+#endif
+
+            Pair<TBaseElement, THashKey> currentPair = default(Pair<TBaseElement, THashKey>);
+            TBaseOrderKey orderKey = default(TBaseOrderKey);
+            int i = 0;
+            while (dataSource.MoveNext(ref currentPair, ref orderKey))
+            {
+                if ((i++ & CancellationState.POLL_INTERVAL) == 0)
+                    CancellationState.ThrowIfCanceled(cancellationToken);
+
+                TBaseElement element = currentPair.First;
+                THashKey hashKey = currentPair.Second;
+
+                // We ignore null keys.
+                if (hashKey != null)
+                {
+#if DEBUG
+                    hashLookupCount++;
+#endif
+
+                    if (baseHashBuilder.Add(hashKey, element, orderKey))
+                    {
+#if DEBUG
+                        hashKeyCollisions++;
+#endif
+                    }
+                }
+            }
+
+#if DEBUG
+            TraceHelpers.TraceInfo("HashLookupBuilder::BuildBaseHashLookup - built hash table [count = {0}, collisions = {1}]",
+                hashLookupCount, hashKeyCollisions);
+#endif
+        }
+
+        // Standard implementation of the disposable pattern.
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+        }
+
+        /// <summary>
+        /// Used in BuildBaseHashLookup to translate from data in dataSource to data to be used
+        /// by the HashJoin operator.
+        /// </summary>
+        /// <typeparam name="TBaseElement"></typeparam>
+        /// <typeparam name="TBaseOrderKey"></typeparam>
+        protected interface IBaseHashBuilder<TBaseElement, TBaseOrderKey>
+        {
+            // adds the value to the base HashLookup.
+            // returns true if the addition is a hash collision
+            bool Add(THashKey hashKey, TBaseElement element, TBaseOrderKey orderKey);
+        }
+    }
+
+    /// <summary>
+    /// A wrapper for the HashLookup returned by HashLookupBuilder.
+    /// 
+    /// This will allow for providing a default if there is no value in the base lookup.
+    /// </summary>
+    /// <typeparam name="THashKey"></typeparam>
+    /// <typeparam name="TElement"></typeparam>
+    /// <typeparam name="TOrderKey"></typeparam>
+    internal abstract class HashJoinHashLookup<THashKey, TElement, TOrderKey>
+    {
+        // get the current value if it exists.
+        public abstract bool TryGetValue(THashKey key, ref HashLookupValueList<TElement, TOrderKey> value);
+    }
+
+    /// <summary>
+    /// A list to handle one or more right elements of a join operation.
+    /// 
+    /// It optimizes for 1 to 1 joins by only allocating heap space lazily
+    /// once a second value is added.
+    /// 
+    /// This is built in the HashLookupBuilder classes and consumed by the
+    /// HashJoinQueryOperatorEnumerator.
+    /// </summary>
+    /// <typeparam name="TElement"></typeparam>
+    /// <typeparam name="TOrderKey"></typeparam>
+    internal struct HashLookupValueList<TElement, TOrderKey>
+    {
+        internal Pair<TElement, TOrderKey> Head
+        {
+            get
+            {
+                return _head;
+            }
+        }
+        private readonly Pair<TElement, TOrderKey> _head;
+
+        internal ListChunk<Pair<TElement, TOrderKey>> Tail
+        {
+            get
+            {
+                return _tail;
+            }
+        }
+        private ListChunk<Pair<TElement, TOrderKey>> _tail;
+
+        private const int INITIAL_CHUNK_SIZE = 2;
+
+        // constructor used to build a new list.
+        internal HashLookupValueList(TElement firstValue, TOrderKey firstOrderKey)
+        {
+            _head = CreatePair(firstValue, firstOrderKey);
+            _tail = null;
+        }
+
+        /// <summary>
+        /// Adds a value/ordering key pair to the list.
+        /// </summary>
+        /// <param name="value">value to add</param>
+        /// <param name="orderKey">ordering key</param>
+        /// <returns>if true, the internal memory has changed</returns>
+        /// <remarks>
+        /// As this is a value type, if the internal memory changes,
+        /// then the changes need to be reflected (to a HashLookup, for example)
+        /// as necessary
+        /// </remarks>
+        internal bool Add(TElement value, TOrderKey orderKey)
+        {
+            bool requiresMemoryChange = (_tail == null);
+
+            if (requiresMemoryChange)
+            {
+                _tail = new ListChunk<Pair<TElement, TOrderKey>>(INITIAL_CHUNK_SIZE);
+            }
+            _tail.Add(CreatePair(value, orderKey));
+
+            return requiresMemoryChange;
+        }
+
+        private static Pair<TElement, TOrderKey> CreatePair(TElement value, TOrderKey orderKey)
+        {
+            return new Pair<TElement, TOrderKey>(value, orderKey);
         }
     }
 }

@@ -4,26 +4,11 @@
 
 namespace System.ComponentModel.Design
 {
-    /// <summary>
-    ///    <para>[To be supplied.]</para>
-    /// </summary>
     public enum HelpContextType
     {
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         Ambient,
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         Window,
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         Selection,
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         ToolWindowSelection,
     }
 }

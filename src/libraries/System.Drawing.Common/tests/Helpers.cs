@@ -18,6 +18,7 @@ namespace System.Drawing
         public const string GdiPlusIsAvailableNotRedhat73 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotRedhat73);
         public const string GdiPlusIsAvailableNotWindows7 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotWindows7);
         public const string AnyInstalledPrinters = nameof(Helpers) + "." + nameof(IsAnyInstalledPrinters);
+        public const string WindowsRS3OrEarlier = nameof(Helpers) + "." + nameof(IsWindowsRS3OrEarlier);
 
         public static bool GetGdiplusIsAvailable()
         {
@@ -44,6 +45,8 @@ namespace System.Drawing
                 return nativeLib != IntPtr.Zero;
             }
         }
+
+        public static bool IsWindowsRS3OrEarlier => !PlatformDetection.IsWindows10Version1803OrGreater;
 
         public static bool GetRecentGdiPlusIsAvailable2()
         {

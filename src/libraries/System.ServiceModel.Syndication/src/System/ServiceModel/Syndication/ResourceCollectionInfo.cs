@@ -44,11 +44,11 @@ namespace System.ServiceModel.Syndication
         {
             if (title == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("title");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(title));
             }
             if (link == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("link");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(link));
             }
             _title = title;
             _link = link;

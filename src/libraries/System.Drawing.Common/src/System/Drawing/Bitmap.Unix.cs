@@ -70,7 +70,7 @@ namespace System.Drawing
         public Bitmap(Type type, string resource)
         {
             if (resource == null)
-                throw new ArgumentException("resource");
+                throw new ArgumentException(nameof(resource));
 
             // For compatibility with the .NET Framework
             if (type == null)

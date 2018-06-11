@@ -16,6 +16,7 @@ namespace System.Xml.Tests
             _output = output;
         }
 
+        [ActiveIssue(30017)]
         //[Variation("4", Desc = "Basic /settings test cases, stylesheet has script, where script-", Pri = 0, Params = new object[] { "/settings:script- sft4.xsl", "sft4hack.dll", "no", "sft4", "sft4.pdb", "no", "sft4.txt" })]
         [InlineData("/settings:script- sft4.xsl", "sft4hack.dll", "no", "sft4", "sft4.pdb", "no", "sft4.txt")]
         //[Variation("6", Desc = "Basic /settings test cases, stylesheet has document(), where document-", Pri = 0, Params = new object[] { "/settings:document- sft6.xsl", "sft6hack.dll", "no", "sft6", "sft6.pdb", "no", "sft6.txt" })]

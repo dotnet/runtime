@@ -189,7 +189,25 @@ MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.DefinePInvokeMetho
 MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.DefinePInvokeMethod(System.String, System.String, System.String, System.Reflection.MethodAttributes, System.Reflection.CallingConventions, System.Type, System.Type[], System.Type[], System.Type[], System.Type[][], System.Type[][], System.Runtime.InteropServices.CallingConvention, System.Runtime.InteropServices.CharSet)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.TypeToken.get()' does not exist in the implementation but it does exist in the contract.
 
+// Consciously are not bringing to core
+TypesMustExist : Type 'System.Security.Cryptography.CryptoAPITransform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.HMACRIPEMD160' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.MACTripleDES' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.RijndaelManagedTransform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.RIPEMD160' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.RIPEMD160Managed' does not exist in the implementation but it does exist in the contract.
+
+// Too coupled to ACLs
+TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyAccessRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyAuditRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyRights' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CryptoKeySecurity' does not exist in the implementation but it does exist in the contract.
+
 // Interfaces were intentional removals
+CannotRemoveBaseTypeOrInterface : Type 'System.Windows.Markup.ValueSerializerAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.DirectoryServicesCOMException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ServiceProcess.ServiceControllerPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ServiceProcess.ServiceProcessDescriptionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlMethodAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlUserDefinedAggregateAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'Microsoft.SqlServer.Server.SqlUserDefinedTypeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
@@ -769,8 +787,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlClient.SqlClientPermissio
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.CallbackValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.ConfigurationCollectionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.ConfigurationErrorsException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Configuration.ConfigurationPermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.ConfigurationPermissionAttribute' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.ConfigurationPropertyAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.ConfigurationValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.IntegerValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
@@ -785,9 +801,31 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.BitmapSuffixInSatelliteAs
 CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.ToolboxBitmapAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Printing.InvalidPrinterException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.FileFormatException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.ActiveDirectory.ActiveDirectoryObjectExistsException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.ActiveDirectory.ActiveDirectoryObjectNotFoundException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.ActiveDirectory.ActiveDirectoryOperationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.ActiveDirectory.ActiveDirectoryServerDownException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.ActiveDirectory.ForestTrustCollisionException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.ActiveDirectory.SyncFromAllServersOperationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.DirectoryObjectClassAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.DirectoryPropertyAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.DirectoryRdnPrefixAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.MultipleMatchesException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.NoMatchingPrincipalException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.PasswordException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.PrincipalException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.PrincipalExistsException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.PrincipalOperationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.PrincipalServerDownException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.Protocols.BerConversionException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.Protocols.DirectoryException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.Protocols.DirectoryOperationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.Protocols.LdapException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.Protocols.TlsOperationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 
 
-// TypesMustExist isn't a goal for netcore20:
+
+// Types we currently don't plan to port:
 TypesMustExist : Type 'System._AppDomain' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ActivationContext' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.AppDomainInitializer' does not exist in the implementation but it does exist in the contract.
@@ -796,26 +834,9 @@ TypesMustExist : Type 'System.AppDomainManagerInitializationOptions' does not ex
 TypesMustExist : Type 'System.AppDomainSetup' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.CrossAppDomainDelegate' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IAppDomainSetup' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.Assemblies.AssemblyHash' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Deployment.Internal.InternalActivationContextHelper' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Deployment.Internal.InternalApplicationIdentityHelper' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.Contracts.Internal.ContractHelper' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.IO.IsolatedStorage.IsolatedStorageSecurityOptions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.IO.IsolatedStorage.IsolatedStorageSecurityState' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.DynamicILInfo' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.EventToken' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.ExceptionHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.FieldToken' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.MethodRental' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.MethodToken' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.ParameterToken' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.PEFileKinds' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.PropertyToken' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.SignatureToken' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.StringToken' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.TypeToken' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.UnmanagedMarshal' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.ProfileOptimization' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.CompilerServices.IDispatchConstantAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.DesignerServices.WindowsRuntimeDesignerContext' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Hosting.ActivationArguments' does not exist in the implementation but it does exist in the contract.
@@ -1005,7 +1026,6 @@ TypesMustExist : Type 'System.Runtime.Remoting.Messaging.IMethodCallMessage' doe
 TypesMustExist : Type 'System.Runtime.Remoting.Messaging.IMethodMessage' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Remoting.Messaging.IMethodReturnMessage' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Remoting.Messaging.InternalMessageWrapper' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Remoting.Messaging.IRemotingFormatter' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Remoting.Messaging.LogicalCallContext' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Remoting.Messaging.MessageSurrogateFilter' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Remoting.Messaging.MethodCall' does not exist in the implementation but it does exist in the contract.
@@ -1059,410 +1079,12 @@ TypesMustExist : Type 'System.Runtime.Remoting.Proxies.RealProxy' does not exist
 TypesMustExist : Type 'System.Runtime.Remoting.Services.EnterpriseServicesHelper' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Remoting.Services.ITrackingHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Remoting.Services.TrackingServices' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Formatters.InternalRM' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Formatters.InternalST' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Formatters.ISoapMessage' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Formatters.ServerFault' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Formatters.SoapFault' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Formatters.SoapMessage' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.ReadOnlyPermissionSet' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyAccessRule' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyAuditRule' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyRights' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.AccessControl.CryptoKeySecurity' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.CryptoAPITransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.HMACRIPEMD160' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.MACTripleDES' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.RijndaelManagedTransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.RIPEMD160' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.RIPEMD160Managed' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Policy.ApplicationSecurityInfo' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Policy.ApplicationSecurityManager' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Policy.IApplicationTrustManager' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Principal.WindowsAccountType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Principal.WindowsImpersonationContext' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.Win32.IntranetZoneCredentialPolicy' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.PowerModeChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.PowerModeChangedEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.PowerModes' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.SessionEndedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.SessionEndedEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.SessionEndingEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.SessionEndingEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.SessionEndReasons' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.SessionSwitchEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.SessionSwitchEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.SessionSwitchReason' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.SystemEvents' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.TimerElapsedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.TimerElapsedEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.UserPreferenceCategory' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.UserPreferenceChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.UserPreferenceChangedEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.UserPreferenceChangingEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.Win32.UserPreferenceChangingEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.ConsoleTraceListener' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.DiagnosticsConfigurationHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.EventLogTraceListener' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.XmlWriterTraceListener' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.IO.IODescriptionAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Media.SoundPlayer' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Media.SystemSound' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Media.SystemSounds' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.ICertificatePolicy' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.AuthenticationModuleElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.AuthenticationModuleElementCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.AuthenticationModulesSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.BypassElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.BypassElementCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.ConnectionManagementElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.ConnectionManagementElementCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.ConnectionManagementSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.DefaultProxySection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.FtpCachePolicyElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.HttpCachePolicyElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.HttpListenerElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.HttpListenerTimeoutsElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.HttpWebRequestElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.Ipv6Element' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.MailSettingsSectionGroup' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.ModuleElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.NetSectionGroup' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.PerformanceCountersElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.ProxyElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.RequestCachingSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.ServicePointManagerElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.SettingsSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.SmtpNetworkElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.SmtpSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.SmtpSpecifiedPickupDirectoryElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.SocketElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.UnicodeDecodingConformance' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.UnicodeEncodingConformance' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.WebProxyScriptElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.WebRequestModuleElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.WebRequestModuleElementCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.WebRequestModulesSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Configuration.WebUtilityElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.SocketClientAccessPolicyProtocol' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.ICustomTypeProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.InteropServices.StandardOleMarshalObject' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.TokenBinding' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.TokenBindingType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configuration.ExtendedProtectionPolicyElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configuration.ServiceNameElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configuration.ServiceNameElementCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Claims.DynamicRoleClaimProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Web.AspNetHostingPermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Web.AspNetHostingPermissionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Web.AspNetHostingPermissionLevel' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Windows.Markup.ValueSerializerAttribute' does not exist in the implementation but it does exist in the contract.
-
-TypesMustExist : Type 'System.ComponentModel.DataAnnotations.AssociatedMetadataTypeTypeDescriptionProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ComponentModel.DataAnnotations.BindableTypeAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ComponentModel.DataAnnotations.MetadataTypeAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ComponentModel.DataAnnotations.ScaffoldTableAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.EventSchemaTraceListener' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.TraceLogRetentionOption' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.UnescapedXmlDiagnosticData' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.EventDescriptor' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.EventProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.EventProviderTraceListener' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventBookmark' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventKeyword' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLevel' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogConfiguration' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogInformation' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogInvalidDataException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogIsolation' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogLink' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogMode' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogNotFoundException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogPropertySelector' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogProviderDisabledException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogQuery' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogReader' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogReadingException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogRecord' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogSession' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogStatus' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventLogWatcher' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventMetadata' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventOpcode' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventProperty' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventRecord' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventRecordWrittenEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.EventTask' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.PathType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.ProviderMetadata' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.SessionAuthentication' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.StandardEventKeywords' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.StandardEventLevel' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.StandardEventOpcode' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.Eventing.Reader.StandardEventTask' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.PerformanceData.CounterData' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.PerformanceData.CounterSet' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.PerformanceData.CounterSetInstance' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.PerformanceData.CounterSetInstanceCounterDataSet' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.PerformanceData.CounterSetInstanceType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Diagnostics.PerformanceData.CounterType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.IO.MemoryMappedFiles.MemoryMappedFileSecurity' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.InstanceNotFoundException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.InstrumentationBaseException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.InstrumentationException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementBindAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementCommitAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementConfigurationAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementConfigurationType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementCreateAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementEntityAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementEnumeratorAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementHostingModel' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementKeyAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementMemberAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementNameAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementNewInstanceAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementProbeAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementReferenceAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementRemoveAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.ManagementTaskAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Management.Instrumentation.WmiConfigurationAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.CompilerServices.CallSiteOps' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.CompilerServices.Closure' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.CompilerServices.ExecutionScope' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.CompilerServices.RuntimeOps' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.ManifestKinds' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ECDiffieHellman' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ECDiffieHellmanCng' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ECDiffieHellmanCngPublicKey' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ECDiffieHellmanKeyDerivationFunction' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ManifestSignatureInformation' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ManifestSignatureInformationCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.MD5Cng' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.SHA1Cng' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.SHA256Cng' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.SHA384Cng' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.SHA512Cng' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.SignatureVerificationResult' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.StrongNameSignatureInformation' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.AuthenticodeSignatureInformation' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.TimestampInformation' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.TrustStatus' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlFacetAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlPipe' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlProcedureAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlTriggerAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.SqlServer.Server.SqlTriggerContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'Microsoft.SqlServer.Server.TriggerAction' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.DataSetSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.PropertyAttributes' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.TypedDataSetGenerator' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.TypedDataSetGeneratorException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Common.DbProviderConfigurationHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Common.DbProviderFactories' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Common.DbProviderFactoriesConfigurationHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbCommand' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbCommandBuilder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbConnection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbConnectionStringBuilder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbDataAdapter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbDataReader' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbEnumerator' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbError' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbErrorCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbFactory' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbInfoMessageEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbInfoMessageEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbLiteral' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbMetaDataCollectionNames' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbMetaDataColumnNames' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbParameter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbParameterCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbRowUpdatedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbRowUpdatedEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbRowUpdatingEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbRowUpdatingEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbSchemaGuid' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbTransaction' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.OleDb.OleDbType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Sql.SqlDataSourceEnumerator' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlAuthenticationMethod' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlColumnEncryptionCertificateStoreProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlColumnEncryptionCngProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlColumnEncryptionCspProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlColumnEncryptionKeyStoreProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlCommandColumnEncryptionSetting' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlConnectionColumnEncryptionSetting' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SqlCredential' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlClient.SQLDebugging' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.SqlFileStream' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.SqlTypesSchemaImporterExtensionHelper' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeBigIntSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeBinarySchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeBitSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeCharSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeDateTimeSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeDecimalSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeFloatSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeIntSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeMoneySchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeNCharSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeNTextSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeNumericSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeNVarCharSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeRealSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeSmallDateTimeSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeSmallIntSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeSmallMoneySchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeTextSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeTinyIntSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeUniqueIdentifierSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeVarBinarySchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeVarCharSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.SqlTypes.TypeVarImageSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.XmlDataDocument' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.FontConverter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.IconConverter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.ImageConverter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.ImageFormatConverter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.IPropertyValueUIService' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.IToolboxItemProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.IToolboxService' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.IToolboxUser' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.PaintValueEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.PropertyValueUIHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.PropertyValueUIItem' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.PropertyValueUIItemInvokeHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.ToolboxComponentsCreatedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.ToolboxComponentsCreatedEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.ToolboxComponentsCreatingEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.ToolboxComponentsCreatingEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.ToolboxItem' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.ToolboxItemCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.ToolboxItemCreatorCallback' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.UITypeEditor' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Design.UITypeEditorEditStyle' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Drawing.Printing.MarginsConverter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.INetworkProgress' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.IPEndPointCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.IUnsafeWebRequestCreate' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.NetworkProgressChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.UiSynchronizationContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Cloud' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.CloudCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerName' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameRecord' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameRecordCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameRegistration' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameResolver' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerNameType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.PeerToPeerException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.ResolveCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.ResolveProgressChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.ApplicationChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.ContactManager' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.CreateContactCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.InviteCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.NameChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.ObjectChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.Peer' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerApplication' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerApplicationCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerApplicationLaunchInfo' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerApplicationRegistrationType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerChangeType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerCollaboration' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerContact' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerContactCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerEndPoint' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerEndPointCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerInvitationResponse' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerInvitationResponseType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerNearMe' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerNearMeChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerNearMeCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerObject' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerObjectCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerPresenceInfo' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerPresenceStatus' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PeerScope' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.PresenceChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.RefreshDataCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.SubscribeCompletedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.SubscriptionListChangedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.PeerToPeer.Collaboration.SubscriptionType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.HttpPolicyDownloaderProtocol' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.SecurityCriticalAction' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.SocketPolicy' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.UdpAnySourceMulticastClient' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Sockets.UdpSingleSourceMulticastClient' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.IDataContractSurrogate' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.ImportOptions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.NetDataContractSerializer' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.XsdDataContractImporter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Configuration.DataContractSerializerSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Configuration.DeclaredTypeElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Configuration.DeclaredTypeElementCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Configuration.NetDataContractSerializerSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Configuration.ParameterElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Configuration.ParameterElementCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Configuration.SerializationSectionGroup' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Configuration.TypeElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.Configuration.TypeElementCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.IXmlMtomReaderInitializer' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.IXmlMtomWriterInitializer' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.WebHttpBinding' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.WebHttpSecurity' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.WebHttpSecurityMode' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Activation.WebScriptServiceHostFactory' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Activation.WebServiceHostFactory' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Channels.JavascriptCallbackResponseMessageProperty' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Channels.StreamBodyWriter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Channels.WebBodyFormatMessageProperty' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Channels.WebContentFormat' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Channels.WebContentTypeMapper' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Channels.WebMessageEncodingBindingElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Configuration.WebHttpBindingCollectionElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Configuration.WebHttpBindingElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Configuration.WebHttpElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Configuration.WebHttpEndpointCollectionElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Configuration.WebHttpEndpointElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Configuration.WebHttpSecurityElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Configuration.WebMessageEncodingElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Configuration.WebScriptEnablingElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Configuration.WebScriptEndpointCollectionElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Configuration.WebScriptEndpointElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Description.JsonFaultDetail' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Description.WebHttpBehavior' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Description.WebHttpEndpoint' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Description.WebScriptEnablingBehavior' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Description.WebScriptEndpoint' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Description.WebServiceEndpoint' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Dispatcher.JsonQueryStringConverter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Dispatcher.QueryStringConverter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Dispatcher.WebHttpDispatchOperationSelector' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.AspNetCacheProfileAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.IncomingWebRequestContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.IncomingWebResponseContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.JavascriptCallbackBehaviorAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.OutgoingWebRequestContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.OutgoingWebResponseContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.WebChannelFactory<TChannel>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.WebFaultException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.WebFaultException<T>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.WebGetAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.WebInvokeAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.WebMessageBodyStyle' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.WebMessageFormat' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.WebOperationContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ServiceModel.Web.WebServiceHost' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Transactions.Configuration.DefaultSettingsSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Transactions.Configuration.MachineSettingsSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Transactions.Configuration.TransactionsSectionGroup' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Web:
 TypesMustExist : Type 'System.Web.ApplicationShutdownReason' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Web.BeginEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Web.DefaultHttpHandler' does not exist in the implementation but it does exist in the contract.
@@ -2838,24 +2460,7 @@ TypesMustExist : Type 'System.Web.Util.WorkItemCallback' does not exist in the i
 TypesMustExist : Type 'System.Web.WebSockets.AspNetWebSocket' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Web.WebSockets.AspNetWebSocketContext' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Web.WebSockets.AspNetWebSocketOptions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.XmlXapResolver' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.CodeExporter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.SchemaImporter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.SoapCodeExporter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.SoapSchemaExporter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.SoapSchemaImporter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.XmlCodeExporter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.Advanced.SchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.Advanced.SchemaImporterExtensionCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.Configuration.DateTimeSerializationSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.Configuration.RootedPathValidator' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.Configuration.SchemaImporterExtensionElement' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.Configuration.SchemaImporterExtensionElementCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.Configuration.SchemaImporterExtensionsSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.Configuration.SerializationSectionGroup' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.Serialization.Configuration.XmlSerializerSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.XmlConfiguration.XmlReaderSection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Xml.XmlConfiguration.XsltConfigSection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Windows.Markup.ValueSerializerAttribute' does not exist in the implementation but it does exist in the contract.
 
 // Members can't be added because types are on NS20 and the missing members required types that are not on NS20 and we are ignoring those for netcore20:
 MembersMustExist : Member 'System.Activator.CreateComInstanceFrom(System.String, System.String)' does not exist in the implementation but it does exist in the contract.
@@ -3099,6 +2704,11 @@ TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionAttribut
 TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionEntry' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ServiceProcess.ServiceControllerPermissionEntryCollection' does not exist in the implementation but it does exist in the contract.
 
+// CAS
+TypesMustExist : Type 'System.Security.Policy.ApplicationSecurityInfo' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.ApplicationSecurityManager' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.IApplicationTrustManager' does not exist in the implementation but it does exist in the contract.
+
 // Undesirable dependencies
 TypesMustExist : Type 'System.ServiceProcess.Design.ServiceInstallerDialog' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ServiceProcess.Design.ServiceInstallerDialogResult' does not exist in the implementation but it does exist in the contract.
@@ -3111,3 +2721,7 @@ TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation 
 MembersMustExist : Member 'System.Console.Write(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Console.WriteLine(System.String, System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
+
+// Intentional change in Core
+TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.

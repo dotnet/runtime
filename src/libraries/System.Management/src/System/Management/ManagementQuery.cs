@@ -673,7 +673,7 @@ namespace System.Management
                     if (p.IsClass && (p.NamespacePath.Length==0))
                         ClassName = queryOrClassName;
                     else
-                        throw new ArgumentException (SR.InvalidQuery,"queryOrClassName");
+                        throw new ArgumentException (SR.InvalidQuery,nameof(queryOrClassName));
 
                 }
             }
@@ -747,7 +747,7 @@ namespace System.Management
         public SelectQuery(bool isSchemaQuery, string condition) : base ()
         {
             if (isSchemaQuery == false)
-                throw new ArgumentException(SR.InvalidQuery, "isSchemaQuery");
+                throw new ArgumentException(SR.InvalidQuery, nameof(isSchemaQuery));
             
             this.isSchemaQuery = true;
             this.className = null;
@@ -1274,7 +1274,7 @@ namespace System.Management
                         isSchemaQuery = false;
                     }
                     else
-                        throw new ArgumentException (SR.InvalidQuery,"queryOrSourceObject");
+                        throw new ArgumentException (SR.InvalidQuery,nameof(queryOrSourceObject));
                 }
             }
         }
@@ -1347,7 +1347,7 @@ namespace System.Management
             string thisRole) 
         {
             if (isSchemaQuery == false)
-                throw new ArgumentException(SR.InvalidQuery, "isSchemaQuery");
+                throw new ArgumentException(SR.InvalidQuery, nameof(isSchemaQuery));
 
             this.isSchemaQuery = true;
             this.sourceObject = sourceObject;
@@ -1900,7 +1900,7 @@ namespace System.Management
                         isSchemaQuery = false;
                     }
                     else
-                        throw new ArgumentException (SR.InvalidQuery,"queryOrSourceObject");
+                        throw new ArgumentException (SR.InvalidQuery,nameof(queryOrSourceObject));
 
                 }
             }
@@ -1957,7 +1957,7 @@ namespace System.Management
             string thisRole) 
         {
             if (isSchemaQuery == false)
-                throw new ArgumentException(SR.InvalidQuery, "isSchemaQuery");
+                throw new ArgumentException(SR.InvalidQuery, nameof(isSchemaQuery));
 
             this.isSchemaQuery = true;
             this.sourceObject = sourceObject;
@@ -2485,7 +2485,7 @@ namespace System.Management
                         EventClassName = queryOrEventClassName;
                     }
                     else
-                        throw new ArgumentException (SR.InvalidQuery,"queryOrEventClassName");
+                        throw new ArgumentException (SR.InvalidQuery,nameof(queryOrEventClassName));
                 }
             }
         }
@@ -3210,7 +3210,7 @@ namespace System.Management
 
             if (destinationType == null) 
             {
-                throw new ArgumentNullException("destinationType");
+                throw new ArgumentNullException(nameof(destinationType));
             }
 
             if (value is EventQuery && destinationType == typeof(InstanceDescriptor)) 

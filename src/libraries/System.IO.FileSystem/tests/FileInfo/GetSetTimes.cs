@@ -101,8 +101,7 @@ namespace System.IO.Tests
             Assert.InRange(fi.CreationTimeUtc, before, fi.LastWriteTimeUtc);
         }
 
-
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
         [PlatformSpecific(TestPlatforms.Windows)]
         public void PageFileHasTimes()
         {

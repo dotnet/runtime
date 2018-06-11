@@ -62,7 +62,7 @@ namespace System.Buffers.Text
                     ticks = -ticks;
                     if (ticks < 0)
                     {
-                        Debug.Assert(ticks == Int64.MinValue /* -9223372036854775808 */);
+                        Debug.Assert(ticks == long.MinValue /* -9223372036854775808 */);
 
                         // We computed these ahead of time; they're straight from the decimal representation of Int64.MinValue.
                         fraction = 4775808;
@@ -75,7 +75,7 @@ namespace System.Buffers.Text
                 fraction = (uint)fraction64;
             }
 
-AfterComputeFraction:
+        AfterComputeFraction:
 
             int fractionDigits = 0;
             if (symbol == 'c')
@@ -131,7 +131,7 @@ AfterComputeFraction:
             Debug.Assert(minutes < 60);
 
             // At this point, we can switch over to 32-bit divmod since the data has shrunk far enough.
-            Debug.Assert(totalHoursRemaining <= UInt32.MaxValue);
+            Debug.Assert(totalHoursRemaining <= uint.MaxValue);
 
             uint days = 0;
             uint hours = 0;

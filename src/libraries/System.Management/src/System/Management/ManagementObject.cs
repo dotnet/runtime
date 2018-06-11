@@ -385,9 +385,9 @@ namespace System.Management
                 //If this is a ManagementObject then the path has to be an instance,
                 // and if this is a ManagementClass the path has to be a class.
                 if (GetType() == typeof(ManagementObject) && path.IsClass)
-                    throw new ArgumentOutOfRangeException("path");
+                    throw new ArgumentOutOfRangeException(nameof(path));
                 else if (GetType() == typeof(ManagementClass) && path.IsInstance)
-                    throw new ArgumentOutOfRangeException("path");
+                    throw new ArgumentOutOfRangeException(nameof(path));
 
                 // Save the namespace path portion of the path (if any) in case
                 // we don't have a scope
@@ -521,7 +521,7 @@ namespace System.Management
                     FireIdentifierChanged();
                 }
                 else 
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
             }
         }
         
@@ -587,7 +587,7 @@ namespace System.Management
                     FireIdentifierChanged();
                 }
                 else
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
             }
         }
 
@@ -643,7 +643,7 @@ namespace System.Management
                     FireIdentifierChanged();
                 }
                 else
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
             }
         }
 
@@ -899,7 +899,7 @@ namespace System.Management
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
             else if (null == watcher)
-                throw new ArgumentNullException("watcher");
+                throw new ArgumentNullException(nameof(watcher));
             else
             {
                 IWbemServices wbemServices = scope.GetIWbemServices();
@@ -1155,7 +1155,7 @@ namespace System.Management
             Initialize ( true ) ;
 
             if (null == watcher)
-                throw new ArgumentNullException("watcher");
+                throw new ArgumentNullException(nameof(watcher));
             else
             {
                 // Ensure we switch off ReturnImmediately as this is invalid for async calls
@@ -1381,7 +1381,7 @@ namespace System.Management
             if ((null == path)  || (path.Path.Length==0))
                 throw new InvalidOperationException();
             if (null == watcher)
-                throw new ArgumentNullException("watcher");
+                throw new ArgumentNullException(nameof(watcher));
             else
             {
                 Initialize ( false ) ;
@@ -1624,7 +1624,7 @@ namespace System.Management
         public void Put(ManagementOperationObserver watcher, PutOptions options)
         {
             if (null == watcher)
-                throw new ArgumentNullException("watcher");
+                throw new ArgumentNullException(nameof(watcher));
             else
             {
                 Initialize ( false ) ;
@@ -1885,7 +1885,7 @@ namespace System.Management
         public void CopyTo(ManagementOperationObserver watcher, ManagementPath path, PutOptions options)
         {
             if (null == watcher)
-                throw new ArgumentNullException("watcher");
+                throw new ArgumentNullException(nameof(watcher));
             else
             {
                 Initialize ( false ) ;
@@ -2029,7 +2029,7 @@ namespace System.Management
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
             else if (null == watcher)
-                throw new ArgumentNullException("watcher");
+                throw new ArgumentNullException(nameof(watcher));
             else
             {
                 Initialize ( false ) ;
@@ -2153,7 +2153,7 @@ namespace System.Management
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
             else if (null == methodName)
-                throw new ArgumentNullException("methodName");
+                throw new ArgumentNullException(nameof(methodName));
             else
             {
                 Initialize ( false ) ;
@@ -2198,9 +2198,9 @@ namespace System.Management
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
             else if (null == watcher)
-                throw new ArgumentNullException("watcher");
+                throw new ArgumentNullException(nameof(watcher));
             else if (null == methodName)
-                throw new ArgumentNullException("methodName");
+                throw new ArgumentNullException(nameof(methodName));
             else
             {
                 Initialize ( false ) ;
@@ -2299,7 +2299,7 @@ namespace System.Management
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
             else if (null == methodName)
-                throw new ArgumentNullException("methodName");
+                throw new ArgumentNullException(nameof(methodName));
             else
             {
                 Initialize ( false ) ;
@@ -2367,9 +2367,9 @@ namespace System.Management
             if ((null == path) || (path.Path.Length==0))
                 throw new InvalidOperationException();
             else if (null == watcher)
-                throw new ArgumentNullException("watcher");
+                throw new ArgumentNullException(nameof(watcher));
             else if (null == methodName)
-                throw new ArgumentNullException("methodName");
+                throw new ArgumentNullException(nameof(methodName));
             else
             {
                 Initialize ( false ) ;
@@ -2451,7 +2451,7 @@ namespace System.Management
             outParametersClass = null;
 
             if (null == methodName)
-                throw new ArgumentNullException("methodName");
+                throw new ArgumentNullException(nameof(methodName));
             else
             {
                 Initialize ( false ) ;

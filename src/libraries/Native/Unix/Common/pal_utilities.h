@@ -148,6 +148,8 @@ inline void SafeStringCopy(char* destination, int32_t destinationSize, const cha
     }
 }
 
+#else // __cplusplus
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 #endif // __cplusplus
 
 /**

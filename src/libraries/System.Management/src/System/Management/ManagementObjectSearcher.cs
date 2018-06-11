@@ -252,7 +252,7 @@ namespace System.Management
                 if (null != value)
                     scope = (ManagementScope) value.Clone ();
                 else
-                    throw new ArgumentNullException ("value");
+                    throw new ArgumentNullException (nameof(value));
             }
         }
 
@@ -278,7 +278,7 @@ namespace System.Management
                 if (null != value)
                     query = (ObjectQuery)value.Clone ();
                 else
-                    throw new ArgumentNullException ("value");
+                    throw new ArgumentNullException (nameof(value));
             }
         }
 
@@ -299,7 +299,7 @@ namespace System.Management
                 if (null != value)
                     options = (EnumerationOptions) value.Clone ();
                 else
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
             } 
         }
 
@@ -402,7 +402,7 @@ namespace System.Management
         public void Get(ManagementOperationObserver watcher)
         {
             if (null == watcher)
-                throw new ArgumentNullException ("watcher");
+                throw new ArgumentNullException (nameof(watcher));
 
             Initialize ();
             IWbemServices wbemServices = scope.GetIWbemServices ();

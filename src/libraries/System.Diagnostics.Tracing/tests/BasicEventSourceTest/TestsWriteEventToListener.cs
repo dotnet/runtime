@@ -358,7 +358,6 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-#if FEATURE_ETLEVENTS
         [Fact]
         public void Test_EventSourceCreatedEvents_BeforeListener()
         {
@@ -483,6 +482,5 @@ namespace BasicEventSourceTests
 
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
-#endif
     }
 }

@@ -5,17 +5,17 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    /// <para>Specifies whether the template can be bound one-way or two-way.</para>
+    /// Specifies whether the template can be bound one-way or two-way.
     /// </summary>
     public enum BindingDirection
     {
         /// <summary>
-        /// <para>The template can only accept property values.  Used with a generic ITemplate.</para>
+        /// The template can only accept property values. Used with a generic ITemplate.
         /// </summary>
         OneWay = 0,
 
         /// <summary>
-        /// <para>The template can accept and expose property values.  Used with an IBindableTemplate.</para>
+        /// The template can accept and expose property values. Used with an IBindableTemplate.
         /// </summary>
         TwoWay = 1
     }

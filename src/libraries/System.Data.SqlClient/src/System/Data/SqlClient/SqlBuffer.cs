@@ -842,6 +842,9 @@ namespace System.Data.SqlClient
             }
         }
 
+        private static readonly object s_cachedTrueObject = true;
+        private static readonly object s_cachedFalseObject = false;
+
         internal object Value
         {
             get
@@ -853,7 +856,7 @@ namespace System.Data.SqlClient
                 switch (_type)
                 {
                     case StorageType.Empty: return DBNull.Value;
-                    case StorageType.Boolean: return Boolean;
+                    case StorageType.Boolean: return Boolean ? s_cachedTrueObject : s_cachedFalseObject;
                     case StorageType.Byte: return Byte;
                     case StorageType.DateTime: return DateTime;
                     case StorageType.Decimal: return Decimal;

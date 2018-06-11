@@ -152,10 +152,10 @@ namespace System.DirectoryServices.ActiveDirectory
         public ActiveDirectorySubnet(DirectoryContext context, string subnetName, string siteName) : this(context, subnetName)
         {
             if (siteName == null)
-                throw new ArgumentNullException("siteName");
+                throw new ArgumentNullException(nameof(siteName));
 
             if (siteName.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
 
             // validate that siteName is valid
             try
@@ -164,7 +164,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             catch (ActiveDirectoryObjectNotFoundException)
             {
-                throw new ArgumentException(SR.Format(SR.SiteNotExist , siteName), "siteName");
+                throw new ArgumentException(SR.Format(SR.SiteNotExist , siteName), nameof(siteName));
             }
         }
 
@@ -183,7 +183,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
-                    throw new ArgumentException(SR.Format(SR.SiteNotExist , siteName), "siteName");
+                    throw new ArgumentException(SR.Format(SR.SiteNotExist , siteName), nameof(siteName));
                 }
             }
 
@@ -379,12 +379,12 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             // basic validation first
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
             // more validation for the context, if the target is not null, then it should be either forest name or server name
@@ -392,14 +392,14 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // we only allow target to be forest, server name or ADAM config set
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
-                    throw new ArgumentException(SR.NotADOrADAM, "context");
+                    throw new ArgumentException(SR.NotADOrADAM, nameof(context));
             }
 
             if (subnetName == null)
-                throw new ArgumentNullException("subnetName");
+                throw new ArgumentNullException(nameof(subnetName));
 
             if (subnetName.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "subnetName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(subnetName));
         }
     }
 }

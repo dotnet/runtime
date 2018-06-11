@@ -1,0 +1,4 @@
+Compat issues with assembly System.Runtime:
+MembersMustExist : Member 'System.Text.StringBuilder.GetChunks()' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Text.StringBuilder.ChunkEnumerator' does not exist in the implementation but it does exist in the contract.
+CannotMakeMoreVisible : Visibility of member 'System.Exception.HResult.set(System.Int32)' is 'Family' in the implementation but 'Public' in the contract.

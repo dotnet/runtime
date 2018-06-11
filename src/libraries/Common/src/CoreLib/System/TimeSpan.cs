@@ -34,7 +34,7 @@ namespace System
         private const double MillisecondsPerTick = 1.0 / TicksPerMillisecond;
 
         public const long TicksPerSecond = TicksPerMillisecond * 1000;   // 10,000,000
-        private const double SecondsPerTick = 1.0 / TicksPerSecond;         // 0.0001
+        private const double SecondsPerTick = 1.0 / TicksPerSecond;         // 0.0000001
 
         public const long TicksPerMinute = TicksPerSecond * 60;         // 600,000,000
         private const double MinutesPerTick = 1.0 / TicksPerMinute; // 1.6666666666667e-9
@@ -364,7 +364,7 @@ namespace System
         {
             if (s == null)
             {
-                result = default(TimeSpan);
+                result = default;
                 return false;
             }
             return TimeSpanParse.TryParse(s, null, out result);
@@ -378,7 +378,7 @@ namespace System
         {
             if (input == null)
             {
-                result = default(TimeSpan);
+                result = default;
                 return false;
             }
             return TimeSpanParse.TryParse(input, formatProvider, out result);
@@ -405,7 +405,7 @@ namespace System
         {
             if (input == null)
             {
-                result = default(TimeSpan);
+                result = default;
                 return false;
             }
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None, out result);
@@ -437,7 +437,7 @@ namespace System
             ValidateStyles(styles, nameof(styles));
             if (input == null)
             {
-                result = default(TimeSpan);
+                result = default;
                 return false;
             }
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, styles, out result);

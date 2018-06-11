@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Drawing.Internal;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace System.Drawing.Drawing2D
 {
@@ -169,36 +168,26 @@ namespace System.Drawing.Drawing2D
             if (points.Length != types.Length)
                 throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
 
-            int resultCount = 0;
-            int size = Marshal.SizeOf(typeof(GPPOINTF));
-            int count = points.Length;
-            byte[] typesLocal = new byte[count];
+            if (points.Length == 0)
+                return 0;
 
-            IntPtr memoryPts = Marshal.AllocHGlobal(checked(count * size));
-            try
+            fixed (PointF* p = points)
+            fixed (byte* t = types)
             {
-                int status = SafeNativeMethods.Gdip.GdipPathIterEnumerate(new HandleRef(this, nativeIter), out resultCount,
-                                memoryPts, typesLocal, count);
+                int status = SafeNativeMethods.Gdip.GdipPathIterEnumerate(
+                    new HandleRef(this, nativeIter),
+                    out int resultCount,
+                    p,
+                    t,
+                    points.Length);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {
                     throw SafeNativeMethods.Gdip.StatusException(status);
                 }
 
-                if (resultCount < count)
-                {
-                    SafeNativeMethods.ZeroMemory((byte*)(checked((long)memoryPts + resultCount * size)), (ulong)((count - resultCount) * size));
-                }
-
-                points = SafeNativeMethods.Gdip.ConvertGPPOINTFArrayF(memoryPts, count);
-                typesLocal.CopyTo(types, 0);
+                return resultCount;
             }
-            finally
-            {
-                Marshal.FreeHGlobal(memoryPts);
-            }
-
-            return resultCount;
         }
 
         public unsafe int CopyData(ref PointF[] points, ref byte[] types, int startIndex, int endIndex)
@@ -206,36 +195,24 @@ namespace System.Drawing.Drawing2D
             if ((points.Length != types.Length) || (endIndex - startIndex + 1 > points.Length))
                 throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
 
-            int resultCount = 0;
-            int size = Marshal.SizeOf(typeof(GPPOINTF));
-            int count = points.Length;
-            byte[] typesLocal = new byte[count];
-
-            IntPtr memoryPts = Marshal.AllocHGlobal(checked(count * size));
-            try
+            fixed (PointF* p = points)
+            fixed (byte* t = types)
             {
-                int status = SafeNativeMethods.Gdip.GdipPathIterCopyData(new HandleRef(this, nativeIter), out resultCount,
-                                memoryPts, typesLocal, startIndex, endIndex);
+                int status = SafeNativeMethods.Gdip.GdipPathIterCopyData(
+                    new HandleRef(this, nativeIter),
+                    out int resultCount,
+                    p,
+                    t,
+                    startIndex,
+                    endIndex);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {
                     throw SafeNativeMethods.Gdip.StatusException(status);
                 }
 
-                if (resultCount < count)
-                {
-                    SafeNativeMethods.ZeroMemory((byte*)(checked((long)memoryPts + resultCount * size)), (ulong)((count - resultCount) * size));
-                }
-
-                points = SafeNativeMethods.Gdip.ConvertGPPOINTFArrayF(memoryPts, count);
-                typesLocal.CopyTo(types, 0);
+                return resultCount;
             }
-            finally
-            {
-                Marshal.FreeHGlobal(memoryPts);
-            }
-
-            return resultCount;
         }
 
         // handle to native path iterator object

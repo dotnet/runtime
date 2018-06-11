@@ -44,7 +44,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ActiveIssue(23702, TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't support .Proxy property")]
         [Fact]
         public async Task ProxyExplicitlyProvided_DefaultCredentials_Ignored()
         {
@@ -77,7 +77,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
         [Theory]
         [InlineData(false)]
@@ -127,7 +127,7 @@ namespace System.Net.Http.Functional.Tests
         // The purpose of this test is mainly to validate the .NET Framework OOB System.Net.Http implementation
         // since it has an underlying dependency to WebRequest. While .NET Core implementations of System.Net.Http
         // are not using any WebRequest code, the test is still useful to validate correctness.
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public async Task ProxyNotExplicitlyProvided_DefaultCredentialsSet_DefaultWebProxySetToNull_Success()
         {

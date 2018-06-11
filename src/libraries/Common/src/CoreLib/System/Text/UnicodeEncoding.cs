@@ -31,6 +31,8 @@ namespace System.Text
         // Unicode version 2.0 character size in bytes
         public const int CharSize = 2;
 
+        // endianness-based bit pattern mask.
+        static readonly ulong highLowPatternMask = ((ulong) 0xd800d800d800d800 | (BitConverter.IsLittleEndian ? (ulong) 0x0400000004000000 : (ulong) 0x0000040000000400)); 
 
         public UnicodeEncoding()
             : this(false, true)
@@ -89,13 +91,13 @@ namespace System.Text
         {
             // Validate input parameters
             if (chars == null)
-                throw new ArgumentNullException("chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - index < count)
-                throw new ArgumentOutOfRangeException("chars", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             // If no input, return 0, avoid fixed empty array problem
             if (count == 0)
@@ -115,7 +117,7 @@ namespace System.Text
         {
             // Validate input
             if (s==null)
-                throw new ArgumentNullException("s");
+                throw new ArgumentNullException(nameof(s));
 
             fixed (char* pChars = s)
                 return GetByteCount(pChars, s.Length, null);
@@ -130,10 +132,10 @@ namespace System.Text
         {
             // Validate Parameters
             if (chars == null)
-                throw new ArgumentNullException("chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             // Call it with empty encoder
             return GetByteCount(chars, count, null);
@@ -148,16 +150,16 @@ namespace System.Text
                                               byte[] bytes, int byteIndex)
         {
             if (s == null || bytes == null)
-                throw new ArgumentNullException((s == null ? "s" : "bytes"), SR.ArgumentNull_Array);
+                throw new ArgumentNullException((s == null ? nameof(s) : nameof(bytes)), SR.ArgumentNull_Array);
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (s.Length - charIndex < charCount)
-                throw new ArgumentOutOfRangeException("s", SR.ArgumentOutOfRange_IndexCount);
+                throw new ArgumentOutOfRangeException(nameof(s), SR.ArgumentOutOfRange_IndexCount);
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException("byteIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
 
             int byteCount = bytes.Length - byteIndex;
 
@@ -184,16 +186,16 @@ namespace System.Text
         {
             // Validate parameters
             if (chars == null || bytes == null)
-                throw new ArgumentNullException((chars == null ? "chars" : "bytes"), SR.ArgumentNull_Array);
+                throw new ArgumentNullException((chars == null ? nameof(chars) : nameof(bytes)), SR.ArgumentNull_Array);
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - charIndex < charCount)
-                throw new ArgumentOutOfRangeException("chars", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException("byteIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
 
             // If nothing to encode return 0, avoid fixed problem
             if (charCount == 0)
@@ -216,10 +218,10 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
 
             if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((charCount < 0 ? "charCount" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             return GetBytes(chars, charCount, bytes, byteCount, null);
         }
@@ -236,13 +238,13 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (bytes.Length - index < count)
-                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             // If no input just return 0, fixed doesn't like 0 length arrays
             if (count == 0)
@@ -262,10 +264,10 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             return GetCharCount(bytes, count, null);
         }
@@ -280,16 +282,16 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
 
             if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex < 0 ? "byteIndex" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if ( bytes.Length - byteIndex < byteCount)
-                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (charIndex < 0 || charIndex > chars.Length)
-                throw new ArgumentOutOfRangeException("charIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ArgumentOutOfRange_Index);
 
             // If no input, return 0 & avoid fixed problem
             if (byteCount == 0)
@@ -312,10 +314,10 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
 
             if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((charCount < 0 ? "charCount" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             return GetChars(bytes, byteCount, chars, charCount, null);
         }
@@ -332,19 +334,19 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (bytes.Length - index < count)
-                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             // Avoid problems with empty input buffer
-            if (count == 0) return String.Empty;
+            if (count == 0) return string.Empty;
 
             fixed (byte* pBytes = bytes)
-                return String.CreateStringFromEncoding(
+                return string.CreateStringFromEncoding(
                     pBytes + index, count, this);
         }
 
@@ -411,11 +413,8 @@ namespace System.Text
                 {
                     // No fallback, maybe we can do it fast
 #if !NO_FAST_UNICODE_LOOP
-#if BIGENDIAN       // If endianess is backwards then each pair of bytes would be backwards.
-                    if ( bigEndian &&
-#else
-                    if (!bigEndian &&
-#endif // BIGENDIAN
+                    // If endianess is backwards then each pair of bytes would be backwards.
+                    if ( (bigEndian ^ BitConverter.IsLittleEndian) && 
 
 #if BIT64           // 64 bit CPU needs to be long aligned for this to work.
                           charLeftOver == 0 && (unchecked((long)chars) & 7) == 0)
@@ -453,11 +452,7 @@ namespace System.Text
 
                                     // If they happen to be high/low/high/low, we may as well continue.  Check the next
                                     // bit to see if its set (low) or not (high) in the right pattern
-#if BIGENDIAN
-                                    if (((0xfc00fc00fc00fc00 & *longChars) ^ 0xd800dc00d800dc00) != 0)
-#else
-                                    if (((0xfc00fc00fc00fc00 & *longChars) ^ 0xdc00d800dc00d800) != 0)
-#endif
+                                    if (((0xfc00fc00fc00fc00 & *longChars) ^ highLowPatternMask) != 0)
                                     {
                                         // Either there weren't 4 surrogates, or the 0x0400 bit was set when a high
                                         // was hoped for or the 0x0400 bit wasn't set where a low was hoped for.
@@ -701,11 +696,8 @@ namespace System.Text
                 {
                     // No fallback, maybe we can do it fast
 #if !NO_FAST_UNICODE_LOOP
-#if BIGENDIAN           // If endianess is backwards then each pair of bytes would be backwards.
-                    if ( bigEndian &&
-#else
-                    if (!bigEndian &&
-#endif // BIGENDIAN
+                    // If endianess is backwards then each pair of bytes would be backwards.
+                    if ( (bigEndian ^ BitConverter.IsLittleEndian) && 
 #if BIT64           // 64 bit CPU needs to be long aligned for this to work, 32 bit CPU needs to be 32 bit aligned
                         (unchecked((long)chars) & 7) == 0 && (unchecked((long)bytes) & 7) == 0 &&
 #else
@@ -752,11 +744,7 @@ namespace System.Text
 
                                     // If they happen to be high/low/high/low, we may as well continue.  Check the next
                                     // bit to see if its set (low) or not (high) in the right pattern
-#if BIGENDIAN
-                                    if (((0xfc00fc00fc00fc00 & *longChars) ^ 0xd800dc00d800dc00) != 0)
-#else
-                                    if (((0xfc00fc00fc00fc00 & *longChars) ^ 0xdc00d800dc00d800) != 0)
-#endif
+                                    if (((0xfc00fc00fc00fc00 & *longChars) ^ highLowPatternMask) != 0)
                                     {
                                         // Either there weren't 4 surrogates, or the 0x0400 bit was set when a high
                                         // was hoped for or the 0x0400 bit wasn't set where a low was hoped for.
@@ -786,11 +774,7 @@ namespace System.Text
                     // Also somehow this optimizes the above loop?  It seems to cause something above
                     // to get enregistered, but I haven't figured out how to make that happen without this loop.
                     else if ((charLeftOver == 0) &&
-#if BIGENDIAN
-                        bigEndian &&
-#else
-                        !bigEndian &&
-#endif // BIGENDIAN
+                        (bigEndian ^ BitConverter.IsLittleEndian) && 
 
 #if BIT64
                         (unchecked((long)chars) & 7) != (unchecked((long)bytes) & 7) &&  // Only do this if chars & bytes are out of line, otherwise faster loop will be faster next time
@@ -1127,11 +1111,7 @@ namespace System.Text
                 // If we're aligned then maybe we can do it fast
                 // That'll hurt if we're unaligned because we'll always test but never be aligned
 #if !NO_FAST_UNICODE_LOOP
-#if BIGENDIAN
-                if (bigEndian &&
-#else // BIGENDIAN
-                if (!bigEndian &&
-#endif // BIGENDIAN
+                if ((bigEndian ^ BitConverter.IsLittleEndian) &&
 #if BIT64 // win64 has to be long aligned
                     (unchecked((long)bytes) & 7) == 0 &&
 #else
@@ -1169,11 +1149,7 @@ namespace System.Text
 
                                 // If they happen to be high/low/high/low, we may as well continue.  Check the next
                                 // bit to see if its set (low) or not (high) in the right pattern
-#if BIGENDIAN
-                                if (((0xfc00fc00fc00fc00 & *longBytes) ^ 0xd800dc00d800dc00) != 0)
-#else
-                                if (((0xfc00fc00fc00fc00 & *longBytes) ^ 0xdc00d800dc00d800) != 0)
-#endif
+                                if (((0xfc00fc00fc00fc00 & *longBytes) ^ highLowPatternMask) != 0)
                                 {
                                     // Either there weren't 4 surrogates, or the 0x0400 bit was set when a high
                                     // was hoped for or the 0x0400 bit wasn't set where a low was hoped for.
@@ -1450,11 +1426,7 @@ namespace System.Text
                 // If we're aligned then maybe we can do it fast
                 // That'll hurt if we're unaligned because we'll always test but never be aligned
 #if !NO_FAST_UNICODE_LOOP
-#if BIGENDIAN
-                if (bigEndian &&
-#else // BIGENDIAN
-                if (!bigEndian &&
-#endif // BIGENDIAN
+                if ((bigEndian ^ BitConverter.IsLittleEndian) &&
 #if BIT64 // win64 has to be long aligned
                     (unchecked((long)chars) & 7) == 0 && (unchecked((long)bytes) & 7) == 0 &&
 #else
@@ -1501,11 +1473,7 @@ namespace System.Text
 
                                 // If they happen to be high/low/high/low, we may as well continue.  Check the next
                                 // bit to see if its set (low) or not (high) in the right pattern
-#if BIGENDIAN
-                                if (((0xfc00fc00fc00fc00 & *longBytes) ^ 0xd800dc00d800dc00) != 0)
-#else
-                                if (((0xfc00fc00fc00fc00 & *longBytes) ^ 0xdc00d800dc00d800) != 0)
-#endif
+                                if (((0xfc00fc00fc00fc00 & *longBytes) ^ highLowPatternMask) != 0)
                                 {
                                     // Either there weren't 4 surrogates, or the 0x0400 bit was set when a high
                                     // was hoped for or the 0x0400 bit wasn't set where a low was hoped for.

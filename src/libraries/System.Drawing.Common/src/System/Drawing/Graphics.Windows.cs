@@ -583,57 +583,40 @@ namespace System.Drawing
             }
         }
 
-        public void TransformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, PointF[] pts)
+        public unsafe void TransformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, PointF[] pts)
         {
             if (pts == null)
             {
                 throw new ArgumentNullException(nameof(pts));
             }
 
-            IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(pts);
-            try
+            fixed (PointF* p = pts)
             {
-                int status = SafeNativeMethods.Gdip.GdipTransformPoints(new HandleRef(this, NativeGraphics), unchecked((int)destSpace),
-                                                         unchecked((int)srcSpace), buf, pts.Length);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-
-                // must do an in-place copy because we only have a reference
-                PointF[] newPts = SafeNativeMethods.Gdip.ConvertGPPOINTFArrayF(buf, pts.Length);
-                for (int i = 0; i < pts.Length; i++)
-                {
-                    pts[i] = newPts[i];
-                }
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                SafeNativeMethods.Gdip.CheckStatus(SafeNativeMethods.Gdip.GdipTransformPoints(
+                    new HandleRef(this, NativeGraphics),
+                    (int)destSpace,
+                    (int)srcSpace,
+                    p,
+                    pts.Length));
             }
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public void TransformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, Point[] pts)
+        public unsafe void TransformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, Point[] pts)
         {
             if (pts == null)
             {
                 throw new ArgumentNullException(nameof(pts));
             }
 
-            IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(pts);
-            try
+            fixed (Point* p = pts)
             {
-                int status = SafeNativeMethods.Gdip.GdipTransformPointsI(new HandleRef(this, NativeGraphics), unchecked((int)destSpace),
-                                                          unchecked((int)srcSpace), buf, pts.Length);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-
-                Point[] newPts = SafeNativeMethods.Gdip.ConvertGPPOINTArray(buf, pts.Length);
-                for (int i = 0; i < pts.Length; i++)
-                {
-                    pts[i] = newPts[i];
-                }
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                SafeNativeMethods.Gdip.CheckStatus(SafeNativeMethods.Gdip.GdipTransformPointsI(
+                    new HandleRef(this, NativeGraphics),
+                    (int)destSpace,
+                    (int)srcSpace,
+                    p,
+                    pts.Length));
             }
         }
 
@@ -671,7 +654,7 @@ namespace System.Drawing
         /// <summary>
         /// Draws a series of line segments that connect an array of points.
         /// </summary>
-        public void DrawLines(Pen pen, PointF[] points)
+        public unsafe void DrawLines(Pen pen, PointF[] points)
         {
             if (pen == null)
             {
@@ -683,16 +666,12 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
             }
 
-            IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            try
+            fixed (PointF* p = points)
             {
-                int status = SafeNativeMethods.Gdip.GdipDrawLines(new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
-                                                    new HandleRef(this, buf), points.Length);
-                CheckErrorStatus(status);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                CheckErrorStatus(SafeNativeMethods.Gdip.GdipDrawLines(
+                    new HandleRef(this, NativeGraphics),
+                    new HandleRef(pen, pen.NativePen),
+                    p, points.Length));
             }
         }
 
@@ -722,7 +701,7 @@ namespace System.Drawing
         /// <summary>
         /// Draws a series of line segments that connect an array of points.
         /// </summary>
-        public void DrawLines(Pen pen, Point[] points)
+        public unsafe void DrawLines(Pen pen, Point[] points)
         {
             if (pen == null)
             {
@@ -734,16 +713,13 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
             }
 
-            IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            try
+            fixed (Point* p = points)
             {
-                int status = SafeNativeMethods.Gdip.GdipDrawLinesI(new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
-                                                    new HandleRef(this, buf), points.Length);
-                CheckErrorStatus(status);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                CheckErrorStatus(SafeNativeMethods.Gdip.GdipDrawLinesI(
+                    new HandleRef(this, NativeGraphics),
+                    new HandleRef(pen, pen.NativePen),
+                    p,
+                    points.Length));
             }
         }
 
@@ -824,7 +800,7 @@ namespace System.Drawing
         /// <summary>
         /// Draws a series of cubic Bezier curves from an array of points.
         /// </summary>
-        public void DrawBeziers(Pen pen, PointF[] points)
+        public unsafe void DrawBeziers(Pen pen, PointF[] points)
         {
             if (pen == null)
             {
@@ -836,16 +812,12 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
             }
 
-            IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            try
+            fixed (PointF* p = points)
             {
-                int status = SafeNativeMethods.Gdip.GdipDrawBeziers(new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
-                                                     new HandleRef(this, buf), points.Length);
-                CheckErrorStatus(status);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                CheckErrorStatus(SafeNativeMethods.Gdip.GdipDrawBeziers(
+                    new HandleRef(this, NativeGraphics),
+                    new HandleRef(pen, pen.NativePen),
+                    p, points.Length));
             }
         }
 
@@ -860,7 +832,7 @@ namespace System.Drawing
         /// <summary>
         /// Draws a series of cubic Bezier curves from an array of points.
         /// </summary>
-        public void DrawBeziers(Pen pen, Point[] points)
+        public unsafe void DrawBeziers(Pen pen, Point[] points)
         {
             if (pen == null)
             {
@@ -872,16 +844,13 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(points));
             }
 
-            IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
-            try
+            fixed (Point* p = points)
             {
-                int status = SafeNativeMethods.Gdip.GdipDrawBeziersI(new HandleRef(this, NativeGraphics), new HandleRef(pen, pen.NativePen),
-                                                      new HandleRef(this, buf), points.Length);
-                CheckErrorStatus(status);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buf);
+                CheckErrorStatus(SafeNativeMethods.Gdip.GdipDrawBeziersI(
+                    new HandleRef(this, NativeGraphics),
+                    new HandleRef(pen, pen.NativePen),
+                    p,
+                    points.Length));
             }
         }
 

@@ -130,8 +130,10 @@ int32_t SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno)
             return Error_ENOTCONN;
         case ENOTDIR:
             return Error_ENOTDIR;
+#if ENOTEMPTY != EEXIST // AIX defines this
         case ENOTEMPTY:
             return Error_ENOTEMPTY;
+#endif
 #ifdef ENOTRECOVERABLE // not available in NetBSD
         case ENOTRECOVERABLE:
             return Error_ENOTRECOVERABLE;

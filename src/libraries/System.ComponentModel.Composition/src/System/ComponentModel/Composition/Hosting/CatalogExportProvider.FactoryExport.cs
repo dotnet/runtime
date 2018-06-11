@@ -117,7 +117,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (definition != _definition.FactoryExportDefinition)
                     {
-                        throw ExceptionBuilder.CreateExportDefinitionNotOnThisComposablePart("definition");
+                        throw ExceptionBuilder.CreateExportDefinitionNotOnThisComposablePart(nameof(definition));
                     }
 
                     return _export.Value;
@@ -125,7 +125,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                 public override void SetImport(ImportDefinition definition, IEnumerable<Export> exports)
                 {
-                    throw ExceptionBuilder.CreateImportDefinitionNotOnThisComposablePart("definition");
+                    throw ExceptionBuilder.CreateImportDefinitionNotOnThisComposablePart(nameof(definition));
                 }
 
                 public void Dispose()

@@ -79,7 +79,7 @@ namespace System.SpanTests
 
                 TInt[] first = new TInt[length];
                 TInt[] second = new TInt[length];
-                
+
                 for (int i = 0; i < length; i++)
                 {
                     first[i] = new TInt(i + 1, log);

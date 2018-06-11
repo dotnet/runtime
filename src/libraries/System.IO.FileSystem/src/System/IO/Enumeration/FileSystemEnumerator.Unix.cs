@@ -66,20 +66,23 @@ namespace System.IO.Enumeration
             }
         }
 
-        private bool InternalContinueOnError(int error)
-            => (_options.IgnoreInaccessible && IsAccessError(error)) || ContinueOnError(error);
+        private bool InternalContinueOnError(Interop.ErrorInfo info, bool ignoreNotFound = false)
+            => (ignoreNotFound && IsDirectoryNotFound(info)) || (_options.IgnoreInaccessible && IsAccessError(info)) || ContinueOnError(info.RawErrno);
 
-        private static bool IsAccessError(int error)
-            => error == (int)Interop.Error.EACCES || error == (int)Interop.Error.EBADF
-                || error == (int)Interop.Error.EPERM;
+        private static bool IsDirectoryNotFound(Interop.ErrorInfo info)
+            => info.Error == Interop.Error.ENOTDIR || info.Error == Interop.Error.ENOENT;
 
-        private IntPtr CreateDirectoryHandle(string path)
+        private static bool IsAccessError(Interop.ErrorInfo info)
+            => info.Error == Interop.Error.EACCES || info.Error == Interop.Error.EBADF
+                || info.Error == Interop.Error.EPERM;
+
+        private IntPtr CreateDirectoryHandle(string path, bool ignoreNotFound = false)
         {
             IntPtr handle = Interop.Sys.OpenDir(path);
             if (handle == IntPtr.Zero)
             {
                 Interop.ErrorInfo info = Interop.Sys.GetLastErrorInfo();
-                if (InternalContinueOnError(info.RawErrno))
+                if (InternalContinueOnError(info, ignoreNotFound))
                 {
                     return IntPtr.Zero;
                 }
@@ -185,7 +188,7 @@ namespace System.IO.Enumeration
                     break;
                 default:
                     // Error
-                    if (InternalContinueOnError(result))
+                    if (InternalContinueOnError(new Interop.ErrorInfo(result)))
                     {
                         DirectoryFinished();
                         break;
@@ -197,10 +200,29 @@ namespace System.IO.Enumeration
             }
         }
 
-        private void DequeueNextDirectory()
+        private bool DequeueNextDirectory()
         {
-            _currentPath = _pending.Dequeue();
-            _directoryHandle = CreateDirectoryHandle(_currentPath);
+            // In Windows we open handles before we queue them, not after. If we fail to create the handle
+            // but are ok with it (IntPtr.Zero), we don't queue them. Unix can't handle having a lot of
+            // open handles, so we open after the fact.
+            //
+            // Doing the same on Windows would create a performance hit as we would no longer have the context
+            // of the parent handle to open from. Keeping the parent handle open would increase the amount of
+            // data we're maintaining, the number of active handles (they're not infinite), and the length
+            // of time we have handles open (preventing some actions such as renaming/deleting/etc.).
+
+            _directoryHandle = IntPtr.Zero;
+
+            while (_directoryHandle == IntPtr.Zero)
+            {
+                if (_pending == null || _pending.Count == 0)
+                    return false;
+
+                _currentPath = _pending.Dequeue();
+                _directoryHandle = CreateDirectoryHandle(_currentPath, ignoreNotFound: true);
+            }
+
+            return true;
         }
 
         private void InternalDispose(bool disposing)
@@ -208,7 +230,7 @@ namespace System.IO.Enumeration
             // It is possible to fail to allocate the lock, but the finalizer will still run
             if (_lock != null)
             {
-                lock(_lock)
+                lock (_lock)
                 {
                     _lastEntryFound = true;
                     _pending = null;

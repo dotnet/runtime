@@ -16,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
         protected virtual Stream GetStream(Stream s) => s;
         protected virtual Stream GetStream_ClientDisconnectOk(Stream s) => s;
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // Uap does not support 1.0
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Uap does not support 1.0")]
         [Fact]
         public async Task GetAsync_RequestVersion10_Success()
         {
@@ -211,7 +211,7 @@ namespace System.Net.Http.Functional.Tests
             }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // Uap ignores response version if not 1.0 or 1.1
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Uap ignores response version if not 1.0 or 1.1")]
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -250,7 +250,7 @@ namespace System.Net.Http.Functional.Tests
             }, new LoopbackServer.Options { StreamWrapper = GetStream_ClientDisconnectOk });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // Uap ignores response version if not 1.0 or 1.1
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Uap ignores response version if not 1.0 or 1.1")]
         [Theory]
         [InlineData(2, 0)]
         [InlineData(2, 1)]
@@ -410,7 +410,7 @@ namespace System.Net.Http.Functional.Tests
             yield return "HTTP/X.Y.Z 200 OK";
             
             // Only pass on .NET Core Windows & SocketsHttpHandler.
-            if (PlatformDetection.IsNetCore && PlatformDetection.IsWindows)
+            if (PlatformDetection.IsNetCore && !PlatformDetection.IsUap && PlatformDetection.IsWindows)
             {
                 yield return "HTTP/0.1 200 OK";
                 yield return "HTTP/3.5 200 OK";
@@ -455,7 +455,6 @@ namespace System.Net.Http.Functional.Tests
         
         public static TheoryData InvalidStatusLine = GetInvalidStatusLine().ToTheoryData();
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [Theory]
         [MemberData(nameof(InvalidStatusLine))]
         public async Task GetAsync_InvalidStatusLine_ThrowsException(string responseString)
@@ -543,7 +542,6 @@ namespace System.Net.Http.Functional.Tests
                         yield return new object[] { maxChunkSize, lineEnding, useCopyToAsync };
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [OuterLoop]
         [Theory]
         [MemberData(nameof(GetAsync_Chunked_VaryingSizeChunks_ReceivedCorrectly_MemberData))]
@@ -610,9 +608,38 @@ namespace System.Net.Http.Functional.Tests
                 });
             });
         }
+
+        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+        [Theory]
+        [InlineData("get", "GET")]
+        [InlineData("head", "HEAD")]
+        [InlineData("post", "POST")]
+        [InlineData("put", "PUT")]
+        [InlineData("other", "other")]
+        [InlineData("SometHING", "SometHING")]
+        public async Task CustomMethod_SentUppercasedIfKnown(string specifiedMethod, string expectedMethod)
+        {
+            if (IsCurlHandler && specifiedMethod == "get")
+            {
+                // CurlHandler doesn't special-case "get" and sends it in the original casing.
+                expectedMethod = specifiedMethod;
+            }
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var client = CreateHttpClient())
+                {
+                    var m = new HttpRequestMessage(new HttpMethod(specifiedMethod), uri);
+                    (await client.SendAsync(m)).Dispose();
+                }
+            }, async server =>
+            {
+                List<string> headers = await server.AcceptConnectionSendResponseAndCloseAsync();
+                Assert.StartsWith(expectedMethod + " ", headers[0]);
+            });
+        }
     }
 
-    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
     public abstract class HttpProtocolTests_Dribble : HttpProtocolTests
     {
         protected override Stream GetStream(Stream s) => new DribbleStream(s);

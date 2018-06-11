@@ -29,7 +29,7 @@ namespace System.ComponentModel.Composition.Hosting
         private readonly ReadOnlyCollection<ExportProvider> _providers;
         private volatile bool _isDisposed = false;
         private object _lock = new object();
-        private static ReadOnlyCollection<ExportProvider> EmptyProviders = new ReadOnlyCollection<ExportProvider>(new ExportProvider[]{});
+        private static ReadOnlyCollection<ExportProvider> EmptyProviders = new ReadOnlyCollection<ExportProvider>(Array.Empty<ExportProvider>());
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class.
@@ -137,7 +137,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if (compositionOptions > (CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService))
             {
-                throw new ArgumentOutOfRangeException("compositionOptions");
+                throw new ArgumentOutOfRangeException(nameof(compositionOptions));
             }
             _compositionOptions = compositionOptions;
 
@@ -176,7 +176,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (providers[0] == null)
                     {
-                        throw ExceptionBuilder.CreateContainsNullElement("providers");
+                        throw ExceptionBuilder.CreateContainsNullElement(nameof(providers));
                     }
                     _ancestorExportProvider = providers[0];
                 }
@@ -472,7 +472,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </exception>
         public void ReleaseExports(IEnumerable<Export> exports)
         {
-            Requires.NotNullOrNullElements(exports, "exports");
+            Requires.NotNullOrNullElements(exports, nameof(exports));
 
             foreach (Export export in exports)
             {
@@ -494,7 +494,7 @@ namespace System.ComponentModel.Composition.Hosting
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public void ReleaseExports<T>(IEnumerable<Lazy<T>> exports)
         {
-            Requires.NotNullOrNullElements(exports, "exports");
+            Requires.NotNullOrNullElements(exports, nameof(exports));
 
             foreach (Lazy<T> export in exports)
             {
@@ -516,7 +516,7 @@ namespace System.ComponentModel.Composition.Hosting
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public void ReleaseExports<T, TMetadataView>(IEnumerable<Lazy<T, TMetadataView>> exports)
         {
-            Requires.NotNullOrNullElements(exports, "exports");
+            Requires.NotNullOrNullElements(exports, nameof(exports));
 
             foreach (Lazy<T, TMetadataView> export in exports)
             {

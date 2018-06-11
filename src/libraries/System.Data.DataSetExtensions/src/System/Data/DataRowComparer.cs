@@ -101,7 +101,7 @@ namespace System.Data
 
             for (int i = 0; i < a.Length; ++i)
             {
-                if (!a[i].Equals(b[i]))
+                if (!a[i]?.Equals(b[i]) ?? b[i] != null)
                 {
                     return false;
                 }

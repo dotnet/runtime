@@ -526,7 +526,7 @@ namespace System.Drawing.Design {
                     break;
 
                 case "Filter":
-                    if (value == null) value = new ToolboxItemFilterAttribute[0];
+                    if (value == null) value = Array.Empty<ToolboxItemFilterAttribute>();
 
                     break;
 
@@ -563,7 +563,7 @@ namespace System.Drawing.Design {
             Type type = null;
             
             if (typeName == null) {
-                throw new ArgumentNullException("typeName");
+                throw new ArgumentNullException(nameof(typeName));
             }
             
             if (host != null) {
@@ -851,12 +851,12 @@ namespace System.Drawing.Design {
         protected void ValidatePropertyType(string propertyName, object value, Type expectedType, bool allowNull) {
             if (value == null) {
                 if (!allowNull) {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
             }
             else {
                 if (!expectedType.IsInstanceOfType(value)) {
-                    throw new ArgumentException(SR.Format(SR.ToolboxItemInvalidPropertyType, propertyName, expectedType.FullName), "value");
+                    throw new ArgumentException(SR.Format(SR.ToolboxItemInvalidPropertyType, propertyName, expectedType.FullName), nameof(value));
                 }
             }
         }
@@ -1006,13 +1006,13 @@ namespace System.Drawing.Design {
         
             private string GetPropertyName(object key) {
                 if (key == null) {
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
                 }
         
                 string propertyName = key as string;
         
                 if (propertyName == null || propertyName.Length == 0) {
-                    throw new ArgumentException(SR.Format(SR.ToolboxItemInvalidKey), "key");
+                    throw new ArgumentException(SR.Format(SR.ToolboxItemInvalidKey), nameof(key));
                 }
         
                 return propertyName;

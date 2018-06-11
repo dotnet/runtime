@@ -32,7 +32,7 @@ namespace System.DirectoryServices
             get
             {
                 if (propertyName == null)
-                    throw new ArgumentNullException("propertyName");
+                    throw new ArgumentNullException(nameof(propertyName));
 
                 string name = propertyName.ToLower(CultureInfo.InvariantCulture);
                 if (valueTable.Contains(name))
@@ -155,13 +155,13 @@ namespace System.DirectoryServices
         void ICollection.CopyTo(Array array, Int32 index)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if (array.Rank != 1)
-                throw new ArgumentException(SR.OnlyAllowSingleDimension, "array");
+                throw new ArgumentException(SR.OnlyAllowSingleDimension, nameof(array));
 
             if (index < 0)
-                throw new ArgumentOutOfRangeException(SR.LessThanZero, "index");
+                throw new ArgumentOutOfRangeException(SR.LessThanZero, nameof(index));
 
             if (((index + Count) > array.Length) || ((index + Count) < index))
                 throw new ArgumentException(SR.DestinationArrayNotLargeEnough);

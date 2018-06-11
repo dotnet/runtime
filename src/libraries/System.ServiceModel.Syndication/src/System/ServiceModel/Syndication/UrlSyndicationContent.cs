@@ -17,7 +17,7 @@ namespace System.ServiceModel.Syndication
         {
             if (url == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("url");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(url));
             }
             _url = url;
             _mediaType = mediaType;
@@ -28,7 +28,7 @@ namespace System.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("source");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(source));
             }
             _url = source._url;
             _mediaType = source._mediaType;

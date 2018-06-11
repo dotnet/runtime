@@ -24,7 +24,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (applicationPartition == null)
             {
-                throw new ArgumentNullException("applicationPartition");
+                throw new ArgumentNullException(nameof(applicationPartition));
             }
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -42,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (applicationPartition == null)
             {
-                throw new ArgumentNullException("applicationPartition");
+                throw new ArgumentNullException(nameof(applicationPartition));
             }
 
             for (int i = 0; i < InnerList.Count; i++)

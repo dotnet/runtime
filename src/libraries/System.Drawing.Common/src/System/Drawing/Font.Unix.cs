@@ -304,7 +304,7 @@ namespace System.Drawing
                 GraphicsUnit unit, byte gdiCharSet, bool gdiVerticalFont)
         {
             if (family == null)
-                throw new ArgumentNullException("family");
+                throw new ArgumentNullException(nameof(family));
 
             int status;
             setProperties(family, emSize, style, unit, gdiCharSet, gdiVerticalFont);
@@ -602,16 +602,16 @@ namespace System.Drawing
         public void ToLogFont(object logFont, Graphics graphics)
         {
             if (graphics == null)
-                throw new ArgumentNullException("graphics");
+                throw new ArgumentNullException(nameof(graphics));
 
             if (logFont == null)
             {
-                throw new AccessViolationException("logFont");
+                throw new AccessViolationException(nameof(logFont));
             }
 
             Type st = logFont.GetType();
             if (!st.GetTypeInfo().IsLayoutSequential)
-                throw new ArgumentException("logFont", "Layout must be sequential.");
+                throw new ArgumentException(nameof(logFont), "Layout must be sequential.");
 
             // note: there is no exception if 'logFont' isn't big enough
             Type lf = typeof(LOGFONT);
@@ -668,7 +668,7 @@ namespace System.Drawing
         public float GetHeight(Graphics graphics)
         {
             if (graphics == null)
-                throw new ArgumentNullException("graphics");
+                throw new ArgumentNullException(nameof(graphics));
 
             float size;
             int status = SafeNativeMethods.Gdip.GdipGetFontHeight(fontObject, graphics.NativeObject, out size);

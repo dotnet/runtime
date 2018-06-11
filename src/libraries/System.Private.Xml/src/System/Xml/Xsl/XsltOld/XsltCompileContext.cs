@@ -734,7 +734,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private class FuncCurrent : XsltFunctionImpl
         {
-            public FuncCurrent() : base(0, 0, XPathResultType.NodeSet, new XPathResultType[] { }) { }
+            public FuncCurrent() : base(0, 0, XPathResultType.NodeSet, Array.Empty<XPathResultType>()) { }
             public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
             {
                 return ((XsltCompileContext)xsltContext).Current();

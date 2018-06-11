@@ -34,10 +34,10 @@ namespace System.Runtime.Caching.Configuration
             {
                 if (zeroAllowed)
                 {
-                    throw new ArgumentException(RH.Format(SR.Value_must_be_non_negative_integer, valueName, sValue), "config");
+                    throw new ArgumentException(RH.Format(SR.Value_must_be_non_negative_integer, valueName, sValue), nameof(config));
                 }
 
-                throw new ArgumentException(RH.Format(SR.Value_must_be_positive_integer, valueName, sValue), "config");
+                throw new ArgumentException(RH.Format(SR.Value_must_be_positive_integer, valueName, sValue), nameof(config));
             }
 
             if (maxValueAllowed > 0 && iValue > maxValueAllowed)
@@ -45,7 +45,7 @@ namespace System.Runtime.Caching.Configuration
                 throw new ArgumentException(RH.Format(SR.Value_too_big,
                                                       valueName,
                                                       sValue,
-                                                      maxValueAllowed.ToString(CultureInfo.InvariantCulture)), "config");
+                                                      maxValueAllowed.ToString(CultureInfo.InvariantCulture)), nameof(config));
             }
 
             return iValue;
@@ -68,7 +68,7 @@ namespace System.Runtime.Caching.Configuration
             TimeSpan tValue;
             if (!TimeSpan.TryParse(sValue, out tValue) || tValue <= TimeSpan.Zero)
             {
-                throw new ArgumentException(RH.Format(SR.TimeSpan_invalid_format, valueName, sValue), "config");
+                throw new ArgumentException(RH.Format(SR.TimeSpan_invalid_format, valueName, sValue), nameof(config));
             }
 
             double milliseconds = tValue.TotalMilliseconds;
@@ -88,7 +88,7 @@ namespace System.Runtime.Caching.Configuration
             bool bValue;
             if (!Boolean.TryParse(sValue, out bValue))
             {
-                throw new ArgumentException(RH.Format(SR.Value_must_be_boolean, valueName, sValue), "config");
+                throw new ArgumentException(RH.Format(SR.Value_must_be_boolean, valueName, sValue), nameof(config));
             }
 
             return bValue;
