@@ -1346,7 +1346,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        PCODE address = (PCODE)addr;
+        PCODE address = PINSTRToPCODE((TADDR)addr);
         return (((address >= m_addrOfHotCode) &&
                  (address <  m_addrOfHotCode + m_sizeOfHotCode)) ||
                 ((address >= m_addrOfColdCode) &&
