@@ -493,7 +493,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     }
                     else
                     {
-                        value = import.CastExportsToImportType(new Export[0]);
+                        value = import.CastExportsToImportType(Array.Empty<Export>());
                     }
                 }
 

@@ -399,7 +399,7 @@ namespace System.Security.Cryptography
 
             if (args == null)
             {
-                args = new object[] { };
+                args = Array.Empty<object>();
             }
 
             List<MethodBase> candidates = new List<MethodBase>();

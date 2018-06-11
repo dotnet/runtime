@@ -95,7 +95,7 @@ namespace System.ComponentModel.Composition
                     : base(message, innerException)
         {
             Requires.NullOrNotNullElements(errors, "errors");
-            _errors = new ReadOnlyCollection<CompositionError>(errors == null ? new CompositionError[0] : errors.ToArray<CompositionError>());
+            _errors = new ReadOnlyCollection<CompositionError>(errors == null ? Array.Empty<CompositionError>() : errors.ToArray<CompositionError>());
         }
 
         /// <summary>

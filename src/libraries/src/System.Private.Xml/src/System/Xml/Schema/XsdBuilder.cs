@@ -2270,7 +2270,7 @@ namespace System.Xml.Schema
         {
             builder._xso = builder._appInfo = new XmlSchemaAppInfo();
             builder._annotation.Items.Add(builder._appInfo);
-            builder._markup = new XmlNode[] { };
+            builder._markup = Array.Empty<XmlNode>();
         }
 
         private static void BuildAppinfo_Source(XsdBuilder builder, string value)
@@ -2294,7 +2294,7 @@ namespace System.Xml.Schema
         {
             builder._xso = builder._documentation = new XmlSchemaDocumentation();
             builder._annotation.Items.Add(builder._documentation);
-            builder._markup = new XmlNode[] { };
+            builder._markup = Array.Empty<XmlNode>();
         }
 
         private static void BuildDocumentation_Source(XsdBuilder builder, string value)

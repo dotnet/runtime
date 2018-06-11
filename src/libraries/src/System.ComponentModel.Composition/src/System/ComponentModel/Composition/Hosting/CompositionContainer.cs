@@ -29,7 +29,7 @@ namespace System.ComponentModel.Composition.Hosting
         private readonly ReadOnlyCollection<ExportProvider> _providers;
         private volatile bool _isDisposed = false;
         private object _lock = new object();
-        private static ReadOnlyCollection<ExportProvider> EmptyProviders = new ReadOnlyCollection<ExportProvider>(new ExportProvider[]{});
+        private static ReadOnlyCollection<ExportProvider> EmptyProviders = new ReadOnlyCollection<ExportProvider>(Array.Empty<ExportProvider>());
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="CompositionContainer"/> class.

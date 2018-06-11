@@ -1206,7 +1206,7 @@ namespace Microsoft.SqlServer.Server
         {
             Type t = metaData.Type;
             Debug.Assert(t != null, "Unexpected null of Udt type on NullUdtInstance!");
-            return t.InvokeMember("Null", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Static, null, null, new Object[] { }, CultureInfo.InvariantCulture);
+            return t.InvokeMember("Null", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Static, null, null, Array.Empty<object>(), CultureInfo.InvariantCulture);
         }
 
         // Strongly-typed setters are a bit simpler than their corresponding getters.
@@ -2223,7 +2223,7 @@ namespace Microsoft.SqlServer.Server
             {
                 Type t = metaData.Type;
                 Debug.Assert(t != null, "Unexpected null of udtType on GetUdt_LengthChecked!");
-                result = t.InvokeMember("Null", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Static, null, null, new Object[] { }, CultureInfo.InvariantCulture);
+                result = t.InvokeMember("Null", BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.Static, null, null, Array.Empty<object>(), CultureInfo.InvariantCulture);
                 Debug.Assert(result != null);
             }
             else
