@@ -6,4 +6,3 @@ using System.Runtime.CompilerServices;
 
 // Depends on things like WindowsRuntimeImportAttribute
 [assembly: InternalsVisibleTo("System.Runtime.WindowsRuntime, PublicKey=00000000000000000400000000000000", AllInternalsVisible = false)]
-[assembly: InternalsVisibleTo("System.Runtime.WindowsRuntime.UI.Xaml, PublicKey=00000000000000000400000000000000", AllInternalsVisible = false)]
