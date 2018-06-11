@@ -26,7 +26,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(ActiveDirectorySchemaProperty schemaProperty)
         {
             if (schemaProperty == null)
-                throw new ArgumentNullException("schemaProperty");
+                throw new ArgumentNullException(nameof(schemaProperty));
             for (int i = 0; i < InnerList.Count; i++)
             {
                 ActiveDirectorySchemaProperty tmp = (ActiveDirectorySchemaProperty)InnerList[i];
@@ -41,7 +41,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(ActiveDirectorySchemaProperty schemaProperty)
         {
             if (schemaProperty == null)
-                throw new ArgumentNullException("schemaProperty");
+                throw new ArgumentNullException(nameof(schemaProperty));
 
             for (int i = 0; i < InnerList.Count; i++)
             {

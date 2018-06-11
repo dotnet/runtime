@@ -228,7 +228,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                 default:
                     // should not happen
-                    throw new InvalidEnumArgumentException("dn", (int)dn, typeof(WellKnownDN));
+                    throw new InvalidEnumArgumentException(nameof(dn), (int)dn, typeof(WellKnownDN));
             }
             return distinguishedName;
         }
@@ -364,7 +364,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                 default:
                     // should not happen
-                    throw new InvalidEnumArgumentException("dn", (int)dn, typeof(WellKnownDN));
+                    throw new InvalidEnumArgumentException(nameof(dn), (int)dn, typeof(WellKnownDN));
             }
             return distinguishedName;
         }

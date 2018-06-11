@@ -29,11 +29,11 @@ namespace System.Runtime.Caching
         {
             if (source == null)
             {
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             }
             if (cacheItem == null)
             {
-                throw new ArgumentNullException("cacheItem");
+                throw new ArgumentNullException(nameof(cacheItem));
             }
             _source = source;
             _reason = reason;

@@ -36,8 +36,8 @@ namespace System.ComponentModel.Composition
 
         public static ComposablePart CreatePart(object attributedPart, ReflectionContext reflectionContext)
         {
-            Requires.NotNull(attributedPart, "attributedPart");
-            Requires.NotNull(reflectionContext, "reflectionContext");
+            Requires.NotNull(attributedPart, nameof(attributedPart));
+            Requires.NotNull(reflectionContext, nameof(reflectionContext));
             Contract.Ensures(Contract.Result<ComposablePart>() != null);
 
             return AttributedModelDiscovery.CreatePart(attributedPart, reflectionContext);
@@ -52,7 +52,7 @@ namespace System.ComponentModel.Composition
             var reflectionComposablePartDefinition = partDefinition as ReflectionComposablePartDefinition;
             if(reflectionComposablePartDefinition == null)
             {
-                throw ExceptionBuilder.CreateReflectionModelInvalidPartDefinition("partDefinition", partDefinition.GetType());
+                throw ExceptionBuilder.CreateReflectionModelInvalidPartDefinition(nameof(partDefinition), partDefinition.GetType());
             }
 
             return AttributedModelDiscovery.CreatePart(reflectionComposablePartDefinition, attributedPart);
@@ -160,7 +160,7 @@ namespace System.ComponentModel.Composition
         public static void ComposeParts(this CompositionContainer container, params object[] attributedParts)
         {
             Requires.NotNull(container, nameof(container));
-            Requires.NotNullOrNullElements(attributedParts, "attributedParts");
+            Requires.NotNullOrNullElements(attributedParts, nameof(attributedParts));
 
             CompositionBatch batch = new CompositionBatch(
                 attributedParts.Select(attributedPart => AttributedModelServices.CreatePart(attributedPart)).ToArray(),
@@ -217,9 +217,9 @@ namespace System.ComponentModel.Composition
         /// </exception>
         public static ComposablePart SatisfyImportsOnce(this ICompositionService compositionService, object attributedPart, ReflectionContext reflectionContext)
         {
-            Requires.NotNull(compositionService, "compositionService");
-            Requires.NotNull(attributedPart, "attributedPart");
-            Requires.NotNull(reflectionContext, "reflectionContext");
+            Requires.NotNull(compositionService, nameof(compositionService));
+            Requires.NotNull(attributedPart, nameof(attributedPart));
+            Requires.NotNull(reflectionContext, nameof(reflectionContext));
             Contract.Ensures(Contract.Result<ComposablePart>() != null);
 
             ComposablePart part = AttributedModelServices.CreatePart(attributedPart, reflectionContext);

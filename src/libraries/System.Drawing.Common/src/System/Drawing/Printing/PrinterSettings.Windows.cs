@@ -81,7 +81,7 @@ namespace System.Drawing.Printing
             {
                 if (value < 0)
                     throw new ArgumentException(SR.Format(SR.InvalidLowBoundArgumentEx,
-                                                             "value", value.ToString(CultureInfo.CurrentCulture),
+                                                             nameof(value), value.ToString(CultureInfo.CurrentCulture),
                                                              (0).ToString(CultureInfo.CurrentCulture)));
                 /*
                     We shouldnt allow copies to be set since the copies can be a large number 
@@ -159,7 +159,7 @@ namespace System.Drawing.Printing
             {
                 if (value < 0)
                     throw new ArgumentException(SR.Format(SR.InvalidLowBoundArgumentEx,
-                                                             "value", value.ToString(CultureInfo.CurrentCulture),
+                                                             nameof(value), value.ToString(CultureInfo.CurrentCulture),
                                                              (0).ToString(CultureInfo.CurrentCulture)));
                 _fromPage = value;
             }
@@ -276,7 +276,7 @@ namespace System.Drawing.Printing
             {
                 if (value < 0)
                     throw new ArgumentException(SR.Format(SR.InvalidLowBoundArgumentEx,
-                                                             "value", value.ToString(CultureInfo.CurrentCulture),
+                                                             nameof(value), value.ToString(CultureInfo.CurrentCulture),
                                                              (0).ToString(CultureInfo.CurrentCulture)));
                 _maxPage = value;
             }
@@ -292,7 +292,7 @@ namespace System.Drawing.Printing
             {
                 if (value < 0)
                     throw new ArgumentException(SR.Format(SR.InvalidLowBoundArgumentEx,
-                                                             "value", value.ToString(CultureInfo.CurrentCulture),
+                                                             nameof(value), value.ToString(CultureInfo.CurrentCulture),
                                                              (0).ToString(CultureInfo.CurrentCulture)));
                 _minPage = value;
             }
@@ -373,7 +373,7 @@ namespace System.Drawing.Printing
             set
             {
                 if (!Enum.IsDefined(typeof(PrintRange), value))
-                    throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(PrintRange));
+                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(PrintRange));
 
                 _printRange = value;
             }
@@ -537,7 +537,7 @@ namespace System.Drawing.Printing
             {
                 if (value < 0)
                     throw new ArgumentException(SR.Format(SR.InvalidLowBoundArgumentEx,
-                                                             "value", value.ToString(CultureInfo.CurrentCulture),
+                                                             nameof(value), value.ToString(CultureInfo.CurrentCulture),
                                                              (0).ToString(CultureInfo.CurrentCulture)));
                 _toPage = value;
             }

@@ -135,7 +135,7 @@ namespace System.DirectoryServices.AccountManagement
         public void SetPassword(string newPassword)
         {
             if (newPassword == null)
-                throw new ArgumentNullException("newPassword");
+                throw new ArgumentNullException(nameof(newPassword));
 
             // If we're not persisted, we just save up the change until we're Saved
             if (_owningPrincipal.unpersisted)
@@ -153,10 +153,10 @@ namespace System.DirectoryServices.AccountManagement
         public void ChangePassword(string oldPassword, string newPassword)
         {
             if (oldPassword == null)
-                throw new ArgumentNullException("oldPassword");
+                throw new ArgumentNullException(nameof(oldPassword));
 
             if (newPassword == null)
-                throw new ArgumentNullException("newPassword");
+                throw new ArgumentNullException(nameof(newPassword));
 
             // While you can reset the password on an unpersisted principal (and it will be used as the initial password
             // for the pricipal), changing the password on a principal that doesn't exist yet doesn't make sense

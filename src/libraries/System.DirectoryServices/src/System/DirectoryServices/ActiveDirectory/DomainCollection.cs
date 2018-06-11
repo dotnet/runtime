@@ -26,7 +26,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(Domain domain)
         {
             if (domain == null)
-                throw new ArgumentNullException("domain");
+                throw new ArgumentNullException(nameof(domain));
 
             for (int i = 0; i < InnerList.Count; i++)
             {
@@ -42,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(Domain domain)
         {
             if (domain == null)
-                throw new ArgumentNullException("domain");
+                throw new ArgumentNullException(nameof(domain));
 
             for (int i = 0; i < InnerList.Count; i++)
             {

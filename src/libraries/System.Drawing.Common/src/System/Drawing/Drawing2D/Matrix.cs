@@ -37,7 +37,7 @@ namespace System.Drawing.Drawing2D
         {
             if (plgpts == null)
             {
-                throw new ArgumentNullException("plgpts");
+                throw new ArgumentNullException(nameof(plgpts));
             }
             if (plgpts.Length != 3)
             {
@@ -69,7 +69,7 @@ namespace System.Drawing.Drawing2D
         {
             if (plgpts == null)
             {
-                throw new ArgumentNullException("plgpts");
+                throw new ArgumentNullException(nameof(plgpts));
             }
             if (plgpts.Length != 3)
             {

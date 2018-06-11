@@ -23,7 +23,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(GlobalCatalog globalCatalog)
         {
             if (globalCatalog == null)
-                throw new ArgumentNullException("globalCatalog");
+                throw new ArgumentNullException(nameof(globalCatalog));
 
             for (int i = 0; i < InnerList.Count; i++)
             {
@@ -39,7 +39,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(GlobalCatalog globalCatalog)
         {
             if (globalCatalog == null)
-                throw new ArgumentNullException("globalCatalog");
+                throw new ArgumentNullException(nameof(globalCatalog));
 
             for (int i = 0; i < InnerList.Count; i++)
             {

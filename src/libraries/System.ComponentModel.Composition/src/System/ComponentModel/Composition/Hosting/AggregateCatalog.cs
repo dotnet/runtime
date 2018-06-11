@@ -64,7 +64,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </exception>
         public AggregateCatalog(IEnumerable<ComposablePartCatalog> catalogs)
         {
-            Requires.NullOrNotNullElements(catalogs, "catalogs");
+            Requires.NullOrNotNullElements(catalogs, nameof(catalogs));
 
             _catalogs = new ComposablePartCatalogCollection(catalogs, OnChanged, OnChanging);
         }

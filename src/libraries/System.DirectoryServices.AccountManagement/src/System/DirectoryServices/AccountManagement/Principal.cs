@@ -536,7 +536,7 @@ namespace System.DirectoryServices.AccountManagement
         public PrincipalSearchResult<Principal> GetGroups(PrincipalContext contextToQuery)
         {
             if (contextToQuery == null)
-                throw new ArgumentNullException("contextToQuery");
+                throw new ArgumentNullException(nameof(contextToQuery));
 
             return new PrincipalSearchResult<Principal>(GetGroupsHelper(contextToQuery));
         }
@@ -547,7 +547,7 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposedOrDeleted();
 
             if (group == null)
-                throw new ArgumentNullException("group");
+                throw new ArgumentNullException(nameof(group));
 
             return group.Members.Contains(this);
         }
@@ -558,10 +558,10 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposedOrDeleted();
 
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             if (identityValue == null)
-                throw new ArgumentNullException("identityValue");
+                throw new ArgumentNullException(nameof(identityValue));
 
             GroupPrincipal g = GroupPrincipal.FindByIdentity(context, identityType, identityValue);
 
@@ -902,10 +902,10 @@ namespace System.DirectoryServices.AccountManagement
         protected static Principal FindByIdentityWithType(PrincipalContext context, Type principalType, string identityValue)
         {
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             if (identityValue == null)
-                throw new ArgumentNullException("identityValue");
+                throw new ArgumentNullException(nameof(identityValue));
 
             return FindByIdentityWithTypeHelper(context, principalType, null, identityValue, DateTime.UtcNow);
         }
@@ -914,13 +914,13 @@ namespace System.DirectoryServices.AccountManagement
         protected static Principal FindByIdentityWithType(PrincipalContext context, Type principalType, IdentityType identityType, string identityValue)
         {
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             if (identityValue == null)
-                throw new ArgumentNullException("identityValue");
+                throw new ArgumentNullException(nameof(identityValue));
 
             if ((identityType < IdentityType.SamAccountName) || (identityType > IdentityType.Guid))
-                throw new InvalidEnumArgumentException("identityType", (int)identityType, typeof(IdentityType));
+                throw new InvalidEnumArgumentException(nameof(identityType), (int)identityType, typeof(IdentityType));
 
             return FindByIdentityWithTypeHelper(context, principalType, identityType, identityValue, DateTime.UtcNow);
         }

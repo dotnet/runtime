@@ -476,7 +476,7 @@ namespace System.Management
                 }
                 catch
                 {
-                    throw new ArgumentOutOfRangeException ("value");
+                    throw new ArgumentOutOfRangeException (nameof(value));
                 }
                 FireIdentifierChanged();
             }
@@ -541,7 +541,7 @@ namespace System.Management
                 } 
                 catch (COMException) 
                 {
-                    throw new ArgumentOutOfRangeException ("value");
+                    throw new ArgumentOutOfRangeException (nameof(value));
                 }
                 FireIdentifierChanged();
             }
@@ -855,7 +855,7 @@ namespace System.Management
                 }
                 catch (COMException)
                 {
-                    throw new ArgumentOutOfRangeException ("value");
+                    throw new ArgumentOutOfRangeException (nameof(value));
                 }
 
                 if (bChange)
@@ -935,7 +935,7 @@ namespace System.Management
                 }
                 catch (COMException)
                 {
-                    throw new ArgumentOutOfRangeException ("value");
+                    throw new ArgumentOutOfRangeException (nameof(value));
                 }
 
                 if (status < 0)
@@ -1093,7 +1093,7 @@ namespace System.Management
 
             if (destinationType == null) 
             {
-                throw new ArgumentNullException("destinationType");
+                throw new ArgumentNullException(nameof(destinationType));
             }
 
             if (value is ManagementPath && destinationType == typeof(InstanceDescriptor)) 

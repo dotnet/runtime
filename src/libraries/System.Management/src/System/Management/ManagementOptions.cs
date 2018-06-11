@@ -213,7 +213,7 @@ namespace System.Management
             { 
                 //Timespan allows for negative values, but we want to make sure it's positive here...
                 if (value.Ticks < 0)
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
 
                 timeout = value;
                 FireIdentifierChanged();
@@ -350,7 +350,7 @@ namespace System.Management
             set { 
                 //Unfortunately BlockSize was defined as int, but valid values are only  > 0
                 if (value <= 0)
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
 
                 blockSize = value;
             }

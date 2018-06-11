@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition.Hosting
         public CompositionScopeDefinition(ComposablePartCatalog catalog, IEnumerable<CompositionScopeDefinition> children)
         {
             Requires.NotNull(catalog, nameof(catalog));
-            Requires.NullOrNotNullElements(children, "children");
+            Requires.NullOrNotNullElements(children, nameof(children));
 
             InitializeCompositionScopeDefinition(catalog, children, null);
         }
@@ -46,8 +46,8 @@ namespace System.ComponentModel.Composition.Hosting
         public CompositionScopeDefinition(ComposablePartCatalog catalog, IEnumerable<CompositionScopeDefinition> children, IEnumerable<ExportDefinition> publicSurface)
         {
             Requires.NotNull(catalog, nameof(catalog));
-            Requires.NullOrNotNullElements(children, "children");
-            Requires.NullOrNotNullElements(publicSurface, "publicSurface");
+            Requires.NullOrNotNullElements(children, nameof(children));
+            Requires.NullOrNotNullElements(publicSurface, nameof(publicSurface));
 
             InitializeCompositionScopeDefinition(catalog, children, publicSurface);
         }
@@ -189,7 +189,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> GetExportsFromPublicSurface(ImportDefinition definition)
         {
-            Assumes.NotNull(definition, "definition");
+            Assumes.NotNull(definition, nameof(definition));
 
             var exports = new List<Tuple<ComposablePartDefinition, ExportDefinition>>();
 

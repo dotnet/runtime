@@ -658,7 +658,7 @@ namespace System.ComponentModel
                 return new AttributeCollection((Attribute[])null);
             }
 
-            AttributeCollection attributes = GetDescriptor(componentType, "componentType").GetAttributes();
+            AttributeCollection attributes = GetDescriptor(componentType, nameof(componentType)).GetAttributes();
             return attributes;
         }
 
@@ -786,7 +786,7 @@ namespace System.ComponentModel
         /// </summary>
         public static string GetClassName(Type componentType)
         {
-            return GetDescriptor(componentType, "componentType").GetClassName();
+            return GetDescriptor(componentType, nameof(componentType)).GetClassName();
         }
 
         /// <summary>
@@ -828,7 +828,7 @@ namespace System.ComponentModel
         /// </summary>
         public static TypeConverter GetConverter(Type type)
         {
-            TypeConverter converter = GetDescriptor(type, "type").GetConverter();
+            TypeConverter converter = GetDescriptor(type, nameof(type)).GetConverter();
             return converter;
         }
 
@@ -843,7 +843,7 @@ namespace System.ComponentModel
                 return null;
             }
 
-            return GetDescriptor(componentType, "componentType").GetDefaultEvent();
+            return GetDescriptor(componentType, nameof(componentType)).GetDefaultEvent();
         }
 
         /// <summary>
@@ -880,7 +880,7 @@ namespace System.ComponentModel
                 return null;
             }
 
-            return GetDescriptor(componentType, "componentType").GetDefaultProperty();
+            return GetDescriptor(componentType, nameof(componentType)).GetDefaultProperty();
         }
 
         /// <summary>
@@ -996,7 +996,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(editorBaseType));
             }
 
-            return GetDescriptor(type, "type").GetEditor(editorBaseType);
+            return GetDescriptor(type, nameof(type)).GetEditor(editorBaseType);
         }
 
         /// <summary>
@@ -1010,7 +1010,7 @@ namespace System.ComponentModel
                 return new EventDescriptorCollection(null, true);
             }
 
-            return GetDescriptor(componentType, "componentType").GetEvents();
+            return GetDescriptor(componentType, nameof(componentType)).GetEvents();
         }
 
         /// <summary>
@@ -1025,7 +1025,7 @@ namespace System.ComponentModel
                 return new EventDescriptorCollection(null, true);
             }
 
-            EventDescriptorCollection events = GetDescriptor(componentType, "componentType").GetEvents(attributes);
+            EventDescriptorCollection events = GetDescriptor(componentType, nameof(componentType)).GetEvents(attributes);
 
             if (attributes != null && attributes.Length > 0)
             {
@@ -1227,7 +1227,7 @@ namespace System.ComponentModel
                 return new PropertyDescriptorCollection(null, true);
             }
 
-            return GetDescriptor(componentType, "componentType").GetProperties();
+            return GetDescriptor(componentType, nameof(componentType)).GetProperties();
         }
 
         /// <summary>
@@ -1242,7 +1242,7 @@ namespace System.ComponentModel
                 return new PropertyDescriptorCollection(null, true);
             }
 
-            PropertyDescriptorCollection properties = GetDescriptor(componentType, "componentType").GetProperties(attributes);
+            PropertyDescriptorCollection properties = GetDescriptor(componentType, nameof(componentType)).GetProperties(attributes);
 
             if (attributes != null && attributes.Length > 0)
             {

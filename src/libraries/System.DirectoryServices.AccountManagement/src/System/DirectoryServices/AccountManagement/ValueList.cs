@@ -34,7 +34,7 @@ namespace System.Identity.Principals
         int IList.Add(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
+                throw new ArgumentNullException(nameof(value));   
         
             return inner.Add((T) value);
         }
@@ -47,7 +47,7 @@ namespace System.Identity.Principals
         bool IList.Contains(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
+                throw new ArgumentNullException(nameof(value));   
         
             return inner.Contains((T) value);
         }
@@ -55,7 +55,7 @@ namespace System.Identity.Principals
         int IList.IndexOf(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
+                throw new ArgumentNullException(nameof(value));   
         
             return IndexOf((T) value);
         }
@@ -63,7 +63,7 @@ namespace System.Identity.Principals
         void IList.Insert(int index, object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
+                throw new ArgumentNullException(nameof(value));   
         
             Insert(index, (T) value);
         }
@@ -71,7 +71,7 @@ namespace System.Identity.Principals
         void IList.Remove(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
         
             inner.Remove((T) value);
         }
@@ -91,7 +91,7 @@ namespace System.Identity.Principals
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");   
+                    throw new ArgumentNullException(nameof(value));   
             
                 this[index] = (T) value;
             }
@@ -161,7 +161,7 @@ namespace System.Identity.Principals
         public int Add(T value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
+                throw new ArgumentNullException(nameof(value));   
         
             return inner.Add(value);
         }
@@ -174,7 +174,7 @@ namespace System.Identity.Principals
         public bool Contains(T value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
+                throw new ArgumentNullException(nameof(value));   
         
             return inner.Contains(value);
         }
@@ -182,7 +182,7 @@ namespace System.Identity.Principals
         public int IndexOf(T value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
+                throw new ArgumentNullException(nameof(value));   
 
             int index = 0;
 
@@ -205,10 +205,10 @@ namespace System.Identity.Principals
             inner.MarkChange();
 
             if (value == null)
-                throw new ArgumentNullException("value");   
+                throw new ArgumentNullException(nameof(value));   
 
             if ((index < 0) || (index > inner.combinedValues.Count))
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             TrackedCollection<T>.ValueEl el = new TrackedCollection<T>.ValueEl();
             el.isInserted = true;
@@ -220,7 +220,7 @@ namespace System.Identity.Principals
         public bool Remove(T value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");   
+                throw new ArgumentNullException(nameof(value));   
         
             return inner.Remove(value);
         }
@@ -230,7 +230,7 @@ namespace System.Identity.Principals
             inner.MarkChange();
             
             if ((index < 0) || (index >= inner.combinedValues.Count))
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             TrackedCollection<T>.ValueEl el = inner.combinedValues[index];
 
@@ -253,7 +253,7 @@ namespace System.Identity.Principals
             get
             {
                 if ((index < 0) || (index >= inner.combinedValues.Count))
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
                 TrackedCollection<T>.ValueEl el = inner.combinedValues[index];
 
@@ -272,10 +272,10 @@ namespace System.Identity.Principals
                 inner.MarkChange();
 
                 if ((index < 0) || (index >= inner.combinedValues.Count))
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
                 if (value == null)
-                    throw new ArgumentNullException("value");   
+                    throw new ArgumentNullException(nameof(value));   
 
                 TrackedCollection<T>.ValueEl el = inner.combinedValues[index];
 

@@ -116,7 +116,7 @@ namespace System.Drawing
 
             internal ComStreamFromDataStream(Stream dataStream)
             {
-                this.dataStream = dataStream ?? throw new ArgumentNullException("dataStream");
+                this.dataStream = dataStream ?? throw new ArgumentNullException(nameof(dataStream));
             }
 
             private void ActualizeVirtualPosition()

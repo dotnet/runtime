@@ -45,7 +45,7 @@ namespace System.Drawing.Imaging
         internal void SetNativeImageAttributes(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
-                throw new ArgumentNullException("handle");
+                throw new ArgumentNullException(nameof(handle));
 
             nativeImageAttributes = handle;
         }

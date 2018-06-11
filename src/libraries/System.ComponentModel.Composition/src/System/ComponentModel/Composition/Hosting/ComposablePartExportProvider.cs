@@ -40,7 +40,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if (compositionOptions > (CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService))
             {
-                throw new ArgumentOutOfRangeException("compositionOptions");
+                throw new ArgumentOutOfRangeException(nameof(compositionOptions));
             }
 
             _compositionOptions = compositionOptions;

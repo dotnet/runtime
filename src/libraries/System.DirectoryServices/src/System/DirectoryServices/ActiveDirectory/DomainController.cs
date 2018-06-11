@@ -126,12 +126,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // check that the context argument is not null
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             // target should be DC
             if (context.ContextType != DirectoryContextType.DirectoryServer)
             {
-                throw new ArgumentException(SR.TargetShouldBeDC, "context");
+                throw new ArgumentException(SR.TargetShouldBeDC, nameof(context));
             }
 
             // target should be a server
@@ -176,12 +176,12 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
-                throw new ArgumentException(SR.TargetShouldBeDomain, "context");
+                throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
             return FindOneWithCredentialValidation(context, null, 0);
@@ -191,17 +191,17 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
-                throw new ArgumentException(SR.TargetShouldBeDomain, "context");
+                throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
             if (siteName == null)
             {
-                throw new ArgumentNullException("siteName");
+                throw new ArgumentNullException(nameof(siteName));
             }
 
             return FindOneWithCredentialValidation(context, siteName, 0);
@@ -211,12 +211,12 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
-                throw new ArgumentException(SR.TargetShouldBeDomain, "context");
+                throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
             return FindOneWithCredentialValidation(context, null, flag);
@@ -226,17 +226,17 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
-                throw new ArgumentException(SR.TargetShouldBeDomain, "context");
+                throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
             if (siteName == null)
             {
-                throw new ArgumentNullException("siteName");
+                throw new ArgumentNullException(nameof(siteName));
             }
 
             return FindOneWithCredentialValidation(context, siteName, flag);
@@ -246,12 +246,12 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
-                throw new ArgumentException(SR.TargetShouldBeDomain, "context");
+                throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
             //  work with copy of the context
@@ -264,17 +264,17 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
-                throw new ArgumentException(SR.TargetShouldBeDomain, "context");
+                throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
             if (siteName == null)
             {
-                throw new ArgumentNullException("siteName");
+                throw new ArgumentNullException(nameof(siteName));
             }
 
             //  work with copy of the context
@@ -344,7 +344,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (role < ActiveDirectoryRole.SchemaRole || role > ActiveDirectoryRole.InfrastructureRole)
             {
-                throw new InvalidEnumArgumentException("role", (int)role, typeof(ActiveDirectoryRole));
+                throw new InvalidEnumArgumentException(nameof(role), (int)role, typeof(ActiveDirectoryRole));
             }
 
             try
@@ -399,7 +399,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         break;
                     }
                 default:
-                    throw new InvalidEnumArgumentException("role", (int)role, typeof(ActiveDirectoryRole));
+                    throw new InvalidEnumArgumentException(nameof(role), (int)role, typeof(ActiveDirectoryRole));
             }
 
             DirectoryEntry roleObjectEntry = null;
@@ -469,10 +469,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
-                throw new ArgumentNullException("partition");
+                throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partition));
 
             // get the handle
             GetDSHandle();
@@ -503,10 +503,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
-                throw new ArgumentNullException("partition");
+                throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partition));
 
             // get the handle
             GetDSHandle();
@@ -542,10 +542,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ObjectDisposedException(GetType().Name);
 
             if (objectPath == null)
-                throw new ArgumentNullException("objectPath");
+                throw new ArgumentNullException(nameof(objectPath));
 
             if (objectPath.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "objectPath");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(objectPath));
 
             // get the handle
             GetDSHandle();
@@ -559,16 +559,16 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
-                throw new ArgumentNullException("partition");
+                throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partition));
 
             if (sourceServer == null)
-                throw new ArgumentNullException("sourceServer");
+                throw new ArgumentNullException(nameof(sourceServer));
 
             if (sourceServer.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "sourceServer");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(sourceServer));
 
             // get the dsHandle
             GetDSHandle();
@@ -581,10 +581,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
-                throw new ArgumentNullException("partition");
+                throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partition));
 
             // get the dsHandle
             GetDSHandle();
@@ -597,10 +597,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
-                throw new ArgumentNullException("partition");
+                throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partition));
 
             // get the dsHandle
             GetDSHandle();
@@ -997,13 +997,13 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (siteName != null && siteName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
 
             // check that the flags passed have only the valid bits set
             if (((long)flag & (~((long)LocatorOptions.AvoidSelf | (long)LocatorOptions.ForceRediscovery | (long)LocatorOptions.KdcRequired | (long)LocatorOptions.TimeServerRequired | (long)LocatorOptions.WriteableRequired))) != 0)
             {
-                throw new ArgumentException(SR.InvalidFlags, "flag");
+                throw new ArgumentException(SR.InvalidFlags, nameof(flag));
             }
 
             if (domainName == null)
@@ -1021,7 +1021,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // this can only occur when flag is being explicitly passed (since the flags that we pass internally are valid)
             if (errorCode == NativeMethods.ERROR_INVALID_FLAGS)
             {
-                throw new ArgumentException(SR.InvalidFlags, "flag");
+                throw new ArgumentException(SR.InvalidFlags, nameof(flag));
             }
             else if (errorCode != 0)
             {
@@ -1044,7 +1044,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (siteName != null && siteName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
 
             if (domainName == null || !isDnsDomainName)

@@ -42,7 +42,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (part == null)
                     {
-                        throw ExceptionBuilder.CreateContainsNullElement("partsToAdd");
+                        throw ExceptionBuilder.CreateContainsNullElement(nameof(partsToAdd));
                     }
                     _partsToAdd.Add(part);
                 }
@@ -56,7 +56,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (part == null)
                     {
-                        throw ExceptionBuilder.CreateContainsNullElement("partsToRemove");
+                        throw ExceptionBuilder.CreateContainsNullElement(nameof(partsToRemove));
                     }
                     _partsToRemove.Add(part);
                 }

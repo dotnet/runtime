@@ -29,7 +29,7 @@ namespace System.DirectoryServices
                     value != ReferralChasingOption.Subordinate &&
                     value != ReferralChasingOption.External &&
                     value != ReferralChasingOption.All)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(ReferralChasingOption));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ReferralChasingOption));
 
                 ((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_REFERRALS, value);
             }
@@ -44,7 +44,7 @@ namespace System.DirectoryServices
             set
             {
                 if (value > (SecurityMasks.None | SecurityMasks.Owner | SecurityMasks.Group | SecurityMasks.Dacl | SecurityMasks.Sacl))
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(SecurityMasks));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(SecurityMasks));
 
                 ((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_SECURITY_MASK, value);
             }
@@ -86,7 +86,7 @@ namespace System.DirectoryServices
             set
             {
                 if (value < PasswordEncodingMethod.PasswordEncodingSsl || value > PasswordEncodingMethod.PasswordEncodingClear)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(PasswordEncodingMethod));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(PasswordEncodingMethod));
 
                 ((UnsafeNativeMethods.IAdsObjectOptions)_entry.AdsObject).SetOption((int)AdsOptions.ADS_OPTION_PASSWORD_METHOD, value);
             }
