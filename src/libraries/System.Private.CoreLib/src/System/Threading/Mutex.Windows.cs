@@ -18,21 +18,6 @@ namespace System.Threading
         private const uint AccessRights =
             (uint)Interop.Kernel32.MAXIMUM_ALLOWED | Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.MUTEX_MODIFY_STATE;
 
-#if PLATFORM_UNIX
-        // Maximum file name length on tmpfs file system.
-        private const int WaitHandleNameMax = 255;
-#endif
-
-        private static void VerifyNameForCreate(string name)
-        {
-#if PLATFORM_WINDOWS
-            if (name != null && (Interop.Kernel32.MAX_PATH < name.Length))
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name, Interop.Kernel32.MAX_PATH), nameof(name));
-            }
-#endif
-        }
-
         private void CreateMutexCore(bool initiallyOwned, string name, out bool createdNew)
         {
             uint mutexFlags = initiallyOwned ? Interop.Kernel32.CREATE_MUTEX_INITIAL_OWNER : 0;
@@ -45,7 +30,7 @@ namespace System.Threading
 #if PLATFORM_UNIX
                 if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
-                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name, WaitHandleNameMax), nameof(name));
+                    throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
 #endif
                 if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
@@ -69,7 +54,6 @@ namespace System.Threading
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             }
 
-            VerifyNameForCreate(name);
             result = null;
             // To allow users to view & edit the ACL's, call OpenMutex
             // with parameters to allow us to view & edit the ACL.  This will
@@ -84,7 +68,7 @@ namespace System.Threading
                 if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                 {
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
-                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, name, WaitHandleNameMax), nameof(name));
+                    throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
                 }
 #endif
                 if (Interop.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.Errors.ERROR_INVALID_NAME == errorCode)
