@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">Windows_NT</OSGroup>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />

@@ -4,10 +4,5 @@
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <NoWarn>CS3021;$(NoWarn)</NoWarn>
-    <IsSDKProject>true</IsSDKProject>
-  </PropertyGroup>
-  <PropertyGroup>
-    <CSharpCoreTargetsPath>$(MSBuildExtensionsPath32)\Roslyn\Microsoft.CSharp.Core.targets</CSharpCoreTargetsPath>
-    <VisualBasicCoreTargetsPath>$(MSBuildExtensionsPath32)\Roslyn\Microsoft.VisualBasic.Core.targets</VisualBasicCoreTargetsPath>
   </PropertyGroup>
 </Project> 
