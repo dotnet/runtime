@@ -190,6 +190,12 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\GitHub_18056\Bool_And_Op_cs_do\Bool_And_Op_cs_do.cmd">
             <Issue>18056</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\varargs\varargsupport\varargsupport.cmd">
+            <Issue>Varargs supported on this platform</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\baseservices\varargs\varargsupport_r\varargsupport_r.cmd">
+            <Issue>Varargs supported on this platform</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x86 failures -->
