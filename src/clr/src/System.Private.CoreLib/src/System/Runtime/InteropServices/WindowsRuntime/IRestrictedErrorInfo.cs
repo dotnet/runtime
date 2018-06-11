@@ -8,7 +8,6 @@ using System;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
-    // [System.Runtime.CompilerServices.FriendAccessAllowed]
     [ComImport]
     [Guid("82BA7092-4C88-427D-A7BC-16DD93FEB67E")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
