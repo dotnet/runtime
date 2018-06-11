@@ -20,16 +20,17 @@ gint32
 mono_security_win_get_token_name (gpointer token, gunichar2 ** uniname);
 
 gboolean
-mono_security_win_is_machine_protected (gunichar2 *path);
+mono_security_win_is_machine_protected (const gunichar2 *path, MonoError *error);
 
 gboolean
-mono_security_win_is_user_protected (gunichar2 *path);
+mono_security_win_is_user_protected (const gunichar2 *path, MonoError *error);
 
 gboolean
-mono_security_win_protect_machine (gunichar2 *path);
+mono_security_win_protect_machine (const gunichar2 *path, MonoError *error);
 
 gboolean
-mono_security_win_protect_user (gunichar2 *path);
+mono_security_win_protect_user (const gunichar2 *path, MonoError *error);
+
 #endif /* HOST_WIN32 */
 
 #endif /* __MONO_METADATA_MONO_SECURITY_WINDOWS_INTERNALS_H__ */
