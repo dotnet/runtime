@@ -20,6 +20,7 @@ namespace System.Net.Http.Functional.Tests
             from contentMode in Enum.GetValues(typeof(LoopbackServer.ContentMode)).Cast<LoopbackServer.ContentMode>()
             select new object[] { responseHeadersRead, contentMode };
 
+        [ActiveIssue(30052, TargetFrameworkMonikers.Uap)]
         [Theory]
         [MemberData(nameof(ResponseHeadersRead_SynchronizationContextNotUsedByHandler_MemberData))]
         public async Task ResponseHeadersRead_SynchronizationContextNotUsedByHandler(bool responseHeadersRead, LoopbackServer.ContentMode contentMode)

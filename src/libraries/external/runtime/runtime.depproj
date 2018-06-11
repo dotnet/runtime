@@ -75,6 +75,7 @@
   <PropertyGroup>
     <SymbolPackagesDir>$(PackagesDir)symbolpackages/</SymbolPackagesDir>
     <DotNetAssetRootUrl Condition="'$(DotNetAssetRootUrl)' == ''">https://dotnetfeed.blob.core.windows.net/dotnet-core/assets/</DotNetAssetRootUrl>
+    <DownloadCoreCLRSymbols Condition="'$(DotNetBuildFromSource)' == 'true'">false</DownloadCoreCLRSymbols>
   </PropertyGroup>
 
   <Target Name="CalculateCoreCLRSymbolPackageProperties"

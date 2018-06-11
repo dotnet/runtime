@@ -57,7 +57,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // We don't want to let them set a null value.
                 if (!value.HasValue)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 HandleSet<bool>(ref _enabled, value.Value, ref _enabledChanged,
                                   PropertyNames.AuthenticablePrincipalEnabled);
@@ -366,10 +366,10 @@ namespace System.DirectoryServices.AccountManagement
                 throw new ArgumentException(SR.AuthenticablePrincipalMustBeSubtypeOfAuthPrinc);
 
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             if (subtype == null)
-                throw new ArgumentNullException("subtype");
+                throw new ArgumentNullException(nameof(subtype));
         }
 
         //

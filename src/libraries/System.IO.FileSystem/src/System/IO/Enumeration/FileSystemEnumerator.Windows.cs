@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -87,7 +88,7 @@ namespace System.IO.Enumeration
         /// <summary>
         /// Simple wrapper to allow creating a file handle for an existing directory.
         /// </summary>
-        private IntPtr CreateDirectoryHandle(string path)
+        private IntPtr CreateDirectoryHandle(string path, bool ignoreNotFound = false)
         {
             IntPtr handle = Interop.Kernel32.CreateFile_IntPtr(
                 path,
@@ -100,8 +101,7 @@ namespace System.IO.Enumeration
             {
                 int error = Marshal.GetLastWin32Error();
 
-                if ((error == Interop.Errors.ERROR_ACCESS_DENIED &&
-                    _options.IgnoreInaccessible) || ContinueOnError(error))
+                if (ContinueOnDirectoryError(error, ignoreNotFound))
                 {
                     return IntPtr.Zero;
                 }
@@ -116,6 +116,17 @@ namespace System.IO.Enumeration
             }
 
             return handle;
+        }
+
+        private bool ContinueOnDirectoryError(int error, bool ignoreNotFound)
+        {
+            // Directories can be removed (ERROR_FILE_NOT_FOUND) or replaced with a file of the same name (ERROR_DIRECTORY) while
+            // we are enumerating. The only reasonable way to handle this is to simply move on. There is no such thing as a "true"
+            // snapshot of filesystem state- our "snapshot" will consider the name non-existent in this rare case.
+
+            return (ignoreNotFound && (error == Interop.Errors.ERROR_FILE_NOT_FOUND || error == Interop.Errors.ERROR_PATH_NOT_FOUND || error == Interop.Errors.ERROR_DIRECTORY))
+                || (error == Interop.Errors.ERROR_ACCESS_DENIED && _options.IgnoreInaccessible)
+                || ContinueOnError(error);
         }
 
         public bool MoveNext()
@@ -195,9 +206,13 @@ namespace System.IO.Enumeration
                 _entry = (Interop.NtDll.FILE_FULL_DIR_INFORMATION*)_pinnedBuffer.AddrOfPinnedObject();
         }
 
-        private void DequeueNextDirectory()
+        private bool DequeueNextDirectory()
         {
+            if (_pending == null || _pending.Count == 0)
+                return false;
+
             (_directoryHandle, _currentPath) = _pending.Dequeue();
+            return true;
         }
 
         private void InternalDispose(bool disposing)

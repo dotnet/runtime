@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Pkcs
             _recipients.CopyTo(array, index);
         }
 
-        bool ICollection.IsSynchronized
+        public bool IsSynchronized
         {
             get
             {
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        object ICollection.SyncRoot
+        public object SyncRoot
         {
             get
             {

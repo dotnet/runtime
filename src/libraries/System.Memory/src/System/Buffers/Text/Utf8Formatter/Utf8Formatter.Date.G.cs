@@ -25,7 +25,7 @@ namespace System.Buffers.Text
 
             int bytesRequired = MinimumBytesNeeded;
 
-            if (offset != Utf8Constants.s_nullUtcOffset)
+            if (offset != Utf8Constants.NullUtcOffset)
             {
                 bytesRequired += 7; // Space['+'|'-']hh:mm
             }
@@ -62,7 +62,7 @@ namespace System.Buffers.Text
 
             FormattingHelpers.WriteTwoDecimalDigits((uint)value.Second, destination, 17);
 
-            if (offset != Utf8Constants.s_nullUtcOffset)
+            if (offset != Utf8Constants.NullUtcOffset)
             {
                 byte sign;
 

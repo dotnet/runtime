@@ -4,13 +4,11 @@
 
 namespace System.ComponentModel
 {
-    /// <summary>
-    /// </summary>
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
     public sealed class TypeDescriptionProviderAttribute : Attribute
     {
         /// <summary>
-        ///     Creates a new TypeDescriptionProviderAttribute object.
+        /// Creates a new TypeDescriptionProviderAttribute object.
         /// </summary>
         public TypeDescriptionProviderAttribute(string typeName)
         {
@@ -23,7 +21,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Creates a new TypeDescriptionProviderAttribute object.
+        /// Creates a new TypeDescriptionProviderAttribute object.
         /// </summary>
         public TypeDescriptionProviderAttribute(Type type)
         {
@@ -36,10 +34,9 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     The TypeName property returns the assembly qualified type name 
-        ///     for the type description provider.
+        /// The TypeName property returns the assembly qualified type name 
+        /// for the type description provider.
         /// </summary>
         public string TypeName { get; }
     }
 }
-

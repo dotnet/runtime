@@ -73,7 +73,7 @@ namespace System.Drawing.Printing
             get
             {
                 LoadPrinters();
-                PrinterSettings.StringCollection list = new PrinterSettings.StringCollection(new string[] { });
+                PrinterSettings.StringCollection list = new PrinterSettings.StringCollection(Array.Empty<string>());
                 foreach (object key in installed_printers.Keys)
                 {
                     list.Add(key.ToString());
@@ -275,12 +275,12 @@ namespace System.Drawing.Printing
                     paper_sources, out defsource);
 
                 if (settings.paper_sizes == null)
-                    settings.paper_sizes = new PrinterSettings.PaperSizeCollection(new PaperSize[] { });
+                    settings.paper_sizes = new PrinterSettings.PaperSizeCollection(Array.Empty<PaperSize>());
                 else
                     settings.paper_sizes.Clear();
 
                 if (settings.paper_sources == null)
-                    settings.paper_sources = new PrinterSettings.PaperSourceCollection(new PaperSource[] { });
+                    settings.paper_sources = new PrinterSettings.PaperSourceCollection(Array.Empty<PaperSource>());
                 else
                     settings.paper_sources.Clear();
 
@@ -561,7 +561,7 @@ namespace System.Drawing.Printing
             PrinterSettings settings, IntPtr ppd_handle)
         {
             if (settings.printer_resolutions == null)
-                settings.printer_resolutions = new PrinterSettings.PrinterResolutionCollection(new PrinterResolution[] { });
+                settings.printer_resolutions = new PrinterSettings.PrinterResolutionCollection(Array.Empty<PrinterResolution>());
             else
                 settings.printer_resolutions.Clear();
 

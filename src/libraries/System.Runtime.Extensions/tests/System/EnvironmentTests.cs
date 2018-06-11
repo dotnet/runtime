@@ -171,7 +171,7 @@ namespace System.Tests
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
         [OuterLoop]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/21404", TargetFrameworkMonikers.Uap)]
+        [ActiveIssue("21404", TargetFrameworkMonikers.Uap)]
         public void FailFast_ExpectFailureExitCode()
         {
             using (RemoteInvokeHandle handle = RemoteInvoke(() => { Environment.FailFast("message"); return SuccessExitCode; }))
@@ -193,6 +193,7 @@ namespace System.Tests
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have dotnet/coreclr#16622")]
+        [ActiveIssue("29869", TargetFrameworkMonikers.Uap)]
         [Fact]
         public void FailFast_ExceptionStackTrace_ArgumentException()
         {
@@ -216,6 +217,7 @@ namespace System.Tests
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have dotnet/coreclr#16622")]
+        [ActiveIssue("29869", TargetFrameworkMonikers.Uap)]
         [Fact]
         public void FailFast_ExceptionStackTrace_StackOverflowException()
         {
@@ -240,6 +242,7 @@ namespace System.Tests
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have dotnet/coreclr#16622")]
+        [ActiveIssue("29869", TargetFrameworkMonikers.Uap)]
         [Fact]
         public void FailFast_ExceptionStackTrace_InnerException()
         {

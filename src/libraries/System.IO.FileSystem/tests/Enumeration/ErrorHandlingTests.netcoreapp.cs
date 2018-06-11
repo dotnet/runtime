@@ -31,6 +31,24 @@ namespace System.IO.Tests
                 => DirectoryFinished = directory.ToString();
         }
 
+        private class LastError : FileSystemEnumerator<string>
+        {
+            public LastError(string directory)
+                : base(directory)
+            { }
+
+            public int Error { get; private set; }
+
+            protected override string TransformEntry(ref FileSystemEntry entry)
+                => entry.FileName.ToString();
+
+            protected override bool ContinueOnError(int error)
+            {
+                Error = error;
+                return true;
+            }
+        }
+
         [Fact]
         public void OpenErrorDoesNotHappenAgainOnMoveNext()
         {
@@ -45,6 +63,17 @@ namespace System.IO.Tests
 
                 // Since we didn't start, the directory shouldn't finish.
                 Assert.Null(ie.DirectoryFinished);
+            }
+        }
+
+        [Fact]
+        public void NotFoundErrorIsExpected()
+        {
+            // Make sure we're returning the native error as expected (and not the PAL error on Unix)
+            using (LastError le = new LastError(Path.GetRandomFileName()))
+            {
+                // Conveniently ERROR_FILE_NOT_FOUND and ENOENT are both 0x2
+                Assert.Equal(2, le.Error);
             }
         }
 

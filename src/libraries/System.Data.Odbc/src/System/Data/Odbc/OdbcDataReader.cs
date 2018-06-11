@@ -1111,15 +1111,15 @@ namespace System.Data.Odbc
             if (dataIndex < 0)
             {
                 // test only for negative value here, Int32.MaxValue will be validated only in case of random access
-                throw ADP.ArgumentOutOfRange("dataIndex");
+                throw ADP.ArgumentOutOfRange(nameof(dataIndex));
             }
             if (bufferIndex < 0)
             {
-                throw ADP.ArgumentOutOfRange("bufferIndex");
+                throw ADP.ArgumentOutOfRange(nameof(bufferIndex));
             }
             if (length < 0)
             {
-                throw ADP.ArgumentOutOfRange("length");
+                throw ADP.ArgumentOutOfRange(nameof(length));
             }
 
             string originalMethodName = isCharsBuffer ? "GetChars" : "GetBytes";
@@ -1153,7 +1153,7 @@ namespace System.Data.Odbc
                 {
                     // indices greater than allocable size are not supported in random access
                     // (negative value is already tested in the beginning of ths function)
-                    throw ADP.ArgumentOutOfRange("dataIndex");
+                    throw ADP.ArgumentOutOfRange(nameof(dataIndex));
                 }
 
                 if (cachedObj == null)

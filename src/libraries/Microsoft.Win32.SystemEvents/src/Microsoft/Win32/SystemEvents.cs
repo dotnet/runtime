@@ -518,7 +518,7 @@ namespace Microsoft.Win32
         {
             if (interval <= 0)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidLowBoundArgument, "interval", interval.ToString(System.Threading.Thread.CurrentThread.CurrentCulture), "0"));
+                throw new ArgumentException(SR.Format(SR.InvalidLowBoundArgument, nameof(interval), interval.ToString(System.Threading.Thread.CurrentThread.CurrentCulture), "0"));
             }
 
             EnsureSystemEvents(true, true);
@@ -846,7 +846,7 @@ namespace Microsoft.Win32
                     }
                     else
                     {
-                        current.DynamicInvoke(new object[0]);
+                        current.DynamicInvoke(Array.Empty<object>());
                     }
                 }
                 catch (Exception t)

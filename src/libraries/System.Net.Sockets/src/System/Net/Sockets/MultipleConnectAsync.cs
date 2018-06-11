@@ -335,7 +335,7 @@ namespace System.Net.Sockets
                 _internalArgs.Dispose();
             }
 
-            _userArgs.FinishOperationAsyncFailure(e, 0, SocketFlags.None);
+            _userArgs.FinishConnectByNameAsyncFailure(e, 0, SocketFlags.None);
         }
 
         public void Cancel()

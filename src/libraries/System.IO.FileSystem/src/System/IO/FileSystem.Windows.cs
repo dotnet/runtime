@@ -209,7 +209,10 @@ namespace System.IO
                         && errorCode != Interop.Errors.ERROR_BAD_NETPATH
                         && errorCode != Interop.Errors.ERROR_BAD_NET_NAME
                         && errorCode != Interop.Errors.ERROR_INVALID_PARAMETER
-                        && errorCode != Interop.Errors.ERROR_NETWORK_UNREACHABLE)
+                        && errorCode != Interop.Errors.ERROR_NETWORK_UNREACHABLE
+                        && errorCode != Interop.Errors.ERROR_NETWORK_ACCESS_DENIED
+                        && errorCode != Interop.Errors.ERROR_INVALID_HANDLE  // eg from \\.\CON
+                        )
                     {
                         // Assert so we can track down other cases (if any) to add to our test suite
                         Debug.Assert(errorCode == Interop.Errors.ERROR_ACCESS_DENIED || errorCode == Interop.Errors.ERROR_SHARING_VIOLATION,

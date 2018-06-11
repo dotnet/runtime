@@ -55,7 +55,7 @@ namespace System.Security.Cryptography
             {
                 if (_hashAlgorithm == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 _hashAlgorithm = value;

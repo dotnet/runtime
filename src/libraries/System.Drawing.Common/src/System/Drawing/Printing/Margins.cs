@@ -38,10 +38,10 @@ namespace System.Drawing.Printing
         /// </summary>
         public Margins(int left, int right, int top, int bottom)
         {
-            CheckMargin(left, "left");
-            CheckMargin(right, "right");
-            CheckMargin(top, "top");
-            CheckMargin(bottom, "bottom");
+            CheckMargin(left, nameof(left));
+            CheckMargin(right, nameof(right));
+            CheckMargin(top, nameof(top));
+            CheckMargin(bottom, nameof(bottom));
 
             _left = left;
             _right = right;

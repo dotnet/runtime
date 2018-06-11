@@ -37,7 +37,7 @@ namespace System.IO.Tests
             Assert.Equal(path, info.ToString());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
         [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Drive letter only
         public void DriveOnlyReturnsPeriod_Windows_Desktop()

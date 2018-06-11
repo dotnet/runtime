@@ -288,7 +288,8 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void Equals_NullStringValueInStringArrayInRightColumn_ThrowsNullReferenceException()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix applied only for dotnet Core, full framework throws NullReferenceException")]
+        public void Equals_NullStringValueInStringArray_CanBeCompared()
         {
             var table = new DataTable("Table");
             DataColumn column = table.Columns.Add("Column");
@@ -298,11 +299,14 @@ namespace System.Data.Tests
             DataRow row2 = table.Rows.Add(new object[] { new string[] { null } });
             DataRow row3 = table.Rows.Add(new object[] { new string[] { "abc" } });
 
-            Assert.Throws<NullReferenceException>(() => DataRowComparer.Default.Equals(row1, row2));
-            Assert.Throws<NullReferenceException>(() => DataRowComparer.Default.Equals(row2, row1));
-            Assert.Throws<NullReferenceException>(() => DataRowComparer.Default.Equals(row1, row3));
+            Assert.True(DataRowComparer.Default.Equals(row1, row2));
+            Assert.True(DataRowComparer.Default.Equals(row2, row1));
 
+            Assert.False(DataRowComparer.Default.Equals(row1, row3));
             Assert.False(DataRowComparer.Default.Equals(row3, row1));
+
+            Assert.False(DataRowComparer.Default.Equals(row2, row3));
+            Assert.False(DataRowComparer.Default.Equals(row3, row2));
         }
 
         [Fact]

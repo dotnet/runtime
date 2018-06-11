@@ -16,6 +16,17 @@ namespace System.IO
             return path.Length > 0 && IsDirectorySeparator(path[0]) ? 1 : 0;
         }
 
+        internal static bool EndsInDirectorySeparator(ReadOnlySpan<char> path)
+            => path.Length > 0 && IsDirectorySeparator(path[path.Length - 1]);
+
+        internal static ReadOnlySpan<char> TrimEndingDirectorySeparator(ReadOnlySpan<char> path) =>
+            EndsInDirectorySeparator(path) && !IsRoot(path) ?
+                path.Slice(0, path.Length - 1) :
+                path;
+
+        internal static bool IsRoot(ReadOnlySpan<char> path)
+            => path.Length == GetRootLength(path);
+
         internal static bool IsDirectorySeparator(char c)
         {
             // The alternate directory separator char is the same as the directory separator,

@@ -4,7 +4,6 @@
 
 using Xunit;
 using System.Threading;
-using System.Timers;
 
 using TestTimer = System.Timers.Timer;
 

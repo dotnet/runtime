@@ -23,13 +23,9 @@ namespace System.Net.Sockets.Tests
             new object[] { SocketType.Seqpacket, ProtocolType.Udp },
             new object[] { SocketType.Stream, ProtocolType.Udp },
             new object[] { SocketType.Unknown, ProtocolType.Udp },
-/*
-    Disabling these test cases because it actually passes in some cases
-    see https://github.com/dotnet/corefx/issues/3726
-            new object[] { SocketType.Raw, ProtocolType.Tcp },
-            new object[] { SocketType.Raw, ProtocolType.Udp },
-*/
         };
+
+        private static bool SupportsRawSockets => AdminHelpers.IsProcessElevated();
 
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(DualModeSuccessInputs))]
@@ -74,12 +70,6 @@ namespace System.Net.Sockets.Tests
             new object[] { AddressFamily.InterNetwork, SocketType.Seqpacket, ProtocolType.Udp },
             new object[] { AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Udp },
             new object[] { AddressFamily.InterNetwork, SocketType.Unknown, ProtocolType.Udp },
-/*
-    Disabling these test cases because it actually passes in some cases
-    see https://github.com/dotnet/corefx/issues/3726
-            new object[] { AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Tcp },
-            new object[] { AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Udp },
-*/
         };
 
         [OuterLoop] // TODO: Issue #11345
@@ -87,6 +77,21 @@ namespace System.Net.Sockets.Tests
         public void Ctor_Failure(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             Assert.Throws<SocketException>(() => new Socket(addressFamily, socketType, protocolType));
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData(AddressFamily.InterNetwork, ProtocolType.Tcp)]
+        [InlineData(AddressFamily.InterNetwork, ProtocolType.Udp)]
+        [InlineData(AddressFamily.InterNetwork, ProtocolType.Icmp)]
+        [InlineData(AddressFamily.InterNetworkV6, ProtocolType.Tcp)]
+        [InlineData(AddressFamily.InterNetworkV6, ProtocolType.Udp)]
+        [InlineData(AddressFamily.InterNetworkV6, ProtocolType.IcmpV6)]
+        [ConditionalTheory(nameof(SupportsRawSockets))]
+        public void Ctor_Raw_Success(AddressFamily addressFamily, ProtocolType protocolType)
+        {
+           using (new Socket(addressFamily, SocketType.Raw, protocolType))
+           {
+           }
         }
     }
 }

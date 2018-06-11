@@ -49,7 +49,7 @@ namespace System.ComponentModel.Composition.Hosting
                     ExportProvider provider = providers[i];
                     if (provider == null)
                     {
-                        throw ExceptionBuilder.CreateContainsNullElement("providers");
+                        throw ExceptionBuilder.CreateContainsNullElement(nameof(providers));
                     }
 
                     copiedProviders[i] = provider;
@@ -60,7 +60,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
             else
             {
-                copiedProviders = new ExportProvider[] { };
+                copiedProviders = Array.Empty<ExportProvider>();
             }
 
             _providers = copiedProviders;

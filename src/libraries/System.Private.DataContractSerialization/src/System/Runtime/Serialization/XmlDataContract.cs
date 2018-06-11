@@ -395,7 +395,7 @@ namespace System.Runtime.Serialization
                 else
                 {
                     ConstructorInfo ctor = GetConstructor();
-                    o = ctor.Invoke(new object[] { });
+                    o = ctor.Invoke(Array.Empty<object>());
                 }
 
                 return (IXmlSerializable)o;

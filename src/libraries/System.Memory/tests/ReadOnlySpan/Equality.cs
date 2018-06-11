@@ -4,8 +4,6 @@
 
 using Xunit;
 
-#pragma warning disable 1718 //Comparison made to same variable; did you mean to compare something else?
-
 namespace System.SpanTests
 {
     public static partial class ReadOnlySpanTests
@@ -27,8 +25,10 @@ namespace System.SpanTests
             int[] a = { 91, 92, 93, 94, 95 };
             ReadOnlySpan<int> left = new ReadOnlySpan<int>(a, 2, 3);
 
+#pragma warning disable 1718 // Comparison made to same variable; did you mean to compare something else?
             Assert.True(left == left);
             Assert.True(!(left != left));
+#pragma warning restore 1718
         }
 
         [Fact]

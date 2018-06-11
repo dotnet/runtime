@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     [ActiveIssue(18784, TargetFrameworkMonikers.Uap)]
     public class HttpListenerResponseHeadersTests : HttpListenerResponseTestBase
     {

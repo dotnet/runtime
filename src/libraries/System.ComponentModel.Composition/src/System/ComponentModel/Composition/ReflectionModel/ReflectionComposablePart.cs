@@ -40,7 +40,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             if (attributedPart is ValueType)
             {
-                throw new ArgumentException(SR.ArgumentValueType, "attributedPart");
+                throw new ArgumentException(SR.ArgumentValueType, nameof(attributedPart));
             }
             _cachedInstance = attributedPart;
         }
@@ -175,7 +175,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 member = GetExportingMemberFromDefinition(definition);
                 if (member == null)
                 {
-                    throw ExceptionBuilder.CreateExportDefinitionNotOnThisComposablePart("definition");
+                    throw ExceptionBuilder.CreateExportDefinitionNotOnThisComposablePart(nameof(definition));
                 }
                 EnsureGettable();
             }
@@ -192,7 +192,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             ImportingItem item = GetImportingItemFromDefinition(definition);
             if (item == null)
             {
-                throw ExceptionBuilder.CreateImportDefinitionNotOnThisComposablePart("definition");
+                throw ExceptionBuilder.CreateImportDefinitionNotOnThisComposablePart(nameof(definition));
             }
 
             EnsureSettable(definition);
@@ -390,17 +390,17 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private static void EnsureCardinality(ImportDefinition definition, Export[] exports)
         {
-            Requires.NullOrNotNullElements(exports, "exports");
+            Requires.NullOrNotNullElements(exports, nameof(exports));
 
             ExportCardinalityCheckResult result = ExportServices.CheckCardinality(definition, exports);
 
             switch (result)
             {
                 case ExportCardinalityCheckResult.NoExports:
-                    throw new ArgumentException(SR.Argument_ExportsEmpty, "exports");
+                    throw new ArgumentException(SR.Argument_ExportsEmpty, nameof(exports));
 
                 case ExportCardinalityCheckResult.TooManyExports:
-                    throw new ArgumentException(SR.Argument_ExportsTooMany, "exports");
+                    throw new ArgumentException(SR.Argument_ExportsTooMany, nameof(exports));
 
                 default:
                     Assumes.IsTrue(result == ExportCardinalityCheckResult.Match);
@@ -493,7 +493,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     }
                     else
                     {
-                        value = import.CastExportsToImportType(new Export[0]);
+                        value = import.CastExportsToImportType(Array.Empty<Export>());
                     }
                 }
 

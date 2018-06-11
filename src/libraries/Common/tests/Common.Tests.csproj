@@ -48,6 +48,9 @@
     <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
       <Link>Common\System\IO\StringParser.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpDateParser.cs">
+      <Link>Common\System\Net\HttpDateParser.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
@@ -72,10 +75,12 @@
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
     <Compile Include="Tests\System\IO\StringParserTests.cs" />
     <Compile Include="Tests\System\MarvinTests.cs" />
+    <Compile Include="Tests\System\Net\HttpDateParserTests.cs" />
     <Compile Include="Tests\System\PasteArgumentsTests.cs" />
     <Compile Include="Tests\System\Security\IdentityHelperTests.cs" />
     <Compile Include="Tests\System\Text\ValueStringBuilderTests.cs" />
-    <Compile Include="Tests\System\StringExtensions.Tests.cs" />
+    <Compile Include="Tests\System\SpanTestHelpers.cs" />
+    <Compile Include="Tests\System\StringExtensions.Tests.cs" />    
     <Compile Include="Tests\System\StringTests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
     <Compile Include="Tests\System\Collections\Generic\LargeArrayBuilderTests.cs" />

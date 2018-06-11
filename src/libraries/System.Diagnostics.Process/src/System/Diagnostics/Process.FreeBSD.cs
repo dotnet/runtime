@@ -14,7 +14,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveId);
+                EnsureState(State.HaveNonExitedId);
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
 
                 return  new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(stat.startTime);
@@ -30,7 +30,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveId);
+                EnsureState(State.HaveNonExitedId);
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
                 return Process.TicksToTimeSpan(stat.userTime + stat.systemTime);
             }
@@ -44,7 +44,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveId);
+                EnsureState(State.HaveNonExitedId);
 
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
                 return Process.TicksToTimeSpan(stat.userTime);
@@ -56,7 +56,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveId);
+                EnsureState(State.HaveNonExitedId);
 
                 Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, 0);
                 return Process.TicksToTimeSpan(stat.systemTime);

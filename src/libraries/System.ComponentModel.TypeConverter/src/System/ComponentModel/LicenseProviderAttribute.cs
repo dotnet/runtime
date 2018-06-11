@@ -2,41 +2,36 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Security.Permissions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
 {
     /// <summary>
-    /// <para>Specifies the <see cref='System.ComponentModel.LicenseProvider'/>
-    /// to use with a class.</para>
+    /// Specifies the <see cref='System.ComponentModel.LicenseProvider'/>
+    /// to use with a class.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public sealed class LicenseProviderAttribute : Attribute
     {
         /// <summary>
-        ///    <para>
-        ///       Specifies the default value, which is no provider. This <see langword='static '/>field is read-only.
-        ///    </para>
+        /// Specifies the default value, which is no provider. This <see langword='static '/>field is read-only.
         /// </summary>
         public static readonly LicenseProviderAttribute Default = new LicenseProviderAttribute();
 
         private Type _licenseProviderType;
-        private string _licenseProviderName;
+        private readonly string _licenseProviderName;
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.LicenseProviderAttribute'/> class without a license
-        ///    provider.</para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseProviderAttribute'/> class without a license
+        /// provider.
         /// </summary>
         public LicenseProviderAttribute() : this((string)null)
         {
         }
 
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.LicenseProviderAttribute'/> class with
-        ///       the specified type.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseProviderAttribute'/> class with
+        /// the specified type.
         /// </summary>
         public LicenseProviderAttribute(string typeName)
         {
@@ -44,10 +39,8 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.LicenseProviderAttribute'/> class with
-        ///       the specified type of license provider.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseProviderAttribute'/> class with
+        /// the specified type of license provider.
         /// </summary>
         public LicenseProviderAttribute(Type type)
         {
@@ -55,11 +48,11 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Gets the license provider to use with the associated class.</para>
+        /// Gets the license provider to use with the associated class.
         /// </summary>
         public Type LicenseProvider
         {
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods")]
+            [SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods")]
             get
             {
                 if (_licenseProviderType == null && _licenseProviderName != null)
@@ -70,15 +63,12 @@ namespace System.ComponentModel
             }
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>
-        ///       This defines a unique ID for this attribute type. It is used
-        ///       by filtering algorithms to identify two attributes that are
-        ///       the same type. For most attributes, this just returns the
-        ///       Type instance for the attribute. LicenseProviderAttribute overrides this to include the type name and the
-        ///       provider type name.
-        ///    </para>
+        /// This defines a unique ID for this attribute type. It is used
+        /// by filtering algorithms to identify two attributes that are
+        /// the same type. For most attributes, this just returns the
+        /// Type instance for the attribute. LicenseProviderAttribute overrides this to include the type name and the
+        /// provider type name.
         /// </summary>
         public override object TypeId
         {
@@ -94,9 +84,6 @@ namespace System.ComponentModel
             }
         }
 
-        /// <internalonly/>
-        /// <summary>
-        /// </summary>
         public override bool Equals(object value)
         {
             if (value is LicenseProviderAttribute && value != null)
@@ -119,13 +106,8 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///       Returns the hashcode for this object.
-        ///    </para>
+        /// Returns the hashcode for this object.
         /// </summary>
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
     }
 }

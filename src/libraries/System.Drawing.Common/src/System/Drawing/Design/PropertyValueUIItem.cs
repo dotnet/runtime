@@ -46,10 +46,10 @@ namespace System.Drawing.Design {
             this.itemImage = uiItemImage;
             this.handler = handler;
             if (itemImage == null) {
-               throw new ArgumentNullException("uiItemImage");
+               throw new ArgumentNullException(nameof(uiItemImage));
             }
             if (handler == null) {
-               throw new ArgumentNullException("handler");
+               throw new ArgumentNullException(nameof(handler));
             }
             this.tooltip = tooltip;
       }

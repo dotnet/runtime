@@ -29,7 +29,7 @@ namespace System.ServiceModel.Syndication
         {
             if (itemToWrite == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("itemToWrite");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(itemToWrite));
             }
             _item = itemToWrite;
         }
@@ -60,7 +60,7 @@ namespace System.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(item));
             }
             _item = item;
         }

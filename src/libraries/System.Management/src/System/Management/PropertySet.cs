@@ -125,10 +125,10 @@ namespace System.Management
         public void CopyTo(Array array, Int32 index) 
         {
             if (null == array)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if ((index < array.GetLowerBound(0)) || (index > array.GetUpperBound(0)))
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             // Get the names of the properties 
             string[] nameArray = null;
@@ -147,7 +147,7 @@ namespace System.Management
             if (status >= 0)
             {
                 if ((index + nameArray.Length) > array.Length)
-                    throw new ArgumentException(null,"index");
+                    throw new ArgumentException(null,nameof(index));
 
                 foreach (string propertyName in nameArray)
                     array.SetValue(new PropertyData(parent, propertyName), index++);
@@ -342,7 +342,7 @@ namespace System.Management
         {
             get { 
                 if (null == propertyName)
-                    throw new ArgumentNullException("propertyName");
+                    throw new ArgumentNullException(nameof(propertyName));
 
                 return new PropertyData(parent, propertyName);
             }
@@ -405,7 +405,7 @@ namespace System.Management
         public virtual void Add(string propertyName, Object propertyValue)
         {
             if (null == propertyValue)
-                throw new ArgumentNullException("propertyValue");
+                throw new ArgumentNullException(nameof(propertyValue));
 
             if (parent.GetType() == typeof(ManagementObject)) //can't add properties to instance
                 throw new InvalidOperationException();
@@ -444,7 +444,7 @@ namespace System.Management
         public void Add(string propertyName, Object propertyValue, CimType propertyType)
         {
             if (null == propertyName)
-                throw new ArgumentNullException("propertyName");
+                throw new ArgumentNullException(nameof(propertyName));
 
             if (parent.GetType() == typeof(ManagementObject)) //can't add properties to instance
                 throw new InvalidOperationException();

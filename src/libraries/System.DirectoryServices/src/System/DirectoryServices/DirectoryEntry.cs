@@ -230,7 +230,7 @@ namespace System.DirectoryServices
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 _objectSecurity = value;

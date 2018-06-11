@@ -51,7 +51,7 @@ namespace System.Xml.Xsl.IlGen
             {
                 // Add custom attribute to assembly marking it as security transparent so that Assert will not be allowed
                 // and link demands will be converted to full demands.
-                asmBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.Transparent, new object[] { }));
+                asmBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.Transparent, Array.Empty<object>()));
 
                 // Store LREModule once.  If multiple threads are doing this, then some threads might get different
                 // modules.  This is OK, since it's not mandatory to share, just preferable.
@@ -116,7 +116,7 @@ namespace System.Xml.Xsl.IlGen
 
                 // Add custom attribute to assembly marking it as security transparent so that Assert will not be allowed
                 // and link demands will be converted to full demands.
-                asmBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.Transparent, new object[] { }));
+                asmBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.Transparent, Array.Empty<object>()));
 
                 if (emitSymbols)
                 {
@@ -176,8 +176,8 @@ namespace System.Xml.Xsl.IlGen
                 if (_emitSymbols && (xmlAttrs & XmlILMethodAttributes.NonUser) != 0)
                 {
                     // Add DebuggerStepThroughAttribute and DebuggerNonUserCodeAttribute to non-user methods so that debugging is a better experience
-                    methBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.StepThrough, new object[] { }));
-                    methBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.NonUserCode, new object[] { }));
+                    methBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.StepThrough, Array.Empty<object>()));
+                    methBldr.SetCustomAttribute(new CustomAttributeBuilder(XmlILConstructors.NonUserCode, Array.Empty<object>()));
                 }
 
                 if (!isRaw)

@@ -23,7 +23,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(ActiveDirectorySite site)
         {
             if (site == null)
-                throw new ArgumentNullException("site");
+                throw new ArgumentNullException(nameof(site));
 
             string dn = (string)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -44,7 +44,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(ActiveDirectorySite site)
         {
             if (site == null)
-                throw new ArgumentNullException("site");
+                throw new ArgumentNullException(nameof(site));
 
             string dn = (string)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName);
 

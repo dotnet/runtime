@@ -118,7 +118,7 @@ namespace System.SpanTests
                     Assert.False(firstSpan.StartsWith(secondSpan, StringComparison.Ordinal));
 
                     Assert.False(firstSpan.StartsWith(secondSpan, StringComparison.OrdinalIgnoreCase));
-                    
+
                     // Different behavior depending on OS
                     Assert.Equal(
                         firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
@@ -197,7 +197,7 @@ namespace System.SpanTests
             value = new char[] { '\u0069', '\u0073', '\u0073', '\u0049' }; // issI
 
             Assert.False(span.StartsWith(value, StringComparison.Ordinal));
-             // Different behavior depending on OS - True on Windows, False on Unix
+            // Different behavior depending on OS - True on Windows, False on Unix
             Assert.Equal(
                 span.ToString().StartsWith(value.ToString(), StringComparison.InvariantCulture),
                 span.StartsWith(value, StringComparison.InvariantCulture));
@@ -208,7 +208,7 @@ namespace System.SpanTests
             value = new char[] { '\u0049', '\u0073', '\u0073', '\u0049' }; // IssI
             Assert.False(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
             Assert.False(span.StartsWith(value, StringComparison.InvariantCulture));
-             // Different behavior depending on OS - True on Windows, False on Unix
+            // Different behavior depending on OS - True on Windows, False on Unix
             Assert.Equal(
                 span.ToString().StartsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
                 span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));

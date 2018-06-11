@@ -15,10 +15,20 @@ namespace System
         [Fact]
         public void Properties()
         {
-            byte[] token = {1,2,3,4,5};
+            byte[] token = { 1, 2, 3, 4, 5 };
             var id = new ApplicationId(token, "Pizza", new Version(1, 0), "pepperoni", "it-it");
             CheckId(id, token);
             CheckId(id.Copy(), token);
+        }
+
+        [Fact]
+        public void ToStringTest()
+        {
+            byte[] token = { 1, 2, 3, 4, 5 };
+            var id = new ApplicationId(token, "Pizza", new Version(1, 0), "pepperoni", "it-it");
+            Assert.Equal(
+                "Pizza, culture=\"it-it\", version=\"1.0\", publicKeyToken=\"0102030405\", processorArchitecture =\"pepperoni\"",
+                id.ToString());
         }
 
         private void CheckId(ApplicationId id, byte[] token)

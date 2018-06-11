@@ -62,6 +62,8 @@ namespace System.Reflection.Tests
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithRefParameter", 0, false)]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithOutParameter", 1, false)]
         [InlineData(typeof(GenericClass<int>), "GenericMethod", 0, false)]
+        [InlineData(typeof(ParameterInfoMetadata), "MethodWithEnum", 0, true)]
+        [InlineData(typeof(ParameterInfoMetadata), "MethodWithNullableEnum", 0, true)]
         public void HasDefaultValue(Type type, string name, int index, bool expected)
         {
             ParameterInfo parameterInfo = GetParameterInfo(type, name, index);
@@ -120,6 +122,8 @@ namespace System.Reflection.Tests
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithDefault3", 0, false)]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithDefault4", 0, '\0')]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithDefaultNullableDateTime", 0, null)]
+        [InlineData(typeof(ParameterInfoMetadata), "MethodWithEnum", 0, AttributeTargets.All)]
+        [InlineData(typeof(ParameterInfoMetadata), "MethodWithNullableEnum", 0, (int)AttributeTargets.All)]
         public void DefaultValue(Type type, string name, int index, object expected)
         {
             ParameterInfo parameterInfo = GetParameterInfo(type, name, index);
@@ -257,6 +261,9 @@ namespace System.Reflection.Tests
 
             public void MethodWithDefaultDateTime(DateTime arg = default(DateTime)) { }
             public void MethodWithDefaultNullableDateTime(DateTime? arg = default(DateTime?)) { }
+
+            public void MethodWithEnum(AttributeTargets arg = AttributeTargets.All) { }
+            public void MethodWithNullableEnum(AttributeTargets? arg = AttributeTargets.All) { }
 
             public int MethodWithOptionalAndNoDefault([Optional] object o) { return 1; }
             public int MethodWithOptionalDefaultOutInMarshalParam([MarshalAs(UnmanagedType.LPWStr)][Out][In] string str = "") { return 1; }

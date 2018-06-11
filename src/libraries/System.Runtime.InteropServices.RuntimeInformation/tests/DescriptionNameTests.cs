@@ -27,8 +27,14 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             Console.WriteLine($@"### CONFIGURATION: {dvs} OS={osd} OSVer={osv} OSArch={osa} Arch={pra} Framework={frd} LibcRelease={lcr} LibcVersion={lcv}");
 
-            Console.WriteLine($"### BINARIES: {Path.GetDirectoryName(typeof(object).Assembly.Location)} (drive {new DriveInfo(Path.GetDirectoryName(typeof(object).Assembly.Location)).DriveFormat})");
-            Console.WriteLine($"### TEMP PATH: {Path.GetTempPath()} (drive {new DriveInfo(Path.GetTempPath()).DriveFormat})");
+            string binariesLocation = Path.GetDirectoryName(typeof(object).Assembly.Location);
+            string binariesLocationFormat = PlatformDetection.IsInAppContainer ? "Unknown" : new DriveInfo(binariesLocation).DriveFormat;
+            Console.WriteLine($"### BINARIES: {binariesLocation} (drive format {binariesLocationFormat})");
+
+            string tempPathLocation = Path.GetTempPath();
+            string tempPathLocationFormat = PlatformDetection.IsInAppContainer ? "Unknown" : new DriveInfo(tempPathLocation).DriveFormat;
+            Console.WriteLine($"### TEMP PATH: {tempPathLocation} (drive format {tempPathLocationFormat})");
+
             Console.WriteLine($"### CURRENT DIRECTORY: {Environment.CurrentDirectory}");
         }
 

@@ -4,8 +4,8 @@
 
 namespace System.Diagnostics
 {
-    // This class uses high-resolution performance counter if installed hardware 
-    // does not support it. Otherwise, the class will fall back to DateTime class
+    // This class uses high-resolution performance counter if the installed
+    // hardware supports it. Otherwise, the class will fall back to DateTime
     // and uses ticks as a measurement.
 
     public partial class Stopwatch

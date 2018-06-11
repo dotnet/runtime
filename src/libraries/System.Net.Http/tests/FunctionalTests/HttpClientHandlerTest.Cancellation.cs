@@ -13,7 +13,6 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
     public abstract class HttpClientHandler_Cancellation_Test : HttpClientTestBase
     {
         [Theory]
@@ -99,6 +98,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Test needs to be rewritten to work on UAP due to WinRT differences")]
         [Theory]
         [MemberData(nameof(TwoBoolsAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Buffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, CancellationMode mode)
@@ -288,6 +288,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT stack can't set MaxConnectionsPerServer < 2")]
         [Fact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
@@ -363,7 +364,7 @@ namespace System.Net.Http.Functional.Tests
                     "Expected cancellation exception, got:" + Environment.NewLine + error);
             }
 
-            Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 30), $"Elapsed time {stopwatch.Elapsed} should be less than 30 seconds, was {stopwatch.Elapsed.TotalSeconds}");
+            Assert.True(stopwatch.Elapsed < new TimeSpan(0, 0, 60), $"Elapsed time {stopwatch.Elapsed} should be less than 60 seconds, was {stopwatch.Elapsed.TotalSeconds}");
         }
 
         private static void Cancel(CancellationMode mode, HttpClient client, CancellationTokenSource cts)

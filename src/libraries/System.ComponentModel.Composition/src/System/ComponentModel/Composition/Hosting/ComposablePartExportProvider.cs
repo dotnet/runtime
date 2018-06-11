@@ -40,7 +40,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if (compositionOptions > (CompositionOptions.DisableSilentRejection | CompositionOptions.IsThreadSafe | CompositionOptions.ExportCompositionService))
             {
-                throw new ArgumentOutOfRangeException("compositionOptions");
+                throw new ArgumentOutOfRangeException(nameof(compositionOptions));
             }
 
             _compositionOptions = compositionOptions;
@@ -369,11 +369,11 @@ namespace System.ComponentModel.Composition.Hosting
             // the event
             IEnumerable<ExportDefinition> addedExports = batch.PartsToAdd.Count != 0 ?
                 batch.PartsToAdd.SelectMany(part => part.ExportDefinitions).ToArray() :
-                new ExportDefinition[0];
+                Array.Empty<ExportDefinition>();
 
             IEnumerable<ExportDefinition> removedExports = batch.PartsToRemove.Count != 0 ?
                 batch.PartsToRemove.SelectMany(part => part.ExportDefinitions).ToArray() :
-                new ExportDefinition[0];
+                Array.Empty<ExportDefinition>();
 
             OnExportsChanging(
                 new ExportsChangeEventArgs(addedExports, removedExports, atomicComposition));

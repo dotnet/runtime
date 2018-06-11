@@ -24,6 +24,7 @@ internal partial class Interop
         internal const int ERROR_LOCK_VIOLATION = 0x21;
         internal const int ERROR_HANDLE_EOF = 0x26;
         internal const int ERROR_BAD_NETPATH = 0x35;
+        internal const int ERROR_NETWORK_ACCESS_DENIED = 0x41;
         internal const int ERROR_BAD_NET_NAME = 0x43;
         internal const int ERROR_FILE_EXISTS = 0x50;
         internal const int ERROR_INVALID_PARAMETER = 0x57;
@@ -47,6 +48,7 @@ internal partial class Interop
         internal const int ERROR_PIPE_NOT_CONNECTED = 0xE9;
         internal const int ERROR_MORE_DATA = 0xEA;
         internal const int ERROR_NO_MORE_ITEMS = 0x103;
+        internal const int ERROR_DIRECTORY = 0x10B;
         internal const int ERROR_PARTIAL_COPY = 0x12B;
         internal const int ERROR_ARITHMETIC_OVERFLOW = 0x216;
         internal const int ERROR_PIPE_CONNECTED = 0x217;

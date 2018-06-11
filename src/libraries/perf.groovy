@@ -138,10 +138,10 @@ def osShortName = ['Windows 10': 'win10',
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
             newJob.with {
                 logRotator {
-                    artifactDaysToKeep(30)
-                    daysToKeep(30)
-                    artifactNumToKeep(200)
-                    numToKeep(200)
+                    artifactDaysToKeep(14)
+                    daysToKeep(14)
+                    artifactNumToKeep(100)
+                    numToKeep(100)
                 }
                 wrappers {
                     timeout {

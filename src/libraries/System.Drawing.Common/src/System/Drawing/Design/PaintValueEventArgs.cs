@@ -47,7 +47,7 @@ namespace System.Drawing.Design {
             
             this.graphics = graphics;
             if (graphics == null)
-                throw new ArgumentNullException("graphics");
+                throw new ArgumentNullException(nameof(graphics));
             
             this.bounds = bounds;
         }

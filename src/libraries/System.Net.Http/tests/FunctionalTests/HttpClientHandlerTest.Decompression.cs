@@ -8,11 +8,19 @@ using System.IO.Compression;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandler_Decompression_Test : HttpClientTestBase
     {
+        private readonly ITestOutputHelper _output;
+
+        public HttpClientHandler_Decompression_Test(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         public static IEnumerable<object[]> DecompressedResponse_MethodSpecified_DecompressedContentReturned_MemberData()
         {
             foreach (bool specifyAllMethods in new[] { false, true })
@@ -21,19 +29,19 @@ namespace System.Net.Http.Functional.Tests
                 {
                     "deflate",
                     new Func<Stream, Stream>(s => new DeflateStream(s, CompressionLevel.Optimal, leaveOpen: true)),
-                    specifyAllMethods ? DecompressionMethods.Deflate : ~DecompressionMethods.None
+                    specifyAllMethods ? DecompressionMethods.Deflate : DecompressionMethods.All
                 };
                 yield return new object[]
                 {
                     "gzip",
                     new Func<Stream, Stream>(s => new GZipStream(s, CompressionLevel.Optimal, leaveOpen: true)),
-                    specifyAllMethods ? DecompressionMethods.GZip : ~DecompressionMethods.None
+                    specifyAllMethods ? DecompressionMethods.GZip : DecompressionMethods.All
                 };
                 yield return new object[]
                 {
                     "br",
                     new Func<Stream, Stream>(s => new BrotliStream(s, CompressionLevel.Optimal, leaveOpen: true)),
-                    specifyAllMethods ? DecompressionMethods.Brotli : ~DecompressionMethods.None
+                    specifyAllMethods ? DecompressionMethods.Brotli : DecompressionMethods.All
                 };
             }
         }
@@ -43,6 +51,12 @@ namespace System.Net.Http.Functional.Tests
         public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(
             string encodingName, Func<Stream, Stream> compress, DecompressionMethods methods)
         {
+            if (!UseSocketsHttpHandler && encodingName == "br")
+            {
+                // Brotli only supported on SocketsHttpHandler.
+                return;
+            }
+
             var expectedContent = new byte[12345];
             new Random(42).NextBytes(expectedContent);
 
@@ -95,6 +109,13 @@ namespace System.Net.Http.Functional.Tests
         public async Task DecompressedResponse_MethodNotSpecified_OriginalContentReturned(
             string encodingName, Func<Stream, Stream> compress, DecompressionMethods methods)
         {
+            if (IsCurlHandler && encodingName == "br")
+            {
+                // 'Content-Encoding' response header with Brotli causes error
+                // with some Linux distros of libcurl.
+                return;
+            }
+
             var expectedContent = new byte[12345];
             new Random(42).NextBytes(expectedContent);
 

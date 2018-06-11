@@ -105,7 +105,7 @@ namespace System.ComponentModel.Composition.Primitives
                 (cardinality != ImportCardinality.ZeroOrOne)
                 )
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_InvalidEnum, "cardinality", cardinality, typeof(ImportCardinality).Name), "cardinality");
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_InvalidEnum, nameof(cardinality), cardinality, typeof(ImportCardinality).Name), nameof(cardinality));
             }
 
             _contractName = contractName ?? EmptyContractName;

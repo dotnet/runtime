@@ -10,12 +10,12 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        internal static void GetRandomBytes(ref byte pbBuffer, int count)
+        internal unsafe static void GetRandomBytes(byte* pbBuffer, int count)
         {
             Debug.Assert(count >= 0);
 
             int errorCode;
-            int ret = AppleCryptoNative_GetRandomBytes(ref pbBuffer, count, out errorCode);
+            int ret = AppleCryptoNative_GetRandomBytes(pbBuffer, count, out errorCode);
 
             if (ret == 0)
             {
@@ -29,6 +29,6 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_GetRandomBytes(ref byte buf, int num, out int errorCode);
+        private unsafe static extern int AppleCryptoNative_GetRandomBytes(byte* buf, int num, out int errorCode);
     }
 }

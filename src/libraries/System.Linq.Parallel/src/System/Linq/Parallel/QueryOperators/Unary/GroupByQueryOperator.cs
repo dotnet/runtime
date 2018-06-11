@@ -724,11 +724,12 @@ namespace System.Linq.Parallel
     /// </summary>
     internal class OrderedGroupByGrouping<TGroupKey, TOrderKey, TElement> : IGrouping<TGroupKey, TElement>
     {
+        const int INITIAL_CHUNK_SIZE = 2;
+
         private TGroupKey _groupKey; // The group key for this grouping
-        private GrowingArray<TElement> _values; // Values in this group
-        private GrowingArray<TOrderKey> _orderKeys; // Order keys that correspond to the values
+        private ListChunk<Pair<TOrderKey, TElement>> _values; // Values in this group
+        private TElement[] _sortedValues; // Sorted values (allocated in DoneAdding)
         private IComparer<TOrderKey> _orderComparer; // Comparer for order keys
-        private KeyAndValuesComparer _wrappedComparer; // Comparer that wraps the _orderComparer used for sorting key/value pairs
 
         /// <summary>
         /// Constructs a new grouping
@@ -738,10 +739,8 @@ namespace System.Linq.Parallel
             IComparer<TOrderKey> orderComparer)
         {
             _groupKey = groupKey;
-            _values = new GrowingArray<TElement>();
-            _orderKeys = new GrowingArray<TOrderKey>();
+            _values = new ListChunk<Pair<TOrderKey, TElement>>(INITIAL_CHUNK_SIZE);
             _orderComparer = orderComparer;
-            _wrappedComparer = new KeyAndValuesComparer(_orderComparer);
         }
 
         /// <summary>
@@ -757,17 +756,9 @@ namespace System.Linq.Parallel
 
         IEnumerator<TElement> IEnumerable<TElement>.GetEnumerator()
         {
-            Debug.Assert(_values != null);
+            Debug.Assert(_sortedValues != null);
 
-
-            int valueCount = _values.Count;
-            TElement[] valueArray = _values.InternalArray;
-            Debug.Assert(valueArray.Length >= valueCount); // valueArray.Length may be larger than valueCount
-
-            for (int i = 0; i < valueCount; i++)
-            {
-                yield return valueArray[i];
-            }
+            return ((IEnumerable<TElement>)_sortedValues).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -781,10 +772,8 @@ namespace System.Linq.Parallel
         internal void Add(TElement value, TOrderKey orderKey)
         {
             Debug.Assert(_values != null);
-            Debug.Assert(_orderKeys != null);
 
-            _values.Add(value);
-            _orderKeys.Add(orderKey);
+            _values.Add(new Pair<TOrderKey, TElement>(orderKey, value));
         }
 
         /// <summary>
@@ -793,41 +782,33 @@ namespace System.Linq.Parallel
         internal void DoneAdding()
         {
             Debug.Assert(_values != null);
-            Debug.Assert(_orderKeys != null);
 
-            // Create a map of key-value pair.
-            // We can't use a dictionary since the keys are not necessarily unique
-            List<KeyValuePair<TOrderKey, TElement>> sortedValues = new List<KeyValuePair<TOrderKey, TElement>>();
-            for (int i = 0; i < _orderKeys.InternalArray.Length; i++)
+            int count = _values.Count;
+            ListChunk<Pair<TOrderKey, TElement>> curChunk = _values;
+            while ((curChunk = curChunk.Next) != null)
             {
-                sortedValues.Add(new KeyValuePair<TOrderKey, TElement>(_orderKeys.InternalArray[i], _values.InternalArray[i]));
+                count += curChunk.Count;
             }
 
-            // Sort the values by using the _orderComparer wrapped in a Tuple comparer
-            sortedValues.Sort(0, _values.Count, _wrappedComparer);
+            TElement[] values = new TElement[count];
+            TOrderKey[] orderKeys = new TOrderKey[count];
 
-            // Unpack the values from the list back into the 2 separate arrays
-            for (int i = 0; i < _values.InternalArray.Length; i++)
+            int idx = 0;
+            foreach (Pair<TOrderKey, TElement> p in _values)
             {
-                _orderKeys.InternalArray[i] = sortedValues[i].Key;
-                _values.InternalArray[i] = sortedValues[i].Value;
+                orderKeys[idx] = p.First;
+                values[idx] = p.Second;
+
+                idx++;
             }
+
+            Array.Sort(orderKeys, values, _orderComparer);
+
+            _sortedValues = values;
+
 #if DEBUG
-            _orderKeys = null; // Any future calls to Add() or DoneAdding() will fail
+            _values = null; // Any future calls to Add() or DoneAdding() will fail
 #endif
-        }
-
-        private class KeyAndValuesComparer : IComparer<KeyValuePair<TOrderKey, TElement>>
-        {
-            private IComparer<TOrderKey> myComparer;
-            public KeyAndValuesComparer(IComparer<TOrderKey> comparer)
-            {
-                myComparer = comparer;
-            }
-            public int Compare(KeyValuePair<TOrderKey, TElement> x, KeyValuePair<TOrderKey, TElement> y)
-            {
-                return myComparer.Compare(x.Key, y.Key);
-            }
         }
     }
 }

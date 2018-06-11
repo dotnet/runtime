@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Net.NetworkInformation.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Ping class not supported on UWP. See dotnet/corefx #19583")]
     public class PingTest
     {
         private class FinalizingPing : Ping
@@ -96,7 +97,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         public async Task SendPingAsyncWithIPAddress()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -110,7 +110,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         public async Task SendPingAsyncWithIPAddress_AddressAsString()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -138,7 +137,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         [Fact]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer()
         {
@@ -180,7 +178,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         [Fact]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions()
         {
@@ -224,7 +221,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         public async Task SendPingAsyncWithHost()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -238,7 +234,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         public async Task SendPingAsyncWithHostAndTimeout()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -252,7 +247,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         [Fact]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer()
         {
@@ -294,7 +288,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         [Fact]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions()
         {
@@ -337,7 +330,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         public static async Task SendPings_ReuseInstance_Hostname()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -353,7 +345,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         public static async Task Sends_ReuseInstance_Hostname()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -369,7 +360,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         public static async Task SendAsyncs_ReuseInstance_Hostname()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -420,7 +410,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         public static async Task Ping_DisposeAfterSend_Success()
         {
             Ping p = new Ping();
@@ -429,7 +418,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         public static void Ping_DisposeMultipletimes_Success()
         {
             Ping p = new Ping();
@@ -438,7 +426,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue(19583, TargetFrameworkMonikers.Uap)]
         public static void Ping_SendAfterDispose_ThrowsSynchronously()
         {
             Ping p = new Ping();

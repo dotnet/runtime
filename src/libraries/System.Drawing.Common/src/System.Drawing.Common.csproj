@@ -29,6 +29,8 @@
     <Compile Include="System\Drawing\Bitmap.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
+    <Compile Include="System\Drawing\BufferedGraphics.cs" />
+    <Compile Include="System\Drawing\BufferedGraphicsContext.cs" />
     <Compile Include="System\Drawing\Brushes.cs" />
     <Compile Include="System\Drawing\CharacterRange.cs" />
     <Compile Include="System\Drawing\ColorTranslator.cs" />
@@ -225,6 +227,7 @@
     <Compile Include="System\Drawing\Imaging\Metafile.Windows.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileHeader.Windows.cs" />
     <Compile Include="System\Drawing\Imaging\MetaHeader.Windows.cs" />
+    <Compile Include="System\Drawing\Internal\GpPathData.cs" />	
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
     <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
     <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
@@ -282,8 +285,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.Win32SystemColors.cs">
       <Link>Common\Interop\Windows\user32\Interop.Win32SystemColors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\FunctionWrapper.Windows.cs">
       <Link>Common\System\Runtime\InteropServices\FunctionWrapper.Windows.cs</Link>
