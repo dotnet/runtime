@@ -17,13 +17,11 @@ namespace System.Threading
     {
         public Mutex(bool initiallyOwned, string name, out bool createdNew)
         {
-            VerifyNameForCreate(name);
             CreateMutexCore(initiallyOwned, name, out createdNew);
         }
 
         public Mutex(bool initiallyOwned, string name)
         {
-            VerifyNameForCreate(name);
             CreateMutexCore(initiallyOwned, name, out _);
         }
 
