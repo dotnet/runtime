@@ -106,6 +106,7 @@ namespace System.Tests
             });
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("ptr", () => new string((char*)null, 0, 1)); // null ptr with non-zero length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => new string(UIntPtr.Size == 4 ? (char*)uint.MaxValue : (char*)ulong.MaxValue, 42, 0)); // overflowing ptr + startIndex
         }
 
         [Theory]
@@ -476,7 +477,9 @@ namespace System.Tests
 
         [Theory]
         // CurrentCulture
+        [InlineData("", 0, "", 0, 0, StringComparison.CurrentCulture, 0)]
         [InlineData("Hello", 0, "Hello", 0, 5, StringComparison.CurrentCulture, 0)]
+        [InlineData("Hello", 2, "Hello", 3, 1, StringComparison.CurrentCulture, 0)]
         [InlineData("Hello", 0, "Goodbye", 0, 5, StringComparison.CurrentCulture, 1)]
         [InlineData("Goodbye", 0, "Hello", 0, 5, StringComparison.CurrentCulture, -1)]
         [InlineData("HELLO", 2, "hello", 2, 3, StringComparison.CurrentCulture, 1)]
@@ -492,7 +495,9 @@ namespace System.Tests
         [InlineData("foo", -1, null, -1, -1, StringComparison.CurrentCulture, 1)]
         [InlineData(null, -1, "foo", -1, -1, StringComparison.CurrentCulture, -1)]
         // CurrentCultureIgnoreCase
+        [InlineData("", 0, "", 0, 0, StringComparison.CurrentCultureIgnoreCase, 0)]
         [InlineData("HELLO", 0, "hello", 0, 5, StringComparison.CurrentCultureIgnoreCase, 0)]
+        [InlineData("Hello", 2, "Hello", 3, 1, StringComparison.CurrentCultureIgnoreCase, 0)]
         [InlineData("Hello", 0, "Hello", 0, 5, StringComparison.CurrentCultureIgnoreCase, 0)]
         [InlineData("Hello", 2, "Hello", 2, 3, StringComparison.CurrentCultureIgnoreCase, 0)]
         [InlineData("Hello", 2, "Yellow", 2, 3, StringComparison.CurrentCultureIgnoreCase, 0)]
@@ -507,7 +512,9 @@ namespace System.Tests
         [InlineData("foo", -1, null, -1, -1, StringComparison.CurrentCultureIgnoreCase, 1)]
         [InlineData(null, -1, "foo", -1, -1, StringComparison.CurrentCultureIgnoreCase, -1)]
         // InvariantCulture
+        [InlineData("", 0, "", 0, 0, StringComparison.InvariantCulture, 0)]
         [InlineData("Hello", 0, "Hello", 0, 5, StringComparison.InvariantCulture, 0)]
+        [InlineData("Hello", 2, "Hello", 3, 1, StringComparison.InvariantCulture, 0)]
         [InlineData("Hello", 0, "Goodbye", 0, 5, StringComparison.InvariantCulture, 1)]
         [InlineData("Goodbye", 0, "Hello", 0, 5, StringComparison.InvariantCulture, -1)]
         [InlineData("HELLO", 2, "hello", 2, 3, StringComparison.InvariantCulture, 1)]
@@ -516,8 +523,10 @@ namespace System.Tests
         [InlineData("Hello", 0, null, 0, 5, StringComparison.InvariantCulture, 1)]
         [InlineData(null, 0, "Hello", 0, 5, StringComparison.InvariantCulture, -1)]
         // InvariantCultureIgnoreCase
+        [InlineData("", 0, "", 0, 0, StringComparison.InvariantCultureIgnoreCase, 0)]
         [InlineData("HELLO", 0, "hello", 0, 5, StringComparison.InvariantCultureIgnoreCase, 0)]
         [InlineData("Hello", 0, "Hello", 0, 5, StringComparison.InvariantCultureIgnoreCase, 0)]
+        [InlineData("Hello", 2, "Hello", 3, 1, StringComparison.InvariantCultureIgnoreCase, 0)]
         [InlineData("Hello", 2, "Hello", 2, 3, StringComparison.InvariantCultureIgnoreCase, 0)]
         [InlineData("Hello", 2, "Yellow", 2, 3, StringComparison.InvariantCultureIgnoreCase, 0)]
         [InlineData("Hello", 0, "Goodbye", 0, 5, StringComparison.InvariantCultureIgnoreCase, 1)]
@@ -528,7 +537,9 @@ namespace System.Tests
         [InlineData("Hello", 0, null, 0, 5, StringComparison.InvariantCultureIgnoreCase, 1)]
         [InlineData(null, 0, "Hello", 0, 5, StringComparison.InvariantCultureIgnoreCase, -1)]
         // Ordinal
+        [InlineData("", 0, "", 0, 0, StringComparison.Ordinal, 0)]
         [InlineData("Hello", 0, "Hello", 0, 5, StringComparison.Ordinal, 0)]
+        [InlineData("Hello", 2, "Hello", 3, 1, StringComparison.Ordinal, 0)]
         [InlineData("Hello", 0, "Goodbye", 0, 5, StringComparison.Ordinal, 1)]
         [InlineData("Goodbye", 0, "Hello", 0, 5, StringComparison.Ordinal, -1)]
         [InlineData("Hello", 2, "Hello", 2, 3, StringComparison.Ordinal, 0)]
@@ -577,8 +588,10 @@ namespace System.Tests
         [InlineData("foo", -1, null, -1, -1, StringComparison.Ordinal, 1)]
         [InlineData(null, -1, "foo", -1, -1, StringComparison.Ordinal, -1)]
         // OrdinalIgnoreCase
+        [InlineData("", 0, "", 0, 0, StringComparison.OrdinalIgnoreCase, 0)]
         [InlineData("HELLO", 0, "hello", 0, 5, StringComparison.OrdinalIgnoreCase, 0)]
         [InlineData("Hello", 0, "Hello", 0, 5, StringComparison.OrdinalIgnoreCase, 0)]
+        [InlineData("Hello", 2, "Hello", 3, 1, StringComparison.OrdinalIgnoreCase, 0)]
         [InlineData("Hello", 2, "Hello", 2, 3, StringComparison.OrdinalIgnoreCase, 0)]
         [InlineData("Hello", 2, "Yellow", 2, 3, StringComparison.OrdinalIgnoreCase, 0)]
         [InlineData("Hello", 0, "Goodbye", 0, 5, StringComparison.OrdinalIgnoreCase, 1)]
@@ -1419,15 +1432,46 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void EndsWith_StringBoolCultureInfo_Valid()
+        {
+            // Same string
+            string s = "foo";
+            Assert.True(s.EndsWith(s, false, null));
+            Assert.True(s.EndsWith(s, true, null));
+            Assert.True(s.EndsWith(s, false, CultureInfo.InvariantCulture));
+            Assert.True(s.EndsWith(s, true, CultureInfo.InvariantCulture));
+
+            // Different object, same string, no culture
+            Assert.True(s.EndsWith(String.Copy(s), false, null));
+            Assert.True(s.EndsWith(String.Copy(s), true, null));
+
+            // Different object, same string, invariant culture
+            Assert.True(s.EndsWith(String.Copy(s), false, CultureInfo.InvariantCulture));
+            Assert.True(s.EndsWith(String.Copy(s), true, CultureInfo.InvariantCulture));
+
+            // Different object, same string, current culture
+            Assert.True(s.EndsWith(String.Copy(s), false, CultureInfo.InvariantCulture));
+            Assert.True(s.EndsWith(String.Copy(s), true, CultureInfo.InvariantCulture));
+        }
+
+        [Fact]
         public static void EndsWith_Invalid()
         {
             // Value is null
             AssertExtensions.Throws<ArgumentNullException>("value", () => "foo".EndsWith(null));
             AssertExtensions.Throws<ArgumentNullException>("value", () => "foo".EndsWith(null, StringComparison.CurrentCulture));
 
-            // Invalid comparison type
+            // Invalid comparison type with empty string
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "foo".EndsWith("", StringComparison.CurrentCulture - 1));
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "foo".EndsWith("", StringComparison.OrdinalIgnoreCase + 1));
+
+            // Invalid comparison type with same string
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => "foo".EndsWith("foo", StringComparison.CurrentCulture - 1));
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => "foo".EndsWith("foo", StringComparison.OrdinalIgnoreCase + 1));
+
+            // Invalid comparison type with non-empty different string
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => "foo".EndsWith("a", StringComparison.CurrentCulture - 1));
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => "foo".EndsWith("a", StringComparison.OrdinalIgnoreCase + 1));
         }
 
         [Fact]
@@ -2225,8 +2269,12 @@ namespace System.Tests
         [InlineData(StringComparison.OrdinalIgnoreCase + 1)]
         public static void Equals_InvalidComparisonType_ThrowsArgumentOutOfRangeException(StringComparison comparisonType)
         {
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => string.Equals("a", "a", comparisonType));
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => string.Equals("a", null, comparisonType));
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => string.Equals("a", "b", comparisonType));
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "a".Equals("a", comparisonType));
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => "a".Equals(null, comparisonType));
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => "a".Equals("b", comparisonType));
         }
 
         [Fact]
@@ -2829,6 +2877,9 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData("Hello", new char[] { 'd' }, 0, 5, -1)]
+        [InlineData("Hello", new char[] { 'o' }, 0, 5, 4)]
+        [InlineData("Hello", new char[] { 'e', 'l', 'o' }, 0, 5, 1)]
         [InlineData("Hello", new char[] { 'd', 'o', 'l' }, 0, 5, 2)]
         [InlineData("Hello", new char[] { 'd', 'e', 'H' }, 0, 0, -1)]
         [InlineData("Hello", new char[] { 'd', 'e', 'f' }, 1, 3, 1)]
@@ -2837,6 +2888,7 @@ namespace System.Tests
         [InlineData("H" + SoftHyphen + "ello", new char[] { 'a', '\u00AD', 'c' }, 0, 2, 1)]
         [InlineData("", new char[] { 'd', 'e', 'f' }, 0, 0, -1)]
         [InlineData("Hello", new char[] { 'o', 'l' }, 0, 5, 2)]
+        [InlineData("Hello", new char[] { 'e', 'o' }, 0, 5, 1)]
         [InlineData("Hello", new char[] { 'e', 'H' }, 0, 0, -1)]
         [InlineData("Hello", new char[] { 'd', 'e' }, 1, 3, 1)]
         [InlineData("Hello", new char[] { 'a', 'b' }, 2, 3, -1)]
@@ -2845,6 +2897,10 @@ namespace System.Tests
         [InlineData("xHello", new char[] { '\0', 'b' }, 0, 6, -1)]   // Null terminator check, even
         [InlineData("Hello", new char[] { '\0', 'o' }, 0, 5, 4)]     // Match last char, odd
         [InlineData("xHello", new char[] { '\0', 'o' }, 0, 6, 5)]    // Match last char, even
+        [InlineData("\x4E16\x754C\x60A8\x597D", new char[] { '\x754C' }, 0, 4, 1)]
+        [InlineData("\x4E16\x754C\x60A8\x597D", new char[] { '\x754C', '\x60A8' }, 0, 4, 1)]
+        [InlineData("\x4E16\x754C\x60A8\x597D", new char[] { '\x754C', '\x60A8', '\x4E16' }, 0, 4, 0)]
+        [InlineData("\x4E16\x754C\x60A8\x597D", new char[] { '\x754C', '\x60A8', '\x4E16', '\x597D' }, 0, 4, 0)]
         public static void IndexOfAny(string s, char[] anyOf, int startIndex, int count, int expected)
         {
             if (startIndex + count == s.Length)
@@ -2855,7 +2911,11 @@ namespace System.Tests
                 }
                 Assert.Equal(expected, s.IndexOfAny(anyOf, startIndex));
             }
-            Assert.Equal(expected, s.IndexOfAny(anyOf, startIndex, count));
+
+            foreach (char[] permutedAnyOf in Permute(anyOf))
+            {
+                Assert.Equal(expected, s.IndexOfAny(permutedAnyOf, startIndex, count));
+            }
         }
 
         [Fact]
@@ -3368,6 +3428,8 @@ namespace System.Tests
             Assert.Equal(expected, s.LastIndexOf(value.ToString(), startIndex, count, StringComparison.CurrentCulture));
             Assert.Equal(expected, s.LastIndexOf(value.ToString(), startIndex, count, StringComparison.Ordinal));
             Assert.Equal(expected, s.LastIndexOf(value.ToString(), startIndex, count, StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(expected, s.LastIndexOf(value.ToString(), startIndex, count, StringComparison.InvariantCulture));
+            Assert.Equal(expected, s.LastIndexOf(value.ToString(), startIndex, count, StringComparison.InvariantCultureIgnoreCase));
         }
 
         [Fact]
@@ -3572,13 +3634,22 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData("Hello", new char[] { 'd' }, 4, 5, -1)]
+        [InlineData("Hello", new char[] { 'l' }, 4, 5, 3)]
+        [InlineData("Hello", new char[] { 'e', 'l' }, 4, 5, 3)]
         [InlineData("Hello", new char[] { 'd', 'e', 'l' }, 4, 5, 3)]
         [InlineData("Hello", new char[] { 'd', 'e', 'l' }, 4, 0, -1)]
         [InlineData("Hello", new char[] { 'd', 'e', 'f' }, 2, 3, 1)]
         [InlineData("Hello", new char[] { 'a', 'b', 'c' }, 2, 3, -1)]
+        [InlineData("Hello", new char[] { 'a', 'b', 'c', 'd' }, 2, 3, -1)]
+        [InlineData("Hello", new char[] { 'a', 'b', 'c', 'e' }, 2, 3, 1)]
         [InlineData("Hello", new char[0], 2, 3, -1)]
         [InlineData("H" + SoftHyphen + "ello", new char[] { 'a', '\u00AD', 'c' }, 2, 3, 1)]
         [InlineData("", new char[] { 'd', 'e', 'f' }, -1, -1, -1)]
+        [InlineData("\x4E16\x754C\x60A8\x597D", new char[] { '\x754C' }, 3, 4, 1)]
+        [InlineData("\x4E16\x754C\x60A8\x597D", new char[] { '\x754C', '\x60A8' }, 3, 4, 2)]
+        [InlineData("\x4E16\x754C\x60A8\x597D", new char[] { '\x754C', '\x60A8', '\x4E16' }, 3, 4, 2)]
+        [InlineData("\x4E16\x754C\x60A8\x597D", new char[] { '\x754C', '\x60A8', '\x4E16', '\x597D' }, 3, 4, 3)]
         public static void LastIndexOfAny(string s, char[] anyOf, int startIndex, int count, int expected)
         {
             if (count == startIndex + 1)
@@ -3589,7 +3660,11 @@ namespace System.Tests
                 }
                 Assert.Equal(expected, s.LastIndexOfAny(anyOf, startIndex));
             }
-            Assert.Equal(expected, s.LastIndexOfAny(anyOf, startIndex, count));
+
+            foreach (char[] permutedAnyOf in Permute(anyOf))
+            {
+                Assert.Equal(expected, s.LastIndexOfAny(permutedAnyOf, startIndex, count));
+            }
         }
 
         [Fact]
@@ -3968,6 +4043,7 @@ namespace System.Tests
 
         [Theory]
         [InlineData("Hello", 'l', '!', "He!!o")]
+        [InlineData("Hello", 'e', 'e', "Hello")]
         [InlineData("Hello", 'a', 'b', "Hello")]
         public static void Replace_Char_Char(string s, char oldChar, char newChar, string expected)
         {
@@ -4290,6 +4366,8 @@ namespace System.Tests
         public static void ToString(string s)
         {
             Assert.Same(s, s.ToString());
+            Assert.Same(s, s.ToString(null));
+            Assert.Same(s, s.ToString(CultureInfo.CurrentCulture));
 
             Assert.Equal(s, s.AsSpan().ToString());
         }
@@ -4454,6 +4532,9 @@ namespace System.Tests
         [InlineData("  Hello  ", new char[0], "Hello")]
         [InlineData("      \t      ", null, "")]
         [InlineData("", null, "")]
+        [InlineData("      ", new char[] { ' ' }, "")]
+        [InlineData("aaaaa", new char[] { 'a' }, "")]
+        [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
         public static void Trim(string s, char[] trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
@@ -4481,6 +4562,9 @@ namespace System.Tests
         [InlineData("  Hello  ", new char[0], "  Hello")]
         [InlineData("      \t      ", null, "")]
         [InlineData("", null, "")]
+        [InlineData("      ", new char[] { ' ' }, "")]
+        [InlineData("aaaaa", new char[] { 'a' }, "")]
+        [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
         public static void TrimEnd(string s, char[] trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
@@ -4508,6 +4592,9 @@ namespace System.Tests
         [InlineData("  Hello  ", new char[0], "Hello  ")]
         [InlineData("      \t      ", null, "")]
         [InlineData("", null, "")]
+        [InlineData("      ", new char[] { ' ' }, "")]
+        [InlineData("aaaaa", new char[] { 'a' }, "")]
+        [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
         public static void TrimStart(string s, char[] trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
@@ -4607,14 +4694,17 @@ namespace System.Tests
 
         public static IEnumerable<object[]> StartEndWith_TestData()
         {
-            //                           str1                    Start      End   Culture  ignorecase   expected
-            yield return new object[] { "abcd",                  "AB",      "CD", "en-US",    false,       false  };
-            yield return new object[] { "ABcd",                  "ab",      "CD", "en-US",    false,       false  };
-            yield return new object[] { "abcd",                  "AB",      "CD", "en-US",    true,        true   };
-            yield return new object[] { "i latin i",             "I Latin", "I",  "tr-TR",    false,       false  };
-            yield return new object[] { "i latin i",             "I Latin", "I",  "tr-TR",    true,        false  };
-            yield return new object[] { "\u0130 turkish \u0130", "i",       "i",  "tr-TR",    true,        true   };
-            yield return new object[] { "\u0131 turkish \u0131", "I",       "I",  "tr-TR",    true,        true   };
+            //                           str1                    Start      End     Culture  ignorecase   expected
+            yield return new object[] { "abcd",                  "abcd",    "abcd", "en-US",    false,       true   };
+            yield return new object[] { "abcd",                  "abcd",    "abcd", "en-US",    true,        true   };
+            yield return new object[] { "abcd",                  "AB",      "CD",   "en-US",    false,       false  };
+            yield return new object[] { "abcd",                  "AB",      "CD",   null,       false,       false  };
+            yield return new object[] { "ABcd",                  "ab",      "CD",   "en-US",    false,       false  };
+            yield return new object[] { "abcd",                  "AB",      "CD",   "en-US",    true,        true   };
+            yield return new object[] { "i latin i",             "I Latin", "I",    "tr-TR",    false,       false  };
+            yield return new object[] { "i latin i",             "I Latin", "I",    "tr-TR",    true,        false  };
+            yield return new object[] { "\u0130 turkish \u0130", "i",       "i",    "tr-TR",    true,        true   };
+            yield return new object[] { "\u0131 turkish \u0131", "I",       "I",    "tr-TR",    true,        true   };
         }
 
         [Theory]
@@ -4697,7 +4787,7 @@ namespace System.Tests
         [MemberData(nameof(StartEndWith_TestData))]
         public static void StartEndWithTest(string source, string start, string end, string cultureName, bool ignoreCase, bool expected)
         {
-             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
+             CultureInfo ci = cultureName != null ? CultureInfo.GetCultureInfo(cultureName) : null;
              Assert.Equal(expected, source.StartsWith(start, ignoreCase, ci));
              Assert.Equal(expected, source.EndsWith(end, ignoreCase, ci));
         }
@@ -4710,11 +4800,10 @@ namespace System.Tests
         }
 
         [Fact]
-        public static unsafe void ConstructorsTest()
+        public static unsafe void Ctor_SByte()
         {
             string s = "This is a string constructor test";
             byte [] encodedBytes = Encoding.Default.GetBytes(s);
-
             fixed (byte *pBytes = encodedBytes)
             {
                 Assert.Equal(s, new String((sbyte*) pBytes));
@@ -4724,16 +4813,22 @@ namespace System.Tests
 
             s = "This is some string \u0393\u0627\u3400\u0440\u1100";
             encodedBytes = Encoding.UTF8.GetBytes(s);
-
             fixed (byte *pBytes = encodedBytes)
             {
                 Assert.Equal(s, new String((sbyte*) pBytes, 0, encodedBytes.Length, Encoding.UTF8));
+            }
+
+            fixed (byte *pBytes = new byte[1] { 0 })
+            {
+                Assert.Equal(string.Empty, new String((sbyte*) pBytes));
+                Assert.Equal(string.Empty, new String((sbyte*) pBytes, 0, 0));
+                Assert.Equal(string.Empty, new String((sbyte*) pBytes, 0, 0, Encoding.UTF8));
             }
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // These tests assume that UTF8 is the default encoding
-        public static unsafe void ConstructorsTest_InvalidUTF8()
+        public static unsafe void Ctor_SByte_InvalidUTF8()
         {
             byte[] invalidUTF8Bytes = new byte[] { (byte)'A', (byte)'B', 0xEE, (byte)'C', (byte)'D', 0 };
 
@@ -4746,18 +4841,25 @@ namespace System.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static unsafe void ConstructorsTest_InvalidArguments ()
+        public static unsafe void Ctor_SByte_InvalidArguments()
         {
             AssertExtensions.Throws<ArgumentNullException>("value", () => new String ((sbyte*) null, 0, 1, Encoding.Default));
             AssertExtensions.Throws<ArgumentNullException>("value", () => new String ((sbyte*) null, 1, 1, Encoding.Default));
 
             AssertExtensions.Throws<ArgumentNullException>("value", () => new String ((sbyte*) null, 0, 1, null));
             AssertExtensions.Throws<ArgumentNullException>("value", () => new String ((sbyte*) null, 1, 1, null));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => new String((sbyte*)null, -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => new String((sbyte*)null, -1, 0, Encoding.UTF8));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => new String((sbyte*)null, 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => new String((sbyte*)null, 0, -1, Encoding.UTF8));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => new String(UIntPtr.Size == 4 ? (sbyte*)uint.MaxValue : (sbyte*)ulong.MaxValue, 42, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => new String(UIntPtr.Size == 4 ? (sbyte*)uint.MaxValue : (sbyte*)ulong.MaxValue, 42, 0, Encoding.UTF8));
         }
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static unsafe void ConstructorsTest_Empty ()
+        public static unsafe void Ctor_SByte_NullPointer_ReturnsEmptyString()
         {
             Assert.Equal(string.Empty, new String((sbyte*) null));
 
@@ -4773,6 +4875,18 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateStringFromEncoding_0Length_EmptyStringReturned() // basic test for code coverage; more tests in encodings tests
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes("hello");
+            Assert.Same(string.Empty, new AsciiEncodingWithZeroReturningGetCharCount().GetString(bytes, 0, 0));
+        }
+
+        private sealed class AsciiEncodingWithZeroReturningGetCharCount : ASCIIEncoding
+        {
+            public override int GetCharCount(byte[] bytes, int index, int count) => 0;
+        }
+
+        [Fact]
         public static unsafe void CloneTest()
         {
             string s = "some string to clone";
@@ -4784,6 +4898,8 @@ namespace System.Tests
         [Fact]
         public static unsafe void CopyTest()
         {
+            AssertExtensions.Throws<ArgumentNullException>("str", () => String.Copy(null));
+
             string s = "some string to copy";
             string copy = String.Copy(s);
             Assert.Equal(s, copy);
@@ -4794,6 +4910,9 @@ namespace System.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, ".NetNative limits interning of literals to the empty string.")]
         public static unsafe void InternTest()
         {
+            AssertExtensions.Throws<ArgumentNullException>("str", () => String.Intern(null));
+            AssertExtensions.Throws<ArgumentNullException>("str", () => String.IsInterned(null));
+
             String s1 = "MyTest";
             String s2 = new StringBuilder().Append("My").Append("Test").ToString(); 
             String s3 = String.Intern(s2);
@@ -4823,7 +4942,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static unsafe void NormalizationTest()
+        public static unsafe void NormalizationTest() // basic test; more tests in globalization tests
         {
             // U+0063  LATIN SMALL LETTER C
             // U+0301  COMBINING ACUTE ACCENT
@@ -4853,6 +4972,18 @@ namespace System.Tests
 
             normalized = s.Normalize(NormalizationForm.FormKD);
             Assert.True(normalized.IsNormalized(NormalizationForm.FormKD), "Expected to have the normalized string with FormKD");
+
+            s = "hello";
+            Assert.True(s.IsNormalized());
+            Assert.True(s.IsNormalized(NormalizationForm.FormC));
+            Assert.True(s.IsNormalized(NormalizationForm.FormD));
+            Assert.True(s.IsNormalized(NormalizationForm.FormKC));
+            Assert.True(s.IsNormalized(NormalizationForm.FormKD));
+            Assert.Same(s, s.Normalize());
+            Assert.Same(s, s.Normalize(NormalizationForm.FormC));
+            Assert.Same(s, s.Normalize(NormalizationForm.FormD));
+            Assert.Same(s, s.Normalize(NormalizationForm.FormKC));
+            Assert.Same(s, s.Normalize(NormalizationForm.FormKD));
         }
 
         [Fact]
@@ -4878,6 +5009,52 @@ namespace System.Tests
             }
 
             Assert.False(chEnum.MoveNext(), "expect to not having any characters to enumerate");
+        }
+        
+        [Fact]
+        public static void IConvertible_ValuesRoundtripThroughString() // basic test; more coverage tests in Convert tests
+        {
+            CultureInfo c = CultureInfo.InvariantCulture;
+            DateTime dt = new DateTime(2018, 6, 5, 1, 2, 0, DateTimeKind.Utc);
+
+            Assert.True(((IConvertible)true.ToString(c)).ToBoolean(c));
+            Assert.Equal(42, ((IConvertible)((byte)42).ToString(c)).ToByte(c));
+            Assert.Equal(42, ((IConvertible)((char)42).ToString(c)).ToChar(c));
+            Assert.Equal(dt, ((IConvertible)dt.ToString(c)).ToDateTime(c));
+            Assert.Equal(42, ((IConvertible)(42m).ToString(c)).ToDecimal(c));
+            Assert.Equal(42, ((IConvertible)(42.0).ToString(c)).ToDouble(c));
+            Assert.Equal(42, ((IConvertible)((short)42).ToString(c)).ToInt16(c));
+            Assert.Equal(42, ((IConvertible)((int)42).ToString(c)).ToInt32(c));
+            Assert.Equal(42, ((IConvertible)((long)42).ToString(c)).ToInt64(c));
+            Assert.Equal(42, ((IConvertible)((sbyte)42).ToString(c)).ToSByte(c));
+            Assert.Equal(42, ((IConvertible)(42.0f).ToString(c)).ToSingle(c));
+            Assert.Equal("42", ((IConvertible)"42".ToString(c)).ToString(c));
+            Assert.Equal((ushort)42, ((IConvertible)((ushort)42).ToString(c)).ToUInt16(c));
+            Assert.Equal((uint)42, ((IConvertible)((uint)42).ToString(c)).ToUInt32(c));
+            Assert.Equal((ulong)42, ((IConvertible)((ulong)42).ToString(c)).ToUInt64(c));
+        }
+
+        private static IEnumerable<T[]> Permute<T>(T[] input)
+        {
+            if (input.Length <= 1)
+            {
+                yield return input;
+                yield break;
+            }
+
+            for (int i = 0; i < input.Length; i++)
+            {
+                var remainder = new T[input.Length - 1];
+                Array.Copy(input, 0, remainder, 0, i);
+                Array.Copy(input, i + 1, remainder, i, input.Length - i - 1);
+                foreach (T[] output in Permute(remainder))
+                {
+                    var result = new T[input.Length];
+                    result[0] = input[i];
+                    Array.Copy(output, 0, result, 1, output.Length);
+                    yield return result;
+                }
+            }
         }
     }
 }
