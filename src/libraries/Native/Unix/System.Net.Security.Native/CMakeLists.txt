@@ -24,7 +24,7 @@ else()
 endif()
 
 set(NATIVEGSS_SOURCES
-    pal_gssapi.cpp
+    pal_gssapi.c
 )
 
 add_library(System.Net.Security.Native
