@@ -9,7 +9,7 @@ using System.Text;
 
 namespace R2RDump
 {
-    class GcInfo
+    public class GcInfo
     {
         private enum GcInfoHeaderFlags
         {
@@ -33,8 +33,8 @@ namespace R2RDump
 
         public struct InterruptibleRange
         {
-            public uint StartOffset { get; }
-            public uint StopOffset { get; }
+            public uint StartOffset { get; set; }
+            public uint StopOffset { get; set; }
             public InterruptibleRange(uint start, uint stop)
             {
                 StartOffset = start;
@@ -335,7 +335,7 @@ namespace R2RDump
             _wantsReportOnlyLeaf = ((headerFlags & GcInfoHeaderFlags.GC_INFO_WANTS_REPORT_ONLY_LEAF) != 0);
         }
 
-        private IEnumerable<uint> EnumerateSafePoints(byte[] image, ref int bitOffset)
+        private List<uint> EnumerateSafePoints(byte[] image, ref int bitOffset)
         {
             List<uint> safePoints = new List<uint>();
             uint numBitsPerOffset = GcInfoTypes.CeilOfLog2(CodeLength);
@@ -347,7 +347,7 @@ namespace R2RDump
             return safePoints;
         }
 
-        private IEnumerable<InterruptibleRange> EnumerateInterruptibleRanges(byte[] image, int interruptibleRangeDelta1EncBase, int interruptibleRangeDelta2EncBase, ref int bitOffset)
+        private List<InterruptibleRange> EnumerateInterruptibleRanges(byte[] image, int interruptibleRangeDelta1EncBase, int interruptibleRangeDelta2EncBase, ref int bitOffset)
         {
             List<InterruptibleRange> ranges = new List<InterruptibleRange>();
             uint lastinterruptibleRangeStopOffset = 0;
