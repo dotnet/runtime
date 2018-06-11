@@ -9,13 +9,13 @@ using System.Text;
 
 namespace R2RDump
 {
-    class GcSlotTable
+    public class GcSlotTable
     {
         public struct GcSlot
         {
-            public int RegisterNumber { get; }
-            public GcStackSlot StackSlot { get; }
-            public GcSlotFlags Flags { get; }
+            public int RegisterNumber { get; set; }
+            public GcStackSlot StackSlot { get; set; }
+            public GcSlotFlags Flags { get; set; }
 
             public GcSlot(int registerNumber, GcStackSlot stack, GcSlotFlags flags, bool isUntracked = false)
             {
@@ -50,11 +50,13 @@ namespace R2RDump
             }
         }
 
-        public uint NumRegisters { get; }
-        public uint NumStackSlots { get; }
-        public uint NumUntracked { get; }
-        public uint NumSlots { get; }
-        public List<GcSlot> GcSlots { get; }
+        public uint NumRegisters { get; set; }
+        public uint NumStackSlots { get; set; }
+        public uint NumUntracked { get; set; }
+        public uint NumSlots { get; set; }
+        public List<GcSlot> GcSlots { get; set; }
+
+        public GcSlotTable() { }
 
         public GcSlotTable(byte[] image, Machine machine, GcInfoTypes gcInfoTypes, ref int bitOffset)
         {

@@ -32,7 +32,7 @@ namespace R2RDump
         E15 = 15,
     }
 
-    class R2RReader
+    public class R2RReader
     {
         private readonly PEReader _peReader;
         private readonly MetadataReader _mdReader;
@@ -45,23 +45,23 @@ namespace R2RDump
         /// <summary>
         /// Name of the image file
         /// </summary>
-        public string Filename { get; }
+        public string Filename { get; set; }
 
         /// <summary>
         /// True if the image is ReadyToRun
         /// </summary>
-        public bool IsR2R { get; }
+        public bool IsR2R { get; set; }
 
         /// <summary>
         /// The type of target machine
         /// </summary>
-        public Machine Machine { get; }
+        public Machine Machine { get; set; }
 
         /// <summary>
         /// The preferred address of the first byte of image when loaded into memory; 
         /// must be a multiple of 64K.
         /// </summary>
-        public ulong ImageBase { get; }
+        public ulong ImageBase { get; set; }
 
         /// <summary>
         /// The ReadyToRun header
@@ -84,6 +84,8 @@ namespace R2RDump
         public string CompileIdentifier { get; }
 
         public IList<R2RImportSection> ImportSections { get; }
+
+        public unsafe R2RReader() { }
 
         /// <summary>
         /// Initializes the fields of the R2RHeader and R2RMethods
@@ -313,7 +315,7 @@ namespace R2RDump
             byte[] identifier = new byte[compilerIdentifierSection.Size];
             int identifierOffset = GetOffset(compilerIdentifierSection.RelativeVirtualAddress);
             Array.Copy(Image, identifierOffset, identifier, 0, compilerIdentifierSection.Size);
-            return Encoding.UTF8.GetString(identifier);
+            return Encoding.UTF8.GetString(identifier).Replace("\0", string.Empty);
         }
 
         private void ParseImportSections()
