@@ -8,11 +8,11 @@
 #include <config.h>
 #include <glib.h>
 #include "mono/utils/mono-compiler.h"
-
-#if G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
 #include <windows.h>
 #include "mono/metadata/w32file-win32-internals.h"
+#include "mono/metadata/w32subset.h"
 
+#if !HAVE_API_SUPPORT_WIN32_MOVE_FILE && HAVE_API_SUPPORT_WIN32_MOVE_FILE_EX
 gboolean
 mono_w32file_move (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
 {
@@ -27,23 +27,9 @@ mono_w32file_move (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
 	MONO_EXIT_GC_SAFE;
 	return result;
 }
+#endif
 
-gboolean
-mono_w32file_replace (const gunichar2 *destinationFileName, const gunichar2 *sourceFileName,
-			   const gunichar2 *destinationBackupFileName, guint32 flags, gint32 *error)
-{
-	gboolean result = FALSE;
-	MONO_ENTER_GC_SAFE;
-
-	result = ReplaceFile (destinationFileName, sourceFileName, destinationBackupFileName, flags, NULL, NULL);
-	if (result == FALSE) {
-		*error=GetLastError ();
-	}
-
-	MONO_EXIT_GC_SAFE;
-	return result;
-}
-
+#if !HAVE_API_SUPPORT_WIN32_COPY_FILE && HAVE_API_SUPPORT_WIN32_COPY_FILE2
 gboolean
 mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwrite, gint32 *error)
 {
@@ -63,57 +49,9 @@ mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwr
 	MONO_EXIT_GC_SAFE;
 	return result;
 }
+#endif
 
-gint64
-mono_w32file_get_file_size (HANDLE handle, gint32 *error)
-{
-	LARGE_INTEGER length;
-
-	MONO_ENTER_GC_SAFE;
-
-	if (!GetFileSizeEx (handle, &length)) {
-		*error=GetLastError ();
-		length.QuadPart = INVALID_FILE_SIZE;
-	}
-
-	MONO_EXIT_GC_SAFE;
-	return length.QuadPart;
-}
-
-gboolean
-mono_w32file_lock (HANDLE handle, gint64 position, gint64 length, gint32 *error)
-{
-	gboolean result = FALSE;
-	MONO_ENTER_GC_SAFE;
-
-	result = LockFile (handle, position & 0xFFFFFFFF, position >> 32,
-			   length & 0xFFFFFFFF, length >> 32);
-
-	if (result == FALSE) {
-		*error = GetLastError ();
-	}
-
-	MONO_EXIT_GC_SAFE;
-	return result;
-}
-
-gboolean
-mono_w32file_unlock (HANDLE handle, gint64 position, gint64 length, gint32 *error)
-{
-	gboolean result = FALSE;
-	MONO_ENTER_GC_SAFE;
-
-	result = UnlockFile (handle, position & 0xFFFFFFFF, position >> 32,
-			     length & 0xFFFFFFFF, length >> 32);
-
-	if (result == FALSE) {
-		*error = GetLastError ();
-	}
-
-	MONO_EXIT_GC_SAFE;
-	return result;
-}
-
+#if !HAVE_API_SUPPORT_WIN32_GET_STD_HANDLE
 HANDLE
 mono_w32file_get_console_output (void)
 {
@@ -161,8 +99,6 @@ mono_w32file_get_console_error (void)
 
 	return INVALID_HANDLE_VALUE;
 }
-
-#else /* G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT) */
+#endif // HAVE_API_SUPPORT_WIN32_GET_STD_HANDLE
 
 MONO_EMPTY_SOURCE_FILE (file_io_windows_uwp);
-#endif /* G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT) */
