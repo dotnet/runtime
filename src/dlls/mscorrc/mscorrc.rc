@@ -1417,7 +1417,7 @@ BEGIN
 
     IDS_EE_ARRAY_DIMENSIONS_EXCEEDED        "Array dimensions exceeded supported range."
 
-    IDS_EE_CANNOT_LOAD_JIT                  "Unable to load Jit Compiler: (%s): file may be missing or corrupt. Please check or rerun setup."
+    IDS_EE_CANNOT_LOAD_JIT                  "Unable to load JIT Compiler: (%s): file may be missing or corrupt. Please check or rerun setup."
     IDS_EE_PROFILING_FAILURE                "Profiling failure"
 
 
@@ -1527,8 +1527,7 @@ BEGIN
 
     IDS_EE_WRONG_METADATA_VERSION           "'%1' has an incompatible metadata format. The assembly must be compiled using metadata format '%2'."
     IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR   "Collectible type '%1' has unsupported FixedAddressValueTypeAttribute applied to a field."
-    IDS_EE_JIT_COMPILER_ERROR               "JIT Compiler encountered an internal limitation."
-    IDS_UNMARSHALABLE_DEMAND_OBJECT         "The security object (Permission or PermissionSet) used for performing a Demand caused an error relating to serialization/deserialization."
+    IDS_EE_JIT_COMPILER_ERROR               "The JIT compiler encountered invalid IL code or an internal limitation."
     IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED  "Invalid managed/unmanaged type combination (Marshaling to and from COM VARIANTs isn't supported)."
     IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED      "Invalid managed/unmanaged type combination (Marshaling to and from COM interface pointers isn't supported)."
 
