@@ -3985,7 +3985,7 @@ mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_fra
 				if (location) {
 					sf->il_offset = location->il_offset;
 
-					if (location && location->source_file) {
+					if (location->source_file) {
 						MonoString *filename = mono_string_new_checked (domain, location->source_file, error);
 						goto_if_nok (error, leave);
 						MONO_OBJECT_SETREF (sf, filename, filename);
