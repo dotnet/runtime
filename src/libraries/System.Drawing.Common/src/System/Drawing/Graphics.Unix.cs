@@ -1180,7 +1180,7 @@ namespace System.Drawing
             if (s == null || s.Length == 0)
                 return;
 
-            int status = SafeNativeMethods.Gdip.GdipDrawString(nativeObject, s, s.Length, font.NativeObject, ref layoutRectangle, format != null ? format.nativeFormat : IntPtr.Zero, brush.NativeBrush);
+            int status = SafeNativeMethods.Gdip.GdipDrawString(nativeObject, s, s.Length, font.NativeFont, ref layoutRectangle, format != null ? format.nativeFormat : IntPtr.Zero, brush.NativeBrush);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1732,7 +1732,7 @@ namespace System.Drawing
             }
 
             int status = SafeNativeMethods.Gdip.GdipMeasureCharacterRanges(nativeObject, text, text.Length,
-                font.NativeObject, ref layoutRect, stringFormat.nativeFormat, regcount, out native_regions[0]);
+                font.NativeFont, ref layoutRect, stringFormat.nativeFormat, regcount, out native_regions[0]);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return regions;
@@ -1749,7 +1749,7 @@ namespace System.Drawing
 
             RectangleF boundingBox = new RectangleF();
 
-            int status = SafeNativeMethods.Gdip.GdipMeasureString(nativeObject, text, text.Length, font.NativeObject,
+            int status = SafeNativeMethods.Gdip.GdipMeasureString(nativeObject, text, text.Length, font.NativeFont,
                 ref layoutRect, stringFormat, out boundingBox, null, null);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
@@ -1816,7 +1816,7 @@ namespace System.Drawing
                 fixed (int* pc = &charactersFitted, pl = &linesFilled)
                 {
                     int status = SafeNativeMethods.Gdip.GdipMeasureString(nativeObject, text, text.Length,
-                    font.NativeObject, ref rect, format, out boundingBox, pc, pl);
+                    font.NativeFont, ref rect, format, out boundingBox, pc, pl);
                     SafeNativeMethods.Gdip.CheckStatus(status);
                 }
             }
