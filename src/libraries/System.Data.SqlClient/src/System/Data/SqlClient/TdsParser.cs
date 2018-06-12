@@ -366,7 +366,7 @@ namespace System.Data.SqlClient
 
             _physicalStateObj.SniContext = SniContext.Snix_PreLogin;
 
-            PreLoginHandshakeStatus status = ConsumePreLoginHandshake(encrypt, trustServerCert, integratedSecurity, out marsCapable);
+            PreLoginHandshakeStatus status = ConsumePreLoginHandshake(encrypt, trustServerCert, integratedSecurity, out marsCapable, out _connHandler._fedAuthRequired);
 
             if (status == PreLoginHandshakeStatus.InstanceFailure)
             {
@@ -388,7 +388,7 @@ namespace System.Data.SqlClient
                 Debug.Assert(retCode == TdsEnums.SNI_SUCCESS, "Unexpected failure state upon calling SniGetConnectionId");
 
                 SendPreLoginHandshake(instanceName, encrypt);
-                status = ConsumePreLoginHandshake(encrypt, trustServerCert, integratedSecurity, out marsCapable);
+                status = ConsumePreLoginHandshake(encrypt, trustServerCert, integratedSecurity, out marsCapable, out _connHandler._fedAuthRequired); 
 
                 // Don't need to check for Sphinx failure, since we've already consumed
                 // one pre-login packet and know we are connecting to Shiloh.
@@ -632,6 +632,12 @@ namespace System.Data.SqlClient
                         optionDataSize += actIdSize;
                         break;
 
+                    case (int)PreLoginOptions.FEDAUTHREQUIRED:
+                        payload[payloadLength++] = 0x01;
+                        offset += 1;
+                        optionDataSize += 1;
+                        break;
+
                     default:
                         Debug.Assert(false, "UNKNOWN option in SendPreLoginHandshake");
                         break;
@@ -652,9 +658,10 @@ namespace System.Data.SqlClient
             _physicalStateObj.WritePacket(TdsEnums.HARDFLUSH);
         }
 
-        private PreLoginHandshakeStatus ConsumePreLoginHandshake(bool encrypt, bool trustServerCert, bool integratedSecurity, out bool marsCapable)
+        private PreLoginHandshakeStatus ConsumePreLoginHandshake(bool encrypt, bool trustServerCert, bool integratedSecurity, out bool marsCapable, out bool fedAuthRequired )
         {
             marsCapable = _fMARS; // Assign default value
+            fedAuthRequired = false;
             bool isYukonOrLater = false;
             Debug.Assert(_physicalStateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
             bool result = _physicalStateObj.TryReadNetworkPacket();
@@ -772,7 +779,11 @@ namespace System.Data.SqlClient
                             _encryptionOption == EncryptionOptions.LOGIN)
                         {
                             UInt32 error = 0;
-                            UInt32 info = ((encrypt && !trustServerCert) ? TdsEnums.SNI_SSL_VALIDATE_CERTIFICATE : 0)
+                            // If we're using legacy server certificate validation behavior (not using access token), then validate if
+                            //     Encrypt=true and Trust Sever Certificate = false.
+                            // If using access token, validate if Trust Server Certificate=false.
+                            bool shouldValidateServerCert = (encrypt && !trustServerCert) || (_connHandler._accessTokenInBytes != null && !trustServerCert);
+                            UInt32 info = (shouldValidateServerCert ? TdsEnums.SNI_SSL_VALIDATE_CERTIFICATE : 0)
                                 | (isYukonOrLater ? TdsEnums.SNI_SSL_USE_SCHANNEL_CACHE : 0);
 
                             if (encrypt && !integratedSecurity)
@@ -833,6 +844,23 @@ namespace System.Data.SqlClient
                     case (int)PreLoginOptions.TRACEID:
                         // DO NOTHING FOR TRACEID
                         offset += 4;
+                        break;
+
+                    case (int)PreLoginOptions.FEDAUTHREQUIRED:
+                        payloadOffset = payload[offset++] << 8 | payload[offset++];
+                        payloadLength = payload[offset++] << 8 | payload[offset++];
+
+                        // Only 0x00 and 0x01 are accepted values from the server.
+                        if (payload[payloadOffset] != 0x00 && payload[payloadOffset] != 0x01)
+                        {
+                            throw SQL.ParsingErrorValue(ParsingErrorState.FedAuthRequiredPreLoginResponseInvalidValue, (int)payload[payloadOffset]);
+                        }
+
+                        // We must NOT use the response for the FEDAUTHREQUIRED PreLogin option, if AccessToken is not null, meaning token based authentication is used.
+                        if (_connHandler.ConnectionOptions != null || _connHandler._accessTokenInBytes != null)
+                        {
+                            fedAuthRequired = payload[payloadOffset] == 0x01 ? true : false;
+                        }
                         break;
 
                     default:
@@ -5963,6 +5991,71 @@ namespace System.Data.SqlClient
             return len;
         }
 
+        internal int WriteFedAuthFeatureRequest(FederatedAuthenticationFeatureExtensionData fedAuthFeatureData,
+                                                bool write /* if false just calculates the length */)
+        {
+            Debug.Assert(fedAuthFeatureData.libraryType == TdsEnums.FedAuthLibrary.ADAL || fedAuthFeatureData.libraryType == TdsEnums.FedAuthLibrary.SecurityToken,
+                "only fed auth library type ADAL and Security Token are supported in writing feature request");
+
+            int dataLen = 0;
+            int totalLen = 0;
+
+            // set dataLen and totalLen
+            switch (fedAuthFeatureData.libraryType)
+            {
+                case TdsEnums.FedAuthLibrary.SecurityToken:
+                    Debug.Assert(fedAuthFeatureData.accessToken != null, "AccessToken should not be null.");
+                    dataLen = 1 + sizeof(int) + fedAuthFeatureData.accessToken.Length; // length of feature data = 1 byte for library and echo, security token length and sizeof(int) for token lengh itself
+                    break;
+                default:
+                    Debug.Assert(false, "Unrecognized library type for fedauth feature extension request");
+                    break;
+            }
+
+            totalLen = dataLen + 5; // length of feature id (1 byte), data length field (4 bytes), and feature data (dataLen)
+
+            // write feature id
+            if (write)
+            {
+                _physicalStateObj.WriteByte(TdsEnums.FEATUREEXT_FEDAUTH);
+
+                // set options
+                byte options = 0x00;
+
+                // set upper 7 bits of options to indicate fed auth library type
+                switch (fedAuthFeatureData.libraryType)
+                {
+                    case TdsEnums.FedAuthLibrary.SecurityToken:
+                        Debug.Assert(_connHandler._federatedAuthenticationRequested == true, "_federatedAuthenticationRequested field should be true");
+                        options |= TdsEnums.FEDAUTHLIB_SECURITYTOKEN << 1;
+                        break;
+                    default:
+                        Debug.Assert(false, "Unrecognized FedAuthLibrary type for feature extension request");
+                        break;
+                }
+
+                options |= (byte)(fedAuthFeatureData.fedAuthRequiredPreLoginResponse == true ? 0x01 : 0x00);
+
+                // write dataLen and options
+                WriteInt(dataLen, _physicalStateObj);
+                _physicalStateObj.WriteByte(options);
+
+                // write workflow for FedAuthLibrary.ADAL
+                // write accessToken for FedAuthLibrary.SecurityToken
+                switch (fedAuthFeatureData.libraryType)
+                {
+                    case TdsEnums.FedAuthLibrary.SecurityToken:
+                        WriteInt(fedAuthFeatureData.accessToken.Length, _physicalStateObj);
+                        _physicalStateObj.WriteByteArray(fedAuthFeatureData.accessToken, fedAuthFeatureData.accessToken.Length, 0);
+                        break;
+                    default:
+                        Debug.Assert(false, "Unrecognized FedAuthLibrary type for feature extension request");
+                        break;
+                }
+            }
+            return totalLen;
+        }
+
         internal int WriteGlobalTransactionsFeatureRequest(bool write /* if false just calculates the length */)
         {
             int len = 5; // 1byte = featureID, 4bytes = featureData length
@@ -5977,12 +6070,16 @@ namespace System.Data.SqlClient
             return len;
         }
 
-        internal void TdsLogin(SqlLogin rec, TdsEnums.FeatureExtension requestedFeatures, SessionData recoverySessionData)
+        internal void TdsLogin(SqlLogin rec, TdsEnums.FeatureExtension requestedFeatures, SessionData recoverySessionData, FederatedAuthenticationFeatureExtensionData? fedAuthFeatureExtensionData)
         {
             _physicalStateObj.SetTimeoutSeconds(rec.timeout);
 
             Debug.Assert(recoverySessionData == null || (requestedFeatures & TdsEnums.FeatureExtension.SessionRecovery) != 0, "Recovery session data without session recovery feature request");
             Debug.Assert(TdsEnums.MAXLEN_HOSTNAME >= rec.hostName.Length, "_workstationId.Length exceeds the max length for this value");
+
+            Debug.Assert(!rec.useSSPI || (requestedFeatures & TdsEnums.FeatureExtension.FedAuth) == 0, "Cannot use both SSPI and FedAuth");
+            Debug.Assert(fedAuthFeatureExtensionData == null || (requestedFeatures & TdsEnums.FeatureExtension.FedAuth) != 0, "fedAuthFeatureExtensionData provided without fed auth feature request");
+            Debug.Assert(fedAuthFeatureExtensionData != null || (requestedFeatures & TdsEnums.FeatureExtension.FedAuth) == 0, "Fed Auth feature requested without specifying fedAuthFeatureExtensionData.");
 
             Debug.Assert(rec.userName == null || (rec.userName != null && TdsEnums.MAXLEN_USERNAME >= rec.userName.Length), "_userID.Length exceeds the max length for this value");
             Debug.Assert(rec.credential == null || (rec.credential != null && TdsEnums.MAXLEN_USERNAME >= rec.credential.UserId.Length), "_credential.UserId.Length exceeds the max length for this value");
@@ -6060,12 +6157,12 @@ namespace System.Data.SqlClient
             byte[] outSSPIBuff = null;
             UInt32 outSSPILength = 0;
 
-            // only add lengths of password and username if not using SSPI
-            if (!rec.useSSPI)
+            // only add lengths of password and username if not using SSPI or requesting federated authentication info
+            if (!rec.useSSPI && !(_connHandler._federatedAuthenticationRequested))
             {
                 checked
                 {
-                    length += (userName.Length * 2) + encryptedPasswordLengthInBytes 
+                    length += (userName.Length * 2) + encryptedPasswordLengthInBytes
                     + encryptedChangePasswordLengthInBytes;
                 }
             }
@@ -6109,6 +6206,11 @@ namespace System.Data.SqlClient
                 if ((requestedFeatures & TdsEnums.FeatureExtension.GlobalTransactions) != 0)
                 {
                     length += WriteGlobalTransactionsFeatureRequest(false);
+                }
+                if ((requestedFeatures & TdsEnums.FeatureExtension.FedAuth) != 0)
+                {
+                    Debug.Assert(fedAuthFeatureExtensionData != null, "fedAuthFeatureExtensionData should not null.");
+                    length += WriteFedAuthFeatureRequest(fedAuthFeatureExtensionData.Value, write: false);
                 }
                 length++; // for terminator
             }
@@ -6210,9 +6312,10 @@ namespace System.Data.SqlClient
                 WriteShort(rec.hostName.Length, _physicalStateObj);
                 offset += rec.hostName.Length * 2;
 
-                // Only send user/password over if not fSSPI...  If both user/password and SSPI are in login
+                // Only send user/password over if not fSSPI or fed auth ADAL...  If both user/password and SSPI are in login
                 // rec, only SSPI is used.  Confirmed same behavior as in luxor.
-                if (rec.useSSPI == false)
+                //if (rec.useSSPI == false && !(_connHandler._federatedAuthenticationInfoRequested || _connHandler._federatedAuthenticationRequested))
+                if (rec.useSSPI == false && !(_connHandler._federatedAuthenticationRequested))
                 {
                     WriteShort(offset, _physicalStateObj);  // userName offset
                     WriteShort(userName.Length, _physicalStateObj);
@@ -6291,9 +6394,10 @@ namespace System.Data.SqlClient
                 // write variable length portion
                 WriteString(rec.hostName, _physicalStateObj);
 
-                // if we are using SSPI, do not send over username/password, since we will use SSPI instead
+                // if we are using SSPI or fed auth ADAL, do not send over username/password, since we will use SSPI instead
                 // same behavior as Luxor
-                if (!rec.useSSPI)
+                //if (!rec.useSSPI && !(_connHandler._federatedAuthenticationInfoRequested || _connHandler._federatedAuthenticationRequested))
+                if (!rec.useSSPI && !(_connHandler._federatedAuthenticationRequested))
                 {
                     WriteString(userName, _physicalStateObj);
 
@@ -6325,9 +6429,11 @@ namespace System.Data.SqlClient
                     _physicalStateObj.WriteByteArray(outSSPIBuff, (int)outSSPILength, 0);
 
                 WriteString(rec.attachDBFilename, _physicalStateObj);
-
-                if (!rec.useSSPI)
+                if (!rec.useSSPI && !( _connHandler._federatedAuthenticationRequested))
                 {
+                    // Cache offset in packet for tracing.
+                    _physicalStateObj._traceChangePasswordOffset = _physicalStateObj._outBytesUsed;
+                    _physicalStateObj._traceChangePasswordLength = encryptedChangePasswordLengthInBytes;
                     if (rec.newSecurePassword != null)
                     {
                         _physicalStateObj.WriteSecureString(rec.newSecurePassword);
@@ -6348,6 +6454,11 @@ namespace System.Data.SqlClient
                     {
                         WriteGlobalTransactionsFeatureRequest(true);
                     }
+                    if ((requestedFeatures & TdsEnums.FeatureExtension.FedAuth) != 0)
+                    {
+                        Debug.Assert(fedAuthFeatureExtensionData != null, "fedAuthFeatureExtensionData should not null.");
+                        WriteFedAuthFeatureRequest(fedAuthFeatureExtensionData.Value, write: true);
+                    };
                     _physicalStateObj.WriteByte(0xFF); // terminator
                 }
             }
