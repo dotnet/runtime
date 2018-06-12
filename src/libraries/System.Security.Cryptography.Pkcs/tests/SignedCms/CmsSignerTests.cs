@@ -12,13 +12,14 @@ namespace System.Security.Cryptography.Pkcs.Tests
 {
 	public static partial class CmsSignerTests
 	{
+        [ActiveIssue(30257)]
 		[Fact]
-		public void SignerIdentifierType_InvalidValues()
+		public static void SignerIdentifierType_InvalidValues()
 		{
 			CmsSigner signer = new CmsSigner();
 			Assert.ThrowsAny<CryptographicException>(() => signer.SignerIdentifierType = SubjectIdentifierType.Unknown);
 			Assert.ThrowsAny<CryptographicException>(() => signer.SignerIdentifierType = (SubjectIdentifierType)4);
-			Assert.ThrowsAny<CryptographicException>(() => signer.SignerIdentifierType = (SubjectIdentifierType)-1);
+			Assert.ThrowsAny<CryptographicException>(() => signer.SignerIdentifierType = (SubjectIdentifierType)(-1));
 		}
 	}
 }

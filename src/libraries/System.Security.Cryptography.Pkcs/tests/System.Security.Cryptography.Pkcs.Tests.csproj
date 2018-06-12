@@ -37,6 +37,7 @@
     <Compile Include="Oids.cs" />
     <Compile Include="Pkcs9AttributeTests.cs" />
     <Compile Include="RecipientInfoCollectionTests.cs" />
+    <Compile Include="SignedCms\CmsSignerTests.cs" />
     <Compile Include="SignedCms\CounterSigningDerOrder.cs" />
     <Compile Include="SignedCms\SignedCmsTests.cs" />
     <Compile Include="SignedCms\SignedCmsWholeDocumentTests.cs" />

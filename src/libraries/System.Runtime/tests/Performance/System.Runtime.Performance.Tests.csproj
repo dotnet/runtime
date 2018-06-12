@@ -10,6 +10,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="Perf.Array.cs" />
     <Compile Include="Perf.Boolean.cs" />
     <Compile Include="Perf.Char.cs" />
     <Compile Include="Perf.DateTime.cs" />

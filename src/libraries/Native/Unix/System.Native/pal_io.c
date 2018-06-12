@@ -664,11 +664,6 @@ int32_t SystemNative_Access(const char* path, int32_t mode)
     return access(path, mode);
 }
 
-int32_t SystemNative_FnMatch(const char* pattern, const char* path, int32_t flags)
-{
-    return fnmatch(pattern, path, flags);
-}
-
 int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence)
 {
     int64_t result;
@@ -879,46 +874,6 @@ int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
     assert_msg(false, "Unknown MemoryAdvice", (int)advice);
     errno = EINVAL;
     return -1;
-}
-
-int32_t SystemNative_MLock(void* address, uint64_t length)
-{
-    if (length > SIZE_MAX)
-    {
-        errno = ERANGE;
-        return -1;
-    }
-
-    return mlock(address, (size_t)length);
-}
-
-int32_t SystemNative_MUnlock(void* address, uint64_t length)
-{
-    if (length > SIZE_MAX)
-    {
-        errno = ERANGE;
-        return -1;
-    }
-
-    return munlock(address, (size_t)length);
-}
-
-int32_t SystemNative_MProtect(void* address, uint64_t length, int32_t protection)
-{
-    if (length > SIZE_MAX)
-    {
-        errno = ERANGE;
-        return -1;
-    }
-
-    protection = ConvertMMapProtection(protection);
-    if (protection == -1)
-    {
-        errno = EINVAL;
-        return -1;
-    }
-
-    return mprotect(address, (size_t)length, protection);
 }
 
 int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)
