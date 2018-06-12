@@ -275,6 +275,4 @@ DLLEXPORT int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
 DLLEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
 #endif
 
-DLLEXPORT char** SystemNative_GetEnviron();
-
 END_EXTERN_C
