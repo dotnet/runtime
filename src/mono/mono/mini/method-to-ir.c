@@ -4501,24 +4501,11 @@ mini_field_access_needs_cctor_run (MonoCompile *cfg, MonoMethod *method, MonoCla
 	return TRUE;
 }
 
-MonoInst*
-mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck)
+int
+mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index)
 {
-	MonoInst *ins;
-	guint32 size;
-	int mult_reg, add_reg, array_reg, index_reg, index2_reg;
-	int context_used;
-
-	if (mini_is_gsharedvt_variable_klass (klass)) {
-		size = -1;
-	} else {
-		mono_class_init (klass);
-		size = mono_class_array_element_size (klass);
-	}
-
-	mult_reg = alloc_preg (cfg);
-	array_reg = arr->dreg;
-	index_reg = index->dreg;
+	int index_reg = index->dreg;
+	int index2_reg;
 
 #if SIZEOF_REGISTER == 8
 	/* The array reg is 64 bits but the index reg is only 32 */
@@ -4541,6 +4528,29 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 		index2_reg = index_reg;
 	}
 #endif
+
+	return index2_reg;
+}
+
+MonoInst*
+mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck)
+{
+	MonoInst *ins;
+	guint32 size;
+	int mult_reg, add_reg, array_reg, index2_reg;
+	int context_used;
+
+	if (mini_is_gsharedvt_variable_klass (klass)) {
+		size = -1;
+	} else {
+		mono_class_init (klass);
+		size = mono_class_array_element_size (klass);
+	}
+
+	mult_reg = alloc_preg (cfg);
+	array_reg = arr->dreg;
+
+	index2_reg = mini_emit_sext_index_reg (cfg, index);
 
 	if (bcheck)
 		MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index2_reg);
@@ -10301,9 +10311,10 @@ field_access_end:
 			MONO_INST_NEW (cfg, ins, OP_LDLEN);
 			ins->dreg = alloc_preg (cfg);
 			ins->sreg1 = sp [0]->dreg;
+			ins->inst_imm = MONO_STRUCT_OFFSET (MonoArray, max_length);
 			ins->type = STACK_I4;
 			/* This flag will be inherited by the decomposition */
-			ins->flags |= MONO_INST_FAULT;
+			ins->flags |= MONO_INST_FAULT | MONO_INST_INVARIANT_LOAD;
 			MONO_ADD_INS (cfg->cbb, ins);
 			cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
 			cfg->cbb->needs_decompose = TRUE;
@@ -12003,6 +12014,8 @@ mono_op_to_op_imm (int opcode)
 	case OP_LSHR_UN:
 		return OP_LSHR_UN_IMM;
 #if SIZEOF_REGISTER == 8
+	case OP_LMUL:
+		return OP_LMUL_IMM;
 	case OP_LREM:
 		return OP_LREM_IMM;
 #endif

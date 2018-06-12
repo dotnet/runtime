@@ -963,6 +963,28 @@ static int ccount = 0;
 #define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg) MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), (offset), (index_reg), TRUE)
 #endif
 
+#define MONO_EMIT_BOUNDS_CHECK_OFFSET(cfg, array_reg, array_length_offset, index_reg) do { \
+		if (!(cfg->opt & MONO_OPT_UNSAFE)) {							\
+		if (!(cfg->opt & MONO_OPT_ABCREM)) {							\
+			MONO_EMIT_NULL_CHECK (cfg, array_reg);						\
+			if (COMPILE_LLVM (cfg)) \
+				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg), TRUE); \
+			else \
+				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg)); \
+		} else {														\
+			MonoInst *ins;												\
+			MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);				\
+			ins->sreg1 = array_reg;										\
+			ins->sreg2 = index_reg;										\
+			ins->inst_imm = (array_length_offset);                      \
+			ins->flags |= MONO_INST_FAULT;								\
+			MONO_ADD_INS ((cfg)->cbb, ins);								\
+			(cfg)->flags |= MONO_CFG_NEEDS_DECOMPOSE;					\
+			(cfg)->cbb->needs_decompose = TRUE;							\
+		}																\
+		}																\
+    } while (0)
+
 /* cfg is the MonoCompile been used
  * array_reg is the vreg holding the array object
  * array_type is a struct (usually MonoArray or MonoString)
@@ -970,25 +992,7 @@ static int ccount = 0;
  * index_reg is the vreg holding the index
  */
 #define MONO_EMIT_BOUNDS_CHECK(cfg, array_reg, array_type, array_length_field, index_reg) do { \
-		if (!(cfg->opt & MONO_OPT_UNSAFE)) {							\
-		if (!(cfg->opt & MONO_OPT_ABCREM)) {							\
-			MONO_EMIT_NULL_CHECK (cfg, array_reg);						\
-			if (COMPILE_LLVM (cfg)) \
-				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), MONO_STRUCT_OFFSET (array_type, array_length_field), (index_reg), TRUE); \
-			else \
-				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), MONO_STRUCT_OFFSET (array_type, array_length_field), (index_reg)); \
-		} else {														\
-			MonoInst *ins;												\
-			MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);				\
-			ins->sreg1 = array_reg;										\
-			ins->sreg2 = index_reg;										\
-			ins->inst_imm = MONO_STRUCT_OFFSET (array_type, array_length_field); \
-			ins->flags |= MONO_INST_FAULT; \
-			MONO_ADD_INS ((cfg)->cbb, ins);								\
-			(cfg)->flags |= MONO_CFG_NEEDS_DECOMPOSE;					\
-			(cfg)->cbb->needs_decompose = TRUE;						\
-		}																\
-		}																\
+		MONO_EMIT_BOUNDS_CHECK_OFFSET ((cfg), (array_reg), MONO_STRUCT_OFFSET (array_type, array_length_field), (index_reg)); \
     } while (0)
 
 G_END_DECLS

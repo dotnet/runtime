@@ -68,9 +68,22 @@ mono_type_is_native_blittable (MonoType *t)
 MonoInst*
 mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-#ifdef MONO_ARCH_SIMD_INTRINSICS
+	const char* cmethod_klass_name_space = m_class_get_name_space (cmethod->klass);
+	const char* cmethod_klass_name = m_class_get_name (cmethod->klass);
+	MonoImage *cmethod_klass_image = m_class_get_image (cmethod->klass);
+	gboolean in_corlib = cmethod_klass_image == mono_defaults.corlib;
 	MonoInst *ins = NULL;
 
+	if (in_corlib &&
+		!strcmp (cmethod_klass_name_space, "System") &&
+		!strcmp (cmethod_klass_name, "ByReference`1")) {
+		/* public ByReference(ref T value) */
+		g_assert (fsig->hasthis && fsig->param_count == 1);
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [0]->dreg, 0, args [1]->dreg);
+		return ins;
+	}
+
+#ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (cfg->opt & MONO_OPT_SIMD) {
 		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
 		if (ins)
@@ -166,6 +179,74 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	return ins;
 }
 
+static MonoInst*
+emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	MonoInst *ins;
+
+	MonoClassField *ptr_field = mono_class_get_field_from_name (cmethod->klass, "_pointer");
+	if (!ptr_field)
+		/* Portable Span<T> */
+		return NULL;
+
+	if (!strcmp (cmethod->name, "get_Item")) {
+		MonoClassField *length_field = mono_class_get_field_from_name (cmethod->klass, "_length");
+
+		g_assert (length_field);
+
+		MonoGenericClass *gclass = mono_class_get_generic_class (cmethod->klass);
+		MonoClass *param_class = mono_class_from_mono_type (gclass->context.class_inst->type_argv [0]);
+
+		if (mini_is_gsharedvt_variable_klass (param_class))
+			return NULL;
+
+		int span_reg = args [0]->dreg;
+		/* Load _pointer.Value */
+		int base_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, base_reg, span_reg, ptr_field->offset - sizeof (MonoObject));
+		/* Similar to mini_emit_ldelema_1_ins () */
+		int size = mono_class_array_element_size (param_class);
+
+		int index_reg = mini_emit_sext_index_reg (cfg, args [1]);
+
+		MONO_EMIT_BOUNDS_CHECK_OFFSET(cfg, span_reg, length_field->offset - sizeof (MonoObject), index_reg);
+
+		// FIXME: Sign extend index ?
+
+		int mult_reg = alloc_preg (cfg);
+		int add_reg = alloc_preg (cfg);
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_MUL_IMM, mult_reg, index_reg, size);
+		EMIT_NEW_BIALU (cfg, ins, OP_PADD, add_reg, base_reg, mult_reg);
+		ins->klass = param_class;
+		ins->type = STACK_MP;
+
+		return ins;
+	} else if (!strcmp (cmethod->name, "get_Length")) {
+		MonoClassField *length_field = mono_class_get_field_from_name (cmethod->klass, "_length");
+		g_assert (length_field);
+
+		/*
+		 * FIXME: This doesn't work with abcrem, since the src is a unique LDADDR not
+		 * the same array object.
+		 */
+		MONO_INST_NEW (cfg, ins, OP_LDLEN);
+		ins->dreg = alloc_preg (cfg);
+		ins->sreg1 = args [0]->dreg;
+		ins->inst_imm = length_field->offset - sizeof (MonoObject);
+		ins->type = STACK_I4;
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+		cfg->cbb->needs_decompose = TRUE;
+
+		return ins;
+	}
+
+
+	return NULL;
+}
+
 MonoInst*
 mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -250,6 +331,11 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return emit_array_generic_access (cfg, fsig, args, FALSE);
 		else if (strcmp (cmethod->name, "SetGenericValueImpl") == 0 && fsig->param_count + fsig->hasthis == 3 && !cfg->gsharedvt)
 			return emit_array_generic_access (cfg, fsig, args, TRUE);
+		else if (!strcmp (cmethod->name, "GetRawSzArrayData")) {
+			int dreg = alloc_preg (cfg);
+			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->sreg1, MONO_STRUCT_OFFSET (MonoArray, vector));
+			return ins;
+		}
 
 #ifndef MONO_BIG_ARRAYS
 		/*
@@ -1119,6 +1205,18 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		ins = mini_handle_enum_has_flag (cfg, args [0]->klass, NULL, args [0]->sreg1, args [1]);
 		NULLIFY_INS (args [0]);
 		return ins;
+	} else if (in_corlib &&
+			   !strcmp (cmethod_klass_name_space, "System") &&
+			   !strcmp (cmethod_klass_name, "ByReference`1") &&
+			   !strcmp (cmethod->name, "get_Value")) {
+		g_assert (fsig->hasthis && fsig->param_count == 0);
+		int dreg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, args [0]->dreg, 0);
+		return ins;
+	} else if (in_corlib &&
+			   !strcmp (cmethod_klass_name_space, "System") &&
+			   (!strcmp (cmethod_klass_name, "Span`1") || !strcmp (cmethod_klass_name, "ReadOnlySpan`1"))) {
+		return emit_span_intrinsics (cfg, cmethod, fsig, args);
 	}
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS

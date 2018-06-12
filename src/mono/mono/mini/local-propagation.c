@@ -641,8 +641,8 @@ mono_local_cprop (MonoCompile *cfg)
 
 				/* Constant propagation */
 				/* is_inst_imm is only needed for binops */
-				if ((((def->opcode == OP_ICONST) || ((sizeof (gpointer) == 8) && (def->opcode == OP_I8CONST)) || (def->opcode == OP_PCONST)) &&
-					 (((srcindex == 0) && (ins->sreg2 == -1)))) ||
+				if ((((def->opcode == OP_ICONST) || ((sizeof (gpointer) == 8) && (def->opcode == OP_I8CONST)) || (def->opcode == OP_PCONST)))
+					||
 					(!MONO_ARCH_USE_FPSTACK && (def->opcode == OP_R8CONST))) {
 					guint32 opcode2;
 
@@ -744,6 +744,11 @@ mono_local_cprop (MonoCompile *cfg)
 				} else if (srcindex == 0 && ins->opcode == OP_COMPARE && defs [ins->sreg1]->opcode == OP_PCONST && defs [ins->sreg2] && defs [ins->sreg2]->opcode == OP_PCONST) {
 					/* typeof(T) == typeof(..) */
 					mono_constant_fold_ins (cfg, ins, defs [ins->sreg1], defs [ins->sreg2], TRUE);
+				} else if (ins->opcode == OP_MOVE && def->opcode == OP_LDADDR) {
+					ins->opcode = OP_LDADDR;
+					ins->sreg1 = -1;
+					ins->inst_p0 = def->inst_p0;
+					ins->klass = def->klass;
 				}
 			}
 

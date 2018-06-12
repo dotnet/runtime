@@ -221,6 +221,13 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 			MONO_INST_NULLIFY_SREGS (dest);
 		}
 		break;
+	case OP_SEXT_I4:
+		if (arg1->opcode == OP_ICONST && arg1->inst_c0 >= 0 && arg1->inst_c0 < (1 << 16) && overwrite) {
+			dest->opcode = OP_ICONST;
+			dest->sreg1 = -1;
+			dest->inst_c0 = arg1->inst_c0;
+		}
+		break;
 	case OP_MOVE:
 #if SIZEOF_REGISTER == 8
 		if ((arg1->opcode == OP_ICONST) || (arg1->opcode == OP_I8CONST)) {

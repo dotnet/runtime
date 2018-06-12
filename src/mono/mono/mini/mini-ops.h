@@ -718,6 +718,7 @@ MINI_OP(OP_SQRTF,    "sqrtf", FREG, FREG, NONE)
 /* to optimize strings */
 MINI_OP(OP_STRLEN, "strlen", IREG, IREG, NONE)
 MINI_OP(OP_NEWARR, "newarr", IREG, IREG, NONE)
+/* Load a readonly length field from [sreg1+inst_imm] */
 MINI_OP(OP_LDLEN, "ldlen", IREG, IREG, NONE)
 MINI_OP(OP_BOUNDS_CHECK, "bounds_check", NONE, IREG, IREG)
 /* type checks */
