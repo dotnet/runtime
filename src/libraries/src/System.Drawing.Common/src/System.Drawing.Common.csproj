@@ -138,6 +138,7 @@
     <Compile Include="System\Drawing\Internal\GPRECTF.cs" />
     <Compile Include="System\Drawing\Internal\ISystemEventTracker.cs" />
     <Compile Include="System\Drawing\Brush.cs" />
+    <Compile Include="System\Drawing\Font.cs" />
     <Compile Include="System\Drawing\Font.NotSerializable.cs" />
     <Compile Include="System\Drawing\FontFamily.cs" />
     <Compile Include="System\Drawing\SolidBrush.cs" />
