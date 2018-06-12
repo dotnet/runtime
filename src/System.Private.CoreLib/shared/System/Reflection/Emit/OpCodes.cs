@@ -237,19 +237,18 @@ namespace System.Reflection.Emit
         Refanytype = 0xfe1d,
         Readonly_ = 0xfe1e,
         // If you add more opcodes here, modify OpCode.Name to handle them correctly
-    };
+    }
 
+    /// <summary>
+    ///    <para>
+    ///       The IL instruction opcodes supported by the
+    ///       runtime. The IL Instruction Specification describes each
+    ///       Opcode.
+    ///    </para>
+    /// </summary>
+    /// <seealso topic='IL Instruction Set Specification'/>
     public class OpCodes
     {
-        /// <summary>
-        ///    <para>
-        ///       The IL instruction opcodes supported by the
-        ///       runtime. The IL Instruction Specification describes each
-        ///       Opcode.
-        ///    </para>
-        /// </summary>
-        /// <seealso topic='IL Instruction Set       Specification'/>
-
         private OpCodes()
         {
         }
@@ -2533,7 +2532,7 @@ namespace System.Reflection.Emit
                 case OperandType.ShortInlineI:
                 case OperandType.ShortInlineVar:
                     return true;
-            };
+            }
             return false;
         }
     }
