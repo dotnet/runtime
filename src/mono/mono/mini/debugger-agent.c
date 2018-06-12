@@ -4129,11 +4129,15 @@ event_requests_cleanup (void)
  * Ensure DebuggerTlsData fields are filled out.
  */
 static void
-ss_calculate_framecount (DebuggerTlsData *tls, MonoContext *ctx, gboolean force_use_ctx)
+ss_calculate_framecount (DebuggerTlsData *tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes)
 {
 	if (force_use_ctx || !tls->context.valid)
 		mono_thread_state_init_from_monoctx (&tls->context, ctx);
 	compute_frame_info (tls->thread, tls);
+	if (frames)
+		*frames = (DbgEngineStackFrame**)tls->frames;
+	if (nframes)
+		*nframes = tls->frame_count;
 }
 
 /*
@@ -4182,13 +4186,15 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	gboolean hit = TRUE;
 
 	if ((req->filter & STEP_FILTER_STATIC_CTOR)) {
-		ss_calculate_framecount (tls, ctx, TRUE);
+		DbgEngineStackFrame **frames;
+		int nframes;
+		ss_calculate_framecount (tls, ctx, TRUE, &frames, &nframes);
 
 		gboolean ret = FALSE;
 		gboolean method_in_stack = FALSE;
 
-		for (int i = 0; i < tls->frame_count; i++) {
-			MonoMethod *external_method = tls->frames [i]->de.method;
+		for (int i = 0; i < nframes; i++) {
+			MonoMethod *external_method = frames [i]->method;
 			if (method == external_method)
 				method_in_stack = TRUE;
 
@@ -4200,11 +4206,11 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 		}
 
 		if (!method_in_stack) {
-			g_printerr ("[%p] The instruction pointer of the currently executing method(%s) is not on the recorded stack. This is likely due to a runtime bug. The %d frames are as follow: \n", (gpointer)(gsize)mono_native_thread_id_get (), mono_method_full_name (method, TRUE), tls->frame_count);
+			g_printerr ("[%p] The instruction pointer of the currently executing method(%s) is not on the recorded stack. This is likely due to a runtime bug. The %d frames are as follow: \n", (gpointer)(gsize)mono_native_thread_id_get (), mono_method_full_name (method, TRUE), nframes);
 			/*DEBUG_PRINTF (1, "[%p] The instruction pointer of the currently executing method(%s) is not on the recorded stack. This is likely due to a runtime bug. The %d frames are as follow: \n", (gpointer)(gsize)mono_native_thread_id_get (), mono_method_full_name (method, TRUE), tls->frame_count);*/
 
-			for (int i=0; i < tls->frame_count; i++)
-				g_printerr ("\t [%p] Frame (%d / %d): %s\n", (gpointer)(gsize)mono_native_thread_id_get (), i, tls->frame_count, mono_method_full_name (tls->frames [i]->de.method, TRUE));
+			for (int i=0; i < nframes; i++)
+				g_printerr ("\t [%p] Frame (%d / %d): %s\n", (gpointer)(gsize)mono_native_thread_id_get (), i, nframes, mono_method_full_name (frames [i]->method, TRUE));
 		}
 		g_assert (method_in_stack);
 
@@ -4229,13 +4235,13 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 
 	if ((req->depth == STEP_DEPTH_OVER || req->depth == STEP_DEPTH_OUT) && hit && !req->async_stepout_method) {
 		gboolean is_step_out = req->depth == STEP_DEPTH_OUT;
-
-		ss_calculate_framecount (tls, ctx, FALSE);
+		int nframes;
+		ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
 
 		// Because functions can call themselves recursively, we need to make sure we're stopping at the right stack depth.
 		// In case of step out, the target is the frame *enclosing* the one where the request was made.
 		int target_frames = req->nframes + (is_step_out ? -1 : 0);
-		if (req->nframes > 0 && tls->frame_count > 0 && tls->frame_count > target_frames) {
+		if (req->nframes > 0 && nframes > 0 && nframes > target_frames) {
 			/* Hit the breakpoint in a recursive call, don't halt */
 			DEBUG_PRINTF (1, "[%p] Breakpoint at lower frame while stepping %s, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), is_step_out ? "out" : "over");
 			return FALSE;
@@ -4243,8 +4249,9 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	}
 
 	if (req->depth == STEP_DEPTH_INTO && req->size == STEP_SIZE_MIN && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) && req->start_method) {
-		ss_calculate_framecount (tls, ctx, FALSE);
-		if (req->start_method == method && req->nframes && tls->frame_count == req->nframes) { //Check also frame count(could be recursion)
+		int nframes;
+		ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
+		if (req->start_method == method && req->nframes && nframes == req->nframes) { //Check also frame count(could be recursion)
 			DEBUG_PRINTF (1, "[%p] Seq point at nonempty stack %x while stepping in, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
 			return FALSE;
 		}
@@ -4275,8 +4282,9 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 		req->last_method = method;
 		hit = FALSE;
 	} else if (loc && method == req->last_method && loc->row == req->last_line) {
-		ss_calculate_framecount (tls, ctx, FALSE);
-		if (tls->frame_count == req->nframes) { // If the frame has changed we're clearly not on the same source line.
+		int nframes;
+		ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
+		if (nframes == req->nframes) { // If the frame has changed we're clearly not on the same source line.
 			DEBUG_PRINTF (1, "[%p] Same source line (%d), continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), loc->row);
 			hit = FALSE;
 		}
@@ -4522,15 +4530,17 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 
 		//if we hit async_stepout_method, it's our no matter which thread
 		if ((ss_req->async_stepout_method != method) && (ss_req->async_id || mono_thread_internal_current () != ss_req->thread)) {
+			DbgEngineStackFrame **frames;
+			int nframes;
 			//We have different thread and we don't have async stepping in progress
 			//it's breakpoint in parallel thread, ignore it
 			if (ss_req->async_id == 0)
 				continue;
 
 			ss_discard_frame_context (tls);
-			ss_calculate_framecount (tls, ctx, FALSE);
+			ss_calculate_framecount (tls, ctx, FALSE, &frames, &nframes);
 			//make sure we have enough data to get current async method instance id
-			if (tls->frame_count == 0 || !ensure_jit (tls->frames [0]))
+			if (nframes == 0 || !ensure_jit ((StackFrame*)frames [0]))
 				continue;
 
 			//Check method is async before calling get_this_async_id
@@ -4541,17 +4551,18 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 				mono_debug_free_method_async_debug_info (asyncMethod);
 
 			//breakpoint was hit in parallelly executing async method, ignore it
-			if (ss_req->async_id != get_this_async_id (tls->frames [0]))
+			if (ss_req->async_id != get_this_async_id ((StackFrame*)frames [0]))
 				continue;
 		}
 
 		//Update stepping request to new thread/frame_count that we are continuing on
 		//so continuing with normal stepping works as expected
 		if (ss_req->async_stepout_method || ss_req->async_id) {
+			int nframes;
 			ss_discard_frame_context (tls);
-			ss_calculate_framecount (tls, ctx, FALSE);
+			ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
 			ss_req->thread = mono_thread_internal_current ();
-			ss_req->nframes = tls->frame_count;
+			ss_req->nframes = nframes;
 		}
 
 		hit = ss_update (ss_req, ji, &sp, tls, ctx, method);
@@ -5128,9 +5139,7 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			locked = TRUE;
 
 			/* Need parent frames */
-			ss_calculate_framecount (tls, ss_args->ctx, FALSE);
-			frames = tls->frames;
-			nframes = tls->frame_count;
+			ss_calculate_framecount (tls, ss_args->ctx, FALSE, (DbgEngineStackFrame ***)&frames, &nframes);
 		}
 
 		MonoDebugMethodAsyncInfo* asyncMethod = mono_debug_lookup_method_async_debug_info (method);
@@ -5161,7 +5170,7 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			// of this await call and sets async_id so we can distinguish it from parallel executions
 			for (i = 0; i < asyncMethod->num_awaits; i++) {
 				if (sp->il_offset == asyncMethod->yield_offsets [i]) {
-					ss_req->async_id = get_this_async_id (frames [0]);
+					ss_req->async_id = get_this_async_id ((StackFrame*)frames [0]);
 					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, method, asyncMethod->resume_offsets [i]);
 					g_hash_table_destroy (ss_req_bp_cache);
 					mono_debug_free_method_async_debug_info (asyncMethod);
