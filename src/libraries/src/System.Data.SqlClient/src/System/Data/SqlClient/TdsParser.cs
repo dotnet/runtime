@@ -5994,8 +5994,8 @@ namespace System.Data.SqlClient
         internal int WriteFedAuthFeatureRequest(FederatedAuthenticationFeatureExtensionData fedAuthFeatureData,
                                                 bool write /* if false just calculates the length */)
         {
-            Debug.Assert(fedAuthFeatureData.libraryType == TdsEnums.FedAuthLibrary.ADAL || fedAuthFeatureData.libraryType == TdsEnums.FedAuthLibrary.SecurityToken,
-                "only fed auth library type ADAL and Security Token are supported in writing feature request");
+            Debug.Assert(fedAuthFeatureData.libraryType == TdsEnums.FedAuthLibrary.SecurityToken,
+                "only Security Token are supported in writing feature request");
 
             int dataLen = 0;
             int totalLen = 0;
@@ -6040,7 +6040,6 @@ namespace System.Data.SqlClient
                 WriteInt(dataLen, _physicalStateObj);
                 _physicalStateObj.WriteByte(options);
 
-                // write workflow for FedAuthLibrary.ADAL
                 // write accessToken for FedAuthLibrary.SecurityToken
                 switch (fedAuthFeatureData.libraryType)
                 {
@@ -6312,10 +6311,9 @@ namespace System.Data.SqlClient
                 WriteShort(rec.hostName.Length, _physicalStateObj);
                 offset += rec.hostName.Length * 2;
 
-                // Only send user/password over if not fSSPI or fed auth ADAL...  If both user/password and SSPI are in login
+                // Only send user/password over if not fSSPI...  If both user/password and SSPI are in login
                 // rec, only SSPI is used.  Confirmed same behavior as in luxor.
-                //if (rec.useSSPI == false && !(_connHandler._federatedAuthenticationInfoRequested || _connHandler._federatedAuthenticationRequested))
-                if (rec.useSSPI == false && !(_connHandler._federatedAuthenticationRequested))
+                if (rec.useSSPI == false)
                 {
                     WriteShort(offset, _physicalStateObj);  // userName offset
                     WriteShort(userName.Length, _physicalStateObj);
@@ -6394,10 +6392,9 @@ namespace System.Data.SqlClient
                 // write variable length portion
                 WriteString(rec.hostName, _physicalStateObj);
 
-                // if we are using SSPI or fed auth ADAL, do not send over username/password, since we will use SSPI instead
+                // if we are using SSPI, do not send over username/password, since we will use SSPI instead
                 // same behavior as Luxor
-                //if (!rec.useSSPI && !(_connHandler._federatedAuthenticationInfoRequested || _connHandler._federatedAuthenticationRequested))
-                if (!rec.useSSPI && !(_connHandler._federatedAuthenticationRequested))
+                if (!rec.useSSPI)
                 {
                     WriteString(userName, _physicalStateObj);
 
@@ -6429,7 +6426,7 @@ namespace System.Data.SqlClient
                     _physicalStateObj.WriteByteArray(outSSPIBuff, (int)outSSPILength, 0);
 
                 WriteString(rec.attachDBFilename, _physicalStateObj);
-                if (!rec.useSSPI && !( _connHandler._federatedAuthenticationRequested))
+                if (!rec.useSSPI)
                 {
                     // Cache offset in packet for tracing.
                     _physicalStateObj._traceChangePasswordOffset = _physicalStateObj._outBytesUsed;
