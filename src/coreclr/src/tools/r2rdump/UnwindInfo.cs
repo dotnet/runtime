@@ -6,11 +6,47 @@ using System.Text;
 
 namespace R2RDump
 {
+    public enum REGISTERS
+    {
+        RAX = 0,
+        RCX = 1,
+        RDX = 2,
+        RBX = 3,
+        RSP = 4,
+        RBP = 5,
+        RSI = 6,
+        RDI = 7,
+        R8 = 8,
+        R9 = 9,
+        R10 = 10,
+        R11 = 11,
+        R12 = 12,
+        R13 = 13,
+        R14 = 14,
+        R15 = 15,
+    }
+
     struct UnwindCode
     {
+        public enum UNWIND_OP_CODES
+        {
+            UWOP_PUSH_NONVOL = 0,
+            UWOP_ALLOC_LARGE,
+            UWOP_ALLOC_SMALL,
+            UWOP_SET_FPREG,
+            UWOP_SAVE_NONVOL,
+            UWOP_SAVE_NONVOL_FAR,
+            UWOP_EPILOG,
+            UWOP_SPARE_CODE,
+            UWOP_SAVE_XMM128,
+            UWOP_SAVE_XMM128_FAR,
+            UWOP_PUSH_MACHFRAME,
+            UWOP_SET_FPREG_LARGE,
+        }
+
         public byte CodeOffset { get; }
-        public byte UnwindOp { get; } //4 bits
-        public byte OpInfo { get; } //4 bits
+        public UNWIND_OP_CODES UnwindOp { get; } //4 bits
+        public REGISTERS OpInfo { get; } //4 bits
 
         public byte OffsetLow { get; }
         public byte OffsetHigh { get; } //4 bits
@@ -22,11 +58,11 @@ namespace R2RDump
             int off = offset;
             CodeOffset = NativeReader.ReadByte(image, ref off);
             byte op = NativeReader.ReadByte(image, ref off);
-            UnwindOp = (byte)(op & 15);
-            OpInfo = (byte)(op >> 4);
+            UnwindOp = (UNWIND_OP_CODES)(op & 15);
+            OpInfo = (REGISTERS)(op >> 4);
 
             OffsetLow = CodeOffset;
-            OffsetHigh = OpInfo;
+            OffsetHigh = (byte)OpInfo;
 
             FrameOffset = NativeReader.ReadUInt16(image, ref offset);
         }
