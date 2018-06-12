@@ -1763,7 +1763,7 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 	g_free (absfname);
 
 	if (image) { // Image already loaded
-		if (!load_from_context && mono_is_problematic_image (image)) {
+		if (!refonly && !load_from_context && mono_is_problematic_image (image)) {
 			// If we previously loaded a problematic image, don't
 			// return it if we're not in LoadFrom context.
 			//
