@@ -6512,6 +6512,11 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
         sz += emitGetRexPrefixSize(ins);
     }
 
+    if (ins == INS_crc32)
+    {
+        sz += 1;
+    }
+
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
@@ -8368,6 +8373,12 @@ void emitter::emitDispIns(
             {
                 printf("%s, %s", emitRegName(id->idReg1(), EA_PTRSIZE), sstr);
             }
+            else if ((ins == INS_crc32) && (attr != EA_8BYTE))
+            {
+                // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
+                // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
+                printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
+            }
             else
             {
                 printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
@@ -8583,6 +8594,12 @@ void emitter::emitDispIns(
             {
                 printf("%s, %s", emitRegName(id->idReg1(), EA_PTRSIZE), sstr);
             }
+            else if ((ins == INS_crc32) && (attr != EA_8BYTE))
+            {
+                // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
+                // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
+                printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
+            }
             else
             {
                 printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
@@ -8696,6 +8713,8 @@ void emitter::emitDispIns(
 #ifdef FEATURE_HW_INTRINSICS
             else if (ins == INS_crc32 && attr != EA_8BYTE)
             {
+                // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
+                // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
                 printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
             }
 #endif // FEATURE_HW_INTRINSICS
@@ -8780,6 +8799,12 @@ void emitter::emitDispIns(
                 attr = EA_PTRSIZE;
             }
 #endif
+            else if ((ins == INS_crc32) && (attr != EA_8BYTE))
+            {
+                // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
+                // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
+                printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
+            }
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
@@ -9319,12 +9344,22 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
 
     // Special case emitting AVX instructions
-    if (Is4ByteSSE4OrAVXInstruction(ins))
+    if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
     {
+        if ((ins == INS_crc32) && (size > EA_1BYTE))
+        {
+            code |= 0x0100;
+
+            if (size == EA_2BYTE)
+            {
+                dst += emitOutputByte(dst, 0x66);
+            }
+        }
+
         unsigned regcode = insEncodeReg345(ins, id->idReg1(), size, &code);
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
-        if (UseVEXEncoding())
+        if (UseVEXEncoding() && (ins != INS_crc32))
         {
             // Emit last opcode byte
             // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
@@ -9450,6 +9485,7 @@ GOT_DSP:
         switch (reg)
         {
             case REG_NA:
+            {
                 if (id->idIsDspReloc())
                 {
                     INT32 addlDelta = 0;
@@ -9457,7 +9493,7 @@ GOT_DSP:
                     // The address is of the form "[disp]"
                     // On x86 - disp is relative to zero
                     // On Amd64 - disp is relative to RIP
-                    if (Is4ByteSSE4OrAVXInstruction(ins))
+                    if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
                     {
                         dst += emitOutputByte(dst, code | 0x05);
                     }
@@ -9513,7 +9549,7 @@ GOT_DSP:
                 else
                 {
 #ifdef _TARGET_X86_
-                    if (Is4ByteSSE4OrAVXInstruction(ins))
+                    if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
                     {
                         dst += emitOutputByte(dst, code | 0x05);
                     }
@@ -9543,9 +9579,11 @@ GOT_DSP:
                     dst += emitOutputLong(dst, dsp);
                 }
                 break;
+            }
 
             case REG_EBP:
-                if (Is4ByteSSE4OrAVXInstruction(ins))
+            {
+                if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
                 {
                     // Does the offset fit in a byte?
                     if (dspInByte)
@@ -9584,9 +9622,11 @@ GOT_DSP:
                     }
                 }
                 break;
+            }
 
             case REG_ESP:
-                if (Is4ByteSSE4OrAVXInstruction(ins))
+            {
+                if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
                 {
                     // Is the offset 0 or does it at least fit in a byte?
                     if (dspIsZero)
@@ -9637,9 +9677,11 @@ GOT_DSP:
                     }
                 }
                 break;
+            }
 
             default:
-                if (Is4ByteSSE4OrAVXInstruction(ins))
+            {
+                if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
                 {
                     // Put the register in the opcode
                     code |= insEncodeReg012(ins, reg, EA_PTRSIZE, nullptr);
@@ -9701,6 +9743,7 @@ GOT_DSP:
                 }
 
                 break;
+            }
         }
     }
     else
@@ -9720,7 +9763,7 @@ GOT_DSP:
                 regByte = insEncodeReg012(ins, reg, EA_PTRSIZE, nullptr) |
                           insEncodeReg345(ins, rgx, EA_PTRSIZE, nullptr) | insSSval(mul);
 
-                if (Is4ByteSSE4OrAVXInstruction(ins))
+                if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
                 {
                     // Emit [ebp + {2/4/8} * rgz] as [ebp + {2/4/8} * rgx + 0]
                     if (dspIsZero && reg != REG_EBP)
@@ -9787,7 +9830,7 @@ GOT_DSP:
                 regByte = insEncodeReg012(ins, REG_EBP, EA_PTRSIZE, nullptr) |
                           insEncodeReg345(ins, rgx, EA_PTRSIZE, nullptr) | insSSval(mul);
 
-                if (Is4ByteSSE4OrAVXInstruction(ins))
+                if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
                 {
                     dst += emitOutputByte(dst, code | 0x04);
                 }
@@ -9816,7 +9859,7 @@ GOT_DSP:
             // The address is "[reg+rgx+dsp]"
             regByte = insEncodeReg012(ins, reg, EA_PTRSIZE, nullptr) | insEncodeReg345(ins, rgx, EA_PTRSIZE, nullptr);
 
-            if (Is4ByteSSE4OrAVXInstruction(ins))
+            if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
             {
                 if (dspIsZero && reg != REG_EBP)
                 {
@@ -10043,12 +10086,22 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
 
     // Special case emitting AVX instructions
-    if (Is4ByteSSE4OrAVXInstruction(ins))
+    if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
     {
+        if ((ins == INS_crc32) && (size > EA_1BYTE))
+        {
+            code |= 0x0100;
+
+            if (size == EA_2BYTE)
+            {
+                dst += emitOutputByte(dst, 0x66);
+            }
+        }
+
         unsigned regcode = insEncodeReg345(ins, id->idReg1(), size, &code);
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
-        if (UseVEXEncoding())
+        if (UseVEXEncoding() && (ins != INS_crc32))
         {
             // Emit last opcode byte
             // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
@@ -10174,7 +10227,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     if (EBPbased)
     {
         // EBP-based variable: does the offset fit in a byte?
-        if (Is4ByteSSE4OrAVXInstruction(ins))
+        if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
         {
             if (dspInByte)
             {
@@ -10213,7 +10266,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         dspIsZero = (dsp == 0);
 
         // Does the offset fit in a byte?
-        if (Is4ByteSSE4OrAVXInstruction(ins))
+        if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
         {
             if (dspInByte)
             {
@@ -10483,12 +10536,22 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 #endif //_TARGET_X86_
 
     // Special case emitting AVX instructions
-    if (Is4ByteSSE4OrAVXInstruction(ins))
+    if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
     {
+        if ((ins == INS_crc32) && (size > EA_1BYTE))
+        {
+            code |= 0x0100;
+
+            if (size == EA_2BYTE)
+            {
+                dst += emitOutputByte(dst, 0x66);
+            }
+        }
+
         unsigned regcode = insEncodeReg345(ins, id->idReg1(), size, &code);
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
-        if (UseVEXEncoding())
+        if (UseVEXEncoding() && (ins != INS_crc32))
         {
             // Emit last opcode byte
             // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
@@ -12813,8 +12876,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_ARD:
         case IF_RRW_ARD:
         case IF_RWR_RRD_ARD:
+        {
             code = insCodeRM(ins);
-            if (Is4ByteSSE4OrAVXInstruction(ins))
+            if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
             {
                 dst = emitOutputAM(dst, id, code);
             }
@@ -12826,6 +12890,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             sz = emitSizeOfInsDsc(id);
             break;
+        }
 
         case IF_RWR_RRD_ARD_CNS:
         case IF_RWR_RRD_ARD_RRD:
@@ -12954,11 +13019,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RRD_SRD:
         case IF_RWR_SRD:
         case IF_RRW_SRD:
+        {
             code = insCodeRM(ins);
 
             // 4-byte AVX instructions are special cased inside emitOutputSV
             // since they do not have space to encode ModRM byte.
-            if (Is4ByteSSE4OrAVXInstruction(ins))
+            if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
             {
                 dst = emitOutputSV(dst, id, code);
             }
@@ -12975,7 +13041,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputSV(dst, id, code | regcode);
             }
+
+            sz = emitSizeOfInsDsc(id);
             break;
+        }
 
         case IF_RWR_RRD_SRD:
         {
@@ -13115,9 +13184,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RRD_MRD:
         case IF_RWR_MRD:
         case IF_RRW_MRD:
+        {
             code = insCodeRM(ins);
+
             // Special case 4-byte AVX instructions
-            if (Is4ByteSSE4OrAVXInstruction(ins))
+            if (Is4ByteSSE4OrAVXInstruction(ins) || (ins == INS_crc32))
             {
                 dst = emitOutputCV(dst, id, code);
             }
@@ -13134,8 +13205,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
             }
+
             sz = emitSizeOfInsDsc(id);
             break;
+        }
 
         case IF_RWR_RRD_MRD:
         {
