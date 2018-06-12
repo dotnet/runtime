@@ -1,5 +1,6 @@
 ﻿﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -61,14 +62,26 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		public virtual IEnumerable<string> GetReferencedAssemblies (NPath workingDirectory)
 		{
-			foreach (var referenceAttr in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (ReferenceAttribute))) {
-				var fileName = (string) referenceAttr.ConstructorArguments.First ().Value;
+			foreach (var fileName in GetReferenceValues ()) {
 				if (fileName.StartsWith ("System.", StringComparison.Ordinal) || fileName.StartsWith ("Mono.", StringComparison.Ordinal) || fileName.StartsWith ("Microsoft.", StringComparison.Ordinal))
 					yield return fileName;
 				else
-					yield return workingDirectory.Combine (fileName);
-
+					// Drop any relative path information.  Sandboxing will have taken care of copying the reference to the directory
+					yield return workingDirectory.Combine (Path.GetFileName (fileName));
 			}
+		}
+		
+		public virtual IEnumerable<string> GetReferenceDependencies ()
+		{
+			return _testCaseTypeDefinition.CustomAttributes
+				.Where (attr => attr.AttributeType.Name == nameof (ReferenceDependencyAttribute))
+				.Select (attr => (string) attr.ConstructorArguments [0].Value);
+		}
+
+		public virtual IEnumerable<string> GetReferenceValues ()
+		{
+			foreach (var referenceAttr in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (ReferenceAttribute)))
+				yield return (string) referenceAttr.ConstructorArguments.First ().Value;
 		}
 
 		public virtual IEnumerable<SourceAndDestinationPair> GetResources ()

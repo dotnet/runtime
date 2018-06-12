@@ -76,6 +76,15 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				if (destination.Parent == InputDirectory)
 					dep.Source.Copy (ExpectationsDirectory.Combine (destination.RelativeTo (InputDirectory)));
 			}
+			
+			// Copy non class library dependencies to the sandbox
+			foreach (var fileName in metadataProvider.GetReferenceValues ()) {
+				if (!fileName.StartsWith ("System.", StringComparison.Ordinal) && !fileName.StartsWith ("Mono.", StringComparison.Ordinal) && !fileName.StartsWith ("Microsoft.", StringComparison.Ordinal))
+					CopyToInputAndExpectations (_testCase.SourceFile.Parent.Combine (fileName.ToNPath ()));
+			}
+			
+			foreach (var referenceDependency in metadataProvider.GetReferenceDependencies ())
+				CopyToInputAndExpectations (_testCase.SourceFile.Parent.Combine (referenceDependency.ToNPath()));
 
 			foreach (var res in metadataProvider.GetResources ()) {
 				res.Source.FileMustExist ().Copy (ResourcesDirectory.Combine (res.DestinationFileName));
