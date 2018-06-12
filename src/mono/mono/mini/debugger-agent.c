@@ -5123,14 +5123,12 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 		frame_index = 1;
 
 		if (ss_args->ctx && !frames) {
-			/* Need parent frames */
-			if (!tls->context.valid)
-				mono_thread_state_init_from_monoctx (&tls->context, ss_args->ctx);
 
 			mono_loader_lock ();
 			locked = TRUE;
 
-			compute_frame_info (tls->thread, tls);
+			/* Need parent frames */
+			ss_calculate_framecount (tls, ss_args->ctx, FALSE);
 			frames = tls->frames;
 			nframes = tls->frame_count;
 		}
