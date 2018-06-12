@@ -11622,28 +11622,11 @@ void Compiler::gtGetLateArgMsg(
 #if FEATURE_MULTIREG_ARGS
             if (curArgTabEntry->numRegs >= 2)
             {
-                regNumber otherRegNum;
-#if defined(UNIX_AMD64_ABI)
-                assert(curArgTabEntry->numRegs == 2);
-                otherRegNum = curArgTabEntry->otherRegNum;
-#else
-                otherRegNum = (regNumber)(((unsigned)curArgTabEntry->regNum) + curArgTabEntry->numRegs - 1);
-#endif // UNIX_AMD64_ABI
-
-                if (listCount == -1)
-                {
-                    char seperator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
-
-                    sprintf_s(bufp, bufLength, "arg%d %s%c%s%c", curArgTabEntry->argNum, compRegVarName(argReg),
-                              seperator, compRegVarName(otherRegNum), 0);
-                }
-                else // listCount is 0,1,2 or 3
-                {
-                    assert(listCount <= MAX_ARG_REG_COUNT);
-                    regNumber curReg = (listCount == 1) ? otherRegNum : (regNumber)((unsigned)(argReg) + listCount);
-                    sprintf_s(bufp, bufLength, "arg%d m%d %s%c", curArgTabEntry->argNum, listCount,
-                              compRegVarName(curReg), 0);
-                }
+                // listCount could be -1 but it is signed, so this comparison is OK.
+                assert(listCount <= MAX_ARG_REG_COUNT);
+                char separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
+                sprintf_s(bufp, bufLength, "arg%d %s%c%s%c", curArgTabEntry->argNum, compRegVarName(argReg), separator,
+                          compRegVarName(curArgTabEntry->getRegNum(curArgTabEntry->numRegs - 1)), 0);
             }
             else
 #endif

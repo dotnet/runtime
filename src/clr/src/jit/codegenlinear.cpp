@@ -1468,6 +1468,45 @@ void CodeGen::genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode)
 #endif
 
 //------------------------------------------------------------------------
+// genPutArgStkFieldList: Generate code for a putArgStk whose source is a GT_FIELD_LIST
+//
+// Arguments:
+//    putArgStk    - The putArgStk node
+//    outArgVarNum - The lclVar num for the argument
+//
+// Notes:
+//    The x86 version of this is in codegenxarch.cpp, and doesn't take an
+//    outArgVarNum, as it pushes its args onto the stack.
+//
+#ifndef _TARGET_X86_
+void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArgVarNum)
+{
+    assert(putArgStk->gtOp1->OperIs(GT_FIELD_LIST));
+
+    // Evaluate each of the GT_FIELD_LIST items into their register
+    // and store their register into the outgoing argument area.
+    unsigned argOffset = putArgStk->getArgOffset();
+    for (GenTreeFieldList* fieldListPtr = putArgStk->gtOp1->AsFieldList(); fieldListPtr != nullptr;
+         fieldListPtr                   = fieldListPtr->Rest())
+    {
+        GenTree* nextArgNode = fieldListPtr->gtOp.gtOp1;
+        genConsumeReg(nextArgNode);
+
+        regNumber reg  = nextArgNode->gtRegNum;
+        var_types type = nextArgNode->TypeGet();
+        emitAttr  attr = emitTypeSize(type);
+
+        // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
+        // argument area
+        getEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, argOffset);
+        argOffset += EA_SIZE_IN_BYTES(attr);
+        // We can't write beyound the arg area
+        assert(argOffset <= compiler->lvaLclSize(outArgVarNum));
+    }
+}
+#endif // !_TARGET_X86_
+
+//------------------------------------------------------------------------
 // genSetBlockSize: Ensure that the block size is in the given register
 //
 // Arguments:
