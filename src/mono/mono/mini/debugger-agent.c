@@ -80,6 +80,7 @@
 #include "mini-runtime.h"
 #include "interp/interp.h"
 #include "debugger-engine.h"
+#include "mono/metadata/debug-mono-ppdb.h"
 
 /*
  * On iOS we can't use System.Environment.Exit () as it will do the wrong
@@ -266,7 +267,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 46
+#define MINOR_VERSION 47
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -394,7 +395,12 @@ typedef enum {
 	CMD_ASSEMBLY_GET_OBJECT = 4,
 	CMD_ASSEMBLY_GET_TYPE = 5,
 	CMD_ASSEMBLY_GET_NAME = 6,
-	CMD_ASSEMBLY_GET_DOMAIN = 7
+	CMD_ASSEMBLY_GET_DOMAIN = 7,
+	CMD_ASSEMBLY_GET_METADATA_BLOB = 8,
+	CMD_ASSEMBLY_GET_IS_DYNAMIC = 9,
+	CMD_ASSEMBLY_GET_PDB_BLOB = 10,
+	CMD_ASSEMBLY_GET_TYPE_FROM_TOKEN = 11,
+	CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN = 12
 } CmdAssembly;
 
 typedef enum {
@@ -1695,6 +1701,13 @@ buffer_add_string (Buffer *buf, const char *str)
 		buffer_add_int (buf, len);
 		buffer_add_data (buf, (guint8*)str, len);
 	}
+}
+
+static inline void
+buffer_add_byte_array (Buffer *buf, guint8 *bytes, guint32 arr_len)
+{
+    buffer_add_int (buf, arr_len);
+    buffer_add_data (buf, bytes, arr_len);
 }
 
 static inline void
@@ -7868,6 +7881,65 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		g_free (name);
 		break;
 	}
+    case CMD_ASSEMBLY_GET_METADATA_BLOB: {
+        MonoImage* image = ass->image;
+        if (ass->dynamic) {
+            return ERR_NOT_IMPLEMENTED;
+        }
+        buffer_add_byte_array (buf, (guint8*)image->raw_data, image->raw_data_len);
+        break;
+    }
+    case CMD_ASSEMBLY_GET_IS_DYNAMIC: {
+        buffer_add_byte (buf, ass->dynamic);
+        break;
+    }
+    case CMD_ASSEMBLY_GET_PDB_BLOB: {
+        MonoImage* image = ass->image;
+        MonoDebugHandle* handle = mono_debug_get_handle (image); 
+        if (!handle) {
+            return ERR_INVALID_ARGUMENT;
+        }
+        MonoPPDBFile* ppdb = handle->ppdb;
+        if (ppdb) {
+            image = mono_ppdb_get_image (ppdb);
+            buffer_add_byte_array (buf, (guint8*)image->raw_data, image->raw_data_len);
+        } else {
+            buffer_add_byte_array (buf, NULL, 0);
+        }
+        break;
+    }
+    case CMD_ASSEMBLY_GET_TYPE_FROM_TOKEN: {
+        if (ass->dynamic) {
+            return ERR_NOT_IMPLEMENTED;
+        }
+        guint32 token = decode_int (p, &p, end);
+        ERROR_DECL (error);
+        error_init (error);
+        MonoClass* mono_class = mono_class_get_checked (ass->image, token, error);
+        if (!is_ok (error)) {
+            mono_error_cleanup (error);
+            return ERR_INVALID_ARGUMENT;
+        }
+        buffer_add_typeid (buf, domain, mono_class);
+        mono_error_cleanup (error);
+        break;
+    }
+    case CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN: {
+        if (ass->dynamic) {
+            return ERR_NOT_IMPLEMENTED;
+        }
+        guint32 token = decode_int (p, &p, end);
+        ERROR_DECL (error);
+        error_init (error);
+        MonoMethod* mono_method = mono_get_method_checked (ass->image, token, NULL, NULL, error);
+        if (!is_ok (error)) {
+            mono_error_cleanup (error);
+            return ERR_INVALID_ARGUMENT;
+        }
+        buffer_add_methodid (buf, domain, mono_method);
+        mono_error_cleanup (error);
+        break;
+    }
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}

@@ -248,6 +248,12 @@ mono_debug_close_image (MonoImage *image)
 	mono_debugger_unlock ();
 }
 
+MonoDebugHandle *
+mono_debug_get_handle (MonoImage *image)
+{
+    return mono_debug_open_image (image, NULL, 0);
+}
+
 static MonoDebugHandle *
 mono_debug_open_image (MonoImage *image, const guint8 *raw_contents, int size)
 {
