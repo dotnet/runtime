@@ -3067,16 +3067,40 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     assert(node->OperIsPutArgReg());
     regNumber argReg = node->gtRegNum;
     assert(argReg != REG_NA);
-    bool isSpecialPutArg = false;
-    int  srcCount        = 1;
+    bool     isSpecialPutArg = false;
+    int      srcCount        = 1;
+    GenTree* op1             = node->gtGetOp1();
 
-    // Set the register requirements for the node.
-    regMaskTP argMask = genRegMask(argReg);
+    // First, handle the GT_OBJ case, which loads into the arg register
+    // (so we don't set the use to prefer that register for the source address).
+    if (op1->OperIs(GT_OBJ))
+    {
+        GenTreeObj* obj  = op1->AsObj();
+        GenTree*    addr = obj->Addr();
+        unsigned    size = obj->gtBlkSize;
+        assert(size <= TARGET_POINTER_SIZE);
+        if (addr->OperIsLocalAddr())
+        {
+            // We don't need a source register.
+            assert(addr->isContained());
+            srcCount = 0;
+        }
+        else if (!isPow2(size))
+        {
+            // We'll need an internal register to do the odd-size load.
+            // This can only happen with integer registers.
+            assert(genIsValidIntReg(argReg));
+            buildInternalIntRegisterDefForNode(node);
+            BuildUse(addr);
+            buildInternalRegisterUses();
+        }
+        return srcCount;
+    }
 
     // To avoid redundant moves, have the argument operand computed in the
     // register in which the argument is passed to the call.
-    GenTree*     op1 = node->gtOp1;
-    RefPosition* use = BuildUse(op1, argMask);
+    regMaskTP    argMask = genRegMask(argReg);
+    RefPosition* use     = BuildUse(op1, argMask);
 
     if (supportsSpecialPutArg() && isCandidateLocalRef(op1) && ((op1->gtFlags & GTF_VAR_DEATH) == 0))
     {
