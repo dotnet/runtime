@@ -6,7 +6,7 @@ using System.Text;
 
 namespace R2RDump
 {
-    public enum REGISTERS
+    public enum Registers
     {
         RAX = 0,
         RCX = 1,
@@ -28,7 +28,7 @@ namespace R2RDump
 
     struct UnwindCode
     {
-        public enum UNWIND_OP_CODES
+        public enum OpCodes
         {
             UWOP_PUSH_NONVOL = 0,
             UWOP_ALLOC_LARGE,
@@ -45,8 +45,8 @@ namespace R2RDump
         }
 
         public byte CodeOffset { get; }
-        public UNWIND_OP_CODES UnwindOp { get; } //4 bits
-        public REGISTERS OpInfo { get; } //4 bits
+        public OpCodes UnwindOp { get; } //4 bits
+        public Registers OpInfo { get; } //4 bits
 
         public byte OffsetLow { get; }
         public byte OffsetHigh { get; } //4 bits
@@ -58,8 +58,8 @@ namespace R2RDump
             int off = offset;
             CodeOffset = NativeReader.ReadByte(image, ref off);
             byte op = NativeReader.ReadByte(image, ref off);
-            UnwindOp = (UNWIND_OP_CODES)(op & 15);
-            OpInfo = (REGISTERS)(op >> 4);
+            UnwindOp = (OpCodes)(op & 15);
+            OpInfo = (Registers)(op >> 4);
 
             OffsetLow = CodeOffset;
             OffsetHigh = (byte)OpInfo;
