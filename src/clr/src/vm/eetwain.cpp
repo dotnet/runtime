@@ -36,7 +36,8 @@
 #define X86_INSTR_PUSH_EBP              0x55    // push ebp
 #define X86_INSTR_W_MOV_EBP_ESP         0xEC8B  // mov ebp, esp
 #define X86_INSTR_POP_ECX               0x59    // pop ecx
-#define X86_INSTR_RET                   0xC2    // ret
+#define X86_INSTR_RET                   0xC2    // ret imm16
+#define X86_INSTR_RETN                  0xC3    // ret
 #define X86_INSTR_w_LEA_ESP_EBP_BYTE_OFFSET     0x658d      // lea esp, [ebp-bOffset]
 #define X86_INSTR_w_LEA_ESP_EBP_DWORD_OFFSET    0xa58d      // lea esp, [ebp-dwOffset]
 #define X86_INSTR_JMP_NEAR_REL32     0xE9        // near jmp rel32
@@ -3880,19 +3881,9 @@ bool UnwindEbpDoubleAlignFrame(
             //   epilog: add esp, 12
             //           ret
             // SP alignment padding should be added for all instructions except the first one and the last one.
-            TADDR funcletStart = pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo);
-
-            const ULONG32 funcletLastInstSize = 1; // 0xc3, ret
-            BOOL atFuncletLastInst = (pCodeInfo->GetRelOffset() + funcletLastInstSize) >= info->methodSize;
-            if (!atFuncletLastInst)
-            {
-                EECodeInfo nextCodeInfo;
-                nextCodeInfo.Init(pCodeInfo->GetCodeAddress() + funcletLastInstSize);
-                atFuncletLastInst = !nextCodeInfo.IsValid() || !nextCodeInfo.IsFunclet() ||
-                    nextCodeInfo.GetJitManager()->GetFuncletStartAddress(&nextCodeInfo) != funcletStart;
-            }
-
-            if (!atFuncletLastInst && funcletStart != pCodeInfo->GetCodeAddress())
+            // Epilog may not exist (unreachable), so we need to check the instruction code.
+            const TADDR funcletStart = pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo);
+            if (funcletStart != pCodeInfo->GetCodeAddress() && methodStart[pCodeInfo->GetRelOffset()] != X86_INSTR_RETN)
                 baseSP += 12;
 
             pContext->PCTAddr = baseSP;
