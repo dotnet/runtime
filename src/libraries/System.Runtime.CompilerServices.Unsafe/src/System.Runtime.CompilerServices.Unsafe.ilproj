@@ -1,6 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <ProjectGuid>{04BA3E3C-6979-4792-B19E-C797AD607F42}</ProjectGuid>
@@ -22,5 +20,4 @@
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

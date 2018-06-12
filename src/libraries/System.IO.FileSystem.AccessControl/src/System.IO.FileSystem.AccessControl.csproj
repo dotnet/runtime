@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">Windows_NT</OSGroup>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.IO.FileSystem.AccessControl</AssemblyName>
     <ProjectGuid>{D77FBA6C-1AA6-45A4-93E2-97A370672C53}</ProjectGuid>
