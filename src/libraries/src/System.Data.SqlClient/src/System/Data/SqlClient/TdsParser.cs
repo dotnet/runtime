@@ -6428,9 +6428,6 @@ namespace System.Data.SqlClient
                 WriteString(rec.attachDBFilename, _physicalStateObj);
                 if (!rec.useSSPI)
                 {
-                    // Cache offset in packet for tracing.
-                    _physicalStateObj._traceChangePasswordOffset = _physicalStateObj._outBytesUsed;
-                    _physicalStateObj._traceChangePasswordLength = encryptedChangePasswordLengthInBytes;
                     if (rec.newSecurePassword != null)
                     {
                         _physicalStateObj.WriteSecureString(rec.newSecurePassword);
