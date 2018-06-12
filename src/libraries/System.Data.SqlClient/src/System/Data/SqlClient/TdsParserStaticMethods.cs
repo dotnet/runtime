@@ -61,11 +61,9 @@ namespace System.Data.SqlClient
         {
             if (s_currentProcessId == NoProcessId)
             {
-                // In ProjectK\CoreCLR we don't want to take a dependency on an assembly
-                // just to grab the real Process Id that the server doesn't really use
-                // So, instead, pick a random number and use that for all connections
-                Random rand = new Random();
-                int processId = rand.Next();
+                // Pick up the process Id from the current process instead of randomly generating it.
+                // This would be helpful while tracing application related issues.
+                int processId = System.Diagnostics.Process.GetCurrentProcess().Id;
                 Threading.Interlocked.CompareExchange(ref s_currentProcessId, processId, NoProcessId);
             }
             return s_currentProcessId;
