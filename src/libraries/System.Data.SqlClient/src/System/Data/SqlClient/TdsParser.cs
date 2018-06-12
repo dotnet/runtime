@@ -779,8 +779,7 @@ namespace System.Data.SqlClient
                             _encryptionOption == EncryptionOptions.LOGIN)
                         {
                             UInt32 error = 0;
-                            // If we're using legacy server certificate validation behavior (not using access token), then validate if
-                            //     Encrypt=true and Trust Sever Certificate = false.
+                            // If we're using legacy server certificate validation behavior (not using access token), then validate if Encrypt=true and Trust Sever Certificate = false.
                             // If using access token, validate if Trust Server Certificate=false.
                             bool shouldValidateServerCert = (encrypt && !trustServerCert) || (_connHandler._accessTokenInBytes != null && !trustServerCert);
                             UInt32 info = (shouldValidateServerCert ? TdsEnums.SNI_SSL_VALIDATE_CERTIFICATE : 0)
