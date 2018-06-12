@@ -434,8 +434,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
                     // We will generate all of the code for the GT_PUTARG_STK and its child node
                     // as one contained operation
                     //
-                    BuildUse(objChild);
-                    srcCount = 1;
+                    srcCount = BuildOperandUses(objChild);
                 }
             }
             else

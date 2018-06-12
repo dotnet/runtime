@@ -79,9 +79,6 @@ void Compiler::lvaInit()
     lvaSIMDInitTempVarNum = BAD_VAR_NUM;
 #endif // FEATURE_SIMD
     lvaCurEpoch = 0;
-#ifdef UNIX_AMD64_ABI
-    lvaFirstStackIncomingArgNum = BAD_VAR_NUM;
-#endif // UNIX_AMD64_ABI
 }
 
 /*****************************************************************************/
@@ -853,8 +850,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
                 printf("Arg #%u    passed in register(s) ", varDscInfo->varNum);
                 bool isFloat = false;
 #if defined(UNIX_AMD64_ABI)
-                // In case of one eightbyte struct the type is already normalized earlier.
-                // The varTypeIsFloating(argType) is good for this case.
                 if (varTypeIsStruct(argType) && (structDesc.eightByteCount >= 1))
                 {
                     isFloat = varTypeIsFloating(firstEightByteType);
@@ -895,6 +890,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
                 else
 #endif // defined(UNIX_AMD64_ABI)
                 {
+                    isFloat            = varTypeIsFloating(argType);
                     unsigned regArgNum = genMapRegNumToRegArgNum(varDsc->lvArgReg, argType);
 
                     for (unsigned ix = 0; ix < cSlots; ix++, regArgNum++)
