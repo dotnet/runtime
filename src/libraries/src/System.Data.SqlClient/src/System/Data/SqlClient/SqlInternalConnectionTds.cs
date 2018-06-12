@@ -117,7 +117,6 @@ namespace System.Data.SqlClient
         // Federated Authentication
         // Response obtained from the server for FEDAUTHREQUIRED prelogin option.
         internal bool _fedAuthRequired;
-
         internal bool _federatedAuthenticationRequested;
         internal bool _federatedAuthenticationAcknowledged;
         internal byte[] _accessTokenInBytes;
