@@ -380,14 +380,15 @@ namespace System.Net.Sockets
 
                 receivedFlags = messageHeader.Flags;
                 sockAddrLen = messageHeader.SocketAddressLen;
-                ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
             }
 
             if (errno != Interop.Error.SUCCESS)
             {
+                ipPacketInformation = default(IPPacketInformation);
                 return -1;
             }
 
+            ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
             socketAddressLen = sockAddrLen;
             return checked((int)received);
         }
@@ -442,15 +443,16 @@ namespace System.Net.Sockets
 
                     receivedFlags = messageHeader.Flags;
                     int sockAddrLen = messageHeader.SocketAddressLen;
-                    ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
 
                     if (errno == Interop.Error.SUCCESS)
                     {
+                        ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
                         socketAddressLen = sockAddrLen;
                         return checked((int)received);
                     }
                     else
                     {
+                        ipPacketInformation = default(IPPacketInformation);
                         return -1;
                     }
                 }
