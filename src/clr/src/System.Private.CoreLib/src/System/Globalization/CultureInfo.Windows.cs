@@ -11,6 +11,7 @@ using Internal.Runtime.Augments;
 using System.Threading;
 #if FEATURE_APPX
 using System.Resources;
+using Internal.Resources;
 #endif
 
 namespace System.Globalization

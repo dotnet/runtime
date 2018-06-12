@@ -30,38 +30,9 @@ namespace System.Resources
     using System.Collections.Generic;
     using System.Runtime.Versioning;
     using System.Diagnostics;
-
 #if FEATURE_APPX
-    //
-    // This is implemented in System.Runtime.WindowsRuntime as function System.Resources.WindowsRuntimeResourceManager,
-    // allowing us to ask for a WinRT-specific ResourceManager.
-    // It is important to have WindowsRuntimeResourceManagerBase as regular class with virtual methods and default implementations. 
-    // Defining WindowsRuntimeResourceManagerBase as abstract class or interface will cause issues when adding more methods to it 
-    // because it'll create dependency between mscorlib and System.Runtime.WindowsRuntime which will require always shipping both DLLs together. 
-    //
-    // [FriendAccessAllowed]
-    internal abstract class WindowsRuntimeResourceManagerBase
-    {
-        public abstract bool Initialize(string libpath, string reswFilename, out PRIExceptionInfo exceptionInfo);
-
-        public abstract string GetString(string stringName, string startingCulture, string neutralResourcesCulture);
-
-        public abstract CultureInfo GlobalResourceContextBestFitCultureInfo
-        {
-            get;
-        }
-
-        public abstract bool SetGlobalResourceContextDefaultCulture(CultureInfo ci);
-    }
-
-    // [FriendAccessAllowed]
-    internal class PRIExceptionInfo
-    {
-        public string _PackageSimpleName;
-        public string _ResWFile;
-    }
-#endif // FEATURE_APPX
-
+    using Internal.Resources;
+#endif
     // Resource Manager exposes an assembly's resources to an application for
     // the correct CultureInfo.  An example would be localizing text for a 
     // user-visible message.  Create a set of resource files listing a name 
@@ -919,7 +890,6 @@ namespace System.Resources
                                     try
                                     {
                                         _PRIonAppXInitialized = _WinRTResourceManager.Initialize(resourcesAssembly.Location, reswFilename, out _PRIExceptionInfo);
-
                                         // Note that _PRIExceptionInfo might be null - this is OK.
                                         // In that case we will just throw the generic
                                         // MissingManifestResource_NoPRIresources exception.
@@ -1016,8 +986,8 @@ namespace System.Resources
                 {
                     // Always throw if we did not fully succeed in initializing the WinRT Resource Manager.
 
-                    if (_PRIExceptionInfo != null && _PRIExceptionInfo._PackageSimpleName != null && _PRIExceptionInfo._ResWFile != null)
-                        throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_ResWFileNotLoaded, _PRIExceptionInfo._ResWFile, _PRIExceptionInfo._PackageSimpleName));
+                    if (_PRIExceptionInfo != null && _PRIExceptionInfo.PackageSimpleName != null && _PRIExceptionInfo.ResWFile != null)
+                        throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_ResWFileNotLoaded, _PRIExceptionInfo.ResWFile, _PRIExceptionInfo.PackageSimpleName));
 
                     throw new MissingManifestResourceException(SR.MissingManifestResource_NoPRIresources);
                 }
