@@ -4154,8 +4154,9 @@ ss_discard_frame_context (void *de_tls) {
 }
 
 static gboolean
-ensure_jit (StackFrame* frame)
+ensure_jit (DbgEngineStackFrame* the_frame)
 {
+	StackFrame *frame = (StackFrame*)the_frame;
 	if (!frame->jit) {
 		frame->jit = mono_debug_find_method (frame->api_method, frame->de.domain);
 		if (!frame->jit && frame->api_method->is_inflated)
@@ -4306,8 +4307,9 @@ breakpoint_matches_assembly (MonoBreakpoint *bp, MonoAssembly *assembly)
 }
 
 static gpointer
-get_this_addr (StackFrame *frame)
+get_this_addr (DbgEngineStackFrame *the_frame)
 {
+	StackFrame *frame = (StackFrame *)the_frame;
 	if (frame->de.ji->is_interp)
 		return mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
 
@@ -4349,21 +4351,21 @@ get_object_id_for_debugger_method (MonoClass* async_builder_class)
 
 /* Return the address of the AsyncMethodBuilder struct belonging to the state machine method pointed to by FRAME */
 static gpointer
-get_async_method_builder (StackFrame *frame)
+get_async_method_builder (DbgEngineStackFrame *frame)
 {
 	MonoObject *this_obj;
 	MonoClassField *builder_field;
 	gpointer builder;
 	guint8 *this_addr;
 
-	builder_field = mono_class_get_field_from_name (frame->de.method->klass, "<>t__builder");
+	builder_field = mono_class_get_field_from_name (frame->method->klass, "<>t__builder");
 	g_assert (builder_field);
 
 	this_addr = get_this_addr (frame);
 	if (!this_addr)
 		return NULL;
 
-	if (m_class_is_valuetype (frame->de.method->klass)) {
+	if (m_class_is_valuetype (frame->method->klass)) {
 		guint8 *vtaddr = *(guint8**)this_addr;
 		builder = (char*)vtaddr + builder_field->offset - sizeof (MonoObject);
 	} else {
@@ -4377,7 +4379,7 @@ get_async_method_builder (StackFrame *frame)
 //This ID is used to figure out if breakpoint hit on resumeOffset belongs to us or not
 //since thread probably changed...
 static int
-get_this_async_id (StackFrame *frame)
+get_this_async_id (DbgEngineStackFrame *frame)
 {
 	MonoClassField *builder_field;
 	gpointer builder;
@@ -4396,7 +4398,7 @@ get_this_async_id (StackFrame *frame)
 	if (!builder)
 		return 0;
 
-	builder_field = mono_class_get_field_from_name (frame->de.method->klass, "<>t__builder");
+	builder_field = mono_class_get_field_from_name (frame->method->klass, "<>t__builder");
 	g_assert (builder_field);
 
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
@@ -4418,9 +4420,9 @@ get_this_async_id (StackFrame *frame)
 // Returns true if TaskBuilder has NotifyDebuggerOfWaitCompletion method
 // false if not(AsyncVoidBuilder)
 static gboolean
-set_set_notification_for_wait_completion_flag (StackFrame *frame)
+set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame)
 {
-	MonoClassField *builder_field = mono_class_get_field_from_name (frame->de.method->klass, "<>t__builder");
+	MonoClassField *builder_field = mono_class_get_field_from_name (frame->method->klass, "<>t__builder");
 	g_assert (builder_field);
 	gpointer builder = get_async_method_builder (frame);
 	g_assert (builder);
@@ -4540,7 +4542,7 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 			ss_discard_frame_context (tls);
 			ss_calculate_framecount (tls, ctx, FALSE, &frames, &nframes);
 			//make sure we have enough data to get current async method instance id
-			if (nframes == 0 || !ensure_jit ((StackFrame*)frames [0]))
+			if (nframes == 0 || !ensure_jit (frames [0]))
 				continue;
 
 			//Check method is async before calling get_this_async_id
@@ -4551,7 +4553,7 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 				mono_debug_free_method_async_debug_info (asyncMethod);
 
 			//breakpoint was hit in parallelly executing async method, ignore it
-			if (ss_req->async_id != get_this_async_id ((StackFrame*)frames [0]))
+			if (ss_req->async_id != get_this_async_id (frames [0]))
 				continue;
 		}
 
@@ -5121,7 +5123,7 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 
 	DebuggerTlsData *tls = ss_args->tls;
 	MonoMethod *method = ss_args->method;
-	StackFrame **frames = (StackFrame**)ss_args->frames;
+	DbgEngineStackFrame **frames = ss_args->frames;
 	int nframes = ss_args->nframes;
 	SeqPoint *sp = &ss_args->sp;
 
@@ -5139,25 +5141,25 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			locked = TRUE;
 
 			/* Need parent frames */
-			ss_calculate_framecount (tls, ss_args->ctx, FALSE, (DbgEngineStackFrame ***)&frames, &nframes);
+			ss_calculate_framecount (tls, ss_args->ctx, FALSE, &frames, &nframes);
 		}
 
 		MonoDebugMethodAsyncInfo* asyncMethod = mono_debug_lookup_method_async_debug_info (method);
 
 		/* Need to stop in catch clauses as well */
 		for (i = ss_req->depth == STEP_DEPTH_OUT ? 1 : 0; i < nframes; ++i) {
-			StackFrame *frame = frames [i];
+			DbgEngineStackFrame *frame = frames [i];
 
-			if (frame->de.ji) {
-				MonoJitInfo *jinfo = frame->de.ji;
+			if (frame->ji) {
+				MonoJitInfo *jinfo = frame->ji;
 				for (j = 0; j < jinfo->num_clauses; ++j) {
 					// In case of async method we don't want to place breakpoint on last catch handler(which state machine added for whole method)
 					if (asyncMethod && asyncMethod->num_awaits && i == 0 && j + 1 == jinfo->num_clauses)
 						break;
 					MonoJitExceptionInfo *ei = &jinfo->clauses [j];
 
-					if (mono_find_next_seq_point_for_native_offset (frame->de.domain, frame->de.method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp))
-						ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, frame->de.method, local_sp.il_offset);
+					if (mono_find_next_seq_point_for_native_offset (frame->domain, frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp))
+						ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, frame->method, local_sp.il_offset);
 				}
 			}
 		}
@@ -5170,7 +5172,7 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			// of this await call and sets async_id so we can distinguish it from parallel executions
 			for (i = 0; i < asyncMethod->num_awaits; i++) {
 				if (sp->il_offset == asyncMethod->yield_offsets [i]) {
-					ss_req->async_id = get_this_async_id ((StackFrame*)frames [0]);
+					ss_req->async_id = get_this_async_id (frames [0]);
 					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, method, asyncMethod->resume_offsets [i]);
 					g_hash_table_destroy (ss_req_bp_cache);
 					mono_debug_free_method_async_debug_info (asyncMethod);
@@ -5209,10 +5211,10 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 		if (ss_req->depth == STEP_DEPTH_OUT) {
 			/* Ignore seq points in current method */
 			while (frame_index < nframes) {
-				StackFrame *frame = frames [frame_index];
+				DbgEngineStackFrame *frame = frames [frame_index];
 
-				method = frame->de.method;
-				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &ss_args->info, &local_sp);
+				method = frame->method;
+				found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &ss_args->info, &local_sp);
 				sp = (found_sp)? &local_sp : NULL;
 				frame_index ++;
 				if (sp && sp->next_len != 0)
@@ -5224,10 +5226,10 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			if (sp && sp->next_len == 0) {
 				sp = NULL;
 				while (frame_index < nframes) {
-					StackFrame *frame = frames [frame_index];
+					DbgEngineStackFrame *frame = frames [frame_index];
 
-					method = frame->de.method;
-					found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &ss_args->info, &local_sp);
+					method = frame->method;
+					found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &ss_args->info, &local_sp);
 					sp = (found_sp)? &local_sp : NULL;
 					if (sp && sp->next_len != 0)
 						break;
@@ -5237,10 +5239,10 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			} else {
 				/* Have to put a breakpoint into a parent frame since the seq points might not cover all control flow out of the method */
 				while (frame_index < nframes) {
-					StackFrame *frame = frames [frame_index];
+					DbgEngineStackFrame *frame = frames [frame_index];
 
-					parent_sp_method = frame->de.method;
-					found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &parent_info, &local_parent_sp);
+					parent_sp_method = frame->method;
+					found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &parent_info, &local_parent_sp);
 					parent_sp = found_sp ? &local_parent_sp : NULL;
 					if (found_sp && parent_sp->next_len != 0)
 						break;
@@ -9329,7 +9331,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	if (!frame->has_ctx)
 		return ERR_ABSENT_INFORMATION;
 
-	if (!ensure_jit (frame))
+	if (!ensure_jit ((DbgEngineStackFrame*)frame))
 		return ERR_ABSENT_INFORMATION;
 
 	jit = frame->jit;
