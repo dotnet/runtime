@@ -6,13 +6,11 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 [assembly: KeptAttributeAttribute (typeof (System.Diagnostics.DebuggableAttribute))]
 
 namespace Mono.Linker.Tests.Cases.Symbols {
-	[Reference ("LibraryWithMdb.dll")]
-	[SandboxDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll", "input/LibraryWithMdb.dll")]
-	[SandboxDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb", "input/LibraryWithMdb.dll.mdb")]
+	[Reference ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll")]
+	[ReferenceDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb")]
 
-	[Reference ("LibraryWithPdb.dll")]
-	[SandboxDependency ("Dependencies/LibraryWithPdb/LibraryWithPdb.dll", "input/LibraryWithPdb.dll")]
-	[SandboxDependency ("Dependencies/LibraryWithPdb/LibraryWithPdb.pdb", "input/LibraryWithPdb.pdb")]
+	[Reference ("Dependencies/LibraryWithPdb/LibraryWithPdb.dll")]
+	[ReferenceDependency ("Dependencies/LibraryWithPdb/LibraryWithPdb.pdb")]
 
 	[SetupCompileBefore ("LibraryWithCompilerDefaultSymbols.dll", new[] { "Dependencies/LibraryWithCompilerDefaultSymbols.cs" }, additionalArguments: "/debug:full")]
 	[SetupCompileBefore ("LibraryWithPortablePdbSymbols.dll", new[] { "Dependencies/LibraryWithPortablePdbSymbols.cs" }, additionalArguments: "/debug:portable", compilerToUse: "csc")]

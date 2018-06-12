@@ -4,9 +4,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols {
-	[Reference ("LibraryWithMdb.dll")]
-	[SandboxDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll", "input/LibraryWithMdb.dll")]
-	[SandboxDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb", "input/LibraryWithMdb.dll.mdb")]
+	[Reference ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll")]
+	[ReferenceDependency ("Dependencies/LibraryWithMdb/LibraryWithMdb.dll.mdb")]
 	[SetupLinkerLinkSymbols ("false")]
 
 	[RemovedSymbols ("LibraryWithMdb.dll")]
