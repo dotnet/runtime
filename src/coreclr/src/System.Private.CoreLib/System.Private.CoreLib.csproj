@@ -350,7 +350,6 @@
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderData.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderAccess.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AQNBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
@@ -361,7 +360,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldToken.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ISymWrapperCore.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\Label.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilderInstantiation.cs" />
@@ -371,13 +369,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodToken.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilderData.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PEFileKinds.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\OpCodes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\Opcode.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\OpCodeType.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\StackBehaviour.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\OperandType.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FlowControl.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterToken.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyBuilder.cs" />

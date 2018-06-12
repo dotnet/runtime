@@ -76,7 +76,6 @@ namespace System.Reflection.Emit
             }
         }
 
-
         public StackBehaviour StackBehaviourPop
         {
             get
