@@ -1460,7 +1460,6 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
     {
         assert(putArgStk->gtOp1->isContained());
 
-#ifdef _TARGET_X86_
         RefPosition* simdTemp   = nullptr;
         RefPosition* intTemp    = nullptr;
         unsigned     prevOffset = putArgStk->getArgSize();
@@ -1471,7 +1470,10 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             GenTree* const  fieldNode   = current->Current();
             const var_types fieldType   = fieldNode->TypeGet();
             const unsigned  fieldOffset = current->gtFieldOffset;
+
+#ifdef _TARGET_X86_
             assert(fieldType != TYP_LONG);
+#endif // _TARGET_X86_
 
 #if defined(FEATURE_SIMD)
             // Note that we need to check the GT_FIELD_LIST type, not 'fieldType'. This is because the
@@ -1483,6 +1485,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             }
 #endif // defined(FEATURE_SIMD)
 
+#ifdef _TARGET_X86_
             if (putArgStk->gtPutArgStkKind == GenTreePutArgStk::Kind::Push)
             {
                 // We can treat as a slot any field that is stored at a slot boundary, where the previous
@@ -1501,6 +1504,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
                     intTemp->registerAssignment &= allByteRegs();
                 }
             }
+#endif // _TARGET_X86_
 
             if (varTypeIsGC(fieldType))
             {
@@ -1508,6 +1512,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             }
             prevOffset = fieldOffset;
         }
+
         for (GenTreeFieldList* current = putArgStk->gtOp1->AsFieldList(); current != nullptr; current = current->Rest())
         {
             GenTree* const fieldNode = current->Current();
@@ -1520,7 +1525,6 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
         buildInternalRegisterUses();
 
         return srcCount;
-#endif // _TARGET_X86_
     }
 
     GenTree*  src  = putArgStk->gtOp1;

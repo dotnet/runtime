@@ -605,12 +605,12 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_SHORT;
             break;
 
-#ifndef _TARGET_XARCH_
+#if !defined(_TARGET_XARCH_) || defined(UNIX_AMD64_ABI)
         case 3:
             useType = TYP_INT;
             break;
 
-#endif // _TARGET_XARCH_
+#endif // !_TARGET_XARCH_ || UNIX_AMD64_ABI
 
 #ifdef _TARGET_64BIT_
         case 4:
@@ -625,14 +625,14 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             }
             break;
 
-#ifndef _TARGET_XARCH_
+#if !defined(_TARGET_XARCH_) || defined(UNIX_AMD64_ABI)
         case 5:
         case 6:
         case 7:
             useType = TYP_I_IMPL;
             break;
 
-#endif // _TARGET_XARCH_
+#endif // !_TARGET_XARCH_ || UNIX_AMD64_ABI
 #endif // _TARGET_64BIT_
 
         case TARGET_POINTER_SIZE:
@@ -767,6 +767,9 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     }
     assert(structSize > 0);
 
+// Determine if we can pass the struct as a primitive type.
+// Note that on x86 we never pass structs as primitive types (unless the VM unwraps them for us).
+#ifndef _TARGET_X86_
 #ifdef UNIX_AMD64_ABI
 
     // An 8-byte struct may need to be passed in a floating point register
@@ -775,32 +778,33 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
     eeGetSystemVAmd64PassStructInRegisterDescriptor(clsHnd, &structDesc);
 
-    // If we have one eightByteCount then we can set 'useType' based on that
-    if (structDesc.eightByteCount == 1)
+    if (structDesc.passedInRegisters && (structDesc.eightByteCount != 1))
     {
-        // Set 'useType' to the type of the first eightbyte item
+        // We can't pass this as a primitive type.
+    }
+    else if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeSSE)
+    {
+        // If this is passed as a floating type, use that.
+        // Otherwise, we'll use the general case - we don't want to use the "EightByteType"
+        // directly, because it returns `TYP_INT` for any integral type <= 4 bytes, and
+        // we need to preserve small types.
         useType = GetEightByteType(structDesc, 0);
     }
+    else
+#endif // UNIX_AMD64_ABI
 
-#elif defined(_TARGET_X86_)
-
-    // On x86 we never pass structs as primitive types (unless the VM unwraps them for us)
-    useType = TYP_UNKNOWN;
-
-#else // all other targets
-
-    // The largest primitive type is 8 bytes (TYP_DOUBLE)
-    // so we can skip calling getPrimitiveTypeForStruct when we
-    // have a struct that is larger than that.
-    //
-    if (structSize <= sizeof(double))
+        // The largest primitive type is 8 bytes (TYP_DOUBLE)
+        // so we can skip calling getPrimitiveTypeForStruct when we
+        // have a struct that is larger than that.
+        //
+        if (structSize <= sizeof(double))
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
         useType = getPrimitiveTypeForStruct(structSize, clsHnd);
     }
 
-#endif // all other targets
+#endif // !_TARGET_X86_
 
     // Did we change this struct type into a simple "primitive" type?
     //
@@ -834,7 +838,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 #ifdef UNIX_AMD64_ABI
 
                 // The case of (structDesc.eightByteCount == 1) should have already been handled
-                if (structDesc.eightByteCount > 1)
+                if ((structDesc.eightByteCount > 1) || !structDesc.passedInRegisters)
                 {
                     // setup wbPassType and useType indicate that this is passed by value in multiple registers
                     //  (when all of the parameters registers are used, then the stack will be used)

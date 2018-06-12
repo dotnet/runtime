@@ -273,6 +273,10 @@ void AddNestedAlignment(unsigned adjustment)
 
 #endif
 
+#ifndef _TARGET_X86_
+void genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArgVarNum);
+#endif // !_TARGET_X86_
+
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
 #ifdef _TARGET_X86_
 bool genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk);
