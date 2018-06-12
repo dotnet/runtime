@@ -137,6 +137,9 @@ namespace System.Data.SqlClient
         internal _SqlMetaDataSet _cleanupMetaData = null;
         internal _SqlMetaDataSetCollection _cleanupAltMetaDataSetArray = null;
 
+        //// Used for blanking out password in trace.
+        internal int _traceChangePasswordOffset = 0;
+        internal int _traceChangePasswordLength = 0;
 
         internal bool _receivedColMetaData;      // Used to keep track of when to fire StatementCompleted  event.
 
