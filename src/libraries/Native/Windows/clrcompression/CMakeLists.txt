@@ -76,13 +76,6 @@ if ($ENV{__VSVersion} STREQUAL vs2015)
     add_definitions(-DHAVE_VSNPRINTF)
 endif ()
 
-if(__LinkCustomCRT STREQUAL true)
-    set(NATIVECOMPRESSION_SOURCES
-        ${NATIVECOMPRESSION_SOURCES}
-        crt.cpp
-    )
-endif()
-
 # Include 'bin/obj' dir since it contains _version.h
 include_directories("${CMAKE_BINARY_DIR}/../../")
 
