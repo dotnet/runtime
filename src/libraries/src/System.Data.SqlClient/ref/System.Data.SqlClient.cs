@@ -283,12 +283,6 @@ namespace System.Data.SqlClient
         Descending = 1,
         Unspecified = -1,
     }
-    public enum PoolBlockingPeriod
-    {
-        Auto = 0,
-        AlwaysBlock = 1,
-        NeverBlock = 2,
-    }
     public sealed partial class SqlBulkCopy : System.IDisposable
     {
         public SqlBulkCopy(System.Data.SqlClient.SqlConnection connection) { }
@@ -544,7 +538,6 @@ namespace System.Data.SqlClient
         public override bool Remove(string keyword) { throw null; }
         public override bool ShouldSerialize(string keyword) { throw null; }
         public override bool TryGetValue(string keyword, out object value) { throw null; }
-        public System.Data.SqlClient.PoolBlockingPeriod PoolBlockingPeriod { get { throw null; } set { } }
     }
     public sealed partial class SqlDataAdapter : System.Data.Common.DbDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Threading;
 using Xunit;
 
@@ -10,6 +9,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public class PoolBlockPeriodTest
     {
+#if netcoreapp
         private static readonly string _sampleAzureEndpoint = "nonexistance.database.windows.net";
         private static readonly string _sampleNonAzureEndpoint = "nonexistanceserver";
         private static readonly string _policyKeyword = "PoolBlockingPeriod";
@@ -322,5 +322,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             return counter;
         }
+#endif
     }
 }
