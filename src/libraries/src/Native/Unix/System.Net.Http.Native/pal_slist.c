@@ -4,12 +4,12 @@
 
 #include "pal_slist.h"
 
-extern "C" curl_slist* HttpNative_SListAppend(curl_slist* list, const char* headerValue)
+struct curl_slist* HttpNative_SListAppend(struct curl_slist* list, const char* headerValue)
 {
     return curl_slist_append(list, headerValue);
 }
 
-extern "C" void HttpNative_SListFreeAll(curl_slist* list)
+void HttpNative_SListFreeAll(struct curl_slist* list)
 {
     curl_slist_free_all(list);
 }
