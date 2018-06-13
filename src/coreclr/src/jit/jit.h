@@ -208,6 +208,10 @@
 #define _TARGET_UNIX_
 #endif
 
+#ifndef _TARGET_UNIX_
+#define _TARGET_WINDOWS_
+#endif // !_TARGET_UNIX_
+
 // --------------------------------------------------------------------------------
 // IMAGE_FILE_MACHINE_TARGET
 // --------------------------------------------------------------------------------

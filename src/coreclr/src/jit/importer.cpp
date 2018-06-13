@@ -6703,9 +6703,9 @@ bool Compiler::impTailCallRetTypeCompatible(var_types            callerRetType,
     unsigned callerRetTypeSize = 0;
     unsigned calleeRetTypeSize = 0;
     bool     isCallerRetTypMBEnreg =
-        VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, &callerRetTypeSize, true);
+        VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, &callerRetTypeSize, true, info.compIsVarArgs);
     bool isCalleeRetTypMBEnreg =
-        VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, &calleeRetTypeSize, true);
+        VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, &calleeRetTypeSize, true, info.compIsVarArgs);
 
     if (varTypeIsIntegral(callerRetType) || isCallerRetTypMBEnreg)
     {
@@ -18759,6 +18759,10 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                 if (varTypeIsStruct(lclTyp))
                 {
                     lvaSetStruct(tmpNum, lclInfo.lclVerTypeInfo.GetClassHandle(), true /* unsafe value cls check */);
+                    if (info.compIsVarArgs)
+                    {
+                        lvaSetStructUsedAsVarArg(tmpNum);
+                    }
                 }
                 else
                 {

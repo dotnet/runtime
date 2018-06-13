@@ -589,7 +589,7 @@ bool Compiler::isSingleFloat32Struct(CORINFO_CLASS_HANDLE clsHnd)
 //    For ARM32 if we have an HFA struct that wraps a 64-bit double
 //    we will return TYP_DOUBLE.
 //
-var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd)
+var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd, bool isVarArg)
 {
     assert(structSize != 0);
 
@@ -640,8 +640,15 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             // For ARM_SOFTFP, HFA is unsupported so we need to check in another way
             // This matters only for size-4 struct cause bigger structs would be processed with RetBuf
             if (isSingleFloat32Struct(clsHnd))
-#else  // !ARM_SOFTFP
-            if (IsHfa(clsHnd))
+#else // !ARM_SOFTFP
+            if (IsHfa(clsHnd)
+#if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+                // Arm64 Windows VarArg methods arguments will not
+                // classify HFA types, they will need to be treated
+                // as if they are not HFA types.
+                && !isVarArg
+#endif // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+                )
 #endif // ARM_SOFTFP
             {
 #ifdef _TARGET_64BIT_
@@ -729,6 +736,7 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
 //    clsHnd       - the handle for the struct type
 //    wbPassStruct - An "out" argument with information about how
 //                   the struct is to be passed
+//    isVarArg     - is vararg, used to ignore HFA types for Arm64 windows varargs
 //    structSize   - the size of the struct type,
 //                   or zero if we should call getClassSize(clsHnd)
 //
@@ -756,6 +764,7 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
 //
 var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                                         structPassingKind*   wbPassStruct,
+                                        bool                 isVarArg,
                                         unsigned             structSize /* = 0 */)
 {
     var_types         useType         = TYP_UNKNOWN;
@@ -801,7 +810,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
-        useType = getPrimitiveTypeForStruct(structSize, clsHnd);
+        useType = getPrimitiveTypeForStruct(structSize, clsHnd, isVarArg);
     }
 
 #endif // !_TARGET_X86_
@@ -821,7 +830,13 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         if (structSize <= MAX_PASS_MULTIREG_BYTES)
         {
             // Structs that are HFA's are passed by value in multiple registers
-            if (IsHfa(clsHnd))
+            if (IsHfa(clsHnd)
+#if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+                && !isVarArg // Arm64 Windows VarArg methods arguments will not
+                             // classify HFA types, they will need to be treated
+                             // as if they are not HFA types.
+#endif                       // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+                )
             {
                 // HFA's of count one should have been handled by getPrimitiveTypeForStruct
                 assert(GetHfaCount(clsHnd) >= 2);
@@ -1014,7 +1029,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
-        useType = getPrimitiveTypeForStruct(structSize, clsHnd);
+        //
+        // The ABI for struct returns in varArg methods, is same as the normal case, so pass false for isVararg
+        useType = getPrimitiveTypeForStruct(structSize, clsHnd, /*isVararg=*/false);
     }
 
 #endif // UNIX_AMD64_ABI
