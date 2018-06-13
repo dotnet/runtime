@@ -3470,6 +3470,12 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // Change regType to the HFA type when we have a HFA argument
         if (varDsc->lvIsHfaRegArg())
         {
+#if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+            if (compiler->info.compIsVarArgs)
+            {
+                assert(!"Illegal incoming HFA arg encountered in Vararg method.");
+            }
+#endif // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
             regType = varDsc->GetHfaType();
         }
 
@@ -3593,7 +3599,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             slots = 1;
 
 #if FEATURE_MULTIREG_ARGS
-            if (compiler->lvaIsMultiregStruct(varDsc))
+            if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
             {
                 if (varDsc->lvIsHfaRegArg())
                 {
@@ -10263,28 +10269,6 @@ void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
 }
 
 #endif // defined(_TARGET_XARCH_)
-
-//-----------------------------------------------------------------------------------
-// IsMultiRegPassedType: Returns true if the type is returned in multiple registers
-//
-// Arguments:
-//     hClass   -  type handle
-//
-// Return Value:
-//     true if type is passed in multiple registers, false otherwise.
-//
-bool Compiler::IsMultiRegPassedType(CORINFO_CLASS_HANDLE hClass)
-{
-    if (hClass == NO_CLASS_HANDLE)
-    {
-        return false;
-    }
-
-    structPassingKind howToPassStruct;
-    var_types         returnType = getArgTypeForStruct(hClass, &howToPassStruct);
-
-    return (varTypeIsStruct(returnType));
-}
 
 //-----------------------------------------------------------------------------------
 // IsMultiRegReturnedType: Returns true if the type is returned in multiple registers
