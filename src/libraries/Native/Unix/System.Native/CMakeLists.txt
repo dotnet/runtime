@@ -16,14 +16,14 @@ set(NATIVE_SOURCES
     pal_process.cpp
     pal_random.c
     pal_runtimeinformation.cpp
-    pal_runtimeextensions.cpp
+    pal_runtimeextensions.c
     pal_signal.c
     pal_string.cpp
     pal_tcpstate.c
-    pal_time.cpp
+    pal_time.c
     pal_uid.cpp
-    pal_datetime.cpp
-    pal_sysctl.cpp
+    pal_datetime.c
+    pal_sysctl.c
 )
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
