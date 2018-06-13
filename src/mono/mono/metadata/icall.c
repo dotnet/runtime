@@ -101,6 +101,7 @@
 #include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-merp.h>
+#include <mono/utils/mono-logger-internals.h>
 
 #include "decimal-ms.h"
 #include "number-ms.h"
@@ -5447,6 +5448,8 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 	dirname = g_path_get_dirname (filename);
 	replace_shadow_path (mono_domain_get (), dirname, &filename);
 	g_free (dirname);
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "InternalGetAssemblyName (\"%s\")", filename);
 
 	image = mono_image_open_full (filename, &status, TRUE);
 
