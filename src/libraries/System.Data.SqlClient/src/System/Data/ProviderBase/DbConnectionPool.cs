@@ -17,7 +17,7 @@ using System.Transactions;
 
 namespace System.Data.ProviderBase
 {
-    sealed internal class DbConnectionPool
+    sealed internal partial class DbConnectionPool
     {
         private enum State
         {
@@ -669,38 +669,6 @@ namespace System.Data.ProviderBase
                 _cleanupWait,
                 _cleanupWait);
 
-        private bool IsBlockingPeriodEnabled()
-        {
-            var poolGroupConnectionOptions = _connectionPoolGroup.ConnectionOptions as SqlConnectionString;
-            if (poolGroupConnectionOptions == null)
-            {
-                return true;
-            }
-            var policy = poolGroupConnectionOptions.PoolBlockingPeriod;
-
-            switch (policy)
-            {
-                case System.Data.SqlClient.PoolBlockingPeriod.Auto:
-                    {
-                        return !ADP.IsAzureSqlServerEndpoint(poolGroupConnectionOptions.DataSource);
-                    }
-                case System.Data.SqlClient.PoolBlockingPeriod.AlwaysBlock:
-                    {
-                        return true; //Enabled
-                    }
-                case System.Data.SqlClient.PoolBlockingPeriod.NeverBlock:
-                    {
-                        return false; //Disabled
-                    }
-                default:
-                    {
-                        //we should never get into this path.
-                        Debug.Fail("Unknown PoolBlockingPeriod. Please specify explicit results in above switch case statement.");
-                        return true;
-                    }
-            }
-        }
-
         private DbConnectionInternal CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
         {
             DbConnectionInternal newObj = null;
@@ -752,10 +720,12 @@ namespace System.Data.ProviderBase
                 {
                     throw;
                 }
+#if netcoreapp
                 if (!IsBlockingPeriodEnabled())
                 {
                     throw;
                 }
+#endif
                 newObj = null; // set to null, so we do not return bad new object
                 // Failed to create instance
                 _resError = e;
