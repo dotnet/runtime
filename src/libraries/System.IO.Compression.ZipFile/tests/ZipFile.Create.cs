@@ -1,13 +1,105 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public partial class ZipFileTest_Invalid : ZipFileTestBase
+    public class ZipFile_Create : ZipFileTestBase
     {
+        [Fact]
+        public async Task CreateFromDirectoryNormal()
+        {
+            string folderName = zfolder("normal");
+            string noBaseDir = GetTestFilePath();
+            ZipFile.CreateFromDirectory(folderName, noBaseDir);
+
+            await IsZipSameAsDirAsync(noBaseDir, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false);
+        }
+
+        [Fact]
+        public void CreateFromDirectory_IncludeBaseDirectory()
+        {
+            string folderName = zfolder("normal");
+            string withBaseDir = GetTestFilePath();
+            ZipFile.CreateFromDirectory(folderName, withBaseDir, CompressionLevel.Optimal, true);
+
+            IEnumerable<string> expected = Directory.EnumerateFiles(zfolder("normal"), "*", SearchOption.AllDirectories);
+            using (ZipArchive actual_withbasedir = ZipFile.Open(withBaseDir, ZipArchiveMode.Read))
+            {
+                foreach (ZipArchiveEntry actualEntry in actual_withbasedir.Entries)
+                {
+                    string expectedFile = expected.Single(i => Path.GetFileName(i).Equals(actualEntry.Name));
+                    Assert.True(actualEntry.FullName.StartsWith("normal"));
+                    Assert.Equal(new FileInfo(expectedFile).Length, actualEntry.Length);
+                    using (Stream expectedStream = File.OpenRead(expectedFile))
+                    using (Stream actualStream = actualEntry.Open())
+                    {
+                        StreamsEqual(expectedStream, actualStream);
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public void CreateFromDirectoryUnicode()
+        {
+            string folderName = zfolder("unicode");
+            string noBaseDir = GetTestFilePath();
+            ZipFile.CreateFromDirectory(folderName, noBaseDir);
+
+            using (ZipArchive archive = ZipFile.OpenRead(noBaseDir))
+            {
+                IEnumerable<string> actual = archive.Entries.Select(entry => entry.Name);
+                IEnumerable<string> expected = Directory.EnumerateFileSystemEntries(zfolder("unicode"), "*", SearchOption.AllDirectories).ToList();
+                Assert.True(Enumerable.SequenceEqual(expected.Select(i => Path.GetFileName(i)), actual.Select(i => i)));
+            }
+        }
+
+        [Fact]
+        public void CreatedEmptyDirectoriesRoundtrip()
+        {
+            using (var tempFolder = new TempDirectory(GetTestFilePath()))
+            {
+                DirectoryInfo rootDir = new DirectoryInfo(tempFolder.Path);
+                rootDir.CreateSubdirectory("empty1");
+
+                string archivePath = GetTestFilePath();
+                ZipFile.CreateFromDirectory(
+                    rootDir.FullName, archivePath,
+                    CompressionLevel.Optimal, false, Encoding.UTF8);
+
+                using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+                {
+                    Assert.Equal(1, archive.Entries.Count);
+                    Assert.True(archive.Entries[0].FullName.StartsWith("empty1"));
+                }
+            }
+        }
+
+        [Fact]
+        public void CreatedEmptyRootDirectoryRoundtrips()
+        {
+            using (var tempFolder = new TempDirectory(GetTestFilePath()))
+            {
+                DirectoryInfo emptyRoot = new DirectoryInfo(tempFolder.Path);
+                string archivePath = GetTestFilePath();
+                ZipFile.CreateFromDirectory(
+                    emptyRoot.FullName, archivePath,
+                    CompressionLevel.Optimal, true);
+
+                using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+                {
+                    Assert.Equal(1, archive.Entries.Count);
+                }
+            }
+        }
+
         [Fact]
         public void InvalidInstanceMethods()
         {
@@ -209,62 +301,98 @@ namespace System.IO.Compression.Tests
             Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(archivePath, GetTestFilePath()));
         }
 
-        /// <summary>
-        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
-        /// when an attempt is made to extract them.
-        /// </summary>
-        [ActiveIssue(25665)]
-        [Theory]
-        [InlineData("NullCharFileName_FromWindows")]
-        [InlineData("NullCharFileName_FromUnix")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific invalid file path
-        public void Unix_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
+        [Fact]
+        public void ReadStreamOps()
         {
-            AssertExtensions.Throws<ArgumentException>("path", () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+            using (ZipArchive archive = ZipFile.OpenRead(zfile("normal.zip")))
+            {
+                foreach (ZipArchiveEntry e in archive.Entries)
+                {
+                    using (Stream s = e.Open())
+                    {
+                        Assert.True(s.CanRead, "Can read to read archive");
+                        Assert.False(s.CanWrite, "Can't write to read archive");
+                        Assert.False(s.CanSeek, "Can't seek on archive");
+                        Assert.Equal(LengthOfUnseekableStream(s), e.Length);
+                    }
+                }
+            }
         }
 
-        [Theory]
-        [InlineData("backslashes_FromUnix", "aa\\bb\\cc\\dd")]
-        [InlineData("backslashes_FromWindows", "aa\\bb\\cc\\dd")]
-        [InlineData("WindowsInvalid_FromUnix", "aa<b>d")]
-        [InlineData("WindowsInvalid_FromWindows", "aa<b>d")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific invalid file path
-        public void Unix_ZipWithOSSpecificFileNames(string zipName, string fileName)
+        [Fact]
+        public void UpdateReadTwice()
         {
-            string tempDir = GetTestFilePath();
-            ZipFile.ExtractToDirectory(compat(zipName) + ".zip", tempDir);
-            string[] results = Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories);
-            Assert.Equal(1, results.Length);
-            Assert.Equal(fileName, Path.GetFileName(results[0]));
+            using (TempFile testArchive = CreateTempCopyFile(zfile("small.zip"), GetTestFilePath()))
+            using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
+            {
+                ZipArchiveEntry entry = archive.Entries[0];
+                string contents1, contents2;
+                using (StreamReader s = new StreamReader(entry.Open()))
+                {
+                    contents1 = s.ReadToEnd();
+                }
+                using (StreamReader s = new StreamReader(entry.Open()))
+                {
+                    contents2 = s.ReadToEnd();
+                }
+                Assert.Equal(contents1, contents2);
+            }
         }
 
-        /// <summary>
-        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
-        /// when an attempt is made to extract them.
-        /// </summary>
-        [Theory]
-        [ActiveIssue(27269)]
-        [InlineData("WindowsInvalid_FromUnix", null)]
-        [InlineData("WindowsInvalid_FromWindows", null)]
-        [InlineData("NullCharFileName_FromWindows", "path")]
-        [InlineData("NullCharFileName_FromUnix", "path")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
-        public void Windows_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName, string paramName)
+        [Fact]
+        public async Task UpdateAddFile()
         {
-            AssertExtensions.Throws<ArgumentException>(paramName, null, () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+            //add file
+            using (TempFile testArchive = CreateTempCopyFile(zfile("normal.zip"), GetTestFilePath()))
+            {
+                using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
+                {
+                    await UpdateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+                }
+                await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read);
+            }
+
+            //add file and read entries before
+            using (TempFile testArchive = CreateTempCopyFile(zfile("normal.zip"), GetTestFilePath()))
+            {
+                using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
+                {
+                    var x = archive.Entries;
+
+                    await UpdateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+                }
+                await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read);
+            }
+
+            //add file and read entries after
+            using (TempFile testArchive = CreateTempCopyFile(zfile("normal.zip"), GetTestFilePath()))
+            {
+                using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
+                {
+                    await UpdateArchive(archive, zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
+
+                    var x = archive.Entries;
+                }
+                await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read);
+            }
         }
 
-        [Theory]
-        [InlineData("backslashes_FromUnix", "dd")]
-        [InlineData("backslashes_FromWindows", "dd")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
-        public void Windows_ZipWithOSSpecificFileNames(string zipName, string fileName)
+        private static async Task UpdateArchive(ZipArchive archive, string installFile, string entryName)
         {
-            string tempDir = GetTestFilePath();
-            ZipFile.ExtractToDirectory(compat(zipName) + ".zip", tempDir);
-            string[] results = Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories);
-            Assert.Equal(1, results.Length);
-            Assert.Equal(fileName, Path.GetFileName(results[0]));
+            string fileName = installFile;
+            ZipArchiveEntry e = archive.CreateEntry(entryName);
+
+            var file = FileData.GetFile(fileName);
+            e.LastWriteTime = file.LastModifiedDate;
+
+            using (var stream = await StreamHelpers.CreateTempCopyStream(fileName))
+            {
+                using (Stream es = e.Open())
+                {
+                    es.SetLength(0);
+                    stream.CopyTo(es);
+                }
+            }
         }
     }
 }
