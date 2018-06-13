@@ -12,6 +12,11 @@ using System.Text;
 
 namespace R2RDump
 {
+    interface UnwindInfo
+    {
+
+    }
+
     class RuntimeFunction
     {
         /// <summary>
