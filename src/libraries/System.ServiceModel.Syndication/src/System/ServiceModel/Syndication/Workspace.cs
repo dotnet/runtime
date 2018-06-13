@@ -3,11 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.ObjectModel;
-using System.Runtime.Serialization;
-using System.Xml.Serialization;
 using System.Collections.Generic;
 using System.Xml;
-using System.Runtime.CompilerServices;
 
 namespace System.ServiceModel.Syndication
 {
@@ -20,8 +17,7 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Workspace(string title, IEnumerable<ResourceCollectionInfo> collections)
-            : this((title != null) ? new TextSyndicationContent(title) : null, collections)
+        public Workspace(string title, IEnumerable<ResourceCollectionInfo> collections) : this((title != null) ? new TextSyndicationContent(title) : null, collections)
         {
         }
 
@@ -38,35 +34,16 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public Dictionary<XmlQualifiedName, string> AttributeExtensions
-        {
-            get
-            {
-                return _extensions.AttributeExtensions;
-            }
-        }
+        public Dictionary<XmlQualifiedName, string> AttributeExtensions => _extensions.AttributeExtensions;
 
         public Uri BaseUri { get; set; }
 
         public Collection<ResourceCollectionInfo> Collections
         {
-            get
-            {
-                if (_collections == null)
-                {
-                    _collections = new NullNotAllowedCollection<ResourceCollectionInfo>();
-                }
-                return _collections;
-            }
+            get => _collections ?? (_collections = new NullNotAllowedCollection<ResourceCollectionInfo>());
         }
 
-        public SyndicationElementExtensionCollection ElementExtensions
-        {
-            get
-            {
-                return _extensions.ElementExtensions;
-            }
-        }
+        public SyndicationElementExtensionCollection ElementExtensions => _extensions.ElementExtensions;
 
         public TextSyndicationContent Title { get; set; }
 

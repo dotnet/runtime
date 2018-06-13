@@ -6,11 +6,9 @@ using System.Collections.ObjectModel;
 
 namespace System.ServiceModel.Syndication
 {
-    internal class NullNotAllowedCollection<TCollectionItem> : Collection<TCollectionItem>
-        where TCollectionItem : class
+    internal class NullNotAllowedCollection<TCollectionItem> : Collection<TCollectionItem> where TCollectionItem : class
     {
-        public NullNotAllowedCollection()
-            : base()
+        public NullNotAllowedCollection() : base()
         {
         }
 

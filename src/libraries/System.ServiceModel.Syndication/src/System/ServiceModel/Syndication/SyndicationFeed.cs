@@ -16,7 +16,7 @@ namespace System.ServiceModel.Syndication
         private static readonly HashSet<string> s_acceptedDays = new HashSet<string>(
             new string[] { "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday" },
             StringComparer.OrdinalIgnoreCase
-        );        
+        );
 
         private Collection<SyndicationPerson> _authors;
         private Collection<SyndicationCategory> _categories;
@@ -26,13 +26,11 @@ namespace System.ServiceModel.Syndication
         private DateTimeOffset _lastUpdatedTime;
         private Collection<SyndicationLink> _links;
 
-        public SyndicationFeed()
-            : this((IEnumerable<SyndicationItem>)null)
+        public SyndicationFeed() : this((IEnumerable<SyndicationItem>)null)
         {
         }
 
-        public SyndicationFeed(IEnumerable<SyndicationItem> items)
-            : this(null, null, null, items)
+        public SyndicationFeed(IEnumerable<SyndicationItem> items) : this(null, null, null, items)
         {
         }
 
@@ -63,7 +61,7 @@ namespace System.ServiceModel.Syndication
             }
             if (feedAlternateLink != null)
             {
-                this.Links.Add(SyndicationLink.CreateAlternateLink(feedAlternateLink));
+                Links.Add(SyndicationLink.CreateAlternateLink(feedAlternateLink));
             }
             Id = id;
             _lastUpdatedTime = lastUpdatedTime;
@@ -111,21 +109,11 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public Dictionary<XmlQualifiedName, string> AttributeExtensions
-        {
-            get { return _extensions.AttributeExtensions; }
-        }
+        public Dictionary<XmlQualifiedName, string> AttributeExtensions => _extensions.AttributeExtensions;
 
         public Collection<SyndicationPerson> Authors
         {
-            get
-            {
-                if (_authors == null)
-                {
-                    _authors = new NullNotAllowedCollection<SyndicationPerson>();
-                }
-                return _authors;
-            }
+            get => _authors ?? (_authors = new NullNotAllowedCollection<SyndicationPerson>());
         }
 
 
@@ -133,36 +121,19 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationCategory> Categories
         {
-            get
-            {
-                if (_categories == null)
-                {
-                    _categories = new NullNotAllowedCollection<SyndicationCategory>();
-                }
-                return _categories;
-            }
+            get => _categories ?? (_categories = new NullNotAllowedCollection<SyndicationCategory>());
         }
 
         public Collection<SyndicationPerson> Contributors
         {
-            get
-            {
-                if (_contributors == null)
-                {
-                    _contributors = new NullNotAllowedCollection<SyndicationPerson>();
-                }
-                return _contributors;
-            }
+            get => _contributors ?? (_contributors = new NullNotAllowedCollection<SyndicationPerson>());
         }
 
         public TextSyndicationContent Copyright { get; set; }
 
         public TextSyndicationContent Description { get; set; }
 
-        public SyndicationElementExtensionCollection ElementExtensions
-        {
-            get { return _extensions.ElementExtensions; }
-        }
+        public SyndicationElementExtensionCollection ElementExtensions => _extensions.ElementExtensions;
 
         public string Generator { get; set; }
 
@@ -200,14 +171,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationLink> Links
         {
-            get
-            {
-                if (_links == null)
-                {
-                    _links = new NullNotAllowedCollection<SyndicationLink>();
-                }
-                return _links;
-            }
+            get =>_links ?? (_links = new NullNotAllowedCollection<SyndicationLink>());
         }
 
         public TextSyndicationContent Title { get; set; }
@@ -341,8 +305,7 @@ namespace System.ServiceModel.Syndication
                     if (reader.LocalName == Rss20Constants.HourTag)
                     {
                         string value = reader.ReadElementString();
-                        int hour;
-                        bool parsed = int.TryParse(value, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out hour);
+                        bool parsed = int.TryParse(value, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out int hour);
 
                         if (!parsed || (hour < 0 || hour > 23))
                         {
@@ -378,7 +341,7 @@ namespace System.ServiceModel.Syndication
                     {
                         string day = reader.ReadElementString();
 
-                        //Check if the day is actually an accepted day.
+                        // Check if the day is actually an accepted day.
                         if (IsValidDay(day))
                         {
                             skipDays.Add(day);
@@ -445,17 +408,13 @@ namespace System.ServiceModel.Syndication
 
         private static bool IsValidTextInput(SyndicationTextInput textInput)
         {
-            //All textInput items are required, we check if all items were instantiated.
+            // All textInput items are required, we check if all items were instantiated.
             return textInput.Description != null && textInput.Title != null && textInput.Name != null && textInput.Link != null;
         }
 
-        public static SyndicationFeed Load(XmlReader reader)
-        {
-            return Load<SyndicationFeed>(reader);
-        }
+        public static SyndicationFeed Load(XmlReader reader) => Load<SyndicationFeed>(reader);
 
-        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader)
-            where TSyndicationFeed : SyndicationFeed, new()
+        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader) where TSyndicationFeed : SyndicationFeed, new()
         {
             if (reader == null)
             {
@@ -476,22 +435,21 @@ namespace System.ServiceModel.Syndication
             }
 
             throw new XmlException(SR.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
+<<<<<<< HEAD
         }
 
         public virtual SyndicationFeed Clone(bool cloneItems)
         {
             return new SyndicationFeed(this, cloneItems);
+=======
+>>>>>>> Misc cleanup in Syndication
         }
 
-        public Atom10FeedFormatter GetAtom10Formatter()
-        {
-            return new Atom10FeedFormatter(this);
-        }
+        public virtual SyndicationFeed Clone(bool cloneItems) => new SyndicationFeed(this, cloneItems);
 
-        public Rss20FeedFormatter GetRss20Formatter()
-        {
-            return GetRss20Formatter(true);
-        }
+        public Atom10FeedFormatter GetAtom10Formatter() => new Atom10FeedFormatter(this);
+
+        public Rss20FeedFormatter GetRss20Formatter() => GetRss20Formatter(true);
 
         public Rss20FeedFormatter GetRss20Formatter(bool serializeExtensionsAsAtom)
         {
@@ -500,12 +458,12 @@ namespace System.ServiceModel.Syndication
 
         public void SaveAsAtom10(XmlWriter writer)
         {
-            this.GetAtom10Formatter().WriteTo(writer);
+            GetAtom10Formatter().WriteTo(writer);
         }
 
         public void SaveAsRss20(XmlWriter writer)
         {
-            this.GetRss20Formatter().WriteTo(writer);
+            GetRss20Formatter().WriteTo(writer);
         }
 
         protected internal virtual SyndicationCategory CreateCategory()
