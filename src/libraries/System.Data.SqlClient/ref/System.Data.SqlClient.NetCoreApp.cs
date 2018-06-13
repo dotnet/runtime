@@ -11,4 +11,17 @@ namespace System.Data.SqlClient
     {
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Data.Common.DbColumn> GetColumnSchema() { throw null; }
     }
+
+    public enum PoolBlockingPeriod
+    {
+        Auto = 0,
+        AlwaysBlock = 1,
+        NeverBlock = 2,
+    }
+    
+    public sealed partial class SqlConnectionStringBuilder : System.Data.Common.DbConnectionStringBuilder
+    {
+        public PoolBlockingPeriod PoolBlockingPeriod { get { throw null; } set { } }
+    }
+
 }

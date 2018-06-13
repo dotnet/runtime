@@ -7,4 +7,7 @@
 Compat issues with assembly System.Data.SqlClient:
 CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlClient.SqlDataReader' does not implement interface 'System.Data.Common.IDbColumnSchemaGenerator' in the reference but it does in the implementation.
 MembersMustExist : Member 'System.Data.SqlClient.SqlDataReader.GetColumnSchema()' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Data.SqlClient.PoolBlockingPeriod' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.PoolBlockingPeriod.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Data.SqlClient.SqlConnectionStringBuilder.PoolBlockingPeriod.set(System.Data.SqlClient.PoolBlockingPeriod)' does not exist in the reference but it does exist in the implementation.
 Total Issues: 2

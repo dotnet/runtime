@@ -37,6 +37,8 @@
     <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS'">
+    <Compile Include="System\Data\SqlClient\PoolBlockingPeriod.NetCoreApp.cs" />
+    <Compile Include="System\Data\SqlClient\SqlConnectionStringBuilder.NetCoreApp.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedGetters.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedGettersV3.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedSetters.cs" />
@@ -131,7 +133,6 @@
     <Compile Include="System\Data\SqlClient\ApplicationIntent.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.cs" />
     <Compile Include="System\Data\SqlClient\ParameterPeekAheadValue.cs" />
-    <Compile Include="System\Data\SqlClient\PoolBlockingPeriod.cs" />
     <Compile Include="System\Data\SqlClient\RowsCopiedEventArgs.cs" />
     <Compile Include="System\Data\SqlClient\RowsCopiedEventHandler.cs" />
     <Compile Include="System\Data\SqlClient\SortOrder.cs" />

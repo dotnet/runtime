@@ -390,7 +390,7 @@ namespace System.Data.Common
         internal const string TransactionBinding = "Implicit Unbind";
         internal const int ConnectRetryCount = 1;
         internal const int ConnectRetryInterval = 10;
-        internal const PoolBlockingPeriod PoolBlockingPeriod = SqlClient.PoolBlockingPeriod.Auto;
+        internal const PoolBlockingPeriod PoolBlockingPeriod = System.Data.SqlClient.PoolBlockingPeriod.Auto;
     }
 
 

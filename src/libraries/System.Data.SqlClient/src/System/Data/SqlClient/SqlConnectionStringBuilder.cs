@@ -304,21 +304,6 @@ namespace System.Data.SqlClient
             }
         }
 
-        public PoolBlockingPeriod PoolBlockingPeriod
-        {
-            get { return _poolBlockingPeriod; }
-            set
-            {
-                if (!DbConnectionStringBuilderUtil.IsValidPoolBlockingPeriodValue(value))
-                {
-                    throw ADP.InvalidEnumerationValue(typeof(PoolBlockingPeriod), (int)value);
-                }
-
-                SetPoolBlockingPeriodValue(value);
-                _poolBlockingPeriod = value;
-            }
-        }
-
         public int ConnectTimeout
         {
             get { return _connectTimeout; }
