@@ -34,7 +34,8 @@ namespace System.IO.Compression
         /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.
         /// The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
-        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName) => ExtractToFile(source, destinationFileName, false);
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName) => 
+            ExtractToFile(source, destinationFileName, false);
 
         /// <summary>
         /// Creates a file on the file system with the entry?s contents and the specified name.
@@ -83,7 +84,8 @@ namespace System.IO.Compression
             File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
         }
 
-        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName) => ExtractRelativeToDirectory(source, destinationDirectoryName, overwrite: false);
+        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName) => 
+            ExtractRelativeToDirectory(source, destinationDirectoryName, overwrite: false);
 
         internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite)
         {

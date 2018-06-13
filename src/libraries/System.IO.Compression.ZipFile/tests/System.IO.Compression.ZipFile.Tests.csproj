@@ -40,6 +40,9 @@
       <Link>Common\System\IO\Compression\ZipTestHelper.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
+    <Compile Include="ZipFile.Extract.netcoreapp.cs" />
+  </ItemGroup>  
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)system.io.compression.testdata\1.0.6-prerelease\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>

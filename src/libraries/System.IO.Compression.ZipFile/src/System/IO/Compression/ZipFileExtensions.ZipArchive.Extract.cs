@@ -35,7 +35,8 @@ namespace System.IO.Compression
         /// <param name="destinationDirectoryName">The path to the directory on the file system.
         /// The directory specified must not exist. The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
-        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName) => ExtractToDirectory(source, destinationDirectoryName, overwrite: false);
+        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName) => 
+            ExtractToDirectory(source, destinationDirectoryName, overwrite: false);
 
         /// <summary>
         /// Extracts all of the files in the archive to a directory on the file system. The specified directory may already exist.
