@@ -2483,7 +2483,8 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	if (mono_use_interpreter) {
 		mono_domain_jit_code_hash_lock (domain);
 		/* InterpMethod is allocated in the domain mempool */
-		mono_internal_hash_table_remove (&info->interp_code_hash, method);
+		if (mono_internal_hash_table_lookup (&info->interp_code_hash, method))
+			mono_internal_hash_table_remove (&info->interp_code_hash, method);
 		mono_domain_jit_code_hash_unlock (domain);
 	}
 
