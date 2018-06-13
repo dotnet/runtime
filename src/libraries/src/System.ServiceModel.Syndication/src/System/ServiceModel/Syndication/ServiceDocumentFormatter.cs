@@ -32,10 +32,7 @@ namespace System.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, CategoriesDocument categories)
         {
-            if (categories == null)
-            {
-                throw new ArgumentNullException(nameof(categories));
-            }
+            Debug.Assert(categories != null);
 
             SyndicationFeedFormatter.CloseBuffer(buffer, writer);
             categories.LoadElementExtensions(buffer);
@@ -43,10 +40,7 @@ namespace System.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, ResourceCollectionInfo collection)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
+            Debug.Assert(collection != null);
 
             SyndicationFeedFormatter.CloseBuffer(buffer, writer);
             collection.LoadElementExtensions(buffer);
@@ -54,10 +48,7 @@ namespace System.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, Workspace workspace)
         {
-            if (workspace == null)
-            {
-                throw new ArgumentNullException(nameof(workspace));
-            }
+            Debug.Assert(workspace != null);
 
             SyndicationFeedFormatter.CloseBuffer(buffer, writer);
             workspace.LoadElementExtensions(buffer);

@@ -160,8 +160,6 @@ namespace System.ServiceModel.Syndication
             {
                 SyndicationFeedFormatter.MoveToStartElement(reader);
                 SetDocument(AtomPub10ServiceDocumentFormatter.ReadCategories(reader, null,
-                    _preserveElementExtensions,
-                    _preserveAttributeExtensions,
                     () => CreateInlineCategoriesDocument(),
                     () => CreateReferencedCategoriesDocument(),
                     Version,

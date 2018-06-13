@@ -435,17 +435,12 @@ namespace System.ServiceModel.Syndication
             }
 
             throw new XmlException(SR.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
-<<<<<<< HEAD
         }
 
         public virtual SyndicationFeed Clone(bool cloneItems)
         {
             return new SyndicationFeed(this, cloneItems);
-=======
->>>>>>> Misc cleanup in Syndication
         }
-
-        public virtual SyndicationFeed Clone(bool cloneItems) => new SyndicationFeed(this, cloneItems);
 
         public Atom10FeedFormatter GetAtom10Formatter() => new Atom10FeedFormatter(this);
 

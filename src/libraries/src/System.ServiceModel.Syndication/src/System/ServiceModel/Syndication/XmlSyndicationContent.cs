@@ -74,11 +74,7 @@ namespace System.ServiceModel.Syndication
 
         protected XmlSyndicationContent(XmlSyndicationContent source) : base(source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
+            Debug.Assert(source != null, "The base constructor already checks if source is valid.");
             _contentBuffer = source._contentBuffer;
             Extension = source.Extension;
             _type = source._type;
@@ -154,8 +150,9 @@ namespace System.ServiceModel.Syndication
             {
                 Extension.WriteTo(writer);
             }
-            else if (_contentBuffer != null)
+            else
             {
+                Debug.Assert(_contentBuffer != null, "contentBuffer cannot be null");
                 using (XmlDictionaryReader reader = _contentBuffer.GetReader(0))
                 {
                     reader.MoveToStartElement();
