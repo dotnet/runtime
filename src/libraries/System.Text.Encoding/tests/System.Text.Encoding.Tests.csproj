@@ -26,6 +26,7 @@
     <Compile Include="Decoder\DecoderGetChars2.cs" />
     <Compile Include="Decoder\DecoderGetChars3.cs" />
     <Compile Include="Decoder\DecoderReset.cs" />
+    <Compile Include="DecoderFallback\DecoderFallbackTests.cs" />
     <Compile Include="DecoderFallbackException\DecoderFallbackExceptionTests.cs" />
     <Compile Include="EncoderFallbackException\EncoderFallbackExceptionTests.cs" />
     <Compile Include="Encoder\EncoderSpanTests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
