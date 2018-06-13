@@ -77,9 +77,9 @@ namespace System.IO.Compression
             DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel);
 
         internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
-                                                            string sourceFileName, string entryName, CompressionLevel? compressionLevel)
+                                                              string sourceFileName, string entryName, CompressionLevel? compressionLevel)
         {
-                if (destination == null)
+            if (destination == null)
                 throw new ArgumentNullException(nameof(destination));
 
             if (sourceFileName == null)

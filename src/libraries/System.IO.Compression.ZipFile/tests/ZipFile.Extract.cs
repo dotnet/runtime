@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class ZipFile_Extract : ZipFileTestBase
+    public partial class ZipFile_Extract : ZipFileTestBase
     {
         [Theory]
         [InlineData("normal.zip", "normal")]
@@ -104,61 +104,5 @@ namespace System.IO.Compression.Tests
             Assert.Equal(1, results.Length);
             Assert.Equal(fileName, Path.GetFileName(results[0]));
         }
-
-#if netcoreapp
-        [Fact]
-        public void ExtractToDirectoryOverwrite()
-        {
-            string zipFileName = zfile("normal.zip");
-            string folderName = zfolder("normal");
-
-            using (var tempFolder = new TempDirectory(GetTestFilePath()))
-            {
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, overwriteFiles: false);
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path /* default false */));
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, overwriteFiles: false));
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, overwriteFiles: true);
-
-                DirsEqual(tempFolder.Path, folderName);
-            }
-        }
-
-        [Fact]
-        public void ExtractToDirectoryOverwriteEncoding()
-        {
-            string zipFileName = zfile("normal.zip");
-            string folderName = zfolder("normal");
-
-            using (var tempFolder = new TempDirectory(GetTestFilePath()))
-            {
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: false);
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, Encoding.UTF8 /* default false */));
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: false));
-                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: true);
-
-                DirsEqual(tempFolder.Path, folderName);
-            }
-        }
-
-        [Fact]
-        public void ExtractToDirectoryZipArchiveOverwrite()
-        {
-            string zipFileName = zfile("normal.zip");
-            string folderName = zfolder("normal");
-
-            using (var tempFolder = new TempDirectory(GetTestFilePath()))
-            {
-                using (ZipArchive archive = ZipFile.Open(zipFileName, ZipArchiveMode.Read))
-                {
-                    archive.ExtractToDirectory(tempFolder.Path);
-                    Assert.Throws<IOException>(() => archive.ExtractToDirectory(tempFolder.Path /* default false */));
-                    Assert.Throws<IOException>(() => archive.ExtractToDirectory(tempFolder.Path, overwriteFiles: false));
-                    archive.ExtractToDirectory(tempFolder.Path, overwriteFiles: true);
-
-                    DirsEqual(tempFolder.Path, folderName);
-                }
-            }
-        }
-#endif
     }
 }

@@ -355,7 +355,7 @@ namespace System.IO.Compression
             DoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding: null);
 
         private static void DoCreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName,
-                                               CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding entryNameEncoding)
+                                                  CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding entryNameEncoding)
 
         {
             // Rely on Path.GetFullPath for validation of sourceDirectoryName and destinationArchive
