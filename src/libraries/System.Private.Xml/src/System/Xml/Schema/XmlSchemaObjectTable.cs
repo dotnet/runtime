@@ -159,21 +159,6 @@ namespace System.Xml.Schema
                 qname = name;
                 xso = value;
             }
-
-            public XmlSchemaObject IsMatch(string localName, string ns)
-            {
-                if (localName == qname.Name && ns == qname.Namespace)
-                {
-                    return xso;
-                }
-                return null;
-            }
-
-            public void Reset()
-            {
-                qname = null;
-                xso = null;
-            }
         }
 
         internal class NamesCollection : ICollection

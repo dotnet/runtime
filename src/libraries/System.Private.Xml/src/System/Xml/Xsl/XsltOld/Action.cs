@@ -4,12 +4,6 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using MS.Internal.Xml.XPath;
-    using System.Xml.Xsl.XsltOld.Debugger;
-
     internal abstract class Action
     {
         internal const int Initialized = 0;
@@ -18,11 +12,5 @@ namespace System.Xml.Xsl.XsltOld
         internal abstract void Execute(Processor processor, ActionFrame frame);
 
         internal virtual void ReplaceNamespaceAlias(Compiler compiler) { }
-
-        // -------------- Debugger related stuff ---------
-        // We have to pass ActionFrame to GetNavigator and GetVariables
-        // because CopyCodeAction can't implement them without frame.count
-
-        internal virtual DbgData GetDbgData(ActionFrame frame) { return DbgData.Empty; }
     }
 }
