@@ -13,7 +13,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 	{
 		readonly BaseAssemblyResolver _originalsResolver;
 		readonly BaseAssemblyResolver _linkedResolver;
-		readonly ReaderParameters _readerParameters;
+		readonly ReaderParameters _originalReaderParameters;
+		readonly ReaderParameters _linkedReaderParameters;
 		readonly PeVerifier _peVerifier;
 
 		public ResultChecker ()
@@ -21,16 +22,22 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 					new ReaderParameters
 					{
 						SymbolReaderProvider = new DefaultSymbolReaderProvider (false)
+					},
+					new ReaderParameters
+					{
+						SymbolReaderProvider = new DefaultSymbolReaderProvider (false)
 					})
 		{
 		}
 
-		public ResultChecker (BaseAssemblyResolver originalsResolver, BaseAssemblyResolver linkedResolver, PeVerifier peVerifier, ReaderParameters readerParameters)
+		public ResultChecker (BaseAssemblyResolver originalsResolver, BaseAssemblyResolver linkedResolver, PeVerifier peVerifier,
+			ReaderParameters originalReaderParameters, ReaderParameters linkedReaderParameters)
 		{
 			_originalsResolver = originalsResolver;
 			_linkedResolver = linkedResolver;
 			_peVerifier = peVerifier;
-			_readerParameters = readerParameters;
+			_originalReaderParameters = originalReaderParameters;
+			_linkedReaderParameters = linkedReaderParameters;
 		}
 
 		public virtual void Check (LinkedTestCaseResult linkResult)
@@ -78,7 +85,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var cleanAssemblyName = assemblyName;
 			if (assemblyName.EndsWith(".exe") || assemblyName.EndsWith(".dll"))
 				cleanAssemblyName = System.IO.Path.GetFileNameWithoutExtension (assemblyName);
-			return _linkedResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), _readerParameters);
+			return _linkedResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), _linkedReaderParameters);
 		}
 
 		AssemblyDefinition ResolveOriginalsAssembly (string assemblyName)
@@ -86,7 +93,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var cleanAssemblyName = assemblyName;
 			if (assemblyName.EndsWith (".exe") || assemblyName.EndsWith (".dll"))
 				cleanAssemblyName = Path.GetFileNameWithoutExtension (assemblyName);
-			return _originalsResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), _readerParameters);
+			return _originalsResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), _originalReaderParameters);
 		}
 
 		void PerformOutputAssemblyChecks (AssemblyDefinition original, NPath outputDirectory)
@@ -170,6 +177,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 						foreach (var checkAttrInAssembly in checks [assemblyName]) {
 							var expectedTypeName = checkAttrInAssembly.ConstructorArguments [1].Value.ToString ();
 							var linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
+
+							if (linkedType == null && linkedAssembly.MainModule.HasExportedTypes) {
+								linkedType = linkedAssembly.MainModule.ExportedTypes
+									.FirstOrDefault (exported => exported.FullName == expectedTypeName)
+									?.Resolve ();
+							}
 
 							switch (checkAttrInAssembly.AttributeType.Name) {
 							case nameof (RemovedTypeInAssemblyAttribute):

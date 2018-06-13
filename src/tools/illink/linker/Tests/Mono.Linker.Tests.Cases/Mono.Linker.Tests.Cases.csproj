@@ -258,6 +258,7 @@
     <Compile Include="TypeForwarding\Dependencies\ReferenceImplementationLibrary.cs" />
     <Compile Include="TypeForwarding\TypeForwarderOnlyAssembliesRemoved.cs" />
     <Compile Include="TypeForwarding\TypeForwarderOnlyAssembliesKept.cs" />
+    <Compile Include="TypeForwarding\TypeForwarderOnlyAssemblyCanBePreservedViaLinkXml.cs" />
     <Compile Include="VirtualMethods\ClassUsedFromConcreteTypeHasInterfaceMethodRemoved.cs" />
     <Compile Include="VirtualMethods\ClassUsedFromInterfaceHasInterfaceMethodKept.cs" />
     <Compile Include="VirtualMethods\StructUsedFromConcreteTypeHasInterfaceMethodRemoved.cs" />
@@ -375,6 +376,7 @@
     <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs.txt" />
     <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
     <Content Include="LinkXml\PreserveBackingFieldWhenPropertyIsKept.xml" />
+    <Content Include="TypeForwarding\TypeForwarderOnlyAssemblyCanBePreservedViaLinkXml.xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">
