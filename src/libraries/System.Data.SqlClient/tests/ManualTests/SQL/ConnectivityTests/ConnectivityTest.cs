@@ -83,6 +83,30 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.True(timeElapsed < threshold);
         }
 
+        [CheckConnStrSetupFact]
+        public static void ProcessIdTest()
+        {
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
+            string sqlProviderName = builder.ApplicationName;
+            string sqlProviderProcessID = System.Diagnostics.Process.GetCurrentProcess().Id.ToString();
+
+            using (SqlConnection sqlConnection = new SqlConnection(builder.ConnectionString))
+            {
+                sqlConnection.Open();
+                string strCommand = $"SELECT PROGRAM_NAME,HOSTPROCESS FROM SYS.SYSPROCESSES WHERE PROGRAM_NAME LIKE ('%{sqlProviderName}%')";
+                using (SqlCommand command = new SqlCommand(strCommand, sqlConnection))
+                {
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            Assert.Equal(sqlProviderName,reader.GetString(0).Trim());
+                            Assert.Equal(sqlProviderProcessID, reader.GetString(1).Trim());
+                        }
+                    }
+                }
+            }
+        }
         public class ConnectionWorker
         {
             private static List<ConnectionWorker> workerList = new List<ConnectionWorker>();
