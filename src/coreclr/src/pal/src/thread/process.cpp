@@ -1544,7 +1544,7 @@ public:
         LONG ref = InterlockedDecrement(&m_ref);
         if (ref == 0)
         {
-            delete this;
+            InternalDelete(this);
         }
         return ref;
     }
@@ -1836,7 +1836,7 @@ PAL_RegisterForRuntimeStartup(
     _ASSERTE(pfnCallback != NULL);
     _ASSERTE(ppUnregisterToken != NULL);
 
-    PAL_RuntimeStartupHelper *helper = new PAL_RuntimeStartupHelper(dwProcessId, pfnCallback, parameter);
+    PAL_RuntimeStartupHelper *helper = InternalNew<PAL_RuntimeStartupHelper>(dwProcessId, pfnCallback, parameter);
 
     // Create the debuggee startup semaphore so the runtime (debuggee) knows to wait for 
     // a debugger connection.
