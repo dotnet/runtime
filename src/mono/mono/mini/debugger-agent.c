@@ -4781,6 +4781,13 @@ ss_depth_to_string (StepDepth depth)
 }
 
 static void
+begin_single_step_processing (MonoContext *ctx, gboolean from_signal)
+{
+	if (from_signal)
+		mono_arch_skip_single_step (ctx);
+}
+
+static void
 process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 {
 	MonoJitInfo *ji;
@@ -4795,8 +4802,7 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 	SingleStepReq *ss_req;
 
 	/* Skip the instruction causing the single step */
-	if (from_signal)
-		mono_arch_skip_single_step (ctx);
+	begin_single_step_processing (ctx, from_signal);
 
 	if (try_process_suspend (tls, ctx))
 		return;
