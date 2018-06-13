@@ -3706,4 +3706,7 @@
   <data name="Arg_MustBeNullTerminatedString" xml:space="preserve">
     <value>The string must be null-terminated.</value>
   </data>
+  <data name="ArgumentOutOfRange_Week_ISO" xml:space="preserve">
+    <value>The week parameter must be in the range 1 through 53.</value>
+  </data>
 </root>
