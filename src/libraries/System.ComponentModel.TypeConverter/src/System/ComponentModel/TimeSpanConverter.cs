@@ -9,16 +9,15 @@ using System.Reflection;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// <para>Provides a type converter to convert <see cref='System.TimeSpan'/>
-    /// objects to and from various
-    /// other representations.</para>
+    /// Provides a type converter to convert <see cref='System.TimeSpan'/> objects to and from
+    /// various other representations.
     /// </summary>
     public class TimeSpanConverter : TypeConverter
     {
         /// <summary>
-        ///    <para>Gets a value indicating whether this converter can
-        ///       convert an object in the given source type to a <see cref='System.TimeSpan'/> object using the
-        ///       specified context.</para>
+        /// Gets a value indicating whether this converter can
+        /// convert an object in the given source type to a <see cref='System.TimeSpan'/> object using the
+        /// specified context.
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
@@ -26,28 +25,21 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///        Gets a value indicating whether this converter can convert an object to the given
-        ///        destination type using the context.
-        ///    </para>
+        /// Gets a value indicating whether this converter can convert an object to the given
+        /// destination type using the context.
         /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            if (destinationType == typeof(InstanceDescriptor))
-            {
-                return true;
-            }
-            return base.CanConvertTo(context, destinationType);
+            return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
         /// <summary>
-        /// <para>Converts the given object to a <see cref='System.TimeSpan'/>
-        /// object.</para>
+        /// Converts the given object to a <see cref='System.TimeSpan'/>
+        /// object.
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            string text = value as string;
-            if (text != null)
+            if (value is string text)
             {
                 text = text.Trim();
                 try
@@ -64,11 +56,11 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///      Converts the given object to another type.  The most common types to convert
-        ///      are to and from a string object.  The default implementation will make a call
-        ///      to ToString on the object if the object is valid and if the destination
-        ///      type is string.  If this cannot convert to the destination type, this will
-        ///      throw a NotSupportedException.
+        /// Converts the given object to another type. The most common types to convert
+        /// are to and from a string object. The default implementation will make a call
+        /// to ToString on the object if the object is valid and if the destination
+        /// type is string. If this cannot convert to the destination type, this will
+        /// throw a NotSupportedException.
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
@@ -76,6 +68,7 @@ namespace System.ComponentModel
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
+
             if (destinationType == typeof(InstanceDescriptor) && value is TimeSpan)
             {
                 MethodInfo method = typeof(TimeSpan).GetMethod("Parse", new Type[] { typeof(string) });
