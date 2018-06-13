@@ -5,12 +5,9 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <!-- Compilation options -->
   <PropertyGroup>
-    <AvailablePlatforms>amd64,x86,arm,armel,arm64</AvailablePlatforms>
+    <AvailablePlatforms>x64,x86,arm,armel,arm64</AvailablePlatforms>
     <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
-    <!-- The CLR properties use amd64 as their platform string, we want to keep in sync with those, so set Platform appropriately,
-         though still use the 'x64' output path (see use of BuildArch below) -->
-    <Platform Condition=" '$(Platform)' == 'x64' ">amd64</Platform>
     <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
     <ProjectGuid>{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -49,7 +46,7 @@
     </AssemblyMetadata>
   </ItemGroup>
   <!-- Platform specific properties -->
-  <PropertyGroup Condition="'$(Platform)' == 'amd64'">
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <PlatformTarget>x64</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
     <BaseAddress>0x180000000</BaseAddress>
@@ -75,7 +72,7 @@
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
     <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
     <DefineConstants>_LOGGING;DEBUG;TRACE;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'amd64'">CODE_ANALYSIS;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'x64'">CODE_ANALYSIS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugSymbols>true</DebugSymbols>
@@ -243,51 +240,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IVector.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IMap.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIKeyValuePairImpl.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector64.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector64DebugView.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector128.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector128DebugView.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector256.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector256DebugView.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Enums.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(Platform)' == 'amd64' OR '$(Platform)' == 'x86'">
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Aes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Avx.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Avx2.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Bmi1.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Bmi2.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Fma.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Lzcnt.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Pclmulqdq.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Popcnt.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse2.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse3.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse41.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse42.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Ssse3.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(Platform)' != 'amd64' AND '$(Platform)' != 'x86'">
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Aes.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Avx.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Avx2.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Bmi1.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Bmi2.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Fma.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Lzcnt.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Pclmulqdq.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Popcnt.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse2.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse3.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse41.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse42.PlatformNotSupported.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Ssse3.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)' == 'arm64'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Arm\Arm64\Aes.cs" />
