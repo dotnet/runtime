@@ -2654,7 +2654,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             regSet.AddMaskVars(genRegMask(argReg));
             gcInfo.gcMarkRegPtrVal(argReg, loadType);
 
-            if (compiler->lvaIsMultiregStruct(varDsc))
+            if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
             {
                 if (varDsc->lvIsHfa())
                 {
@@ -2685,7 +2685,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
             fixedIntArgMask |= genRegMask(argReg);
 
-            if (compiler->lvaIsMultiregStruct(varDsc))
+            if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
             {
                 assert(argRegNext != REG_NA);
                 fixedIntArgMask |= genRegMask(argRegNext);
