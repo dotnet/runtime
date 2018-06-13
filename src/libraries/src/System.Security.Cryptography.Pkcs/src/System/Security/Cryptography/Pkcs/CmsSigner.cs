@@ -19,11 +19,11 @@ namespace System.Security.Cryptography.Pkcs
 
         public X509Certificate2 Certificate { get; set; }
         public AsymmetricAlgorithm PrivateKey { get; set; }
-        public X509Certificate2Collection Certificates { get; set; } = new X509Certificate2Collection();
+        public X509Certificate2Collection Certificates { get; private set; } = new X509Certificate2Collection();
         public Oid DigestAlgorithm { get; set; }
         public X509IncludeOption IncludeOption { get; set; }
-        public CryptographicAttributeObjectCollection SignedAttributes { get; set; } = new CryptographicAttributeObjectCollection();
-        public CryptographicAttributeObjectCollection UnsignedAttributes { get; set; } = new CryptographicAttributeObjectCollection();
+        public CryptographicAttributeObjectCollection SignedAttributes { get; private set; } = new CryptographicAttributeObjectCollection();
+        public CryptographicAttributeObjectCollection UnsignedAttributes { get; private set; } = new CryptographicAttributeObjectCollection();
 
         public SubjectIdentifierType SignerIdentifierType
         {
