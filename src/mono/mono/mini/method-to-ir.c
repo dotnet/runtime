@@ -2612,7 +2612,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		if (!cfg->llvm_only && (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) && !strcmp (method->name, "Invoke")) {
 			MonoInst *dummy_use;
 
-			MONO_EMIT_NULL_CHECK (cfg, this_reg);
+			MONO_EMIT_NULL_CHECK (cfg, this_reg, FALSE);
 
 			/* Make a call to delegate->invoke_impl */
 			call->inst.inst_basereg = this_reg;
@@ -5792,7 +5792,7 @@ emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	 * In llvm-only mode, vtables contain function descriptors instead of
 	 * method addresses/trampolines.
 	 */
-	MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
+	MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, FALSE);
 
 	if (is_iface)
 		slot = mono_method_get_imt_slot (cmethod);
@@ -9770,7 +9770,7 @@ calli_end:
 				{
 					MonoInst *store, *wbarrier_ptr_ins = NULL;
 
-					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
+					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, foffset > mono_target_pagesize ());
 
 					if (ins_flag & MONO_INST_VOLATILE) {
 						/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
@@ -9884,7 +9884,7 @@ calli_end:
 				} else {
 					MonoInst *load;
 
-					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg);
+					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, foffset > mono_target_pagesize ());
 
 					if (sp [0]->opcode == OP_LDADDR && m_class_is_simd_type (klass) && cfg->opt & MONO_OPT_SIMD) {
 						ins = mono_emit_simd_field_load (cfg, field, sp [0]);

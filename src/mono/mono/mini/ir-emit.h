@@ -886,8 +886,8 @@ static int ccount = 0;
     } while (0)
 
 /* Emit an explicit null check which doesn't depend on SIGSEGV signal handling */
-#define MONO_EMIT_NULL_CHECK(cfg, reg) do { \
-		if (cfg->explicit_null_checks) {							  \
+#define MONO_EMIT_NULL_CHECK(cfg, reg, out_of_page) do { \
+		if (cfg->explicit_null_checks || (out_of_page)) {							  \
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0); \
 			MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException"); \
 		} else {			\
@@ -898,7 +898,7 @@ static int ccount = 0;
 #define MONO_EMIT_NEW_CHECK_THIS(cfg, sreg) do { \
 		cfg->flags |= MONO_CFG_HAS_CHECK_THIS;	 \
 		if (cfg->explicit_null_checks) {		 \
-			MONO_EMIT_NULL_CHECK (cfg, sreg);				\
+			MONO_EMIT_NULL_CHECK (cfg, sreg, FALSE);			\
 		} else {											\
 			MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, sreg);			\
 			MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE (cfg);			\
@@ -908,8 +908,9 @@ static int ccount = 0;
 
 #define NEW_LOAD_MEMBASE_FLAGS(cfg,dest,op,dr,base,offset,ins_flags) do {	\
 		int __ins_flags = ins_flags; \
+		gboolean __out_of_page = offset > mono_target_pagesize (); \
 		if (__ins_flags & MONO_INST_FAULT) {								\
-			MONO_EMIT_NULL_CHECK ((cfg), (base));						\
+			MONO_EMIT_NULL_CHECK ((cfg), (base), __out_of_page);						\
 		}																\
 		NEW_LOAD_MEMBASE ((cfg), (dest), (op), (dr), (base), (offset));	\
 		(dest)->flags = (__ins_flags);									\
@@ -918,8 +919,9 @@ static int ccount = 0;
 #define MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS(cfg,op,dr,base,offset,ins_flags) do { \
         MonoInst *inst;													\
 		int __ins_flags = ins_flags; \
-	    if (__ins_flags & MONO_INST_FAULT) {									\
-			MONO_EMIT_NULL_CHECK ((cfg), (base));						\
+		int __out_of_page = offset > mono_target_pagesize (); \
+		if (__ins_flags & MONO_INST_FAULT) {							\
+			MONO_EMIT_NULL_CHECK ((cfg), (base), __out_of_page); \
 		}																\
 		NEW_LOAD_MEMBASE ((cfg), (inst), (op), (dr), (base), (offset)); \
 		inst->flags = (__ins_flags); \
@@ -966,7 +968,7 @@ static int ccount = 0;
 #define MONO_EMIT_BOUNDS_CHECK_OFFSET(cfg, array_reg, array_length_offset, index_reg) do { \
 		if (!(cfg->opt & MONO_OPT_UNSAFE)) {							\
 		if (!(cfg->opt & MONO_OPT_ABCREM)) {							\
-			MONO_EMIT_NULL_CHECK (cfg, array_reg);						\
+			MONO_EMIT_NULL_CHECK (cfg, array_reg, FALSE);						\
 			if (COMPILE_LLVM (cfg)) \
 				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), (array_length_offset), (index_reg), TRUE); \
 			else \

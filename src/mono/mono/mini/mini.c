@@ -4272,3 +4272,22 @@ mini_class_is_system_array (MonoClass *klass)
 {
 	return m_class_get_parent (klass) == mono_defaults.array_class;
 }
+
+/*
+ * mono_target_pagesize:
+ *
+ *   query pagesize used to determine if an implicit NRE can be used
+ */
+int
+mono_target_pagesize (void)
+{
+	/* We could query the system's pagesize via mono_pagesize (), however there
+	 * are pitfalls: sysconf (3) is called on some posix like systems, and per
+	 * POSIX.1-2008 this function doesn't have to be async-safe. Since this
+	 * function can be called from a signal handler, we simplify things by
+	 * using 4k on all targets. Implicit null-checks with an offset larger than
+	 * 4k are _very_ uncommon, so we don't mind emitting an explicit null-check
+	 * for those cases.
+	 */
+	return 4 * 1024;
+}

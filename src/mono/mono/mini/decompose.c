@@ -1541,7 +1541,7 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 					MONO_ADD_INS (cfg->cbb, dest);
 					break;
 				case OP_BOUNDS_CHECK:
-					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1);
+					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1, FALSE);
 					if (COMPILE_LLVM (cfg)) {
 						int index2_reg = alloc_preg (cfg);
 						MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
