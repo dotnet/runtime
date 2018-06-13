@@ -4,10 +4,6 @@
 
 using System.Collections.Generic;
 using System.Xml;
-using System.Collections.ObjectModel;
-using System.Xml.Serialization;
-using System.Runtime.Serialization;
-using System.Runtime.CompilerServices;
 
 namespace System.ServiceModel.Syndication
 {
@@ -17,8 +13,7 @@ namespace System.ServiceModel.Syndication
         private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
         private long _length;
 
-        public SyndicationLink(Uri uri)
-            : this(uri, null, null, null, 0)
+        public SyndicationLink(Uri uri) : this(uri, null, null, null, 0)
         {
         }
 
@@ -37,8 +32,7 @@ namespace System.ServiceModel.Syndication
             _length = length;
         }
 
-        public SyndicationLink()
-            : this(null, null, null, null, 0)
+        public SyndicationLink() : this(null, null, null, null, 0)
         {
         }
 
@@ -58,21 +52,15 @@ namespace System.ServiceModel.Syndication
             _extensions = source._extensions.Clone();
         }
 
-        public Dictionary<XmlQualifiedName, string> AttributeExtensions
-        {
-            get { return _extensions.AttributeExtensions; }
-        }
+        public Dictionary<XmlQualifiedName, string> AttributeExtensions => _extensions.AttributeExtensions;
 
         public Uri BaseUri { get; set; }
 
-        public SyndicationElementExtensionCollection ElementExtensions
-        {
-            get { return _extensions.ElementExtensions; }
-        }
+        public SyndicationElementExtensionCollection ElementExtensions => _extensions.ElementExtensions;
 
         public long Length
         {
-            get { return _length; }
+            get => _length;
             set
             {
                 if (value < 0)
@@ -117,10 +105,7 @@ namespace System.ServiceModel.Syndication
             return new SyndicationLink(uri, Atom10Constants.SelfTag, null, mediaType, 0);
         }
 
-        public virtual SyndicationLink Clone()
-        {
-            return new SyndicationLink(this);
-        }
+        public virtual SyndicationLink Clone() => new SyndicationLink(this);
 
         public Uri GetAbsoluteUri()
         {

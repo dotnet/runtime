@@ -10,15 +10,13 @@ namespace System.ServiceModel.Channels
     internal class UriGenerator
     {
         private long _id;
-        private string _prefix;
+        private readonly string _prefix;
 
-        public UriGenerator()
-            : this("uuid")
+        public UriGenerator() : this("uuid")
         {
         }
 
-        public UriGenerator(string scheme)
-            : this(scheme, ";")
+        public UriGenerator(string scheme) : this(scheme, ";")
         {
         }
 

@@ -3,11 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.ObjectModel;
-using System.Runtime.Serialization;
-using System.Xml.Serialization;
 using System.Collections.Generic;
 using System.Xml;
-using System.Runtime.CompilerServices;
 
 namespace System.ServiceModel.Syndication
 {
@@ -32,30 +29,17 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public Dictionary<XmlQualifiedName, string> AttributeExtensions
-        {
-            get { return _extensions.AttributeExtensions; }
-        }
+        public Dictionary<XmlQualifiedName, string> AttributeExtensions => _extensions.AttributeExtensions;
 
         public Uri BaseUri { get; set; }
 
-        public SyndicationElementExtensionCollection ElementExtensions
-        {
-            get { return _extensions.ElementExtensions; }
-        }
+        public SyndicationElementExtensionCollection ElementExtensions => _extensions.ElementExtensions;
 
         public string Language { get; set; }
 
         public Collection<Workspace> Workspaces
         {
-            get
-            {
-                if (_workspaces == null)
-                {
-                    _workspaces = new NullNotAllowedCollection<Workspace>();
-                }
-                return _workspaces;
-            }
+            get => _workspaces ?? (_workspaces = new NullNotAllowedCollection<Workspace>());
         }
 
         public static ServiceDocument Load(XmlReader reader)
@@ -63,12 +47,11 @@ namespace System.ServiceModel.Syndication
             return Load<ServiceDocument>(reader);
         }
 
-        public static TServiceDocument Load<TServiceDocument>(XmlReader reader)
-            where TServiceDocument : ServiceDocument, new()
+        public static TServiceDocument Load<TServiceDocument>(XmlReader reader) where TServiceDocument : ServiceDocument, new()
         {
             AtomPub10ServiceDocumentFormatter<TServiceDocument> formatter = new AtomPub10ServiceDocumentFormatter<TServiceDocument>();
             formatter.ReadFrom(reader);
-            return (TServiceDocument)(object)formatter.Document;
+            return (TServiceDocument)formatter.Document;
         }
 
         public ServiceDocumentFormatter GetFormatter()

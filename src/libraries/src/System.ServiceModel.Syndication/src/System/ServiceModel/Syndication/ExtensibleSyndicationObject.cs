@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Xml.Serialization;
 using System.Xml;
 
 namespace System.ServiceModel.Syndication
@@ -42,26 +39,12 @@ namespace System.ServiceModel.Syndication
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions
         {
-            get
-            {
-                if (_attributeExtensions == null)
-                {
-                    _attributeExtensions = new Dictionary<XmlQualifiedName, string>();
-                }
-                return _attributeExtensions;
-            }
+            get => _attributeExtensions ?? (_attributeExtensions = new Dictionary<XmlQualifiedName, string>());
         }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
-            get
-            {
-                if (_elementExtensions == null)
-                {
-                    _elementExtensions = new SyndicationElementExtensionCollection();
-                }
-                return _elementExtensions;
-            }
+            get => _elementExtensions ?? (_elementExtensions = new SyndicationElementExtensionCollection());
         }
 
         private static XmlBuffer CreateXmlBuffer(XmlDictionaryReader unparsedExtensionsReader, int maxExtensionSize)
@@ -132,9 +115,6 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public ExtensibleSyndicationObject Clone()
-        {
-            return new ExtensibleSyndicationObject(this);
-        }
+        public ExtensibleSyndicationObject Clone() => new ExtensibleSyndicationObject(this);
     }
 }

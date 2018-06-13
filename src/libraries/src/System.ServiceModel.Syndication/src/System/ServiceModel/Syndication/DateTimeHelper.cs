@@ -4,7 +4,6 @@
 
 using System.Globalization;
 using System.Text;
-using System.Xml;
 
 namespace System.ServiceModel.Syndication
 {

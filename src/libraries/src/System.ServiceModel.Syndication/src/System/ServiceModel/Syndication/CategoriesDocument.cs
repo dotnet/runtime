@@ -5,10 +5,6 @@
 using System.Xml;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization;
-using System.Xml.Serialization;
-using System.Runtime.CompilerServices;
 
 namespace System.ServiceModel.Syndication
 {
@@ -20,30 +16,15 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Dictionary<XmlQualifiedName, string> AttributeExtensions
-        {
-            get
-            {
-                return _extensions.AttributeExtensions;
-            }
-        }
+        public Dictionary<XmlQualifiedName, string> AttributeExtensions => _extensions.AttributeExtensions;
 
         public Uri BaseUri { get; set; }
 
-        public SyndicationElementExtensionCollection ElementExtensions
-        {
-            get
-            {
-                return _extensions.ElementExtensions;
-            }
-        }
+        public SyndicationElementExtensionCollection ElementExtensions => _extensions.ElementExtensions;
 
         public string Language { get; set; }
 
-        internal abstract bool IsInline
-        {
-            get;
-        }
+        internal abstract bool IsInline { get; }
 
         public static InlineCategoriesDocument Create(Collection<SyndicationCategory> categories)
         {
@@ -67,14 +48,11 @@ namespace System.ServiceModel.Syndication
             return formatter.Document;
         }
 
-        public CategoriesDocumentFormatter GetFormatter()
-        {
-            return new AtomPub10CategoriesDocumentFormatter(this);
-        }
+        public CategoriesDocumentFormatter GetFormatter() => new AtomPub10CategoriesDocumentFormatter(this);
 
         public void Save(XmlWriter writer)
         {
-            this.GetFormatter().WriteTo(writer);
+            GetFormatter().WriteTo(writer);
         }
 
         protected internal virtual bool TryParseAttribute(string name, string ns, string value, string version)

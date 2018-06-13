@@ -3,11 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
-using System.Runtime;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Serialization;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
 namespace System.ServiceModel.Syndication
@@ -18,7 +16,7 @@ namespace System.ServiceModel.Syndication
         private int _bufferElementIndex;
         // extensionData and extensionDataWriter are only present on the send side
         private object _extensionData;
-        private ExtensionDataWriter _extensionDataWriter;
+        private readonly ExtensionDataWriter _extensionDataWriter;
         private string _outerName;
         private string _outerNamespace;
 
@@ -44,8 +42,7 @@ namespace System.ServiceModel.Syndication
             _bufferElementIndex = 0;
         }
 
-        public SyndicationElementExtension(object dataContractExtension)
-            : this(dataContractExtension, (XmlObjectSerializer)null)
+        public SyndicationElementExtension(object dataContractExtension) : this(dataContractExtension, (XmlObjectSerializer)null)
         {
         }
 
@@ -111,6 +108,7 @@ namespace System.ServiceModel.Syndication
                 {
                     EnsureOuterNameAndNs();
                 }
+
                 return _outerName;
             }
         }
@@ -123,14 +121,12 @@ namespace System.ServiceModel.Syndication
                 {
                     EnsureOuterNameAndNs();
                 }
+
                 return _outerNamespace;
             }
         }
 
-        public TExtension GetObject<TExtension>()
-        {
-            return GetObject<TExtension>(new DataContractSerializer(typeof(TExtension)));
-        }
+        public TExtension GetObject<TExtension>() => GetObject<TExtension>(new DataContractSerializer(typeof(TExtension)));
 
         public TExtension GetObject<TExtension>(XmlObjectSerializer serializer)
         {
@@ -168,7 +164,7 @@ namespace System.ServiceModel.Syndication
 
         public XmlReader GetReader()
         {
-            this.EnsureBuffer();
+            EnsureBuffer();
             XmlReader reader = _buffer.GetReader(0);
             int index = 0;
             reader.ReadStartElement(Rss20Constants.ExtensionWrapperTag);
@@ -212,7 +208,7 @@ namespace System.ServiceModel.Syndication
                 using (XmlDictionaryWriter writer = _buffer.OpenSection(XmlDictionaryReaderQuotas.Max))
                 {
                     writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
-                    this.WriteTo(writer);
+                    WriteTo(writer);
                     writer.WriteEndElement();
                 }
                 _buffer.CloseSection();
@@ -323,7 +319,7 @@ namespace System.ServiceModel.Syndication
                 {
                     using (XmlWriter writer = XmlWriter.Create(stream))
                     {
-                        this.WriteTo(writer);
+                        WriteTo(writer);
                     }
                     stream.Seek(0, SeekOrigin.Begin);
                     using (XmlReader reader = XmlReader.Create(stream))
