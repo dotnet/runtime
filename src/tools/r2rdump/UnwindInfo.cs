@@ -57,7 +57,7 @@ namespace R2RDump
         public byte Flags { get; } //5 bits
         public byte SizeOfProlog { get; }
         public byte CountOfUnwindCodes { get; }
-        public byte FrameRegister { get; } //4 bits
+        public Registers FrameRegister { get; } //4 bits
         public byte FrameOffset { get; } //4 bits
         public UnwindCode[] UnwindCode { get; }
         public uint PersonalityRoutineRVA { get; }
@@ -71,7 +71,7 @@ namespace R2RDump
             SizeOfProlog = NativeReader.ReadByte(image, ref offset);
             CountOfUnwindCodes = NativeReader.ReadByte(image, ref offset);
             byte frameRegisterAndOffset = NativeReader.ReadByte(image, ref offset);
-            FrameRegister = (byte)(frameRegisterAndOffset & 15);
+            FrameRegister = (Registers)(frameRegisterAndOffset & 15);
             FrameOffset = (byte)(frameRegisterAndOffset >> 4);
 
             UnwindCode = new UnwindCode[CountOfUnwindCodes];
@@ -102,7 +102,7 @@ namespace R2RDump
             for (int i = 0; i < CountOfUnwindCodes; i++)
             {
                 sb.Append(GetUnwindCode(ref i));
-                sb.AppendLine($"{tab}{tab}------------------");
+                sb.AppendLine($"\t\t------------------");
             }
             sb.AppendLine($"\tPersonalityRoutineRVA: 0x{PersonalityRoutineRVA:X8}");
             sb.AppendLine($"\tSize: {Size} bytes");
