@@ -82,6 +82,9 @@ static gpointer bp_trampoline;
 #define ARGS_OFFSET 16
 #define GP_SCRATCH_REG AMD64_R11
 
+/* Max number of bblocks before we bail from using more advanced branch placement code */
+#define MAX_BBLOCKS_FOR_BRANCH_OPTS 800
+
 /*
  * AMD64 register usage:
  * - callee saved registers are used for global register allocation
@@ -2460,7 +2463,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 	        x86_branch (code, cond, cfg->native_code + ins->inst_true_bb->native_offset, sign); \
         } else { \
 	        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
-	        if ((cfg->opt & MONO_OPT_BRANCH) && \
+	        if (optimize_branch_pred && \
             x86_is_imm8 (ins->inst_true_bb->max_offset - offset)) \
 		        x86_branch8 (code, cond, 0, sign); \
                 else \
@@ -3776,7 +3779,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	guint8 *code = cfg->native_code + cfg->code_len;
 
 	/* Fix max_offset estimate for each successor bb */
-	if (cfg->opt & MONO_OPT_BRANCH) {
+	gboolean optimize_branch_pred = (cfg->opt & MONO_OPT_BRANCH) && (cfg->max_block_num < MAX_BBLOCKS_FOR_BRANCH_OPTS);
+
+	if (optimize_branch_pred) {
 		int current_offset = cfg->code_len;
 		MonoBasicBlock *current_bb;
 		for (current_bb = bb; current_bb != NULL; current_bb = current_bb->next_bb) {
@@ -5049,7 +5054,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					amd64_jump_code (code, cfg->native_code + ins->inst_target_bb->native_offset); 
 				} else {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-					if ((cfg->opt & MONO_OPT_BRANCH) &&
+					if (optimize_branch_pred &&
 					    x86_is_imm8 (ins->inst_target_bb->max_offset - offset))
 						x86_jump8 (code, 0);
 					else 
@@ -7022,7 +7027,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/* compute max_length in order to use short forward jumps */
 	max_epilog_size = get_max_epilog_size (cfg);
-	if (cfg->opt & MONO_OPT_BRANCH) {
+	if (cfg->opt & MONO_OPT_BRANCH && cfg->max_block_num < MAX_BBLOCKS_FOR_BRANCH_OPTS) {
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 			MonoInst *ins;
 			int max_length = 0;

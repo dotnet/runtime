@@ -37,6 +37,62 @@
 static void mono_analyze_liveness2 (MonoCompile *cfg);
 #endif
 
+
+#define INLINE_SIZE 16
+
+typedef struct {
+	int capacity;
+	gpointer data [INLINE_SIZE];
+} MonoPtrSet;
+
+static void
+mono_ptrset_init (MonoPtrSet *set)
+{
+	set->capacity = 0;
+}
+
+static void
+mono_ptrset_destroy (MonoPtrSet *set)
+{
+	if (set->capacity > INLINE_SIZE)
+		g_hash_table_destroy (set->data [0]);
+}
+
+static void
+mono_ptrset_add (MonoPtrSet *set, gpointer val)
+{
+	//switch to hashtable
+	if (set->capacity == INLINE_SIZE) {
+		GHashTable *tmp = g_hash_table_new (NULL, NULL);
+		for (int i = 0; i < INLINE_SIZE; ++i)
+			g_hash_table_insert (tmp, set->data [i], set->data [i]);
+		set->data [0] = tmp;
+		++set->capacity;
+	}
+
+	if (set->capacity > INLINE_SIZE) {
+		g_hash_table_insert (set->data [0], val, val);
+	} else {
+		set->data [set->capacity] = val;
+		++set->capacity;
+	}
+}
+
+static gboolean
+mono_ptrset_contains (MonoPtrSet *set, gpointer val)
+{
+	if (set->capacity <= INLINE_SIZE) {
+		for (int i = 0; i < set->capacity; ++i) {
+			if (set->data [i] == val)
+				return TRUE;
+		}
+		return FALSE;
+	}
+
+	return g_hash_table_lookup (set->data [0], val) != NULL;
+}
+
+
 static void
 optimize_initlocals (MonoCompile *cfg);
 
@@ -78,12 +134,12 @@ mono_bitset_print (MonoBitSet *set)
 }
 
 static void
-visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, GSList **visited)
+visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, MonoPtrSet *visited)
 {
 	int i;
 	MonoInst *ins;
 
-	if (g_slist_find (*visited, bb))
+	if (mono_ptrset_contains (visited, bb))
 		return;
 
 	for (ins = bb->code; ins; ins = ins->next) {
@@ -132,7 +188,7 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, GSList **visited)
 		}
 	}
 
-	*visited = g_slist_append (*visited, bb);
+	mono_ptrset_add (visited, bb);
 
 	/* 
 	 * Need to visit all bblocks reachable from this one since they can be
@@ -147,7 +203,6 @@ void
 mono_liveness_handle_exception_clauses (MonoCompile *cfg)
 {
 	MonoBasicBlock *bb;
-	GSList *visited = NULL;
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause, *clause2;
 	int i, j;
@@ -182,6 +237,8 @@ mono_liveness_handle_exception_clauses (MonoCompile *cfg)
 		}
 	}
 
+	MonoPtrSet visited;
+	mono_ptrset_init (&visited);
 	/*
 	 * Variables in exception handler register cannot be allocated to registers
 	 * so make them volatile. See bug #42136. This will not be neccessary when
@@ -203,7 +260,7 @@ mono_liveness_handle_exception_clauses (MonoCompile *cfg)
 
 		visit_bb (cfg, bb, &visited);
 	}
-	g_slist_free (visited);
+	mono_ptrset_destroy (&visited);
 }
 
 static inline void
