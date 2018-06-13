@@ -93,7 +93,7 @@ namespace System.ServiceModel.Syndication
             }
             if (string.IsNullOrEmpty(outerElementName))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(SR.Format(SR.OuterElementNameNotSpecified));
+                throw new ArgumentException(SR.OuterElementNameNotSpecified, nameof(outerElementName));
             }
             writer.WriteStartElement(outerElementName, outerElementNamespace);
             writer.WriteAttributeString(Atom10Constants.TypeTag, string.Empty, this.Type);
