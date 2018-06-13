@@ -15,18 +15,17 @@
 #include "pal_safecrt.h"
 
 #include <errno.h>
-#include <memory>
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
 
-extern "C" int32_t SystemNative_Sysctl(int* name, unsigned int namelen, void* value, size_t* len)
+int32_t SystemNative_Sysctl(int* name, unsigned int namelen, void* value, size_t* len)
 {
-    void* newp = nullptr;
+    void* newp = NULL;
     size_t newlen = 0;
 
 #ifdef __linux__
-    return sysctl(name, static_cast<int>(namelen), value, len, newp, newlen);
+    return sysctl(name, (int)(namelen), value, len, newp, newlen);
 #else
     return sysctl(name, namelen, value, len, newp, newlen);
 #endif

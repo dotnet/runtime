@@ -15,4 +15,3 @@ BEGIN_EXTERN_C
 DLLEXPORT int32_t SystemNative_Sysctl(int* name, unsigned int namelen, void* value, size_t* len);
 
 END_EXTERN_C
-

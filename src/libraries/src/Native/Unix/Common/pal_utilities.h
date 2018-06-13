@@ -188,4 +188,11 @@ static inline bool CheckInterrupted(TInt result)
     return result < 0 && errno == EINTR;
 }
 
+#else
+
+static inline bool CheckInterrupted(int32_t result)
+{
+    return result < 0 && errno == EINTR;
+}
+
 #endif // __cplusplus

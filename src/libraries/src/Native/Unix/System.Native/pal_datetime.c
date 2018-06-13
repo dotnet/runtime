@@ -22,19 +22,19 @@ static const int64_t TICKS_PER_MICROSECOND = 10; /* 1000 / 100 */
 // SystemNative_GetSystemTimeAsTicks return the system time as ticks (100 nanoseconds) 
 // since 00:00 01 January 1970 UTC (Unix epoch) 
 //
-extern "C" int64_t SystemNative_GetSystemTimeAsTicks()
+int64_t SystemNative_GetSystemTimeAsTicks()
 {
 #if HAVE_CLOCK_REALTIME
     struct timespec time;
     if (clock_gettime(CLOCK_REALTIME, &time) == 0)
     {
-        return static_cast<int64_t>(time.tv_sec) * TICKS_PER_SECOND + (time.tv_nsec / NANOSECONDS_PER_TICK); 
+        return (int64_t)(time.tv_sec) * TICKS_PER_SECOND + (time.tv_nsec / NANOSECONDS_PER_TICK); 
     }
 #else
     struct timeval time;
     if (gettimeofday(&time, NULL) == 0)
     {
-        return static_cast<int64_t>(time.tv_sec) * TICKS_PER_SECOND + (time.tv_usec * TICKS_PER_MICROSECOND); 
+        return (int64_t)(time.tv_sec) * TICKS_PER_SECOND + (time.tv_usec * TICKS_PER_MICROSECOND); 
     }
 #endif
     // in failure we return 00:00 01 January 1970 UTC (Unix epoch)
