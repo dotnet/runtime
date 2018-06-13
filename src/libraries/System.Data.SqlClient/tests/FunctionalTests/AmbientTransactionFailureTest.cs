@@ -81,12 +81,5 @@ namespace System.Data.SqlClient.Tests
                 connectAction(connectionString);
             });
         }
-
-        [ActiveIssue(30144)]
-        [Fact]
-        public async Task TestNotSupportedExceptionForTransactionScopeAsync()
-        {
-            await Assert.ThrowsAsync<NotSupportedException>(() => ConnectToServerInTransactionScopeTask(s_connectionStringWithEnlistAsDefault));
-        }
     }
 }
