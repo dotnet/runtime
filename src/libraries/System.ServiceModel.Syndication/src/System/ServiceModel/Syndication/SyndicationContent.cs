@@ -89,11 +89,8 @@ namespace System.ServiceModel.Syndication
                     {
                         continue;
                     }
-                    string attrValue;
-                    if (_attributeExtensions.TryGetValue(key, out attrValue))
-                    {
-                        writer.WriteAttributeString(key.Name, key.Namespace, attrValue);
-                    }
+
+                    writer.WriteAttributeString(key.Name, key.Namespace, _attributeExtensions[key]);
                 }
             }
             WriteContentsTo(writer);

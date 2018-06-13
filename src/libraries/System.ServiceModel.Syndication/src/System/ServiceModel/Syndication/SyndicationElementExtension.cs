@@ -273,13 +273,8 @@ namespace System.ServiceModel.Syndication
 
             internal void ComputeOuterNameAndNs(out string name, out string ns)
             {
-                if (_outerName != null)
-                {
-                    Debug.Assert(_xmlSerializer == null, "outer name is not null for data contract extension only");
-                    name = _outerName;
-                    ns = _outerNamespace;
-                }
-                else if (_dataContractSerializer != null)
+                Debug.Assert(_outerName == null, "All callers of this function should already check for a null outer name.");
+                if (_dataContractSerializer != null)
                 {
                     Debug.Assert(_xmlSerializer == null, "only one of xmlserializer or datacontract serializer can be present");
                     XsdDataContractExporter dcExporter = new XsdDataContractExporter();

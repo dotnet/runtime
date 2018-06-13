@@ -29,11 +29,7 @@ namespace System.ServiceModel.Syndication
 
         protected TextSyndicationContent(TextSyndicationContent source) : base(source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
+            Debug.Assert(source != null, "The base constructor already checks if source is valid.");
             Text = source.Text;
             _textKind = source._textKind;
         }

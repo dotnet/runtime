@@ -14,22 +14,6 @@ using System.Diagnostics;
 
 namespace System.ServiceModel.Syndication
 {
-<<<<<<< HEAD
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Globalization;
-    using System.Text;
-    using System.Xml;
-    using System.Xml.Serialization;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Xml.Schema;
-    using System.Collections;
-    using System.ServiceModel.Channels;
-    using System.Runtime.CompilerServices;
-
-=======
->>>>>>> Misc cleanup in Syndication
     [XmlRoot(ElementName = Atom10Constants.FeedTag, Namespace = Atom10Constants.Atom10Namespace)]
     public class Atom10FeedFormatter : SyndicationFeedFormatter, IXmlSerializable
     {
@@ -627,10 +611,8 @@ namespace System.ServiceModel.Syndication
             {
                 foreach (XmlQualifiedName attr in attrs.Keys)
                 {
-                    if (!FeedUtils.IsXmlns(attr.Name, attr.Namespace))
-                    {
-                        result.AttributeExtensions.Add(attr, attrs[attr]);
-                    }
+                    Debug.Assert(!FeedUtils.IsXmlns(attr.Name, attr.Namespace), "XML namespace attributes should not be added to the list." );
+                    result.AttributeExtensions.Add(attr, attrs[attr]);
                 }
             }
             return result;

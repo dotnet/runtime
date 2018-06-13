@@ -164,11 +164,9 @@ namespace System.ServiceModel.Syndication
         protected override void ClearItems()
         {
             base.ClearItems();
-            // clear the cached buffer if the operation is happening outside the constructor
-            if (_initialized)
-            {
-                _buffer = null;
-            }
+
+            Debug.Assert(_initialized, "The constructor should never clear the collection.");
+            _buffer = null;
         }
 
         protected override void InsertItem(int index, SyndicationElementExtension item)
@@ -189,11 +187,9 @@ namespace System.ServiceModel.Syndication
         protected override void RemoveItem(int index)
         {
             base.RemoveItem(index);
-            // clear the cached buffer if the operation is happening outside the constructor
-            if (_initialized)
-            {
-                _buffer = null;
-            }
+
+            Debug.Assert(_initialized, "The constructor should never remove items from the collection.");
+            _buffer = null;
         }
 
         protected override void SetItem(int index, SyndicationElementExtension item)
@@ -204,11 +200,8 @@ namespace System.ServiceModel.Syndication
             }
 
             base.SetItem(index, item);
-            // clear the cached buffer if the operation is happening outside the constructor
-            if (_initialized)
-            {
-                _buffer = null;
-            }
+            Debug.Assert(_initialized, "The constructor should never set items in the collection.");
+            _buffer = null;
         }
 
         private XmlBuffer GetOrCreateBufferOverExtensions()
