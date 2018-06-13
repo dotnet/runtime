@@ -61,6 +61,7 @@ class Driver {
 		"IIL",
 		"IILI",
 		"IILLLI",
+		"IDIII",
 		"LII",
 		"VID",
 		"VIIIIIII",
