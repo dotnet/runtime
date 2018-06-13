@@ -2,14 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.Serialization;
+using System.Xml;
+
 namespace System.ServiceModel.Syndication
 {
+<<<<<<< HEAD
     using System;
     using System.Diagnostics;
     using System.Globalization;
     using System.Runtime.Serialization;
     using System.Xml;
 
+=======
+>>>>>>> Misc cleanup in Syndication
     public delegate bool TryParseDateTimeCallback(XmlDateTimeData data, out DateTimeOffset dateTimeOffset);
     public delegate bool TryParseUriCallback(XmlUriData data, out Uri uri);
 
@@ -30,41 +38,28 @@ namespace System.ServiceModel.Syndication
             DateTimeParser = GetDefaultDateTimeParser();
         }
 
-        public SyndicationFeed Feed
-        {
-            get
-            {
-                return _feed;
-            }
-        }
+        public SyndicationFeed Feed => _feed;
 
         public TryParseUriCallback UriParser { get; set; } = DefaultUriParser;
 
         // Different DateTimeParsers are needed for Atom and Rss so can't set inline
         public TryParseDateTimeCallback DateTimeParser { get; set; }
 
-        internal virtual TryParseDateTimeCallback GetDefaultDateTimeParser()
-        {
-            return NotImplementedDateTimeParser;
-        }
+        internal virtual TryParseDateTimeCallback GetDefaultDateTimeParser() => NotImplementedDateTimeParser;
 
         private bool NotImplementedDateTimeParser(XmlDateTimeData XmlDateTimeData, out DateTimeOffset dateTimeOffset)
         {
-            dateTimeOffset = default(DateTimeOffset);
+            dateTimeOffset = default;
             return false;
         }
 
-        public abstract string Version
-        { get; }
+        public abstract string Version { get; }
 
         public abstract bool CanRead(XmlReader reader);
 
         public abstract void ReadFrom(XmlReader reader);
 
-        public override string ToString()
-        {
-            return string.Format(CultureInfo.CurrentCulture, "{0}, SyndicationVersion={1}", this.GetType(), this.Version);
-        }
+        public override string ToString() => $"{GetType()}, SyndicationVersion={Version}";
 
         public abstract void WriteTo(XmlWriter writer);
 
@@ -74,8 +69,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(feed));
             }
-            return GetNonNullValue<SyndicationCategory>(feed.CreateCategory(), SR.FeedCreatedNullCategory);
 
+            return GetNonNullValue(feed.CreateCategory(), SR.FeedCreatedNullCategory);
         }
 
         internal static protected SyndicationCategory CreateCategory(SyndicationItem item)
@@ -84,8 +79,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(item));
             }
-            return GetNonNullValue<SyndicationCategory>(item.CreateCategory(), SR.ItemCreatedNullCategory);
 
+            return GetNonNullValue(item.CreateCategory(), SR.ItemCreatedNullCategory);
         }
 
         internal static protected SyndicationItem CreateItem(SyndicationFeed feed)
@@ -94,8 +89,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(feed));
             }
-            return GetNonNullValue<SyndicationItem>(feed.CreateItem(), SR.FeedCreatedNullItem);
 
+            return GetNonNullValue(feed.CreateItem(), SR.FeedCreatedNullItem);
         }
 
         internal static protected SyndicationLink CreateLink(SyndicationFeed feed)
@@ -104,8 +99,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(feed));
             }
-            return GetNonNullValue<SyndicationLink>(feed.CreateLink(), SR.FeedCreatedNullPerson);
 
+            return GetNonNullValue(feed.CreateLink(), SR.FeedCreatedNullPerson);
         }
 
         internal static protected SyndicationLink CreateLink(SyndicationItem item)
@@ -114,8 +109,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(item));
             }
-            return GetNonNullValue<SyndicationLink>(item.CreateLink(), SR.ItemCreatedNullPerson);
 
+            return GetNonNullValue(item.CreateLink(), SR.ItemCreatedNullPerson);
         }
 
         internal static protected SyndicationPerson CreatePerson(SyndicationFeed feed)
@@ -124,8 +119,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(feed));
             }
-            return GetNonNullValue<SyndicationPerson>(feed.CreatePerson(), SR.FeedCreatedNullPerson);
 
+            return GetNonNullValue(feed.CreatePerson(), SR.FeedCreatedNullPerson);
         }
 
         internal static protected SyndicationPerson CreatePerson(SyndicationItem item)
@@ -134,8 +129,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(item));
             }
-            return GetNonNullValue<SyndicationPerson>(item.CreatePerson(), SR.ItemCreatedNullPerson);
 
+            return GetNonNullValue(item.CreatePerson(), SR.ItemCreatedNullPerson);
         }
 
         internal static protected void LoadElementExtensions(XmlReader reader, SyndicationFeed feed, int maxExtensionSize)
@@ -453,7 +448,7 @@ namespace System.ServiceModel.Syndication
         {
             try
             {
-                DateTimeOffset dateTimeOffset = default(DateTimeOffset);
+                DateTimeOffset dateTimeOffset = default;
                 var elementQualifiedName = new XmlQualifiedName(reader.LocalName, reader.NamespaceURI);
                 var xmlDateTimeData = new XmlDateTimeData(dateTimeString, elementQualifiedName);
                 object[] args = new object[] { xmlDateTimeData, dateTimeOffset };
@@ -595,8 +590,7 @@ namespace System.ServiceModel.Syndication
             private static void ThrowXmlException(XmlDictionaryReader reader, string res, string arg1)
             {
                 string s = SR.Format(res, arg1);
-                IXmlLineInfo lineInfo = reader as IXmlLineInfo;
-                if (lineInfo != null && lineInfo.HasLineInfo())
+                if (reader is IXmlLineInfo lineInfo && lineInfo.HasLineInfo())
                 {
                     s += " " + SR.Format(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
                 }

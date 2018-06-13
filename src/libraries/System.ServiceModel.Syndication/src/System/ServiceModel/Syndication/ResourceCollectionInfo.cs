@@ -3,11 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.ObjectModel;
-using System.Runtime.Serialization;
-using System.Xml.Serialization;
 using System.Collections.Generic;
 using System.Xml;
-using System.Runtime.CompilerServices;
 
 namespace System.ServiceModel.Syndication
 {
@@ -22,13 +19,11 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public ResourceCollectionInfo(string title, Uri link)
-            : this((title == null) ? null : new TextSyndicationContent(title), link)
+        public ResourceCollectionInfo(string title, Uri link) : this((title == null) ? null : new TextSyndicationContent(title), link)
         {
         }
 
-        public ResourceCollectionInfo(TextSyndicationContent title, Uri link)
-            : this(title, link, null, null)
+        public ResourceCollectionInfo(TextSyndicationContent title, Uri link) : this(title, link, null, null)
         {
         }
 
@@ -63,45 +58,19 @@ namespace System.ServiceModel.Syndication
 
         public Collection<string> Accepts
         {
-            get
-            {
-                if (_accepts == null)
-                {
-                    _accepts = new NullNotAllowedCollection<string>();
-                }
-                return _accepts;
-            }
+            get => _accepts ?? (_accepts = new NullNotAllowedCollection<string>());
         }
 
-        public Dictionary<XmlQualifiedName, string> AttributeExtensions
-        {
-            get
-            {
-                return _extensions.AttributeExtensions;
-            }
-        }
+        public Dictionary<XmlQualifiedName, string> AttributeExtensions => _extensions.AttributeExtensions;
 
         public Uri BaseUri { get; set; }
 
         public Collection<CategoriesDocument> Categories
         {
-            get
-            {
-                if (_categories == null)
-                {
-                    _categories = new NullNotAllowedCollection<CategoriesDocument>();
-                }
-                return _categories;
-            }
+            get => _categories ?? (_categories = new NullNotAllowedCollection<CategoriesDocument>());
         }
 
-        public SyndicationElementExtensionCollection ElementExtensions
-        {
-            get
-            {
-                return _extensions.ElementExtensions;
-            }
-        }
+        public SyndicationElementExtensionCollection ElementExtensions => _extensions.ElementExtensions;
 
         public Uri Link { get; set; }
 
@@ -151,10 +120,9 @@ namespace System.ServiceModel.Syndication
         {
             if (s_singleEmptyAccept == null)
             {
-                List<string> tmp = new List<string>(1);
-                tmp.Add(string.Empty);
-                s_singleEmptyAccept = tmp.AsReadOnly();
+                s_singleEmptyAccept = new List<string>(1) { string.Empty }.AsReadOnly();
             }
+
             return s_singleEmptyAccept;
         }
     }

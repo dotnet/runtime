@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
@@ -52,18 +51,9 @@ namespace System.ServiceModel
             _sections = new List<Section>(1);
         }
 
-        public int BufferSize
-        {
-            get
-            {
-                return _buffer.Length;
-            }
-        }
+        public int BufferSize => _buffer.Length;
 
-        public int SectionCount
-        {
-            get { return _sections.Count; }
-        }
+        public int SectionCount => _sections.Count;
 
         public XmlDictionaryWriter OpenSection(XmlDictionaryReaderQuotas quotas)
         {
@@ -103,11 +93,7 @@ namespace System.ServiceModel
             _stream = null;
         }
 
-        private Exception CreateInvalidStateException()
-        {
-            return new InvalidOperationException(SR.XmlBufferInInvalidState);
-        }
-
+        private Exception CreateInvalidStateException() => new InvalidOperationException(SR.XmlBufferInInvalidState);
 
         public XmlDictionaryReader GetReader(int sectionIndex)
         {

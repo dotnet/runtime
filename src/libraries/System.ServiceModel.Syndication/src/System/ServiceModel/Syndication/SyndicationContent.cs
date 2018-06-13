@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 using System.Runtime.Serialization;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.ServiceModel.Syndication
 {
@@ -21,27 +17,14 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        protected SyndicationContent(SyndicationContent source)
-        {
-            CopyAttributeExtensions(source);
-        }
+        protected SyndicationContent(SyndicationContent source) => CopyAttributeExtensions(source);
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions
         {
-            get
-            {
-                if (_attributeExtensions == null)
-                {
-                    _attributeExtensions = new Dictionary<XmlQualifiedName, string>();
-                }
-                return _attributeExtensions;
-            }
+            get => _attributeExtensions ?? (_attributeExtensions = new Dictionary<XmlQualifiedName, string>());
         }
 
-        public abstract string Type
-        {
-            get;
-        }
+        public abstract string Type { get; }
 
         public static TextSyndicationContent CreateHtmlContent(string content)
         {
@@ -97,7 +80,7 @@ namespace System.ServiceModel.Syndication
             }
 
             writer.WriteStartElement(outerElementName, outerElementNamespace);
-            writer.WriteAttributeString(Atom10Constants.TypeTag, string.Empty, this.Type);
+            writer.WriteAttributeString(Atom10Constants.TypeTag, string.Empty, Type);
             if (_attributeExtensions != null)
             {
                 foreach (XmlQualifiedName key in _attributeExtensions.Keys)
@@ -128,7 +111,7 @@ namespace System.ServiceModel.Syndication
             {
                 foreach (XmlQualifiedName key in source._attributeExtensions.Keys)
                 {
-                    this.AttributeExtensions.Add(key, source._attributeExtensions[key]);
+                    AttributeExtensions.Add(key, source._attributeExtensions[key]);
                 }
             }
         }

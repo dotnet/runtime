@@ -3,11 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.ObjectModel;
-using System.Runtime;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Serialization;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
 namespace System.ServiceModel.Syndication
@@ -16,15 +14,13 @@ namespace System.ServiceModel.Syndication
     public sealed class SyndicationElementExtensionCollection : Collection<SyndicationElementExtension>
     {
         private XmlBuffer _buffer;
-        private bool _initialized;
+        private readonly bool _initialized;
 
-        internal SyndicationElementExtensionCollection()
-            : this((XmlBuffer)null)
+        internal SyndicationElementExtensionCollection() : this((XmlBuffer)null)
         {
         }
 
-        internal SyndicationElementExtensionCollection(XmlBuffer buffer)
-            : base()
+        internal SyndicationElementExtensionCollection(XmlBuffer buffer) : base()
         {
             _buffer = buffer;
             if (_buffer != null)
@@ -34,8 +30,7 @@ namespace System.ServiceModel.Syndication
             _initialized = true;
         }
 
-        internal SyndicationElementExtensionCollection(SyndicationElementExtensionCollection source)
-            : base()
+        internal SyndicationElementExtensionCollection(SyndicationElementExtensionCollection source) : base()
         {
             _buffer = source._buffer;
             for (int i = 0; i < source.Items.Count; ++i)
@@ -53,18 +48,18 @@ namespace System.ServiceModel.Syndication
             }
             else
             {
-                this.Add(extension, (DataContractSerializer)null);
+                Add(extension, (DataContractSerializer)null);
             }
         }
 
         public void Add(string outerName, string outerNamespace, object dataContractExtension)
         {
-            this.Add(outerName, outerNamespace, dataContractExtension, null);
+            Add(outerName, outerNamespace, dataContractExtension, null);
         }
 
         public void Add(object dataContractExtension, DataContractSerializer serializer)
         {
-            this.Add(null, null, dataContractExtension, serializer);
+            Add(null, null, dataContractExtension, serializer);
         }
 
         public void Add(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
@@ -159,9 +154,9 @@ namespace System.ServiceModel.Syndication
             }
             else
             {
-                for (int i = 0; i < this.Items.Count; ++i)
+                for (int i = 0; i < Items.Count; ++i)
                 {
-                    this.Items[i].WriteTo(writer);
+                    Items[i].WriteTo(writer);
                 }
             }
         }
@@ -222,11 +217,12 @@ namespace System.ServiceModel.Syndication
             {
                 return _buffer;
             }
+
             XmlBuffer newBuffer = new XmlBuffer(int.MaxValue);
             using (XmlWriter writer = newBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
             {
                 writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
-                for (int i = 0; i < this.Count; ++i)
+                for (int i = 0; i < Count; ++i)
                 {
                     this[i].WriteTo(writer);
                 }
@@ -267,7 +263,7 @@ namespace System.ServiceModel.Syndication
                 extensionNamespace = string.Empty;
             }
             Collection<TExtension> results = new Collection<TExtension>();
-            for (int i = 0; i < this.Count; ++i)
+            for (int i = 0; i < Count; ++i)
             {
                 if (extensionName != this[i].OuterName || extensionNamespace != this[i].OuterNamespace)
                 {

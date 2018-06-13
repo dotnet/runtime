@@ -2,35 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.ObjectModel;
-using System.Runtime.Serialization;
 using System.Xml.Serialization;
-using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Schema;
-using System.ServiceModel.Channels;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.ServiceModel.Syndication
 {
     [XmlRoot(ElementName = App10Constants.Categories, Namespace = App10Constants.Namespace)]
     public class AtomPub10CategoriesDocumentFormatter : CategoriesDocumentFormatter, IXmlSerializable
     {
-        private Type _inlineDocumentType;
-        private int _maxExtensionSize;
-        private bool _preserveAttributeExtensions;
-        private bool _preserveElementExtensions;
-        private Type _referencedDocumentType;
+        private readonly Type _inlineDocumentType;
+        private readonly int _maxExtensionSize;
+        private readonly Type _referencedDocumentType;
 
-        public AtomPub10CategoriesDocumentFormatter()
-            : this(typeof(InlineCategoriesDocument), typeof(ReferencedCategoriesDocument))
+        public AtomPub10CategoriesDocumentFormatter() : this(typeof(InlineCategoriesDocument), typeof(ReferencedCategoriesDocument))
         {
         }
 
-        public AtomPub10CategoriesDocumentFormatter(Type inlineDocumentType, Type referencedDocumentType)
-            : base()
+        public AtomPub10CategoriesDocumentFormatter(Type inlineDocumentType, Type referencedDocumentType) : base()
         {
             if (inlineDocumentType == null)
             {
@@ -50,19 +40,13 @@ namespace System.ServiceModel.Syndication
             }
 
             _maxExtensionSize = int.MaxValue;
-            _preserveAttributeExtensions = true;
-            _preserveElementExtensions = true;
             _inlineDocumentType = inlineDocumentType;
             _referencedDocumentType = referencedDocumentType;
         }
 
-        public AtomPub10CategoriesDocumentFormatter(CategoriesDocument documentToWrite)
-            : base(documentToWrite)
+        public AtomPub10CategoriesDocumentFormatter(CategoriesDocument documentToWrite) : base(documentToWrite)
         {
-            // No need to check that the parameter passed is valid - it is checked by the c'tor of the base class
             _maxExtensionSize = int.MaxValue;
-            _preserveAttributeExtensions = true;
-            _preserveElementExtensions = true;
             if (documentToWrite.IsInline)
             {
                 _inlineDocumentType = documentToWrite.GetType();
@@ -75,10 +59,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public override string Version
-        {
-            get { return App10Constants.Namespace; }
-        }
+        public override string Version => App10Constants.Namespace;
 
         public override bool CanRead(XmlReader reader)
         {
@@ -91,10 +72,7 @@ namespace System.ServiceModel.Syndication
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        XmlSchema IXmlSerializable.GetSchema()
-        {
-            return null;
-        }
+        XmlSchema IXmlSerializable.GetSchema() => null;
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
         void IXmlSerializable.ReadXml(XmlReader reader)
@@ -114,7 +92,7 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(writer));
             }
-            if (this.Document == null)
+            if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
@@ -142,7 +120,7 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(writer));
             }
-            if (this.Document == null)
+            if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
@@ -182,18 +160,11 @@ namespace System.ServiceModel.Syndication
             {
                 SyndicationFeedFormatter.MoveToStartElement(reader);
                 SetDocument(AtomPub10ServiceDocumentFormatter.ReadCategories(reader, null,
-                    delegate ()
-                    {
-                        return this.CreateInlineCategoriesDocument();
-                    },
-
-                    delegate ()
-                    {
-                        return this.CreateReferencedCategoriesDocument();
-                    },
-                    this.Version,
                     _preserveElementExtensions,
                     _preserveAttributeExtensions,
+                    () => CreateInlineCategoriesDocument(),
+                    () => CreateReferencedCategoriesDocument(),
+                    Version,
                     _maxExtensionSize));
             }
             catch (FormatException e)
@@ -210,7 +181,7 @@ namespace System.ServiceModel.Syndication
         {
             // declare the atom10 namespace upfront for compactness
             writer.WriteAttributeString(Atom10Constants.Atom10Prefix, Atom10FeedFormatter.XmlNsNs, Atom10Constants.Atom10Namespace);
-            AtomPub10ServiceDocumentFormatter.WriteCategoriesInnerXml(writer, this.Document, null, this.Version);
+            AtomPub10ServiceDocumentFormatter.WriteCategoriesInnerXml(writer, Document, null, Version);
         }
     }
 }

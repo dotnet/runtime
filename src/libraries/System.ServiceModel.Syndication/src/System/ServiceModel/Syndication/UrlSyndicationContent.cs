@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Xml;
-using System.Runtime.CompilerServices;
 
 namespace System.ServiceModel.Syndication
 {
@@ -18,8 +18,7 @@ namespace System.ServiceModel.Syndication
             _mediaType = mediaType;
         }
 
-        protected UrlSyndicationContent(UrlSyndicationContent source)
-            : base(source)
+        protected UrlSyndicationContent(UrlSyndicationContent source) : base(source)
         {
             if (source == null)
             {
@@ -30,17 +29,11 @@ namespace System.ServiceModel.Syndication
             _mediaType = source._mediaType;
         }
 
-        public override string Type
-        {
-            get { return _mediaType; }
-        }
+        public override string Type => _mediaType;
 
         public Uri Url { get; }
 
-        public override SyndicationContent Clone()
-        {
-            return new UrlSyndicationContent(this);
-        }
+        public override SyndicationContent Clone() => new UrlSyndicationContent(this);
 
         protected override void WriteContentsTo(XmlWriter writer)
         {

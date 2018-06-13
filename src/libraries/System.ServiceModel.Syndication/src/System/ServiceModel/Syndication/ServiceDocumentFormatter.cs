@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Runtime.Serialization;
-using System.Xml.Serialization;
-using System.Collections.Generic;
 using System.Xml;
-using System.Runtime.CompilerServices;
 
 namespace System.ServiceModel.Syndication
 {
@@ -25,13 +22,9 @@ namespace System.ServiceModel.Syndication
             _document = documentToWrite ?? throw new ArgumentNullException(nameof(documentToWrite));
         }
 
-        public ServiceDocument Document
-        {
-            get { return _document; }
-        }
+        public ServiceDocument Document => _document;
 
-        public abstract string Version
-        { get; }
+        public abstract string Version { get; }
 
         public abstract bool CanRead(XmlReader reader);
         public abstract void ReadFrom(XmlReader reader);
@@ -43,8 +36,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(categories));
             }
-            Atom10FeedFormatter.CloseBuffer(buffer, writer);
 
+            SyndicationFeedFormatter.CloseBuffer(buffer, writer);
             categories.LoadElementExtensions(buffer);
         }
 
@@ -54,8 +47,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(collection));
             }
-            Atom10FeedFormatter.CloseBuffer(buffer, writer);
 
+            SyndicationFeedFormatter.CloseBuffer(buffer, writer);
             collection.LoadElementExtensions(buffer);
         }
 
@@ -65,8 +58,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(workspace));
             }
-            Atom10FeedFormatter.CloseBuffer(buffer, writer);
 
+            SyndicationFeedFormatter.CloseBuffer(buffer, writer);
             workspace.LoadElementExtensions(buffer);
         }
 
@@ -76,8 +69,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(document));
             }
-            Atom10FeedFormatter.CloseBuffer(buffer, writer);
 
+            SyndicationFeedFormatter.CloseBuffer(buffer, writer);
             document.LoadElementExtensions(buffer);
         }
 
@@ -321,14 +314,8 @@ namespace System.ServiceModel.Syndication
             categories.WriteElementExtensions(writer, version);
         }
 
-        protected virtual ServiceDocument CreateDocumentInstance()
-        {
-            return new ServiceDocument();
-        }
+        protected virtual ServiceDocument CreateDocumentInstance() => new ServiceDocument();
 
-        protected virtual void SetDocument(ServiceDocument document)
-        {
-            _document = document;
-        }
+        protected virtual void SetDocument(ServiceDocument document) => _document = document;
     }
 }

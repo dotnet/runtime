@@ -2,13 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics;
 using System.Xml;
-using System.Xml.Schema;
-using System.Xml.Serialization;
-using System.Runtime.CompilerServices;
 
 namespace System.ServiceModel.Syndication
 {
@@ -32,8 +27,7 @@ namespace System.ServiceModel.Syndication
             _textKind = textKind;
         }
 
-        protected TextSyndicationContent(TextSyndicationContent source)
-            : base(source)
+        protected TextSyndicationContent(TextSyndicationContent source) : base(source)
         {
             if (source == null)
             {
@@ -62,10 +56,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public override SyndicationContent Clone()
-        {
-            return new TextSyndicationContent(this);
-        }
+        public override SyndicationContent Clone() => new TextSyndicationContent(this);
 
         protected override void WriteContentsTo(XmlWriter writer)
         {
