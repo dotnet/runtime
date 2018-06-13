@@ -15,7 +15,6 @@ namespace System.ServiceModel.Syndication
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
     public class TextSyndicationContent : SyndicationContent
     {
-        private string _text;
         private TextSyndicationContentKind _textKind;
 
         public TextSyndicationContent(string text) : this(text, TextSyndicationContentKind.Plaintext)
@@ -28,8 +27,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentOutOfRangeException(nameof(textKind));
             }
-            _text = text;
 
+            Text = text;
             _textKind = textKind;
         }
 
@@ -40,15 +39,12 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            _text = source._text;
 
+            Text = source.Text;
             _textKind = source._textKind;
         }
 
-        public string Text
-        {
-            get { return _text; }
-        }
+        public string Text { get; }
 
         public override string Type
         {
@@ -73,7 +69,7 @@ namespace System.ServiceModel.Syndication
 
         protected override void WriteContentsTo(XmlWriter writer)
         {
-            string val = _text ?? string.Empty;
+            string val = Text ?? string.Empty;
             if (_textKind == TextSyndicationContentKind.XHtml)
             {
                 writer.WriteRaw(val);

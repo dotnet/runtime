@@ -28,31 +28,18 @@ namespace System.ServiceModel
 
         private struct Section
         {
-            private int _offset;
-            private int _size;
-            private XmlDictionaryReaderQuotas _quotas;
-
             public Section(int offset, int size, XmlDictionaryReaderQuotas quotas)
             {
-                _offset = offset;
-                _size = size;
-                _quotas = quotas;
+                Offset = offset;
+                Size = size;
+                Quotas = quotas;
             }
 
-            public int Offset
-            {
-                get { return _offset; }
-            }
+            public int Offset { get; }
 
-            public int Size
-            {
-                get { return _size; }
-            }
+            public int Size { get; }
 
-            public XmlDictionaryReaderQuotas Quotas
-            {
-                get { return _quotas; }
-            }
+            public XmlDictionaryReaderQuotas Quotas { get; }
         }
 
         public XmlBuffer(int maxBufferSize)

@@ -18,19 +18,12 @@ namespace System.ServiceModel.Syndication
     public class SyndicationItem : IExtensibleSyndicationObject
     {
         private Collection<SyndicationPerson> _authors;
-        private Uri _baseUri;
         private Collection<SyndicationCategory> _categories;
-        private SyndicationContent _content;
         private Collection<SyndicationPerson> _contributors;
-        private TextSyndicationContent _copyright;
         private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
-        private string _id;
         private DateTimeOffset _lastUpdatedTime;
         private Collection<SyndicationLink> _links;
         private DateTimeOffset _publishDate;
-        private SyndicationFeed _sourceFeed;
-        private TextSyndicationContent _summary;
-        private TextSyndicationContent _title;
 
         public SyndicationItem()
             : this(null, null, null)
@@ -51,14 +44,14 @@ namespace System.ServiceModel.Syndication
         {
             if (title != null)
             {
-                this.Title = new TextSyndicationContent(title);
+                Title = new TextSyndicationContent(title);
             }
-            _content = content;
+            Content = content;
             if (itemAlternateLink != null)
             {
-                this.Links.Add(SyndicationLink.CreateAlternateLink(itemAlternateLink));
+                Links.Add(SyndicationLink.CreateAlternateLink(itemAlternateLink));
             }
-            _id = id;
+            Id = id;
             _lastUpdatedTime = lastUpdatedTime;
         }
 
@@ -72,21 +65,21 @@ namespace System.ServiceModel.Syndication
             _extensions = source._extensions.Clone();
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
-            _content = (source._content != null) ? source._content.Clone() : null;
+            Content = (source.Content != null) ? source.Content.Clone() : null;
             _contributors = FeedUtils.ClonePersons(source._contributors);
-            _copyright = FeedUtils.CloneTextContent(source._copyright);
-            _id = source._id;
+            Copyright = FeedUtils.CloneTextContent(source.Copyright);
+            Id = source.Id;
             _lastUpdatedTime = source._lastUpdatedTime;
             _links = FeedUtils.CloneLinks(source._links);
             _publishDate = source._publishDate;
             if (source.SourceFeed != null)
             {
-                _sourceFeed = source._sourceFeed.Clone(false);
-                _sourceFeed.Items = new Collection<SyndicationItem>();
+                SourceFeed = source.SourceFeed.Clone(false);
+                SourceFeed.Items = new Collection<SyndicationItem>();
             }
-            _summary = FeedUtils.CloneTextContent(source._summary);
-            _baseUri = source._baseUri;
-            _title = FeedUtils.CloneTextContent(source._title);
+            Summary = FeedUtils.CloneTextContent(source.Summary);
+            BaseUri = source.BaseUri;
+            Title = FeedUtils.CloneTextContent(source.Title);
         }
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions
@@ -106,11 +99,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public Uri BaseUri
-        {
-            get { return _baseUri; }
-            set { _baseUri = value; }
-        }
+        public Uri BaseUri { get; set; }
 
         public Collection<SyndicationCategory> Categories
         {
@@ -124,11 +113,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public SyndicationContent Content
-        {
-            get { return _content; }
-            set { _content = value; }
-        }
+        public SyndicationContent Content { get; set; }
 
         public Collection<SyndicationPerson> Contributors
         {
@@ -142,22 +127,14 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public TextSyndicationContent Copyright
-        {
-            get { return _copyright; }
-            set { _copyright = value; }
-        }
+        public TextSyndicationContent Copyright { get; set; }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
             get { return _extensions.ElementExtensions; }
         }
 
-        public string Id
-        {
-            get { return _id; }
-            set { _id = value; }
-        }
+        public string Id { get; set; }
 
         internal Exception LastUpdatedTimeException { get; set; }
 
@@ -211,23 +188,11 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public SyndicationFeed SourceFeed
-        {
-            get { return _sourceFeed; }
-            set { _sourceFeed = value; }
-        }
+        public SyndicationFeed SourceFeed { get; set; }
 
-        public TextSyndicationContent Summary
-        {
-            get { return _summary; }
-            set { _summary = value; }
-        }
+        public TextSyndicationContent Summary { get; set; }
 
-        public TextSyndicationContent Title
-        {
-            get { return _title; }
-            set { _title = value; }
-        }
+        public TextSyndicationContent Title { get; set; }
 
         public static SyndicationItem Load(XmlReader reader)
         {

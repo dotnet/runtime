@@ -14,9 +14,7 @@ namespace System.ServiceModel.Syndication
 {
     public abstract class CategoriesDocument : IExtensibleSyndicationObject
     {
-        private Uri _baseUri;
         private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
-        private string _language;
 
         internal CategoriesDocument()
         {
@@ -30,11 +28,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public Uri BaseUri
-        {
-            get { return _baseUri; }
-            set { _baseUri = value; }
-        }
+        public Uri BaseUri { get; set; }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
@@ -44,11 +38,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public string Language
-        {
-            get { return _language; }
-            set { _language = value; }
-        }
+        public string Language { get; set; }
 
         internal abstract bool IsInline
         {
