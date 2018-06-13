@@ -20,8 +20,14 @@ namespace System.Globalization
         public const int ADEra = 1;
 
         //
-        // This is the max Gregorian year can be represented by DateTime class.  The limitation
-        // is derived from DateTime class.
+        // This is the min Gregorian year can be represented by the DateTime class.
+        // The limitation is derived from the DateTime class.
+        //
+        internal const int MinYear = 1;
+
+        //
+        // This is the max Gregorian year can be represented by the DateTime class.
+        // The limitation is derived from the DateTime class.
         //
         internal const int MaxYear = 9999;
 
