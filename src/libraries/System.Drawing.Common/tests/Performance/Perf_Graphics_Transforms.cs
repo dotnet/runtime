@@ -13,6 +13,9 @@ namespace System.Drawing.Tests
         [Benchmark(InnerIterationCount = 10000)]
         public void TransformPoints()
         {
+            if (!Helpers.GetGdiplusIsAvailable())
+                return;
+
             Point[] points =
             {
                 new Point(10, 10), new Point(20, 1), new Point(35, 5), new Point(50, 10),
