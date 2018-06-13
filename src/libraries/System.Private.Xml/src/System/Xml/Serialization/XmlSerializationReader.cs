@@ -4,20 +4,14 @@
 
 namespace System.Xml.Serialization
 {
-    using System.IO;
     using System;
-    using System.Security;
     using System.Collections;
+    using System.Globalization;
+    using System.IO;
     using System.Reflection;
-    using System.Text;
+    using System.Security;
     using System.Xml;
     using System.Xml.Schema;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Diagnostics;
-    using System.Threading;
-    using System.Configuration;
-    using System.Xml.Serialization.Configuration;
 
     ///<internalonly/>
     public abstract class XmlSerializationReader : XmlSerializationGeneratedCode
@@ -2375,10 +2369,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        internal void GenerateEnd()
-        {
-            GenerateEnd(Array.Empty<string>(), Array.Empty<XmlMapping>(), Array.Empty<Type>());
-        }
         internal void GenerateEnd(string[] methods, XmlMapping[] xmlMappings, Type[] types)
         {
             GenerateReferencedMethods();
