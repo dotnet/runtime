@@ -34,10 +34,7 @@ namespace System.ServiceModel.Syndication
         private static readonly UriGenerator s_idGenerator = new UriGenerator();
         private const string Rfc3339LocalDateTimeFormat = "yyyy-MM-ddTHH:mm:sszzz";
         private const string Rfc3339UTCDateTimeFormat = "yyyy-MM-ddTHH:mm:ssZ";
-        private Type _feedType;
         private int _maxExtensionSize;
-        private bool _preserveAttributeExtensions;
-        private bool _preserveElementExtensions;
 
         public Atom10FeedFormatter()
             : this(typeof(SyndicationFeed))
@@ -57,8 +54,7 @@ namespace System.ServiceModel.Syndication
             }
 
             _maxExtensionSize = int.MaxValue;
-            _preserveAttributeExtensions = _preserveElementExtensions = true;
-            _feedType = feedTypeToCreate;
+            FeedType = feedTypeToCreate;
         }
 
         public Atom10FeedFormatter(SyndicationFeed feedToWrite)
@@ -66,8 +62,7 @@ namespace System.ServiceModel.Syndication
         {
             // No need to check that the parameter passed is valid - it is checked by the c'tor of the base class
             _maxExtensionSize = int.MaxValue;
-            _preserveAttributeExtensions = _preserveElementExtensions = true;
-            _feedType = feedToWrite.GetType();
+            FeedType = feedToWrite.GetType();
         }
 
         internal override TryParseDateTimeCallback GetDefaultDateTimeParser()
@@ -75,30 +70,16 @@ namespace System.ServiceModel.Syndication
             return DateTimeHelper.DefaultAtom10DateTimeParser;
         }
 
-        public bool PreserveAttributeExtensions
-        {
-            get { return _preserveAttributeExtensions; }
-            set { _preserveAttributeExtensions = value; }
-        }
+        public bool PreserveAttributeExtensions { get; set; } = true;
 
-        public bool PreserveElementExtensions
-        {
-            get { return _preserveElementExtensions; }
-            set { _preserveElementExtensions = value; }
-        }
+        public bool PreserveElementExtensions { get; set; } = true;
 
         public override string Version
         {
             get { return SyndicationVersions.Atom10; }
         }
 
-        protected Type FeedType
-        {
-            get
-            {
-                return _feedType;
-            }
-        }
+        protected Type FeedType { get; }
 
         public override bool CanRead(XmlReader reader)
         {
@@ -530,10 +511,7 @@ namespace System.ServiceModel.Syndication
             writer.WriteEndElement();
         }
 
-        protected override SyndicationFeed CreateFeedInstance()
-        {
-            return SyndicationFeedFormatter.CreateFeedInstance(_feedType);
-        }
+        protected override SyndicationFeed CreateFeedInstance() => CreateFeedInstance(FeedType);
 
         protected virtual SyndicationItem ReadItem(XmlReader reader, SyndicationFeed feed)
         {
@@ -729,13 +707,14 @@ namespace System.ServiceModel.Syndication
                         }
                         else if (!FeedUtils.IsXmlns(reader.LocalName, reader.NamespaceURI))
                         {
-                            if (_preserveAttributeExtensions)
+                            if (PreserveAttributeExtensions)
                             {
                                 result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                             }
                         }
                     }
                 }
+
                 reader.ReadStartElement();
                 if (!isEmpty)
                 {
@@ -745,7 +724,7 @@ namespace System.ServiceModel.Syndication
             }
             else
             {
-                return ReadTextContentFromHelper(reader, type, "//atom:feed/atom:entry/atom:content[@type]", _preserveAttributeExtensions);
+                return ReadTextContentFromHelper(reader, type, "//atom:feed/atom:entry/atom:content[@type]", PreserveAttributeExtensions);
             }
         }
 
@@ -788,7 +767,7 @@ namespace System.ServiceModel.Syndication
                                 string val = reader.Value;
                                 if (!TryParseAttribute(name, ns, val, result, this.Version))
                                 {
-                                    if (_preserveAttributeExtensions)
+                                    if (PreserveAttributeExtensions)
                                     {
                                         result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                                     }
@@ -833,7 +812,7 @@ namespace System.ServiceModel.Syndication
                             {
                                 if (!TryParseElement(reader, result, this.Version))
                                 {
-                                    if (_preserveElementExtensions)
+                                    if (PreserveElementExtensions)
                                     {
                                         CreateBufferIfRequiredAndWriteNode(ref buffer, ref extWriter, reader, _maxExtensionSize);
                                     }
@@ -902,7 +881,7 @@ namespace System.ServiceModel.Syndication
                         string val = reader.Value;
                         if (!TryParseAttribute(name, ns, val, result, this.Version))
                         {
-                            if (_preserveAttributeExtensions)
+                            if (PreserveAttributeExtensions)
                             {
                                 result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                             }
@@ -926,7 +905,7 @@ namespace System.ServiceModel.Syndication
                             {
                                 if (!TryParseElement(reader, result, this.Version))
                                 {
-                                    if (_preserveElementExtensions)
+                                    if (PreserveElementExtensions)
                                     {
                                         CreateBufferIfRequiredAndWriteNode(ref buffer, ref extWriter, reader, _maxExtensionSize);
                                     }
@@ -998,7 +977,7 @@ namespace System.ServiceModel.Syndication
                     }
                     else if (!FeedUtils.IsXmlns(reader.LocalName, reader.NamespaceURI))
                     {
-                        if (_preserveAttributeExtensions)
+                        if (PreserveAttributeExtensions)
                         {
                             link.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                         }
@@ -1024,7 +1003,7 @@ namespace System.ServiceModel.Syndication
                         {
                             continue;
                         }
-                        else if (!_preserveElementExtensions)
+                        else if (!PreserveElementExtensions)
                         {
                             reader.Skip();
                         }
@@ -1095,7 +1074,7 @@ namespace System.ServiceModel.Syndication
                     string val = reader.Value;
                     if (!TryParseAttribute(name, ns, val, result, this.Version))
                     {
-                        if (_preserveAttributeExtensions)
+                        if (PreserveAttributeExtensions)
                         {
                             result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                         }
@@ -1127,7 +1106,7 @@ namespace System.ServiceModel.Syndication
                         {
                             if (!TryParseElement(reader, result, this.Version))
                             {
-                                if (_preserveElementExtensions)
+                                if (PreserveElementExtensions)
                                 {
                                     CreateBufferIfRequiredAndWriteNode(ref buffer, ref extWriter, reader, _maxExtensionSize);
                                 }

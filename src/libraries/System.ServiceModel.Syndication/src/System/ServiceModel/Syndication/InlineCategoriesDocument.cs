@@ -15,8 +15,6 @@ namespace System.ServiceModel.Syndication
     public class InlineCategoriesDocument : CategoriesDocument
     {
         private Collection<SyndicationCategory> _categories;
-        private bool _isFixed;
-        private string _scheme;
 
         public InlineCategoriesDocument()
         {
@@ -37,8 +35,9 @@ namespace System.ServiceModel.Syndication
                     _categories.Add(category);
                 }
             }
-            _isFixed = isFixed;
-            _scheme = scheme;
+
+            IsFixed = isFixed;
+            Scheme = scheme;
         }
 
         public Collection<SyndicationCategory> Categories
@@ -53,17 +52,9 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public bool IsFixed
-        {
-            get { return _isFixed; }
-            set { _isFixed = value; }
-        }
+        public bool IsFixed { get; set; }
 
-        public string Scheme
-        {
-            get { return _scheme; }
-            set { _scheme = value; }
-        }
+        public string Scheme { get; set; }
 
         internal override bool IsInline
         {

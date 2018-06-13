@@ -16,9 +16,6 @@ namespace System.ServiceModel.Syndication
     public class SyndicationCategory : IExtensibleSyndicationObject
     {
         private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
-        private string _label;
-        private string _name;
-        private string _scheme;
 
         public SyndicationCategory()
             : this((string)null)
@@ -32,9 +29,9 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationCategory(string name, string scheme, string label)
         {
-            _name = name;
-            _scheme = scheme;
-            _label = label;
+            Name = name;
+            Scheme = scheme;
+            Label = label;
         }
 
         protected SyndicationCategory(SyndicationCategory source)
@@ -43,10 +40,10 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            _label = source._label;
-            _name = source._name;
-            _scheme = source._scheme;
 
+            Label = source.Label;
+            Name = source.Name;
+            Scheme = source.Scheme;
             _extensions = source._extensions.Clone();
         }
 
@@ -60,23 +57,11 @@ namespace System.ServiceModel.Syndication
             get { return _extensions.ElementExtensions; }
         }
 
-        public string Label
-        {
-            get { return _label; }
-            set { _label = value; }
-        }
+        public string Label { get; set; }
 
-        public string Name
-        {
-            get { return _name; }
-            set { _name = value; }
-        }
+        public string Name { get; set; }
 
-        public string Scheme
-        {
-            get { return _scheme; }
-            set { _scheme = value; }
-        }
+        public string Scheme { get; set; }
 
         public virtual SyndicationCategory Clone()
         {

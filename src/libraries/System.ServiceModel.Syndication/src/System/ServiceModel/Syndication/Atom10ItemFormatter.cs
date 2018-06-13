@@ -19,7 +19,6 @@ namespace System.ServiceModel.Syndication
     public class Atom10ItemFormatter : SyndicationItemFormatter, IXmlSerializable
     {
         private Atom10FeedFormatter _feedSerializer;
-        private Type _itemType;
         private bool _preserveAttributeExtensions;
         private bool _preserveElementExtensions;
 
@@ -42,18 +41,17 @@ namespace System.ServiceModel.Syndication
             _feedSerializer = new Atom10FeedFormatter();
             _feedSerializer.PreserveAttributeExtensions = _preserveAttributeExtensions = true;
             _feedSerializer.PreserveElementExtensions = _preserveElementExtensions = true;
-            _itemType = itemTypeToCreate;
 
+            ItemType = itemTypeToCreate;
         }
 
         public Atom10ItemFormatter(SyndicationItem itemToWrite)
             : base(itemToWrite)
         {
-            // No need to check that the parameter passed is valid - it is checked by the c'tor of the base class
             _feedSerializer = new Atom10FeedFormatter();
             _feedSerializer.PreserveAttributeExtensions = _preserveAttributeExtensions = true;
             _feedSerializer.PreserveElementExtensions = _preserveElementExtensions = true;
-            _itemType = itemToWrite.GetType();
+            ItemType = itemToWrite.GetType();
         }
 
         public bool PreserveAttributeExtensions
@@ -81,13 +79,7 @@ namespace System.ServiceModel.Syndication
             get { return SyndicationVersions.Atom10; }
         }
 
-        protected Type ItemType
-        {
-            get
-            {
-                return _itemType;
-            }
-        }
+        protected Type ItemType { get; }
 
         public override bool CanRead(XmlReader reader)
         {
@@ -149,10 +141,7 @@ namespace System.ServiceModel.Syndication
             writer.WriteEndElement();
         }
 
-        protected override SyndicationItem CreateItemInstance()
-        {
-            return SyndicationItemFormatter.CreateItemInstance(_itemType);
-        }
+        protected override SyndicationItem CreateItemInstance() => CreateItemInstance(ItemType);
 
         private void ReadItem(XmlReader reader)
         {

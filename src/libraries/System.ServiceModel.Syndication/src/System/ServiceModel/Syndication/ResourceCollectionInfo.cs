@@ -15,11 +15,8 @@ namespace System.ServiceModel.Syndication
     {
         private static IEnumerable<string> s_singleEmptyAccept;
         private Collection<string> _accepts;
-        private Uri _baseUri;
         private Collection<CategoriesDocument> _categories;
         private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
-        private Uri _link;
-        private TextSyndicationContent _title;
 
         public ResourceCollectionInfo()
         {
@@ -42,8 +39,8 @@ namespace System.ServiceModel.Syndication
 
         public ResourceCollectionInfo(TextSyndicationContent title, Uri link, IEnumerable<CategoriesDocument> categories, IEnumerable<string> accepts)
         {
-            _title = title ?? throw new ArgumentNullException(nameof(title));
-            _link = link ?? throw new ArgumentNullException(nameof(link));
+            Title = title ?? throw new ArgumentNullException(nameof(title));
+            Link = link ?? throw new ArgumentNullException(nameof(link));
     
             if (categories != null)
             {
@@ -53,6 +50,7 @@ namespace System.ServiceModel.Syndication
                     _categories.Add(category);
                 }
             }
+
             if (accepts != null)
             {
                 _accepts = new NullNotAllowedCollection<string>();
@@ -83,11 +81,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public Uri BaseUri
-        {
-            get { return _baseUri; }
-            set { _baseUri = value; }
-        }
+        public Uri BaseUri { get; set; }
 
         public Collection<CategoriesDocument> Categories
         {
@@ -109,17 +103,9 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public Uri Link
-        {
-            get { return _link; }
-            set { _link = value; }
-        }
+        public Uri Link { get; set; }
 
-        public TextSyndicationContent Title
-        {
-            get { return _title; }
-            set { _title = value; }
-        }
+        public TextSyndicationContent Title { get; set; }
 
         protected internal virtual InlineCategoriesDocument CreateInlineCategoriesDocument()
         {

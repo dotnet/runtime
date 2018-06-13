@@ -19,7 +19,6 @@ namespace System.ServiceModel.Syndication
     public class Rss20ItemFormatter : SyndicationItemFormatter, IXmlSerializable
     {
         private Rss20FeedFormatter _feedSerializer;
-        private Type _itemType;
         private bool _preserveAttributeExtensions;
         private bool _preserveElementExtensions;
         private bool _serializeExtensionsAsAtom;
@@ -44,8 +43,8 @@ namespace System.ServiceModel.Syndication
             _feedSerializer.PreserveAttributeExtensions = _preserveAttributeExtensions = true;
             _feedSerializer.PreserveElementExtensions = _preserveElementExtensions = true;
             _feedSerializer.SerializeExtensionsAsAtom = _serializeExtensionsAsAtom = true;
-            _itemType = itemTypeToCreate;
 
+            ItemType = itemTypeToCreate;
         }
 
         public Rss20ItemFormatter(SyndicationItem itemToWrite)
@@ -61,7 +60,7 @@ namespace System.ServiceModel.Syndication
             _feedSerializer.PreserveAttributeExtensions = _preserveAttributeExtensions = true;
             _feedSerializer.PreserveElementExtensions = _preserveElementExtensions = true;
             _feedSerializer.SerializeExtensionsAsAtom = _serializeExtensionsAsAtom = serializeExtensionsAsAtom;
-            _itemType = itemToWrite.GetType();
+            ItemType = itemToWrite.GetType();
         }
 
         public bool PreserveAttributeExtensions
@@ -99,13 +98,7 @@ namespace System.ServiceModel.Syndication
             get { return SyndicationVersions.Rss20; }
         }
 
-        protected Type ItemType
-        {
-            get
-            {
-                return _itemType;
-            }
-        }
+        protected Type ItemType { get; }
 
         public override bool CanRead(XmlReader reader)
         {
@@ -167,10 +160,7 @@ namespace System.ServiceModel.Syndication
             writer.WriteEndElement();
         }
 
-        protected override SyndicationItem CreateItemInstance()
-        {
-            return SyndicationItemFormatter.CreateItemInstance(_itemType);
-        }
+        protected override SyndicationItem CreateItemInstance() => CreateItemInstance(ItemType);
 
         private void ReadItem(XmlReader reader)
         {
