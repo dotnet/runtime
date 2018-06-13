@@ -2376,7 +2376,9 @@ lookup_start:
 
 	if (!code) {
 		if (mono_class_is_open_constructed_type (m_class_get_byval_arg (method->klass))) {
-			mono_error_set_invalid_operation (error, "Could not execute the method because the containing type is not fully instantiated.");
+			char *full_name = mono_type_get_full_name (method->klass);
+			mono_error_set_invalid_operation (error, "Could not execute the method because the containing type '%s', is not fully instantiated.", full_name);
+			g_free (full_name);
 			return NULL;
 		}
 
