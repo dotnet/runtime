@@ -14,8 +14,6 @@ namespace System.ServiceModel.Syndication
 {
     public class ReferencedCategoriesDocument : CategoriesDocument
     {
-        private Uri _link;
-
         public ReferencedCategoriesDocument()
         {
         }
@@ -23,14 +21,10 @@ namespace System.ServiceModel.Syndication
         public ReferencedCategoriesDocument(Uri link)
             : base()
         {
-            _link = link ?? throw new ArgumentNullException(nameof(link));
+            Link = link ?? throw new ArgumentNullException(nameof(link));
         }
 
-        public Uri Link
-        {
-            get { return _link; }
-            set { _link = value; }
-        }
+        public Uri Link { get; set; }
 
         internal override bool IsInline
         {

@@ -11,11 +11,10 @@ namespace System.ServiceModel.Syndication
     public class UrlSyndicationContent : SyndicationContent
     {
         private string _mediaType;
-        private Uri _url;
 
         public UrlSyndicationContent(Uri url, string mediaType) : base()
         {
-            _url = url ?? throw new ArgumentNullException(nameof(url));
+            Url = url ?? throw new ArgumentNullException(nameof(url));
             _mediaType = mediaType;
         }
 
@@ -26,8 +25,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            _url = source._url;
 
+            Url = source.Url;
             _mediaType = source._mediaType;
         }
 
@@ -36,10 +35,7 @@ namespace System.ServiceModel.Syndication
             get { return _mediaType; }
         }
 
-        public Uri Url
-        {
-            get { return _url; }
-        }
+        public Uri Url { get; }
 
         public override SyndicationContent Clone()
         {
@@ -48,7 +44,7 @@ namespace System.ServiceModel.Syndication
 
         protected override void WriteContentsTo(XmlWriter writer)
         {
-            writer.WriteAttributeString(Atom10Constants.SourceTag, string.Empty, FeedUtils.GetUriString(_url));
+            writer.WriteAttributeString(Atom10Constants.SourceTag, string.Empty, FeedUtils.GetUriString(Url));
         }
     }
 }

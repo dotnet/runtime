@@ -19,27 +19,12 @@ namespace System.ServiceModel.Syndication
         );        
 
         private Collection<SyndicationPerson> _authors;
-        private Uri _baseUri;
         private Collection<SyndicationCategory> _categories;
         private Collection<SyndicationPerson> _contributors;
-        private TextSyndicationContent _copyright;
-        private TextSyndicationContent _description;
         private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
-        private string _generator;
-        private string _id;
-        private Uri _imageUrl;
         private IEnumerable<SyndicationItem> _items;
-        private string _language;
         private DateTimeOffset _lastUpdatedTime;
         private Collection<SyndicationLink> _links;
-        private TextSyndicationContent _title;
-
-        // optional RSS tags
-        private SyndicationLink _documentation;
-        private TimeSpan? _timeToLive;
-        private Collection<int> _skipHours;
-        private Collection<string> _skipDays;
-        private SyndicationTextInput _textInput;
 
         public SyndicationFeed()
             : this((IEnumerable<SyndicationItem>)null)
@@ -70,17 +55,17 @@ namespace System.ServiceModel.Syndication
         {
             if (title != null)
             {
-                _title = new TextSyndicationContent(title);
+                Title = new TextSyndicationContent(title);
             }
             if (description != null)
             {
-                _description = new TextSyndicationContent(description);
+                Description = new TextSyndicationContent(description);
             }
             if (feedAlternateLink != null)
             {
                 this.Links.Add(SyndicationLink.CreateAlternateLink(feedAlternateLink));
             }
-            _id = id;
+            Id = id;
             _lastUpdatedTime = lastUpdatedTime;
             _items = items;
         }
@@ -95,19 +80,18 @@ namespace System.ServiceModel.Syndication
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
             _contributors = FeedUtils.ClonePersons(source._contributors);
-            _copyright = FeedUtils.CloneTextContent(source._copyright);
-            _description = FeedUtils.CloneTextContent(source._description);
+            Copyright = FeedUtils.CloneTextContent(source.Copyright);
+            Description = FeedUtils.CloneTextContent(source.Description);
             _extensions = source._extensions.Clone();
-            _generator = source._generator;
-            _id = source._id;
-            _imageUrl = source._imageUrl;
-            _language = source._language;
+            Generator = source.Generator;
+            Id = source.Id;
+            ImageUrl = source.ImageUrl;
+            Language = source.Language;
             _lastUpdatedTime = source._lastUpdatedTime;
             _links = FeedUtils.CloneLinks(source._links);
-            _title = FeedUtils.CloneTextContent(source._title);
-            _baseUri = source._baseUri;
-            IList<SyndicationItem> srcList = source._items as IList<SyndicationItem>;
-            if (srcList != null)
+            Title = FeedUtils.CloneTextContent(source.Title);
+            BaseUri = source.BaseUri;
+            if (source._items is IList<SyndicationItem> srcList)
             {
                 Collection<SyndicationItem> tmp = new NullNotAllowedCollection<SyndicationItem>();
                 for (int i = 0; i < srcList.Count; ++i)
@@ -145,11 +129,7 @@ namespace System.ServiceModel.Syndication
         }
 
 
-        public Uri BaseUri
-        {
-            get { return _baseUri; }
-            set { _baseUri = value; }
-        }
+        public Uri BaseUri { get; set; }
 
         public Collection<SyndicationCategory> Categories
         {
@@ -175,40 +155,20 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public TextSyndicationContent Copyright
-        {
-            get { return _copyright; }
-            set { _copyright = value; }
-        }
+        public TextSyndicationContent Copyright { get; set; }
 
-        public TextSyndicationContent Description
-        {
-            get { return _description; }
-            set { _description = value; }
-        }
+        public TextSyndicationContent Description { get; set; }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
             get { return _extensions.ElementExtensions; }
         }
 
-        public string Generator
-        {
-            get { return _generator; }
-            set { _generator = value; }
-        }
+        public string Generator { get; set; }
 
-        public string Id
-        {
-            get { return _id; }
-            set { _id = value; }
-        }
+        public string Id { get; set; }
 
-        public Uri ImageUrl
-        {
-            get { return _imageUrl; }
-            set { _imageUrl = value; }
-        }
+        public Uri ImageUrl { get; set; }
 
         public IEnumerable<SyndicationItem> Items
         {
@@ -216,11 +176,7 @@ namespace System.ServiceModel.Syndication
             set => _items = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        public string Language
-        {
-            get { return _language; }
-            set { _language = value; }
-        }
+        public string Language { get; set; }
 
         internal Exception LastUpdatedTimeException { get; set; }
 
@@ -254,44 +210,21 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public TextSyndicationContent Title
-        {
-            get { return _title; }
-            set { _title = value; }
-        }
+        public TextSyndicationContent Title { get; set; }
 
-        internal SyndicationLink InternalDocumentation => _documentation;
+        internal SyndicationLink InternalDocumentation { get; private set; }
 
         public SyndicationLink Documentation
         {
-            get
-            {
-                if (_documentation == null)
-                {
-                    _documentation = TryReadDocumentationFromExtension(ElementExtensions);
-                }
-
-                return _documentation;
-            }
-            set
-            {
-                _documentation = value;
-            }
+            get => InternalDocumentation ?? (InternalDocumentation = TryReadDocumentationFromExtension(ElementExtensions));
+            set => InternalDocumentation = value;
         }
 
-        internal TimeSpan? InternalTimeToLive => _timeToLive;
+        internal TimeSpan? InternalTimeToLive { get; private set; }
 
         public TimeSpan? TimeToLive
         {
-            get
-            {
-                if (!_timeToLive.HasValue)
-                {
-                    _timeToLive = TryReadTimeToLiveFromExtension(ElementExtensions);
-                }
-
-                return _timeToLive;
-            }
+            get => InternalTimeToLive ?? (InternalTimeToLive = TryReadTimeToLiveFromExtension(ElementExtensions));
             set
             {
                 if (value.HasValue && (value.Value.Milliseconds != 0 || value.Value.Seconds != 0 || value.Value.TotalMinutes < 0))
@@ -299,61 +232,50 @@ namespace System.ServiceModel.Syndication
                     throw new ArgumentOutOfRangeException(nameof(value), value.Value, SR.InvalidTimeToLiveValue);
                 }
 
-                _timeToLive = value;
+                InternalTimeToLive = value;
             }
         }
 
-        internal Collection<int> InternalSkipHours => _skipHours;
+        internal Collection<int> InternalSkipHours { get; private set; }
 
         public Collection<int> SkipHours
         {
             get
             {
-                if (_skipHours == null)
+                if (InternalSkipHours == null)
                 {
                     var skipHours = new Collection<int>();
                     TryReadSkipHoursFromExtension(ElementExtensions, skipHours);
-                    _skipHours = skipHours;
+                    InternalSkipHours = skipHours;
                 }
 
-                return _skipHours;
+                return InternalSkipHours;
             }
         }
 
-        internal Collection<string> InternalSkipDays => _skipDays;
+        internal Collection<string> InternalSkipDays { get; private set; }
 
         public Collection<string> SkipDays
         {
             get
             {
-                if (_skipDays == null)
+                if (InternalSkipDays == null)
                 {
                     var skipDays = new Collection<string>();
                     TryReadSkipDaysFromExtension(ElementExtensions, skipDays);
-                    _skipDays = skipDays;
+                    InternalSkipDays = skipDays;
                 }
 
-                return _skipDays;
+                return InternalSkipDays;
             }
         }
 
-        internal SyndicationTextInput InternalTextInput => _textInput;
+        internal SyndicationTextInput InternalTextInput { get; private set; }
 
         public SyndicationTextInput TextInput
         {
-            get
-            {
-                if (_textInput == null)
-                {
-                    _textInput = TryReadTextInputFromExtension(ElementExtensions);
-                }
-
-                return _textInput;
-            }
-            set
-            {
-                _textInput = value;
-            }
+            get => InternalTextInput ?? (InternalTextInput = TryReadTextInputFromExtension(ElementExtensions));
+            set => InternalTextInput = value;
         }
 
         private SyndicationLink TryReadDocumentationFromExtension(SyndicationElementExtensionCollection elementExtensions)

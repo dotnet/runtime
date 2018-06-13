@@ -13,9 +13,7 @@ namespace System.ServiceModel.Syndication
 {
     public class ServiceDocument : IExtensibleSyndicationObject
     {
-        private Uri _baseUri;
         private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
-        private string _language;
         private Collection<Workspace> _workspaces;
 
         public ServiceDocument() : this(null)
@@ -39,22 +37,14 @@ namespace System.ServiceModel.Syndication
             get { return _extensions.AttributeExtensions; }
         }
 
-        public Uri BaseUri
-        {
-            get { return _baseUri; }
-            set { _baseUri = value; }
-        }
+        public Uri BaseUri { get; set; }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
             get { return _extensions.ElementExtensions; }
         }
 
-        public string Language
-        {
-            get { return _language; }
-            set { _language = value; }
-        }
+        public string Language { get; set; }
 
         public Collection<Workspace> Workspaces
         {

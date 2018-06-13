@@ -13,10 +13,8 @@ namespace System.ServiceModel.Syndication
 {
     public class Workspace : IExtensibleSyndicationObject
     {
-        private Uri _baseUri;
         private Collection<ResourceCollectionInfo> _collections;
         private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
-        private TextSyndicationContent _title;
 
         public Workspace()
         {
@@ -29,7 +27,7 @@ namespace System.ServiceModel.Syndication
 
         public Workspace(TextSyndicationContent title, IEnumerable<ResourceCollectionInfo> collections)
         {
-            _title = title;
+            Title = title;
             if (collections != null)
             {
                 _collections = new NullNotAllowedCollection<ResourceCollectionInfo>();
@@ -48,11 +46,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public Uri BaseUri
-        {
-            get { return _baseUri; }
-            set { _baseUri = value; }
-        }
+        public Uri BaseUri { get; set; }
 
         public Collection<ResourceCollectionInfo> Collections
         {
@@ -74,11 +68,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public TextSyndicationContent Title
-        {
-            get { return _title; }
-            set { _title = value; }
-        }
+        public TextSyndicationContent Title { get; set; }
 
         protected internal virtual ResourceCollectionInfo CreateResourceCollection()
         {

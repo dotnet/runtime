@@ -15,7 +15,6 @@ namespace System.ServiceModel.Syndication
     public class XmlSyndicationContent : SyndicationContent
     {
         private XmlBuffer _contentBuffer;
-        private SyndicationElementExtension _extension;
         private string _type;
 
         // Saves the element in the reader to the buffer (attributes preserved)
@@ -60,19 +59,19 @@ namespace System.ServiceModel.Syndication
         public XmlSyndicationContent(string type, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
             _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
-            _extension = new SyndicationElementExtension(dataContractExtension, dataContractSerializer);
+            Extension = new SyndicationElementExtension(dataContractExtension, dataContractSerializer);
         }
 
         public XmlSyndicationContent(string type, object xmlSerializerExtension, XmlSerializer serializer)
         {
             _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
-            _extension = new SyndicationElementExtension(xmlSerializerExtension, serializer);
+            Extension = new SyndicationElementExtension(xmlSerializerExtension, serializer);
         }
 
         public XmlSyndicationContent(string type, SyndicationElementExtension extension)
         {
             _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
-            _extension = extension ?? throw new ArgumentNullException(nameof(extension));
+            Extension = extension ?? throw new ArgumentNullException(nameof(extension));
         }
 
         protected XmlSyndicationContent(XmlSyndicationContent source)
@@ -84,17 +83,11 @@ namespace System.ServiceModel.Syndication
             }
 
             _contentBuffer = source._contentBuffer;
-            _extension = source._extension;
+            Extension = source.Extension;
             _type = source._type;
         }
 
-        public SyndicationElementExtension Extension
-        {
-            get
-            {
-                return _extension;
-            }
-        }
+        public SyndicationElementExtension Extension { get; }
 
         public override string Type
         {
@@ -123,9 +116,9 @@ namespace System.ServiceModel.Syndication
             {
                 dataContractSerializer = new DataContractSerializer(typeof(TContent));
             }
-            if (_extension != null)
+            if (Extension != null)
             {
-                return _extension.GetObject<TContent>(dataContractSerializer);
+                return Extension.GetObject<TContent>(dataContractSerializer);
             }
             else
             {
@@ -145,9 +138,9 @@ namespace System.ServiceModel.Syndication
             {
                 serializer = new XmlSerializer(typeof(TContent));
             }
-            if (_extension != null)
+            if (Extension != null)
             {
-                return _extension.GetObject<TContent>(serializer);
+                return Extension.GetObject<TContent>(serializer);
             }
             else
             {
@@ -168,10 +161,10 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(writer));
             }
-            if (_extension != null)
 
+            if (Extension != null)
             {
-                _extension.WriteTo(writer);
+                Extension.WriteTo(writer);
             }
             else if (_contentBuffer != null)
             {
