@@ -9,15 +9,6 @@ using System.Xml;
 
 namespace System.ServiceModel.Syndication
 {
-<<<<<<< HEAD
-    using System;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Runtime.Serialization;
-    using System.Xml;
-
-=======
->>>>>>> Misc cleanup in Syndication
     public delegate bool TryParseDateTimeCallback(XmlDateTimeData data, out DateTimeOffset dateTimeOffset);
     public delegate bool TryParseUriCallback(XmlUriData data, out Uri uri);
 
@@ -522,10 +513,7 @@ namespace System.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationItem item)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            Debug.Assert(item != null);
 
             CloseBuffer(buffer, writer);
             item.LoadElementExtensions(buffer);
@@ -533,10 +521,7 @@ namespace System.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationCategory category)
         {
-            if (category == null)
-            {
-                throw new ArgumentNullException(nameof(category));
-            }
+            Debug.Assert(category != null);
 
             CloseBuffer(buffer, writer);
             category.LoadElementExtensions(buffer);
@@ -544,10 +529,7 @@ namespace System.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationLink link)
         {
-            if (link == null)
-            {
-                throw new ArgumentNullException(nameof(link));
-            }
+            Debug.Assert(link != null);
 
             CloseBuffer(buffer, writer);
             link.LoadElementExtensions(buffer);
@@ -555,10 +537,7 @@ namespace System.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationPerson person)
         {
-            if (person == null)
-            {
-                throw new ArgumentNullException(nameof(person));
-            }
+            Debug.Assert(person != null);
 
             CloseBuffer(buffer, writer);
             person.LoadElementExtensions(buffer);

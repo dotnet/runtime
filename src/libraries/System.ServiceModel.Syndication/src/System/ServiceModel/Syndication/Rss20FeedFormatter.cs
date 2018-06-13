@@ -14,21 +14,6 @@ using System.Xml.Serialization;
 
 namespace System.ServiceModel.Syndication
 {
-<<<<<<< HEAD
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
-    using System.Runtime;
-    using System.Text;
-    using System.Xml;
-    using System.Xml.Schema;
-    using System.Xml.Serialization;
-    using System.Runtime.CompilerServices;
-
-=======
->>>>>>> Misc cleanup in Syndication
     [XmlRoot(ElementName = Rss20Constants.RssTag, Namespace = Rss20Constants.Rss20Namespace)]
     public class Rss20FeedFormatter : SyndicationFeedFormatter, IXmlSerializable
     {

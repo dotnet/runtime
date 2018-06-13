@@ -20,11 +20,7 @@ namespace System.ServiceModel.Syndication
 
         protected UrlSyndicationContent(UrlSyndicationContent source) : base(source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
+            Debug.Assert(source != null, "The base constructor already checks if source is valid.");
             Url = source.Url;
             _mediaType = source._mediaType;
         }
