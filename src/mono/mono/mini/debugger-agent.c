@@ -4456,16 +4456,70 @@ get_notify_debugger_of_wait_completion_method (void)
 	return notify_debugger_of_wait_completion_method_cache;
 }
 
+static gboolean
+begin_breakpoint_processing (DebuggerTlsData *tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal)
+{
+	/*
+	 * Skip the instruction causing the breakpoint signal.
+	 */
+	if (from_signal)
+		mono_arch_skip_breakpoint (ctx, ji);
+
+	if (tls->disable_breakpoints)
+		return FALSE;
+	return TRUE;
+}
+
+typedef struct {
+	GSList *bp_events, *ss_events, *enter_leave_events;
+	EventKind kind;
+	int suspend_policy;
+} BreakPointEvents;
+
+static void*
+create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, EventKind kind)
+{
+	int suspend_policy = 0;
+	BreakPointEvents *evts = g_new0 (BreakPointEvents, 1);
+	if (ss_reqs && ss_reqs->len > 0)
+		evts->ss_events = create_event_list (EVENT_KIND_STEP, ss_reqs, ji, NULL, &suspend_policy);
+	else if (bp_reqs && bp_reqs->len > 0)
+		evts->bp_events = create_event_list (EVENT_KIND_BREAKPOINT, bp_reqs, ji, NULL, &suspend_policy);
+	else if (kind != EVENT_KIND_BREAKPOINT)
+		evts->enter_leave_events = create_event_list (kind, NULL, ji, NULL, &suspend_policy);
+
+	evts->kind = kind;
+	evts->suspend_policy = suspend_policy;
+	return evts;
+}
+
+static void
+process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset)
+{
+	BreakPointEvents *evts = _evts;
+	/*
+	 * FIXME: The first event will suspend, so the second will only be sent after the
+	 * resume.
+	 */
+	if (evts->ss_events)
+		process_event (EVENT_KIND_STEP, method, il_offset, ctx, evts->ss_events, evts->suspend_policy);
+	if (evts->bp_events)
+		process_event (evts->kind, method, il_offset, ctx, evts->bp_events, evts->suspend_policy);
+	if (evts->enter_leave_events)
+		process_event (evts->kind, method, il_offset, ctx, evts->enter_leave_events, evts->suspend_policy);
+
+	g_free (evts);
+}
+
 static void
 process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 {
 	MonoJitInfo *ji;
 	guint8 *ip;
-	int i, suspend_policy;
+	int i;
 	guint32 native_offset;
 	MonoBreakpoint *bp;
 	GPtrArray *bp_reqs, *ss_reqs_orig, *ss_reqs;
-	GSList *bp_events = NULL, *ss_events = NULL, *enter_leave_events = NULL;
 	EventKind kind = EVENT_KIND_BREAKPOINT;
 	MonoContext *ctx = &tls->restore_state.ctx;
 	MonoMethod *method;
@@ -4485,13 +4539,10 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 	/* Compute the native offset of the breakpoint from the ip */
 	native_offset = ip - (guint8*)ji->code_start;
 
-	/* 
-	 * Skip the instruction causing the breakpoint signal.
-	 */
-	if (from_signal)
-		mono_arch_skip_breakpoint (ctx, ji);
+	if (!begin_breakpoint_processing (tls, ctx, ji, from_signal))
+		return;
 
-	if (method->wrapper_type || tls->disable_breakpoints)
+	if (method->wrapper_type)
 		return;
 
 	bp_reqs = g_ptr_array_new ();
@@ -4583,29 +4634,15 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 		};
 		ss_start (ss_req, &args);
 	}
-	
-	if (ss_reqs->len > 0)
-		ss_events = create_event_list (EVENT_KIND_STEP, ss_reqs, ji, NULL, &suspend_policy);
-	else if (bp_reqs->len > 0)
-		bp_events = create_event_list (EVENT_KIND_BREAKPOINT, bp_reqs, ji, NULL, &suspend_policy);
-	else if (kind != EVENT_KIND_BREAKPOINT)
-		enter_leave_events = create_event_list (kind, NULL, ji, NULL, &suspend_policy);
+
+	void *events = create_breakpoint_events (ss_reqs, bp_reqs, ji, kind);
 
 	mono_loader_unlock ();
 
 	g_ptr_array_free (bp_reqs, TRUE);
 	g_ptr_array_free (ss_reqs, TRUE);
 
-	/* 
-	 * FIXME: The first event will suspend, so the second will only be sent after the
-	 * resume.
-	 */
-	if (ss_events)
-		process_event (EVENT_KIND_STEP, method, 0, ctx, ss_events, suspend_policy);
-	if (bp_events)
-		process_event (kind, method, 0, ctx, bp_events, suspend_policy);
-	if (enter_leave_events)
-		process_event (kind, method, 0, ctx, enter_leave_events, suspend_policy);
+	process_breakpoint_events (events, method, ctx, 0);
 }
 
 /* Process a breakpoint/single step event after resuming from a signal handler */
@@ -4749,9 +4786,8 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 	MonoJitInfo *ji;
 	guint8 *ip;
 	GPtrArray *reqs;
-	int il_offset, suspend_policy;
+	int il_offset;
 	MonoDomain *domain;
-	GSList *events;
 	MonoContext *ctx = &tls->restore_state.ctx;
 	MonoMethod *method;
 	SeqPoint sp;
@@ -4855,13 +4891,13 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 
 	g_ptr_array_add (reqs, ss_req->req);
 
-	events = create_event_list (EVENT_KIND_STEP, reqs, ji, NULL, &suspend_policy);
+	void *bp_events = create_breakpoint_events (reqs, NULL, ji, EVENT_KIND_BREAKPOINT);
 
 	g_ptr_array_free (reqs, TRUE);
 
 	mono_loader_unlock ();
 
-	process_event (EVENT_KIND_STEP, jinfo_get_method (ji), il_offset, ctx, events, suspend_policy);
+	process_breakpoint_events (bp_events, method, ctx, il_offset);
 
  exit:
 	ss_req_release (ss_req);
