@@ -2464,6 +2464,8 @@ map_to_reg_reg_op (int op)
 		return OP_IXOR;
 	case OP_MUL_IMM:
 		return OP_IMUL;
+	case OP_LMUL_IMM:
+		return OP_LMUL;
 	case OP_LOAD_MEMBASE:
 		return OP_LOAD_MEMINDEX;
 	case OP_LOADI4_MEMBASE:
@@ -2678,6 +2680,7 @@ loop_start:
 			break;
 		case OP_IMUL_IMM:
 		case OP_MUL_IMM:
+		CASE_PPC64 (OP_LMUL_IMM)
 			if (ins->inst_imm == 1) {
 				ins->opcode = OP_MOVE;
 				break;
