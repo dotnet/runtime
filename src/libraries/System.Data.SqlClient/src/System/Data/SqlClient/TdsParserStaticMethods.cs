@@ -63,8 +63,12 @@ namespace System.Data.SqlClient
             {
                 // Pick up the process Id from the current process instead of randomly generating it.
                 // This would be helpful while tracing application related issues.
-                int processId = System.Diagnostics.Process.GetCurrentProcess().Id;
-                Threading.Interlocked.CompareExchange(ref s_currentProcessId, processId, NoProcessId);
+                int processId;
+                using (System.Diagnostics.Process p = System.Diagnostics.Process.GetCurrentProcess())
+                {
+                    processId = p.Id;
+                }
+                System.Threading.Volatile.Write(ref s_currentProcessId, processId);
             }
             return s_currentProcessId;
         }
