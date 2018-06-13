@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#ifdef _AIX
-// For getline (declare this before stdio)
-#define _GETDELIM 1
-#endif
-
 #include "pal_compiler.h"
 #include "pal_config.h"
 #include "pal_errno.h"
@@ -47,6 +42,11 @@
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
+// This function declaration is hidden behind `_XOPEN_SOURCE=700`, but we need
+// `_ALL_SOURCE` to build the runtime, and that resets that definition to 600.
+// Instead of trying to wrangle ifdefs in system headers with more definitions,
+// just declare it here.
+extern ssize_t  getline(char **, size_t *, FILE *);
 #endif
 
 #if HAVE_STAT64
