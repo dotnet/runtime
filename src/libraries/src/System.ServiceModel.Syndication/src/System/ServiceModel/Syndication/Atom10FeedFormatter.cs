@@ -123,10 +123,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(reader));
             }
-            TraceFeedReadBegin();
 
             ReadFeed(reader);
-            TraceFeedReadEnd();
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
@@ -136,22 +134,18 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(writer));
             }
-            TraceFeedWriteBegin();
 
             WriteFeed(writer);
-            TraceFeedWriteEnd();
         }
 
         public override void ReadFrom(XmlReader reader)
         {
-            TraceFeedReadBegin();
             if (!CanRead(reader))
             {
                 throw new XmlException(SR.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
             }
 
             ReadFeed(reader);
-            TraceFeedReadEnd();
         }
 
         public override void WriteTo(XmlWriter writer)
@@ -160,12 +154,10 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(writer));
             }
-            TraceFeedWriteBegin();
 
             writer.WriteStartElement(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
             WriteFeed(writer);
             writer.WriteEndElement();
-            TraceFeedWriteEnd();
         }
 
         internal static void ReadCategory(XmlReader reader, SyndicationCategory category, string version, bool preserveAttributeExtensions, bool preserveElementExtensions, int maxExtensionSize)
@@ -204,10 +196,6 @@ namespace System.ServiceModel.Syndication
                             {
                                 category.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
                             }
-                            else
-                            {
-                                TraceSyndicationElementIgnoredOnRead(reader);
-                            }
                         }
                     }
                 }
@@ -228,7 +216,6 @@ namespace System.ServiceModel.Syndication
                         }
                         else if (!preserveElementExtensions)
                         {
-                            TraceSyndicationElementIgnoredOnRead(reader);
                             reader.Skip();
                         }
                         else
@@ -560,9 +547,7 @@ namespace System.ServiceModel.Syndication
             }
 
             SyndicationItem item = CreateItem(feed);
-            TraceItemReadBegin();
             ReadItemFrom(reader, item, feed.BaseUri);
-            TraceItemReadEnd();
             return item;
         }
 
@@ -589,11 +574,9 @@ namespace System.ServiceModel.Syndication
 
         protected virtual void WriteItem(XmlWriter writer, SyndicationItem item, Uri feedBaseUri)
         {
-            TraceItemWriteBegin();
             writer.WriteStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace);
             WriteItemContents(writer, item, feedBaseUri);
             writer.WriteEndElement();
-            TraceItemWriteEnd();
         }
 
         protected virtual void WriteItems(XmlWriter writer, IEnumerable<SyndicationItem> items, Uri feedBaseUri)
@@ -654,10 +637,6 @@ namespace System.ServiceModel.Syndication
                             attrs = new Dictionary<XmlQualifiedName, string>();
                         }
                         attrs.Add(new XmlQualifiedName(name, ns), value);
-                    }
-                    else
-                    {
-                        TraceSyndicationElementIgnoredOnRead(reader);
                     }
                 }
             }
@@ -754,10 +733,6 @@ namespace System.ServiceModel.Syndication
                             {
                                 result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                             }
-                            else
-                            {
-                                TraceSyndicationElementIgnoredOnRead(reader);
-                            }
                         }
                     }
                 }
@@ -817,10 +792,6 @@ namespace System.ServiceModel.Syndication
                                     {
                                         result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                                     }
-                                    else
-                                    {
-                                        TraceSyndicationElementIgnoredOnRead(reader);
-                                    }
                                 }
                             }
                         }
@@ -868,7 +839,6 @@ namespace System.ServiceModel.Syndication
                                     }
                                     else
                                     {
-                                        TraceSyndicationElementIgnoredOnRead(reader);
                                         reader.Skip();
                                     }
                                 }
@@ -936,10 +906,6 @@ namespace System.ServiceModel.Syndication
                             {
                                 result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                             }
-                            else
-                            {
-                                TraceSyndicationElementIgnoredOnRead(reader);
-                            }
                         }
                     }
                 }
@@ -966,7 +932,6 @@ namespace System.ServiceModel.Syndication
                                     }
                                     else
                                     {
-                                        TraceSyndicationElementIgnoredOnRead(reader);
                                         reader.Skip();
                                     }
                                 }
@@ -1037,10 +1002,6 @@ namespace System.ServiceModel.Syndication
                         {
                             link.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                         }
-                        else
-                        {
-                            TraceSyndicationElementIgnoredOnRead(reader);
-                        }
                     }
                 }
             }
@@ -1065,7 +1026,6 @@ namespace System.ServiceModel.Syndication
                         }
                         else if (!_preserveElementExtensions)
                         {
-                            SyndicationFeedFormatter.TraceSyndicationElementIgnoredOnRead(reader);
                             reader.Skip();
                         }
                         else
@@ -1139,10 +1099,6 @@ namespace System.ServiceModel.Syndication
                         {
                             result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                         }
-                        else
-                        {
-                            TraceSyndicationElementIgnoredOnRead(reader);
-                        }
                     }
                 }
             }
@@ -1177,7 +1133,6 @@ namespace System.ServiceModel.Syndication
                                 }
                                 else
                                 {
-                                    TraceSyndicationElementIgnoredOnRead(reader);
                                     reader.Skip();
                                 }
                             }

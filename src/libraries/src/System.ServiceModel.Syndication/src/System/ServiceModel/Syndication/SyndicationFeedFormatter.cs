@@ -578,42 +578,6 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal static void TraceFeedReadBegin()
-        {
-        }
-
-        internal static void TraceFeedReadEnd()
-        {
-        }
-
-        internal static void TraceFeedWriteBegin()
-        {
-        }
-
-        internal static void TraceFeedWriteEnd()
-        {
-        }
-
-        internal static void TraceItemReadBegin()
-        {
-        }
-
-        internal static void TraceItemReadEnd()
-        {
-        }
-
-        internal static void TraceItemWriteBegin()
-        {
-        }
-
-        internal static void TraceItemWriteEnd()
-        {
-        }
-
-        internal static void TraceSyndicationElementIgnoredOnRead(XmlReader reader)
-        {
-        }
-
         protected abstract SyndicationFeed CreateFeedInstance();
 
         private static T GetNonNullValue<T>(T value, string errorMsg)
