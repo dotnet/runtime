@@ -19,12 +19,12 @@ namespace System
 
         public int Compare(object a, object b)
         {
-            string sa = a as string;
-            string sb = b as string;
-            if (sa != null && sb != null)
+            if (a is string sa && b is string sb)
+            {
                 return _compareInfo.Compare(sa, sb);
-            else
-                return Comparer.Default.Compare(a, b);
+            }
+            
+            return Comparer.Default.Compare(a, b);
         }
     }
 }

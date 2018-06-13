@@ -164,12 +164,8 @@ namespace System.ComponentModel.Design.Serialization
 
             public override bool Equals(object o)
             {
-                if (o is RelationshipEntry e)
-                {
-                    return this == e;
-                }
-
-                return false;
+                Debug.Assert(o is RelationshipEntry, "This is only called indirectly from a dictionary only containing RelationshipEntry structs.");
+                return this == (RelationshipEntry)o;
             }
 
             public static bool operator ==(RelationshipEntry re1, RelationshipEntry re2)
