@@ -20,25 +20,25 @@ enum
     SecondsToNanoSeconds = 1000000000 // 10^9
 };
 
-static void ConvertUTimBuf(const UTimBuf& pal, utimbuf& native)
+static void ConvertUTimBuf(const UTimBuf* pal, struct utimbuf* native)
 {
-    native.actime = static_cast<time_t>(pal.AcTime);
-    native.modtime = static_cast<time_t>(pal.ModTime);
+    native->actime = (time_t)(pal->AcTime);
+    native->modtime = (time_t)(pal->ModTime);
 }
 
-extern "C" int32_t SystemNative_UTime(const char* path, UTimBuf* times)
+int32_t SystemNative_UTime(const char* path, UTimBuf* times)
 {
-    assert(times != nullptr);
+    assert(times != NULL);
 
-    utimbuf temp;
-    ConvertUTimBuf(*times, temp);
+    struct utimbuf temp;
+    ConvertUTimBuf(times, &temp);
 
     int32_t result;
     while (CheckInterrupted(result = utime(path, &temp)));
     return result;
 }
 
-extern "C" int32_t SystemNative_GetTimestampResolution(uint64_t* resolution)
+int32_t SystemNative_GetTimestampResolution(uint64_t* resolution)
 {
     assert(resolution);
 
@@ -62,7 +62,7 @@ extern "C" int32_t SystemNative_GetTimestampResolution(uint64_t* resolution)
     mach_timebase_info_data_t mtid;
     if (mach_timebase_info(&mtid) == KERN_SUCCESS)
     {
-        *resolution = SecondsToNanoSeconds * (static_cast<uint64_t>(mtid.denom) / static_cast<uint64_t>(mtid.numer));
+        *resolution = SecondsToNanoSeconds * ((uint64_t)(mtid.denom) / (uint64_t)(mtid.numer));
         return 1;
     }
     else
@@ -78,7 +78,7 @@ extern "C" int32_t SystemNative_GetTimestampResolution(uint64_t* resolution)
 #endif
 }
 
-extern "C" int32_t SystemNative_GetTimestamp(uint64_t* timestamp)
+int32_t SystemNative_GetTimestamp(uint64_t* timestamp)
 {
     assert(timestamp);
 
@@ -87,7 +87,7 @@ extern "C" int32_t SystemNative_GetTimestamp(uint64_t* timestamp)
     int result = clock_gettime(CLOCK_MONOTONIC, &ts);
     assert(result == 0); // only possible errors are if MONOTONIC isn't supported or &ts is an invalid address
     (void)result; // suppress unused parameter warning in release builds
-    *timestamp = (static_cast<uint64_t>(ts.tv_sec) * SecondsToNanoSeconds) + static_cast<uint64_t>(ts.tv_nsec);
+    *timestamp = ((uint64_t)(ts.tv_sec) * SecondsToNanoSeconds) + (uint64_t)(ts.tv_nsec);
     return 1;
 
 #elif HAVE_MACH_ABSOLUTE_TIME
@@ -98,7 +98,7 @@ extern "C" int32_t SystemNative_GetTimestamp(uint64_t* timestamp)
     struct timeval tv;
     if (gettimeofday(&tv, NULL) == 0)
     {
-        *timestamp = (static_cast<uint64_t>(tv.tv_sec) * SecondsToMicroSeconds) + static_cast<uint64_t>(tv.tv_usec);
+        *timestamp = ((uint64_t)(tv.tv_sec) * SecondsToMicroSeconds) + (uint64_t)(tv.tv_usec);
         return 1;
     }
     else
@@ -110,7 +110,7 @@ extern "C" int32_t SystemNative_GetTimestamp(uint64_t* timestamp)
 #endif
 }
 
-extern "C" int32_t SystemNative_GetAbsoluteTime(uint64_t* timestamp)
+int32_t SystemNative_GetAbsoluteTime(uint64_t* timestamp)
 {
     assert(timestamp);
 
@@ -124,7 +124,7 @@ extern "C" int32_t SystemNative_GetAbsoluteTime(uint64_t* timestamp)
 #endif
 }
 
-extern "C" int32_t SystemNative_GetTimebaseInfo(uint32_t* numer, uint32_t* denom)
+int32_t SystemNative_GetTimebaseInfo(uint32_t* numer, uint32_t* denom)
 {
 #if  HAVE_MACH_TIMEBASE_INFO
     mach_timebase_info_data_t timebase;
