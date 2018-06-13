@@ -49217,7 +49217,7 @@ RelativePath=JIT\jit64\opt\cse\HugeArray\HugeArray.cmd
 WorkingDir=JIT\jit64\opt\cse\HugeArray
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS;Pri1;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [b11762.cmd_6176]
