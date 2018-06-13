@@ -284,24 +284,6 @@ bp_matches_method (MonoBreakpoint *bp, MonoMethod *method)
 	return FALSE;
 }
 
-int
-mono_de_current_breakpoints (MonoBreakpoint **out)
-{
-	mono_loader_lock ();
-
-	int len = breakpoints->len;
-	MonoBreakpoint *bps = g_malloc0 (sizeof (MonoBreakpoint) * len);
-
-	for (int i = 0; i < len; ++i)
-		bps [i] = *(MonoBreakpoint *) g_ptr_array_index (breakpoints, i);
-
-	mono_loader_unlock ();
-
-	*out = bps;
-
-	return len;
-}
-
 /*
  * mono_de_add_pending_breakpoints:
  *
@@ -478,7 +460,7 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	}
 
 	g_ptr_array_add (breakpoints, bp);
-	mono_debugger_log_add_bp (bp->method, bp->il_offset);
+	mono_debugger_log_add_bp (bp, bp->method, bp->il_offset);
 	mono_loader_unlock ();
 
 	g_ptr_array_free (methods, TRUE);
@@ -508,7 +490,7 @@ mono_de_clear_breakpoint (MonoBreakpoint *bp)
 	}
 
 	mono_loader_lock ();
-	mono_debugger_log_remove_bp (bp->method, bp->il_offset);
+	mono_debugger_log_remove_bp (bp, bp->method, bp->il_offset);
 	g_ptr_array_remove (breakpoints, bp);
 	mono_loader_unlock ();
 

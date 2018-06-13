@@ -35,10 +35,10 @@ void
 mono_debugger_log_exit (int exit_code);
 
 void
-mono_debugger_log_add_bp (MonoMethod *method, long il_offset);
+mono_debugger_log_add_bp (gpointer key, MonoMethod *method, long il_offset);
 
 void
-mono_debugger_log_remove_bp (MonoMethod *method, long il_offset);
+mono_debugger_log_remove_bp (gpointer key, MonoMethod *method, long il_offset);
 
 void
 mono_debugger_log_command (const char *command_set, const char *command, guint8 *buf, int len);

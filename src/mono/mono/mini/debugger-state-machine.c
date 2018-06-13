@@ -51,6 +51,7 @@ static MonoDebuggerLog *debugger_log;
 
 #define MAX_DEBUGGER_LOG_LEN 65
 #define MONO_DEBUGGER_LOG_UNINIT -1
+#define MAX_LOGGED_BREAKPOINTS 128
 
 static const char *
 mono_debug_log_kind_to_string (MonoDebugLogKind kind)
@@ -80,11 +81,11 @@ mono_debug_log_thread_state_to_string (MonoDebuggerThreadState state)
 }
 
 static MonoCoopMutex debugger_log_mutex;
+static GPtrArray *breakpoint_copy;
 
 void
 mono_debugger_log_init (void)
 {
-
 	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_UNINIT))
 		g_error ("Attempted to initialize debugger log after cleanup");
 
@@ -94,9 +95,7 @@ mono_debugger_log_init (void)
 	debugger_log->items = g_malloc0 (sizeof (MonoDebugLogItem) * debugger_log->max_size);
 
 	mono_coop_mutex_init (&debugger_log_mutex);
-
-	mono_coop_mutex_lock (&debugger_log_mutex);
-	mono_coop_mutex_unlock (&debugger_log_mutex);
+	breakpoint_copy = g_ptr_array_new ();
 }
 
 void
@@ -217,15 +216,23 @@ mono_debugger_log_exit (int exit_code)
 }
 
 void
-mono_debugger_log_add_bp (MonoMethod *method, long il_offset)
+mono_debugger_log_add_bp (gpointer bp, MonoMethod *method, long il_offset)
 {
+	mono_coop_mutex_lock (&debugger_log_mutex);
+	g_ptr_array_add (breakpoint_copy, bp);
+	mono_coop_mutex_unlock (&debugger_log_mutex);
+
 	char *msg = g_strdup_printf ("Add breakpoint %s %lu", method ? mono_method_full_name (method, TRUE) : "No method", il_offset);
 	debugger_log_append (DEBUG_LOG_BREAKPOINT, 0x0, msg);
 }
 
 void
-mono_debugger_log_remove_bp (MonoMethod *method, long il_offset)
+mono_debugger_log_remove_bp (gpointer bp, MonoMethod *method, long il_offset)
 {
+	mono_coop_mutex_lock (&debugger_log_mutex);
+	g_ptr_array_remove (breakpoint_copy, bp);
+	mono_coop_mutex_unlock (&debugger_log_mutex);
+
 	char *msg = g_strdup_printf ("Remove breakpoint %s %lu", method ? mono_method_full_name (method, TRUE) : "No method", il_offset);
 	debugger_log_append (DEBUG_LOG_BREAKPOINT, 0x0, msg);
 }
@@ -258,7 +265,7 @@ mono_debugger_log_suspend (DebuggerTlsData *tls)
 	g_assert (prev_state == MONO_DEBUGGER_RESUMED || prev_state == MONO_DEBUGGER_STARTED);
 	mono_debugger_set_thread_state (tls, prev_state, MONO_DEBUGGER_SUSPENDED);
 
-	char *msg = g_strdup_printf ("Suspending 0x%x from state %s", tid, tid, mono_debug_log_thread_state_to_string (prev_state));
+	char *msg = g_strdup_printf ("Suspending 0x%x from state %s", tid, mono_debug_log_thread_state_to_string (prev_state));
 	debugger_log_append (DEBUG_LOG_STATE_CHANGE, tid, msg);
 }
 
@@ -328,24 +335,24 @@ mono_debugger_state (JsonWriter *writer)
 	mono_json_writer_printf (writer, ",\n");
 
 	// FIXME: Log breakpoint state
-	MonoBreakpoint *bps;
-	int num_bps = mono_de_current_breakpoints (&bps);
-	if (num_bps) {
+	if (breakpoint_copy->len > 0) {
 		mono_json_writer_indent (writer);
 		mono_json_writer_object_key(writer, "breakpoints");
 		mono_json_writer_array_begin (writer);
 
-		for (int i=0; i < num_bps; i++) {
+		for (int i=0; i < breakpoint_copy->len; i++) {
+			MonoBreakpoint *bp = (MonoBreakpoint *) g_ptr_array_index (breakpoint_copy, i);
+
 			mono_json_writer_indent (writer);
 			mono_json_writer_object_begin(writer);
 
 			mono_json_writer_indent (writer);
 			mono_json_writer_object_key(writer, "method");
-			mono_json_writer_printf (writer, "\"%s\",\n", bps [i].method ? mono_method_full_name (bps [i].method, TRUE) : "No method");
+			mono_json_writer_printf (writer, "\"%s\",\n", bp->method ? mono_method_full_name (bp->method, TRUE) : "No method");
 
 			mono_json_writer_indent (writer);
 			mono_json_writer_object_key(writer, "il_offset");
-			mono_json_writer_printf (writer, "\"0x%x\",\n", bps [i].il_offset);
+			mono_json_writer_printf (writer, "\"0x%x\",\n", bp->il_offset);
 
 			mono_json_writer_indent_pop (writer);
 			mono_json_writer_indent (writer);
@@ -358,8 +365,6 @@ mono_debugger_state (JsonWriter *writer)
 		mono_json_writer_array_end (writer);
 		mono_json_writer_printf (writer, ",\n");
 	}
-
-	g_free (bps);
 
 	// Log history
 	MonoDebuggerLogIter diter;
