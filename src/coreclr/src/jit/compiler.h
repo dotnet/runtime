@@ -1164,6 +1164,7 @@ public:
     bool isNonStandard : 1; // True if it is an arg that is passed in a reg other than a standard arg reg, or is forced
                             // to be on the stack despite its arg list position.
     bool isStruct : 1;      // True if this is a struct arg
+    bool _isVararg : 1;     // True if the argument is in a vararg context.
 #ifdef _TARGET_ARM_
     bool _isSplit : 1; // True when this argument is split between the registers and OutArg area
 #endif
@@ -1211,6 +1212,22 @@ public:
 #ifdef _TARGET_ARM_
         _isSplit = value;
 #endif
+    }
+
+    __declspec(property(get = getIsVararg, put = setIsVararg)) bool isVararg;
+    bool getIsVararg()
+    {
+#ifdef FEATURE_VARARG
+        return _isVararg;
+#else
+        return false;
+#endif
+    }
+    void setIsVararg(bool value)
+    {
+#ifdef FEATURE_VARARG
+        _isVararg = value;
+#endif // FEATURE_VARARG
     }
 
     __declspec(property(get = getIsHfaRegArg)) bool isHfaRegArg;
@@ -1411,7 +1428,8 @@ public:
                              regNumber regNum,
                              unsigned  numRegs,
                              unsigned  alignment,
-                             bool      isStruct);
+                             bool      isStruct,
+                             bool      isVararg = false);
 
 #ifdef UNIX_AMD64_ABI
     fgArgTabEntry* AddRegArg(unsigned                                                         argNum,
@@ -1421,12 +1439,18 @@ public:
                              unsigned                                                         numRegs,
                              unsigned                                                         alignment,
                              const bool                                                       isStruct,
+                             const bool                                                       isVararg,
                              const regNumber                                                  otherRegNum,
                              const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* const structDescPtr = nullptr);
 #endif // UNIX_AMD64_ABI
 
-    fgArgTabEntry* AddStkArg(
-        unsigned argNum, GenTree* node, GenTree* parent, unsigned numSlots, unsigned alignment, bool isStruct);
+    fgArgTabEntry* AddStkArg(unsigned argNum,
+                             GenTree* node,
+                             GenTree* parent,
+                             unsigned numSlots,
+                             unsigned alignment,
+                             bool     isStruct,
+                             bool     isVararg = false);
 
     void           RemorphReset();
     fgArgTabEntry* RemorphRegArg(
@@ -1688,7 +1712,6 @@ public:
     var_types GetHfaType(CORINFO_CLASS_HANDLE hClass);
     unsigned GetHfaCount(CORINFO_CLASS_HANDLE hClass);
 
-    bool IsMultiRegPassedType(CORINFO_CLASS_HANDLE hClass);
     bool IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass);
 
     //-------------------------------------------------------------------------
@@ -2799,11 +2822,12 @@ public:
     }
 
     // Returns true if this local var is a multireg struct
-    bool lvaIsMultiregStruct(LclVarDsc* varDsc);
+    bool lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVararg);
 
     // If the local is a TYP_STRUCT, get/set a class handle describing it
     CORINFO_CLASS_HANDLE lvaGetStruct(unsigned varNum);
     void lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck, bool setTypeInfo = true);
+    void lvaSetStructUsedAsVarArg(unsigned varNum);
 
     // If the local is TYP_REF, set or update the associated class information.
     void lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact = false);
@@ -3275,10 +3299,8 @@ public:
 
     GenTree* impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass);
 
-    bool VarTypeIsMultiByteAndCanEnreg(var_types            type,
-                                       CORINFO_CLASS_HANDLE typeClass,
-                                       unsigned*            typeSize,
-                                       bool                 forReturn);
+    bool VarTypeIsMultiByteAndCanEnreg(
+        var_types type, CORINFO_CLASS_HANDLE typeClass, unsigned* typeSize, bool forReturn, bool isVarArg);
 
     bool IsIntrinsicImplementedByUserCall(CorInfoIntrinsics intrinsicId);
     bool IsTargetIntrinsic(CorInfoIntrinsics intrinsicId);
@@ -4215,18 +4237,24 @@ public:
     // A "primitive" type is one of the scalar types: byte, short, int, long, ref, float, double
     // If we can't or shouldn't use a "primitive" type then TYP_UNKNOWN is returned.
     //
-    var_types getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd);
+    // isVarArg is passed for use on Windows Arm64 to change the decision returned regarding
+    // hfa types.
+    //
+    var_types getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd, bool isVarArg);
 
     // Get the type that is used to pass values of the given struct type.
-    // If you have already retrieved the struct size then pass it as the optional third argument
+    // If you have already retrieved the struct size then pass it as the optional fourth argument
+    //
+    // isVarArg is passed for use on Windows Arm64 to change the decision returned regarding
+    // hfa types.
     //
     var_types getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                                   structPassingKind*   wbPassStruct,
+                                  bool                 isVarArg,
                                   unsigned             structSize = 0);
 
     // Get the type that is used to return values of the given struct type.
-    // If you have already retrieved the struct size then pass it as the optional third argument
-    //
+    // If you have already retrieved the struct size then pass it as the optional fourth argument
     var_types getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                                      structPassingKind*   wbPassStruct = nullptr,
                                      unsigned             structSize   = 0);

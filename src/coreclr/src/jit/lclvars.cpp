@@ -585,8 +585,13 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
         bool      isHfaArg         = false;
         var_types hfaType          = TYP_UNDEF;
 
+#if defined(_TARGET_ARM64_) && defined(_TARGET_UNIX_)
+        // Native varargs on arm64 unix use the regular calling convention.
+        if (!opts.compUseSoftFP)
+#else
         // Methods that use VarArg or SoftFP cannot have HFA arguments
         if (!info.compIsVarArgs && !opts.compUseSoftFP)
+#endif // defined(_TARGET_ARM64_) && defined(_TARGET_UNIX_)
         {
             // If the argType is a struct, then check if it is an HFA
             if (varTypeIsStruct(argType))
@@ -1260,6 +1265,10 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     if ((varTypeIsStruct(type)))
     {
         lvaSetStruct(varNum, typeHnd, typeHnd != nullptr, !tiVerificationNeeded);
+        if (info.compIsVarArgs)
+        {
+            lvaSetStructUsedAsVarArg(varNum);
+        }
     }
     else
     {
@@ -1867,7 +1876,7 @@ bool Compiler::lvaShouldPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo
 #if FEATURE_MULTIREG_STRUCT_PROMOTE
         // Is this a variable holding a value with exactly two fields passed in
         // multiple registers?
-        if ((structPromotionInfo->fieldCnt != 2) && lvaIsMultiregStruct(varDsc))
+        if ((structPromotionInfo->fieldCnt != 2) && lvaIsMultiregStruct(varDsc, this->info.compIsVarArgs))
         {
             JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true and #fields != 2\n", lclNum);
             shouldPromote = false;
@@ -2232,14 +2241,14 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
 }
 
 // Returns true if this local var is a multireg struct
-bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc)
+bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)
 {
     if (varTypeIsStruct(varDsc->TypeGet()))
     {
         CORINFO_CLASS_HANDLE clsHnd = varDsc->lvVerTypeInfo.GetClassHandleForValueClass();
         structPassingKind    howToPassStruct;
 
-        var_types type = getArgTypeForStruct(clsHnd, &howToPassStruct, varDsc->lvExactSize);
+        var_types type = getArgTypeForStruct(clsHnd, &howToPassStruct, isVarArg, varDsc->lvExactSize);
 
         if (howToPassStruct == SPK_ByValueAsHfa)
         {
@@ -2360,6 +2369,30 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
         compGSReorderStackLayout = true;
         varDsc->lvIsUnsafeBuffer = true;
     }
+}
+
+//------------------------------------------------------------------------
+// lvaSetStructUsedAsVarArg: update hfa information for vararg struct args
+//
+// Arguments:
+//    varNum   -- number of the variable
+//
+// Notes:
+//    This only affects arm64 varargs on windows where we need to pass
+//    hfa arguments as if they are not HFAs.
+//
+//    This function should only be called if the struct is used in a varargs
+//    method.
+
+void Compiler::lvaSetStructUsedAsVarArg(unsigned varNum)
+{
+#if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+    LclVarDsc* varDsc = &lvaTable[varNum];
+    // For varargs methods incoming and outgoing arguments should not be treated
+    // as HFA.
+    varDsc->_lvIsHfa          = false;
+    varDsc->_lvHfaTypeIsFloat = false;
+#endif // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
 }
 
 //------------------------------------------------------------------------
