@@ -130,10 +130,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(reader));
             }
-            SyndicationFeedFormatter.TraceItemReadBegin();
             
             ReadItem(reader);
-            SyndicationFeedFormatter.TraceItemReadEnd();
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
@@ -143,22 +141,18 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(writer));
             }
-            SyndicationFeedFormatter.TraceItemWriteBegin();
 
             WriteItem(writer);
-            SyndicationFeedFormatter.TraceItemWriteEnd();
         }
 
         public override void ReadFrom(XmlReader reader)
         {
-            SyndicationFeedFormatter.TraceItemReadBegin();
             if (!CanRead(reader))
             {
                 throw new XmlException(SR.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
             }
 
             ReadItem(reader);
-            SyndicationFeedFormatter.TraceItemReadEnd();
         }
 
         public override void WriteTo(XmlWriter writer)
@@ -167,12 +161,10 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(writer));
             }
-            SyndicationFeedFormatter.TraceItemWriteBegin();
 
             writer.WriteStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
             WriteItem(writer);
             writer.WriteEndElement();
-            SyndicationFeedFormatter.TraceItemWriteEnd();
         }
 
         protected override SyndicationItem CreateItemInstance()
