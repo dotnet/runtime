@@ -7,14 +7,14 @@ using System.Globalization;
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Provides a type converter to convert string objects to and from various other
-    ///       representations.</para>
+    /// Provides a type converter to convert string objects to and from various other
+    /// representations.
     /// </summary>
     public class StringConverter : TypeConverter
     {
         /// <summary>
-        ///    <para>Gets a value indicating whether this converter can convert an object in the
-        ///       given source type to a string using the specified context.</para>
+        /// Gets a value indicating whether this converter can convert an object in the
+        /// given source type to a string using the specified context.
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
@@ -22,7 +22,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Converts the specified value object to a string object.</para>
+        /// Converts the specified value object to a string object.
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {

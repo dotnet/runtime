@@ -7,9 +7,8 @@ using System.Globalization;
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Provides a
-    ///       type converter to convert 8-bit unsigned
-    ///       integer objects to and from various other representations.</para>
+    /// Provides a type converter to convert 8-bit unsigned integer objects
+    /// to and from various other representations.
     /// </summary>
     public class ByteConverter : BaseNumberConverter
     {
@@ -21,17 +20,14 @@ namespace System.ComponentModel
         /// <summary>
         /// Convert the given string to a Byte using the given radix
         /// </summary>
-        internal override object FromString(string value, int radix)
-        {
-            return Convert.ToByte(value, radix);
-        }
+        internal override object FromString(string value, int radix) => Convert.ToByte(value, radix);
 
         /// <summary>
         /// Convert the given string to a Byte using the given formatInfo
         /// </summary>
         internal override object FromString(string value, NumberFormatInfo formatInfo)
         {
-            return Byte.Parse(value, NumberStyles.Integer, formatInfo);
+            return byte.Parse(value, NumberStyles.Integer, formatInfo);
         }
 
         /// <summary>
@@ -39,8 +35,7 @@ namespace System.ComponentModel
         /// </summary>
         internal override string ToString(object value, NumberFormatInfo formatInfo)
         {
-            return ((Byte)value).ToString("G", formatInfo);
+            return ((byte)value).ToString("G", formatInfo);
         }
     }
 }
-

@@ -314,8 +314,7 @@ namespace System.ComponentModel
             // If event hander did not supply new item, create one ourselves
             if (newItem == null)
             {
-                Type type = typeof(T);
-                newItem = SecurityUtils.SecureCreateInstance(type);
+                newItem = Activator.CreateInstance(typeof(T));
             }
 
             // Add item to end of list. Note: If event handler returned an item not of type T,
@@ -326,8 +325,6 @@ namespace System.ComponentModel
             return newItem;
         }
 
-        /// <summary>
-        /// </summary>
         public bool AllowNew
         {
             get

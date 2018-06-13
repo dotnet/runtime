@@ -2,24 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// The code was copied from DateTimeConverter and adapted for DateTimeOffset.
-
 using System.ComponentModel.Design.Serialization;
 using System.Globalization;
 
 namespace System.ComponentModel
 {
     /// <summary>
-    /// <para>Provides a type converter to convert <see cref='System.DateTimeOffset'/>
-    /// objects to and from various other representations.</para>
+    /// Provides a type converter to convert <see cref='System.DateTimeOffset'/>
+    /// objects to and from various other representations.
     /// </summary>
     public class DateTimeOffsetConverter : TypeConverter
     {
         /// <summary>
-        ///    <para>Gets a value indicating whether this converter can
-        ///       convert an object in the given source type to a <see cref='System.DateTimeOffset'/>
-        ///       object using the
-        ///       specified context.</para>
+        /// Gets a value indicating whether this converter can convert an
+        /// object in the given source type to a <see cref='System.DateTimeOffset'/>
+        /// object using the specified context.
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
@@ -27,28 +24,21 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///        Gets a value indicating whether this converter can
-        ///        convert an object to the given destination type using the context.
-        ///    </para>
+        /// Gets a value indicating whether this converter can convert an
+        /// object to the given destination type using the context.
         /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            if (destinationType == typeof(InstanceDescriptor))
-            {
-                return true;
-            }
-            return base.CanConvertTo(context, destinationType);
+            return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
         /// <summary>
-        /// <para>Converts the given value object to a <see cref='System.DateTime'/>
-        /// object.</para>
+        /// Converts the given value object to a <see cref='System.DateTime'/>
+        /// object.
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            string text = value as string;
-            if (text != null)
+            if (value is string text)
             {
                 text = text.Trim();
                 if (text.Length == 0)
@@ -58,8 +48,7 @@ namespace System.ComponentModel
 
                 try
                 {
-                    // See if we have a culture info to parse with.  If so, then use it.
-                    //
+                    // See if we have a culture info to parse with. If so, then use it.
                     DateTimeFormatInfo formatInfo = null;
 
                     if (culture != null)
@@ -86,17 +75,15 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// <para>Converts the given value object to a <see cref='System.DateTimeOffset'/>
-        /// object
-        /// using the arguments.</para>
+        /// Converts the given value object to a <see cref='System.DateTimeOffset'/>
+        /// object using the arguments.
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
             // logic is exactly as in DateTimeConverter, only the offset pattern ' zzz' is added to the default
             // ConvertToString pattern.
-            if (destinationType == typeof(string) && value is DateTimeOffset)
+            if (destinationType == typeof(string) && value is DateTimeOffset dto)
             {
-                DateTimeOffset dto = (DateTimeOffset)value;
                 if (dto == DateTimeOffset.MinValue)
                 {
                     return string.Empty;

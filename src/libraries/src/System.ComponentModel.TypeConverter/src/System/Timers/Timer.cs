@@ -101,7 +101,9 @@ namespace System.Timers
                     _enabled = value;
                 }
                 else if (_initializing)
+                {
                     _delayedEnable = value;
+                }
                 else if (_enabled != value)
                 {
                     if (!value)
@@ -188,7 +190,9 @@ namespace System.Timers
             {
                 base.Site = value;
                 if (DesignMode)
+                {
                     _enabled = true;
+                }
             }
         }
 
@@ -207,7 +211,9 @@ namespace System.Timers
                     IDesignerHost host = (IDesignerHost)GetService(typeof(IDesignerHost));
                     object baseComponent = host?.RootComponent;
                     if (baseComponent != null && baseComponent is ISynchronizeInvoke)
+                    {
                         _synchronizingObject = (ISynchronizeInvoke)baseComponent;
+                    }
                 }
 
                 return _synchronizingObject;
