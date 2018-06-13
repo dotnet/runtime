@@ -103,10 +103,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(reader));
             }
-            TraceCategoriesDocumentReadBegin();
             
             ReadDocument(reader);
-            TraceCategoriesDocumentReadEnd();
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
@@ -120,10 +118,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
-            TraceCategoriesDocumentWriteBegin();
 
             WriteDocument(writer);
-            TraceCategoriesDocumentWriteEnd();
         }
 
         public override void ReadFrom(XmlReader reader)
@@ -136,10 +132,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new XmlException(SR.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
             }
-            TraceCategoriesDocumentReadBegin();
 
             ReadDocument(reader);
-            TraceCategoriesDocumentReadEnd();
         }
 
         public override void WriteTo(XmlWriter writer)
@@ -152,28 +146,10 @@ namespace System.ServiceModel.Syndication
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
-            TraceCategoriesDocumentWriteBegin();
             
             writer.WriteStartElement(App10Constants.Prefix, App10Constants.Categories, App10Constants.Namespace);
             WriteDocument(writer);
             writer.WriteEndElement();
-            TraceCategoriesDocumentWriteEnd();
-        }
-
-        internal static void TraceCategoriesDocumentReadBegin()
-        {
-        }
-
-        internal static void TraceCategoriesDocumentReadEnd()
-        {
-        }
-
-        internal static void TraceCategoriesDocumentWriteBegin()
-        {
-        }
-
-        internal static void TraceCategoriesDocumentWriteEnd()
-        {
         }
 
         protected override InlineCategoriesDocument CreateInlineCategoriesDocument()

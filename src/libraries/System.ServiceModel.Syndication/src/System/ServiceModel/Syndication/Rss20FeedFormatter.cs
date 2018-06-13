@@ -136,10 +136,8 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(reader));
             }
-            TraceFeedReadBegin();
 
             ReadFeed(reader);
-            TraceFeedReadEnd();
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
@@ -149,22 +147,18 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(writer));
             }
-            TraceFeedWriteBegin();
 
             WriteFeed(writer);
-            TraceFeedWriteEnd();
         }
 
         public override void ReadFrom(XmlReader reader)
         {
-            TraceFeedReadBegin();
             if (!CanRead(reader))
             {
                 throw new XmlException(SR.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
             }
 
             ReadFeed(reader);
-            TraceFeedReadEnd();
         }
 
         public override void WriteTo(XmlWriter writer)
@@ -173,12 +167,10 @@ namespace System.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(writer));
             }
-            TraceFeedWriteBegin();
 
             writer.WriteStartElement(Rss20Constants.RssTag, Rss20Constants.Rss20Namespace);
             WriteFeed(writer);
             writer.WriteEndElement();
-            TraceFeedWriteEnd();
         }
 
         protected internal override void SetFeed(SyndicationFeed feed)
@@ -187,9 +179,6 @@ namespace System.ServiceModel.Syndication
             _atomSerializer.SetFeed(this.Feed);
         }
 
-        internal static void TraceExtensionsIgnoredOnWrite(string message)
-        {
-        }
 
         internal void ReadItemFrom(XmlReader reader, SyndicationItem result)
         {
@@ -218,9 +207,7 @@ namespace System.ServiceModel.Syndication
             }
 
             SyndicationItem item = CreateItem(feed);
-            TraceItemReadBegin();
             ReadItemFrom(reader, item, feed.BaseUri);
-            TraceItemReadEnd();
             return item;
         }
 
@@ -247,11 +234,9 @@ namespace System.ServiceModel.Syndication
 
         protected virtual void WriteItem(XmlWriter writer, SyndicationItem item, Uri feedBaseUri)
         {
-            TraceItemWriteBegin();
             writer.WriteStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
             WriteItemContents(writer, item, feedBaseUri);
             writer.WriteEndElement();
-            TraceItemWriteEnd();
         }
 
         protected virtual void WriteItems(XmlWriter writer, IEnumerable<SyndicationItem> items, Uri feedBaseUri)
@@ -299,10 +284,6 @@ namespace System.ServiceModel.Syndication
                         if (preserveAttributeExtensions)
                         {
                             link.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
-                        }
-                        else
-                        {
-                            TraceSyndicationElementIgnoredOnRead(reader);
                         }
                     }
                 }
@@ -352,10 +333,6 @@ namespace System.ServiceModel.Syndication
                         {
                             category.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
                         }
-                        else
-                        {
-                            TraceSyndicationElementIgnoredOnRead(reader);
-                        }
                     }
                 }
             }
@@ -401,10 +378,6 @@ namespace System.ServiceModel.Syndication
                             if (_preserveAttributeExtensions)
                             {
                                 result.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
-                            }
-                            else
-                            {
-                                TraceSyndicationElementIgnoredOnRead(reader);
                             }
                         }
                     }
@@ -509,10 +482,6 @@ namespace System.ServiceModel.Syndication
                                             {
                                                 feed.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
                                             }
-                                            else
-                                            {
-                                                TraceSyndicationElementIgnoredOnRead(reader);
-                                            }
                                         }
                                     }
                                 }
@@ -536,7 +505,6 @@ namespace System.ServiceModel.Syndication
                                     }
                                     else
                                     {
-                                        TraceSyndicationElementIgnoredOnRead(reader);
                                         reader.Skip();
                                     }
                                 }
@@ -616,10 +584,6 @@ namespace System.ServiceModel.Syndication
                         {
                             link.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
                         }
-                        else
-                        {
-                            TraceSyndicationElementIgnoredOnRead(reader);
-                        }
                     }
                 }
             }
@@ -664,10 +628,6 @@ namespace System.ServiceModel.Syndication
                         if (_preserveAttributeExtensions)
                         {
                             person.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
-                        }
-                        else
-                        {
-                            TraceSyndicationElementIgnoredOnRead(reader);
                         }
                     }
                 }
@@ -733,10 +693,6 @@ namespace System.ServiceModel.Syndication
                             if (_preserveAttributeExtensions)
                             {
                                 result.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
-                            }
-                            else
-                            {
-                                TraceSyndicationElementIgnoredOnRead(reader);
                             }
                         }
                     }
@@ -823,7 +779,6 @@ namespace System.ServiceModel.Syndication
                                 else
                                 {
                                     // ignore other content
-                                    TraceSyndicationElementIgnoredOnRead(reader);
                                     reader.Skip();
                                 }
                             }
@@ -859,7 +814,6 @@ namespace System.ServiceModel.Syndication
                                 }
                                 else
                                 {
-                                    TraceSyndicationElementIgnoredOnRead(reader);
                                     reader.Skip();
                                 }
                             }
@@ -984,10 +938,6 @@ namespace System.ServiceModel.Syndication
                 {
                     _atomSerializer.WriteFeedAuthorsTo(writer, this.Feed.Authors);
                 }
-                else
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.FeedAuthorsIgnoredOnWrite);
-                }
             }
 
             if (this.Feed.LastUpdatedTime > DateTimeOffset.MinValue)
@@ -1018,9 +968,6 @@ namespace System.ServiceModel.Syndication
                     _atomSerializer.WriteFeedContributorsTo(writer, this.Feed.Contributors);
                 }
                 else
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.FeedContributorsIgnoredOnWrite);
-                }
             }
 
             if (this.Feed.ImageUrl != null)
@@ -1096,17 +1043,6 @@ namespace System.ServiceModel.Syndication
                     _atomSerializer.WriteLink(writer, this.Feed.Links[i], this.Feed.BaseUri);
                 }
             }
-            else
-            {
-                if (this.Feed.Id != null)
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.FeedIdIgnoredOnWrite);
-                }
-                if (this.Feed.Links.Count > 1)
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.FeedLinksIgnoredOnWrite);
-                }
-            }
 
             WriteElementExtensions(writer, this.Feed, this.Version);
             WriteItems(writer, this.Feed.Items, this.Feed.BaseUri);
@@ -1169,10 +1105,6 @@ namespace System.ServiceModel.Syndication
                 if (_serializeExtensionsAsAtom)
                 {
                     _atomSerializer.WriteItemAuthorsTo(writer, item.Authors);
-                }
-                else
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.ItemAuthorsIgnoredOnWrite);
                 }
             }
 
@@ -1237,7 +1169,6 @@ namespace System.ServiceModel.Syndication
             // serialize the enclosures
             SyndicationLink firstEnclosureLink = null;
             bool passedFirstAlternateLink = false;
-            bool isLinkIgnored = false;
             for (int i = 0; i < item.Links.Count; ++i)
             {
                 if (item.Links[i].RelationshipType == Rss20Constants.EnclosureTag)
@@ -1261,14 +1192,6 @@ namespace System.ServiceModel.Syndication
                 {
                     _atomSerializer.WriteLink(writer, item.Links[i], item.BaseUri);
                 }
-                else
-                {
-                    isLinkIgnored = true;
-                }
-            }
-            if (isLinkIgnored)
-            {
-                TraceExtensionsIgnoredOnWrite(SR.ItemLinksIgnoredOnWrite);
             }
 
             if (item.LastUpdatedTime > DateTimeOffset.MinValue)
@@ -1277,19 +1200,11 @@ namespace System.ServiceModel.Syndication
                 {
                     _atomSerializer.WriteItemLastUpdatedTimeTo(writer, item.LastUpdatedTime);
                 }
-                else
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.ItemLastUpdatedTimeIgnoredOnWrite);
-                }
             }
 
             if (_serializeExtensionsAsAtom)
             {
                 _atomSerializer.WriteContentTo(writer, Atom10Constants.RightsTag, item.Copyright);
-            }
-            else
-            {
-                TraceExtensionsIgnoredOnWrite(SR.ItemCopyrightIgnoredOnWrite);
             }
 
             if (!serializedContentAsDescription)
@@ -1297,10 +1212,6 @@ namespace System.ServiceModel.Syndication
                 if (_serializeExtensionsAsAtom)
                 {
                     _atomSerializer.WriteContentTo(writer, Atom10Constants.ContentTag, item.Content);
-                }
-                else
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.ItemContentIgnoredOnWrite);
                 }
             }
 
@@ -1311,10 +1222,6 @@ namespace System.ServiceModel.Syndication
                 if (_serializeExtensionsAsAtom)
                 {
                     _atomSerializer.WriteItemContributorsTo(writer, item.Contributors);
-                }
-                else
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.ItemContributorsIgnoredOnWrite);
                 }
             }
 
