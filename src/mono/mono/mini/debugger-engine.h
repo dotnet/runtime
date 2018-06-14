@@ -154,6 +154,43 @@ typedef struct {
 	guint32 native_offset;
 } DbgEngineStackFrame;
 
+typedef struct {
+	/*
+	 * Method where to start single stepping
+	 */
+	MonoMethod *method;
+
+	/*
+	* If ctx is set, tls must belong to the same thread.
+	*/
+	MonoContext *ctx;
+	void *tls;
+
+	/*
+	 * Stopped at a throw site
+	*/
+	gboolean step_to_catch;
+
+	/*
+	 * Sequence point to start from.
+	*/
+	SeqPoint sp;
+	MonoSeqPointInfo *info;
+
+	/*
+	 * Frame data, will be freed at the end of ss_start if provided
+	 */
+	DbgEngineStackFrame **frames;
+	int nframes;
+} SingleStepArgs;
+
+typedef int DbgEngineErrorCode;
+#define DE_ERR_NONE 0
+// WARNING WARNING WARNING
+// Error codes MUST match those of sdb for now
+#define DE_ERR_NOT_IMPLEMENTED 100
+
+
 void mono_de_init (void);
 void mono_de_cleanup (void);
 void mono_de_set_log_level (int level, FILE *file);
