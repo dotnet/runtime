@@ -72,7 +72,6 @@
       <Link>Common\System\PasteArguments.cs</Link>
     </Compile>
     <Compile Include="Tests\Interop\procfsTests.cs" />
-    <Compile Include="Tests\System\AssertExtensionTests.cs" />
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
     <Compile Include="Tests\System\IO\StringParserTests.cs" />
