@@ -37,6 +37,11 @@ namespace R2RDump
         internal int REGISTER_DELTA_ENCBASE { get; } = 2;
         internal int STACK_SLOT_ENCBASE { get; } = 6;
         internal int STACK_SLOT_DELTA_ENCBASE { get; } = 4;
+        internal int POINTER_SIZE_ENCBASE { get; } = 3;
+        internal int NUM_NORM_CODE_OFFSETS_PER_CHUNK { get; } = 64;
+        internal int LIVESTATE_RLE_RUN_ENCBASE { get; } = 2;
+        internal int LIVESTATE_RLE_SKIP_ENCBASE { get; } = 4;
+        internal int NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 { get; } = 6;
 
         internal GcInfoTypes(Machine machine)
         {
