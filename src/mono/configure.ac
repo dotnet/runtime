@@ -40,7 +40,7 @@ MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
 # This can be reset to 0 when Mono's version number is bumped
 # since it's part of the corlib version (the prefix '1' in the full
 # version number is to ensure the number isn't treated as octal in C)
-MONO_CORLIB_COUNTER=12
+MONO_CORLIB_COUNTER=13
 MONO_CORLIB_VERSION=`printf "1%02d%02d%02d%03d" $MONO_VERSION_MAJOR $MONO_VERSION_MINOR 0 $MONO_CORLIB_COUNTER`
 
 AC_DEFINE_UNQUOTED(MONO_CORLIB_VERSION,$MONO_CORLIB_VERSION,[Version of the corlib-runtime interface])
@@ -5646,17 +5646,21 @@ fi
     echo "MONO_CORLIB_VERSION = $MONO_CORLIB_VERSION" >> $mcs_topdir/build/config.make
 
     if test x$host_darwin = xyes; then
-      echo "BUILD_PLATFORM = darwin" >> $mcs_topdir/build/config.make
-      echo "HOST_PLATFORM ?= darwin" >> $mcs_topdir/build/config.make
+      echo "BUILD_PLATFORM = macos" >> $mcs_topdir/build/config.make
+      echo "HOST_PLATFORM ?= macos" >> $mcs_topdir/build/config.make
       echo "XTEST_PLATFORM ?= osx" >> $mcs_topdir/build/config.make
     elif test x$host_win32 = xyes; then
       echo "BUILD_PLATFORM = win32" >> $mcs_topdir/build/config.make
       echo "HOST_PLATFORM ?= win32" >> $mcs_topdir/build/config.make
       echo "XTEST_PLATFORM ?= windows" >> $mcs_topdir/build/config.make
-    else
+    elif test x$host_linux = xyes; then
       echo "BUILD_PLATFORM = linux" >> $mcs_topdir/build/config.make
       echo "HOST_PLATFORM ?= linux" >> $mcs_topdir/build/config.make
       echo "XTEST_PLATFORM ?= linux" >> $mcs_topdir/build/config.make
+    else
+      echo "BUILD_PLATFORM = unix" >> $mcs_topdir/build/config.make
+      echo "HOST_PLATFORM ?= unix" >> $mcs_topdir/build/config.make
+      echo "XTEST_PLATFORM ?= unix" >> $mcs_topdir/build/config.make
     fi
 
     if test "x$PLATFORM_AOT_SUFFIX" != "x"; then
