@@ -16,7 +16,9 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
 
+#ifdef HAVE_UNWIND_H
 #include <unwind.h>
+#endif
 
 /* These can't go into mini-<ARCH>.h since thats not included into llvm-jit.cpp */
 #if defined(TARGET_AMD64) && defined(TARGET_OSX)

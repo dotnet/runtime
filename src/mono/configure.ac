@@ -3736,11 +3736,11 @@ if test "x$enable_llvm" = "xdefault"; then
 fi
 
 if test "x$enable_llvm" = "xyes"; then
+   if test x$host_win32 = xyes; then
+         AC_MSG_ERROR([LLVM for Windows only supported using Visual Studio build mono runtime, see http://www.mono-project.com/docs/advanced/mono-llvm/ for more details.])
+   fi
    if test "x$with_llvm" != "x"; then
    	  LLVM_CONFIG=$with_llvm/bin/llvm-config
-   	  if test x$host_win32 = xyes; then
-   	  	LLVM_CONFIG=$LLVM_CONFIG.exe
-   	  fi
 	  if test ! -x $LLVM_CONFIG; then
 	  	 AC_MSG_ERROR([LLVM executable $LLVM_CONFIG not found.])
       fi
@@ -3826,24 +3826,6 @@ if test "x$enable_llvm" = "xyes"; then
    fi
 
    expected_llvm_version="3.4svn-mono-mono/e656cac"
-
-   else
-       LLVM_CFLAGS="-I$with_llvm/include -DNDEBUG -D__NO_CTYPE_INLINE -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS"
-       LLVM_CXXFLAGS="$LLVM_CFLAGS -std=gnu++11 -fvisibility-inlines-hidden -fno-rtti -Woverloaded-virtual -Wcast-qual"
-       LLVM_LDFLAGS="-L$with_llvm/lib"
-       LLVM_SYSTEM_LIBS="-lshell32 -lpsapi -limagehlp -ldbghelp -lm"
-       LLVM_LIBS="-lLLVMLTO -lLLVMObjCARCOpts -lLLVMLinker -lLLVMipo -lLLVMVectorize -lLLVMBitWriter \
-         -lLLVMTableGen -lLLVMDebugInfo -lLLVMOption -lLLVMSelectionDAG -lLLVMAsmPrinter \
-         -lLLVMMCDisassembler -lLLVMJIT -lLLVMAnalysis -lLLVMTarget \
-         -lLLVMIRReader -lLLVMAsmParser -lLLVMLineEditor -lLLVMMCAnalysis -lLLVMInstrumentation \
-         -lLLVMInterpreter -lLLVMCodeGen -lLLVMScalarOpts -lLLVMInstCombine -lLLVMTransformUtils \
-         -lLLVMipa -lLLVMAnalysis -lLLVMProfileData -lLLVMMCJIT -lLLVMTarget -lLLVMRuntimeDyld \
-         -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMExecutionEngine -lLLVMMC -lLLVMCore \
-         -lLLVMSupport -lstdc++"
-       LLVM_LIBS="$LLVM_LIBS $LLVM_ARCH_LIBS $LLVM_SYSTEM_LIBS"
-
-       llvm_config_path=$with_llvm/include/llvm/Config/llvm-config.h
-       llvm_api_version=`awk '/MONO_API_VERSION/ { print $3 }' $llvm_config_path`
    fi  
 
    if test "x$llvm_api_version" = "x"; then

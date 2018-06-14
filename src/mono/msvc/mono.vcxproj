@@ -103,8 +103,8 @@
     </ClCompile>
     <ProjectReference />
     <Link>
-      <AdditionalDependencies>$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(MONO_LIBMONO_LIB);$(MONO_LLVM_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Console</SubSystem>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
@@ -131,8 +131,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(MONO_LIBMONO_LIB);$(MONO_LLVM_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Console</SubSystem>
       <ShowProgress>
       </ShowProgress>
@@ -152,8 +152,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(MONO_LIBMONO_LIB);$(MONO_LLVM_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Console</SubSystem>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
@@ -176,8 +176,8 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(MONO_LIBMONO_LIB);$(MONO_LLVM_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
