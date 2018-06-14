@@ -6,6 +6,7 @@
 #include <mono/metadata/seq-points-data.h>
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
+#include <mono/mini/debugger-engine.h>
 
 //XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle
 #include <mono/mini/interp/interp-internals.h>
@@ -22,6 +23,8 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_set_breakpoint (const char *assembly_name, in
 EMSCRIPTEN_KEEPALIVE int mono_wasm_current_bp_id (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_enum_frames (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_var_info (int scope, int pos);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_setup_single_step (int kind);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name);
@@ -33,40 +36,11 @@ extern void mono_wasm_add_float_var (float);
 extern void mono_wasm_add_double_var (double);
 extern void mono_wasm_add_string_var (const char*);
 
-void mono_sdb_single_step_trampoline (void);
-
-typedef struct {
-	//request data
-	MonoAssembly *assembly;
-	MonoMethod *method;
-	int il_offset;
-
-	//bp id
-	int bp_id;
-
-
-	GPtrArray *children;
-} BreakPointRequest;
-
-typedef struct {
-	long il_offset, native_offset;
-	guint8 *ip;
-	MonoJitInfo *ji;
-	MonoDomain *domain;
-} BreakpointInstance;
-
-
 //FIXME move all of those fields to the profiler object
 static gboolean debugger_enabled;
-static int bp_id_count;
-static GHashTable *bp_locs;
-static GPtrArray *active_breakpoints;
 
-static void
-breakpoint_request_free (BreakPointRequest *bp)
-{
-	g_free (bp);
-}
+static int event_request_id;
+#define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
 
 static void
 inplace_tolower (char *c)
@@ -76,260 +50,222 @@ inplace_tolower (char *c)
 		c [i] = tolower (c [i]);
 }
 
-static BreakPointRequest *
-breakpoint_request_new (MonoAssembly *assembly, MonoMethod *method, int il_offset)
-{
-	//dup and lower
-	BreakPointRequest *req = g_new0(BreakPointRequest, 1);
-	req->assembly = assembly;
-	req->method = method;
-	req->il_offset = il_offset;
-
-	return req;
-}
-
-static gboolean
-breakpoint_matches (BreakPointRequest *bp, MonoMethod *method)
-{
-	if (!bp->method)
-		return FALSE;
-	if (method == bp->method)
-		return TRUE;
-	if (method->is_inflated && ((MonoMethodInflated*)method)->declaring == bp->method)
-		return TRUE;
-	//XXX we don't support setting a breakpoint on a specif ginst, so whatever
-
-	return FALSE;
-}
-//LOCKING: loader lock must be held
-static void
-find_applicable_methods (BreakPointRequest *bp, GPtrArray *methods, GPtrArray *method_seq_points)
-{
-	GHashTableIter iter;
-	MonoMethod *method;
-	MonoSeqPointInfo *seq_points;
-
-	mono_domain_lock (mono_get_root_domain ());
-	g_hash_table_iter_init (&iter, domain_jit_info (mono_get_root_domain ())->seq_points);
-	while (g_hash_table_iter_next (&iter, (void**)&method, (void**)&seq_points)) {
-		if (breakpoint_matches (bp, method)) {
-			g_ptr_array_add (methods, method);
-			g_ptr_array_add (method_seq_points, seq_points);
-		}
-	}
-	mono_domain_unlock (mono_get_root_domain ());
-}
-
-static gboolean
-insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo *ji, BreakPointRequest *bp, MonoError *error)
-{
-	int count;
-	SeqPointIterator it;
-	gboolean it_has_sp = FALSE;
-
-	error_init (error);
-
-	DEBUG_PRINTF (1, "insert_breakpoint: JI [%p] method %s at %d SP %p\n", ji, jinfo_get_method (ji)->name, bp->il_offset, seq_points);
-
-	mono_seq_point_iterator_init (&it, seq_points);
-	while (mono_seq_point_iterator_next (&it)) {
-		if (it.seq_point.il_offset == bp->il_offset) {
-			it_has_sp = TRUE;
-			break;
-		}
-	}
-
-	if (!it_has_sp) {
-		/*
-		 * The set of IL offsets with seq points doesn't completely match the
-		 * info returned by CMD_METHOD_GET_DEBUG_INFO (#407).
-		 */
-		mono_seq_point_iterator_init (&it, seq_points);
-		while (mono_seq_point_iterator_next (&it)) {
-			if (it.seq_point.il_offset != METHOD_ENTRY_IL_OFFSET &&
-				it.seq_point.il_offset != METHOD_EXIT_IL_OFFSET &&
-				it.seq_point.il_offset + 1 == bp->il_offset) {
-				it_has_sp = TRUE;
-				break;
-			}
-		}
-	}
-
-	if (!it_has_sp) {
-		DEBUG_PRINTF (1, "Unable to insert breakpoint at %s:%d. SeqPoint data:", mono_method_full_name (jinfo_get_method (ji), TRUE), bp->il_offset);
-
-		mono_seq_point_iterator_init (&it, seq_points);
-		while (mono_seq_point_iterator_next (&it))
-			DEBUG_PRINTF (1, "\t%d\n", it.seq_point.il_offset);
-
-		DEBUG_PRINTF (1, "End of data\n");
-		mono_error_set_error (error, MONO_ERROR_GENERIC, "Failed to find the SP for the given il offset");
-		return FALSE;
-	}
-
-	BreakpointInstance *inst = g_new0 (BreakpointInstance, 1);
-	inst->il_offset = it.seq_point.il_offset;
-	inst->native_offset = it.seq_point.native_offset;
-	inst->ip = (guint8*)ji->code_start + it.seq_point.native_offset;
-	inst->ji = ji;
-	inst->domain = mono_get_root_domain ();
-
-	mono_loader_lock ();
-
-	if (!bp->children)
-		bp->children = g_ptr_array_new ();
-	g_ptr_array_add (bp->children, inst);
-
-	mono_loader_unlock ();
-
-	// dbg_lock ();
-	count = GPOINTER_TO_INT (g_hash_table_lookup (bp_locs, inst->ip));
-	g_hash_table_insert (bp_locs, inst->ip, GINT_TO_POINTER (count + 1));
-	// dbg_unlock ();
-
-	if (it.seq_point.native_offset == SEQ_POINT_NATIVE_OFFSET_DEAD_CODE) {
-		DEBUG_PRINTF (1, "Attempting to insert seq point at dead IL offset %d, ignoring.\n", (int)bp->il_offset);
-	} else if (count == 0) {
-		DEBUG_PRINTF (1, "ACTIVATING BREAKPOINT in %s\n", jinfo_get_method (ji)->name);
-		if (ji->is_interp) {
-			mini_get_interp_callbacks ()->set_breakpoint (ji, inst->ip);
-		} else {
-			g_error ("no idea how to deal with compiled code");
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
-			mono_arch_set_breakpoint (ji, inst->ip);
-#else
-			NOT_IMPLEMENTED;
-#endif
-		}
-	}
-
-	return TRUE;
-}
-
-static gboolean
-set_breakpoint (MonoMethod *method, MonoSeqPointInfo *seq_points, BreakPointRequest *bp, MonoError *error)
-{
-	MonoJitInfo *ji = NULL;
-
-	error_init (error);
-
-	MonoDomain *domain = mono_get_root_domain ();
-	gpointer code = mono_jit_find_compiled_method_with_jit_info (domain, method, &ji);
-	if (!code) {
-		/* Might be AOTed code */
-		mono_class_init (method->klass);
-		code = mono_aot_get_method (domain, method, error);
-		if (code) {
-			mono_error_assert_ok (error);
-			ji = mono_jit_info_table_find (domain, code);
-		} else {
-			/* Might be interpreted */
-			ji = mini_get_interp_callbacks ()->find_jit_info (domain, method);
-		}
-		g_assert (ji);
-	}
-
-	return insert_breakpoint (seq_points, domain, ji, bp, error);
-}
-
-static void
-add_breakpoint (BreakPointRequest *bp)
-{
-	int i;
-	ERROR_DECL (error);
-	bp->bp_id = ++bp_id_count;
-
-	error_init (error);
-
-	GPtrArray *methods = g_ptr_array_new ();
-	GPtrArray *method_seq_points = g_ptr_array_new ();
-
-	mono_loader_lock ();
-
-	find_applicable_methods (bp, methods, method_seq_points);
-
-	for (i = 0; i < methods->len; ++i) {
-		MonoMethod *method = (MonoMethod *)g_ptr_array_index (methods, i);
-		MonoSeqPointInfo *seq_points = (MonoSeqPointInfo *)g_ptr_array_index (method_seq_points, i);
-
-		if (!set_breakpoint (method, seq_points, bp, error)) {
-			//FIXME don't swallow the error
-			DEBUG_PRINTF (1, "Error setting breaking due to %s\n", mono_error_get_message (error));
-			mono_error_cleanup (error);
-			return;
-		}
-	}
-
-	g_ptr_array_add (active_breakpoints, bp);
-
-	mono_loader_unlock ();
-
-	g_ptr_array_free (methods, TRUE);
-	g_ptr_array_free (method_seq_points, TRUE);
-}
-
-static void
-add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
-{
-	int i, j;
-	MonoSeqPointInfo *seq_points;
-	MonoDomain *domain;
-	MonoMethod *jmethod;
-
-	if (!active_breakpoints)
-		return;
-
-	domain = mono_domain_get ();
-
-	mono_loader_lock ();
-
-	for (i = 0; i < active_breakpoints->len; ++i) {
-		BreakPointRequest *bp = (BreakPointRequest *)g_ptr_array_index (active_breakpoints, i);
-		gboolean found = FALSE;
-
-		if (!breakpoint_matches (bp, method))
-			continue;
-
-		for (j = 0; j < bp->children->len; ++j) {
-			BreakpointInstance *inst = (BreakpointInstance *)g_ptr_array_index (bp->children, j);
-
-			if (inst->ji == ji)
-				found = TRUE;
-		}
-
-		if (!found) {
-			ERROR_DECL (error);
-			MonoMethod *declaring = NULL;
-
-			jmethod = jinfo_get_method (ji);
-			if (jmethod->is_inflated)
-				declaring = mono_method_get_declaring_generic_method (jmethod);
-
-			mono_domain_lock (domain);
-			seq_points = (MonoSeqPointInfo *)g_hash_table_lookup (domain_jit_info (domain)->seq_points, jmethod);
-			if (!seq_points && declaring)
-				seq_points = (MonoSeqPointInfo *)g_hash_table_lookup (domain_jit_info (domain)->seq_points, declaring);
-			mono_domain_unlock (domain);
-			if (!seq_points) {
-				/* Could be AOT code */
-				continue;
-			}
-			g_assert (seq_points);
-
-			if (!insert_breakpoint (seq_points, domain, ji, bp, error)) {
-				DEBUG_PRINTF (1, "Failed to resolve pending BP due to %s\n", mono_error_get_message (error));
-				mono_error_cleanup (error);
-			}
-		}
-	}
-
-	mono_loader_unlock ();
-}
-
 static void
 jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 {
-	add_pending_breakpoints (method, jinfo);
+	mono_de_add_pending_breakpoints (method, jinfo);
+}
+
+/* Frame state handling */
+static GPtrArray *frames;
+
+static void
+free_frame (DbgEngineStackFrame *frame)
+{
+	g_free (frame);
+}
+
+static gboolean
+collect_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
+{
+	SeqPoint sp;
+	MonoMethod *method;
+
+	//skip wrappers
+	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP)
+		return FALSE;
+
+	if (info->ji)
+		method = jinfo_get_method (info->ji);
+	else
+		method = info->method;
+
+	if (!method)
+		return FALSE;
+
+	DEBUG_PRINTF (2, "Reporting method %s native_offset %d\n", method->name, info->native_offset);
+
+	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
+		DEBUG_PRINTF (1, "Failed to lookup sequence point\n");
+
+	DbgEngineStackFrame *frame = g_new0 (DbgEngineStackFrame, 1);
+
+	frame->ji = info->ji;
+	frame->domain = info->domain;
+	frame->method = method;
+	frame->native_offset = info->native_offset;
+
+	g_ptr_array_add (frames, frame);
+
+	return FALSE;
+}
+
+static void
+free_frame_state (void)
+{
+	if (frames) {
+		int i;
+		for (i = 0; i < frames->len; ++i)
+			free_frame (g_ptr_array_index (frames, i));
+		g_ptr_array_set_size (frames, 0);
+	}	
+}
+
+static void
+compute_frames (void) {
+	if (frames) {
+		int i;
+		for (i = 0; i < frames->len; ++i)
+			free_frame (g_ptr_array_index (frames, i));
+		g_ptr_array_set_size (frames, 0);
+	} else {
+		frames = g_ptr_array_new ();
+	}
+
+	mono_walk_stack_with_ctx (collect_frames, NULL, MONO_UNWIND_NONE, NULL);	
+}
+static MonoContext*
+tls_get_restore_state (void *tls)
+{
+	return NULL;
+}
+
+static gboolean
+try_process_suspend (void *tls, MonoContext *ctx)
+{
+	return FALSE;
+}
+
+static gboolean
+begin_breakpoint_processing (void *tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal)
+{
+	return TRUE;
+}
+
+static void
+begin_single_step_processing (MonoContext *ctx, gboolean from_signal)
+{
+}
+
+static void
+ss_discard_frame_context (void *the_tls)
+{
+	free_frame_state ();
+}
+
+static void
+ss_calculate_framecount (void *tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***out_frames, int *nframes)
+{
+	compute_frames ();
+	if (out_frames)
+		*out_frames = (DbgEngineStackFrame **)frames->pdata;
+	if (nframes)
+		*nframes = frames->len;
+}
+
+static gboolean
+ensure_jit (DbgEngineStackFrame* the_frame)
+{
+	return TRUE;
+}
+
+static int
+ensure_runtime_is_suspended (void)
+{
+	return DE_ERR_NONE;
+}
+
+static int
+get_this_async_id (DbgEngineStackFrame *f)
+{
+	g_error ("get_this_async_id");
+	return 0;
+}
+
+static gboolean
+set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *f)
+{
+	g_error ("set_set_notification_for_wait_completion_flag");
+	return FALSE;
+}
+
+static MonoMethod*
+get_notify_debugger_of_wait_completion_method (void)
+{
+	g_error ("get_notify_debugger_of_wait_completion_method");
+}
+
+typedef struct {
+	gboolean is_ss; //do I need this?
+} BpEvents;
+
+static void*
+create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, EventKind kind)
+{
+	printf ("ss_reqs %d bp_reqs %d\n", ss_reqs->len, bp_reqs->len);
+	if ((ss_reqs && ss_reqs->len) || (bp_reqs && bp_reqs->len > 0)) {
+		BpEvents *evts = g_new0 (BpEvents, 1); //just a non-null value to make sure we can raise it on process_breakpoint_events
+		evts->is_ss = (ss_reqs && ss_reqs->len);
+		return evts;
+	}
+	return NULL;
+}
+
+static void
+process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offsets)
+{
+	BpEvents *evts = _evts;
+	if (evts) {
+		if (evts->is_ss)
+			mono_de_cancel_ss ();
+		mono_wasm_fire_bp ();
+		g_free (evts);
+	}
+}
+
+static void
+no_seq_points_found (MonoMethod *method, int offset)
+{
+	/*
+	 * This can happen in full-aot mode with assemblies AOTed without the 'soft-debug' option to save space.
+	 */
+	printf ("Unable to find seq points for method '%s', offset 0x%x.\n", mono_method_full_name (method, TRUE), offset);
+}
+
+#define DBG_NOT_SUSPENDED 1
+
+static int
+ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *ss_args)
+{
+	printf ("ss_create_init_args\n");
+	int dummy = 0;
+	ss_req->start_sp = ss_req->last_sp = &dummy;
+	compute_frames ();
+
+	//BIG WTF, should not happen
+	if (frames->len == 0) {
+		DEBUG_PRINTF (1, "SINGLE STEPPING FOUND NO FRAMES WUT?!?!");
+		return DBG_NOT_SUSPENDED;
+	}
+
+	DbgEngineStackFrame *frame = g_ptr_array_index (frames, 0);
+	ss_req->start_method = frame->method;
+	gboolean found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &ss_args->info, &ss_args->sp);
+	if (!found_sp)
+		no_seq_points_found (frame->method, frame->native_offset);
+	g_assert (found_sp);
+
+	ss_args->frames = (DbgEngineStackFrame**)frames->pdata;
+	ss_args->nframes = frames->len;
+	//XXX do sp
+
+	return DE_ERR_NONE;
+}
+
+static void
+ss_args_destroy (SingleStepArgs *ss_args)
+{
+	//nothing to do	
 }
 
 void
@@ -337,6 +273,28 @@ mono_wasm_debugger_init (void)
 {
 	if (!debugger_enabled)
 		return;
+
+	DebuggerEngineCallbacks cbs = {
+		.tls_get_restore_state = tls_get_restore_state,
+		.try_process_suspend = try_process_suspend,
+		.begin_breakpoint_processing = begin_breakpoint_processing,
+		.begin_single_step_processing = begin_single_step_processing,
+		.ss_discard_frame_context = ss_discard_frame_context,
+		.ss_calculate_framecount = ss_calculate_framecount,
+		.ensure_jit = ensure_jit,
+		.ensure_runtime_is_suspended = ensure_runtime_is_suspended,
+		.get_this_async_id = get_this_async_id,
+		.set_set_notification_for_wait_completion_flag = set_set_notification_for_wait_completion_flag,
+		.get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method,
+		.create_breakpoint_events = create_breakpoint_events,
+		.process_breakpoint_events = process_breakpoint_events,
+		.ss_create_init_args = ss_create_init_args,
+		.ss_args_destroy = ss_args_destroy,
+	};
+
+	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+	mono_de_init (&cbs);
+	mono_de_set_log_level (1, stdout);
 
 	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 	mini_get_debug_options ()->gen_sdb_seq_points = TRUE;
@@ -346,9 +304,6 @@ mono_wasm_debugger_init (void)
 
 	MonoProfilerHandle prof = mono_profiler_create (NULL);
 	mono_profiler_set_jit_done_callback (prof, jit_done);
-
-	bp_locs = g_hash_table_new (NULL, NULL);
-	active_breakpoints = g_ptr_array_new ();
 }
 
 MONO_API void
@@ -358,6 +313,53 @@ mono_wasm_enable_debugging (void)
 	debugger_enabled = TRUE;
 }
 
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_setup_single_step (int kind)
+{
+	int nmodifiers = 1;
+
+	printf (">>>> mono_wasm_setup_single_step %d\n", kind);
+	EventRequest *req = (EventRequest *)g_malloc0 (sizeof (EventRequest) + (nmodifiers * sizeof (Modifier)));
+	req->id = ++event_request_id;
+	req->event_kind = EVENT_KIND_STEP;
+	// DE doesn't care about suspend_policy
+	// req->suspend_policy = SUSPEND_POLICY_ALL;
+	req->nmodifiers = nmodifiers;
+
+	StepSize size = STEP_SIZE_MIN;
+
+	//FIXME I DON'T KNOW WHAT I'M DOING!!!!! filter all the things.
+	StepFilter filter = (StepFilter)(STEP_FILTER_STATIC_CTOR | STEP_FILTER_DEBUGGER_HIDDEN | STEP_FILTER_DEBUGGER_STEP_THROUGH | STEP_FILTER_DEBUGGER_NON_USER_CODE);
+	req->modifiers [0].data.filter = filter;
+
+	StepDepth depth;
+	switch (kind) {
+	case 0: //into
+		depth = STEP_DEPTH_INTO;
+		break;
+	case 1: //out
+		depth = STEP_DEPTH_OUT;
+		break;
+	case 2: //over
+		depth = STEP_DEPTH_OVER;
+		break;
+	default:
+		g_error ("dunno step kind %d", kind);
+	}
+
+	DbgEngineErrorCode err = mono_de_ss_create (THREAD_TO_INTERNAL (mono_thread_current ()), size, depth, filter, req);
+	if (err != DE_ERR_NONE) {
+		DEBUG_PRINTF (1, "[dbg] Failed to setup single step request");
+	}
+	printf ("ss is in place, now ahat?\n");
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_clear_all_breakpoints (void)
+{
+	DEBUG_PRINTF (1, "CLEAR BREAKPOINTS\n");
+	mono_de_clear_all_breakpoints ();
+}
 
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_offset)
@@ -396,31 +398,43 @@ mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_of
 		return -1;
 	}
 
-	BreakPointRequest *req = breakpoint_request_new (assembly, method, il_offset);
+	//FIXME right now none of the EventRequest fields are used by debugger-engine
+	EventRequest *req = g_new0 (EventRequest, 1);
+	req->id = ++event_request_id;
+	req->event_kind = EVENT_KIND_BREAKPOINT;
+	//DE doesn't care about suspend_policy
+	// req->suspend_policy = SUSPEND_POLICY_ALL;
+	req->nmodifiers = 0; //funny thing,
 
-	add_breakpoint (req);
-	return req->bp_id;
+	// BreakPointRequest *req = breakpoint_request_new (assembly, method, il_offset);
+	MonoBreakpoint *bp = mono_de_set_breakpoint (method, il_offset, req, error);
+
+	if (!bp) {
+		DEBUG_PRINTF (1, "Could not set breakpoint to %s\n", mono_error_get_message (error));
+		mono_error_cleanup (error);
+		return 0;
+	}
+
+	DEBUG_PRINTF (1, "NEW BP %p has id %d\n", req, req->id);
+	return req->id;
 }
 
-//trampoline
-
 void
-mono_sdb_single_step_trampoline (void)
+mono_wasm_single_step_hit (void)
 {
-	g_error ("mono_sdb_single_step_trampoline");
+	mono_de_process_single_step (NULL, FALSE);
 }
 
 void
 mono_wasm_breakpoint_hit (void)
 {
-	mono_wasm_fire_bp ();
+	mono_de_process_breakpoint (NULL, FALSE);
+	// mono_wasm_fire_bp ();
 }
 
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_current_bp_id (void)
 {
-	int i, j;
-
 	DEBUG_PRINTF (1, "COMPUTING breapoint ID\n");
 	//FIXME handle compiled case
 
@@ -447,23 +461,23 @@ mono_wasm_current_bp_id (void)
 	if (!found_sp)
 		DEBUG_PRINTF (1, "Could not find SP\n");
 
-	for (i = 0; i < active_breakpoints->len; ++i) {
-		BreakPointRequest *bp = (BreakPointRequest *)g_ptr_array_index (active_breakpoints, i);
 
-		if (!bp->method)
-			continue;
+	GPtrArray *bp_reqs = g_ptr_array_new ();
+	mono_de_collect_breakpoints_by_sp (&sp, ji, bp_reqs, NULL);
 
-		for (j = 0; j < bp->children->len; ++j) {
-			BreakpointInstance *inst = (BreakpointInstance *)g_ptr_array_index (bp->children, j);
-			if (inst->ji == ji && inst->il_offset == sp.il_offset && inst->native_offset == sp.native_offset) {
-				DEBUG_PRINTF (1, "FOUND BREAKPOINT idx %d ID %d\n", i, bp->bp_id);
-				return bp->bp_id;
-			}
-		}
+	if (bp_reqs->len == 0) {
+		DEBUG_PRINTF (1, "BP NOT FOUND for method %s JI %p il_offset %d\n", method->name, ji, sp.il_offset);
+		return -1;
 	}
-	DEBUG_PRINTF (1, "BP NOT FOUND for method %s JI %p il_offset %d\n", method->name, ji, sp.il_offset);
 
-	return -1;
+	if (bp_reqs->len > 1)
+		DEBUG_PRINTF (1, "Multiple breakpoints (%d) at the same location, returning the first one.", bp_reqs->len);
+
+	EventRequest *evt = (EventRequest *)g_ptr_array_index (bp_reqs, 0);
+	g_ptr_array_free (bp_reqs, TRUE);
+
+	DEBUG_PRINTF (1, "Found BP %p with id %d\n", evt, evt->id);
+	return evt->id;
 }
 
 static gboolean
@@ -606,7 +620,8 @@ describe_variable (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 			g_free (type_name);
 		}
 	}
-	mono_metadata_free_mh (header);
+	if (header)
+		mono_metadata_free_mh (header);
 
 	return TRUE;
 }
