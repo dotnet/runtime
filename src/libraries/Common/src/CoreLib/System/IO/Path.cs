@@ -409,6 +409,16 @@ namespace System.IO
             return JoinInternal(path1, path2, path3);
         }
 
+        public static string Join(string path1, string path2)
+        {
+            return Join(path1.AsSpan(), path2.AsSpan());
+        }
+
+        public static string Join(string path1, string path2, string path3)
+        {
+            return Join(path1.AsSpan(), path2.AsSpan(), path3.AsSpan());
+        }
+
         public static bool TryJoin(ReadOnlySpan<char> path1, ReadOnlySpan<char> path2, Span<char> destination, out int charsWritten)
         {
             charsWritten = 0;
