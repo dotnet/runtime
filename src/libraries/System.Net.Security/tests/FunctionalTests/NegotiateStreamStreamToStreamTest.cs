@@ -90,6 +90,8 @@ namespace System.Net.Security.Tests
             {
                 Assert.False(client.IsAuthenticated);
                 Assert.False(server.IsAuthenticated);
+                Assert.False(client.IsMutuallyAuthenticated);
+                Assert.False(server.IsMutuallyAuthenticated);
 
                 Task[] auth = new Task[2];
 
