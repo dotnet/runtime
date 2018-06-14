@@ -1182,9 +1182,9 @@ public:
 
     bool OperIsPutArgSplit() const
     {
-#if defined(_TARGET_ARM_)
+#if FEATURE_ARG_SPLIT
         return gtOper == GT_PUTARG_SPLIT;
-#else
+#else // !FEATURE_ARG_SPLIT
         return false;
 #endif
     }
@@ -5195,7 +5195,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
 #endif
 };
 
-#if defined(_TARGET_ARM_)
+#if FEATURE_ARG_SPLIT
 // Represent the struct argument: split value in register(s) and stack
 struct GenTreePutArgSplit : public GenTreePutArgStk
 {
@@ -5398,7 +5398,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     }
 #endif
 };
-#endif // _TARGET_ARM_
+#endif // FEATURE_ARG_SPLIT
 
 // Represents GT_COPY or GT_RELOAD node
 struct GenTreeCopyOrReload : public GenTreeUnOp

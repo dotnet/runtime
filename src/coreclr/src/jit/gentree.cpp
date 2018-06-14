@@ -289,9 +289,9 @@ void GenTree::InitNodeSize()
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     GenTree::s_gtNodeSizes[GT_PUTARG_STK]       = TREE_NODE_SZ_LARGE;
-#if defined(_TARGET_ARM_)
+#if FEATURE_ARG_SPLIT
     GenTree::s_gtNodeSizes[GT_PUTARG_SPLIT]     = TREE_NODE_SZ_LARGE;
-#endif
+#endif // FEATURE_ARG_SPLIT
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
     assert(GenTree::s_gtNodeSizes[GT_RETURN] == GenTree::s_gtNodeSizes[GT_ASG]);
@@ -352,9 +352,9 @@ void GenTree::InitNodeSize()
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     static_assert_no_msg(sizeof(GenTreePutArgStk)    <= TREE_NODE_SZ_LARGE);
-#if defined(_TARGET_ARM_)
+#if FEATURE_ARG_SPLIT
     static_assert_no_msg(sizeof(GenTreePutArgSplit)  <= TREE_NODE_SZ_LARGE);
-#endif
+#endif // FEATURE_ARG_SPLIT
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef FEATURE_SIMD
@@ -742,7 +742,7 @@ int GenTree::GetRegisterDstCount() const
     {
         return gtGetOp1()->GetRegisterDstCount();
     }
-#if defined(_TARGET_ARM_)
+#if FEATURE_ARG_SPLIT
     else if (OperIsPutArgSplit())
     {
         return (const_cast<GenTree*>(this))->AsPutArgSplit()->gtNumRegs;
@@ -751,10 +751,14 @@ int GenTree::GetRegisterDstCount() const
     // either for all double parameters w/SoftFP or for varargs).
     else
     {
+#ifdef _TARGET_ARM_
         assert(OperIsMultiRegOp());
         return (TypeGet() == TYP_LONG) ? 2 : 1;
+#else
+        unreached();
+#endif // _TARGET_ARM_
     }
-#endif // defined(_TARGET_ARM_)
+#endif // FEATURE_ARG_SPLIT
     assert(!"Unexpected multi-reg node");
     return 0;
 }
@@ -800,7 +804,7 @@ regMaskTP GenTree::gtGetRegMask() const
             }
         }
     }
-#if defined(_TARGET_ARM_)
+#if FEATURE_ARG_SPLIT
     else if (OperIsPutArgSplit())
     {
         GenTree*            tree     = const_cast<GenTree*>(this);
@@ -815,7 +819,7 @@ regMaskTP GenTree::gtGetRegMask() const
             resultMask |= genRegMask(reg);
         }
     }
-#endif
+#endif // FEATURE_ARG_SPLIT
     else
     {
         resultMask = genRegMask(gtRegNum);
@@ -5150,7 +5154,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
         case GT_FIELD_LIST:
             return TryGetUseList(def, use);
 
-#if defined(_TARGET_ARM_)
+#if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
             if (this->AsUnOp()->gtOp1->gtOper == GT_FIELD_LIST)
             {
@@ -5162,7 +5166,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
                 return true;
             }
             return false;
-#endif // _TARGET_ARM_
+#endif // FEATURE_ARG_SPLIT
 
 #ifdef FEATURE_SIMD
         case GT_SIMD:
@@ -8772,9 +8776,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-#if defined(_TARGET_ARM_)
+#if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
-#endif // _TARGET_ARM_
+#endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);

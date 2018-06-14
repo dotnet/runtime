@@ -4682,9 +4682,9 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-#if defined(_TARGET_ARM_)
+#if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
-#endif
+#endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
             visitor(this->AsUnOp()->gtOp1);
             return;
