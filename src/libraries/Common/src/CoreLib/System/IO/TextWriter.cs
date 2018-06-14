@@ -283,6 +283,21 @@ namespace System.IO
             }
         }
 
+        /// <summary>
+        /// Equivalent to Write(stringBuilder.ToString()) however it uses the
+        /// StringBuilder.GetChunks() method to avoid creating the intermediate string 
+        /// </summary>
+        /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
+        public virtual void Write(StringBuilder value)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+            foreach (ReadOnlyMemory<char> chunk in value.GetChunks())
+                Write(chunk);
+        }
+
         // Writes out a formatted string.  Uses the same semantics as
         // String.Format.
         // 
@@ -447,6 +462,16 @@ namespace System.IO
             Write(CoreNewLineStr);
         }
 
+        /// <summary>
+        /// Equivalent to WriteLine(stringBuilder.ToString()) however it uses the
+        /// StringBuilder.GetChunks() method to avoid creating the intermediate string 
+        /// </summary>
+        public virtual void WriteLine(StringBuilder value)
+        {
+            Write(value);
+            WriteLine();
+        }
+
         // Writes the text representation of an object followed by a line
         // terminator to the text stream.
         //
@@ -527,6 +552,28 @@ namespace System.IO
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
+        /// <summary>
+        /// Equivalent to WriteAsync(stringBuilder.ToString()) however it uses the
+        /// StringBuilder.GetChunks() method to avoid creating the intermediate string 
+        /// </summary>
+        /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
+        public virtual Task WriteAsync(StringBuilder value, CancellationToken cancellationToken = default)
+        {
+            // Do the agument checking before 'going async' so you get it early 
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+            // Then do the rest which may be deferred (done in the returned Task)
+            return WriteAsyncCore(value, cancellationToken);
+
+            async Task WriteAsyncCore(StringBuilder sb, CancellationToken ct)
+            {
+                foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
+                    await WriteAsync(chunk, ct).ConfigureAwait(false);
+            }
+        }
+
         public Task WriteAsync(char[] buffer)
         {
             if (buffer == null)
@@ -577,6 +624,17 @@ namespace System.IO
                 t.Item1.WriteLine(t.Item2);
             },
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+        }
+
+        /// <summary>
+        /// Equivalent to WriteLineAsync(stringBuilder.ToString()) however it uses the
+        /// StringBuilder.GetChunks() method to avoid creating the intermediate string 
+        /// </summary>
+        /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
+        public async virtual Task WriteLineAsync(StringBuilder value, CancellationToken cancellationToken = default)
+        {
+            await WriteAsync(value, cancellationToken).ConfigureAwait(false);
+            await WriteAsync(CoreNewLine, cancellationToken).ConfigureAwait(false);
         }
 
         public Task WriteLineAsync(char[] buffer)
@@ -745,6 +803,9 @@ namespace System.IO
             public override void Write(string value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
+            public override void Write(StringBuilder value) => _out.Write(value);
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             public override void Write(object value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
@@ -799,6 +860,9 @@ namespace System.IO
             public override void WriteLine(string value) => _out.WriteLine(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
+            public override void WriteLine(StringBuilder value) => _out.WriteLine(value);
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine(object value) => _out.WriteLine(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
@@ -832,6 +896,13 @@ namespace System.IO
             }
 
             [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task WriteAsync(StringBuilder value, CancellationToken cancellationToken = default)
+            {
+                Write(value);
+                return Task.CompletedTask;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task WriteAsync(char[] buffer, int index, int count)
             {
                 Write(buffer, index, count);
@@ -847,6 +918,13 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task WriteLineAsync(string value)
+            {
+                WriteLine(value);
+                return Task.CompletedTask;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task WriteLineAsync(StringBuilder value, CancellationToken cancellationToken = default)
             {
                 WriteLine(value);
                 return Task.CompletedTask;
