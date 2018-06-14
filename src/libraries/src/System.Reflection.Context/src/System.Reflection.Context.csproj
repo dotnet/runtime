@@ -4,23 +4,84 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <ProjectGuid>{404DB891-B5AF-41E6-B89D-29E3F4573C4F}</ProjectGuid>
-    <!-- only supported by desktop CLR -->
-    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_ReflectionContext</GeneratePlatformNotSupportedAssemblyMessage>
-    <!-- Xamarin frameworks claim to support PCL profiles which include this assembly,
-         but do not include this assembly in their framework.
-         This causes NuGet to give them the placeholder from the portable-* folder.
-         Instead give them this assembly.  -->
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;MonoAndroid10;MonoTouch10;xamarinios10;xamarintvos10;xamarinwatchos10</PackageTargetFramework>
+    <!-- Only supported on .NET Framework, .NET Core and UAP -->
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_ReflectionContext</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">
+    <Compile Include="System\Reflection\Context\CollectionServices.cs" />
+    <Compile Include="System\Reflection\Context\CustomReflectionContext.cs" />
+    <Compile Include="System\Reflection\Context\CustomReflectionContext.Projector.cs" />
+    <Compile Include="System\Reflection\Context\Custom\AttributeUtils.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomAssembly.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomEventInfo.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomFieldInfo.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomMethodInfo.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomModule.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomParameterInfo.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomPropertyInfo.cs" />
+    <Compile Include="System\Reflection\Context\Custom\CustomType.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingAssembly.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingEventInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingExceptionHandlingClause.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingFieldInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingLocalVariableInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingManifestResourceInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingMethodBody.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingMethodInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingModule.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingParameterInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingPropertyInfo.cs" />
+    <Compile Include="System\Reflection\Context\Delegation\DelegatingType.cs" />
+    <Compile Include="System\Reflection\Context\Projection\IProjectable.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingAssembly.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingEventInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingExceptionHandlingClause.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingFieldInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingLocalVariableInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingManifestResourceInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingMethodBody.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingMethodInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingModule.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingParameterInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingPropertyInfo.cs" />
+    <Compile Include="System\Reflection\Context\Projection\ProjectingType.cs" />
+    <Compile Include="System\Reflection\Context\Projection\Projector.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\InheritedMethodInfo.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\InheritedPropertyInfo.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualMethodBase.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualParameter.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyBase.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyBase.FuncPropertyAccessorBase.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyBase.PropertyGetterBase.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyBase.PropertySetterBase.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyInfo.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyInfo.PropertyGetter.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualPropertyInfo.PropertySetter.cs" />
+    <Compile Include="System\Reflection\Context\Virtual\VirtualReturnParameter.cs" />
+  </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Runtime" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Security.Permissions" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
