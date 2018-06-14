@@ -61,7 +61,14 @@ namespace System.IO
             int fileType = Interop.Kernel32.GetFileType(_fileHandle);
             if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
             {
+                int errorCode = fileType == Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN ? Marshal.GetLastWin32Error() : Interop.Errors.ERROR_SUCCESS;
+
                 _fileHandle.Dispose();
+
+                if (errorCode != Interop.Errors.ERROR_SUCCESS)
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                }
                 throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);
             }
 
