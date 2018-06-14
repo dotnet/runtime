@@ -481,6 +481,12 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
+#if FEATURE_ARG_SPLIT
+        case GT_PUTARG_SPLIT:
+            BuildPutArgSplit(tree->AsPutArgSplit());
+            break;
+#endif // FEATURE _SPLIT_ARG
+
         case GT_PUTARG_STK:
             srcCount = BuildPutArgStk(tree->AsPutArgStk());
             break;

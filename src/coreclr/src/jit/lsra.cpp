@@ -130,13 +130,15 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
     {
         tree->gtRegNum = reg;
     }
-#if defined(_TARGET_ARM_)
+#if FEATURE_ARG_SPLIT
+#ifdef _TARGET_ARM_
     else if (tree->OperIsMultiRegOp())
     {
         assert(regIdx == 1);
         GenTreeMultiRegOp* mul = tree->AsMultiRegOp();
         mul->gtOtherReg        = reg;
     }
+#endif // _TARGET_ARM_
     else if (tree->OperGet() == GT_COPY)
     {
         assert(regIdx == 1);
@@ -148,7 +150,7 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
         GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
         putArg->SetRegNumByIdx(reg, regIdx);
     }
-#endif // _TARGET_ARM_
+#endif // FEATURE_ARG_SPLIT
     else
     {
         assert(tree->IsMultiRegCall());
@@ -6442,7 +6444,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                     ReturnTypeDesc* retTypeDesc = treeNode->AsCall()->GetReturnTypeDesc();
                     typ                         = retTypeDesc->GetReturnRegType(refPosition->getMultiRegIdx());
                 }
-#ifdef _TARGET_ARM_
+#if FEATURE_ARG_SPLIT
                 else if (treeNode->OperIsPutArgSplit())
                 {
                     typ = treeNode->AsPutArgSplit()->GetRegType(refPosition->getMultiRegIdx());
@@ -6454,7 +6456,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                     var_types typNode = treeNode->TypeGet();
                     typ               = (typNode == TYP_LONG) ? TYP_INT : typNode;
                 }
-#endif // _TARGET_ARM_
+#endif // FEATURE_ARG_SPLIT
                 else
                 {
                     typ = treeNode->TypeGet();
@@ -6771,18 +6773,20 @@ void LinearScan::resolveRegisters()
                                 GenTreeCall* call = treeNode->AsCall();
                                 call->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
-#ifdef _TARGET_ARM_
+#if FEATURE_ARG_SPLIT
                             else if (treeNode->OperIsPutArgSplit())
                             {
                                 GenTreePutArgSplit* splitArg = treeNode->AsPutArgSplit();
                                 splitArg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
+#ifdef _TARGET_ARM_
                             else if (treeNode->OperIsMultiRegOp())
                             {
                                 GenTreeMultiRegOp* multiReg = treeNode->AsMultiRegOp();
                                 multiReg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
-#endif
+#endif // _TARGET_ARM_
+#endif // FEATURE_ARG_SPLIT
                         }
 
                         // If the value is reloaded or moved to a different register, we need to insert

@@ -43,9 +43,9 @@ void genCodeForCompare(GenTreeOp* tree);
 void genIntrinsic(GenTree* treeNode);
 void genPutArgStk(GenTreePutArgStk* treeNode);
 void genPutArgReg(GenTreeOp* tree);
-#ifdef _TARGET_ARM_
+#if FEATURE_ARG_SPLIT
 void genPutArgSplit(GenTreePutArgSplit* treeNode);
-#endif
+#endif // FEATURE_ARG_SPLIT
 
 #if defined(_TARGET_XARCH_)
 unsigned getBaseVarForPutArgStk(GenTree* treeNode);
@@ -194,9 +194,9 @@ void genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber srcReg, 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
 void genConsumePutStructArgStk(GenTreePutArgStk* putArgStkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 #endif // FEATURE_PUT_STRUCT_ARG_STK
-#ifdef _TARGET_ARM_
+#if FEATURE_ARG_SPLIT
 void genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode);
-#endif
+#endif // FEATURE_ARG_SPLIT
 
 void genConsumeRegs(GenTree* tree);
 void genConsumeOperands(GenTreeOp* tree);
