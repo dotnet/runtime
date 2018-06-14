@@ -2,8 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Test.Common;
+using System.Security.Authentication;
+using System.Security.Authentication.ExtendedProtection;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +21,7 @@ namespace System.Net.Security.Tests
     public class NegotiateStreamInvalidOperationTest
     {
         private static readonly byte[] s_sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
+        private const string TargetName = "testTargetName";
 
         [Fact]
         public async Task NegotiateStream_StreamContractTest_Success()
@@ -160,6 +166,190 @@ namespace System.Net.Security.Tests
                 server.Dispose();
                 Assert.Throws<IOException>(() => client.Write(s_sampleMsg, 0, s_sampleMsg.Length));
                 Assert.Throws<IOException>(() => client.Read(recvBuf, 0, s_sampleMsg.Length));
+            }
+        }
+
+        [Fact]
+        public void NegotiateStream_InvalidPolicy_Throws()
+        {
+            var network = new VirtualNetwork();
+            var policy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new NegotiateStream(clientStream))
+            using (var server = new NegotiateStream(serverStream))
+            {
+                // If ExtendedProtection is on, either CustomChannelBinding or CustomServiceNames must be set.
+                AssertExtensions.Throws<ArgumentException>(nameof(policy), () => server.AuthenticateAsServer(policy));
+            }
+        }
+
+        [Fact]
+        public async Task NegotiateStream_TokenImpersonationLevelRequirmentNotMatch_Throws()
+        {
+            var network = new VirtualNetwork();
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new NegotiateStream(clientStream))
+            using (var server = new NegotiateStream(serverStream))
+            {
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    Assert.ThrowsAsync<AuthenticationException>(() =>
+                        client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, string.Empty)),
+                    // We suppress the Delegation flag in NTLM case.
+                    Assert.ThrowsAsync<AuthenticationException>(() =>
+                        server.AuthenticateAsServerAsync((NetworkCredential)CredentialCache.DefaultCredentials,
+                            null, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Delegation)));
+            }
+        }
+
+        [Fact]
+        public async Task NegotiateStream_SPNRequirmentNotMeet_Throws()
+        {
+            var network = new VirtualNetwork();
+            var snc = new List<string>
+            {
+                "serviceName"
+            };
+            // PolicyEnforcement.Always will force clientSpn check.
+            var policy = new ExtendedProtectionPolicy(PolicyEnforcement.Always, ProtectionScenario.TransportSelected, new ServiceNameCollection(snc));
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new NegotiateStream(clientStream))
+            using (var server = new NegotiateStream(serverStream))
+            {
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, string.Empty)),
+                    Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync(policy)));
+            }
+        }
+
+        [Fact]
+        public void NegotiateStream_DisposedState_Throws()
+        {
+            var network = new VirtualNetwork();
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new NegotiateStream(clientStream))
+            using (var server = new NegotiateStream(serverStream))
+            {
+                client.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => client.AuthenticateAsClient());
+            }
+        }
+
+        [Fact]
+        public async Task NegotiateStream_DoubleAuthentication_Throws()
+        {
+            var network = new VirtualNetwork();
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new NegotiateStream(clientStream))
+            using (var server = new NegotiateStream(serverStream))
+            {
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(),
+                    server.AuthenticateAsServerAsync());
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    Assert.ThrowsAsync<InvalidOperationException>(() => client.AuthenticateAsClientAsync()),
+                    Assert.ThrowsAsync<InvalidOperationException>(() => server.AuthenticateAsServerAsync()));
+            }
+        }
+
+        [Fact]
+        public void NegotiateStream_NullCredential_Throws()
+        {
+            NetworkCredential credential = null;
+            var network = new VirtualNetwork();
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new NegotiateStream(clientStream))
+            using (var server = new NegotiateStream(serverStream))
+            {
+                AssertExtensions.Throws<ArgumentNullException>(nameof(credential), () => client.AuthenticateAsClient(null, TargetName));
+            }
+        }
+
+        [Fact]
+        public void NegotiateStream_NullServicePrincipalName_Throws()
+        {
+            string servicePrincipalName = null;
+            var network = new VirtualNetwork();
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new NegotiateStream(clientStream))
+            using (var server = new NegotiateStream(serverStream))
+            {
+                AssertExtensions.Throws<ArgumentNullException>(nameof(servicePrincipalName),
+                    () => client.AuthenticateAsClient(CredentialCache.DefaultNetworkCredentials, servicePrincipalName));
+            }
+        }
+
+        [Fact]
+        public async Task NegotiateStream_SecurityRequirmentNotMeet_Throws()
+        {
+            var network = new VirtualNetwork();
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new NegotiateStream(clientStream))
+            using (var server = new NegotiateStream(serverStream))
+            {
+                // ProtectionLevel not match.
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    Assert.ThrowsAsync<AuthenticationException>(() =>
+                        client.AuthenticateAsClientAsync((NetworkCredential)CredentialCache.DefaultCredentials,
+                            TargetName, ProtectionLevel.None, TokenImpersonationLevel.Identification)),
+                    Assert.ThrowsAsync<AuthenticationException>(() =>
+                        server.AuthenticateAsServerAsync((NetworkCredential)CredentialCache.DefaultCredentials,
+                            ProtectionLevel.Sign, TokenImpersonationLevel.Identification)));
+
+                Assert.Throws<AuthenticationException>(() => client.Write(s_sampleMsg, 0, s_sampleMsg.Length));
+            }
+        }
+
+        [Fact]
+        public async Task NegotiateStream_EndAuthenticateInvalidParameter_Throws()
+        {
+            var network = new VirtualNetwork();
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new NegotiateStream(clientStream))
+            using (var server = new NegotiateStream(serverStream))
+            {
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    Task.Factory.FromAsync(client.BeginAuthenticateAsClient, (asyncResult) =>
+                    {
+                        NegotiateStream authStream = (NegotiateStream)asyncResult.AsyncState;
+                        AssertExtensions.Throws<ArgumentNullException>(nameof(asyncResult), () => authStream.EndAuthenticateAsClient(null));
+
+                        IAsyncResult result = new MyAsyncResult();
+                        AssertExtensions.Throws<ArgumentException>(nameof(asyncResult), () => authStream.EndAuthenticateAsClient(result));
+
+                        authStream.EndAuthenticateAsClient(asyncResult);
+                        Assert.Throws<InvalidOperationException>(() => authStream.EndAuthenticateAsClient(asyncResult));
+                    }, CredentialCache.DefaultNetworkCredentials, string.Empty, client),
+
+                    Task.Factory.FromAsync(server.BeginAuthenticateAsServer, (asyncResult) =>
+                    {
+                        NegotiateStream authStream = (NegotiateStream)asyncResult.AsyncState;
+                        AssertExtensions.Throws<ArgumentNullException>(nameof(asyncResult), () => authStream.EndAuthenticateAsServer(null));
+
+                        IAsyncResult result = new MyAsyncResult();
+                        AssertExtensions.Throws<ArgumentException>(nameof(asyncResult), () => authStream.EndAuthenticateAsServer(result));
+
+                        authStream.EndAuthenticateAsServer(asyncResult);
+                        Assert.Throws<InvalidOperationException>(() => authStream.EndAuthenticateAsServer(asyncResult));
+                    }, server));
             }
         }
 
