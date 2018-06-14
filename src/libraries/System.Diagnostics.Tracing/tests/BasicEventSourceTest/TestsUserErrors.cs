@@ -12,15 +12,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using System.Threading;
 
 namespace BasicEventSourceTests
 {
     /// <summary>
     /// Tests the user experience for common user errors.  
     /// </summary>
-
-    public class TestsUserErrors
+    public partial class TestsUserErrors
     {
         /// <summary>
         /// Try to pass a user defined class (even with EventData)
@@ -74,26 +72,11 @@ namespace BasicEventSourceTests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Depends on inspecting IL at runtime.")]
         public void Test_BadEventSource_MismatchedIds()
         {
-#if USE_ETW
-            // We expect only one session to be on when running the test but if a ETW session was left
-            // hanging, it will confuse the EventListener tests.
-            if(TestUtilities.IsProcessElevated)
-            {
-                EtwListener.EnsureStopped();
-            }
-#endif // USE_ETW
-
             TestUtilities.CheckNoEventSourcesRunning("Start");
             var onStartups = new bool[] { false, true };
 
             var listenerGenerators = new List<Func<Listener>>();
             listenerGenerators.Add(() => new EventListenerListener());
-#if USE_ETW
-            if(TestUtilities.IsProcessElevated)
-            {
-                listenerGenerators.Add(() => new EtwListener());
-            }
-#endif // USE_ETW
 
             var settings = new EventSourceSettings[] { EventSourceSettings.Default, EventSourceSettings.EtwSelfDescribingEventFormat };
 
