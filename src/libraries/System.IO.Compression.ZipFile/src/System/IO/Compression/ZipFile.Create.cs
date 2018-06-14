@@ -9,11 +9,8 @@ using System.Text;
 
 namespace System.IO.Compression
 {
-    public static class ZipFile
+    public static partial class ZipFile
     {
-        // Per the .ZIP File Format Specification 4.4.17.1 all slashes should be forward slashes
-        private const char PathSeparator = '/';
-
         /// <summary>
         /// Opens a <code>ZipArchive</code> on the specified path for reading. The specified file is opened with <code>FileMode.Open</code>.
         /// </summary>
@@ -34,11 +31,7 @@ namespace System.IO.Compression
         /// 
         /// <param name="archiveFileName">A string specifying the path on the filesystem to open the archive on. The path is permitted
         /// to specify relative or absolute path information. Relative path information is interpreted as relative to the current working directory.</param>
-        public static ZipArchive OpenRead(string archiveFileName)
-        {
-            return Open(archiveFileName, ZipArchiveMode.Read);
-        }
-
+        public static ZipArchive OpenRead(string archiveFileName) => Open(archiveFileName, ZipArchiveMode.Read);
 
         /// <summary>
         /// Opens a <code>ZipArchive</code> on the specified <code>archiveFileName</code> in the specified <code>ZipArchiveMode</code> mode.
@@ -76,11 +69,7 @@ namespace System.IO.Compression
         /// If the file exists and is empty or does not exist, a new Zip file will be created.
         /// Note that creating a Zip file with the <code>ZipArchiveMode.Create</code> mode is more efficient when creating a new Zip file.</param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]  // See comment in the body.
-        public static ZipArchive Open(string archiveFileName, ZipArchiveMode mode)
-        {
-            return Open(archiveFileName, mode, entryNameEncoding: null);
-        }
-
+        public static ZipArchive Open(string archiveFileName, ZipArchiveMode mode) => Open(archiveFileName, mode, entryNameEncoding: null);
 
         /// <summary>
         /// Opens a <code>ZipArchive</code> on the specified <code>archiveFileName</code> in the specified <code>ZipArchiveMode</code> mode.
@@ -207,7 +196,6 @@ namespace System.IO.Compression
             }
         }
 
-
         /// <summary>
         /// <p>Creates a Zip archive at the path <code>destinationArchiveFileName</code> that contains the files and directories from
         /// the directory specified by <code>sourceDirectoryName</code>. The directory structure is preserved in the archive, and a
@@ -247,12 +235,8 @@ namespace System.IO.Compression
         ///                                         
         /// <param name="sourceDirectoryName">The path to the directory on the file system to be archived. </param>
         /// <param name="destinationArchiveFileName">The name of the archive to be created.</param>
-        public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName)
-        {
-            DoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName,
-                                  compressionLevel: null, includeBaseDirectory: false, entryNameEncoding: null);
-        }
-
+        public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName) =>
+            DoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName, compressionLevel: null, includeBaseDirectory: false, entryNameEncoding: null);
 
         /// <summary>
         /// <p>Creates a Zip archive at the path <code>destinationArchiveFileName</code> that contains the files and directories in the directory
@@ -297,12 +281,8 @@ namespace System.IO.Compression
         /// <param name="includeBaseDirectory"><code>true</code> to indicate that a directory named <code>sourceDirectoryName</code> should
         /// be included at the root of the archive. <code>false</code> to indicate that the files and directories in <code>sourceDirectoryName</code>
         /// should be included directly in the archive.</param>
-        public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName,
-                                               CompressionLevel compressionLevel, bool includeBaseDirectory)
-        {
+        public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, CompressionLevel compressionLevel, bool includeBaseDirectory) =>
             DoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding: null);
-        }
-
 
         /// <summary>
         /// <p>Creates a Zip archive at the path <code>destinationArchiveFileName</code> that contains the files and directories in the directory
@@ -371,208 +351,12 @@ namespace System.IO.Compression
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName,
-                                               CompressionLevel compressionLevel, bool includeBaseDirectory,
-                                               Encoding entryNameEncoding)
-        {
-            DoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding);
-        }
-
-
-        /// <summary>
-        /// Extracts all of the files in the specified archive to a directory on the file system.
-        /// The specified directory must not exist. This method will create all subdirectories and the specified directory.
-        /// If there is an error while extracting the archive, the archive will remain partially extracted. Each entry will
-        /// be extracted such that the extracted file has the same relative path to the destinationDirectoryName as the entry
-        /// has to the archive. The path is permitted to specify relative or absolute path information. Relative path information
-        /// is interpreted as relative to the current working directory. If a file to be archived has an invalid last modified
-        /// time, the first datetime representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
-        /// </summary>
-        /// 
-        /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only whitespace,
-        /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
-        /// <exception cref="ArgumentNullException">sourceArchive or destinationDirectoryName is null.</exception>
-        /// <exception cref="PathTooLongException">sourceArchive or destinationDirectoryName specifies a path, file name,
-        /// or both exceed the system-defined maximum length. For example, on Windows-based platforms, paths must be less than 248 characters,
-        /// and file names must be less than 260 characters.</exception>
-        /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
-        /// (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only whitespace, or contains one or
-        /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
-        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
-        /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>
-        /// <exception cref="FileNotFoundException">sourceArchive was not found.</exception>
-        /// <exception cref="InvalidDataException">The archive specified by sourceArchive: Is not a valid ZipArchive
-        /// -or- An archive entry was not found or was corrupt. -or- An archive entry has been compressed using a compression method
-        /// that is not supported.</exception>
-        /// 
-        /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
-        /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName)
-        {
-            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null);
-        }
-
-        /// <summary>
-        /// Extracts all of the files in the specified archive to a directory on the file system.
-        /// The specified directory must not exist. This method will create all subdirectories and the specified directory.
-        /// If there is an error while extracting the archive, the archive will remain partially extracted. Each entry will
-        /// be extracted such that the extracted file has the same relative path to the destinationDirectoryName as the entry
-        /// has to the archive. The path is permitted to specify relative or absolute path information. Relative path information
-        /// is interpreted as relative to the current working directory. If a file to be archived has an invalid last modified
-        /// time, the first datetime representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
-        /// </summary>
-        /// 
-        /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only whitespace,
-        /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
-        /// <exception cref="ArgumentNullException">sourceArchive or destinationDirectoryName is null.</exception>
-        /// <exception cref="PathTooLongException">sourceArchive or destinationDirectoryName specifies a path, file name,
-        /// or both exceed the system-defined maximum length. For example, on Windows-based platforms, paths must be less than 248 characters,
-        /// and file names must be less than 260 characters.</exception>
-        /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
-        /// (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only whitespace, or contains one or
-        /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
-        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
-        /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>
-        /// <exception cref="FileNotFoundException">sourceArchive was not found.</exception>
-        /// <exception cref="InvalidDataException">The archive specified by sourceArchive: Is not a valid ZipArchive
-        /// -or- An archive entry was not found or was corrupt. -or- An archive entry has been compressed using a compression method
-        /// that is not supported.</exception>
-        /// 
-        /// <param name="destinationArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
-        /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
-        /// <param name="overwrite">True to indicate overwrite.</param> 
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwrite)
-        {
-            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwrite: overwrite);
-        }
-
-        /// <summary>
-        /// Extracts all of the files in the specified archive to a directory on the file system.
-        /// The specified directory must not exist. This method will create all subdirectories and the specified directory.
-        /// If there is an error while extracting the archive, the archive will remain partially extracted. Each entry will
-        /// be extracted such that the extracted file has the same relative path to the destinationDirectoryName as the entry
-        /// has to the archive. The path is permitted to specify relative or absolute path information. Relative path information
-        /// is interpreted as relative to the current working directory. If a file to be archived has an invalid last modified
-        /// time, the first datetime representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
-        /// </summary>
-        /// 
-        /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only whitespace,
-        /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
-        /// <exception cref="ArgumentNullException">sourceArchive or destinationDirectoryName is null.</exception>
-        /// <exception cref="PathTooLongException">sourceArchive or destinationDirectoryName specifies a path, file name,
-        /// or both exceed the system-defined maximum length. For example, on Windows-based platforms, paths must be less than 248 characters,
-        /// and file names must be less than 260 characters.</exception>
-        /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
-        /// (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only whitespace, or contains one or
-        /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
-        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
-        /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>
-        /// <exception cref="FileNotFoundException">sourceArchive was not found.</exception>
-        /// <exception cref="InvalidDataException">The archive specified by sourceArchive: Is not a valid ZipArchive
-        /// -or- An archive entry was not found or was corrupt. -or- An archive entry has been compressed using a compression method
-        /// that is not supported.</exception>
-        /// 
-        /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
-        /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
-        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
-        ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
-        ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
-        ///         UTF-8 encoding for entry names.<br />
-        ///         This value is used as follows:</para>
-        ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
-        ///     <list>
-        ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
-        ///         use the current system default code page (<c>Encoding.Default</c>) in order to decode the entry name.</item>
-        ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
-        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
-        ///     </list>
-        ///     <para>If <c>entryNameEncoding</c> is specified (<c>!= null</c>):</para>
-        ///     <list>
-        ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
-        ///         use the specified <c>entryNameEncoding</c> in order to decode the entry name.</item>
-        ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
-        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
-        ///     </list>
-        ///     <para>Note that Unicode encodings other than UTF-8 may not be currently used for the <c>entryNameEncoding</c>,
-        ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
-        /// </param>
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding entryNameEncoding)
-        {
-            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, overwrite: false, entryNameEncoding: entryNameEncoding);
-        }
-
-        /// <summary>
-        /// Extracts all of the files in the specified archive to a directory on the file system.
-        /// The specified directory must not exist. This method will create all subdirectories and the specified directory.
-        /// If there is an error while extracting the archive, the archive will remain partially extracted. Each entry will
-        /// be extracted such that the extracted file has the same relative path to the destinationDirectoryName as the entry
-        /// has to the archive. The path is permitted to specify relative or absolute path information. Relative path information
-        /// is interpreted as relative to the current working directory. If a file to be archived has an invalid last modified
-        /// time, the first datetime representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
-        /// </summary>
-        /// 
-        /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only whitespace,
-        /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
-        /// <exception cref="ArgumentNullException">sourceArchive or destinationDirectoryName is null.</exception>
-        /// <exception cref="PathTooLongException">sourceArchive or destinationDirectoryName specifies a path, file name,
-        /// or both exceed the system-defined maximum length. For example, on Windows-based platforms, paths must be less than 248 characters,
-        /// and file names must be less than 260 characters.</exception>
-        /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
-        /// (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only whitespace, or contains one or
-        /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
-        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
-        /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>
-        /// <exception cref="FileNotFoundException">sourceArchive was not found.</exception>
-        /// <exception cref="InvalidDataException">The archive specified by sourceArchive: Is not a valid ZipArchive
-        /// -or- An archive entry was not found or was corrupt. -or- An archive entry has been compressed using a compression method
-        /// that is not supported.</exception>
-        /// 
-        /// <param name="destinationArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
-        /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
-        /// <param name="overwrite">True to indicate overwrite.</param>
-        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
-        ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
-        ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
-        ///         UTF-8 encoding for entry names.<br />
-        ///         This value is used as follows:</para>
-        ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
-        ///     <list>
-        ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
-        ///         use the current system default code page (<c>Encoding.Default</c>) in order to decode the entry name.</item>
-        ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
-        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
-        ///     </list>
-        ///     <para>If <c>entryNameEncoding</c> is specified (<c>!= null</c>):</para>
-        ///     <list>
-        ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
-        ///         use the specified <c>entryNameEncoding</c> in order to decode the entry name.</item>
-        ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
-        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
-        ///     </list>
-        ///     <para>Note that Unicode encodings other than UTF-8 may not be currently used for the <c>entryNameEncoding</c>,
-        ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
-        /// </param>
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding entryNameEncoding, bool overwrite)
-        {
-            if (sourceArchiveFileName == null)
-                throw new ArgumentNullException(nameof(sourceArchiveFileName));
-
-            using (ZipArchive archive = Open(sourceArchiveFileName, ZipArchiveMode.Read, entryNameEncoding))
-            {
-                archive.ExtractToDirectory(destinationDirectoryName, overwrite);
-            }
-        }
+                                               CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding entryNameEncoding) =>
+            DoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding: null);
 
         private static void DoCreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName,
-                                                  CompressionLevel? compressionLevel, bool includeBaseDirectory,
-                                                  Encoding entryNameEncoding)
+                                                  CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding entryNameEncoding)
+
         {
             // Rely on Path.GetFullPath for validation of sourceDirectoryName and destinationArchive
 
@@ -612,18 +396,18 @@ namespace System.IO.Compression
                         if (file is FileInfo)
                         {
                             // Create entry for file:
-                            string entryName = EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer);
+                            string entryName = ZipFileUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer);
                             ZipFileExtensions.DoCreateEntryFromFile(archive, file.FullName, entryName, compressionLevel);
                         }
                         else
                         {
                             // Entry marking an empty dir:
                             DirectoryInfo possiblyEmpty = file as DirectoryInfo;
-                            if (possiblyEmpty != null && IsDirEmpty(possiblyEmpty))
+                            if (possiblyEmpty != null && ZipFileUtils.IsDirEmpty(possiblyEmpty))
                             {
                                 // FullName never returns a directory separator character on the end,
                                 // but Zip archives require it to specify an explicit directory:
-                                string entryName = EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer, appendPathSeparator: true);
+                                string entryName = ZipFileUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer, appendPathSeparator: true);
                                 archive.CreateEntry(entryName);
                             }
                         }
@@ -631,73 +415,14 @@ namespace System.IO.Compression
 
                     // If no entries create an empty root directory entry:
                     if (includeBaseDirectory && directoryIsEmpty)
-                        archive.CreateEntry(EntryFromPath(di.Name, 0, di.Name.Length, ref entryNameBuffer, appendPathSeparator: true));
+                        archive.CreateEntry(ZipFileUtils.EntryFromPath(di.Name, 0, di.Name.Length, ref entryNameBuffer, appendPathSeparator: true));
                 }
                 finally
                 {
                     ArrayPool<char>.Shared.Return(entryNameBuffer);
                 }
 
-            } // using
-        }  // DoCreateFromDirectory
-
-        private static string EntryFromPath(string entry, int offset, int length, ref char[] buffer, bool appendPathSeparator = false)
-        {
-            Debug.Assert(length <= entry.Length - offset);
-            Debug.Assert(buffer != null);
-
-            // Remove any leading slashes from the entry name:
-            while (length > 0)
-            {
-                if (entry[offset] != Path.DirectorySeparatorChar && 
-                    entry[offset] != Path.AltDirectorySeparatorChar)
-                    break;
-
-                offset++;
-                length--;
-            }
-
-            if (length == 0)
-                return appendPathSeparator ? PathSeparator.ToString() : string.Empty;
-
-            int resultLength = appendPathSeparator ? length + 1 : length;
-            EnsureCapacity(ref buffer, resultLength);
-            entry.CopyTo(offset, buffer, 0, length);
-
-            // '/' is a more broadly recognized directory separator on all platforms (eg: mac, linux)
-            // We don't use Path.DirectorySeparatorChar or AltDirectorySeparatorChar because this is
-            // explicitly trying to standardize to '/'
-            for (int i = 0; i < length; i++)
-            {
-                char ch = buffer[i];
-                if (ch == Path.DirectorySeparatorChar || ch == Path.AltDirectorySeparatorChar)
-                    buffer[i] = PathSeparator;
-            }
-
-            if (appendPathSeparator)
-                buffer[length] = PathSeparator;
-
-            return new string(buffer, 0, resultLength);
-        }
-
-        private static void EnsureCapacity(ref char[] buffer, int min)
-        {
-            Debug.Assert(buffer != null);
-            Debug.Assert(min > 0);
-
-            if (buffer.Length < min)
-            {
-                int newCapacity = buffer.Length * 2;
-                if (newCapacity < min) newCapacity = min;
-                ArrayPool<char>.Shared.Return(buffer);
-                buffer = ArrayPool<char>.Shared.Rent(newCapacity);
             }
         }
-
-        private static bool IsDirEmpty(DirectoryInfo possiblyEmptyDir)
-        {
-            using (IEnumerator<string> enumerator = Directory.EnumerateFileSystemEntries(possiblyEmptyDir.FullName).GetEnumerator())
-                return !enumerator.MoveNext();
-        }
-    }  // class ZipFile
-}  // namespace
+    }
+}

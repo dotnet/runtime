@@ -12,8 +12,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="System\IO\Compression\ZipFile.cs" />
-    <Compile Include="System\IO\Compression\ZipFileExtensions.cs" />
+    <Compile Include="System\IO\Compression\ZipFile.Create.cs" />
+    <Compile Include="System\IO\Compression\ZipFile.Extract.cs" />
+    <Compile Include="System\IO\Compression\ZipFile.Utils.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Create.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchive.Extract.cs" />
+    <Compile Include="System\IO\Compression\ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
