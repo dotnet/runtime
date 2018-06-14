@@ -1458,6 +1458,5 @@ MonoExceptionHandle
 mono_error_convert_to_exception_handle (MonoError *error)
 {
 	//FIXMEcoop mono_error_convert_to_exception is raw pointer
-	HANDLE_FUNCTION_ENTER ();
-	HANDLE_FUNCTION_RETURN_REF (MonoException, mono_error_convert_to_exception (error));
+	return MONO_HANDLE_NEW (MonoException, mono_error_convert_to_exception (error));
 }
