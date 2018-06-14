@@ -787,7 +787,9 @@ private:
 #endif // !UNIX_AMD64_ABI
     static const regMaskTP LsraLimitSmallFPSet = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
 #elif defined(_TARGET_ARM_)
-    static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4);
+    // On ARM, we may need two registers to set up the target register for a virtual call, so we need
+    // to have at least the maximum number of arg registers, plus 2.
+    static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F16 | RBM_F17);
 #elif defined(_TARGET_ARM64_)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
