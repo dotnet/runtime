@@ -31,7 +31,6 @@ using System.Text;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-#pragma warning disable BCL0015 // CoreFxPort
 
     internal enum DS_REPL_INFO_TYPE
     {
