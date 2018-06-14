@@ -1270,6 +1270,8 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 	GSList *tmp;
 	gboolean destroy_ht = FALSE;
 
+	g_assert (ass != NULL);
+
 	if (!ass->aname.name)
 		return;
 
@@ -2194,6 +2196,7 @@ static MonoAssembly *
 mono_domain_assembly_search (MonoAssemblyName *aname,
 							 gpointer user_data)
 {
+	g_assert (aname != NULL);
 	MonoDomain *domain = mono_domain_get ();
 	GSList *tmp;
 	MonoAssembly *ass;
@@ -2208,6 +2211,7 @@ mono_domain_assembly_search (MonoAssemblyName *aname,
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		ass = (MonoAssembly *)tmp->data;
+		g_assert (ass != NULL);
 		/* Dynamic assemblies can't match here in MS.NET */
 		gboolean ass_ref_only = mono_asmctx_get_kind (&ass->context) == MONO_ASMCTX_REFONLY;
 		if (assembly_is_dynamic (ass) || refonly != ass_ref_only || !mono_assembly_names_equal_flags (aname, &ass->aname, eq_flags))

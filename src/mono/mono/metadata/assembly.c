@@ -654,6 +654,9 @@ mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 gboolean
 mono_assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, MonoAssemblyNameEqFlags flags)
 {
+	g_assert (l != NULL);
+	g_assert (r != NULL);
+
 	if (!l->name || !r->name)
 		return FALSE;
 
@@ -3952,6 +3955,8 @@ gboolean
 framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name)
 {
 #ifndef DISABLE_DESKTOP_LOADER
+	g_assert (wanted_name != NULL);
+	g_assert (candidate_name != NULL);
 	const AssemblyVersionMap *vmap = (AssemblyVersionMap *)g_hash_table_lookup (assembly_remapping_table, wanted_name->name);
 	if (vmap) {
 		if (!vmap->framework_facade_assembly) {
