@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef _MSC_VER
 #include "cygconfig.h"
 #else
