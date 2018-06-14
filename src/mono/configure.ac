@@ -3740,49 +3740,42 @@ internal_llvm="no"
 if test "x$enable_llvm" = "xyes"; then
 	if test "x$with_llvm" != "x"; then
 		LLVM_CONFIG=$with_llvm/bin/llvm-config
-		if test x$host_win32 = xyes; then
-			LLVM_CONFIG=$LLVM_CONFIG.exe
-		fi
 		if test ! -x $LLVM_CONFIG; then
-			internal_llvm="yes"
+			internal_llvm=yes
 		fi
 	else
 		AC_PATH_PROG(LLVM_CONFIG, llvm-config, no)
 		if test "x$LLVM_CONFIG" = "xno"; then
-			internal_llvm="yes"
+			internal_llvm=yes
 		else
 			with_llvm=`$LLVM_CONFIG --prefix`
 		fi
 	fi
           
 	if test "x$host_win32" != "xyes"; then
-		llvm_codegen="x86codegen"
+		LLVM_CODEGEN_LIBS="x86codegen"
 		case "$target" in
 		arm*)
-			llvm_codegen="armcodegen"
+			LLVM_CODEGEN_LIBS="armcodegen"
 			;;
 		aarch64*)
-			llvm_codegen="aarch64codegen"
+			LLVM_CODEGEN_LIBS="aarch64codegen"
 			;;
 		powerpc*)
-			llvm_codegen="powerpccodegen"
+			LLVM_CODEGEN_LIBS="powerpccodegen"
 			;;
 		esac
-	
-		LLVM_CODEGEN_LIBS="$llvm_codegen"
 		if test "x$host" != "x$target"; then
 			# No need for jit libs
-			LLVM_CODEGEN_LIBS=""
+			LLVM_CODEGEN_LIBS=
 		fi
+
 		AC_SUBST(LLVM_CODEGEN_LIBS)
-		# Rest of the options are filled out in mono/mini/Makefile.am.in
 	else # is win32
 		AC_MSG_ERROR([LLVM for Windows only supported using Visual Studio build mono runtime, see http://www.mono-project.com/docs/advanced/mono-llvm/ for more details.])
 	fi # win32
 	
 	AC_DEFINE(ENABLE_LLVM, 1, [Enable the LLVM back end])
-	ENABLE_LLVM=1
-	AC_SUBST(ENABLE_LLVM)
 fi # ENABLE_LLVM
 
 AM_CONDITIONAL(INTERNAL_LLVM, [test "x$internal_llvm" != "xno"])

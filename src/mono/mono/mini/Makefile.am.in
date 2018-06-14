@@ -38,48 +38,57 @@ if ENABLE_LLVM
 # We need to define
 #    LLVM_CFLAGS
 #    LLVM_CXXFLAGS
-#    LLVM_LIBS
 #    LLVM_LDFLAGS
+#    llvm_libs
 
 if INTERNAL_LLVM 
 llvm_config:=$(monodir)/llvm/usr/bin/llvm-config
 else
-llvm_config:=$(EXTERNAL_LLVM_CONFIG)
-endif
-llvm_system_libs:=$(shell $(llvm_config) --system-libs 2>/dev/null | grep -- -)
-LLVM_VERSION:=$(shell $(llvm_config) --version)
-
-llvm_api_version_from_config:=$(shell $(llvm_config) --mono-api-version 2>/dev/null)
-llvm_api_version:=$(shell if [  -z "$(llvm_api_version_from_config)" ]; then echo "0"; else echo "$(llvm_api_version_from_config)"; fi)
-
-llvm_cflags_from_config:=$(shell $(llvm_config) --cflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g')
-llvm_cxxflags_from_config:=$(shell $(llvm_config) --cxxflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g')
-LLVM_CFLAGS_INTERNAL:=$(llvm_cflags_from_config) -DLLVM_API_VERSION=$(llvm_api_version)
-LLVM_CXXFLAGS_INTERNAL:=$(llvm_cxxflags_from_config) -fno-rtti -fexceptions -DLLVM_API_VERSION=$(llvm_api_version)
-
-llvm_common_libs:=$(shell $(llvm_config) --libs analysis core bitwriter $(LLVM_CODEGEN_LIBS))
-# The one that doesn't work will be null, so just concatenate them
-llvm_libs_for_old:=$(shell $(llvm_config) --libs mcjit jit)
-llvm_libs_for_new:=$(shell $(llvm_config) --libs orcjit)
-
-libcpp_flag:=$(if $(findstring -stdlib=libc++,$(LLVM_CXXFLAGS_INTERNAL)),-lc++,-lstdc++)
-
-llvm_libs_from_config:=$(libcpp_flag) $(llvm_common_libs) $(llvm_libs_for_old) $(llvm_libs_for_new)
-
-LLVM_LDFLAGS_INTERNAL:=$(llvm_libs_from_config) $(llvm_system_libs) $(shell $(llvm_config) --ldflags) 
+llvm_config:=$(LLVM_CONFIG)
 endif
 
-LLVM_CFLAGS:=$(LLVM_CFLAGS_EXTERNAL) $(LLVM_CFLAGS_INTERNAL)
-LLVM_CXXFLAGS:=$(LLVM_CXXFLAGS_EXTERNAL) $(LLVM_CXXFLAGS_INTERNAL)
-LLVM_LDFLAGS:=$(LLVM_LDFLAGS_EXTERNAL) $(LLVM_LDFLAGS_INTERNAL)
-LLVM_LIBS:=$(LLVM_LIBS_EXTERNAL) $(LLVM_LIBS_INTERNAL)
+llvm_api_version:=$(or $(shell $(llvm_config) --mono-api-version 2>/dev/null),0)
+
+LLVM_CFLAGS:= \
+	$(LLVM_CFLAGS_EXTERNAL) \
+	$(shell $(llvm_config) --cflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g') \
+	-DLLVM_API_VERSION=$(llvm_api_version)
+
+LLVM_CXXFLAGS:= \
+	$(LLVM_CXXFLAGS_EXTERNAL) \
+	$(shell $(llvm_config) --cxxflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g') \
+	-fno-rtti \
+	-fexceptions \
+	-DLLVM_API_VERSION=$(llvm_api_version)
+
+LLVM_LDFLAGS:= \
+	$(LLVM_LDFLAGS_EXTERNAL) \
+	$(shell $(llvm_config) --ldflags) \
+	$(shell $(llvm_config) --libs analysis core bitwriter) \
+	$(shell $(llvm_config) --libs mcjit jit) \
+	$(shell $(llvm_config) --libs orcjit) \
+	$(shell $(llvm_config) --libs $(LLVM_CODEGEN_LIBS)) \
+	$(shell $(llvm_config) --system-libs 2>/dev/null | grep -- -) \
+	$(if $(findstring -stdlib=libc++,$(LLVM_CXXFLAGS)),-lc++,-lstdc++)
+
+llvm_libs= \
+	$(LLVM_LIBS_EXTERNAL)
+
+else
+
+LLVM_CFLAGS=
+LLVM_CXXFLAGS=
+LLVM_LDFLAGS=
+llvm_libs=
+
+endif
 
 print-llvm-info:
 	echo "version: $(llvm_api_version)"
 	echo "cflags: $(LLVM_CFLAGS)"
 	echo "cxxflags: $(LLVM_CXXFLAGS)"
 	echo "ldflags: $(LLVM_LDFLAGS)"
-	echo "libs: $(LLVM_LIBS)"
+	echo "libs: $(llvm_libs)"
 
 if FULL_AOT_TESTS
 # if the tests are going to run with framework assemblies compiled with
@@ -204,7 +213,7 @@ noinst_LTLIBRARIES = $(mini_common_lib)
 if LOADED_LLVM
 lib_LTLIBRARIES += libmono-llvm.la
 libmono_llvm_la_SOURCES = mini-llvm.c mini-llvm-cpp.cpp llvm-jit.cpp
-libmono_llvm_la_LIBADD = $(glib_libs) $(LLVM_LIBS) 
+libmono_llvm_la_LIBADD = $(glib_libs) $(llvm_libs) 
 
 if HOST_DARWIN
 libmono_llvm_la_LDFLAGS=-Wl,-undefined -Wl,suppress -Wl,-flat_namespace $(LLVM_LDFLAGS)
@@ -269,7 +278,7 @@ if LOADED_LLVM
 LLVMMONOF=
 LLVMMONOLD=
 else
-LLVMMONOF=$(LLVM_LIBS)
+LLVMMONOF=$(llvm_libs)
 LLVMMONOLD=$(LLVM_LDFLAGS)
 endif
 
