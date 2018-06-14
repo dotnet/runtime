@@ -3298,14 +3298,14 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     }
 #endif
 
-#ifdef _TARGET_ARM64_
+#if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
     if (compiler->info.compIsVarArgs)
     {
         // We've already saved all int registers at the top of stack in the prolog.
         // No need further action.
         return;
     }
-#endif
+#endif // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
 
     unsigned  argMax;           // maximum argNum value plus 1, (including the RetBuffArg)
     unsigned  argNum;           // current argNum, always in [0..argMax-1]
@@ -4985,11 +4985,6 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
     regMaskTP maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
     regMaskTP maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
-
-    if (compiler->info.compIsVarArgs)
-    {
-        assert(maskSaveRegsFloat == RBM_NONE);
-    }
 
     int frameType = 0; // This number is arbitrary, is defined below, and corresponds to one of the frame styles we
                        // generate based on various sizes.

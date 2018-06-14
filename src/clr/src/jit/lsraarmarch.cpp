@@ -276,7 +276,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
                 srcCount++;
             }
         }
-#ifdef _TARGET_ARM_
+#if FEATURE_ARG_SPLIT
         else if (argNode->OperGet() == GT_PUTARG_SPLIT)
         {
             unsigned regCount = argNode->AsPutArgSplit()->gtNumRegs;
@@ -287,7 +287,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             }
             srcCount += regCount;
         }
-#endif
+#endif // FEATURE_ARG_SPLIT
         else
         {
             assert(argNode->OperIs(GT_PUTARG_REG));
@@ -332,11 +332,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
             fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
             assert(curArgTabEntry);
 #endif
-#ifdef _TARGET_ARM_
+#if FEATURE_ARG_SPLIT
             // PUTARG_SPLIT nodes must be in the gtCallLateArgs list, since they
             // define registers used by the call.
             assert(arg->OperGet() != GT_PUTARG_SPLIT);
-#endif
+#endif // FEATURE_ARG_SPLIT
             if (arg->gtOper == GT_PUTARG_STK)
             {
                 assert(curArgTabEntry->regNum == REG_STK);
@@ -453,7 +453,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
     return srcCount;
 }
 
-#ifdef _TARGET_ARM_
+#if FEATURE_ARG_SPLIT
 //------------------------------------------------------------------------
 // BuildPutArgSplit: Set the NodeInfo for a GT_PUTARG_SPLIT node
 //
@@ -501,11 +501,13 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             assert(!node->isContained());
             // The only multi-reg nodes we should see are OperIsMultiRegOp()
             unsigned currentRegCount;
+#ifdef _TARGET_ARM_
             if (node->OperIsMultiRegOp())
             {
                 currentRegCount = node->AsMultiRegOp()->GetRegCount();
             }
             else
+#endif // _TARGET_ARM
             {
                 assert(!node->IsMultiRegNode());
                 currentRegCount = 1;
@@ -550,7 +552,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     BuildDefs(argNode, dstCount, argMask);
     return srcCount;
 }
-#endif // _TARGET_ARM_
+#endif // FEATURE_ARG_SPLIT
 
 //------------------------------------------------------------------------
 // BuildBlockStore: Set the NodeInfo for a block store.

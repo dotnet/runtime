@@ -1473,13 +1473,13 @@ void fgArgInfo::ArgsComplete()
             continue;
 #endif
         }
-#if defined(_TARGET_ARM_)
+#if FEATURE_ARG_SPLIT
         else if (curArgTabEntry->isSplit)
         {
             hasStructRegArg = true;
             hasStackArgs    = true;
         }
-#endif       // _TARGET_ARM_
+#endif       // FEATURE_ARG_SPLIT
         else // we have a register argument, next we look for a struct type.
         {
             if (varTypeIsStruct(argx) UNIX_AMD64_ABI_ONLY(|| curArgTabEntry->isStruct))
@@ -1599,7 +1599,7 @@ void fgArgInfo::ArgsComplete()
                 {
                     prevArgTabEntry->needPlace = true;
                 }
-#if defined(_TARGET_ARM_)
+#if FEATURE_ARG_SPLIT
                 else if (prevArgTabEntry->isSplit)
                 {
                     prevArgTabEntry->needPlace = true;
@@ -3323,6 +3323,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             }
         }
 
+#if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+        // Make sure for vararg methods isHfaArg is not
+        // true.
+        isHfaArg = callIsVararg ? false : isHfaArg;
+#endif // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+
         if (isHfaArg)
         {
             // If we have a HFA struct it's possible we transition from a method that originally
@@ -3972,13 +3978,25 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     //
                     if (!isRegArg && (size > 1))
                     {
-                        // We also must update intArgRegNum so that we no longer try to
-                        // allocate any new general purpose registers for args
-                        //
-                        intArgRegNum = maxRegArgs;
+#if defined(_TARGET_WINDOWS_)
+                        // Arm64 windows native varargs allows splitting a 16 byte struct between stack
+                        // and the last general purpose register.
+                        if (callIsVararg)
+                        {
+                            // Override the decision and force a split.
+                            isRegArg = isRegArg = (intArgRegNum + (size - 1)) <= maxRegArgs;
+                        }
+                        else
+#endif // defined(_TARGET_WINDOWS_)
+                        {
+                            // We also must update intArgRegNum so that we no longer try to
+                            // allocate any new general purpose registers for args
+                            //
+                            intArgRegNum = maxRegArgs;
+                        }
                     }
                 }
-#else // not _TARGET_ARM_ or _TARGET_ARM64_
+#else  // not _TARGET_ARM_ or _TARGET_ARM64_
 
 #if defined(UNIX_AMD64_ABI)
 
@@ -4177,7 +4195,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 else
 #endif // defined(UNIX_AMD64_ABI)
                 {
-#ifdef _TARGET_ARM_
+#if FEATURE_ARG_SPLIT
                     // Check for a split (partially enregistered) struct
                     if (!passUsingFloatRegs && (intArgRegNum + size) > MAX_REG_ARG)
                     {
@@ -4189,7 +4207,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial);
                         fgPtrArgCntCur += size - numRegsPartial;
                     }
-#endif // _TARGET_ARM_
+#endif // FEATURE_ARG_SPLIT
 
                     newArgEntry->SetMultiRegNums();
                     if (passUsingFloatRegs)
@@ -4230,7 +4248,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             else
             {
                 // This is a stack argument - put it in the table
-                call->fgArgInfo->AddStkArg(argIndex, argx, args, size, argAlign, isStructArg);
+                call->fgArgInfo->AddStkArg(argIndex, argx, args, size, argAlign, isStructArg, callIsVararg);
             }
         }
 

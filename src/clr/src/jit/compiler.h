@@ -1165,9 +1165,9 @@ public:
                             // to be on the stack despite its arg list position.
     bool isStruct : 1;      // True if this is a struct arg
     bool _isVararg : 1;     // True if the argument is in a vararg context.
-#ifdef _TARGET_ARM_
+#ifdef FEATURE_ARG_SPLIT
     bool _isSplit : 1; // True when this argument is split between the registers and OutArg area
-#endif
+#endif                 // FEATURE_ARG_SPLIT
 #ifdef FEATURE_HFA
     bool _isHfaRegArg : 1; // True when the argument is passed as a HFA in FP registers.
     bool _isDoubleHfa : 1; // True when the argument is passed as an HFA, with an element type of DOUBLE.
@@ -1201,15 +1201,15 @@ public:
     __declspec(property(get = getIsSplit, put = setIsSplit)) bool isSplit;
     bool getIsSplit()
     {
-#ifdef _TARGET_ARM_
+#ifdef FEATURE_ARG_SPLIT
         return _isSplit;
-#else
+#else // FEATURE_ARG_SPLIT
         return false;
 #endif
     }
     void setIsSplit(bool value)
     {
-#ifdef _TARGET_ARM_
+#ifdef FEATURE_ARG_SPLIT
         _isSplit = value;
 #endif
     }
