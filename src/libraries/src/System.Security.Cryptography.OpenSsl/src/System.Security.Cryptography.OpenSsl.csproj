@@ -15,10 +15,6 @@
     <PackageTargetRuntime>
     </PackageTargetRuntime>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <!-- ApiCompat requires an object reference to determine the core assembly. -->
-    <AssemblyInfoSource Include="internal class ObjectMarker { }" />
-  </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
