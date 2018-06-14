@@ -211,6 +211,24 @@ namespace System.Security.Principal
 
         private static SafeAccessTokenHandle DuplicateAccessToken(IntPtr accessToken)
         {
+            if (accessToken == IntPtr.Zero)
+            {
+                throw new ArgumentException(SR.Argument_TokenZero);
+            }
+
+            // Find out if the specified token is a valid.
+            uint dwLength = sizeof(uint);
+            if (!Interop.Advapi32.GetTokenInformation(
+                    accessToken,
+                    (uint)TokenInformationClass.TokenType,
+                    IntPtr.Zero,
+                    0,
+                    out dwLength) &&
+                Marshal.GetLastWin32Error() == Interop.Errors.ERROR_INVALID_HANDLE)
+            {
+                throw new ArgumentException(SR.Argument_InvalidImpersonationToken);
+            }
+
             SafeAccessTokenHandle duplicateAccessToken = SafeAccessTokenHandle.InvalidHandle;
             IntPtr currentProcessHandle = Interop.Kernel32.GetCurrentProcess();
             if (!Interop.Kernel32.DuplicateHandle(
@@ -252,16 +270,6 @@ namespace System.Security.Principal
 
         private void CreateFromToken(IntPtr userToken)
         {
-            if (userToken == IntPtr.Zero)
-                throw new ArgumentException(SR.Argument_TokenZero);
-
-            // Find out if the specified token is a valid.
-            uint dwLength = (uint)sizeof(uint);
-            bool result = Interop.Advapi32.GetTokenInformation(userToken, (uint)TokenInformationClass.TokenType,
-                                                          SafeLocalAllocHandle.InvalidHandle, 0, out dwLength);
-            if (Marshal.GetLastWin32Error() == Interop.Errors.ERROR_INVALID_HANDLE)
-                throw new ArgumentException(SR.Argument_InvalidImpersonationToken);
-
             _safeTokenHandle = DuplicateAccessToken(userToken);
         }
 
