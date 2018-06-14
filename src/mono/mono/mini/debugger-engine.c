@@ -402,6 +402,14 @@ collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
 	}
 	mono_domain_unlock (domain);
 }
+
+void
+mono_de_clear_all_breakpoints (void)
+{
+	while (breakpoints->len)
+		mono_de_clear_breakpoint (g_ptr_array_index (breakpoints, 0));
+}
+
 /*
  * mono_de_set_breakpoint:
  *
@@ -734,6 +742,14 @@ mono_de_ss_req_release (SingleStepReq *req)
 	if (free)
 		ss_destroy (req);
 }
+
+void
+mono_de_cancel_ss (void)
+{
+	if (the_ss_req)
+		mono_de_ss_req_release (the_ss_req);
+}
+
 
 void
 mono_de_process_single_step (void *tls, gboolean from_signal)
