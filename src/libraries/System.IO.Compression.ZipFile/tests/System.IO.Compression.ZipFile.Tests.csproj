@@ -10,9 +10,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="ZipFileConvenienceMethods.cs" />
-    <Compile Include="ZipFileInvalidFileTests.cs" />
-    <Compile Include="ZipFileReadOpenUpdateTests.cs" />
+    <Compile Include="ZipFile.Create.cs" />
+    <Compile Include="ZipFile.Extract.cs" />
+    <Compile Include="ZipFileExtensions.ZipArchive.Create.cs" />
+    <Compile Include="ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
+    <Compile Include="ZipFileExtensions.ZipArchive.Extract.cs" />
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
@@ -38,9 +40,9 @@
       <Link>Common\System\IO\Compression\ZipTestHelper.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="ZipFileConvenienceMethods.netcoreapp1.1.cs" />
-  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
+    <Compile Include="ZipFile.Extract.netcoreapp.cs" />
+  </ItemGroup>  
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)system.io.compression.testdata\1.0.6-prerelease\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
