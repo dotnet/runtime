@@ -4,6 +4,5 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.3.0</AssemblyVersion>
     <AssemblyKey>ECMA</AssemblyKey>
-    <IsUAP>true</IsUAP>
   </PropertyGroup>
 </Project>
