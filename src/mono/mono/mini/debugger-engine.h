@@ -209,7 +209,31 @@ mono_debugger_set_thread_state (DebuggerTlsData *ref, MonoDebuggerThreadState ex
 MonoDebuggerThreadState
 mono_debugger_get_thread_state (DebuggerTlsData *ref);
 
-void mono_de_init (void);
+typedef struct {
+	MonoContext *(*tls_get_restore_state) (void *tls);
+	gboolean (*try_process_suspend) (void *tls, MonoContext *ctx);
+	gboolean (*begin_breakpoint_processing) (void *tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal);
+	void (*begin_single_step_processing) (MonoContext *ctx, gboolean from_signal);
+
+	void (*ss_discard_frame_context) (void *tls);
+	void (*ss_calculate_framecount) (void *tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes);
+	gboolean (*ensure_jit) (DbgEngineStackFrame *frame);
+	int (*ensure_runtime_is_suspended) (void);
+
+	int (*get_this_async_id) (DbgEngineStackFrame *frame);
+
+	void* (*create_breakpoint_events) (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, EventKind kind);
+	void (*process_breakpoint_events) (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset);
+
+	gboolean (*set_set_notification_for_wait_completion_flag) (DbgEngineStackFrame *f);
+	MonoMethod* (*get_notify_debugger_of_wait_completion_method)(void);
+
+	int (*ss_create_init_args) (SingleStepReq *ss_req, SingleStepArgs *args);
+	void (*ss_args_destroy) (SingleStepArgs *ss_args);
+} DebuggerEngineCallbacks;
+
+
+void mono_de_init (DebuggerEngineCallbacks *cbs);
 void mono_de_cleanup (void);
 void mono_de_set_log_level (int level, FILE *file);
 
@@ -232,5 +256,12 @@ void mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji);
 //single stepping
 void mono_de_start_single_stepping (void);
 void mono_de_stop_single_stepping (void);
+
+void mono_de_process_breakpoint (void *tls, gboolean from_signal);
+void mono_de_process_single_step (void *tls, gboolean from_signal);
+void mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args);
+gboolean mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls, MonoContext *ctx, MonoMethod* method);
+DbgEngineErrorCode mono_de_ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilter filter, EventRequest *req);
+void mono_de_ss_req_release (SingleStepReq *req);
 
 #endif
