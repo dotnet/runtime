@@ -192,9 +192,9 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 			}
 		}
 		if (cindex == 0) {
-			fprintf (ofd, "\n.byte %d", (unsigned int) code [i]);
+			fprintf (ofd, "\n.byte %u", (unsigned int) code [i]);
 		} else {
-			fprintf (ofd, ",%d", (unsigned int) code [i]);
+			fprintf (ofd, ",%u", (unsigned int) code [i]);
 		}
 		cindex++;
 		if (cindex == 64)
