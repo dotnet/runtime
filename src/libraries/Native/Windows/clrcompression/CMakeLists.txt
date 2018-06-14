@@ -23,6 +23,7 @@ if($ENV{__BuildArch} STREQUAL x86 OR $ENV{__BuildArch} STREQUAL x64)
         zlib/inffast.c
         zlib/inflate.c
         zlib/inftrees.c
+        ../../AnyOS/zlib/pal_zlib.c
 )
 elseif($ENV{__BuildArch} STREQUAL arm OR $ENV{__BuildArch} STREQUAL arm64)
     set(NATIVECOMPRESSION_SOURCES
@@ -35,6 +36,7 @@ elseif($ENV{__BuildArch} STREQUAL arm OR $ENV{__BuildArch} STREQUAL arm64)
         zlib/inftrees.c
         zlib/trees.c
         zlib/zutil.c
+        ../../AnyOS/zlib/pal_zlib.c
     )
 endif()
 

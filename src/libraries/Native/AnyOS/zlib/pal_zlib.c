@@ -2,12 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "pal_zlib.h"
-#include "pal_utilities.h"
-
 #include <assert.h>
 #include <stdlib.h>
-#include <zlib.h>
+#include "pal_zlib.h"
+
+#ifdef  _WIN32
+    #define c_static_assert(e) static_assert((e),"")
+    #include "../../Windows/clrcompression/zlib/zlib.h"
+#else
+    #include "pal_utilities.h"
+    #include <zlib.h>
+#endif
 
 c_static_assert(PAL_Z_NOFLUSH == Z_NO_FLUSH);
 c_static_assert(PAL_Z_FINISH == Z_FINISH);
