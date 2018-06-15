@@ -5506,13 +5506,7 @@ void Debugger::TrapAllRuntimeThreads()
         m_trappingRuntimeThreads = TRUE;
 
         // Take the thread store lock.
-        bool alreadyHeldThreadStoreLock = ThreadStore::HoldingThreadStore();
-        if (!alreadyHeldThreadStoreLock)
-        {
-            STRESS_LOG0(LF_CORDB, LL_INFO1000, "About to lock thread Store\n");
-            ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_FOR_DEBUGGER);
-            STRESS_LOG0(LF_CORDB, LL_INFO1000, "Locked thread store\n");
-        }
+        assert(ThreadStore::HoldingThreadStore());
 
         // We start the suspension here, and let the helper thread finish it.
         // If there's no helper thread, then we need to do helper duty.
@@ -5554,19 +5548,6 @@ void Debugger::TrapAllRuntimeThreads()
             DoHelperThreadDuty();
 
             // We will have released the TSL after the call to continue.
-        }
-        else
-        {
-            // We have a live and active helper thread which will handle events
-            // from the RS now that we're stopped.
-            // We need to release the TSL which we acquired above. (The helper will
-            // likely take this lock while doing stuff).
-            if (!alreadyHeldThreadStoreLock)
-            {
-                STRESS_LOG0(LF_CORDB, LL_INFO1000, "About to unlock thread store!\n");
-                ThreadSuspend::UnlockThreadStore(FALSE, ThreadSuspend::SUSPEND_FOR_DEBUGGER);
-                STRESS_LOG0(LF_CORDB, LL_INFO1000, "TART: Unlocked thread store!\n");
-            }
         }
         _ASSERTE(ThreadHoldsLock()); // still hold the lock. (though it may have been toggled)
     }
@@ -10758,11 +10739,14 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     // be sent as part of attach if debugger was launched by managed app.
     //
     DebuggerLockHolder dbgLockHolder(this, FALSE);
+    bool lockedThreadStore = false;
 
     if ((pEvent->type & DB_IPCE_TYPE_MASK) == DB_IPCE_ASYNC_BREAK ||
         (pEvent->type & DB_IPCE_TYPE_MASK) == DB_IPCE_ATTACHING ||
         this->m_isBlockedOnGarbageCollectionEvent)
     {
+        lockedThreadStore = true;
+        ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_FOR_DEBUGGER);
         dbgLockHolder.Acquire();
     }
     else
@@ -11767,6 +11751,10 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
     STRESS_LOG0(LF_CORDB, LL_INFO10000, "D::HIPCE: finished handling event\n");
 
+    if (lockedThreadStore)
+    {
+        ThreadSuspend::UnlockThreadStore(FALSE, ThreadSuspend::SUSPEND_FOR_DEBUGGER);
+    }
     // dbgLockHolder goes out of scope - implicit Release
     return fContinue;
 }
