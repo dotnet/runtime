@@ -44,7 +44,7 @@
       <Name>System.Diagnostics.FileVersionInfo.TestAssembly</Name>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
   <PropertyGroup>
     <BuildDependsOn>$(BuildDependsOn);MangleTestAssemblyExtension</BuildDependsOn>
   </PropertyGroup>
