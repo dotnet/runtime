@@ -1,0 +1,41 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
+using System.Runtime.CompilerServices;
+
+public struct SequentialStruct
+{
+    public short f0;
+    public int f1;
+    public float f2;
+    public IntPtr f3;
+}
+
+class Test
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int foo(SequentialStruct s)
+    {
+        if ((s.f0 != 100) || (s.f1 != 1) || ((int) s.f2 != 10) || ((int)s.f3 != 42))
+        {
+            Console.WriteLine(s.f0);
+            Console.WriteLine(s.f1);
+            Console.WriteLine(s.f2);
+            Console.WriteLine(s.f3);
+            return -1;
+        }
+        return 100;
+    }
+
+    static int Main()
+    {
+        SequentialStruct ss = new SequentialStruct();
+        ss.f0 = 100;
+        ss.f1 = 1;
+        ss.f2 = 10.0f;
+        ss.f3 = new IntPtr(42);
+        return foo(ss);
+    }
+}
