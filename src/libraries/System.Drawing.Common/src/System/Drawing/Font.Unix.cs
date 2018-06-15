@@ -410,7 +410,7 @@ namespace System.Drawing
                 {
                     Marshal.StructureToPtr(logFont, copy, false);
 
-                    status = SafeNativeMethods.Gdip.GdipGetLogFont(NativeFont, graphics.NativeObject, logFont);
+                    status = SafeNativeMethods.Gdip.GdipGetLogFont(NativeFont, graphics.NativeGraphics, logFont);
                     if (status != SafeNativeMethods.Gdip.Ok)
                     {
                         // reset to original values
@@ -457,7 +457,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(graphics));
 
             float size;
-            int status = SafeNativeMethods.Gdip.GdipGetFontHeight(_nativeFont, graphics.NativeObject, out size);
+            int status = SafeNativeMethods.Gdip.GdipGetFontHeight(_nativeFont, graphics.NativeGraphics, out size);
             SafeNativeMethods.Gdip.CheckStatus(status);
             return size;
         }
