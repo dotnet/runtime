@@ -1708,7 +1708,7 @@ mono_thread_info_self_interrupt (void)
 /* Clear the interrupted flag of the current thread, set with
  * mono_thread_info_self_interrupt, so it can wait again */
 void
-mono_thread_info_clear_self_interrupt ()
+mono_thread_info_clear_self_interrupt (void)
 {
 	MonoThreadInfo *info;
 	MonoThreadInfoInterruptToken *previous_token;

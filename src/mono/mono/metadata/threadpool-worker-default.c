@@ -487,9 +487,7 @@ worker_thread (gpointer unused)
 			mono_thread_internal_reset_abort (thread);
 
 		if (!work_item_try_pop ()) {
-			gboolean timeout;
-
-			timeout = worker_park ();
+			gboolean const timeout = worker_park ();
 			if (timeout)
 				break;
 
@@ -660,9 +658,7 @@ monitor_sufficient_delay_since_last_dequeue (void)
 	if (worker.cpu_usage < CPU_USAGE_LOW) {
 		threshold = MONITOR_INTERVAL;
 	} else {
-		ThreadPoolWorkerCounter counter;
-		counter = COUNTER_READ ();
-		threshold = counter._.max_working * MONITOR_INTERVAL * 2;
+		threshold = COUNTER_READ ()._.max_working * MONITOR_INTERVAL * 2;
 	}
 
 	return mono_msec_ticks () >= worker.heuristic_last_dequeue + threshold;
@@ -1074,8 +1070,7 @@ static gboolean
 heuristic_should_adjust (void)
 {
 	if (worker.heuristic_last_dequeue > worker.heuristic_last_adjustment + worker.heuristic_adjustment_interval) {
-		ThreadPoolWorkerCounter counter;
-		counter = COUNTER_READ ();
+		ThreadPoolWorkerCounter const counter = COUNTER_READ ();
 		if (counter._.working <= counter._.max_working)
 			return TRUE;
 	}
@@ -1092,11 +1087,9 @@ heuristic_adjust (void)
 		gint64 sample_duration = sample_end - worker.heuristic_sample_start;
 
 		if (sample_duration >= worker.heuristic_adjustment_interval / 2) {
-			ThreadPoolWorkerCounter counter;
-			gint16 new_thread_count;
 
-			counter = COUNTER_READ ();
-			new_thread_count = hill_climbing_update (counter._.max_working, sample_duration, completions, &worker.heuristic_adjustment_interval);
+			ThreadPoolWorkerCounter counter = COUNTER_READ ();
+			gint16 const new_thread_count = hill_climbing_update (counter._.max_working, sample_duration, completions, &worker.heuristic_adjustment_interval);
 
 			COUNTER_ATOMIC (counter, {
 				counter._.max_working = new_thread_count;
@@ -1126,11 +1119,9 @@ heuristic_notify_work_completed (void)
 gboolean
 mono_threadpool_worker_notify_completed (void)
 {
-	ThreadPoolWorkerCounter counter;
-
 	heuristic_notify_work_completed ();
 
-	counter = COUNTER_READ ();
+	ThreadPoolWorkerCounter const counter = COUNTER_READ ();
 	return counter._.working <= counter._.max_working;
 }
 

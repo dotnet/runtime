@@ -3523,7 +3523,7 @@ mono_thread_manage (void)
 		MONO_EXIT_GC_SAFE;
 		wait->num=0;
 		/* We must zero all InternalThread pointers to avoid making the GC unhappy. */
-		memset (wait->threads, 0, MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS * SIZEOF_VOID_P);
+		memset (wait->threads, 0, sizeof (wait->threads));
 		mono_g_hash_table_foreach (threads, build_wait_tids, wait);
 		mono_threads_unlock ();
 		if (wait->num > 0)
@@ -3548,7 +3548,7 @@ mono_thread_manage (void)
 
 		wait->num = 0;
 		/*We must zero all InternalThread pointers to avoid making the GC unhappy.*/
-		memset (wait->threads, 0, MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS * SIZEOF_VOID_P);
+		memset (wait->threads, 0, sizeof (wait->threads));
 		mono_g_hash_table_foreach (threads, abort_threads, wait);
 
 		mono_threads_unlock ();
@@ -3633,7 +3633,7 @@ void mono_thread_suspend_all_other_threads (void)
 		 */
 		wait->num = 0;
 		/*We must zero all InternalThread pointers to avoid making the GC unhappy.*/
-		memset (wait->threads, 0, MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS * SIZEOF_VOID_P);
+		memset (wait->threads, 0, sizeof (wait->threads));
 		mono_threads_lock ();
 		mono_g_hash_table_foreach (threads, collect_threads_for_suspend, wait);
 		mono_threads_unlock ();
