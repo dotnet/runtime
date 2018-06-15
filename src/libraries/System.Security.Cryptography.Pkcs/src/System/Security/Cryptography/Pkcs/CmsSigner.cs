@@ -130,7 +130,10 @@ namespace System.Security.Cryptography.Pkcs
             SignerInfoAsn newSignerInfo = new SignerInfoAsn();
             newSignerInfo.DigestAlgorithm.Algorithm = DigestAlgorithm;
 
-            if ((SignedAttributes != null && SignedAttributes.Count > 0) || contentTypeOid == null)
+            // If the user specified attributes (not null, count > 0) we need attributes.
+            // If the content type is null we're counter-signing, and need the message digest attr.
+            // If the content type is otherwise not-data we need to record it as the content-type attr.
+            if (SignedAttributes?.Count > 0 || contentTypeOid != Oids.Pkcs7Data)
             {
                 List<AttributeAsn> signedAttrs = BuildAttributes(SignedAttributes);
 
