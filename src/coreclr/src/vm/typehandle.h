@@ -574,14 +574,6 @@ public:
 
     INDEBUGIMPL(BOOL Verify();)             // DEBUGGING Make certain this is a valid type handle 
 
-#if defined(_DEBUG)
-    BOOL IsAppDomainAgile() const;
-    BOOL IsCheckAppDomainAgile() const;
-
-    BOOL IsArrayOfElementsAppDomainAgile() const;
-    BOOL IsArrayOfElementsCheckAppDomainAgile() const;
-#endif
-
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif

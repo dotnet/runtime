@@ -80,9 +80,6 @@ class FieldDesc
 #endif
 
 #ifdef _DEBUG
-    struct {
-        unsigned m_isDangerousAppDomainAgileField : 1;
-    };
     LPUTF8 m_debugName;
 #endif
 
@@ -106,8 +103,6 @@ public:
         m_type = sourceField.m_type;
 
 #ifdef _DEBUG
-        m_isDangerousAppDomainAgileField = sourceField.m_isDangerousAppDomainAgileField;
-
         m_debugName = sourceField.m_debugName;
 #endif // _DEBUG
     }
@@ -312,22 +307,6 @@ public:
         return m_isStatic && (m_isRVA || m_isThreadLocal
             );
     }
-
-#if defined(_DEBUG)
-    BOOL   IsDangerousAppDomainAgileField()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_isDangerousAppDomainAgileField;
-    }
-
-    void    SetDangerousAppDomainAgileField()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_isDangerousAppDomainAgileField = TRUE;
-    }
-#endif
 
     BOOL   IsRVA() const               // Has an explicit RVA associated with it
     { 
