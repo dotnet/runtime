@@ -319,6 +319,19 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        /// <summary>
+        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
+        /// when an attempt is made to extract them.
+        /// </summary>
+        [Theory]
+        [InlineData("NullCharFileName_FromWindows")]
+        [InlineData("NullCharFileName_FromUnix")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific invalid file path
+        public void Unix_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
+        {
+            Assert.Throws<ArgumentException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+        }
+
         [Fact]
         public void UpdateReadTwice()
         {
@@ -375,6 +388,24 @@ namespace System.IO.Compression.Tests
                 }
                 await IsZipSameAsDirAsync(testArchive.Path, zmodified("addFile"), ZipArchiveMode.Read);
             }
+        }
+
+        /// <summary>
+        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
+        /// when an attempt is made to extract them.
+        /// </summary>
+        [Theory]
+        [InlineData("WindowsInvalid_FromUnix", null)]
+        [InlineData("WindowsInvalid_FromWindows", null)]
+        [InlineData("NullCharFileName_FromWindows", "path")]
+        [InlineData("NullCharFileName_FromUnix", "path")]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
+        public void Windows_ZipWithInvalidFileNames_ThrowsException(string zipName, string paramName)
+        {
+            if (paramName == null && !PlatformDetection.IsFullFramework)
+                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+            else
+                AssertExtensions.Throws<ArgumentException>(paramName, null, () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
         }
 
         private static async Task UpdateArchive(ZipArchive archive, string installFile, string entryName)
