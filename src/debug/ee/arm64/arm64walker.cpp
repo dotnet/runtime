@@ -408,7 +408,7 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
             bit_pos = bit_pos + 32;
         }
 
-        PCODE bit_val = 1 << bit_pos;
+        PCODE bit_val = PCODE{ 1 } << bit_pos;
         if (opcode & 0x01000000) //TBNZ
         {
             result = (RegContent & bit_val) != 0;
