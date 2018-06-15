@@ -22,7 +22,7 @@ namespace R2RDump
         private IReadOnlyList<int> _runtimeFunctions = Array.Empty<int>();
         private IReadOnlyList<string> _sections = Array.Empty<string>();
         private bool _diff;
-        private long _disassembler;
+        private IntPtr _disassembler;
         private bool _types;
         private bool _unwind;
         private bool _gc;

@@ -20,36 +20,34 @@ namespace R2RDump
         };
 
         [DllImport("coredistools.dll")]
-        [return: MarshalAs(UnmanagedType.I8)]
-        public static extern long InitBufferedDisasm(TargetArch Target);
+        public static extern IntPtr InitBufferedDisasm(TargetArch Target);
 
         [DllImport("coredistools.dll")]
-        public static extern void DumpCodeBlock(long Disasm, ulong Address, IntPtr Bytes, int Size);
+        public static extern void DumpCodeBlock(IntPtr Disasm, ulong Address, IntPtr Bytes, int Size);
 
         [DllImport("coredistools.dll")]
-        [return: MarshalAs(UnmanagedType.I8)]
-        public static extern long GetOutputBuffer();
+        public static extern IntPtr GetOutputBuffer();
 
         [DllImport("coredistools.dll")]
         public static extern void ClearOutputBuffer();
 
         [DllImport("coredistools.dll")]
-        public static extern void FinishDisasm(long Disasm);
+        public static extern void FinishDisasm(IntPtr Disasm);
 
-        public unsafe static string GetCodeBlock(long Disasm, int Address, int Offset, byte[] image, int Size)
+        public unsafe static string GetCodeBlock(IntPtr Disasm, int Address, int Offset, byte[] image, int Size)
         {
             fixed (byte* p = image)
             {
                 IntPtr ptr = (IntPtr)(p + Offset);
                 DumpCodeBlock(Disasm, (ulong)Address, ptr, Size);
             }
-            IntPtr pBuffer = (IntPtr)GetOutputBuffer();
+            IntPtr pBuffer = GetOutputBuffer();
             string buffer = Marshal.PtrToStringAnsi(pBuffer);
             ClearOutputBuffer();
             return buffer;
         }
 
-        public static long GetDisasm(Machine machine)
+        public static IntPtr GetDisasm(Machine machine)
         {
             TargetArch target = TargetArch.Target_Host;
             switch (machine)
