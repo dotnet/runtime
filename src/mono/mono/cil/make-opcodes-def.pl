@@ -29,34 +29,35 @@ close(OUTPUT) || die "Can not close file: $!";
 
 sub handle_opcode {
     my ($parser, $elem, %attrs) = @_;
-    my ($name, $input, $output, $args, $o1, $o2, $flow, $uname, $count, $ff);
+    my ($count);
 	
     return if ($elem ne 'opcode');
 
-    ($name, $input, $output, $args, $o1, $o2, $flow) = 
-		@attrs{qw(name input output args o1 o2 flow)};
+    my ($name, $input, $output, $args, $o1, $o2, $flow, $constant) =
+		@attrs{qw(name input output args o1 o2 flow constant)};
 
-    $uname = uc $name;
+    $constant ||= 0;
+    my $uname = uc $name;
     $uname =~ tr/./_/;
-    if (hex($o1) == 0xff){
+    if (hex($o1) == 0xff) {
 	$count = 1;
     } else {
 	$count = 2;
     }
 
-    $ff = "ERROR";
+    my $ff = "ERROR";
     if (exists $valid_flow{$flow}) {
 	$ff = uc $flow;
 	$ff =~ tr/-/_/;
     }
 
-    print OUTPUT "OPDEF(CEE_$uname, \"$name\", $input, $output, $args, X, $count, $o1, $o2, $ff)\n";
+    print OUTPUT "OPDEF(CEE_$uname, \"$name\", $input, $output, $args, $constant, $count, $o1, $o2, $ff)\n";
     
 }
 
 sub print_header {
 print OUTPUT<<EOF;
-/* GENERATED FILE, DO NOT EDIT */
+/* GENERATED FILE, DO NOT EDIT. Edit cil-opcodes.xml instead and run "make opcode.def" to regenerate. */
 EOF
 }
 
