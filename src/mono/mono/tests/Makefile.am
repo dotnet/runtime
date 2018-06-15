@@ -646,6 +646,7 @@ TESTS_CS_SRC=		\
 	generic-unloading.2.cs	\
 	namedmutex-destroy-race.cs	\
 	thread6.cs	\
+	thread7.cs	\
 	appdomain-threadpool-unload.cs	\
 	process-unref-race.cs	\
 	bug-46661.cs	\
