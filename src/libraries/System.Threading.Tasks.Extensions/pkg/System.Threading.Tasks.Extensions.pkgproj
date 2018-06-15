@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
   <PropertyGroup>
     <!-- we need to be supported on pre-nuget-3 platforms (Dev12, Dev11, etc) -->
     <MinClientVersion>2.8.6</MinClientVersion>
@@ -19,10 +19,10 @@
          therefore it cannot reference NETStandard.Library -->
     <SuppressMetaPackage Include="NETStandard.Library" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
   <ItemGroup>
     <!--
-      All frameworks except net45 support the frozen 4.2.0.0 api version. Need to include this after dir.targets to
+      All frameworks except net45 support the frozen 4.2.0.0 api version. Need to include this after Directory.Build.targets to
       have DefaultValidateionFramework defined. Normally this wouldn't be necessary but the harvested supported
       frameworks all complain if we don't lift the version of the assembly they support. This won't be any issue
       once the 4.5.0 package is stable and we can harvest it.

@@ -1,5 +1,5 @@
 <Project ToolsVersion="14.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="../dir.props" />
+  <Import Project="../Directory.Build.props" />
 
   <PropertyGroup>
     <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</AdditionalBuildConfigurations>

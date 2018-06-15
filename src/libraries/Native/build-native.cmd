@@ -103,11 +103,21 @@ goto :SetupDirs
 echo Commencing build of native components
 echo.
 
+set "__BaseIntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%"
+
+:: Write an empty Directory.Build.props/targets to ensure that msbuild doesn't pick up 
+:: the repo's root Directory.Build.props/targets.
+set MSBUILD_EMPTY_PROJECT_CONTENT= ^
+ ^^^<Project xmlns=^"http://schemas.microsoft.com/developer/msbuild/2003^"^^^> ^
+ ^^^</Project^^^>
+echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__BaseIntermediatesDir%\Directory.Build.props"
+echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__BaseIntermediatesDir%\Directory.Build.targets"
+
 if %__CMakeBinDir% == "" (
     set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native"
 )
 if %__IntermediatesDir% == "" (
-    set "__IntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native"
+    set "__IntermediatesDir=%__BaseIntermediatesDir%\native"
 )
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
@@ -160,7 +170,7 @@ echo Done building Native components
 
 :BuildNativeAOT
 set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot"
-set "__IntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot"
+set "__IntermediatesDir=%__BaseIntermediatesDir%\native_aot"
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
 if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
