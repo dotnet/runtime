@@ -259,7 +259,7 @@ namespace NativeFormat
 
             bool fFirstIsLeaf = false, fSecondIsLeaf = false;
             Vertex * pFirst = ExpandBlock(index, depth - 1, false, &fFirstIsLeaf);
-            Vertex * pSecond = ExpandBlock(index + (1 << (depth - 1)), depth - 1, true, &fSecondIsLeaf);
+            Vertex * pSecond = ExpandBlock(index + (size_t{ 1 } << (depth - 1)), depth - 1, true, &fSecondIsLeaf);
 
             Vertex * pPop;
 

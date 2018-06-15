@@ -362,7 +362,7 @@ public:
     inline size_t DecodeVarLengthUnsigned( int base )
     {
         _ASSERTE((base > 0) && (base < (int)BITS_PER_SIZE_T));
-        size_t numEncodings = 1 << base;
+        size_t numEncodings = size_t{ 1 } << base;
         size_t result = 0;
         for(int shift=0; ; shift+=base)
         {
@@ -381,7 +381,7 @@ public:
     inline SSIZE_T DecodeVarLengthSigned( int base )
     {
         _ASSERTE((base > 0) && (base < (int)BITS_PER_SIZE_T));
-        size_t numEncodings = 1 << base;
+        size_t numEncodings = size_t{ 1 } << base;
         SSIZE_T result = 0;
         for(int shift=0; ; shift+=base)
         {

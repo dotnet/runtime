@@ -3545,7 +3545,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
                     {
                         if (loByte == 0xFF)
                         {
-                            imm8 |= (1 << pos);
+                            imm8 |= (ssize_t{1} << pos);
                         }
                         uimm >>= 8;
                         pos++;
@@ -10658,7 +10658,7 @@ void emitter::emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm)
         if (imm > 0)
         {
             printf("*");
-            emitDispImm(1 << imm, false);
+            emitDispImm(ssize_t{1} << imm, false);
         }
     }
 }
@@ -11350,7 +11350,7 @@ void emitter::emitDispIns(
                     const ssize_t mask8 = 0xFF;
                     for (unsigned b = 0; b < 8; b++)
                     {
-                        if (imm & (1 << b))
+                        if (imm & (ssize_t{1} << b))
                         {
                             imm64 |= (mask8 << (b * 8));
                         }
