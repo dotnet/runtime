@@ -1499,11 +1499,12 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         emitAttr  attr = emitTypeSize(type);
 
         // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
-        // argument area
-        getEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, argOffset);
-        argOffset += EA_SIZE_IN_BYTES(attr);
+        // argument area.
+        unsigned thisFieldOffset = argOffset + fieldListPtr->gtFieldOffset;
+        getEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset);
+
         // We can't write beyound the arg area
-        assert(argOffset <= compiler->lvaLclSize(outArgVarNum));
+        assert((thisFieldOffset + EA_SIZE_IN_BYTES(attr)) <= compiler->lvaLclSize(outArgVarNum));
     }
 }
 #endif // !_TARGET_X86_
