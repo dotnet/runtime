@@ -385,12 +385,21 @@ namespace R2RDump
             {
                 chunkPointers[i] = NativeReader.ReadBits(image, numBitsPerPointer, ref bitOffset);
             }
-            bitOffset = (int)Math.Ceiling(bitOffset / 8.0) * 8;
+            int info2Offset = (int)Math.Ceiling(bitOffset / 8.0) * 8;
 
             List<GcTransition> transitions = new List<GcTransition>();
             bool[] liveAtEnd = new bool[slots.Count];
             for (int currentChunk = 0; currentChunk < numChunks; currentChunk++)
             {
+                if (chunkPointers[currentChunk] == 0)
+                {
+                    continue;
+                }
+                else
+                {
+                    bitOffset = info2Offset + chunkPointers[currentChunk] - 1;
+                }
+
                 int couldBeLiveOffset = bitOffset;
                 int slotId = 0;
                 bool fSimple = (NativeReader.ReadBits(image, 1, ref couldBeLiveOffset) == 0);
@@ -410,7 +419,7 @@ namespace R2RDump
                 int normChunkBaseCodeOffset = currentChunk * gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK;
                 for (int i = 0; i < numCouldBeLiveSlots; i++)
                 {
-                    slotId = GetSlotId(image, gcInfoTypes, fSimple, fSkipFirst, slotId, ref couldBeLiveCnt, ref couldBeLiveOffset);
+                    slotId = GetNextSlotId(image, gcInfoTypes, fSimple, fSkipFirst, slotId, ref couldBeLiveCnt, ref couldBeLiveOffset);
 
                     bool isLive = !liveAtEnd[slotId];
                     liveAtEnd[slotId] = (NativeReader.ReadBits(image, 1, ref finalStateOffset) != 0);
@@ -469,7 +478,7 @@ namespace R2RDump
             return numCouldBeLiveSlots;
         }
 
-        private int GetSlotId(byte[] image, GcInfoTypes gcInfoTypes, bool fSimple, bool fSkipFirst, int slotId, ref int couldBeLiveCnt, ref int couldBeLiveOffset)
+        private int GetNextSlotId(byte[] image, GcInfoTypes gcInfoTypes, bool fSimple, bool fSkipFirst, int slotId, ref int couldBeLiveCnt, ref int couldBeLiveOffset)
         {
             if (fSimple)
             {

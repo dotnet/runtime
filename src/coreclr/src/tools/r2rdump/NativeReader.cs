@@ -107,7 +107,7 @@ namespace R2RDump
             int bits = bitOffset % BITS_PER_BYTE;
             int val = image[start] >> bits;
             bits += numBits;
-            if (bits > BITS_PER_BYTE)
+            while (bits > BITS_PER_BYTE)
             {
                 start++;
                 bits -= BITS_PER_BYTE;
