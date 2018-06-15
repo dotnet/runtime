@@ -230,7 +230,6 @@ private:
     BOOL HasExplicitSize() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasExplicitSize(); } 
 
 #ifdef _DEBUG
-    BOOL IsAppDomainAgilityDone() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsAppDomainAgilityDone(); } 
     LPCUTF8 GetDebugClassName() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetDebugClassName(); } 
 #endif // _DEBUG
     Assembly *GetAssembly() { WRAPPER_NO_CONTRACT; return GetModule()->GetAssembly(); }
