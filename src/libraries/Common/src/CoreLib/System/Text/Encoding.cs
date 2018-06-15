@@ -1089,7 +1089,7 @@ namespace System.Text
         {
             fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
             {
-                return GetString(bytesPtr, bytes.Length);
+                return string.CreateStringFromEncoding(bytesPtr, bytes.Length, this);
             }
         }
 
