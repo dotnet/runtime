@@ -88,7 +88,7 @@ namespace System.Text
         }
 
         // We go ahead and set this because Encoding expects it, however nothing can fall back in UTF7.
-        internal override void SetDefaultFallbacks()
+        internal sealed override void SetDefaultFallbacks()
         {
             // UTF7 had an odd decoderFallback behavior, and the Encoder fallback
             // is irrelevant because we encode surrogates individually and never check for unmatched ones
@@ -396,7 +396,7 @@ namespace System.Text
         // End of standard methods copied from EncodingNLS.cs
         //
 
-        internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
+        internal sealed override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
         {
             Debug.Assert(chars != null, "[UTF7Encoding.GetByteCount]chars!=null");
             Debug.Assert(count >= 0, "[UTF7Encoding.GetByteCount]count >=0");
@@ -405,8 +405,8 @@ namespace System.Text
             return GetBytes(chars, count, null, 0, baseEncoder);
         }
 
-        internal override unsafe int GetBytes(char* chars, int charCount,
-                                                byte* bytes, int byteCount, EncoderNLS baseEncoder)
+        internal sealed override unsafe int GetBytes(
+            char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS baseEncoder)
         {
             Debug.Assert(byteCount >= 0, "[UTF7Encoding.GetBytes]byteCount >=0");
             Debug.Assert(chars != null, "[UTF7Encoding.GetBytes]chars!=null");
@@ -545,7 +545,7 @@ namespace System.Text
             return buffer.Count;
         }
 
-        internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
+        internal sealed override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
             Debug.Assert(count >= 0, "[UTF7Encoding.GetCharCount]count >=0");
             Debug.Assert(bytes != null, "[UTF7Encoding.GetCharCount]bytes!=null");
@@ -554,8 +554,8 @@ namespace System.Text
             return GetChars(bytes, count, null, 0, baseDecoder);
         }
 
-        internal override unsafe int GetChars(byte* bytes, int byteCount,
-                                                char* chars, int charCount, DecoderNLS baseDecoder)
+        internal sealed override unsafe int GetChars(
+            byte* bytes, int byteCount, char* chars, int charCount, DecoderNLS baseDecoder)
         {
             Debug.Assert(byteCount >= 0, "[UTF7Encoding.GetChars]byteCount >=0");
             Debug.Assert(bytes != null, "[UTF7Encoding.GetChars]bytes!=null");
