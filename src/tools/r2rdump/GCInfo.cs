@@ -209,7 +209,7 @@ namespace R2RDump
 
             SlotTable = new GcSlotTable(image, machine, _gcInfoTypes, ref bitOffset);
 
-            Transitions = GetTranstions(image, SlotTable.GcSlots, ref bitOffset);
+            Transitions = GetTranstions(image, ref bitOffset);
 
             Size = bitOffset - startBitOffset;
 
@@ -359,7 +359,7 @@ namespace R2RDump
             return (readyToRunMajorVersion == 1) ? 1 : GCINFO_VERSION;
         }
 
-        public IList<GcTransition> GetTranstions(byte[] image, List<GcSlotTable.GcSlot> slots, ref int bitOffset)
+        public IList<GcTransition> GetTranstions(byte[] image, ref int bitOffset)
         {
             int totalInterruptibleLength = 0;
             if (NumInterruptibleRanges == 0)
@@ -389,7 +389,7 @@ namespace R2RDump
             int info2Offset = (int)Math.Ceiling(bitOffset / 8.0) * 8;
 
             List<GcTransition> transitions = new List<GcTransition>();
-            bool[] liveAtEnd = new bool[slots.Count];
+            bool[] liveAtEnd = new bool[SlotTable.GcSlots.Count - SlotTable.NumUntracked];
             for (int currentChunk = 0; currentChunk < numChunks; currentChunk++)
             {
                 if (chunkPointers[currentChunk] == 0)
@@ -412,7 +412,7 @@ namespace R2RDump
                     slotId = -1;
                 }
 
-                uint numCouldBeLiveSlots = GetNumCouldBeLiveSlots(image, slots, ref bitOffset);
+                uint numCouldBeLiveSlots = GetNumCouldBeLiveSlots(image, ref bitOffset);
 
                 int finalStateOffset = bitOffset;
                 bitOffset += (int)numCouldBeLiveSlots;
@@ -442,10 +442,10 @@ namespace R2RDump
             return transitions;
         }
 
-        private uint GetNumCouldBeLiveSlots(byte[] image, List<GcSlotTable.GcSlot> slots, ref int bitOffset)
+        private uint GetNumCouldBeLiveSlots(byte[] image, ref int bitOffset)
         {
             uint numCouldBeLiveSlots = 0;
-            int numSlots = slots.Count;
+            int numTracked = SlotTable.GcSlots.Count - (int)SlotTable.NumUntracked;
             if (NativeReader.ReadBits(image, 1, ref bitOffset) != 0)
             {
                 // RLE encoded
@@ -453,7 +453,7 @@ namespace R2RDump
                 bool fReport = true;
                 uint readSlots = NativeReader.DecodeVarLengthUnsigned(image, fSkip ? _gcInfoTypes.LIVESTATE_RLE_SKIP_ENCBASE : _gcInfoTypes.LIVESTATE_RLE_RUN_ENCBASE, ref bitOffset);
                 fSkip = !fSkip;
-                while (readSlots < numSlots)
+                while (readSlots < numTracked)
                 {
                     uint cnt = NativeReader.DecodeVarLengthUnsigned(image, fSkip ? _gcInfoTypes.LIVESTATE_RLE_SKIP_ENCBASE : _gcInfoTypes.LIVESTATE_RLE_RUN_ENCBASE, ref bitOffset) + 1;
                     if (fReport)
@@ -467,9 +467,9 @@ namespace R2RDump
             }
             else
             {
-                foreach (var slot in slots)
+                foreach (var slot in SlotTable.GcSlots)
                 {
-                    if (slot.StackSlot != null)
+                    if (slot.Flags == GcSlotFlags.GC_SLOT_UNTRACKED)
                         break;
 
                     if (NativeReader.ReadBits(image, 1, ref bitOffset) != 0)

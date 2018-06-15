@@ -182,10 +182,6 @@ namespace R2RDump
         GC_SLOT_INTERIOR = 0x1,
         GC_SLOT_PINNED = 0x2,
         GC_SLOT_UNTRACKED = 0x4,
-
-        // For internal use by the encoder/decoder
-        GC_SLOT_IS_REGISTER = 0x8,
-        GC_SLOT_IS_DELETED = 0x10,
     };
 
     public enum GcStackSlotBase
