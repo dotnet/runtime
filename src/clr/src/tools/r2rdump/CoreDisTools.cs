@@ -26,6 +26,10 @@ namespace R2RDump
         public static extern void DumpCodeBlock(IntPtr Disasm, ulong Address, IntPtr Bytes, int Size);
 
         [DllImport("coredistools.dll")]
+        [return: MarshalAs(UnmanagedType.I4)]
+        public static extern int DumpInstruction(IntPtr Disasm, ulong Address, IntPtr Bytes, int Size);
+
+        [DllImport("coredistools.dll")]
         public static extern IntPtr GetOutputBuffer();
 
         [DllImport("coredistools.dll")]
@@ -36,10 +40,11 @@ namespace R2RDump
 
         public unsafe static string GetCodeBlock(IntPtr Disasm, int Address, int Offset, byte[] image, int Size)
         {
+            int len;
             fixed (byte* p = image)
             {
                 IntPtr ptr = (IntPtr)(p + Offset);
-                DumpCodeBlock(Disasm, (ulong)Address, ptr, Size);
+                len = DumpInstruction(Disasm, (ulong)Address, ptr, Size); //DumpCodeBlock(Disasm, (ulong)Address, ptr, Size);
             }
             IntPtr pBuffer = GetOutputBuffer();
             string buffer = Marshal.PtrToStringAnsi(pBuffer);
