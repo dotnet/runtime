@@ -11,6 +11,8 @@ namespace System
         [Serializable]
         public sealed class AdjustmentRule : IEquatable<AdjustmentRule>, ISerializable, IDeserializationCallback
         {
+            private static readonly TimeSpan DaylightDeltaAdjustment = TimeSpan.FromHours(24.0);
+            private static readonly TimeSpan MaxDaylightDelta = TimeSpan.FromHours(12.0);
             private readonly DateTime _dateStart;
             private readonly DateTime _dateEnd;
             private readonly TimeSpan _daylightDelta;
@@ -100,6 +102,7 @@ namespace System
                 TimeSpan baseUtcOffsetDelta,
                 bool noDaylightTransitions)
             {
+                AdjustDaylightDeltaToExpectedRange(ref daylightDelta, ref baseUtcOffsetDelta);
                 return new AdjustmentRule(
                     dateStart,
                     dateEnd,
@@ -184,6 +187,26 @@ namespace System
                 {
                     throw new ArgumentException(SR.Argument_DateTimeHasTimeOfDay, nameof(dateEnd));
                 }
+            }
+
+            /// <summary>
+            /// Ensures the daylight delta is within [-12, 12] hours
+            /// </summary>>
+            private static void AdjustDaylightDeltaToExpectedRange(ref TimeSpan daylightDelta, ref TimeSpan baseUtcOffsetDelta)
+            {
+                if (daylightDelta > MaxDaylightDelta)
+                {
+                    daylightDelta -= DaylightDeltaAdjustment;
+                    baseUtcOffsetDelta += DaylightDeltaAdjustment;
+                }
+                else if (daylightDelta < -MaxDaylightDelta)
+                {
+                    daylightDelta += DaylightDeltaAdjustment;
+                    baseUtcOffsetDelta -= DaylightDeltaAdjustment;
+                }
+
+                System.Diagnostics.Debug.Assert(daylightDelta <= MaxDaylightDelta && daylightDelta >= -MaxDaylightDelta,
+                                                "DaylightDelta should not ever be more than 24h");
             }
 
             void IDeserializationCallback.OnDeserialization(object sender)
