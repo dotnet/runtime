@@ -30,6 +30,8 @@ struct _MonoDebuggerCallbacks {
 	gboolean (*debug_log_is_enabled) (void);
 };
 
+typedef struct _DebuggerTlsData DebuggerTlsData;
+
 MONO_API void
 mono_debugger_agent_init (void);
 

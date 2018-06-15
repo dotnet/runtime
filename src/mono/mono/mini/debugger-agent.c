@@ -165,7 +165,7 @@ struct _InvokeData
 	InvokeData *last_invoke;
 };
 
-typedef struct {
+struct _DebuggerTlsData {
 	MonoThreadUnwindState context;
 
 	/* This is computed on demand when it is requested using the wire protocol */
@@ -249,7 +249,7 @@ typedef struct {
 
 	/* The currently unloading appdomain */
 	MonoDomain *domain_unloading;
-} DebuggerTlsData;
+};
 
 typedef struct {
 	const char *name;
