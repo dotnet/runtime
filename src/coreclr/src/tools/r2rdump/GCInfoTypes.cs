@@ -37,6 +37,11 @@ namespace R2RDump
         internal int REGISTER_DELTA_ENCBASE { get; } = 2;
         internal int STACK_SLOT_ENCBASE { get; } = 6;
         internal int STACK_SLOT_DELTA_ENCBASE { get; } = 4;
+        internal int POINTER_SIZE_ENCBASE { get; } = 3;
+        internal int NUM_NORM_CODE_OFFSETS_PER_CHUNK { get; } = 64;
+        internal int LIVESTATE_RLE_RUN_ENCBASE { get; } = 2;
+        internal int LIVESTATE_RLE_SKIP_ENCBASE { get; } = 4;
+        internal int NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 { get; } = 6;
 
         internal GcInfoTypes(Machine machine)
         {
@@ -177,10 +182,6 @@ namespace R2RDump
         GC_SLOT_INTERIOR = 0x1,
         GC_SLOT_PINNED = 0x2,
         GC_SLOT_UNTRACKED = 0x4,
-
-        // For internal use by the encoder/decoder
-        GC_SLOT_IS_REGISTER = 0x8,
-        GC_SLOT_IS_DELETED = 0x10,
     };
 
     public enum GcStackSlotBase
