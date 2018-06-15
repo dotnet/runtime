@@ -31,7 +31,7 @@ namespace System.Text
         {
         }
 
-        internal override void SetDefaultFallbacks()
+        internal sealed override void SetDefaultFallbacks()
         {
             // For ASCIIEncoding we just use default replacement fallback
             this.encoderFallback = EncoderFallback.ReplacementFallback;
@@ -107,6 +107,14 @@ namespace System.Text
 
             // Call it with empty encoder
             return GetByteCount(chars, count, null);
+        }
+
+        public override unsafe int GetByteCount(ReadOnlySpan<char> chars)
+        {
+            fixed (char* charsPtr = &MemoryMarshal.GetNonNullPinnableReference(chars))
+            {
+                return GetByteCount(charsPtr, chars.Length, encoder: null);
+            }
         }
 
         // Parent method is safe.
@@ -194,6 +202,15 @@ namespace System.Text
             return GetBytes(chars, charCount, bytes, byteCount, null);
         }
 
+        public override unsafe int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes)
+        {
+            fixed (char* charsPtr = &MemoryMarshal.GetNonNullPinnableReference(chars))
+            fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
+            {
+                return GetBytes(charsPtr, chars.Length, bytesPtr, bytes.Length, encoder: null);
+            }
+        }
+
         // Returns the number of characters produced by decoding a range of bytes
         // in a byte array.
         //
@@ -238,6 +255,14 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             return GetCharCount(bytes, count, null);
+        }
+
+        public override unsafe int GetCharCount(ReadOnlySpan<byte> bytes)
+        {
+            fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
+            {
+                return GetCharCount(bytesPtr, bytes.Length, decoder: null);
+            }
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -290,6 +315,15 @@ namespace System.Text
             return GetChars(bytes, byteCount, chars, charCount, null);
         }
 
+        public override unsafe int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars)
+        {
+            fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
+            fixed (char* charsPtr = &MemoryMarshal.GetNonNullPinnableReference(chars))
+            {
+                return GetChars(bytesPtr, bytes.Length, charsPtr, chars.Length, decoder: null);
+            }
+        }
+
         // Returns a string containing the decoded representation of a range of
         // bytes in a byte array.
         //
@@ -326,7 +360,7 @@ namespace System.Text
         // GetByteCount
         // Note: We start by assuming that the output will be the same as count.  Having
         // an encoder or fallback may change that assumption
-        internal override unsafe int GetByteCount(char* chars, int charCount, EncoderNLS encoder)
+        internal sealed override unsafe int GetByteCount(char* chars, int charCount, EncoderNLS encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             Debug.Assert(charCount >= 0, "[ASCIIEncoding.GetByteCount]count is negative");
@@ -460,8 +494,8 @@ namespace System.Text
             return byteCount;
         }
 
-        internal override unsafe int GetBytes(char* chars, int charCount,
-                                                byte* bytes, int byteCount, EncoderNLS encoder)
+        internal sealed override unsafe int GetBytes(
+            char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             Debug.Assert(bytes != null, "[ASCIIEncoding.GetBytes]bytes is null");
@@ -676,7 +710,7 @@ namespace System.Text
         }
 
         // This is internal and called by something else,
-        internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS decoder)
+        internal sealed override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS decoder)
         {
             // Just assert, we're called internally so these should be safe, checked already
             Debug.Assert(bytes != null, "[ASCIIEncoding.GetCharCount]bytes is null");
@@ -748,8 +782,8 @@ namespace System.Text
             return charCount;
         }
 
-        internal override unsafe int GetChars(byte* bytes, int byteCount,
-                                                char* chars, int charCount, DecoderNLS decoder)
+        internal sealed override unsafe int GetChars(
+            byte* bytes, int byteCount, char* chars, int charCount, DecoderNLS decoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             Debug.Assert(bytes != null, "[ASCIIEncoding.GetChars]bytes is null");
