@@ -477,6 +477,15 @@ worker_thread (gpointer unused)
 		if (mono_thread_interruption_checkpoint_bool ())
 			continue;
 
+		// If a worker thread is in its native top, not running managed code,
+		// there is no point in raising thread abort, and no code will clear
+		// the abort request. As such, the subsequent timedwait, would
+		// not be interrupted at runtime shutdown, because an abort is already requested.
+		// Clear the abort request.
+		// This avoids a shutdown hang in tests thread6 and thread7.
+		if (thread->state & ThreadState_AbortRequested)
+			mono_thread_internal_reset_abort (thread);
+
 		if (!work_item_try_pop ()) {
 			gboolean timeout;
 
