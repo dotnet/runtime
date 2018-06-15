@@ -103,7 +103,7 @@ namespace R2RDump
             GcSlotFlags flags = (GcSlotFlags)NativeReader.ReadBits(image, 2, ref bitOffset);
             GcSlots.Add(new GcSlot((int)regNum, null, flags));
 
-            for (int i = 1; i < NumRegisters && i < gcInfoTypes.MAX_PREDECODED_SLOTS; i++)
+            for (int i = 1; i < NumRegisters; i++)
             {
                 if ((uint)flags != 0)
                 {
@@ -128,7 +128,7 @@ namespace R2RDump
             GcSlotFlags flags = (GcSlotFlags)NativeReader.ReadBits(image, 2, ref bitOffset);
             GcSlots.Add(new GcSlot(-1, new GcStackSlot(spOffset, spBase), flags));
 
-            for (int i = 1; i < nSlots && GcSlots.Count < gcInfoTypes.MAX_PREDECODED_SLOTS; i++)
+            for (int i = 1; i < nSlots; i++)
             {
                 spBase = (GcStackSlotBase)NativeReader.ReadBits(image, 2, ref bitOffset);
                 if ((uint)flags != 0)
