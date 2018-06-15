@@ -2661,7 +2661,7 @@ int BitStreamWriter::SizeofVarLengthUnsigned( size_t n, UINT32 base)
     // If a value gets so big we are probably doing something wrong
     _ASSERTE(((INT32)(UINT32)n) >= 0);
     _ASSERTE((base > 0) && (base < BITS_PER_SIZE_T));
-    size_t numEncodings = 1 << base;
+    size_t numEncodings = size_t{ 1 } << base;
     int bitsUsed;
     for(bitsUsed = base+1; ; bitsUsed += base+1)
     {
@@ -2682,7 +2682,7 @@ int BitStreamWriter::EncodeVarLengthUnsigned( size_t n, UINT32 base)
     // If a value gets so big we are probably doing something wrong
     _ASSERTE(((INT32)(UINT32)n) >= 0);
     _ASSERTE((base > 0) && (base < BITS_PER_SIZE_T));
-    size_t numEncodings = 1 << base;
+    size_t numEncodings = size_t{ 1 } << base;
     int bitsUsed;
     for(bitsUsed = base+1; ; bitsUsed += base+1)
     {
@@ -2704,7 +2704,7 @@ int BitStreamWriter::EncodeVarLengthUnsigned( size_t n, UINT32 base)
 int BitStreamWriter::EncodeVarLengthSigned( SSIZE_T n, UINT32 base )
 {
     _ASSERTE((base > 0) && (base < BITS_PER_SIZE_T));
-    size_t numEncodings = 1 << base;
+    size_t numEncodings = size_t{ 1 } << base;
     for(int bitsUsed = base+1; ; bitsUsed += base+1)
     {
         size_t currentChunk = ((size_t) n) & (numEncodings-1);

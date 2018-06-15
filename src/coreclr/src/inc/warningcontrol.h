@@ -15,43 +15,20 @@
 #if defined(_MSC_VER)
 #pragma warning(error   :4007)   // 'main' : must be __cdecl
 #pragma warning(error   :4013)   // 'function' undefined - assuming extern returning int
-#pragma warning(error   :4071)   // no function prototype given
-#pragma warning(error   :4072)   // no function prototype given (fastcall)
-#pragma warning(3               :4092)   // sizeof returns 'unsigned long'
-//#pragma warning(error :4102)   // "'%$S' : unreferenced label"
-#pragma warning(3               :4121)   // structure is sensitive to alignment
-#pragma warning(3               :4125)   // decimal digit in octal sequence
-#pragma warning(3               :4130)   // logical operation on address of string constant
-#pragma warning(3               :4132)   // const object should be initialized
-#pragma warning(error   :4171)   // no function prototype given (old style)
-#pragma warning(4               :4177)   // pragma data_seg s/b at global scope
-#pragma warning(4               :4206)   // Source File is empty
-#pragma warning(3               :4212)   // function declaration used ellipsis
-#pragma warning(error           :4259)   // pure virtual function was not defined
-#pragma warning(disable         :4291)   // delete not defined for new, c++ exception may cause leak
-#pragma warning(disable         :4302)   // truncation from '%$S' to '%$S'
-#pragma warning(disable         :4311)   // pointer truncation from '%$S' to '%$S'
-#pragma warning(disable         :4312)   // '<function-style-cast>' : conversion from '%$S' to '%$S' of greater size
-#pragma warning(disable :4334)   // result of 32-bit shift implicitly converted to 64 bits
-#pragma warning(disable :4430)   // missing type specifier: C++ doesn't support default-int
+#pragma warning(3       :4092)   // sizeof returns 'unsigned long'
+#pragma warning(error   :4102)   // "'%$S' : unreferenced label"
+#pragma warning(3       :4121)   // structure is sensitive to alignment
+#pragma warning(3       :4125)   // decimal digit in octal sequence
+#pragma warning(3       :4130)   // logical operation on address of string constant
+#pragma warning(3       :4132)   // const object should be initialized
+#pragma warning(4       :4177)   // pragma data_seg s/b at global scope
+#pragma warning(3       :4212)   // function declaration used ellipsis
+#pragma warning(disable :4291)   // delete not defined for new, c++ exception may cause leak
+#pragma warning(disable :4302)   // truncation from '%$S' to '%$S'
+#pragma warning(disable :4311)   // pointer truncation from '%$S' to '%$S'
+#pragma warning(disable :4312)   // '<function-style-cast>' : conversion from '%$S' to '%$S' of greater size
 #pragma warning(disable :4477)   // format string '%$S' requires an argument of type '%$S', but variadic argument %d has type '%$S'
-#pragma warning(3               :4509)   // "nonstandard extension used: '%$S' uses SEH and '%$S' has destructor"
-                                                                 //
-                                                                 // But beware of doing a return from inside such a try block:
-                                                                 //
-                                                                 //     int foo()
-                                                                 //             {
-                                                                 //             ClassWithDestructor c;
-                                                                 //             __try {
-                                                                 //                     return 0;
-                                                                 //             } __finally {
-                                                                 //                     printf("in finally");
-                                                                 //             }
-                                                                 //
-                                                                 // as (it's a bug) the return value gets toasted. So DON'T casually
-                                                                 // dismiss this warning if you're compiling w/o CXX EH turned on (the default).
-
-#pragma warning(3               :4530)   // C++ exception handler used, but unwind semantics are not enabled. Specify -GX
+#pragma warning(3       :4530)   // C++ exception handler used, but unwind semantics are not enabled. Specify -GX
 #pragma warning(error   :4551)   // Function call missing argument list
 
 #pragma warning(error   :4700)   // Local used w/o being initialized
