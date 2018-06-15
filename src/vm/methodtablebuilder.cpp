@@ -1920,13 +1920,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     SetFinalizationSemantics();
 
-#if defined(_DEBUG)
-    // Figure out if we're domain agile..
-    // Note that this checks a bunch of field directly on the class & method table,
-    // so it needs to come late in the game.
-    EEClass::SetAppDomainAgileAttribute(pMT);
-#endif
-
     // Allocate dynamic slot if necessary
     if (bmtProp->fDynamicStatics)
     {
