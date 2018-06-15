@@ -32,6 +32,7 @@
 #include "common.h"
 #include "winwrap.h"
 #include "threads.h"
+#include "threadsuspend.h"
 #include "frames.h"
 
 #include "appdomain.hpp"
@@ -2959,7 +2960,7 @@ public:
 #endif
 private:
     HANDLE GetGarbageCollectionBlockerEvent() { return  GetLazyData()->m_garbageCollectionBlockerEvent; }
-    
+
 };
 
 
@@ -3794,16 +3795,16 @@ HANDLE OpenWin32EventOrThrow(
     LPCWSTR lpName
 );
 
-#define SENDIPCEVENT_RAW_BEGIN_EX(pDbgLockHolder, gcxStmt)      \
-  {                                                             \
-    ThreadStore::LockThreadStore();                             \
-    Debugger::DebuggerLockHolder *__pDbgLockHolder = pDbgLockHolder; \
-    gcxStmt;                                                    \
+#define SENDIPCEVENT_RAW_BEGIN_EX(pDbgLockHolder, gcxStmt)               \
+  {                                                                      \
+    ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_FOR_DEBUGGER); \
+    Debugger::DebuggerLockHolder *__pDbgLockHolder = pDbgLockHolder;     \
+    gcxStmt;                                                             \
     g_pDebugger->LockForEventSending(__pDbgLockHolder);
 
-#define SENDIPCEVENT_RAW_END_EX                                 \
-    g_pDebugger->UnlockFromEventSending(__pDbgLockHolder);      \
-    ThreadStore::UnlockThreadStore();                             \
+#define SENDIPCEVENT_RAW_END_EX                                          \
+    g_pDebugger->UnlockFromEventSending(__pDbgLockHolder);               \
+    ThreadStore::UnlockThreadStore();                                    \
   }
 
 #define SENDIPCEVENT_RAW_BEGIN(pDbgLockHolder)                  \
@@ -3828,7 +3829,7 @@ HANDLE OpenWin32EventOrThrow(
         Debugger::DebuggerLockHolder __dbgLockHolder(pDebugger, FALSE);                   \
         Debugger::DebuggerLockHolder *__pDbgLockHolder = &__dbgLockHolder;                \
         gcxStmt;                                                                          \
-        ThreadStore::LockThreadStore();                                                   \
+        ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_FOR_DEBUGGER);              \
         g_pDebugger->LockForEventSending(__pDbgLockHolder);                               \
         /* Check if the thread has been suspended by the debugger via SetDebugState(). */ \
         if (thread != NULL && thread->HasThreadStateNC(Thread::TSNC_DebuggerUserSuspend)) \
