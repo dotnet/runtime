@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), dir.targets))\dir.targets" />
+  <PropertyGroup>
+    <ErrorIfBuildToolsRestoredFromIndividualProject Condition="!Exists('$(ToolsDir)')">true</ErrorIfBuildToolsRestoredFromIndividualProject>
+  </PropertyGroup>
+
+  <Import Project="..\Directory.Build.targets" />
+  
   <Target Name="_CheckForInvalidConfigurationAndPlatform" />
   <Target Name="_CheckForUnsupportedTargetFramework" />
   <Target Name="RunResolvePackageDependencies" />
@@ -22,6 +27,21 @@
     <PropertyGroup>
       <ResolvePackageDependenciesForBuildDependsOn></ResolvePackageDependenciesForBuildDependsOn>
     </PropertyGroup>
-    
+
   </Target>
+
+  <!-- Returns the assembly version of the project for consumption
+       by the NuGet package generation -->
+  <Target Name="GetAssemblyVersion"
+          Returns="$(AssemblyVersion)"/>
+
+  <!-- Returns the generated documentation file for consumption
+       by the NuGet package generation -->
+  <Target Name="GetDocumentationFile"
+          Returns="$(DocumentationFile)"/>
+
+  <Target Name="DumpTargets" BeforeTargets="ResolveProjectReferences">
+    <Message Text="DumpTargets> $(OutputPath), C=[$(Configuration)], CG=[$(ConfigurationGroup)], OG=[$(OSGroup)], TG=[$(TargetGroup)]" Importance="Low" />
+  </Target>
+
 </Project> 

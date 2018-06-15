@@ -7,7 +7,7 @@
     </BuildConfigurations>
   </PropertyGroup>
 
-  <Import Project="dir.props" />
+  <Import Project="Directory.Build.props" />
 
   <PropertyGroup>
     <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
@@ -95,5 +95,5 @@
   </Target>
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 </Project>
