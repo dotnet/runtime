@@ -85,6 +85,7 @@ namespace R2RDump
         private bool _wantsReportOnlyLeaf;
 
         private Machine _machine;
+        private GcInfoTypes _gcInfoTypes;
 
         public int Version { get; }
         public int CodeLength { get; }
@@ -111,7 +112,7 @@ namespace R2RDump
         public GcInfo(byte[] image, int offset, Machine machine, ushort majorVersion)
         {
             Offset = offset;
-            GcInfoTypes gcInfoTypes = new GcInfoTypes(machine);
+            _gcInfoTypes = new GcInfoTypes(machine);
 
             SecurityObjectStackSlot = -1;
             GSCookieStackSlot = -1;
@@ -130,87 +131,87 @@ namespace R2RDump
 
             if (Version >= MIN_GCINFO_VERSION_WITH_RETURN_KIND) // IsReturnKindAvailable
             {
-                int returnKindBits = (_slimHeader) ? gcInfoTypes.SIZE_OF_RETURN_KIND_SLIM : gcInfoTypes.SIZE_OF_RETURN_KIND_FAT;
+                int returnKindBits = (_slimHeader) ? _gcInfoTypes.SIZE_OF_RETURN_KIND_SLIM : _gcInfoTypes.SIZE_OF_RETURN_KIND_FAT;
                 ReturnKind = (ReturnKinds)NativeReader.ReadBits(image, returnKindBits, ref bitOffset);
             }
 
-            CodeLength = gcInfoTypes.DenormalizeCodeLength((int)NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.CODE_LENGTH_ENCBASE, ref bitOffset));
+            CodeLength = _gcInfoTypes.DenormalizeCodeLength((int)NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.CODE_LENGTH_ENCBASE, ref bitOffset));
 
             if (_hasGSCookie)
             {
-                uint normPrologSize = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
-                uint normEpilogSize = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset);
+                uint normPrologSize = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
+                uint normEpilogSize = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset);
 
                 ValidRangeStart = normPrologSize;
                 ValidRangeEnd = (uint)CodeLength - normEpilogSize;
             }
             else if (_hasSecurityObject || _hasGenericsInstContext)
             {
-                ValidRangeStart = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
+                ValidRangeStart = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
                 ValidRangeEnd = ValidRangeStart + 1;
             }
 
             if (_hasSecurityObject)
             {
-                SecurityObjectStackSlot = gcInfoTypes.DenormalizeStackSlot(NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.SECURITY_OBJECT_STACK_SLOT_ENCBASE, ref bitOffset));
+                SecurityObjectStackSlot = _gcInfoTypes.DenormalizeStackSlot(NativeReader.DecodeVarLengthSigned(image, _gcInfoTypes.SECURITY_OBJECT_STACK_SLOT_ENCBASE, ref bitOffset));
             }
 
             if (_hasGSCookie)
             {
-                GSCookieStackSlot = gcInfoTypes.DenormalizeStackSlot(NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.GS_COOKIE_STACK_SLOT_ENCBASE, ref bitOffset));
+                GSCookieStackSlot = _gcInfoTypes.DenormalizeStackSlot(NativeReader.DecodeVarLengthSigned(image, _gcInfoTypes.GS_COOKIE_STACK_SLOT_ENCBASE, ref bitOffset));
             }
 
             if (_hasPSPSym)
             {
-                PSPSymStackSlot = gcInfoTypes.DenormalizeStackSlot(NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.PSP_SYM_STACK_SLOT_ENCBASE, ref bitOffset));
+                PSPSymStackSlot = _gcInfoTypes.DenormalizeStackSlot(NativeReader.DecodeVarLengthSigned(image, _gcInfoTypes.PSP_SYM_STACK_SLOT_ENCBASE, ref bitOffset));
             }
 
             if (_hasGenericsInstContext)
             {
-                GenericsInstContextStackSlot = gcInfoTypes.DenormalizeStackSlot(NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE, ref bitOffset));
+                GenericsInstContextStackSlot = _gcInfoTypes.DenormalizeStackSlot(NativeReader.DecodeVarLengthSigned(image, _gcInfoTypes.GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE, ref bitOffset));
             }
 
             if (_hasStackBaseRegister && !_slimHeader)
             {
-                StackBaseRegister = gcInfoTypes.DenormalizeStackBaseRegister(NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.STACK_BASE_REGISTER_ENCBASE, ref bitOffset));
+                StackBaseRegister = _gcInfoTypes.DenormalizeStackBaseRegister(NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.STACK_BASE_REGISTER_ENCBASE, ref bitOffset));
             }
 
             if (_hasSizeOfEditAndContinuePreservedArea)
             {
-                SizeOfEditAndContinuePreservedArea = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, ref bitOffset);
+                SizeOfEditAndContinuePreservedArea = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, ref bitOffset);
             }
 
             if (_hasReversePInvokeFrame)
             {
-                ReversePInvokeFrameStackSlot = NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.REVERSE_PINVOKE_FRAME_ENCBASE, ref bitOffset);
+                ReversePInvokeFrameStackSlot = NativeReader.DecodeVarLengthSigned(image, _gcInfoTypes.REVERSE_PINVOKE_FRAME_ENCBASE, ref bitOffset);
             }
 
-            // FIXED_STACK_PARAMETER_SCRATCH_AREA (this macro is always defined in gcinfotypes.h)
+            // FIXED_STACK_PARAMETER_SCRATCH_AREA (this macro is always defined in _gcInfoTypes.h)
             if (!_slimHeader)
             {
-                SizeOfStackOutgoingAndScratchArea = gcInfoTypes.DenormalizeSizeOfStackArea(NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.SIZE_OF_STACK_AREA_ENCBASE, ref bitOffset));
+                SizeOfStackOutgoingAndScratchArea = _gcInfoTypes.DenormalizeSizeOfStackArea(NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.SIZE_OF_STACK_AREA_ENCBASE, ref bitOffset));
             }
 
-            // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED (this macro is always defined in gcinfotypes.h)
-            NumSafePoints = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NUM_SAFE_POINTS_ENCBASE, ref bitOffset);
+            // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED (this macro is always defined in _gcInfoTypes.h)
+            NumSafePoints = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.NUM_SAFE_POINTS_ENCBASE, ref bitOffset);
 
             if (!_slimHeader)
             {
-                NumInterruptibleRanges = NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.NUM_INTERRUPTIBLE_RANGES_ENCBASE, ref bitOffset);
+                NumInterruptibleRanges = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.NUM_INTERRUPTIBLE_RANGES_ENCBASE, ref bitOffset);
             }
 
-            // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED (this macro is always defined in gcinfotypes.h)
+            // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED (this macro is always defined in _gcInfoTypes.h)
             SafePointOffsets = EnumerateSafePoints(image, ref bitOffset);
             uint numBitsPerOffset = GcInfoTypes.CeilOfLog2(CodeLength);
             bitOffset += (int)(NumSafePoints * numBitsPerOffset);
 
-            InterruptibleRanges = EnumerateInterruptibleRanges(image, gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA1_ENCBASE, gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA2_ENCBASE, ref bitOffset);
+            InterruptibleRanges = EnumerateInterruptibleRanges(image, _gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA1_ENCBASE, _gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA2_ENCBASE, ref bitOffset);
 
-            SlotTable = new GcSlotTable(image, machine, gcInfoTypes, ref bitOffset);
+            SlotTable = new GcSlotTable(image, machine, _gcInfoTypes, ref bitOffset);
 
-            Transitions = GetTranstions(image, gcInfoTypes, SlotTable.GcSlots, ref bitOffset);
+            Transitions = GetTranstions(image, SlotTable.GcSlots, ref bitOffset);
 
-            Size = (int)Math.Ceiling((bitOffset - startBitOffset) / 8.0);
+            Size = bitOffset - startBitOffset;
 
             _machine = machine;
         }
@@ -358,7 +359,7 @@ namespace R2RDump
             return (readyToRunMajorVersion == 1) ? 1 : GCINFO_VERSION;
         }
 
-        public IList<GcTransition> GetTranstions(byte[] image, GcInfoTypes gcInfoTypes, List<GcSlotTable.GcSlot> slots, ref int bitOffset)
+        public IList<GcTransition> GetTranstions(byte[] image, List<GcSlotTable.GcSlot> slots, ref int bitOffset)
         {
             int totalInterruptibleLength = 0;
             if (NumInterruptibleRanges == 0)
@@ -373,8 +374,8 @@ namespace R2RDump
                 }
             }
 
-            int numChunks = (totalInterruptibleLength + gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK - 1) / gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK; //=2
-            int numBitsPerPointer = (int)NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.POINTER_SIZE_ENCBASE, ref bitOffset);
+            int numChunks = (totalInterruptibleLength + _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK - 1) / _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK; //=2
+            int numBitsPerPointer = (int)NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.POINTER_SIZE_ENCBASE, ref bitOffset);
             if (numBitsPerPointer == 0)
             {
                 return new List<GcTransition>();
@@ -411,15 +412,15 @@ namespace R2RDump
                     slotId = -1;
                 }
 
-                uint numCouldBeLiveSlots = GetNumCouldBeLiveSlots(image, gcInfoTypes, slots, ref bitOffset);
+                uint numCouldBeLiveSlots = GetNumCouldBeLiveSlots(image, slots, ref bitOffset);
 
                 int finalStateOffset = bitOffset;
                 bitOffset += (int)numCouldBeLiveSlots;
 
-                int normChunkBaseCodeOffset = currentChunk * gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK;
+                int normChunkBaseCodeOffset = currentChunk * _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK;
                 for (int i = 0; i < numCouldBeLiveSlots; i++)
                 {
-                    slotId = GetNextSlotId(image, gcInfoTypes, fSimple, fSkipFirst, slotId, ref couldBeLiveCnt, ref couldBeLiveOffset);
+                    slotId = GetNextSlotId(image, fSimple, fSkipFirst, slotId, ref couldBeLiveCnt, ref couldBeLiveOffset);
 
                     bool isLive = !liveAtEnd[slotId];
                     liveAtEnd[slotId] = (NativeReader.ReadBits(image, 1, ref finalStateOffset) != 0);
@@ -427,7 +428,7 @@ namespace R2RDump
                     // Read transitions
                     while (NativeReader.ReadBits(image, 1, ref bitOffset) != 0)
                     {
-                        int transitionOffset = NativeReader.ReadBits(image, gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2, ref bitOffset) + normChunkBaseCodeOffset;
+                        int transitionOffset = NativeReader.ReadBits(image, _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2, ref bitOffset) + normChunkBaseCodeOffset;
                         transitions.Add(new GcTransition(transitionOffset, slotId, isLive, currentChunk));
                         isLive = !isLive;
                     }
@@ -441,7 +442,7 @@ namespace R2RDump
             return transitions;
         }
 
-        private uint GetNumCouldBeLiveSlots(byte[] image, GcInfoTypes gcInfoTypes, List<GcSlotTable.GcSlot> slots, ref int bitOffset)
+        private uint GetNumCouldBeLiveSlots(byte[] image, List<GcSlotTable.GcSlot> slots, ref int bitOffset)
         {
             uint numCouldBeLiveSlots = 0;
             int numSlots = slots.Count;
@@ -450,11 +451,11 @@ namespace R2RDump
                 // RLE encoded
                 bool fSkip = (NativeReader.ReadBits(image, 1, ref bitOffset) == 0);
                 bool fReport = true;
-                uint readSlots = NativeReader.DecodeVarLengthUnsigned(image, fSkip ? gcInfoTypes.LIVESTATE_RLE_SKIP_ENCBASE : gcInfoTypes.LIVESTATE_RLE_RUN_ENCBASE, ref bitOffset);
+                uint readSlots = NativeReader.DecodeVarLengthUnsigned(image, fSkip ? _gcInfoTypes.LIVESTATE_RLE_SKIP_ENCBASE : _gcInfoTypes.LIVESTATE_RLE_RUN_ENCBASE, ref bitOffset);
                 fSkip = !fSkip;
                 while (readSlots < numSlots)
                 {
-                    uint cnt = NativeReader.DecodeVarLengthUnsigned(image, fSkip ? gcInfoTypes.LIVESTATE_RLE_SKIP_ENCBASE : gcInfoTypes.LIVESTATE_RLE_RUN_ENCBASE, ref bitOffset) + 1;
+                    uint cnt = NativeReader.DecodeVarLengthUnsigned(image, fSkip ? _gcInfoTypes.LIVESTATE_RLE_SKIP_ENCBASE : _gcInfoTypes.LIVESTATE_RLE_RUN_ENCBASE, ref bitOffset) + 1;
                     if (fReport)
                     {
                         numCouldBeLiveSlots += cnt;
@@ -478,7 +479,7 @@ namespace R2RDump
             return numCouldBeLiveSlots;
         }
 
-        private int GetNextSlotId(byte[] image, GcInfoTypes gcInfoTypes, bool fSimple, bool fSkipFirst, int slotId, ref int couldBeLiveCnt, ref int couldBeLiveOffset)
+        private int GetNextSlotId(byte[] image, bool fSimple, bool fSkipFirst, int slotId, ref int couldBeLiveCnt, ref int couldBeLiveOffset)
         {
             if (fSimple)
             {
@@ -493,15 +494,15 @@ namespace R2RDump
             // We need to find a new run
             else if (fSkipFirst)
             {
-                int tmp = (int)NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.LIVESTATE_RLE_SKIP_ENCBASE, ref couldBeLiveOffset) + 1;
+                int tmp = (int)NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.LIVESTATE_RLE_SKIP_ENCBASE, ref couldBeLiveOffset) + 1;
                 slotId += tmp;
-                couldBeLiveCnt = (int)NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.LIVESTATE_RLE_RUN_ENCBASE, ref couldBeLiveOffset);
+                couldBeLiveCnt = (int)NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.LIVESTATE_RLE_RUN_ENCBASE, ref couldBeLiveOffset);
             }
             else
             {
-                int tmp = (int)NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.LIVESTATE_RLE_RUN_ENCBASE, ref couldBeLiveOffset) + 1;
+                int tmp = (int)NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.LIVESTATE_RLE_RUN_ENCBASE, ref couldBeLiveOffset) + 1;
                 slotId += tmp;
-                couldBeLiveCnt = (int)NativeReader.DecodeVarLengthUnsigned(image, gcInfoTypes.LIVESTATE_RLE_SKIP_ENCBASE, ref couldBeLiveOffset);
+                couldBeLiveCnt = (int)NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.LIVESTATE_RLE_SKIP_ENCBASE, ref couldBeLiveOffset);
             }
             return slotId;
         }
