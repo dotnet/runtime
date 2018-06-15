@@ -22,7 +22,7 @@ namespace R2RDump
         private IReadOnlyList<int> _runtimeFunctions = Array.Empty<int>();
         private IReadOnlyList<string> _sections = Array.Empty<string>();
         private bool _diff;
-        private long _disassembler;
+        private IntPtr _disassembler;
         private bool _types;
         private bool _unwind;
         private bool _gc;
@@ -181,7 +181,7 @@ namespace R2RDump
             if (_disasm)
             {
                 _writer.WriteLine($"Id: {rtf.Id}");
-                CoreDisTools.DumpCodeBlock(_disassembler, rtf.StartAddress, r2r.GetOffset(rtf.StartAddress), r2r.Image, rtf.Size);
+                _writer.Write(CoreDisTools.GetCodeBlock(_disassembler, rtf.StartAddress, r2r.GetOffset(rtf.StartAddress), r2r.Image, rtf.Size));
             }
             else
             {
