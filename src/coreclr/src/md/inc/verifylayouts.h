@@ -65,21 +65,21 @@
 // class VerifyLayoutsMD
 // {
 //
-//      static const expected_offset_of_first_field_in_CMiniMdRW = 208;
-//      static const actual_offset_of_first_field_in_CMiniMdRW =
+//      static const int expected_offset_of_first_field_in_CMiniMdRW = 208;
+//      static const int actual_offset_of_first_field_in_CMiniMdRW =
 //      208;
-//      static const offset_of_field_after_CMiniMdRW_m_Schema =
+//      static const int offset_of_field_after_CMiniMdRW_m_Schema =
 //      312;
-//      static const offset_of_field_after_CMiniMdRW_m_Tables =
+//      static const int offset_of_field_after_CMiniMdRW_m_Tables =
 //      316;
 //      ... many more lines like this covering all fields in all marked up types ...
 //
 //      
-//      static const alignment_of_first_field_in_CMiniMdRW =
+//      static const int alignment_of_first_field_in_CMiniMdRW =
 //      4;
-//      static const alignment_of_field_after_CMiniMdRW_m_Schema =
+//      static const int alignment_of_field_after_CMiniMdRW_m_Schema =
 //      8;
-//      static const alignment_of_field_after_CMiniMdRW_m_Tables =
+//      static const int alignment_of_field_after_CMiniMdRW_m_Tables =
 //      8;
 //      ... many more lines like this cover all fields in all marked up types ...
 //
@@ -123,16 +123,16 @@ class VerifyLayoutsMD
 #define END_TYPE(typeName, typeAlign) END_TYPE_ESCAPED(typeName, typeName, typeAlign)
 
 #define BEGIN_TYPE_ESCAPED(typeName, typeNameEscaped, initialFieldOffset) \
-    static const expected_offset_of_first_field_in_##typeNameEscaped## = initialFieldOffset; \
-    static const actual_offset_of_first_field_in_##typeNameEscaped## =
+    static const int expected_offset_of_first_field_in_##typeNameEscaped## = initialFieldOffset; \
+    static const int actual_offset_of_first_field_in_##typeNameEscaped## =
 
 #define ALIGN_FIELD_ESCAPED(typeName, typeNameEscaped, fieldName, fieldSize, fieldAlign) \
     offsetof(IGNORE_COMMAS(typeName), fieldName); \
-    static const offset_of_field_after_##typeNameEscaped##_##fieldName =
+    static const int offset_of_field_after_##typeNameEscaped##_##fieldName =
 
 #define BITFIELD(typeName, fieldName, fieldOffset, fieldSize) \
     fieldOffset; \
-    static const offset_of_field_after_##typeName##_##fieldName =
+    static const int offset_of_field_after_##typeName##_##fieldName =
 
 #define END_TYPE_ESCAPED(typeName, typeNameEscaped, typeAlignentSize) \
     sizeof(typeName);
@@ -145,13 +145,13 @@ class VerifyLayoutsMD
 #undef BITFIELD
 
 #define BEGIN_TYPE_ESCAPED(typeName, escapedTypeName, initialFieldOffset) \
-    static const alignment_of_first_field_in_##escapedTypeName =
+    static const int alignment_of_first_field_in_##escapedTypeName =
 #define ALIGN_FIELD_ESCAPED(typeName, escapedTypeName, fieldName, fieldSize, fieldAlign) \
     fieldAlign; \
-    static const alignment_of_field_after_##escapedTypeName##_##fieldName =
+    static const int alignment_of_field_after_##escapedTypeName##_##fieldName =
 #define BITFIELD(typeName, fieldName, fieldOffset, fieldSize) \
     fieldSize; \
-    static const alignment_of_field_after_##typeName##_##fieldName =
+    static const int alignment_of_field_after_##typeName##_##fieldName =
 #define END_TYPE_ESCAPED(typeName, escapedTypeName, typeAlignmentSize) \
     typeAlignmentSize;
 

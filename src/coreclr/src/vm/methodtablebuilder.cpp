@@ -7924,7 +7924,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             for (i = 0; i < MAX_LOG2_PRIMITIVE_FIELD_SIZE; i++) {
                 DWORD j;
 
-                if (IS_ALIGNED(dwCumulativeInstanceFieldPos, 1<<(i+1)))
+                if (IS_ALIGNED(dwCumulativeInstanceFieldPos, size_t{ 1 } << (i + 1)))
                     continue;
 
                 // check whether there are any bigger fields
@@ -7976,7 +7976,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 }
 
                 // Place the field
-                dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 1 << i);
+                dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, size_t{ 1 } << i);
 
                 pFieldDescList[j].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
                 dwCumulativeInstanceFieldPos += (1 << i);
