@@ -98,8 +98,11 @@ namespace R2RDump
         // <summary>
         /// Extracts bits from the image byte array
         /// </summary>
+        /// <param name="image">PE image</param>
+        /// <param name="numBits">Number of bits to read</param>
+        /// <param name="bitOffset">Start bit of the value</param>
         /// <remarks>
-        /// The <paramref name="start"/> and <paramref name="bitOffset"/> get incremented by the size of the value
+        /// The <paramref name="bitOffset"/> gets incremented by <paramref name="numBits">
         /// </remarks>
         public static int ReadBits(byte[] image, int numBits, ref int bitOffset)
         {
@@ -107,7 +110,7 @@ namespace R2RDump
             int bits = bitOffset % BITS_PER_BYTE;
             int val = image[start] >> bits;
             bits += numBits;
-            if (bits > BITS_PER_BYTE)
+            while (bits > BITS_PER_BYTE)
             {
                 start++;
                 bits -= BITS_PER_BYTE;
@@ -125,8 +128,11 @@ namespace R2RDump
         // <summary>
         /// Decode variable length numbers
         /// </summary>
+        /// <param name="image">PE image</param>
+        /// <param name="len">Number of bits to read</param>
+        /// <param name="bitOffset">Start bit of the value</param>
         /// <remarks>
-        /// The <paramref name="start"/> and <paramref name="bitOffset"/> get incremented by the size of the value
+        /// The <paramref name="bitOffset"/> gets incremented by the size of the value
         /// </remarks>
         public static uint DecodeVarLengthUnsigned(byte[] image, int len, ref int bitOffset)
         {

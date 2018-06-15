@@ -17,11 +17,18 @@ namespace R2RDump
             public GcStackSlot StackSlot { get; }
             public GcSlotFlags Flags { get; }
 
-            public GcSlot(int registerNumber, GcStackSlot stack, GcSlotFlags flags)
+            public GcSlot(int registerNumber, GcStackSlot stack, GcSlotFlags flags, bool isUntracked = false)
             {
                 RegisterNumber = registerNumber;
                 StackSlot = stack;
-                Flags = flags;
+                if (isUntracked)
+                {
+                    Flags = GcSlotFlags.GC_SLOT_UNTRACKED;
+                }
+                else
+                {
+                    Flags = flags;
+                }
             }
 
             public override string ToString()
@@ -70,11 +77,11 @@ namespace R2RDump
             }
             if ((NumStackSlots > 0) && (GcSlots.Count < gcInfoTypes.MAX_PREDECODED_SLOTS))
             {
-                DecodeStackSlots(image, machine, gcInfoTypes, NumStackSlots, ref bitOffset);
+                DecodeStackSlots(image, machine, gcInfoTypes, NumStackSlots, false, ref bitOffset);
             }
             if ((NumUntracked > 0) && (GcSlots.Count < gcInfoTypes.MAX_PREDECODED_SLOTS))
             {
-                DecodeStackSlots(image, machine, gcInfoTypes, NumUntracked, ref bitOffset);
+                DecodeStackSlots(image, machine, gcInfoTypes, NumUntracked, true, ref bitOffset);
             }
         }
 
@@ -103,7 +110,7 @@ namespace R2RDump
             GcSlotFlags flags = (GcSlotFlags)NativeReader.ReadBits(image, 2, ref bitOffset);
             GcSlots.Add(new GcSlot((int)regNum, null, flags));
 
-            for (int i = 1; i < NumRegisters && i < gcInfoTypes.MAX_PREDECODED_SLOTS; i++)
+            for (int i = 1; i < NumRegisters; i++)
             {
                 if ((uint)flags != 0)
                 {
@@ -119,16 +126,16 @@ namespace R2RDump
             }
         }
 
-        private void DecodeStackSlots(byte[] image, Machine machine, GcInfoTypes gcInfoTypes, uint nSlots, ref int bitOffset)
+        private void DecodeStackSlots(byte[] image, Machine machine, GcInfoTypes gcInfoTypes, uint nSlots, bool isUntracked, ref int bitOffset)
         {
             // We have stack slots left and more room to predecode
             GcStackSlotBase spBase = (GcStackSlotBase)NativeReader.ReadBits(image, 2, ref bitOffset);
             int normSpOffset = NativeReader.DecodeVarLengthSigned(image, gcInfoTypes.STACK_SLOT_ENCBASE, ref bitOffset);
             int spOffset = gcInfoTypes.DenormalizeStackSlot(normSpOffset);
             GcSlotFlags flags = (GcSlotFlags)NativeReader.ReadBits(image, 2, ref bitOffset);
-            GcSlots.Add(new GcSlot(-1, new GcStackSlot(spOffset, spBase), flags));
+            GcSlots.Add(new GcSlot(-1, new GcStackSlot(spOffset, spBase), flags, isUntracked));
 
-            for (int i = 1; i < nSlots && GcSlots.Count < gcInfoTypes.MAX_PREDECODED_SLOTS; i++)
+            for (int i = 1; i < nSlots; i++)
             {
                 spBase = (GcStackSlotBase)NativeReader.ReadBits(image, 2, ref bitOffset);
                 if ((uint)flags != 0)
@@ -143,7 +150,7 @@ namespace R2RDump
                     normSpOffset += normSpOffsetDelta;
                     spOffset = gcInfoTypes.DenormalizeStackSlot(normSpOffset);
                 }
-                GcSlots.Add(new GcSlot(-1, new GcStackSlot(spOffset, spBase), flags));
+                GcSlots.Add(new GcSlot(-1, new GcStackSlot(spOffset, spBase), flags, isUntracked));
             }
         }
     }
