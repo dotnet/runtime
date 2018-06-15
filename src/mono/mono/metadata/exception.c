@@ -636,18 +636,18 @@ mono_get_exception_missing_field (const char *class_name, const char *member_nam
 	return ret;
 }
 
-/**
- * mono_get_exception_argument_null:
- * \param arg the name of the argument that is null
- * \returns a new instance of the \c System.ArgumentNullException
- */
-MonoException*
-mono_get_exception_argument_null (const char *arg)
-{
-	MonoException *ex;
 
-	ex = mono_exception_from_name ( 
-		mono_get_corlib (), "System", "ArgumentNullException");
+/**
+ * mono_get_exception_argument_internal:
+ * \param type the actual type
+ * \param arg the name of the argument that is invalid or null, etc.
+ * \param msg optional message
+ * \returns a new instance of the \c System.ArgumentException or derived
+ */
+static MonoException*
+mono_get_exception_argument_internal (const char *type, const char *arg, const char *msg)
+{
+	MonoException *ex = mono_exception_from_name_msg (mono_get_corlib (), "System", type, msg);
 
 	if (arg) {
 		ERROR_DECL (error);
@@ -656,8 +656,19 @@ mono_get_exception_argument_null (const char *arg)
 		mono_error_assert_ok (error);
 		MONO_OBJECT_SETREF (argex, param_name, arg_str);
 	}
-	
+
 	return ex;
+}
+
+/**
+ * mono_get_exception_argument_null:
+ * \param arg the name of the argument that is null
+ * \returns a new instance of the \c System.ArgumentNullException
+ */
+MonoException*
+mono_get_exception_argument_null (const char *arg)
+{
+	return mono_get_exception_argument_internal ("ArgumentNullException", arg, NULL);
 }
 
 /**
@@ -668,20 +679,7 @@ mono_get_exception_argument_null (const char *arg)
 MonoException *
 mono_get_exception_argument (const char *arg, const char *msg)
 {
-	MonoException *ex;
-
-	ex = mono_exception_from_name_msg (
-		mono_get_corlib (), "System", "ArgumentException", msg);
-
-	if (arg) {
-		ERROR_DECL (error);
-		MonoArgumentException *argex = (MonoArgumentException *)ex;
-		MonoString *arg_str = mono_string_new_checked (mono_object_get_domain ((MonoObject*)ex), arg, error);
-		mono_error_assert_ok (error);
-		MONO_OBJECT_SETREF (argex, param_name, arg_str);
-	}
-	
-	return ex;
+	return mono_get_exception_argument_internal ("ArgumentException", arg, msg);
 }
 
 TYPED_HANDLE_DECL (MonoArgumentException);
@@ -717,20 +715,7 @@ mono_exception_new_serialization (const char *msg, MonoError *error)
 MonoException *
 mono_get_exception_argument_out_of_range (const char *arg)
 {
-	MonoException *ex;
-
-	ex = mono_exception_from_name (
-		mono_get_corlib (), "System", "ArgumentOutOfRangeException");
-
-	if (arg) {
-		ERROR_DECL (error);
-		MonoArgumentException *argex = (MonoArgumentException *)ex;
-		MonoString *arg_str = mono_string_new_checked (mono_object_get_domain ((MonoObject*)ex), arg, error);
-		mono_error_assert_ok (error);
-		MONO_OBJECT_SETREF (argex, param_name, arg_str);
-	}
-	
-	return ex;
+	return mono_get_exception_argument_internal ("ArgumentOutOfRangeException", arg, NULL);
 }
 
 /**
