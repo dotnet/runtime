@@ -9,6 +9,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="CustomAssemblyAttributes.cs" />
     <Compile Include="Perf_Graphics_DrawBeziers.cs" />
     <Compile Include="Perf_Graphics_Transforms.cs" />
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
@@ -17,6 +18,9 @@
     </ProjectReference>
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Performance\BenchmarkFilter.cs">
+      <Link>Common\Performance\BenchmarkFilter.cs</Link>
     </Compile>
     <Compile Include="..\Helpers.cs" />
   </ItemGroup>
