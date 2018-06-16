@@ -172,6 +172,62 @@ private:
     TempDsc* rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regIdx = 0);
 
     void rsMarkSpill(GenTree* tree, regNumber reg);
+
+public:
+    void tmpInit();
+
+    enum TEMP_USAGE_TYPE
+    {
+        TEMP_USAGE_FREE,
+        TEMP_USAGE_USED
+    };
+
+    static var_types tmpNormalizeType(var_types type);
+    TempDsc* tmpGetTemp(var_types type); // get temp for the given type
+    void tmpRlsTemp(TempDsc* temp);
+    TempDsc* tmpFindNum(int temp, TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
+
+    void     tmpEnd();
+    TempDsc* tmpListBeg(TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
+    TempDsc* tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
+    void tmpDone();
+
+#ifdef DEBUG
+    bool tmpAllFree() const;
+#endif // DEBUG
+
+    void tmpPreAllocateTemps(var_types type, unsigned count);
+
+    unsigned tmpGetTotalSize()
+    {
+        return tmpSize;
+    }
+
+private:
+    unsigned tmpCount; // Number of temps
+    unsigned tmpSize;  // Size of all the temps
+#ifdef DEBUG
+    // Used by RegSet::rsSpillChk()
+    unsigned tmpGetCount; // Temps which haven't been released yet
+#endif
+    static unsigned tmpSlot(unsigned size); // which slot in tmpFree[] or tmpUsed[] to use
+
+    enum TEMP_CONSTANTS : unsigned
+    {
+#if defined(FEATURE_SIMD)
+#if defined(_TARGET_XARCH_)
+        TEMP_MAX_SIZE = YMM_REGSIZE_BYTES,
+#elif defined(_TARGET_ARM64_)
+        TEMP_MAX_SIZE = FP_REGSIZE_BYTES,
+#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+#else  // !FEATURE_SIMD
+        TEMP_MAX_SIZE = sizeof(double),
+#endif // !FEATURE_SIMD
+        TEMP_SLOT_COUNT = (TEMP_MAX_SIZE / sizeof(int))
+    };
+
+    TempDsc* tmpFree[TEMP_MAX_SIZE / sizeof(int)];
+    TempDsc* tmpUsed[TEMP_MAX_SIZE / sizeof(int)];
 };
 
 #endif // _REGSET_H

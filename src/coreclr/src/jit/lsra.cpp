@@ -6352,7 +6352,7 @@ void LinearScan::recordMaxSpill()
     // only a few types should actually be seen here.
     JITDUMP("Recording the maximum number of concurrent spills:\n");
 #ifdef _TARGET_X86_
-    var_types returnType = compiler->tmpNormalizeType(compiler->info.compRetType);
+    var_types returnType = RegSet::tmpNormalizeType(compiler->info.compRetType);
     if (needDoubleTmpForFPCall || (returnType == TYP_DOUBLE))
     {
         JITDUMP("Adding a spill temp for moving a double call/return value between xmm reg and x87 stack.\n");
@@ -6366,7 +6366,7 @@ void LinearScan::recordMaxSpill()
 #endif // _TARGET_X86_
     for (int i = 0; i < TYP_COUNT; i++)
     {
-        if (var_types(i) != compiler->tmpNormalizeType(var_types(i)))
+        if (var_types(i) != RegSet::tmpNormalizeType(var_types(i)))
         {
             // Only normalized types should have anything in the maxSpill array.
             // We assume here that if type 'i' does not normalize to itself, then
@@ -6376,7 +6376,7 @@ void LinearScan::recordMaxSpill()
         if (maxSpill[i] != 0)
         {
             JITDUMP("  %s: %d\n", varTypeName(var_types(i)), maxSpill[i]);
-            compiler->tmpPreAllocateTemps(var_types(i), maxSpill[i]);
+            compiler->codeGen->regSet.tmpPreAllocateTemps(var_types(i), maxSpill[i]);
         }
     }
     JITDUMP("\n");
@@ -6458,7 +6458,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                 {
                     typ = treeNode->TypeGet();
                 }
-                typ = compiler->tmpNormalizeType(typ);
+                typ = RegSet::tmpNormalizeType(typ);
             }
 
             if (refPosition->spillAfter && !refPosition->reload)

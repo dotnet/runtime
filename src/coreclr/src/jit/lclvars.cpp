@@ -4233,7 +4233,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
 
     if (lvaDoneFrameLayout >= REGALLOC_FRAME_LAYOUT)
     {
-        result = tmpSize;
+        result = codeGen->regSet.tmpGetTotalSize();
     }
     else
     {
@@ -4802,8 +4802,8 @@ void Compiler::lvaFixVirtualFrameOffsets()
         }
     }
 
-    assert(tmpAllFree());
-    for (TempDsc* temp = tmpListBeg(); temp != nullptr; temp = tmpListNxt(temp))
+    assert(codeGen->regSet.tmpAllFree());
+    for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
         temp->tdAdjustTempOffs(delta);
     }
@@ -6518,11 +6518,11 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
             assignDone = true;
         }
 
-        assert(tmpAllFree());
+        assert(codeGen->regSet.tmpAllFree());
 
     AGAIN2:
 
-        for (TempDsc* temp = tmpListBeg(); temp != nullptr; temp = tmpListNxt(temp))
+        for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
         {
             var_types tempType = temp->tdTempType();
             unsigned  size;
@@ -7004,8 +7004,8 @@ void Compiler::lvaTableDump(FrameLayoutState curState)
     //-------------------------------------------------------------------------
     // Display the code-gen temps
 
-    assert(tmpAllFree());
-    for (TempDsc* temp = tmpListBeg(); temp != nullptr; temp = tmpListNxt(temp))
+    assert(codeGen->regSet.tmpAllFree());
+    for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
         printf(";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", refCntWtdWidth, " ",
                varTypeName(temp->tdTempType()));
