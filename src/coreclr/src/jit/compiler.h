@@ -2546,7 +2546,7 @@ public:
     }
 
     // reverse map of tracked number to var number
-    unsigned lvaTrackedToVarNum[lclMAX_TRACKED];
+    unsigned* lvaTrackedToVarNum;
 
 #if DOUBLE_ALIGN
 #ifdef DEBUG
