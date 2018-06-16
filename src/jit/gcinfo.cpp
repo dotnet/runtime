@@ -499,8 +499,8 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* untrackedCount, UNALIGNED 
 
     /* Also count spill temps that hold pointers */
 
-    assert(compiler->tmpAllFree());
-    for (TempDsc* tempThis = compiler->tmpListBeg(); tempThis != nullptr; tempThis = compiler->tmpListNxt(tempThis))
+    assert(regSet->tmpAllFree());
+    for (TempDsc* tempThis = regSet->tmpListBeg(); tempThis != nullptr; tempThis = regSet->tmpListNxt(tempThis))
     {
         if (varTypeIsGC(tempThis->tdTempType()) == false)
         {

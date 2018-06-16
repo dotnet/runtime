@@ -128,17 +128,6 @@ unsigned ReinterpretHexAsDecimal(unsigned);
 
 /*****************************************************************************/
 
-#if defined(FEATURE_SIMD)
-#if defined(_TARGET_XARCH_)
-const unsigned TEMP_MAX_SIZE = YMM_REGSIZE_BYTES;
-#elif defined(_TARGET_ARM64_)
-const unsigned       TEMP_MAX_SIZE = FP_REGSIZE_BYTES;
-#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
-#else  // !FEATURE_SIMD
-const unsigned TEMP_MAX_SIZE = sizeof(double);
-#endif // !FEATURE_SIMD
-const unsigned TEMP_SLOT_COUNT = (TEMP_MAX_SIZE / sizeof(int));
-
 const unsigned FLG_CCTOR = (CORINFO_FLG_CONSTRUCTOR | CORINFO_FLG_STATIC);
 
 #ifdef DEBUG
@@ -1331,7 +1320,7 @@ public:
 #ifdef _TARGET_ARM_
         unsigned int regSize = (hfaType == TYP_DOUBLE) ? 2 : 1;
 #else
-        unsigned int regSize       = 1;
+        unsigned int regSize = 1;
 #endif
         for (unsigned int regIndex = 1; regIndex < numRegs; regIndex++)
         {
@@ -6870,45 +6859,6 @@ public:
     static int eeGetJitDataOffs(CORINFO_FIELD_HANDLE field);
 
     /*****************************************************************************/
-
-public:
-    void tmpInit();
-
-    enum TEMP_USAGE_TYPE
-    {
-        TEMP_USAGE_FREE,
-        TEMP_USAGE_USED
-    };
-
-    static var_types tmpNormalizeType(var_types type);
-    TempDsc* tmpGetTemp(var_types type); // get temp for the given type
-    void tmpRlsTemp(TempDsc* temp);
-    TempDsc* tmpFindNum(int temp, TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
-
-    void     tmpEnd();
-    TempDsc* tmpListBeg(TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
-    TempDsc* tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType = TEMP_USAGE_FREE) const;
-    void tmpDone();
-
-#ifdef DEBUG
-    bool tmpAllFree() const;
-#endif // DEBUG
-
-    void tmpPreAllocateTemps(var_types type, unsigned count);
-
-protected:
-    unsigned tmpCount; // Number of temps
-    unsigned tmpSize;  // Size of all the temps
-#ifdef DEBUG
-public:
-    // Used by RegSet::rsSpillChk()
-    unsigned tmpGetCount; // Temps which haven't been released yet
-#endif
-private:
-    static unsigned tmpSlot(unsigned size); // which slot in tmpFree[] or tmpUsed[] to use
-
-    TempDsc* tmpFree[TEMP_MAX_SIZE / sizeof(int)];
-    TempDsc* tmpUsed[TEMP_MAX_SIZE / sizeof(int)];
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
