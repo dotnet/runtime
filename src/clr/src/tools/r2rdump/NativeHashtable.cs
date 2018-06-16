@@ -57,7 +57,7 @@ namespace R2RDump
         {
             int off = (int)Offset;
             uint val = NativeReader.ReadCompressedData(_image, ref off);
-            Offset += 1;
+            Offset = (uint)off;
             return val;
         }
 
