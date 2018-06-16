@@ -137,6 +137,9 @@ namespace System.Net.Sockets
         NoDelay = 1,
         BsdUrgent = 2,
         Expedited = 2,
+        TcpKeepAliveRetryCount = 16,
+        TcpKeepAliveTime = 3,
+        TcpKeepAliveInterval = 17,
         #endregion
 
         #region SocketOptionlevel.Udp

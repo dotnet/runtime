@@ -288,7 +288,7 @@ namespace System.Drawing
 
             using (Graphics g = Graphics.FromImage(ThumbNail))
             {
-                int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(g.nativeObject, nativeImage,
+                int status = SafeNativeMethods.Gdip.GdipDrawImageRectRectI(g.NativeGraphics, nativeImage,
                     0, 0, thumbWidth, thumbHeight,
                     0, 0, this.Width, this.Height,
                     GraphicsUnit.Pixel, IntPtr.Zero, null, IntPtr.Zero);

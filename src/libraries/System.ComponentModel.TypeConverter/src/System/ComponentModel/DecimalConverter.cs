@@ -10,9 +10,8 @@ using System.Reflection;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// <para>Provides a type converter to convert <see cref='System.Decimal'/>
-    /// objects to and from various
-    /// other representations.</para>
+    /// Provides a type converter to convert <see cref='System.Decimal'/>
+    /// objects to and from various other representations.
     /// </summary>
     public class DecimalConverter : BaseNumberConverter
     {
@@ -27,26 +26,20 @@ namespace System.ComponentModel
         internal override Type TargetType => typeof(decimal);
 
         /// <summary>
-        ///    <para>
-        ///        Gets a value indicating whether this converter can
-        ///        convert an object to the given destination type using the context.
-        ///    </para>
+        /// Gets a value indicating whether this converter can convert an
+        /// object to the given destination type using the context.
         /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            if (destinationType == typeof(InstanceDescriptor))
-            {
-                return true;
-            }
-            return base.CanConvertTo(context, destinationType);
+            return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
         /// <summary>
-        ///      Converts the given object to another type.  The most common types to convert
-        ///      are to and from a string object.  The default implementation will make a call
-        ///      to ToString on the object if the object is valid and if the destination
-        ///      type is string.  If this cannot convert to the destination type, this will
-        ///      throw a NotSupportedException.
+        /// Converts the given object to another type. The most common types to convert
+        /// are to and from a string object. The default implementation will make a call
+        /// to ToString on the object if the object is valid and if the destination
+        /// type is string. If this cannot convert to the destination type, this will
+        /// throw a NotSupportedException.
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
@@ -55,13 +48,13 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if (destinationType == typeof(InstanceDescriptor) && value is Decimal)
+            if (destinationType == typeof(InstanceDescriptor) && value is decimal)
             {
 
-                object[] args = new object[] { Decimal.GetBits((Decimal)value) };
-                MemberInfo member = typeof(Decimal).GetConstructor(new Type[] { typeof(Int32[]) });
+                object[] args = new object[] { decimal.GetBits((decimal)value) };
+                MemberInfo member = typeof(decimal).GetConstructor(new Type[] { typeof(int[]) });
 
-                Debug.Assert(member != null, "Could not convert decimal to member.  Did someone change method name / signature and not update DecimalConverter?");
+                Debug.Assert(member != null, "Could not convert decimal to member. Did someone change method name / signature and not update DecimalConverter?");
                 if (member != null)
                 {
                     return new InstanceDescriptor(member, args);
@@ -88,7 +81,7 @@ namespace System.ComponentModel
         /// </summary>
         internal override object FromString(string value, NumberFormatInfo formatInfo)
         {
-            return Decimal.Parse(value, NumberStyles.Float, formatInfo);
+            return decimal.Parse(value, NumberStyles.Float, formatInfo);
         }
 
         /// <summary>
@@ -96,7 +89,7 @@ namespace System.ComponentModel
         /// </summary>
         internal override string ToString(object value, NumberFormatInfo formatInfo)
         {
-            return ((Decimal)value).ToString("G", formatInfo);
+            return ((decimal)value).ToString("G", formatInfo);
         }
     }
 }

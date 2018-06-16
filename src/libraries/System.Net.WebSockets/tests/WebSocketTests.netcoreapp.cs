@@ -3,31 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
-using System.Threading;
 using Xunit;
 
 namespace System.Net.WebSockets.Tests
 {
-    public sealed partial class WebSocketTests
+    public sealed partial class WebSocketTests : WebSocketCreateTest
     {
-        [Fact]
-        public void CreateFromStream_InvalidArguments_Throws()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("stream",
-                () => WebSocket.CreateFromStream(null, true, "subProtocol", TimeSpan.FromSeconds(30)));
-            AssertExtensions.Throws<ArgumentException>("stream",
-                () => WebSocket.CreateFromStream(new MemoryStream(new byte[100], writable:false), true, "subProtocol", TimeSpan.FromSeconds(30)));
-            AssertExtensions.Throws<ArgumentException>("stream",
-                () => WebSocket.CreateFromStream(new UnreadableStream(), true, "subProtocol", TimeSpan.FromSeconds(30)));
-
-            AssertExtensions.Throws<ArgumentException>("subProtocol",
-                () => WebSocket.CreateFromStream(new MemoryStream(), true, "    ", TimeSpan.FromSeconds(30)));
-            AssertExtensions.Throws<ArgumentException>("subProtocol",
-                () => WebSocket.CreateFromStream(new MemoryStream(), true, "\xFF", TimeSpan.FromSeconds(30)));
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveInterval", () =>
-                WebSocket.CreateFromStream(new MemoryStream(), true, "subProtocol", TimeSpan.FromSeconds(-2)));
-        }
+        protected override WebSocket CreateFromStream(Stream stream, bool isServer, string subProtocol, TimeSpan keepAliveInterval) =>
+            WebSocket.CreateFromStream(stream, isServer, subProtocol, keepAliveInterval);
 
         [Fact]
         public void ValueWebSocketReceiveResult_Ctor_InvalidArguments_Throws()
@@ -53,20 +36,6 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(count, r.Count);
             Assert.Equal(messageType, r.MessageType);
             Assert.Equal(endOfMessage, r.EndOfMessage);
-        }
-
-        private sealed class UnreadableStream : Stream
-        {
-            public override bool CanRead => false;
-            public override bool CanSeek => true;
-            public override bool CanWrite => true;
-            public override long Length => throw new NotImplementedException();
-            public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-            public override void Flush() => throw new NotImplementedException();
-            public override int Read(byte[] buffer, int offset, int count) => throw new NotImplementedException();
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotImplementedException();
-            public override void SetLength(long value) => throw new NotImplementedException();
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
         }
     }
 }

@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#ifdef _AIX
-// For getline (declare this before stdio)
-#define _GETDELIM 1
-#endif
-
 #include "pal_compiler.h"
 #include "pal_config.h"
 #include "pal_errno.h"
@@ -47,6 +42,11 @@
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
+// This function declaration is hidden behind `_XOPEN_SOURCE=700`, but we need
+// `_ALL_SOURCE` to build the runtime, and that resets that definition to 600.
+// Instead of trying to wrangle ifdefs in system headers with more definitions,
+// just declare it here.
+extern ssize_t  getline(char **, size_t *, FILE *);
 #endif
 
 #if HAVE_STAT64
@@ -664,11 +664,6 @@ int32_t SystemNative_Access(const char* path, int32_t mode)
     return access(path, mode);
 }
 
-int32_t SystemNative_FnMatch(const char* pattern, const char* path, int32_t flags)
-{
-    return fnmatch(pattern, path, flags);
-}
-
 int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence)
 {
     int64_t result;
@@ -879,46 +874,6 @@ int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
     assert_msg(false, "Unknown MemoryAdvice", (int)advice);
     errno = EINVAL;
     return -1;
-}
-
-int32_t SystemNative_MLock(void* address, uint64_t length)
-{
-    if (length > SIZE_MAX)
-    {
-        errno = ERANGE;
-        return -1;
-    }
-
-    return mlock(address, (size_t)length);
-}
-
-int32_t SystemNative_MUnlock(void* address, uint64_t length)
-{
-    if (length > SIZE_MAX)
-    {
-        errno = ERANGE;
-        return -1;
-    }
-
-    return munlock(address, (size_t)length);
-}
-
-int32_t SystemNative_MProtect(void* address, uint64_t length, int32_t protection)
-{
-    if (length > SIZE_MAX)
-    {
-        errno = ERANGE;
-        return -1;
-    }
-
-    protection = ConvertMMapProtection(protection);
-    if (protection == -1)
-    {
-        errno = EINVAL;
-        return -1;
-    }
-
-    return mprotect(address, (size_t)length, protection);
 }
 
 int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)

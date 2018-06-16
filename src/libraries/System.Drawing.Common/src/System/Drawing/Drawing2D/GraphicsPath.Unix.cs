@@ -758,7 +758,7 @@ namespace System.Drawing.Drawing2D
                 throw new ArgumentNullException(nameof(pen));
 
             bool result;
-            IntPtr g = (graphics == null) ? IntPtr.Zero : graphics.nativeObject;
+            IntPtr g = (graphics == null) ? IntPtr.Zero : graphics.NativeGraphics;
 
             int s = SafeNativeMethods.Gdip.GdipIsOutlineVisiblePathPointI(nativePath, x, y, pen.NativePen, g, out result);
             SafeNativeMethods.Gdip.CheckStatus(s);
@@ -772,7 +772,7 @@ namespace System.Drawing.Drawing2D
                 throw new ArgumentNullException(nameof(pen));
 
             bool result;
-            IntPtr g = (graphics == null) ? IntPtr.Zero : graphics.nativeObject;
+            IntPtr g = (graphics == null) ? IntPtr.Zero : graphics.NativeGraphics;
 
             int s = SafeNativeMethods.Gdip.GdipIsOutlineVisiblePathPoint(nativePath, x, y, pen.NativePen, g, out result);
             SafeNativeMethods.Gdip.CheckStatus(s);
@@ -814,7 +814,7 @@ namespace System.Drawing.Drawing2D
         {
             bool retval;
 
-            IntPtr g = (graphics == null) ? IntPtr.Zero : graphics.nativeObject;
+            IntPtr g = (graphics == null) ? IntPtr.Zero : graphics.NativeGraphics;
 
             int s = SafeNativeMethods.Gdip.GdipIsVisiblePathPointI(nativePath, x, y, g, out retval);
 
@@ -827,7 +827,7 @@ namespace System.Drawing.Drawing2D
         {
             bool retval;
 
-            IntPtr g = (graphics == null) ? IntPtr.Zero : graphics.nativeObject;
+            IntPtr g = (graphics == null) ? IntPtr.Zero : graphics.NativeGraphics;
 
             int s = SafeNativeMethods.Gdip.GdipIsVisiblePathPoint(nativePath, x, y, g, out retval);
 

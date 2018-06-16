@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{0D1E2954-A5C7-4B8C-932A-31EB4A96A726}</ProjectGuid>
   </PropertyGroup>
@@ -89,9 +89,6 @@
     <Compile Include="Other\CodeAttributeArgumentTests.cs" />
     <Compile Include="VBCodeGenerationTests.cs" />
     <Compile Include="CSharpCodeGenerationTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
     </Compile>

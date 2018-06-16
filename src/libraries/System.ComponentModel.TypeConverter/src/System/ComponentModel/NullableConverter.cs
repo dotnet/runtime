@@ -4,7 +4,6 @@
 
 using System.Collections;
 using System.Globalization;
-using System.Reflection;
 
 namespace System.ComponentModel
 {
@@ -30,8 +29,8 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Gets a value indicating whether this converter can convert an object in the
-        ///       given source type to the underlying simple type or a null.</para>
+        /// Gets a value indicating whether this converter can convert an object in the
+        /// given source type to the underlying simple type or a null.
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
@@ -43,14 +42,12 @@ namespace System.ComponentModel
             {
                 return UnderlyingTypeConverter.CanConvertFrom(context, sourceType);
             }
-            else
-            {
-                return base.CanConvertFrom(context, sourceType);
-            }
+            
+            return base.CanConvertFrom(context, sourceType);
         }
 
         /// <summary>
-        ///    Converts the given value to the converter's underlying simple type or a null.
+        /// Converts the given value to the converter's underlying simple type or a null.
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
@@ -66,10 +63,8 @@ namespace System.ComponentModel
             {
                 return UnderlyingTypeConverter.ConvertFrom(context, culture, value);
             }
-            else
-            {
-                return base.ConvertFrom(context, culture, value);
-            }
+            
+            return base.ConvertFrom(context, culture, value);
         }
 
         /// <summary>
@@ -85,10 +80,8 @@ namespace System.ComponentModel
             {
                 return UnderlyingTypeConverter.CanConvertTo(context, destinationType);
             }
-            else
-            {
-                return base.CanConvertTo(context, destinationType);
-            }
+            
+            return base.CanConvertTo(context, destinationType);
         }
 
         /// <summary>
@@ -135,11 +128,9 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///        Gets a value indicating whether changing a value on this object requires a call to
-        ///        <see cref='System.ComponentModel.TypeConverter.CreateInstance'/> to create a new value,
-        ///        using the specified context.
-        ///    </para>
+        /// Gets a value indicating whether changing a value on this object requires a call to
+        /// <see cref='System.ComponentModel.TypeConverter.CreateInstance'/> to create a new value,
+        /// using the specified context.
         /// </summary>
         public override bool GetCreateInstanceSupported(ITypeDescriptorContext context)
         {
@@ -152,10 +143,8 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///        Gets a collection of properties for the type of array specified by the value
-        ///        parameter using the specified context and attributes.
-        ///    </para>
+        /// Gets a collection of properties for the type of array specified by the value
+        /// parameter using the specified context and attributes.
         /// </summary>
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
@@ -169,7 +158,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Gets a value indicating whether this object supports properties using the specified context.</para>
+        /// Gets a value indicating whether this object supports properties using the specified context.
         /// </summary>
         public override bool GetPropertiesSupported(ITypeDescriptorContext context)
         {
@@ -182,7 +171,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Gets a collection of standard values for the data type this type converter is designed for.</para>
+        /// Gets a collection of standard values for the data type this type converter is designed for.
         /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
@@ -191,7 +180,7 @@ namespace System.ComponentModel
                 StandardValuesCollection values = UnderlyingTypeConverter.GetStandardValues(context);
                 if (GetStandardValuesSupported(context) && values != null)
                 {
-                    // Create a set of standard values around nullable instances.  
+                    // Create a set of standard values around nullable instances. 
                     object[] wrappedValues = new object[values.Count + 1];
                     int idx = 0;
 
@@ -209,11 +198,9 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///        Gets a value indicating whether the collection of standard values returned from
-        ///        <see cref='System.ComponentModel.TypeConverter.GetStandardValues'/> is an exclusive 
-        ///        list of possible values, using the specified context.
-        ///    </para>
+        /// Gets a value indicating whether the collection of standard values returned from
+        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues'/> is an exclusive 
+        /// list of possible values, using the specified context.
         /// </summary>
         public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
         {
@@ -226,10 +213,8 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///        Gets a value indicating whether this object supports a standard set of values that can
-        ///        be picked from a list using the specified context.
-        ///    </para>
+        /// Gets a value indicating whether this object supports a standard set of values that can
+        /// be picked from a list using the specified context.
         /// </summary>
         public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
         {
@@ -242,7 +227,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Gets a value indicating whether the given value object is valid for this type.</para>
+        /// Gets a value indicating whether the given value object is valid for this type.
         /// </summary>
         public override bool IsValid(ITypeDescriptorContext context, object value)
         {

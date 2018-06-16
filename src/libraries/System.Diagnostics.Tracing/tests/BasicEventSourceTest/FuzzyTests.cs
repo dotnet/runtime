@@ -13,13 +13,10 @@ using Microsoft.Diagnostics.Tracing;
 using System.Diagnostics.Tracing;
 #endif
 using Xunit;
-#if USE_ETW
-using Microsoft.Diagnostics.Tracing.Session;
-#endif
 
 namespace BasicEventSourceTests
 {
-    public class FuzzyTests
+    public partial class FuzzyTests
     {
         /// <summary>
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
@@ -2747,20 +2744,15 @@ namespace BasicEventSourceTests
                     Assert.Equal("FWKFKXHDFY", evt.EventName);
                 }));
 
-#if USE_ETW
-                if(TestUtilities.IsProcessElevated)
-                {
-                    using (var listener = new EtwListener())
-                    {
-                        EventTestHarness.RunTests(tests, listener, logger);
-                    }
-                }
-#endif // USE_ETW
+                Test_Write_Fuzzy_TestEtw(tests, logger);
+
                 using (var listener = new EventListenerListener())
                 {
                     EventTestHarness.RunTests(tests, listener, logger);
                 }
             }
         }
+
+        static partial void Test_Write_Fuzzy_TestEtw(List<SubTest> tests, EventSource logger);
     }
 }

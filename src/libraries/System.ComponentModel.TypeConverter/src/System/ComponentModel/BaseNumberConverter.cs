@@ -3,12 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
-using System.Reflection;
 
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Provides a base type converter for integral types.</para>
+    /// Provides a base type converter for integral types.
     /// </summary>
     public abstract class BaseNumberConverter : TypeConverter
     {
@@ -41,8 +40,8 @@ namespace System.ComponentModel
         internal abstract string ToString(object value, NumberFormatInfo formatInfo);
 
         /// <summary>
-        ///    <para>Gets a value indicating whether this converter can convert an object in the
-        ///       given source type to the TargetType object using the specified context.</para>
+        /// Gets a value indicating whether this converter can convert an object in the
+        /// given source type to the TargetType object using the specified context.
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
@@ -50,7 +49,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Converts the given value object to an object of Type TargetType.</para>
+        /// Converts the given value object to an object of Type TargetType.
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
@@ -89,7 +88,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Converts the given value object to the destination type.</para>
+        /// Converts the given value object to the destination type.
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {

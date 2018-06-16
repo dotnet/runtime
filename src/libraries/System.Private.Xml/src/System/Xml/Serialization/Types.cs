@@ -5,20 +5,14 @@
 namespace System.Xml.Serialization
 {
     using System;
-    using System.IO;
-    using System.Reflection;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Xml.Schema;
-    using System.Xml;
-    using System.Text;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Security.Cryptography;
     using System.Diagnostics;
-    using System.Linq;
+    using System.Reflection;
+    using System.Text;
+    using System.Xml;
     using System.Xml.Extensions;
-    using System.Xml.Serialization;
+    using System.Xml.Schema;
 
     // These classes provide a higher level view on reflection specific to 
     // Xml serialization, for example:
@@ -1159,8 +1153,7 @@ namespace System.Xml.Serialization
                 }
                 for (int i = 0; i < mappings.Length; i++)
                 {
-                    MemberInfo mi;
-                    if (replaceList.TryGetValue(mappings[i].Name, out mi))
+                    if (replaceList.TryGetValue(mappings[i].Name, out MemberInfo mi))
                     {
                         MemberMapping newMapping = mappings[i].Clone();
                         newMapping.MemberInfo = mi;
@@ -1394,8 +1387,7 @@ namespace System.Xml.Serialization
             {
                 if (parent.Namespaces != null)
                 {
-                    string wsdlNs;
-                    if (parent.Namespaces.Namespaces.TryGetValue(ns, out wsdlNs) && wsdlNs != null)
+                    if (parent.Namespaces.Namespaces.TryGetValue(ns, out string wsdlNs) && wsdlNs != null)
                     {
                         ns = wsdlNs;
                         break;

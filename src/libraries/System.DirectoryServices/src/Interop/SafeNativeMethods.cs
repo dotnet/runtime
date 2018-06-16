@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.Interop
 {
-#pragma warning disable BCL0015 // CoreFxPort
     internal class SafeNativeMethods
     {
         [DllImport(ExternDll.Oleaut32, PreserveSig = false)]

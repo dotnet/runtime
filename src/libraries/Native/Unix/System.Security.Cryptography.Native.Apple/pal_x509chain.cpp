@@ -186,6 +186,10 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         // It doesn't represent a new error code, and we're still getting the old ones, so
         // just ignore it for now.
     }
+    else if (CFEqual(keyString, CFSTR("NonEmptySubject")))
+    {
+        // Not a "problem" that we report.
+    }
     else
     {
 #ifdef DEBUGGING_UNKNOWN_VALUE

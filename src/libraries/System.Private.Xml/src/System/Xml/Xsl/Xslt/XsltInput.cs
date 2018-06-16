@@ -4,10 +4,8 @@
 
 //#define XSLT2
 
-using System.Diagnostics;
-using System.Text;
-using System.Xml.XPath;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Xml.Xsl.Xslt
 {
@@ -1128,17 +1126,17 @@ namespace System.Xml.Xsl.Xslt
             _compiler.ReportError(BuildNameLineInfo(), res, args);
         }
 
+        public void ReportWarning(string res, params string[] args)
+        {
+            _compiler.ReportWarning(BuildNameLineInfo(), res, args);
+        }
+
         public void ReportErrorFC(string res, params string[] args)
         {
             if (!ForwardCompatibility)
             {
                 _compiler.ReportError(BuildNameLineInfo(), res, args);
             }
-        }
-
-        public void ReportWarning(string res, params string[] args)
-        {
-            _compiler.ReportWarning(BuildNameLineInfo(), res, args);
         }
 
         private void ReportNYI(string arg)

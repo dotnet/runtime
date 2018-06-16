@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using Xunit;
 #if netcoreapp
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization.Formatters.Tests;
 #endif
 
 namespace System.Tests
@@ -1223,28 +1220,6 @@ namespace System.Tests
             Assert.Throws<IndexOutOfRangeException>(() => it[8].ToString());
 #endif
         }
-
-#if netcoreapp
-        [Fact]
-        public static void ValueTupleSerialization()
-        {
-            VerifySerialization(new ValueTuple());
-            VerifySerialization(ValueTuple.Create(1));
-            VerifySerialization(ValueTuple.Create(1, 2));
-            VerifySerialization(ValueTuple.Create(1, 2, 3));
-            VerifySerialization(ValueTuple.Create(1, 2, 3, 4));
-            VerifySerialization(ValueTuple.Create(1, 2, 3, 4, 5));
-            VerifySerialization(ValueTuple.Create(1, 2, 3, 4, 5, 6));
-            VerifySerialization(ValueTuple.Create(1, 2, 3, 4, 5, 6, 7));
-            VerifySerialization(CreateLong(1, 2, 3, 4, 5, 6, 7, ValueTuple.Create(8)));
-        }
-
-        private static void VerifySerialization<T>(T tuple)
-        {
-            T clone = BinaryFormatterHelpers.Clone(tuple);
-            Assert.Equal(tuple, clone);
-        }
-#endif
 
         private class TestClass : IComparable
         {

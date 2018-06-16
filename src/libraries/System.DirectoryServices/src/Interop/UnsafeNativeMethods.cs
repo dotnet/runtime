@@ -7,7 +7,6 @@ using System.Security;
 
 namespace System.DirectoryServices.Interop
 {
-#pragma warning disable BCL0015 // CoreFxPort
 
     [StructLayout(LayoutKind.Explicit)]
     internal struct Variant

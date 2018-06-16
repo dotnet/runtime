@@ -10,11 +10,11 @@ BEGIN_EXTERN_C
 
 #include "pal_types.h"
 
-struct UTimBuf
+typedef struct UTimBuf
 {
     int64_t AcTime;
     int64_t ModTime;
-};
+} UTimBuf;
 
 /**
  * Sets the last access and last modified time of a file

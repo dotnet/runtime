@@ -26,11 +26,10 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
-        [Fact]
-        public void Ctor_ValidName_Windows()
+        [Theory]
+        [MemberData(nameof(GetValidNames))]
+        public void Ctor_ValidName_Windows(string name)
         {
-            string name = Guid.NewGuid().ToString("N");
-
             new Semaphore(0, 1, name).Dispose();
 
             bool createdNew;
@@ -74,7 +73,7 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Semaphore(2, 1, "CtorSemaphoreTest", out createdNew));
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Full framework throws argument exception on long names")]
         [Fact]
         public void Ctor_InvalidNames()
         {
@@ -214,7 +213,6 @@ namespace System.Threading.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => Semaphore.OpenExisting(null));
             AssertExtensions.Throws<ArgumentException>("name", null, () => Semaphore.OpenExisting(string.Empty));
-            AssertExtensions.Throws<ArgumentException>("name", null, () => Semaphore.OpenExisting(new string('a', 10000)));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix
@@ -241,10 +239,10 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix
-        [Fact]
-        public void OpenExisting_SameAsOriginal_Windows()
+        [Theory]
+        [MemberData(nameof(GetValidNames))]
+        public void OpenExisting_SameAsOriginal_Windows(string name)
         {
-            string name = Guid.NewGuid().ToString("N");
             bool createdNew;
             using (Semaphore s1 = new Semaphore(0, Int32.MaxValue, name, out createdNew))
             {
@@ -316,6 +314,16 @@ namespace System.Threading.Tests
             }
 
             return SuccessExitCode;
+        }
+
+        public static TheoryData<string> GetValidNames()
+        {
+            var names  =  new TheoryData<string>() { Guid.NewGuid().ToString("N") };
+
+            if (!PlatformDetection.IsFullFramework)
+                names.Add(Guid.NewGuid().ToString("N") + new string('a', 1000));
+
+            return names;
         }
     }
 }
