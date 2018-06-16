@@ -3004,8 +3004,6 @@ protected:
 
 #define SMALL_STACK_SIZE 16 // number of elements in impSmallStack
 
-    StackEntry impSmallStack[SMALL_STACK_SIZE]; // Use this array if possible
-
     struct SavedStack // used to save/restore stack contents.
     {
         unsigned    ssDepth; // number of values on stack
