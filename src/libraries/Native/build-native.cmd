@@ -105,14 +105,6 @@ echo.
 
 set "__BaseIntermediatesDir=%__binDir%\obj\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%"
 
-:: Write an empty Directory.Build.props/targets to ensure that msbuild doesn't pick up 
-:: the repo's root Directory.Build.props/targets.
-set MSBUILD_EMPTY_PROJECT_CONTENT= ^
- ^^^<Project xmlns=^"http://schemas.microsoft.com/developer/msbuild/2003^"^^^> ^
- ^^^</Project^^^>
-echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__BaseIntermediatesDir%\Directory.Build.props"
-echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__BaseIntermediatesDir%\Directory.Build.targets"
-
 if %__CMakeBinDir% == "" (
     set "__CMakeBinDir=%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native"
 )
@@ -125,6 +117,14 @@ set "__IntermediatesDir=%__IntermediatesDir:\=/%"
 :: Check that the intermediate directory exists so we can place our cmake build tree there
 if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
+
+:: Write an empty Directory.Build.props/targets to ensure that msbuild doesn't pick up 
+:: the repo's root Directory.Build.props/targets.
+set MSBUILD_EMPTY_PROJECT_CONTENT= ^
+ ^^^<Project xmlns=^"http://schemas.microsoft.com/developer/msbuild/2003^"^^^> ^
+ ^^^</Project^^^>
+echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__BaseIntermediatesDir%\Directory.Build.props"
+echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__BaseIntermediatesDir%\Directory.Build.targets"
 
 if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
