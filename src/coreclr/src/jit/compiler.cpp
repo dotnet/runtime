@@ -1486,13 +1486,6 @@ void Compiler::compShutdown()
     }
 #endif // FEATURE_JIT_METHOD_PERF
 
-#if COUNT_RANGECHECKS
-    if (optRangeChkAll > 0)
-    {
-        fprintf(fout, "Removed %u of %u range checks\n", optRangeChkRmv, optRangeChkAll);
-    }
-#endif // COUNT_RANGECHECKS
-
 #if COUNT_AST_OPERS
 
     // Add up all the counts so that we can show percentages of total
@@ -2007,9 +2000,7 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     compQmarkUsed         = false;
     compFloatingPointUsed = false;
     compUnsafeCastUsed    = false;
-#if CPU_USES_BLOCK_MOVE
-    compBlkOpUsed = false;
-#endif
+
     compNeedsGSSecurityCookie = false;
     compGSReorderStackLayout  = false;
 #if STACK_PROBES
