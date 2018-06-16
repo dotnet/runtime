@@ -17438,26 +17438,39 @@ void Compiler::impImport(BasicBlock* method)
     }
 #endif
 
-    /* Allocate the stack contents */
+    Compiler* inlineRoot = impInlineRoot();
 
-    if (info.compMaxStack <= _countof(impSmallStack))
+    if (info.compMaxStack <= SMALL_STACK_SIZE)
     {
-        /* Use local variable, don't waste time allocating on the heap */
-
-        impStkSize              = _countof(impSmallStack);
-        verCurrentState.esStack = impSmallStack;
+        impStkSize = SMALL_STACK_SIZE;
     }
     else
     {
-        impStkSize              = info.compMaxStack;
+        impStkSize = info.compMaxStack;
+    }
+
+    if (this == inlineRoot)
+    {
+        // Allocate the stack contents
         verCurrentState.esStack = new (this, CMK_ImpStack) StackEntry[impStkSize];
+    }
+    else
+    {
+        // This is the inlinee compiler, steal the stack from the inliner compiler
+        // (after ensuring that it is large enough).
+        if (inlineRoot->impStkSize < impStkSize)
+        {
+            inlineRoot->impStkSize              = impStkSize;
+            inlineRoot->verCurrentState.esStack = new (this, CMK_ImpStack) StackEntry[impStkSize];
+        }
+
+        verCurrentState.esStack = inlineRoot->verCurrentState.esStack;
     }
 
     // initialize the entry state at start of method
     verInitCurrentState();
 
     // Initialize stuff related to figuring "spill cliques" (see spec comment for impGetSpillTmpBase).
-    Compiler* inlineRoot = impInlineRoot();
     if (this == inlineRoot) // These are only used on the root of the inlining tree.
     {
         // We have initialized these previously, but to size 0.  Make them larger.
