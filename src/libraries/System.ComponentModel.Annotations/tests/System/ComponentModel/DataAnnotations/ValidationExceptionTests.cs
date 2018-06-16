@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations.Tests
@@ -77,6 +79,19 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(errorMessage, ex.ValidationResult.ErrorMessage);
             Assert.Same(validatingAttribute, ex.ValidationAttribute);
             Assert.Same(value, ex.Value);
+        }
+
+        [Fact]
+        public void Ctor_SerializationInfo_StreamingContext()
+        {
+            using (var stream = new MemoryStream())
+            {
+                var formatter = new BinaryFormatter();
+                formatter.Serialize(stream, new ValidationException());
+
+                stream.Seek(0, SeekOrigin.Begin);
+                Assert.IsType<ValidationException>(formatter.Deserialize(stream));
+            }
         }
     }
 }

@@ -9,41 +9,41 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="UIHintAttributeTests.cs" />
-    <Compile Include="FilterUIHintAttributeTests.cs" />
-    <Compile Include="DisplayAttributeTests.cs" />
-    <Compile Include="ValidationAttributeTestBase.cs" />
-    <Compile Include="AssociationAttributeTests.cs" />
-    <Compile Include="CompareAttributeTests.cs" />
-    <Compile Include="CreditCardAttributeTests.cs" />
-    <Compile Include="CustomValidationAttributeTests.cs" />
-    <Compile Include="DataTypeAttributeTests.cs" />
-    <Compile Include="DisplayColumnAttributeTests.cs" />
-    <Compile Include="DisplayFormatAttributeTests.cs" />
-    <Compile Include="DisplayFormatAttributeTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
-    <Compile Include="EditableAttributeTests.cs" />
-    <Compile Include="EmailAddressAttributeTests.cs" />
-    <Compile Include="EnumDataTypeAttributeTests.cs" />
-    <Compile Include="FileExtensionsAttributeTests.cs" />
-    <Compile Include="MaxLengthAttributeTests.cs" />
-    <Compile Include="MinLengthAttributeTests.cs" />
-    <Compile Include="PhoneAttributeTests.cs" />
-    <Compile Include="RangeAttributeTests.cs" />
-    <Compile Include="RegularExpressionAttributeTests.cs" />
-    <Compile Include="RequiredAttributeTests.cs" />
-    <Compile Include="ScaffoldColumnAttributeTests.cs" />
-    <Compile Include="Schema\ColumnAttributeTests.cs" />
-    <Compile Include="Schema\DatabaseGeneratedAttributeTests.cs" />
-    <Compile Include="Schema\ForeignKeyAttributeTests.cs" />
-    <Compile Include="Schema\InversePropertyAttributeTests.cs" />
-    <Compile Include="Schema\TableAttributeTests.cs" />
-    <Compile Include="StringLengthAttributeTests.cs" />
-    <Compile Include="UrlAttributeTests.cs" />
-    <Compile Include="ValidationAttributeTests.cs" />
-    <Compile Include="ValidationContextTests.cs" />
-    <Compile Include="ValidationExceptionTests.cs" />
-    <Compile Include="ValidationResultTests.cs" />
-    <Compile Include="ValidatorTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\UIHintAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\FilterUIHintAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationAttributeTestBase.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\AssociationAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\CompareAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\CreditCardAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\CustomValidationAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DataTypeAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayColumnAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttributeTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="System\ComponentModel\DataAnnotations\EditableAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\EmailAddressAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\EnumDataTypeAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\FileExtensionsAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\MaxLengthAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\MinLengthAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\PhoneAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RangeAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RegularExpressionAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RequiredAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ScaffoldColumnAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\ColumnAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\DatabaseGeneratedAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\ForeignKeyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\InversePropertyAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\TableAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\StringLengthAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\UrlAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationContextTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationExceptionTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationResultTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidatorTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

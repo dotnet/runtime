@@ -88,8 +88,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             if (Length < 0)
             {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture,
-                    SR.MinLengthAttribute_InvalidMinLength));
+                throw new InvalidOperationException(SR.MinLengthAttribute_InvalidMinLength);
             }
         }
     }
