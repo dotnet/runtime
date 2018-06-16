@@ -5506,8 +5506,8 @@ protected:
     bool fgHasLoops;        // True if this method has any loops, set in fgComputeReachability
 
 public:
-    LoopDsc       optLoopTable[MAX_LOOP_NUM]; // loop descriptor table
-    unsigned char optLoopCount;               // number of tracked loops
+    LoopDsc*      optLoopTable; // loop descriptor table
+    unsigned char optLoopCount; // number of tracked loops
 
     bool optRecordLoop(BasicBlock*   head,
                        BasicBlock*   first,
