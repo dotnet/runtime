@@ -48,6 +48,7 @@ namespace R2RDump
             public int SlotId { get; }
             public bool IsLive { get; }
             public int ChunkId { get; }
+
             public GcTransition(int codeOffset, int slotId, bool isLive, int chunkId)
             {
                 CodeOffset = codeOffset;
@@ -67,6 +68,23 @@ namespace R2RDump
                 sb.Append($"{tab2}--------------------");
 
                 return sb.ToString();
+            }
+            public string GetSlotState(GcSlotTable slotTable)
+            {
+                GcSlotTable.GcSlot slot = slotTable.GcSlots[SlotId];
+                string slotStr = "";
+                if (slot.StackSlot == null)
+                {
+                    slotStr = Enum.GetName(typeof(Amd64Registers), slot.RegisterNumber);
+                }
+                else
+                {
+                    slotStr = $"sp{slot.StackSlot.SpOffset:+#;-#;+0}";
+                }
+                string isLiveStr = "live";
+                if (!IsLive)
+                    isLiveStr = "dead";
+                return $"{slotStr} is {isLiveStr}";
             }
         }
 
@@ -107,7 +125,7 @@ namespace R2RDump
         public GcSlotTable SlotTable { get; }
         public int Size { get; }
         public int Offset { get; }
-        public IList<GcTransition> Transitions { get; }
+        public Dictionary<int, GcTransition> Transitions { get; }
 
         public GcInfo(byte[] image, int offset, Machine machine, ushort majorVersion)
         {
@@ -283,7 +301,7 @@ namespace R2RDump
             sb.AppendLine($"{tab}SlotTable:");
             sb.Append(SlotTable.ToString());
             sb.AppendLine($"{tab}Transitions:");
-            foreach (GcTransition trans in Transitions)
+            foreach (GcTransition trans in Transitions.Values)
             {
                 sb.AppendLine(trans.ToString());
             }
@@ -359,7 +377,7 @@ namespace R2RDump
             return (readyToRunMajorVersion == 1) ? 1 : GCINFO_VERSION;
         }
 
-        public IList<GcTransition> GetTranstions(byte[] image, ref int bitOffset)
+        public Dictionary<int, GcTransition> GetTranstions(byte[] image, ref int bitOffset)
         {
             int totalInterruptibleLength = 0;
             if (NumInterruptibleRanges == 0)
@@ -378,7 +396,7 @@ namespace R2RDump
             int numBitsPerPointer = (int)NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.POINTER_SIZE_ENCBASE, ref bitOffset);
             if (numBitsPerPointer == 0)
             {
-                return new List<GcTransition>();
+                return new Dictionary<int, GcTransition>();
             }
 
             int[] chunkPointers = new int[numChunks];
@@ -437,9 +455,8 @@ namespace R2RDump
             }
 
             transitions.Sort((s1, s2) => s1.CodeOffset.CompareTo(s2.CodeOffset));
-            UpdateTransitionCodeOffset(transitions);
 
-            return transitions;
+            return UpdateTransitionCodeOffset(transitions);
         }
 
         private uint GetNumCouldBeLiveSlots(byte[] image, ref int bitOffset)
@@ -507,8 +524,9 @@ namespace R2RDump
             return slotId;
         }
 
-        private void UpdateTransitionCodeOffset(List<GcTransition> transitions)
+        private Dictionary<int, GcTransition> UpdateTransitionCodeOffset(List<GcTransition> transitions)
         {
+            Dictionary<int, GcTransition> updatedTransitions = new Dictionary<int, GcTransition>();
             int cumInterruptibleLength = 0;
             using (IEnumerator<InterruptibleRange> interruptibleRangesIter = InterruptibleRanges.GetEnumerator())
             {
@@ -527,8 +545,10 @@ namespace R2RDump
                         codeOffset = transition.CodeOffset + (int)currentRange.StartOffset - cumInterruptibleLength;
                     }
                     transition.CodeOffset = codeOffset;
+                    updatedTransitions[codeOffset] = transition;
                 }
             }
+            return updatedTransitions;
         }
     }
 }
