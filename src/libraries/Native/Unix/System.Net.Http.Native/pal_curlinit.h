@@ -5,6 +5,7 @@
 #pragma once
 
 #include "pal_types.h"
+#include "pal_compiler.h"
 
 /**
  * Initializes curl.
@@ -15,4 +16,4 @@
  *
  * Returns 0 on success and non-zero on failure.
  */
-extern "C" int32_t HttpNative_EnsureCurlIsInitialized();
+DLLEXPORT int32_t HttpNative_EnsureCurlIsInitialized(void);

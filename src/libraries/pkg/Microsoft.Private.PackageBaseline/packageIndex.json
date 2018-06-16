@@ -3179,14 +3179,13 @@
         "net45": "4.0.0.0",
         "portable46-net451+win81": "4.0.0.0",
         "portable45-net45+win8": "4.0.0.0",
-        "uap10.0.16299": "4.0.3.0",
         "win8": "4.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.0.1",
         "4.0.2.0": "4.3.0",
-        "4.0.3.0": "4.4.0"
+        "4.0.3.0": "4.6.0"
       }
     },
     "System.Reflection.DispatchProxy": {

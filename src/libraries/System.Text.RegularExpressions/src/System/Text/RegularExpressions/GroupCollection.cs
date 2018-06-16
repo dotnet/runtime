@@ -17,7 +17,7 @@ namespace System.Text.RegularExpressions
     /// </summary>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(CollectionDebuggerProxy<Group>))]
-    public class GroupCollection : IList<Group>, IReadOnlyList<Group>, IList
+    public class GroupCollection : IList<Group>, IReadOnlyList<Group>, IList, IReadOnlyDictionary<string, Group>
     {
         private readonly Match _match;
         private readonly Hashtable _captureMap;
@@ -205,7 +205,51 @@ namespace System.Text.RegularExpressions
             set { throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection); }
         }
 
-        private sealed class Enumerator : IEnumerator<Group>
+        IEnumerator<KeyValuePair<string, Group>> IEnumerable<KeyValuePair<string, Group>>.GetEnumerator()
+        {
+            return new Enumerator(this);
+        }
+
+        public bool TryGetValue(string key, out Group value)
+        {
+            Group group = this[key];
+            if (group == Group.s_emptyGroup)
+            {
+                value = null;
+                return false;
+            }
+            value = group;
+            return true;
+        }
+
+        public bool ContainsKey(string key)
+        {
+            return _match._regex.GroupNumberFromName(key) >= 0;
+        }
+
+        public IEnumerable<string> Keys
+        {
+            get
+            {
+                for (int i = 0; i < Count; ++i)
+                {
+                    yield return GetGroup(i).Name;
+                }
+            }
+        }
+
+        public IEnumerable<Group> Values
+        {
+            get
+            {
+                for (int i = 0; i < Count; ++i)
+                {
+                    yield return GetGroup(i);
+                }
+            }
+        }
+
+        private sealed class Enumerator : IEnumerator<Group>, IEnumerator<KeyValuePair<string, Group>>
         {
             private readonly GroupCollection _collection;
             private int _index;
@@ -238,6 +282,20 @@ namespace System.Text.RegularExpressions
                         throw new InvalidOperationException(SR.EnumNotStarted);
 
                     return _collection[_index];
+                }
+            }
+
+            KeyValuePair<string, Group> IEnumerator<KeyValuePair<string, Group>>.Current
+            {
+                get
+                {
+                    if (_index < 0 || _index >= _collection.Count)
+                        throw new InvalidOperationException(SR.EnumNotStarted);
+
+                    Group value = _collection[_index];
+
+                    return new KeyValuePair<string, Group>(value.Name, value);
+
                 }
             }
 

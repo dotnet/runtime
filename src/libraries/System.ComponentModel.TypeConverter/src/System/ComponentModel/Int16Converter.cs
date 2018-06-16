@@ -7,8 +7,8 @@ using System.Globalization;
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Provides a type converter to convert 16-bit signed integer objects to and
-    ///       from various other representations.</para>
+    /// Provides a type converter to convert 16-bit signed integer objects to and
+    /// from various other representations.
     /// </summary>
     public class Int16Converter : BaseNumberConverter
     {
@@ -20,27 +20,22 @@ namespace System.ComponentModel
         /// <summary>
         /// Convert the given value to a string using the given radix
         /// </summary>
-        internal override object FromString(string value, int radix)
-        {
-            return Convert.ToInt16(value, radix);
-        }
+        internal override object FromString(string value, int radix) => Convert.ToInt16(value, radix);
 
         /// <summary>
         /// Convert the given value to a string using the given formatInfo
         /// </summary>
         internal override object FromString(string value, NumberFormatInfo formatInfo)
         {
-            return Int16.Parse(value, NumberStyles.Integer, formatInfo);
+            return short.Parse(value, NumberStyles.Integer, formatInfo);
         }
-
 
         /// <summary>
         /// Convert the given value from a string using the given formatInfo
         /// </summary>
         internal override string ToString(object value, NumberFormatInfo formatInfo)
         {
-            return ((Int16)value).ToString("G", formatInfo);
+            return ((short)value).ToString("G", formatInfo);
         }
     }
 }
-

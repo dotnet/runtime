@@ -4,7 +4,6 @@
 
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization.Formatters.Tests;
 using System.Text;
 using Xunit;
 

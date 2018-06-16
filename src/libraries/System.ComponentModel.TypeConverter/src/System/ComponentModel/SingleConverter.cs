@@ -7,9 +7,8 @@ using System.Globalization;
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para> Provides a type
-    ///       converter to convert single-precision, floating point number objects to and from various other
-    ///       representations.</para>
+    /// Provides a type converter to convert single-precision, floating point number objects to and
+    /// from various other representations.
     /// </summary>
     public class SingleConverter : BaseNumberConverter
     {
@@ -26,17 +25,14 @@ namespace System.ComponentModel
         /// <summary>
         /// Convert the given value to a string using the given radix
         /// </summary>
-        internal override object FromString(string value, int radix)
-        {
-            return Convert.ToSingle(value, CultureInfo.CurrentCulture);
-        }
+        internal override object FromString(string value, int radix) => Convert.ToSingle(value, CultureInfo.CurrentCulture);
 
         /// <summary>
         /// Convert the given value to a string using the given formatInfo
         /// </summary>
         internal override object FromString(string value, NumberFormatInfo formatInfo)
         {
-            return Single.Parse(value, NumberStyles.Float, formatInfo);
+            return float.Parse(value, NumberStyles.Float, formatInfo);
         }
 
         /// <summary>
@@ -44,8 +40,7 @@ namespace System.ComponentModel
         /// </summary>
         internal override string ToString(object value, NumberFormatInfo formatInfo)
         {
-            return ((Single)value).ToString("R", formatInfo);
+            return ((float)value).ToString("R", formatInfo);
         }
     }
 }
-

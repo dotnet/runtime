@@ -731,13 +731,14 @@ namespace System.IO
             // Add parent segments for segments past the common on the "from" path
             if (commonLength < relativeToLength)
             {
-                sb.Append(PathInternal.ParentDirectoryPrefix);
+                sb.Append("..");
 
-                for (int i = commonLength; i < relativeToLength; i++)
+                for (int i = commonLength + 1; i < relativeToLength; i++)
                 {
                     if (PathInternal.IsDirectorySeparator(relativeTo[i]))
                     {
-                        sb.Append(PathInternal.ParentDirectoryPrefix);
+                        sb.Append(DirectorySeparatorChar);
+                        sb.Append("..");
                     }
                 }
             }
@@ -749,11 +750,20 @@ namespace System.IO
             }
 
             // Now add the rest of the "to" path, adding back the trailing separator
-            int count = pathLength - commonLength;
+            int differenceLength = pathLength - commonLength;
             if (pathEndsInSeparator)
-                count++;
+                differenceLength++;
 
-            sb.Append(path, commonLength, count);
+            if (differenceLength > 0)
+            {
+                if (sb.Length > 0)
+                {
+                    sb.Append(DirectorySeparatorChar);
+                }
+
+                sb.Append(path, commonLength, differenceLength);
+            }
+
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 

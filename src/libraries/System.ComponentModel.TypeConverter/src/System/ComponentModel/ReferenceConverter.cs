@@ -2,20 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
 
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Provides a type converter to convert object references to and from various
-    ///       other representations.</para>
+    /// Provides a type converter to convert object references to and from various
+    /// other representations.
     /// </summary>
     public class ReferenceConverter : TypeConverter
     {
@@ -23,19 +20,16 @@ namespace System.ComponentModel
         private Type _type;
 
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.ReferenceConverter'/> class.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.ReferenceConverter'/> class.
         /// </summary>
         public ReferenceConverter(Type type)
         {
             _type = type;
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Gets a value indicating whether this converter can convert an object in the
-        ///       given source type to a reference object using the specified context.</para>
+        /// Gets a value indicating whether this converter can convert an object in the
+        /// given source type to a reference object using the specified context.
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
@@ -46,9 +40,8 @@ namespace System.ComponentModel
             return base.CanConvertFrom(context, sourceType);
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Converts the given object to the reference type.</para>
+        /// Converts the given object to the reference type.
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
@@ -56,10 +49,9 @@ namespace System.ComponentModel
             {
                 string text = ((string)value).Trim();
 
-                if (!String.Equals(text, s_none) && context != null)
+                if (!string.Equals(text, s_none) && context != null)
                 {
                     // Try the reference service first.
-                    //
                     IReferenceService refSvc = (IReferenceService)context.GetService(typeof(IReferenceService));
                     if (refSvc != null)
                     {
@@ -71,7 +63,6 @@ namespace System.ComponentModel
                     }
 
                     // Now try IContainer
-                    //
                     IContainer cont = context.Container;
                     if (cont != null)
                     {
@@ -87,10 +78,9 @@ namespace System.ComponentModel
             return base.ConvertFrom(context, culture, value);
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Converts the given value object to the reference type
-        ///       using the specified context and arguments.</para>
+        /// Converts the given value object to the reference type
+        /// using the specified context and arguments.
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
@@ -104,7 +94,6 @@ namespace System.ComponentModel
                 if (value != null)
                 {
                     // Try the reference service first.
-                    //
                     IReferenceService refSvc = (IReferenceService) context?.GetService(typeof(IReferenceService));
                     if (refSvc != null)
                     {
@@ -116,7 +105,6 @@ namespace System.ComponentModel
                     }
 
                     // Now see if this is an IComponent.
-                    //
                     if (!Marshal.IsComObject(value) && value is IComponent)
                     {
                         IComponent comp = (IComponent)value;
@@ -129,7 +117,7 @@ namespace System.ComponentModel
                     }
 
                     // Couldn't find it.
-                    return String.Empty;
+                    return string.Empty;
                 }
                 return s_none;
             }
@@ -137,9 +125,8 @@ namespace System.ComponentModel
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Gets a collection of standard values for the reference data type.</para>
+        /// Gets a collection of standard values for the reference data type.
         /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
@@ -147,11 +134,9 @@ namespace System.ComponentModel
 
             if (context != null)
             {
-                List<object> list = new List<object>();
-                list.Add(null);
+                var list = new List<object> { null };
 
                 // Try the reference service first.
-                //
                 IReferenceService refSvc = (IReferenceService)context.GetService(typeof(IReferenceService));
                 if (refSvc != null)
                 {
@@ -167,7 +152,6 @@ namespace System.ComponentModel
                 else
                 {
                     // Now try IContainer.
-                    //
                     IContainer cont = context.Container;
                     if (cont != null)
                     {
@@ -191,37 +175,26 @@ namespace System.ComponentModel
             return new StandardValuesCollection(components);
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Gets a value indicating whether the list of standard values returned from
-        ///    <see cref='System.ComponentModel.ReferenceConverter.GetStandardValues'/> is an exclusive list. </para>
+        /// Gets a value indicating whether the list of standard values returned from
+        /// <see cref='System.ComponentModel.ReferenceConverter.GetStandardValues'/> is an exclusive list. 
         /// </summary>
-        public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
-        {
-            return true;
-        }
-
-        /// <internalonly/>
-        /// <summary>
-        ///    <para>Gets a value indicating whether this object supports a standard set of values
-        ///       that can be picked from a list.</para>
-        /// </summary>
-        public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
-        {
-            return true;
-        }
+        public override bool GetStandardValuesExclusive(ITypeDescriptorContext context) => true;
 
         /// <summary>
-        ///    <para>Gets a value indicating whether a particular value can be added to
-        ///       the standard values collection.</para>
+        /// Gets a value indicating whether this object supports a standard set of values
+        /// that can be picked from a list.
         /// </summary>
-        protected virtual bool IsValueAllowed(ITypeDescriptorContext context, object value)
-        {
-            return true;
-        }
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext context) => true;
 
         /// <summary>
-        ///      IComparer object used for sorting references
+        /// Gets a value indicating whether a particular value can be added to
+        /// the standard values collection.
+        /// </summary>
+        protected virtual bool IsValueAllowed(ITypeDescriptorContext context, object value) => true;
+
+        /// <summary>
+        /// IComparer object used for sorting references
         /// </summary>
         private class ReferenceComparer : IComparer
         {
@@ -234,12 +207,11 @@ namespace System.ComponentModel
 
             public int Compare(object item1, object item2)
             {
-                String itemName1 = _converter.ConvertToString(item1);
-                String itemName2 = _converter.ConvertToString(item2);
+                string itemName1 = _converter.ConvertToString(item1);
+                string itemName2 = _converter.ConvertToString(item2);
 
                 return string.Compare(itemName1, itemName2, false, CultureInfo.InvariantCulture);
             }
         }
     }
 }
-

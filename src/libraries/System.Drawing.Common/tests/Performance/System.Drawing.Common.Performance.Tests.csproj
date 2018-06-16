@@ -17,6 +17,7 @@
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
+    <Compile Include="..\Helpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">

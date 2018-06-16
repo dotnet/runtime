@@ -268,7 +268,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm -v $(Build.StagingDirectory):/docker_logs $(PB_DockerCommonRunArgs) find . -type f -name *.log -exec cp {} --target-directory=/docker_logs ;",
+        "arguments": "run --rm -v $(Build.StagingDirectory):/docker_logs $(PB_DockerCommonRunArgs) find . -type f ( -iname *.log -o -iname MSBUILD_*.failure.txt ) -exec cp {} --target-directory=/docker_logs ;",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -399,7 +399,7 @@
       "value": "Release"
     },
     "PB_DockerCommonRunArgs": {
-      "value": "--rm --name $(PB_DockerContainerName) -v \"$(PB_DockerContainerName):$(PB_DockerVolumeName)\" -w=\"$(PB_DockerVolumeName)\" -e \"PACKAGEVERSIONPROPSURL=$(PB_PackageVersionPropsUrl)\" $(PB_DockerImageName)"
+      "value": "--rm --name $(PB_DockerContainerName) -v \"$(PB_DockerContainerName):$(PB_DockerVolumeName)\" -w=\"$(PB_DockerVolumeName)\" -e \"PACKAGEVERSIONPROPSURL=$(PB_PackageVersionPropsUrl)\" -e \"MSBUILDDEBUGCOMM=1\" -e \"MSBUILDDEBUGPATH=$(PB_DockerVolumeName)\" $(PB_DockerImageName)"
     },
     "PB_DockerContainerName": {
       "value": "corefx-cross-$(Build.BuildId)"

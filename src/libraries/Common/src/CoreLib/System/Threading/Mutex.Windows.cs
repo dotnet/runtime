@@ -27,7 +27,7 @@ namespace System.Threading
             if (mutexHandle.IsInvalid)
             {
                 mutexHandle.SetHandleAsInvalid();
-#if PLATFORM_UNIX
+#if !PLATFORM_WINDOWS
                 if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
                     throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
@@ -64,7 +64,7 @@ namespace System.Threading
             if (myHandle.IsInvalid)
             {
                 int errorCode = Marshal.GetLastWin32Error();
-#if PLATFORM_UNIX
+#if !PLATFORM_WINDOWS
                 if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                 {
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8

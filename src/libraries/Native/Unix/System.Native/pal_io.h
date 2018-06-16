@@ -192,14 +192,6 @@ enum AccessMode
 };
 
 /**
- * Flags to pass to fnmatch for what type of pattern matching to do
- */
-enum FnMatchFlags
-{
-    PAL_FNM_NONE = 0,
-};
-
-/**
  * Constants passed to lseek telling the OS where to seek from
  */
 enum SeekWhence
@@ -210,7 +202,7 @@ enum SeekWhence
 };
 
 /**
- * Constants for protection argument to MMap or MProtect.
+ * Constants for protection argument to MMap.
  */
 enum
 {
@@ -517,14 +509,6 @@ DLLEXPORT int32_t SystemNative_ChDir(const char* path);
 DLLEXPORT int32_t SystemNative_Access(const char* path, int32_t mode);
 
 /**
- * Tests whether a pathname matches a specified pattern.
- *
- * Returns 0 if the string matches; returns FNM_NOMATCH if the call succeeded but the
- * string does not match; otherwise, returns a non-zero error code.
- */
-DLLEXPORT int32_t SystemNative_FnMatch(const char* pattern, const char* path, int32_t flags);
-
-/**
  * Seek to a specified location within a seekable stream
  *
  * On success, the resulting offet, in bytes, from the beginning of the stream; otherwise,
@@ -575,27 +559,6 @@ DLLEXPORT int32_t SystemNative_MUnmap(void* address, uint64_t length);
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
 DLLEXPORT int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice);
-
-/**
- * Lock memory from being swapped out. Implemented as shim to mlock(2).
- *
- * Returns 0 for success, -1 for failure. Sets errno on failure.
- */
-DLLEXPORT int32_t SystemNative_MLock(void* address, uint64_t length);
-
-/**
- * Unlock memory, allowing it to be swapped out. Implemented as shim to munlock(2).
- *
- * Returns 0 for success, -1 for failure. Sets errno on failure.
- */
-DLLEXPORT int32_t SystemNative_MUnlock(void* address, uint64_t length);
-
-/**
- * Set protection on a region of memory. Implemented as shim to mprotect(2).
- *
- * Returns 0 for success, -1 for failure. Sets errno on failure.
- */
-DLLEXPORT int32_t SystemNative_MProtect(void* address, uint64_t length, int32_t protection);
 
 /**
  * Sycnhronize a file with a memory map. Implemented as shim to mmap(2).

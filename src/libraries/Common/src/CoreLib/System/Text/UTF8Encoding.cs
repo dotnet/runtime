@@ -93,7 +93,7 @@ namespace System.Text
                 SetDefaultFallbacks();
         }
 
-        internal override void SetDefaultFallbacks()
+        internal sealed override void SetDefaultFallbacks()
         {
             // For UTF-X encodings, we use a replacement fallback with an empty string
             if (_isThrowException)
@@ -178,6 +178,14 @@ namespace System.Text
 
             // Call it with empty encoder
             return GetByteCount(chars, count, null);
+        }
+
+        public override unsafe int GetByteCount(ReadOnlySpan<char> chars)
+        {
+            fixed (char* charsPtr = &MemoryMarshal.GetNonNullPinnableReference(chars))
+            {
+                return GetByteCount(charsPtr, chars.Length, baseEncoder: null);
+            }
         }
 
         // Parent method is safe.
@@ -265,6 +273,15 @@ namespace System.Text
             return GetBytes(chars, charCount, bytes, byteCount, null);
         }
 
+        public override unsafe int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes)
+        {
+            fixed (char* charsPtr = &MemoryMarshal.GetNonNullPinnableReference(chars))
+            fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
+            {
+                return GetBytes(charsPtr, chars.Length, bytesPtr, bytes.Length, baseEncoder: null);
+            }
+        }
+
         // Returns the number of characters produced by decoding a range of bytes
         // in a byte array.
         //
@@ -309,6 +326,14 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             return GetCharCount(bytes, count, null);
+        }
+
+        public override unsafe int GetCharCount(ReadOnlySpan<byte> bytes)
+        {
+            fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
+            {
+                return GetCharCount(bytesPtr, bytes.Length, baseDecoder: null);
+            }
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -361,6 +386,15 @@ namespace System.Text
             return GetChars(bytes, byteCount, chars, charCount, null);
         }
 
+        public override unsafe int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars)
+        {
+            fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
+            fixed (char* charsPtr = &MemoryMarshal.GetNonNullPinnableReference(chars))
+            {
+                return GetChars(bytesPtr, bytes.Length, charsPtr, chars.Length, baseDecoder: null);
+            }
+        }
+
         // Returns a string containing the decoded representation of a range of
         // bytes in a byte array.
         //
@@ -395,7 +429,7 @@ namespace System.Text
 
         // To simplify maintenance, the structure of GetByteCount and GetBytes should be
         // kept the same as much as possible
-        internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
+        internal sealed override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
         {
             // For fallback we may need a fallback buffer.
             // We wait to initialize it though in case we don't have any broken input unicode
@@ -804,8 +838,8 @@ namespace System.Text
 
         // Our workhorse
         // Note:  We ignore mismatched surrogates, unless the exception flag is set in which case we throw
-        internal override unsafe int GetBytes(char* chars, int charCount,
-                                                byte* bytes, int byteCount, EncoderNLS baseEncoder)
+        internal sealed override unsafe int GetBytes(
+            char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS baseEncoder)
         {
             Debug.Assert(chars != null, "[UTF8Encoding.GetBytes]chars!=null");
             Debug.Assert(byteCount >= 0, "[UTF8Encoding.GetBytes]byteCount >=0");
@@ -1293,7 +1327,7 @@ namespace System.Text
         //
         // To simplify maintenance, the structure of GetCharCount and GetChars should be
         // kept the same as much as possible
-        internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
+        internal sealed override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
             Debug.Assert(count >= 0, "[UTF8Encoding.GetCharCount]count >=0");
             Debug.Assert(bytes != null, "[UTF8Encoding.GetCharCount]bytes!=null");
@@ -1731,8 +1765,8 @@ namespace System.Text
         //
         // To simplify maintenance, the structure of GetCharCount and GetChars should be
         // kept the same as much as possible
-        internal override unsafe int GetChars(byte* bytes, int byteCount,
-                                                char* chars, int charCount, DecoderNLS baseDecoder)
+        internal sealed override unsafe int GetChars(
+            byte* bytes, int byteCount, char* chars, int charCount, DecoderNLS baseDecoder)
         {
             Debug.Assert(chars != null, "[UTF8Encoding.GetChars]chars!=null");
             Debug.Assert(byteCount >= 0, "[UTF8Encoding.GetChars]count >=0");
@@ -2205,7 +2239,7 @@ namespace System.Text
 
                             // extra byte, we're already planning 2 chars for 2 of these bytes,
                             // but the big loop is testing the target against pStop, so we need
-                            // to subtract 2 more or we risk overrunning the input.  Subtract 
+                            // to subtract 2 more or we risk overrunning the input.  Subtract
                             // one here and one below.
                             pStop--;
                         }
@@ -2355,11 +2389,17 @@ namespace System.Text
         private unsafe int FallbackInvalidByteSequence(
             byte* pSrc, int ch, DecoderFallbackBuffer fallback)
         {
+            // Calling GetBytesUnknown can adjust the pSrc pointer but we need to pass the pointer before the adjustment
+            // to fallback.InternalFallback. The input pSrc to fallback.InternalFallback will only be used to calculate the
+            // index inside bytesUnknown and if we pass the adjusted pointer we can end up with negative index values.
+            // We store the original pSrc in pOriginalSrc and then pass pOriginalSrc to fallback.InternalFallback.
+            byte* pOriginalSrc = pSrc;
+
             // Get our byte[]
             byte[] bytesUnknown = GetBytesUnknown(ref pSrc, ch);
 
             // Do the actual fallback
-            int count = fallback.InternalFallback(bytesUnknown, pSrc);
+            int count = fallback.InternalFallback(bytesUnknown, pOriginalSrc);
 
             // # of fallback chars expected.
             // Note that we only get here for "long" sequences, and have already unreserved
@@ -2368,7 +2408,7 @@ namespace System.Text
         }
 
         // Note that some of these bytes may have come from a previous fallback, so we cannot
-        // just decrement the pointer and use the values we read.  In those cases we have 
+        // just decrement the pointer and use the values we read.  In those cases we have
         // to regenerate the original values.
         private unsafe byte[] GetBytesUnknown(ref byte* pSrc, int ch)
         {

@@ -126,7 +126,6 @@ namespace System.Reflection.Internal
             return true;
         }
 
-#pragma warning disable BCL0015 // Disable Pinvoke analyzer errors.
         [DllImport(@"kernel32.dll", EntryPoint = "ReadFile", ExactSpelling = true, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe extern bool ReadFile(
@@ -136,6 +135,5 @@ namespace System.Reflection.Internal
              out int bytesRead,
              IntPtr overlapped
         );
-#pragma warning restore BCL0015
     }
 }

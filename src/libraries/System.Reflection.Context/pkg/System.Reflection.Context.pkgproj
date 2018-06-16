@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Reflection.Context.csproj">
+      <SupportedFramework>uap10.0.16299;netcoreapp2.0;net45;$(AllXamarinFrameworks)</SupportedFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Reflection.Context.csproj" />
+    <InboxOnTargetFramework Include="net45">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+
+    <HarvestIncludePaths Include="ref/netcore50;lib/netcore50;ref/portable-net45+win8;lib/portable-net45+win8" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
