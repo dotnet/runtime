@@ -33,7 +33,7 @@ namespace System.ComponentModel.DataAnnotations.Schema.Tests
         [InlineData(" \t\r\n")]
         public static void Ctor_String_NullOrWhitespaceName_ThrowsArgumentException(string name)
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new ColumnAttribute(name));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new ColumnAttribute(name));
         }
 
         [Theory]
@@ -67,7 +67,7 @@ namespace System.ComponentModel.DataAnnotations.Schema.Tests
         public static void TypeName_Set_NullOrWhitespaceValue_ThrowsArgumentException(string value)
         {
             ColumnAttribute attribute = new ColumnAttribute();
-            AssertExtensions.Throws<ArgumentException>(null, () => attribute.TypeName = value);
+            AssertExtensions.Throws<ArgumentException>("value", null, () => attribute.TypeName = value);
         }
     }
 }

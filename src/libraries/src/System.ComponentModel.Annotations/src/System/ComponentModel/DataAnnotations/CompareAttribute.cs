@@ -11,14 +11,9 @@ namespace System.ComponentModel.DataAnnotations
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public class CompareAttribute : ValidationAttribute
     {
-        public CompareAttribute(string otherProperty)
-            : base(SR.CompareAttribute_MustMatch)
+        public CompareAttribute(string otherProperty) : base(SR.CompareAttribute_MustMatch)
         {
-            if (otherProperty == null)
-            {
-                throw new ArgumentNullException(nameof(otherProperty));
-            }
-            OtherProperty = otherProperty;
+            OtherProperty = otherProperty ?? throw new ArgumentNullException(nameof(otherProperty));
         }
 
         public string OtherProperty { get; }
@@ -36,14 +31,11 @@ namespace System.ComponentModel.DataAnnotations
             var otherPropertyInfo = validationContext.ObjectType.GetRuntimeProperty(OtherProperty);
             if (otherPropertyInfo == null)
             {
-                return
-                    new ValidationResult(string.Format(CultureInfo.CurrentCulture,
-                        SR.CompareAttribute_UnknownProperty, OtherProperty));
+                return new ValidationResult(SR.Format(SR.CompareAttribute_UnknownProperty, OtherProperty));
             }
             if (otherPropertyInfo.GetIndexParameters().Any())
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture,
-                    SR.Common_PropertyNotFound, validationContext.ObjectType.FullName, OtherProperty));
+                throw new ArgumentException(SR.Format(SR.Common_PropertyNotFound, validationContext.ObjectType.FullName, OtherProperty));
             }
 
             object otherPropertyValue = otherPropertyInfo.GetValue(validationContext.ObjectInstance, null);

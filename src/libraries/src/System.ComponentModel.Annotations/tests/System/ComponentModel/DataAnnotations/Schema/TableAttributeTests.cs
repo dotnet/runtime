@@ -23,7 +23,7 @@ namespace System.ComponentModel.DataAnnotations.Schema.Tests
         [InlineData(" \t\r\n")]
         public static void Ctor_String_NullOrWhitespaceName_ThrowsArgumentException(string name)
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new TableAttribute(name));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new TableAttribute(name));
         }
         
         [Theory]
@@ -41,7 +41,7 @@ namespace System.ComponentModel.DataAnnotations.Schema.Tests
         public static void Schema_Set_NullOrWhitespaceValue_ThrowsArgumentException(string value)
         {
             TableAttribute attribute = new TableAttribute("Perspicacia Tick");
-            AssertExtensions.Throws<ArgumentException>(null, () => attribute.Schema = value);
+            AssertExtensions.Throws<ArgumentException>("value", null, () => attribute.Schema = value);
         }
     }
 }

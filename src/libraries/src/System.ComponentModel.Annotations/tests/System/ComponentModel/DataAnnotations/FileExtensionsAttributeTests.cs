@@ -38,6 +38,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(GetAttribute("."), "a.");
 
             yield return new TestCase(GetAttribute("png,jpg,jpeg,gif"), Path.GetInvalidPathChars()[0].ToString());
+            yield return new TestCase(GetAttribute("png,jpg,jpeg,gif"), "\0<>");
 
             yield return new TestCase(GetAttribute("png,jpg,jpeg,gif"), new object());
         }
