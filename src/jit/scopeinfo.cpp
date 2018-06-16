@@ -377,19 +377,33 @@ void CodeGen::siInit()
 
     if (compiler->info.compVarScopesCount == 0)
     {
-        return;
+        siLatestTrackedScopes = nullptr;
     }
-
+    else
+    {
 #if FEATURE_EH_FUNCLETS
-    siInFuncletRegion = false;
+        siInFuncletRegion = false;
 #endif // FEATURE_EH_FUNCLETS
 
-    for (unsigned i = 0; i < lclMAX_TRACKED; i++)
-    {
-        siLatestTrackedScopes[i] = nullptr;
-    }
+        unsigned scopeCount = compiler->lvaTrackedCount;
 
-    compiler->compResetScopeLists();
+        if (scopeCount == 0)
+        {
+            siLatestTrackedScopes = nullptr;
+        }
+        else
+        {
+            siLatestTrackedScopes =
+                static_cast<siScope**>(compiler->compGetMemArray(scopeCount, sizeof(siScope*), CMK_SiScope));
+
+            for (unsigned i = 0; i < scopeCount; i++)
+            {
+                siLatestTrackedScopes[i] = nullptr;
+            }
+        }
+
+        compiler->compResetScopeLists();
+    }
 }
 
 /*****************************************************************************
@@ -669,8 +683,6 @@ void CodeGen::siUpdate()
         LclVarDsc* lclVar = &compiler->lvaTable[lclNum];
         assert(lclVar->lvTracked);
 #endif
-
-        siScope* scope = siLatestTrackedScopes[varIndex];
         siEndTrackedScope(varIndex);
     }
 
