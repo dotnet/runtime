@@ -208,6 +208,7 @@ namespace R2RDump
                     continue;
                 curOffset = runtimeFunctionOffset + runtimeFunctionId * runtimeFunctionSize;
                 GcInfo gcInfo = null;
+                int codeOffset = 0;
                 do
                 {
                     int startRva = NativeReader.ReadInt32(Image, ref curOffset);
@@ -225,8 +226,10 @@ namespace R2RDump
                         gcInfo = new GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
                     }
 
-                    method.RuntimeFunctions.Add(new RuntimeFunction(runtimeFunctionId, startRva, endRva, unwindRva, method, unwindInfo, gcInfo));
+                    RuntimeFunction rtf = new RuntimeFunction(runtimeFunctionId, startRva, endRva, unwindRva, codeOffset, method, unwindInfo, gcInfo);
+                    method.RuntimeFunctions.Add(rtf);
                     runtimeFunctionId++;
+                    codeOffset += rtf.Size;
                 }
                 while (runtimeFunctionId < isEntryPoint.Length && !isEntryPoint[runtimeFunctionId]);
             }
