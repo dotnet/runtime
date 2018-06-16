@@ -57,25 +57,25 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
         switch (simdBaseType)
         {
             case TYP_FLOAT:
-                return Vector128FloatHandle;
+                return m_simdHandleCache->Vector128FloatHandle;
             case TYP_DOUBLE:
-                return Vector128DoubleHandle;
+                return m_simdHandleCache->Vector128DoubleHandle;
             case TYP_INT:
-                return Vector128IntHandle;
+                return m_simdHandleCache->Vector128IntHandle;
             case TYP_USHORT:
-                return Vector128UShortHandle;
+                return m_simdHandleCache->Vector128UShortHandle;
             case TYP_UBYTE:
-                return Vector128UByteHandle;
+                return m_simdHandleCache->Vector128UByteHandle;
             case TYP_SHORT:
-                return Vector128ShortHandle;
+                return m_simdHandleCache->Vector128ShortHandle;
             case TYP_BYTE:
-                return Vector128ByteHandle;
+                return m_simdHandleCache->Vector128ByteHandle;
             case TYP_LONG:
-                return Vector128LongHandle;
+                return m_simdHandleCache->Vector128LongHandle;
             case TYP_UINT:
-                return Vector128UIntHandle;
+                return m_simdHandleCache->Vector128UIntHandle;
             case TYP_ULONG:
-                return Vector128ULongHandle;
+                return m_simdHandleCache->Vector128ULongHandle;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
@@ -86,25 +86,25 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
         switch (simdBaseType)
         {
             case TYP_FLOAT:
-                return Vector256FloatHandle;
+                return m_simdHandleCache->Vector256FloatHandle;
             case TYP_DOUBLE:
-                return Vector256DoubleHandle;
+                return m_simdHandleCache->Vector256DoubleHandle;
             case TYP_INT:
-                return Vector256IntHandle;
+                return m_simdHandleCache->Vector256IntHandle;
             case TYP_USHORT:
-                return Vector256UShortHandle;
+                return m_simdHandleCache->Vector256UShortHandle;
             case TYP_UBYTE:
-                return Vector256UByteHandle;
+                return m_simdHandleCache->Vector256UByteHandle;
             case TYP_SHORT:
-                return Vector256ShortHandle;
+                return m_simdHandleCache->Vector256ShortHandle;
             case TYP_BYTE:
-                return Vector256ByteHandle;
+                return m_simdHandleCache->Vector256ByteHandle;
             case TYP_LONG:
-                return Vector256LongHandle;
+                return m_simdHandleCache->Vector256LongHandle;
             case TYP_UINT:
-                return Vector256UIntHandle;
+                return m_simdHandleCache->Vector256UIntHandle;
             case TYP_ULONG:
-                return Vector256ULongHandle;
+                return m_simdHandleCache->Vector256ULongHandle;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
@@ -116,19 +116,19 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
         switch (simdBaseType)
         {
             case TYP_FLOAT:
-                return Vector64FloatHandle;
+                return m_simdHandleCache->Vector64FloatHandle;
             case TYP_UINT:
-                return Vector64UIntHandle;
+                return m_simdHandleCache->Vector64UIntHandle;
             case TYP_USHORT:
-                return Vector64UShortHandle;
+                return m_simdHandleCache->Vector64UShortHandle;
             case TYP_UBYTE:
-                return Vector64UByteHandle;
+                return m_simdHandleCache->Vector64UByteHandle;
             case TYP_SHORT:
-                return Vector64ShortHandle;
+                return m_simdHandleCache->Vector64ShortHandle;
             case TYP_BYTE:
-                return Vector64ByteHandle;
+                return m_simdHandleCache->Vector64ByteHandle;
             case TYP_INT:
-                return Vector64IntHandle;
+                return m_simdHandleCache->Vector64IntHandle;
             default:
                 assert(!"Didn't find a class handle for simdType");
         }

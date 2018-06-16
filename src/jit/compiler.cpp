@@ -2071,54 +2071,7 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     fgOrder = FGOrderTree;
 
 #ifdef FEATURE_SIMD
-    // SIMD Types
-    SIMDFloatHandle   = nullptr;
-    SIMDDoubleHandle  = nullptr;
-    SIMDIntHandle     = nullptr;
-    SIMDUShortHandle  = nullptr;
-    SIMDUByteHandle   = nullptr;
-    SIMDShortHandle   = nullptr;
-    SIMDByteHandle    = nullptr;
-    SIMDLongHandle    = nullptr;
-    SIMDUIntHandle    = nullptr;
-    SIMDULongHandle   = nullptr;
-    SIMDVector2Handle = nullptr;
-    SIMDVector3Handle = nullptr;
-    SIMDVector4Handle = nullptr;
-    SIMDVectorHandle  = nullptr;
-#ifdef FEATURE_HW_INTRINSICS
-#if defined(_TARGET_ARM64_)
-    Vector64FloatHandle  = nullptr;
-    Vector64UIntHandle   = nullptr;
-    Vector64UShortHandle = nullptr;
-    Vector64UByteHandle  = nullptr;
-    Vector64IntHandle    = nullptr;
-    Vector64ShortHandle  = nullptr;
-    Vector64ByteHandle   = nullptr;
-#endif // defined(_TARGET_ARM64_)
-    Vector128FloatHandle  = nullptr;
-    Vector128DoubleHandle = nullptr;
-    Vector128IntHandle    = nullptr;
-    Vector128UShortHandle = nullptr;
-    Vector128UByteHandle  = nullptr;
-    Vector128ShortHandle  = nullptr;
-    Vector128ByteHandle   = nullptr;
-    Vector128LongHandle   = nullptr;
-    Vector128UIntHandle   = nullptr;
-    Vector128ULongHandle  = nullptr;
-#if defined(_TARGET_XARCH_)
-    Vector256FloatHandle  = nullptr;
-    Vector256DoubleHandle = nullptr;
-    Vector256IntHandle    = nullptr;
-    Vector256UShortHandle = nullptr;
-    Vector256UByteHandle  = nullptr;
-    Vector256ShortHandle  = nullptr;
-    Vector256ByteHandle   = nullptr;
-    Vector256LongHandle   = nullptr;
-    Vector256UIntHandle   = nullptr;
-    Vector256ULongHandle  = nullptr;
-#endif // defined(_TARGET_XARCH_)
-#endif // FEATURE_HW_INTRINSICS
+    m_simdHandleCache = nullptr;
 #endif // FEATURE_SIMD
 
     compUsesThrowHelper = false;
