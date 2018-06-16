@@ -2231,9 +2231,8 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoStringHandle fname, MonoBoole
 	MonoReflectionAssemblyHandle result = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 
 	name = NULL;
-	result = NULL;
 
-	if (fname == NULL) {
+	if (MONO_HANDLE_IS_NULL (fname)) {
 		mono_error_set_argument_null (error, "assemblyFile", "");
 		goto leave;
 	}

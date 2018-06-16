@@ -1951,8 +1951,6 @@ mono_reflection_get_custom_attrs_by_type_handle (MonoObjectHandle obj, MonoClass
 		MONO_HANDLE_ASSIGN (result, MONO_HANDLE_NEW (MonoArray, mono_custom_attrs_construct_by_type (cinfo, attr_klass, error))); /* FIXME use coop handles for mono_custom_attrs_construct_by_type */
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
-		if (!result)
-			goto leave;
 	} else {
 		MONO_HANDLE_ASSIGN (result, mono_array_new_handle (mono_domain_get (), mono_defaults.attribute_class, 0, error));
 	}

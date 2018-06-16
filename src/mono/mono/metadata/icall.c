@@ -4853,7 +4853,7 @@ ves_icall_System_Reflection_Assembly_GetAotId (MonoError *error)
 {
 	char *guid = mono_runtime_get_aotid ();
 	if (guid == NULL)
-		return NULL;
+		return MONO_HANDLE_CAST (MonoString, mono_new_null ());
 	MonoStringHandle res = mono_string_new_handle (mono_domain_get (), guid, error);
 	g_free (guid);
 	return res;
@@ -7276,7 +7276,7 @@ ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_app_config 
 	domain = mono_domain_get ();
 	MonoStringHandle file = MONO_HANDLE_NEW (MonoString, domain->setup->configuration_file);
 	if (MONO_HANDLE_IS_NULL (file) || MONO_HANDLE_GETVAL (file, length) == 0)
-		return NULL;
+		return MONO_HANDLE_CAST (MonoString, mono_new_null ());
 
 	// Retrieve config file and remove the extension
 	config_file_name = mono_string_handle_to_utf8 (file, error);
@@ -7367,7 +7367,7 @@ ves_icall_get_resources_ptr (MonoReflectionAssemblyHandle assembly, gpointer *re
 	MonoPEResourceDataEntry *entry;
 	MonoImage *image;
 
-	if (!assembly || !result || !size)
+	if (MONO_HANDLE_IS_NULL (assembly) || !result || !size)
 		return FALSE;
 
 	*result = NULL;

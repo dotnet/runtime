@@ -820,7 +820,7 @@ ves_icall_System_IO_MonoIO_get_InvalidPathChars (MonoError *error)
 	domain = mono_domain_get ();
 	n = sizeof (invalid_path_chars) / sizeof (gunichar2);
 	MONO_HANDLE_ASSIGN (chars, mono_array_new_handle (domain, mono_defaults.char_class, n, error));
-	return_val_if_nok (error, NULL);
+	return_val_if_nok (error, MONO_HANDLE_CAST (MonoArray, mono_new_null ()));
 
 	for (i = 0; i < n; ++ i)
 		MONO_HANDLE_ARRAY_SETVAL (chars, gunichar2, i, invalid_path_chars [i]);

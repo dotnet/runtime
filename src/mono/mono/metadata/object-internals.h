@@ -1643,6 +1643,9 @@ mono_nullable_box (gpointer buf, MonoClass *klass, MonoError *error);
 MonoObjectHandle
 mono_nullable_box_handle (gpointer buf, MonoClass *klass, MonoError *error);
 
+MonoObjectHandle
+mono_new_null (void); // A code size optimization (source and object).
+
 #ifdef MONO_SMALL_CONFIG
 #define MONO_IMT_SIZE 9
 #else

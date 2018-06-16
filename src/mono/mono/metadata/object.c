@@ -4429,7 +4429,7 @@ mono_runtime_try_run_main (MonoMethod *method, int argc, char* argv[],
 	return mono_runtime_try_exec_main (method, args, exc);
 }
 
-static MonoObjectHandle
+MonoObjectHandle
 mono_new_null (void) // A code size optimization (source and object).
 {
 	return MONO_HANDLE_NEW (MonoObject, NULL);
