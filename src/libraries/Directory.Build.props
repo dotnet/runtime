@@ -4,5 +4,12 @@
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <NoWarn>CS3021;$(NoWarn)</NoWarn>
+    
+    <!--
+    The Microsoft.NET.Sdk defaults the AssemblySearchPaths earlier than buildtools, so default
+    the correct search paths here. We are rather restrictive by design - only ref assemblies should
+    be resolved by default.
+    -->
+    <AssemblySearchPaths>$(AssemblySearchPaths);$(RefPath);{RawFileName}</AssemblySearchPaths>
   </PropertyGroup>
 </Project> 
