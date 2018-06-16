@@ -225,7 +225,6 @@ typedef unsigned char   regNumberSmall;
   #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              1       // round intermed float expression results
   #define CPU_HAS_BYTE_REGS        1
-  #define CPU_USES_BLOCK_MOVE      1 
 
   // TODO-CQ: Fine tune the following xxBlk threshold values:
 
@@ -513,7 +512,6 @@ typedef unsigned char   regNumberSmall;
   #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
-  #define CPU_USES_BLOCK_MOVE      1 
 
   #define CPBLK_MOVS_LIMIT         16      // When generating code for CpBlk, this is the buffer size 
                                            // threshold to stop generating rep movs and switch to the helper call.
@@ -918,7 +916,6 @@ typedef unsigned char   regNumberSmall;
   #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
-  #define CPU_USES_BLOCK_MOVE      0
 
   #define CPBLK_UNROLL_LIMIT       32      // Upper bound to let the code generator to loop unroll CpBlk.
   #define INITBLK_UNROLL_LIMIT     32      // Upper bound to let the code generator to loop unroll InitBlk.
@@ -1219,7 +1216,6 @@ typedef unsigned char   regNumberSmall;
   #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
-  #define CPU_USES_BLOCK_MOVE      0
 
   #define CPBLK_UNROLL_LIMIT       64      // Upper bound to let the code generator to loop unroll CpBlk.
   #define INITBLK_UNROLL_LIMIT     64      // Upper bound to let the code generator to loop unroll InitBlk.
