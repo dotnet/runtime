@@ -2035,11 +2035,6 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     // Used to track when we should consider running EarlyProp
     optMethodFlags = 0;
 
-    for (unsigned i = 0; i < MAX_LOOP_NUM; i++)
-    {
-        AllVarSetOps::AssignNoCopy(this, optLoopTable[i].lpAsgVars, AllVarSetOps::UninitVal());
-    }
-
 #ifdef DEBUG
     m_nodeTestData      = nullptr;
     m_loopHoistCSEClass = FIRST_LOOP_HOIST_CSE_CLASS;

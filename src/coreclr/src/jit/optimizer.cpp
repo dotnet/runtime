@@ -35,6 +35,8 @@ void Compiler::optInit()
 
     /* Initialize the # of tracked loops to 0 */
     optLoopCount = 0;
+    optLoopTable = nullptr;
+
     /* Keep track of the number of calls and indirect calls made by this method */
     optCallCount         = 0;
     optIndirectCallCount = 0;
@@ -1148,20 +1150,29 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
     assert(entry->bbNum <= bottom->bbNum);
     assert(head->bbNum < top->bbNum || head->bbNum > bottom->bbNum);
 
-    // If the new loop contains any existing ones, add it in the right place.
     unsigned char loopInd = optLoopCount;
-    for (unsigned char prevPlus1 = optLoopCount; prevPlus1 > 0; prevPlus1--)
+
+    if (optLoopTable == nullptr)
     {
-        unsigned char prev = prevPlus1 - 1;
-        if (optLoopTable[prev].lpContainedBy(first, bottom))
-        {
-            loopInd = prev;
-        }
+        assert(loopInd == 0);
+        optLoopTable = static_cast<LoopDsc*>(compGetMemArray(MAX_LOOP_NUM, sizeof(LoopDsc), CMK_LoopOpt));
     }
-    // Move up any loops if necessary.
-    for (unsigned j = optLoopCount; j > loopInd; j--)
+    else
     {
-        optLoopTable[j] = optLoopTable[j - 1];
+        // If the new loop contains any existing ones, add it in the right place.
+        for (unsigned char prevPlus1 = optLoopCount; prevPlus1 > 0; prevPlus1--)
+        {
+            unsigned char prev = prevPlus1 - 1;
+            if (optLoopTable[prev].lpContainedBy(first, bottom))
+            {
+                loopInd = prev;
+            }
+        }
+        // Move up any loops if necessary.
+        for (unsigned j = optLoopCount; j > loopInd; j--)
+        {
+            optLoopTable[j] = optLoopTable[j - 1];
+        }
     }
 
 #ifdef DEBUG
@@ -1190,6 +1201,8 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
     optLoopTable[loopInd].lpParent  = BasicBlock::NOT_IN_LOOP;
     optLoopTable[loopInd].lpChild   = BasicBlock::NOT_IN_LOOP;
     optLoopTable[loopInd].lpSibling = BasicBlock::NOT_IN_LOOP;
+
+    optLoopTable[loopInd].lpAsgVars = AllVarSetOps::UninitVal();
 
     optLoopTable[loopInd].lpFlags = 0;
 
