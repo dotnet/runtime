@@ -27,7 +27,7 @@
       <Link>Common\System\Collections\TestingTypes.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
     <Compile Include="ArrayListTests.cs" />
     <Compile Include="ArrayList\ArrayList.IList.Tests.cs" />
