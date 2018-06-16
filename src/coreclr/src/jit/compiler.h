@@ -3758,19 +3758,13 @@ public:
 
     unsigned fgMeasureIR();
 
-#if OPT_BOOL_OPS // Used to detect multiple logical "not" assignments.
-    bool fgMultipleNots;
-#endif
-
     bool fgModified;         // True if the flow graph has been modified recently
     bool fgComputePredsDone; // Have we computed the bbPreds list
     bool fgCheapPredsValid;  // Is the bbCheapPreds list valid?
     bool fgDomsComputed;     // Have we computed the dominator sets?
     bool fgOptimizedFinally; // Did we optimize any try-finallys?
 
-    bool     fgHasSwitch;  // any BBJ_SWITCH jumps?
-    bool     fgHasPostfix; // any postfix ++/-- found?
-    unsigned fgIncrCount;  // number of increment nodes found
+    bool fgHasSwitch; // any BBJ_SWITCH jumps?
 
     BlockSet fgEnterBlks; // Set of blocks which have a special transfer of control; the "entry" blocks plus EH handler
                           // begin blocks.
@@ -3947,11 +3941,6 @@ public:
     VARSET_VALRET_TP fgGetHandlerLiveVars(BasicBlock* block);
 
     void fgLiveVarAnalysis(bool updateInternalOnly = false);
-
-    // This is used in the liveness computation, as a temporary.  When we use the
-    // arbitrary-length VarSet representation, it is better not to allocate a new one
-    // at each call.
-    VARSET_TP fgMarkIntfUnionVS;
 
     void fgUpdateRefCntForClone(BasicBlock* addedToBlock, GenTree* clonedTree);
 
@@ -6320,33 +6309,7 @@ public:
                                               BasicBlock*       slow);
     void optInsertLoopCloningStress(BasicBlock* head);
 
-#if COUNT_RANGECHECKS
-    static unsigned optRangeChkRmv;
-    static unsigned optRangeChkAll;
-#endif
-
 protected:
-    struct arraySizes
-    {
-        unsigned arrayVar;
-        int      arrayDim;
-
-#define MAX_ARRAYS 4 // a magic max number of arrays tracked for bounds check elimination
-    };
-
-    struct RngChkDsc
-    {
-        RngChkDsc* rcdNextInBucket; // used by the hash table
-
-        unsigned short rcdHashValue; // to make matching faster
-        unsigned short rcdIndex;     // 0..optRngChkCount-1
-
-        GenTree* rcdTree; // the array index tree
-    };
-
-    unsigned            optRngChkCount;
-    static const size_t optRngChkHashSize;
-
     ssize_t optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk));
     GenTree* optFindLocalInit(BasicBlock* block, GenTree* local, VARSET_TP* pKilledInOut, bool* isKilledAfterInit);
 
@@ -7825,10 +7788,6 @@ public:
 
 // NOTE: These values are only reliable after
 //       the importing is completely finished.
-
-#if CPU_USES_BLOCK_MOVE
-    bool compBlkOpUsed; // Does the method do a COPYBLK or INITBLK
-#endif
 
 #ifdef DEBUG
     // State information - which phases have completed?
