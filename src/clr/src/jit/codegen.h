@@ -626,7 +626,7 @@ protected:
 
     // Tracks the last entry for each tracked register variable
 
-    siScope* siLatestTrackedScopes[lclMAX_TRACKED];
+    siScope** siLatestTrackedScopes;
 
     IL_OFFSET siLastEndOffs; // IL offset of the (exclusive) end of the last block processed
 
