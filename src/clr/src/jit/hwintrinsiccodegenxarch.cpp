@@ -410,7 +410,7 @@ void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emi
             varNum = tmpDsc->tdTempNum();
             offset = 0;
 
-            compiler->tmpRlsTemp(tmpDsc);
+            regSet.tmpRlsTemp(tmpDsc);
         }
         else if (op1->OperIsHWIntrinsic())
         {
@@ -534,7 +534,7 @@ void CodeGen::genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, i
             varNum = tmpDsc->tdTempNum();
             offset = 0;
 
-            compiler->tmpRlsTemp(tmpDsc);
+            regSet.tmpRlsTemp(tmpDsc);
         }
         else if (op1->OperIsHWIntrinsic())
         {
@@ -658,7 +658,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
             varNum = tmpDsc->tdTempNum();
             offset = 0;
 
-            compiler->tmpRlsTemp(tmpDsc);
+            regSet.tmpRlsTemp(tmpDsc);
         }
         else if (op2->OperIsHWIntrinsic())
         {
@@ -814,7 +814,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
             varNum = tmpDsc->tdTempNum();
             offset = 0;
 
-            compiler->tmpRlsTemp(tmpDsc);
+            regSet.tmpRlsTemp(tmpDsc);
         }
         else if (op2->OperIsHWIntrinsic())
         {
@@ -970,7 +970,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins)
             varNum = tmpDsc->tdTempNum();
             offset = 0;
 
-            compiler->tmpRlsTemp(tmpDsc);
+            regSet.tmpRlsTemp(tmpDsc);
         }
         else if (op2->OperIsHWIntrinsic())
         {
@@ -1089,7 +1089,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
             varNum = tmpDsc->tdTempNum();
             offset = 0;
 
-            compiler->tmpRlsTemp(tmpDsc);
+            regSet.tmpRlsTemp(tmpDsc);
         }
         else if (op3->OperIsHWIntrinsic())
         {
