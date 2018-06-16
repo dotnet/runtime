@@ -44,11 +44,11 @@
       <Name>System.Diagnostics.FileVersionInfo.TestAssembly</Name>
     </ProjectReference>
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
   <PropertyGroup>
     <BuildDependsOn>$(BuildDependsOn);MangleTestAssemblyExtension</BuildDependsOn>
   </PropertyGroup>
   <Target Name="MangleTestAssemblyExtension">
     <!-- Copy TestAssembly to file without .dll extension so that ILC preserves it as a data file rather than feeding it to the output executable. -->
     <Copy SourceFiles="$(TestPath)\System.Diagnostics.FileVersionInfo.TestAssembly.dll" DestinationFiles="$(TestPath)\System.Diagnostics.FileVersionInfo.TestAssembly.ildll" />
+  </Target>
 </Project>
