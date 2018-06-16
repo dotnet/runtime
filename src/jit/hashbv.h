@@ -186,8 +186,6 @@ public:
 
 public:
     hashBv(Compiler* comp);
-    hashBv(hashBv* other);
-    // hashBv() {}
     static hashBv* Create(Compiler* comp);
     static void Init(Compiler* comp);
     static hashBv* CreateFrom(hashBv* other, Compiler* comp);
@@ -215,10 +213,7 @@ private:
 
     // maintain free lists for vectors
     hashBvNode** getNewVector(int vectorLength);
-    void freeVector(hashBvNode* vect, int vectorLength);
     int getNodeCount();
-
-    hashBvNode* getFreeList();
 
 public:
     inline hashBvNode* getOrAddNodeForIndex(indexType index)
@@ -281,16 +276,6 @@ public:
 // --------------------------------------------------------------------
 // --------------------------------------------------------------------
 
-class hbvFreeListNode
-{
-public:
-    hbvFreeListNode* next;
-    int              size;
-};
-
-// --------------------------------------------------------------------
-// --------------------------------------------------------------------
-
 class hashBvIterator
 {
 public:
@@ -318,16 +303,9 @@ class hashBvGlobalData
     friend class hashBv;
     friend class hashBvNode;
 
-    hashBvNode*      hbvNodeFreeList;
-    hashBv*          hbvFreeList;
-    unsigned short   hbvHashSizeLog2;
-    hbvFreeListNode* hbvFreeVectorList;
-
-public:
-    hashBvIterator hashBvNextIterator;
+    hashBvNode* hbvNodeFreeList;
+    hashBv*     hbvFreeList;
 };
-
-indexType HbvNext(hashBv* bv, Compiler* comp);
 
 // clang-format off
 #define FOREACH_HBV_BIT_SET(index, bv) \
