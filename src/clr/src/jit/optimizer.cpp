@@ -19,15 +19,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-#if COUNT_RANGECHECKS
-/* static */
-unsigned Compiler::optRangeChkRmv = 0;
-/* static */
-unsigned Compiler::optRangeChkAll = 0;
-#endif
-
-/*****************************************************************************/
-
 void Compiler::optInit()
 {
     optLoopsMarked = false;

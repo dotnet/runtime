@@ -2511,9 +2511,6 @@ void Compiler::fgInterBlockLocalVarLiveness()
      * Now fill in liveness info within each basic block - Backward DataFlow
      */
 
-    // This is used in the liveness computation, as a temporary.
-    VarSetOps::AssignNoCopy(this, fgMarkIntfUnionVS, VarSetOps::MakeEmpty(this));
-
     for (block = fgFirstBB; block; block = block->bbNext)
     {
         /* Tell everyone what block we're working on */
