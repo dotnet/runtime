@@ -4,17 +4,16 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using System.Globalization;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Xml.XPath;
-    using MS.Internal.Xml.XPath;
-    using System.Text;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Xml.Xsl.XsltOld.Debugger;
+    using System.Diagnostics;
+    using System.Globalization;
+    using System.IO;
     using System.Reflection;
-    using System.Security;
+    using System.Text;
+    using System.Xml.XPath;
+    using System.Xml.Xsl.XsltOld.Debugger;
+    using MS.Internal.Xml.XPath;
 
     internal sealed class Processor : IXsltProcessor
     {
@@ -1123,17 +1122,6 @@ namespace System.Xml.Xsl.XsltOld
         {
             Debug.Assert(this.Debugger != null, "We don't generate calls this function if ! debugger");
             ((DebuggerFrame)_debuggerStack[_debuggerStack.Length - 1]).currentMode = mode;
-        }
-
-        // ----------------------- IXsltProcessor : --------------------
-        int IXsltProcessor.StackDepth
-        {
-            get { return _debuggerStack.Length; }
-        }
-
-        IStackFrame IXsltProcessor.GetStackFrame(int depth)
-        {
-            return ((DebuggerFrame)_debuggerStack[depth]).actionFrame;
         }
     }
 }

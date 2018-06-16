@@ -727,6 +727,18 @@ check_c_source_compiles(
     "
     HAVE_IN_EXCL_UNLINK)
 
+check_c_source_compiles(
+    "
+    #include <netinet/tcp.h>
+    int main()
+    {
+        int x = TCP_KEEPALIVE;
+        return x;
+    }
+    "
+    HAVE_TCP_H_TCP_KEEPALIVE
+)
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/Common/pal_config.h)

@@ -36,16 +36,24 @@ namespace System.Threading.Tests
             }
         }
 
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Full framework throws argument exception on long names")]
         [Fact]
-        public void Ctor_InvalidName()
+        public void Ctor_InvalidNames_Windows()
         {
-            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(false, new string('a', 1000)));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(false, new string('a', 1000), out bool createdNew));
         }
 
         [Fact]
-        public void Ctor_ValidName()
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void Ctor_InvalidNames_Unix()
         {
-            string name = Guid.NewGuid().ToString("N");
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(false, new string('a', 1000), out bool createdNew));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetValidNames))]
+        public void Ctor_ValidName(string name)
+        {
             bool createdNew;
             using (Mutex m1 = new Mutex(false, name, out createdNew))
             {
@@ -96,11 +104,10 @@ namespace System.Threading.Tests
                 Assert.Throws<UnauthorizedAccessException>(() => new Mutex(false, "Global\\" + Guid.NewGuid().ToString("N"))));
         }
 
-        [Fact]
-        public void OpenExisting()
+        [Theory]
+        [MemberData(nameof(GetValidNames))]
+        public void OpenExisting(string name)
         {
-            string name = Guid.NewGuid().ToString("N");
-
             Mutex resultHandle;
             Assert.False(Mutex.TryOpenExisting(name, out resultHandle));
 
@@ -128,7 +135,6 @@ namespace System.Threading.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => Mutex.OpenExisting(null));
             AssertExtensions.Throws<ArgumentException>("name", null, () => Mutex.OpenExisting(string.Empty));
-            AssertExtensions.Throws<ArgumentException>("name", null, () => Mutex.OpenExisting(new string('a', 10000)));
         }
 
         [Fact]
@@ -268,6 +274,16 @@ namespace System.Threading.Tests
                 }
                 finally { mutex.ReleaseMutex(); }
             }
+        }
+
+        public static TheoryData<string> GetValidNames()
+        {
+            var names  =  new TheoryData<string>() { Guid.NewGuid().ToString("N") };
+
+            if (PlatformDetection.IsWindows && !PlatformDetection.IsFullFramework)
+                names.Add(Guid.NewGuid().ToString("N") + new string('a', 1000));
+
+            return names;
         }
 
         [DllImport("kernel32.dll")]

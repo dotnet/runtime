@@ -181,6 +181,9 @@ enum SocketOptionName
     // Names for SocketOptionLevel_SOL_TCP
     SocketOptionName_SO_TCP_NODELAY = 1,
     // SocketOptionName_SO_TCP_BSDURGENT = 2,
+    SocketOptionName_SO_TCP_KEEPALIVE_RETRYCOUNT = 16,
+    SocketOptionName_SO_TCP_KEEPALIVE_TIME = 3,
+    SocketOptionName_SO_TCP_KEEPALIVE_INTERVAL = 17,
 
     // Names for SocketOptionLevel_SOL_UDP
     // SocketOptionName_SO_UDP_NOCHECKSUM = 1,

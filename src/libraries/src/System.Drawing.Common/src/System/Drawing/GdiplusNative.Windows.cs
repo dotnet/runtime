@@ -129,28 +129,6 @@ namespace System.Drawing
                 GdipCreateFromHWND_ptr = FunctionWrapper.Load<GdipCreateFromHWND_delegate>(s_gdipModule, "GdipCreateFromHWND", LibraryName);
                 GdipDeleteGraphics_ptr = FunctionWrapper.Load<GdipDeleteGraphics_delegate>(s_gdipModule, "GdipDeleteGraphics", LibraryName);
                 GdipReleaseDC_ptr = FunctionWrapper.Load<GdipReleaseDC_delegate>(s_gdipModule, "GdipReleaseDC", LibraryName);
-                GdipSetCompositingMode_ptr = FunctionWrapper.Load<GdipSetCompositingMode_delegate>(s_gdipModule, "GdipSetCompositingMode", LibraryName);
-                GdipSetTextRenderingHint_ptr = FunctionWrapper.Load<GdipSetTextRenderingHint_delegate>(s_gdipModule, "GdipSetTextRenderingHint", LibraryName);
-                GdipSetTextContrast_ptr = FunctionWrapper.Load<GdipSetTextContrast_delegate>(s_gdipModule, "GdipSetTextContrast", LibraryName);
-                GdipSetInterpolationMode_ptr = FunctionWrapper.Load<GdipSetInterpolationMode_delegate>(s_gdipModule, "GdipSetInterpolationMode", LibraryName);
-                GdipGetCompositingMode_ptr = FunctionWrapper.Load<GdipGetCompositingMode_delegate>(s_gdipModule, "GdipGetCompositingMode", LibraryName);
-                GdipSetRenderingOrigin_ptr = FunctionWrapper.Load<GdipSetRenderingOrigin_delegate>(s_gdipModule, "GdipSetRenderingOrigin", LibraryName);
-                GdipGetRenderingOrigin_ptr = FunctionWrapper.Load<GdipGetRenderingOrigin_delegate>(s_gdipModule, "GdipGetRenderingOrigin", LibraryName);
-                GdipSetCompositingQuality_ptr = FunctionWrapper.Load<GdipSetCompositingQuality_delegate>(s_gdipModule, "GdipSetCompositingQuality", LibraryName);
-                GdipGetCompositingQuality_ptr = FunctionWrapper.Load<GdipGetCompositingQuality_delegate>(s_gdipModule, "GdipGetCompositingQuality", LibraryName);
-                GdipSetSmoothingMode_ptr = FunctionWrapper.Load<GdipSetSmoothingMode_delegate>(s_gdipModule, "GdipSetSmoothingMode", LibraryName);
-                GdipGetSmoothingMode_ptr = FunctionWrapper.Load<GdipGetSmoothingMode_delegate>(s_gdipModule, "GdipGetSmoothingMode", LibraryName);
-                GdipSetPixelOffsetMode_ptr = FunctionWrapper.Load<GdipSetPixelOffsetMode_delegate>(s_gdipModule, "GdipSetPixelOffsetMode", LibraryName);
-                GdipGetPixelOffsetMode_ptr = FunctionWrapper.Load<GdipGetPixelOffsetMode_delegate>(s_gdipModule, "GdipGetPixelOffsetMode", LibraryName);
-                GdipGetTextRenderingHint_ptr = FunctionWrapper.Load<GdipGetTextRenderingHint_delegate>(s_gdipModule, "GdipGetTextRenderingHint", LibraryName);
-                GdipGetTextContrast_ptr = FunctionWrapper.Load<GdipGetTextContrast_delegate>(s_gdipModule, "GdipGetTextContrast", LibraryName);
-                GdipGetInterpolationMode_ptr = FunctionWrapper.Load<GdipGetInterpolationMode_delegate>(s_gdipModule, "GdipGetInterpolationMode", LibraryName);
-                GdipGetPageUnit_ptr = FunctionWrapper.Load<GdipGetPageUnit_delegate>(s_gdipModule, "GdipGetPageUnit", LibraryName);
-                GdipGetPageScale_ptr = FunctionWrapper.Load<GdipGetPageScale_delegate>(s_gdipModule, "GdipGetPageScale", LibraryName);
-                GdipSetPageUnit_ptr = FunctionWrapper.Load<GdipSetPageUnit_delegate>(s_gdipModule, "GdipSetPageUnit", LibraryName);
-                GdipSetPageScale_ptr = FunctionWrapper.Load<GdipSetPageScale_delegate>(s_gdipModule, "GdipSetPageScale", LibraryName);
-                GdipGetDpiX_ptr = FunctionWrapper.Load<GdipGetDpiX_delegate>(s_gdipModule, "GdipGetDpiX", LibraryName);
-                GdipGetDpiY_ptr = FunctionWrapper.Load<GdipGetDpiY_delegate>(s_gdipModule, "GdipGetDpiY", LibraryName);
                 GdipTransformPoints_ptr = FunctionWrapper.Load<GdipTransformPoints_delegate>(s_gdipModule, "GdipTransformPoints", LibraryName);
                 GdipTransformPointsI_ptr = FunctionWrapper.Load<GdipTransformPointsI_delegate>(s_gdipModule, "GdipTransformPointsI", LibraryName);
                 GdipGetNearestColor_ptr = FunctionWrapper.Load<GdipGetNearestColor_delegate>(s_gdipModule, "GdipGetNearestColor", LibraryName);
@@ -655,94 +633,6 @@ namespace System.Drawing
             private delegate int GdipReleaseDC_delegate(HandleRef graphics, HandleRef hdc);
             private static FunctionWrapper<GdipReleaseDC_delegate> GdipReleaseDC_ptr;
             internal static int IntGdipReleaseDC(HandleRef graphics, HandleRef hdc) => GdipReleaseDC_ptr.Delegate(graphics, hdc);
-
-            private delegate int GdipSetCompositingMode_delegate(HandleRef graphics, int compositeMode);
-            private static FunctionWrapper<GdipSetCompositingMode_delegate> GdipSetCompositingMode_ptr;
-            internal static int GdipSetCompositingMode(HandleRef graphics, int compositeMode) => GdipSetCompositingMode_ptr.Delegate(graphics, compositeMode);
-
-            private delegate int GdipSetTextRenderingHint_delegate(HandleRef graphics, TextRenderingHint textRenderingHint);
-            private static FunctionWrapper<GdipSetTextRenderingHint_delegate> GdipSetTextRenderingHint_ptr;
-            internal static int GdipSetTextRenderingHint(HandleRef graphics, TextRenderingHint textRenderingHint) => GdipSetTextRenderingHint_ptr.Delegate(graphics, textRenderingHint);
-
-            private delegate int GdipSetTextContrast_delegate(HandleRef graphics, int textContrast);
-            private static FunctionWrapper<GdipSetTextContrast_delegate> GdipSetTextContrast_ptr;
-            internal static int GdipSetTextContrast(HandleRef graphics, int textContrast) => GdipSetTextContrast_ptr.Delegate(graphics, textContrast);
-
-            private delegate int GdipSetInterpolationMode_delegate(HandleRef graphics, int mode);
-            private static FunctionWrapper<GdipSetInterpolationMode_delegate> GdipSetInterpolationMode_ptr;
-            internal static int GdipSetInterpolationMode(HandleRef graphics, int mode) => GdipSetInterpolationMode_ptr.Delegate(graphics, mode);
-
-            private delegate int GdipGetCompositingMode_delegate(HandleRef graphics, out int compositeMode);
-            private static FunctionWrapper<GdipGetCompositingMode_delegate> GdipGetCompositingMode_ptr;
-            internal static int GdipGetCompositingMode(HandleRef graphics, out int compositeMode) => GdipGetCompositingMode_ptr.Delegate(graphics, out compositeMode);
-
-            private delegate int GdipSetRenderingOrigin_delegate(HandleRef graphics, int x, int y);
-            private static FunctionWrapper<GdipSetRenderingOrigin_delegate> GdipSetRenderingOrigin_ptr;
-            internal static int GdipSetRenderingOrigin(HandleRef graphics, int x, int y) => GdipSetRenderingOrigin_ptr.Delegate(graphics, x, y);
-
-            private delegate int GdipGetRenderingOrigin_delegate(HandleRef graphics, out int x, out int y);
-            private static FunctionWrapper<GdipGetRenderingOrigin_delegate> GdipGetRenderingOrigin_ptr;
-            internal static int GdipGetRenderingOrigin(HandleRef graphics, out int x, out int y) => GdipGetRenderingOrigin_ptr.Delegate(graphics, out x, out y);
-
-            private delegate int GdipSetCompositingQuality_delegate(HandleRef graphics, CompositingQuality quality);
-            private static FunctionWrapper<GdipSetCompositingQuality_delegate> GdipSetCompositingQuality_ptr;
-            internal static int GdipSetCompositingQuality(HandleRef graphics, CompositingQuality quality) => GdipSetCompositingQuality_ptr.Delegate(graphics, quality);
-
-            private delegate int GdipGetCompositingQuality_delegate(HandleRef graphics, out CompositingQuality quality);
-            private static FunctionWrapper<GdipGetCompositingQuality_delegate> GdipGetCompositingQuality_ptr;
-            internal static int GdipGetCompositingQuality(HandleRef graphics, out CompositingQuality quality) => GdipGetCompositingQuality_ptr.Delegate(graphics, out quality);
-
-            private delegate int GdipSetSmoothingMode_delegate(HandleRef graphics, SmoothingMode smoothingMode);
-            private static FunctionWrapper<GdipSetSmoothingMode_delegate> GdipSetSmoothingMode_ptr;
-            internal static int GdipSetSmoothingMode(HandleRef graphics, SmoothingMode smoothingMode) => GdipSetSmoothingMode_ptr.Delegate(graphics, smoothingMode);
-
-            private delegate int GdipGetSmoothingMode_delegate(HandleRef graphics, out SmoothingMode smoothingMode);
-            private static FunctionWrapper<GdipGetSmoothingMode_delegate> GdipGetSmoothingMode_ptr;
-            internal static int GdipGetSmoothingMode(HandleRef graphics, out SmoothingMode smoothingMode) => GdipGetSmoothingMode_ptr.Delegate(graphics, out smoothingMode);
-
-            private delegate int GdipSetPixelOffsetMode_delegate(HandleRef graphics, PixelOffsetMode pixelOffsetMode);
-            private static FunctionWrapper<GdipSetPixelOffsetMode_delegate> GdipSetPixelOffsetMode_ptr;
-            internal static int GdipSetPixelOffsetMode(HandleRef graphics, PixelOffsetMode pixelOffsetMode) => GdipSetPixelOffsetMode_ptr.Delegate(graphics, pixelOffsetMode);
-
-            private delegate int GdipGetPixelOffsetMode_delegate(HandleRef graphics, out PixelOffsetMode pixelOffsetMode);
-            private static FunctionWrapper<GdipGetPixelOffsetMode_delegate> GdipGetPixelOffsetMode_ptr;
-            internal static int GdipGetPixelOffsetMode(HandleRef graphics, out PixelOffsetMode pixelOffsetMode) => GdipGetPixelOffsetMode_ptr.Delegate(graphics, out pixelOffsetMode);
-
-            private delegate int GdipGetTextRenderingHint_delegate(HandleRef graphics, out TextRenderingHint textRenderingHint);
-            private static FunctionWrapper<GdipGetTextRenderingHint_delegate> GdipGetTextRenderingHint_ptr;
-            internal static int GdipGetTextRenderingHint(HandleRef graphics, out TextRenderingHint textRenderingHint) => GdipGetTextRenderingHint_ptr.Delegate(graphics, out textRenderingHint);
-
-            private delegate int GdipGetTextContrast_delegate(HandleRef graphics, out int textContrast);
-            private static FunctionWrapper<GdipGetTextContrast_delegate> GdipGetTextContrast_ptr;
-            internal static int GdipGetTextContrast(HandleRef graphics, out int textContrast) => GdipGetTextContrast_ptr.Delegate(graphics, out textContrast);
-
-            private delegate int GdipGetInterpolationMode_delegate(HandleRef graphics, out int mode);
-            private static FunctionWrapper<GdipGetInterpolationMode_delegate> GdipGetInterpolationMode_ptr;
-            internal static int GdipGetInterpolationMode(HandleRef graphics, out int mode) => GdipGetInterpolationMode_ptr.Delegate(graphics, out mode);
-
-            private delegate int GdipGetPageUnit_delegate(HandleRef graphics, out int unit);
-            private static FunctionWrapper<GdipGetPageUnit_delegate> GdipGetPageUnit_ptr;
-            internal static int GdipGetPageUnit(HandleRef graphics, out int unit) => GdipGetPageUnit_ptr.Delegate(graphics, out unit);
-
-            private delegate int GdipGetPageScale_delegate(HandleRef graphics, float[] scale);
-            private static FunctionWrapper<GdipGetPageScale_delegate> GdipGetPageScale_ptr;
-            internal static int GdipGetPageScale(HandleRef graphics, float[] scale) => GdipGetPageScale_ptr.Delegate(graphics, scale);
-
-            private delegate int GdipSetPageUnit_delegate(HandleRef graphics, int unit);
-            private static FunctionWrapper<GdipSetPageUnit_delegate> GdipSetPageUnit_ptr;
-            internal static int GdipSetPageUnit(HandleRef graphics, int unit) => GdipSetPageUnit_ptr.Delegate(graphics, unit);
-
-            private delegate int GdipSetPageScale_delegate(HandleRef graphics, float scale);
-            private static FunctionWrapper<GdipSetPageScale_delegate> GdipSetPageScale_ptr;
-            internal static int GdipSetPageScale(HandleRef graphics, float scale) => GdipSetPageScale_ptr.Delegate(graphics, scale);
-
-            private delegate int GdipGetDpiX_delegate(HandleRef graphics, float[] dpi);
-            private static FunctionWrapper<GdipGetDpiX_delegate> GdipGetDpiX_ptr;
-            internal static int GdipGetDpiX(HandleRef graphics, float[] dpi) => GdipGetDpiX_ptr.Delegate(graphics, dpi);
-
-            private delegate int GdipGetDpiY_delegate(HandleRef graphics, float[] dpi);
-            private static FunctionWrapper<GdipGetDpiY_delegate> GdipGetDpiY_ptr;
-            internal static int GdipGetDpiY(HandleRef graphics, float[] dpi) => GdipGetDpiY_ptr.Delegate(graphics, dpi);
 
             private delegate int GdipTransformPoints_delegate(HandleRef graphics, int destSpace, int srcSpace, PointF* points, int count);
             private static FunctionWrapper<GdipTransformPoints_delegate> GdipTransformPoints_ptr;

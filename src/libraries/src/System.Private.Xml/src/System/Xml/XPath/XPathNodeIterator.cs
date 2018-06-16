@@ -4,7 +4,6 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Text;
 
 namespace System.Xml.XPath
 {
@@ -95,36 +94,6 @@ namespace System.Xml.XPath
             public virtual void Reset()
             {
                 _iterationStarted = false;
-            }
-        }
-
-        private struct DebuggerDisplayProxy
-        {
-            private XPathNodeIterator _nodeIterator;
-
-            public DebuggerDisplayProxy(XPathNodeIterator nodeIterator)
-            {
-                _nodeIterator = nodeIterator;
-            }
-
-            public override string ToString()
-            {
-                // Position={CurrentPosition}, Current={Current == null ? null : (object) new XPathNavigator.DebuggerDisplayProxy(Current)}
-                StringBuilder sb = new StringBuilder();
-                sb.Append("Position=");
-                sb.Append(_nodeIterator.CurrentPosition);
-                sb.Append(", Current=");
-                if (_nodeIterator.Current == null)
-                {
-                    sb.Append("null");
-                }
-                else
-                {
-                    sb.Append('{');
-                    sb.Append(new XPathNavigator.DebuggerDisplayProxy(_nodeIterator.Current).ToString());
-                    sb.Append('}');
-                }
-                return sb.ToString();
             }
         }
     }

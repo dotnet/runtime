@@ -1,11 +1,10 @@
 LIBRARY clrcompression.dll
 
 EXPORTS
-    crc32
-    deflateInit2_
-    deflate
-    deflateEnd
-    inflateInit2_
-    inflate
-    inflateEnd
-    zlibCompileFlags 
+    CompressionNative_Crc32
+    CompressionNative_DeflateInit2_
+    CompressionNative_Deflate
+    CompressionNative_DeflateEnd
+    CompressionNative_InflateInit2_
+    CompressionNative_Inflate
+    CompressionNative_InflateEnd

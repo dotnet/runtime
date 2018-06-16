@@ -22,12 +22,9 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if (destinationType == typeof(string))
+            if (destinationType == typeof(string) && value is string)
             {
-                if (value is string)
-                {
-                    return SR.Text;
-                }
+                return SR.Text;
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
@@ -45,9 +42,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a value indicating whether this object supports properties.
         /// </summary>
-        public override bool GetPropertiesSupported(ITypeDescriptorContext context)
-        {
-            return false;
-        }
+        public override bool GetPropertiesSupported(ITypeDescriptorContext context) => false;
     }
 }

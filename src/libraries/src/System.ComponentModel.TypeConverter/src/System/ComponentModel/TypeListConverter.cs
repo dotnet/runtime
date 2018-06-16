@@ -8,8 +8,7 @@ using System.Globalization;
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Provides a type
-    ///       converter that can be used to populate a list box with available types.</para>
+    /// Provides a type converter that can be used to populate a list box with available types.
     /// </summary>
     public abstract class TypeListConverter : TypeConverter
     {
@@ -17,47 +16,35 @@ namespace System.ComponentModel
         private StandardValuesCollection _values;
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.TypeListConverter'/> class using
-        ///    the type array as the available types.</para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.TypeListConverter'/> class using
+        /// the type array as the available types.
         /// </summary>
         protected TypeListConverter(Type[] types)
         {
             _types = types;
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Gets a value indicating whether this converter
-        ///       can convert an object in the given source type to an enumeration object using
-        ///       the specified context.</para>
+        /// Gets a value indicating whether this converter
+        /// can convert an object in the given source type to an enumeration object using
+        /// the specified context.
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            if (sourceType == typeof(string))
-            {
-                return true;
-            }
-            return base.CanConvertFrom(context, sourceType);
+            return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
         /// <summary>
-        ///    <para>
-        ///        Gets a value indicating whether this converter can convert an object
-        ///        to the given destination type using the context.
-        ///    </para>
+        /// Gets a value indicating whether this converter can convert an object
+        /// to the given destination type using the context.
         /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            if (destinationType == typeof(InstanceDescriptor))
-            {
-                return true;
-            }
-            return base.CanConvertTo(context, destinationType);
+            return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Converts the specified value object to an enumeration object.</para>
+        /// Converts the specified value object to an enumeration object.
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
@@ -75,9 +62,8 @@ namespace System.ComponentModel
             return base.ConvertFrom(context, culture, value);
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Converts the given value object to the specified destination type.</para>
+        /// Converts the given value object to the specified destination type.
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
@@ -100,9 +86,9 @@ namespace System.ComponentModel
 
             return base.ConvertTo(context, culture, value, destinationType);
         }
-        /// <internalonly/>
+
         /// <summary>
-        ///    <para>Gets a collection of standard values for the data type this validator is designed for.</para>
+        /// Gets a collection of standard values for the data type this validator is designed for.
         /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
@@ -125,26 +111,16 @@ namespace System.ComponentModel
             return _values;
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Gets a value indicating whether the list of standard values returned from
-        ///    <see cref='System.ComponentModel.TypeListConverter.GetStandardValues'/> is an exclusive list. </para>
+        /// Gets a value indicating whether the list of standard values returned from
+        /// <see cref='System.ComponentModel.TypeListConverter.GetStandardValues'/> is an exclusive list. 
         /// </summary>
-        public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
-        {
-            return true;
-        }
+        public override bool GetStandardValuesExclusive(ITypeDescriptorContext context) => true;
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>
-        ///        Gets a value indicating whether this object supports a standard set of values that can be
-        ///        picked from a list using the specified context.
-        ///    </para>
+        /// Gets a value indicating whether this object supports a standard set of values that can be
+        /// picked from a list using the specified context.
         /// </summary>
-        public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
-        {
-            return true;
-        }
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext context) => true;
     }
 }

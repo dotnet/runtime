@@ -8,20 +8,16 @@ using System.Threading;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// Provides a subset of the <see cref="BitVector32"/> surface area, using volatile operations for reads and interlocked operations for writes. 
+    /// Provides a subset of the <see cref="BitVector32"/> surface area, using volatile
+    /// operations for reads and interlocked operations for writes. 
     /// </summary>
     internal struct InterlockedBitVector32
     {
         private int _data;
 
-        public InterlockedBitVector32(int data)
-        {
-            _data = data;
-        }
-
         public bool this[int bit]
         {
-            get { return (Volatile.Read(ref _data) & bit) == bit; }
+            get => (Volatile.Read(ref _data) & bit) == bit;
             set
             {
                 while (true)
@@ -36,11 +32,10 @@ namespace System.ComponentModel
             }
         }
 
-        /// <summary>Sets or unsets the specified bit, without using interlocked operations.</summary>
-        public void DangerousSet(int bit, bool value)
-        {
-            _data = value ? _data | bit : _data & ~bit;
-        }
+        /// <summary>
+        /// Sets or unsets the specified bit, without using interlocked operations.
+        /// </summary>
+        public void DangerousSet(int bit, bool value) => _data = value ? _data | bit : _data & ~bit;
 
         public static int CreateMask() => CreateMask(0);
 
@@ -50,7 +45,7 @@ namespace System.ComponentModel
             return previous == 0 ? 1 : previous << 1;
         }
 
-        public override bool Equals(object o) => o is InterlockedBitVector32 ? _data == ((InterlockedBitVector32)o)._data : false;
+        public override bool Equals(object o) => o is InterlockedBitVector32 vector && _data == vector._data;
 
         public override int GetHashCode() => base.GetHashCode();
     }

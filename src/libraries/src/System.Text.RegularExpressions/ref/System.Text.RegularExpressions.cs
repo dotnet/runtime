@@ -6,7 +6,6 @@
 // ------------------------------------------------------------------------------
 
 
-using System.Reflection;
 
 namespace System.Text.RegularExpressions
 {
@@ -56,7 +55,7 @@ namespace System.Text.RegularExpressions
         public bool Success { get { throw null; } }
         public static System.Text.RegularExpressions.Group Synchronized(System.Text.RegularExpressions.Group inner) { throw null; }
     }
-    public partial class GroupCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.Generic.ICollection<System.Text.RegularExpressions.Group>, System.Collections.Generic.IEnumerable<System.Text.RegularExpressions.Group>, System.Collections.Generic.IList<System.Text.RegularExpressions.Group>, System.Collections.Generic.IReadOnlyCollection<System.Text.RegularExpressions.Group>, System.Collections.Generic.IReadOnlyList<System.Text.RegularExpressions.Group>, System.Collections.IList
+    public partial class GroupCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.Generic.ICollection<System.Text.RegularExpressions.Group>, System.Collections.Generic.IEnumerable<System.Text.RegularExpressions.Group>, System.Collections.Generic.IList<System.Text.RegularExpressions.Group>, System.Collections.Generic.IReadOnlyCollection<System.Text.RegularExpressions.Group>, System.Collections.Generic.IReadOnlyList<System.Text.RegularExpressions.Group>, System.Collections.IList, System.Collections.Generic.IReadOnlyDictionary<string, Group>
     {
         internal GroupCollection() { }
         public int Count { get { throw null; } }
@@ -85,6 +84,12 @@ namespace System.Text.RegularExpressions
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
         void System.Collections.IList.Remove(object value) { }
         void System.Collections.IList.RemoveAt(int index) { }
+        public bool ContainsKey(string key) { throw null; }
+        public bool TryGetValue(string key, out Group value) { throw null; }
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Text.RegularExpressions.Group>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Text.RegularExpressions.Group>>.GetEnumerator() { throw null; }
+
+        public System.Collections.Generic.IEnumerable<string> Keys => throw null;
+        public System.Collections.Generic.IEnumerable<System.Text.RegularExpressions.Group> Values => throw null;
         object System.Collections.IList.this[int index] { get { throw null; } set { } }
     }
     public partial class Match : System.Text.RegularExpressions.Group

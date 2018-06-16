@@ -46,9 +46,9 @@ namespace BasicEventSourceTests
             BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
             if (!PlatformDetection.IsFullFramework)
             {
-              Type sr = typeof(EventSource).Assembly.GetType("System.SR", throwOnError: true, ignoreCase: false);
-              PropertyInfo resourceProp = sr.GetProperty(key, flags);
-              return (string)resourceProp.GetValue(null);
+                Type sr = typeof(EventSource).Assembly.GetType("System.SR", throwOnError: true, ignoreCase: false);
+                PropertyInfo resourceProp = sr.GetProperty(key, flags);
+                return (string)resourceProp.GetValue(null);
             }
 
             Type[] paramsType = new Type[] { typeof(string) };
@@ -95,19 +95,20 @@ namespace BasicEventSourceTests
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.OutOfRangeKwdEventSource), string.Empty, strictOptions));
             AsserExceptionStringsEqual(() => String.Join(Environment.NewLine,
-                                     GetResourceString("EventSource_IllegalKeywordsValue", "Kwd1", "0x100000000000"),
-                                     GetResourceString("EventSource_KeywordCollision", "Session3", "Kwd1", "0x100000000000")),
-                          e);
+                    GetResourceString("EventSource_IllegalKeywordsValue", "Kwd1", "0x100000000000"),
+                    GetResourceString("EventSource_KeywordCollision", "Session3", "Kwd1", "0x100000000000")),
+                e);
 
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
             e = AssertExtensions.Throws<ArgumentException>(GetResourceString("EventSource_MaxChannelExceeded"),
                 () => EventSource.GenerateManifest(typeof(Sdt.TooManyChannelsEventSource), string.Empty));
 #endif
 
-#if USE_ETW
-            e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.EventWithAdminChannelNoMessageEventSource), string.Empty, strictOptions));
-            AsserExceptionStringsEqual(() => GetResourceString("EventSource_EventWithAdminChannelMustHaveMessage", "WriteInteger", "Admin"), e);
-#endif // USE_ETW
+            if (PlatformDetection.IsWindows)
+            {
+                e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.EventWithAdminChannelNoMessageEventSource), string.Empty, strictOptions));
+                AsserExceptionStringsEqual(() => GetResourceString("EventSource_EventWithAdminChannelMustHaveMessage", "WriteInteger", "Admin"), e);
+            }
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.ReservedOpcodeEventSource), string.Empty, strictOptions));
             AsserExceptionStringsEqual(() => String.Join(Environment.NewLine,
@@ -186,7 +187,7 @@ namespace BasicEventSourceTests
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.EventWithInvalidMessageEventSource), string.Empty, strictOptions));
             AsserExceptionStringsEqual(() => GetResourceString("EventSource_UnsupportedMessageProperty", "WriteString", "Message = {0,12:G}"), e);
-            
+
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.AbstractWithKwdTaskOpcodeEventSource), string.Empty, strictOptions));
             AsserExceptionStringsEqual(() => String.Join(Environment.NewLine,
                                      GetResourceString("EventSource_AbstractMustNotDeclareKTOC", "Keywords"),
