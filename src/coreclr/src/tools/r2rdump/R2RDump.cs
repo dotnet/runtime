@@ -178,15 +178,12 @@ namespace R2RDump
         /// </summary>
         private void DumpRuntimeFunction(R2RReader r2r, RuntimeFunction rtf)
         {
+            _writer.Write($"{rtf}");
             if (_disasm)
             {
-                _writer.WriteLine($"Id: {rtf.Id}");
-                _writer.Write(CoreDisTools.GetCodeBlock(_disassembler, rtf.StartAddress, r2r.GetOffset(rtf.StartAddress), r2r.Image, rtf.Size));
+                _writer.Write(CoreDisTools.GetCodeBlock(_disassembler, rtf, r2r.GetOffset(rtf.StartAddress), r2r.Image));
             }
-            else
-            {
-                _writer.Write($"{rtf}");
-            }
+
             if (_raw)
             {
                 _writer.WriteLine("Raw Bytes:");
