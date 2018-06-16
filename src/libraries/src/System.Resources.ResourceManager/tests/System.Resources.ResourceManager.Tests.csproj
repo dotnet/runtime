@@ -17,9 +17,6 @@
       <DependentUpon>TestResx.resx</DependentUpon>
     </Compile>
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
-    <Compile Include="$(CommonTestPath)/System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs">
-      <Link>System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs</Link>
-    </Compile>
     <Compile Include="MissingSatelliteAssemblyException.cs" />
     <Compile Include="ResourceSetTests.cs" />
     <EmbeddedResource Include="Resources\TestResx.netstandard17.resx">

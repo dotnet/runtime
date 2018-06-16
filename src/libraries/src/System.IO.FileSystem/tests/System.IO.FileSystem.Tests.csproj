@@ -37,9 +37,6 @@
     <Compile Include="File\EncryptDecrypt.cs" />
     <Compile Include="File\GetSetAttributesCommon.cs" />
     <Compile Include="File\Replace.cs" />
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="FileSystemTest.Unix.cs" />
