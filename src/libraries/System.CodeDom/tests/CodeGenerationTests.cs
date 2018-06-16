@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.CodeDom.Compiler;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Runtime.Serialization.Formatters.Tests;
 using System.Text;
 using Xunit;
 
