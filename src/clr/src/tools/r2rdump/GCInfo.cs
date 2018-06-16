@@ -45,9 +45,11 @@ namespace R2RDump
         public class GcTransition
         {
             public int CodeOffset { get; set; }
-            public int SlotId { get; }
-            public bool IsLive { get; }
-            public int ChunkId { get; }
+            public int SlotId { get; set; }
+            public bool IsLive { get; set; }
+            public int ChunkId { get; set; }
+
+            public GcTransition() { }
 
             public GcTransition(int codeOffset, int slotId, bool isLive, int chunkId)
             {
@@ -104,27 +106,29 @@ namespace R2RDump
         private Machine _machine;
         private GcInfoTypes _gcInfoTypes;
 
-        public int Version { get; }
-        public int CodeLength { get; }
-        public ReturnKinds ReturnKind { get; }
-        public uint ValidRangeStart { get; }
-        public uint ValidRangeEnd { get; }
-        public int SecurityObjectStackSlot { get; }
-        public int GSCookieStackSlot { get; }
-        public int PSPSymStackSlot { get; }
-        public int GenericsInstContextStackSlot { get; }
-        public uint StackBaseRegister { get; }
-        public uint SizeOfEditAndContinuePreservedArea { get; }
-        public int ReversePInvokeFrameStackSlot { get; }
-        public uint SizeOfStackOutgoingAndScratchArea { get; }
-        public uint NumSafePoints { get; }
-        public uint NumInterruptibleRanges { get; }
-        public IEnumerable<uint> SafePointOffsets { get; }
-        public IEnumerable<InterruptibleRange> InterruptibleRanges { get; }
-        public GcSlotTable SlotTable { get; }
-        public int Size { get; }
-        public int Offset { get; }
-        public Dictionary<int, GcTransition> Transitions { get; }
+        public int Version { get; set; }
+        public int CodeLength { get; set; }
+        public ReturnKinds ReturnKind { get; set; }
+        public uint ValidRangeStart { get; set; }
+        public uint ValidRangeEnd { get; set; }
+        public int SecurityObjectStackSlot { get; set; }
+        public int GSCookieStackSlot { get; set; }
+        public int PSPSymStackSlot { get; set; }
+        public int GenericsInstContextStackSlot { get; set; }
+        public uint StackBaseRegister { get; set; }
+        public uint SizeOfEditAndContinuePreservedArea { get; set; }
+        public int ReversePInvokeFrameStackSlot { get; set; }
+        public uint SizeOfStackOutgoingAndScratchArea { get; set; }
+        public uint NumSafePoints { get; set; }
+        public uint NumInterruptibleRanges { get; set; }
+        public List<uint> SafePointOffsets { get; set; }
+        public List<InterruptibleRange> InterruptibleRanges { get; set; }
+        public GcSlotTable SlotTable { get; set; }
+        public int Size { get; set; }
+        public int Offset { get; set; }
+        public Dictionary<int, GcTransition> Transitions { get; set; }
+
+        public GcInfo() { }
 
         public GcInfo(byte[] image, int offset, Machine machine, ushort majorVersion)
         {
