@@ -55,8 +55,8 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("(i, j, k, l) => i", lambda.ToString());
         }
 
-        // Possible issue with AOT? See https://github.com/dotnet/corefx/pull/8116/files#r61346743
-        [Theory(Skip = "870811"), ClassData(typeof(CompilationTypes))]
+        [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue(30471)]
         public void InvokeComputedLambda(bool useInterpreter)
         {
             ParameterExpression x = Expression.Parameter(typeof(int), "x");
