@@ -322,6 +322,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ConstructorInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeFormatException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\DefaultMemberAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilderAccess.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FlowControl.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Label.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Opcode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodeType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OperandType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PackingSize.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PEFileKinds.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\StackBehaviour.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ExceptionHandlingClauseOptions.cs" />
