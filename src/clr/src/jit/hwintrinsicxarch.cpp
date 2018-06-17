@@ -905,6 +905,18 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_SSE_StaticCast:
+        {
+            // We fold away the static cast here, as it only exists to satisfy
+            // the type system. It is safe to do this here since the retNode type
+            // and the signature return type are both TYP_SIMD16.
+            assert(sig->numArgs == 1);
+            retNode = impSIMDPopStack(TYP_SIMD16);
+            SetOpLclRelatedToSIMDIntrinsic(retNode);
+            assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+            break;
+        }
+
         case NI_SSE_StoreFence:
             assert(sig->numArgs == 0);
             assert(JITtype2varType(sig->retType) == TYP_VOID);
@@ -1211,6 +1223,18 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
             GenTree* higherVector = impSIMDPopStack(TYP_SIMD16);
             retNode               = gtNewSimdHWIntrinsicNode(TYP_SIMD32, lowerVector, higherVector, gtNewIconNode(1),
                                                NI_AVX_InsertVector128, baseType, 32);
+            break;
+        }
+
+        case NI_AVX_StaticCast:
+        {
+            // We fold away the static cast here, as it only exists to satisfy
+            // the type system. It is safe to do this here since the retNode type
+            // and the signature return type are both TYP_SIMD32.
+            assert(sig->numArgs == 1);
+            retNode = impSIMDPopStack(TYP_SIMD32);
+            SetOpLclRelatedToSIMDIntrinsic(retNode);
+            assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
             break;
         }
 
