@@ -642,7 +642,7 @@ namespace System.Linq.Expressions.Tests
             public override string ToString() { return value.ToString(); }
         }
 
-        [Theory(Skip = "870811")]
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void TestAndAlso(bool useInterpreter)
         {
@@ -967,7 +967,7 @@ namespace System.Linq.Expressions.Tests
             public AnonHelperClass1(Expression<Func<decimal>> mem1) { this.mem1 = mem1; }
         }
 
-        [Theory(Skip = "870811")]
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void NewExpressionwithMemberAssignInit(bool useInterpreter)
         {
@@ -1834,7 +1834,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(4, d(3, 4));
         }
 
-        [Theory(Skip = "870811")]
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CallOnCapturedInstance(bool useInterpreter)
         {
@@ -1900,7 +1900,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(5, v.Length);
         }
 
-        [Theory(Skip = "870811")]
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void ArrayInitializedWithCapturedInstance(bool useInterpreter)
         {
