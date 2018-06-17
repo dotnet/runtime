@@ -2384,11 +2384,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             }
 
             case NI_SSE_ConvertToSingle:
-            case NI_SSE_StaticCast:
             case NI_SSE2_ConvertToDouble:
             case NI_AVX_ExtendToVector256:
             case NI_AVX_GetLowerHalf:
-            case NI_AVX_StaticCast:
             {
                 assert(numArgs == 1);
                 assert(!isRMW);
