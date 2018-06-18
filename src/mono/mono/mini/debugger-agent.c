@@ -4129,11 +4129,15 @@ event_requests_cleanup (void)
  * Ensure DebuggerTlsData fields are filled out.
  */
 static void
-ss_calculate_framecount (DebuggerTlsData *tls, MonoContext *ctx, gboolean force_use_ctx)
+ss_calculate_framecount (DebuggerTlsData *tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***frames, int *nframes)
 {
 	if (force_use_ctx || !tls->context.valid)
 		mono_thread_state_init_from_monoctx (&tls->context, ctx);
 	compute_frame_info (tls->thread, tls);
+	if (frames)
+		*frames = (DbgEngineStackFrame**)tls->frames;
+	if (nframes)
+		*nframes = tls->frame_count;
 }
 
 /*
@@ -4150,8 +4154,9 @@ ss_discard_frame_context (void *de_tls) {
 }
 
 static gboolean
-ensure_jit (StackFrame* frame)
+ensure_jit (DbgEngineStackFrame* the_frame)
 {
+	StackFrame *frame = (StackFrame*)the_frame;
 	if (!frame->jit) {
 		frame->jit = mono_debug_find_method (frame->api_method, frame->de.domain);
 		if (!frame->jit && frame->api_method->is_inflated)
@@ -4182,13 +4187,15 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	gboolean hit = TRUE;
 
 	if ((req->filter & STEP_FILTER_STATIC_CTOR)) {
-		ss_calculate_framecount (tls, ctx, TRUE);
+		DbgEngineStackFrame **frames;
+		int nframes;
+		ss_calculate_framecount (tls, ctx, TRUE, &frames, &nframes);
 
 		gboolean ret = FALSE;
 		gboolean method_in_stack = FALSE;
 
-		for (int i = 0; i < tls->frame_count; i++) {
-			MonoMethod *external_method = tls->frames [i]->de.method;
+		for (int i = 0; i < nframes; i++) {
+			MonoMethod *external_method = frames [i]->method;
 			if (method == external_method)
 				method_in_stack = TRUE;
 
@@ -4200,11 +4207,11 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 		}
 
 		if (!method_in_stack) {
-			g_printerr ("[%p] The instruction pointer of the currently executing method(%s) is not on the recorded stack. This is likely due to a runtime bug. The %d frames are as follow: \n", (gpointer)(gsize)mono_native_thread_id_get (), mono_method_full_name (method, TRUE), tls->frame_count);
+			g_printerr ("[%p] The instruction pointer of the currently executing method(%s) is not on the recorded stack. This is likely due to a runtime bug. The %d frames are as follow: \n", (gpointer)(gsize)mono_native_thread_id_get (), mono_method_full_name (method, TRUE), nframes);
 			/*DEBUG_PRINTF (1, "[%p] The instruction pointer of the currently executing method(%s) is not on the recorded stack. This is likely due to a runtime bug. The %d frames are as follow: \n", (gpointer)(gsize)mono_native_thread_id_get (), mono_method_full_name (method, TRUE), tls->frame_count);*/
 
-			for (int i=0; i < tls->frame_count; i++)
-				g_printerr ("\t [%p] Frame (%d / %d): %s\n", (gpointer)(gsize)mono_native_thread_id_get (), i, tls->frame_count, mono_method_full_name (tls->frames [i]->de.method, TRUE));
+			for (int i=0; i < nframes; i++)
+				g_printerr ("\t [%p] Frame (%d / %d): %s\n", (gpointer)(gsize)mono_native_thread_id_get (), i, nframes, mono_method_full_name (frames [i]->method, TRUE));
 		}
 		g_assert (method_in_stack);
 
@@ -4229,13 +4236,13 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 
 	if ((req->depth == STEP_DEPTH_OVER || req->depth == STEP_DEPTH_OUT) && hit && !req->async_stepout_method) {
 		gboolean is_step_out = req->depth == STEP_DEPTH_OUT;
-
-		ss_calculate_framecount (tls, ctx, FALSE);
+		int nframes;
+		ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
 
 		// Because functions can call themselves recursively, we need to make sure we're stopping at the right stack depth.
 		// In case of step out, the target is the frame *enclosing* the one where the request was made.
 		int target_frames = req->nframes + (is_step_out ? -1 : 0);
-		if (req->nframes > 0 && tls->frame_count > 0 && tls->frame_count > target_frames) {
+		if (req->nframes > 0 && nframes > 0 && nframes > target_frames) {
 			/* Hit the breakpoint in a recursive call, don't halt */
 			DEBUG_PRINTF (1, "[%p] Breakpoint at lower frame while stepping %s, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), is_step_out ? "out" : "over");
 			return FALSE;
@@ -4243,8 +4250,9 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	}
 
 	if (req->depth == STEP_DEPTH_INTO && req->size == STEP_SIZE_MIN && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) && req->start_method) {
-		ss_calculate_framecount (tls, ctx, FALSE);
-		if (req->start_method == method && req->nframes && tls->frame_count == req->nframes) { //Check also frame count(could be recursion)
+		int nframes;
+		ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
+		if (req->start_method == method && req->nframes && nframes == req->nframes) { //Check also frame count(could be recursion)
 			DEBUG_PRINTF (1, "[%p] Seq point at nonempty stack %x while stepping in, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
 			return FALSE;
 		}
@@ -4275,8 +4283,9 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 		req->last_method = method;
 		hit = FALSE;
 	} else if (loc && method == req->last_method && loc->row == req->last_line) {
-		ss_calculate_framecount (tls, ctx, FALSE);
-		if (tls->frame_count == req->nframes) { // If the frame has changed we're clearly not on the same source line.
+		int nframes;
+		ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
+		if (nframes == req->nframes) { // If the frame has changed we're clearly not on the same source line.
 			DEBUG_PRINTF (1, "[%p] Same source line (%d), continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), loc->row);
 			hit = FALSE;
 		}
@@ -4298,8 +4307,9 @@ breakpoint_matches_assembly (MonoBreakpoint *bp, MonoAssembly *assembly)
 }
 
 static gpointer
-get_this_addr (StackFrame *frame)
+get_this_addr (DbgEngineStackFrame *the_frame)
 {
+	StackFrame *frame = (StackFrame *)the_frame;
 	if (frame->de.ji->is_interp)
 		return mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
 
@@ -4341,21 +4351,21 @@ get_object_id_for_debugger_method (MonoClass* async_builder_class)
 
 /* Return the address of the AsyncMethodBuilder struct belonging to the state machine method pointed to by FRAME */
 static gpointer
-get_async_method_builder (StackFrame *frame)
+get_async_method_builder (DbgEngineStackFrame *frame)
 {
 	MonoObject *this_obj;
 	MonoClassField *builder_field;
 	gpointer builder;
 	guint8 *this_addr;
 
-	builder_field = mono_class_get_field_from_name (frame->de.method->klass, "<>t__builder");
+	builder_field = mono_class_get_field_from_name (frame->method->klass, "<>t__builder");
 	g_assert (builder_field);
 
 	this_addr = get_this_addr (frame);
 	if (!this_addr)
 		return NULL;
 
-	if (m_class_is_valuetype (frame->de.method->klass)) {
+	if (m_class_is_valuetype (frame->method->klass)) {
 		guint8 *vtaddr = *(guint8**)this_addr;
 		builder = (char*)vtaddr + builder_field->offset - sizeof (MonoObject);
 	} else {
@@ -4369,7 +4379,7 @@ get_async_method_builder (StackFrame *frame)
 //This ID is used to figure out if breakpoint hit on resumeOffset belongs to us or not
 //since thread probably changed...
 static int
-get_this_async_id (StackFrame *frame)
+get_this_async_id (DbgEngineStackFrame *frame)
 {
 	MonoClassField *builder_field;
 	gpointer builder;
@@ -4388,7 +4398,7 @@ get_this_async_id (StackFrame *frame)
 	if (!builder)
 		return 0;
 
-	builder_field = mono_class_get_field_from_name (frame->de.method->klass, "<>t__builder");
+	builder_field = mono_class_get_field_from_name (frame->method->klass, "<>t__builder");
 	g_assert (builder_field);
 
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
@@ -4410,9 +4420,9 @@ get_this_async_id (StackFrame *frame)
 // Returns true if TaskBuilder has NotifyDebuggerOfWaitCompletion method
 // false if not(AsyncVoidBuilder)
 static gboolean
-set_set_notification_for_wait_completion_flag (StackFrame *frame)
+set_set_notification_for_wait_completion_flag (DbgEngineStackFrame *frame)
 {
-	MonoClassField *builder_field = mono_class_get_field_from_name (frame->de.method->klass, "<>t__builder");
+	MonoClassField *builder_field = mono_class_get_field_from_name (frame->method->klass, "<>t__builder");
 	g_assert (builder_field);
 	gpointer builder = get_async_method_builder (frame);
 	g_assert (builder);
@@ -4446,16 +4456,70 @@ get_notify_debugger_of_wait_completion_method (void)
 	return notify_debugger_of_wait_completion_method_cache;
 }
 
+static gboolean
+begin_breakpoint_processing (DebuggerTlsData *tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal)
+{
+	/*
+	 * Skip the instruction causing the breakpoint signal.
+	 */
+	if (from_signal)
+		mono_arch_skip_breakpoint (ctx, ji);
+
+	if (tls->disable_breakpoints)
+		return FALSE;
+	return TRUE;
+}
+
+typedef struct {
+	GSList *bp_events, *ss_events, *enter_leave_events;
+	EventKind kind;
+	int suspend_policy;
+} BreakPointEvents;
+
+static void*
+create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, EventKind kind)
+{
+	int suspend_policy = 0;
+	BreakPointEvents *evts = g_new0 (BreakPointEvents, 1);
+	if (ss_reqs && ss_reqs->len > 0)
+		evts->ss_events = create_event_list (EVENT_KIND_STEP, ss_reqs, ji, NULL, &suspend_policy);
+	else if (bp_reqs && bp_reqs->len > 0)
+		evts->bp_events = create_event_list (EVENT_KIND_BREAKPOINT, bp_reqs, ji, NULL, &suspend_policy);
+	else if (kind != EVENT_KIND_BREAKPOINT)
+		evts->enter_leave_events = create_event_list (kind, NULL, ji, NULL, &suspend_policy);
+
+	evts->kind = kind;
+	evts->suspend_policy = suspend_policy;
+	return evts;
+}
+
+static void
+process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset)
+{
+	BreakPointEvents *evts = _evts;
+	/*
+	 * FIXME: The first event will suspend, so the second will only be sent after the
+	 * resume.
+	 */
+	if (evts->ss_events)
+		process_event (EVENT_KIND_STEP, method, il_offset, ctx, evts->ss_events, evts->suspend_policy);
+	if (evts->bp_events)
+		process_event (evts->kind, method, il_offset, ctx, evts->bp_events, evts->suspend_policy);
+	if (evts->enter_leave_events)
+		process_event (evts->kind, method, il_offset, ctx, evts->enter_leave_events, evts->suspend_policy);
+
+	g_free (evts);
+}
+
 static void
 process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 {
 	MonoJitInfo *ji;
 	guint8 *ip;
-	int i, suspend_policy;
+	int i;
 	guint32 native_offset;
 	MonoBreakpoint *bp;
 	GPtrArray *bp_reqs, *ss_reqs_orig, *ss_reqs;
-	GSList *bp_events = NULL, *ss_events = NULL, *enter_leave_events = NULL;
 	EventKind kind = EVENT_KIND_BREAKPOINT;
 	MonoContext *ctx = &tls->restore_state.ctx;
 	MonoMethod *method;
@@ -4475,13 +4539,10 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 	/* Compute the native offset of the breakpoint from the ip */
 	native_offset = ip - (guint8*)ji->code_start;
 
-	/* 
-	 * Skip the instruction causing the breakpoint signal.
-	 */
-	if (from_signal)
-		mono_arch_skip_breakpoint (ctx, ji);
+	if (!begin_breakpoint_processing (tls, ctx, ji, from_signal))
+		return;
 
-	if (method->wrapper_type || tls->disable_breakpoints)
+	if (method->wrapper_type)
 		return;
 
 	bp_reqs = g_ptr_array_new ();
@@ -4522,15 +4583,17 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 
 		//if we hit async_stepout_method, it's our no matter which thread
 		if ((ss_req->async_stepout_method != method) && (ss_req->async_id || mono_thread_internal_current () != ss_req->thread)) {
+			DbgEngineStackFrame **frames;
+			int nframes;
 			//We have different thread and we don't have async stepping in progress
 			//it's breakpoint in parallel thread, ignore it
 			if (ss_req->async_id == 0)
 				continue;
 
 			ss_discard_frame_context (tls);
-			ss_calculate_framecount (tls, ctx, FALSE);
+			ss_calculate_framecount (tls, ctx, FALSE, &frames, &nframes);
 			//make sure we have enough data to get current async method instance id
-			if (tls->frame_count == 0 || !ensure_jit (tls->frames [0]))
+			if (nframes == 0 || !ensure_jit (frames [0]))
 				continue;
 
 			//Check method is async before calling get_this_async_id
@@ -4541,17 +4604,18 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 				mono_debug_free_method_async_debug_info (asyncMethod);
 
 			//breakpoint was hit in parallelly executing async method, ignore it
-			if (ss_req->async_id != get_this_async_id (tls->frames [0]))
+			if (ss_req->async_id != get_this_async_id (frames [0]))
 				continue;
 		}
 
 		//Update stepping request to new thread/frame_count that we are continuing on
 		//so continuing with normal stepping works as expected
 		if (ss_req->async_stepout_method || ss_req->async_id) {
+			int nframes;
 			ss_discard_frame_context (tls);
-			ss_calculate_framecount (tls, ctx, FALSE);
+			ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
 			ss_req->thread = mono_thread_internal_current ();
-			ss_req->nframes = tls->frame_count;
+			ss_req->nframes = nframes;
 		}
 
 		hit = ss_update (ss_req, ji, &sp, tls, ctx, method);
@@ -4570,29 +4634,15 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 		};
 		ss_start (ss_req, &args);
 	}
-	
-	if (ss_reqs->len > 0)
-		ss_events = create_event_list (EVENT_KIND_STEP, ss_reqs, ji, NULL, &suspend_policy);
-	else if (bp_reqs->len > 0)
-		bp_events = create_event_list (EVENT_KIND_BREAKPOINT, bp_reqs, ji, NULL, &suspend_policy);
-	else if (kind != EVENT_KIND_BREAKPOINT)
-		enter_leave_events = create_event_list (kind, NULL, ji, NULL, &suspend_policy);
+
+	void *events = create_breakpoint_events (ss_reqs, bp_reqs, ji, kind);
 
 	mono_loader_unlock ();
 
 	g_ptr_array_free (bp_reqs, TRUE);
 	g_ptr_array_free (ss_reqs, TRUE);
 
-	/* 
-	 * FIXME: The first event will suspend, so the second will only be sent after the
-	 * resume.
-	 */
-	if (ss_events)
-		process_event (EVENT_KIND_STEP, method, 0, ctx, ss_events, suspend_policy);
-	if (bp_events)
-		process_event (kind, method, 0, ctx, bp_events, suspend_policy);
-	if (enter_leave_events)
-		process_event (kind, method, 0, ctx, enter_leave_events, suspend_policy);
+	process_breakpoint_events (events, method, ctx, 0);
 }
 
 /* Process a breakpoint/single step event after resuming from a signal handler */
@@ -4731,14 +4781,20 @@ ss_depth_to_string (StepDepth depth)
 }
 
 static void
+begin_single_step_processing (MonoContext *ctx, gboolean from_signal)
+{
+	if (from_signal)
+		mono_arch_skip_single_step (ctx);
+}
+
+static void
 process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 {
 	MonoJitInfo *ji;
 	guint8 *ip;
 	GPtrArray *reqs;
-	int il_offset, suspend_policy;
+	int il_offset;
 	MonoDomain *domain;
-	GSList *events;
 	MonoContext *ctx = &tls->restore_state.ctx;
 	MonoMethod *method;
 	SeqPoint sp;
@@ -4746,8 +4802,7 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 	SingleStepReq *ss_req;
 
 	/* Skip the instruction causing the single step */
-	if (from_signal)
-		mono_arch_skip_single_step (ctx);
+	begin_single_step_processing (ctx, from_signal);
 
 	if (try_process_suspend (tls, ctx))
 		return;
@@ -4842,13 +4897,13 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 
 	g_ptr_array_add (reqs, ss_req->req);
 
-	events = create_event_list (EVENT_KIND_STEP, reqs, ji, NULL, &suspend_policy);
+	void *bp_events = create_breakpoint_events (reqs, NULL, ji, EVENT_KIND_BREAKPOINT);
 
 	g_ptr_array_free (reqs, TRUE);
 
 	mono_loader_unlock ();
 
-	process_event (EVENT_KIND_STEP, jinfo_get_method (ji), il_offset, ctx, events, suspend_policy);
+	process_breakpoint_events (bp_events, method, ctx, il_offset);
 
  exit:
 	ss_req_release (ss_req);
@@ -5110,7 +5165,7 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 
 	DebuggerTlsData *tls = ss_args->tls;
 	MonoMethod *method = ss_args->method;
-	StackFrame **frames = (StackFrame**)ss_args->frames;
+	DbgEngineStackFrame **frames = ss_args->frames;
 	int nframes = ss_args->nframes;
 	SeqPoint *sp = &ss_args->sp;
 
@@ -5123,34 +5178,30 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 		frame_index = 1;
 
 		if (ss_args->ctx && !frames) {
-			/* Need parent frames */
-			if (!tls->context.valid)
-				mono_thread_state_init_from_monoctx (&tls->context, ss_args->ctx);
 
 			mono_loader_lock ();
 			locked = TRUE;
 
-			compute_frame_info (tls->thread, tls);
-			frames = tls->frames;
-			nframes = tls->frame_count;
+			/* Need parent frames */
+			ss_calculate_framecount (tls, ss_args->ctx, FALSE, &frames, &nframes);
 		}
 
 		MonoDebugMethodAsyncInfo* asyncMethod = mono_debug_lookup_method_async_debug_info (method);
 
 		/* Need to stop in catch clauses as well */
 		for (i = ss_req->depth == STEP_DEPTH_OUT ? 1 : 0; i < nframes; ++i) {
-			StackFrame *frame = frames [i];
+			DbgEngineStackFrame *frame = frames [i];
 
-			if (frame->de.ji) {
-				MonoJitInfo *jinfo = frame->de.ji;
+			if (frame->ji) {
+				MonoJitInfo *jinfo = frame->ji;
 				for (j = 0; j < jinfo->num_clauses; ++j) {
 					// In case of async method we don't want to place breakpoint on last catch handler(which state machine added for whole method)
 					if (asyncMethod && asyncMethod->num_awaits && i == 0 && j + 1 == jinfo->num_clauses)
 						break;
 					MonoJitExceptionInfo *ei = &jinfo->clauses [j];
 
-					if (mono_find_next_seq_point_for_native_offset (frame->de.domain, frame->de.method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp))
-						ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, frame->de.method, local_sp.il_offset);
+					if (mono_find_next_seq_point_for_native_offset (frame->domain, frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp))
+						ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, frame->method, local_sp.il_offset);
 				}
 			}
 		}
@@ -5202,10 +5253,10 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 		if (ss_req->depth == STEP_DEPTH_OUT) {
 			/* Ignore seq points in current method */
 			while (frame_index < nframes) {
-				StackFrame *frame = frames [frame_index];
+				DbgEngineStackFrame *frame = frames [frame_index];
 
-				method = frame->de.method;
-				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &ss_args->info, &local_sp);
+				method = frame->method;
+				found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &ss_args->info, &local_sp);
 				sp = (found_sp)? &local_sp : NULL;
 				frame_index ++;
 				if (sp && sp->next_len != 0)
@@ -5217,10 +5268,10 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			if (sp && sp->next_len == 0) {
 				sp = NULL;
 				while (frame_index < nframes) {
-					StackFrame *frame = frames [frame_index];
+					DbgEngineStackFrame *frame = frames [frame_index];
 
-					method = frame->de.method;
-					found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &ss_args->info, &local_sp);
+					method = frame->method;
+					found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &ss_args->info, &local_sp);
 					sp = (found_sp)? &local_sp : NULL;
 					if (sp && sp->next_len != 0)
 						break;
@@ -5230,10 +5281,10 @@ ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			} else {
 				/* Have to put a breakpoint into a parent frame since the seq points might not cover all control flow out of the method */
 				while (frame_index < nframes) {
-					StackFrame *frame = frames [frame_index];
+					DbgEngineStackFrame *frame = frames [frame_index];
 
-					parent_sp_method = frame->de.method;
-					found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &parent_info, &local_parent_sp);
+					parent_sp_method = frame->method;
+					found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &parent_info, &local_parent_sp);
 					parent_sp = found_sp ? &local_parent_sp : NULL;
 					if (found_sp && parent_sp->next_len != 0)
 						break;
@@ -9322,7 +9373,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	if (!frame->has_ctx)
 		return ERR_ABSENT_INFORMATION;
 
-	if (!ensure_jit (frame))
+	if (!ensure_jit ((DbgEngineStackFrame*)frame))
 		return ERR_ABSENT_INFORMATION;
 
 	jit = frame->jit;
