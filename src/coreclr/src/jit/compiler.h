@@ -7268,6 +7268,13 @@ private:
     // Get the handle for a SIMD type.
     CORINFO_CLASS_HANDLE gtGetStructHandleForSIMD(var_types simdType, var_types simdBaseType)
     {
+        if (m_simdHandleCache == nullptr)
+        {
+            // This may happen if the JIT generates SIMD node on its own, without importing them.
+            // Otherwise getBaseTypeAndSizeOfSIMDType should have created the cache.
+            return NO_CLASS_HANDLE;
+        }
+
         if (simdBaseType == TYP_FLOAT)
         {
             switch (simdType)
