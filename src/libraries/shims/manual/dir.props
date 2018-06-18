@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
+    <PackageConfigurations>
+      netcoreapp2.0;
+    </PackageConfigurations>
     <BuildConfigurations>
+      $(PackageConfigurations);
       netcoreapp;
       uap;
     </BuildConfigurations>
@@ -11,6 +15,8 @@
   <!-- need to by-pass the dir.props in the shims directory for this project -->
   <Import Project="..\..\..\dir.props" />
   <PropertyGroup>
+    <_RuntimePath Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">$(RuntimePath)</_RuntimePath>
+    <_RuntimePath Condition="'$(TargetGroup)' == 'netcoreapp2.0'">$(ShimsTargetRuntimeRoot)netcoreapp2.0/</_RuntimePath>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <AssemblyKey>ECMA</AssemblyKey>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
@@ -19,6 +25,6 @@
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
     <HasMatchingContract>true</HasMatchingContract>
     <ContractAssemblyPath>$(NetFxRefPath)$(MSBuildProjectName).dll</ContractAssemblyPath>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
+    <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
 </Project>
