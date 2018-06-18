@@ -1320,6 +1320,7 @@ INTERP_DISABLED_TESTS = $(DISABLED_TESTS) \
 	tailcall/8273.exe \
 	$(TAILCALL_DISABLED_TESTS_RUN) \
 	thread6.exe \
+	thread7.exe \
 	bug-60843.exe
 
 # bug-48015.exe: be careful when re-enabling, it happens that it returns with exit code 0, but doesn't actually execute the test.
