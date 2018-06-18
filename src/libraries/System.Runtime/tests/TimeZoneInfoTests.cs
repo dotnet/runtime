@@ -198,7 +198,7 @@ namespace System.Tests
             TimeZoneInfo.TransitionTime e2 = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 4, 0, 0), 11, 2, DayOfWeek.Sunday);
 
             TimeZoneInfo.AdjustmentRule r1 = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(new DateTime(2000, 1, 1), new DateTime(2005, 1, 1), new TimeSpan(1, 0, 0), s1, e1);
-            
+
             // AdjustmentRules overlap
             TimeZoneInfo.AdjustmentRule r2 = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(new DateTime(2004, 1, 1), new DateTime(2007, 1, 1), new TimeSpan(1, 0, 0), s2, e2);
             VerifyCustomTimeZoneException<InvalidTimeZoneException>("mytimezone", new TimeSpan(6, 0, 0), null, null, null, new TimeZoneInfo.AdjustmentRule[] { r1, r2 });
@@ -306,6 +306,18 @@ namespace System.Tests
                 foreach (TimeZoneInfo.AdjustmentRule ar in tzi.GetAdjustmentRules())
                 {
                     Assert.True(Math.Abs((tzi.GetUtcOffset(ar.DateStart)).TotalHours) <= 14.0);
+                }
+            }
+        }
+
+        [Fact]
+        public static void TimeZoneInfo_DaylightDeltaIsNoMoreThan12Hours()
+        {
+            foreach (TimeZoneInfo tzi in TimeZoneInfo.GetSystemTimeZones())
+            {
+                foreach (TimeZoneInfo.AdjustmentRule ar in tzi.GetAdjustmentRules())
+                {
+                    Assert.True(Math.Abs(ar.DaylightDelta.TotalHours) <= 12.0);
                 }
             }
         }
