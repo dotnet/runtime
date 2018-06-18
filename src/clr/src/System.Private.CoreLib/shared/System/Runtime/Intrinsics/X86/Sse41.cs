@@ -182,11 +182,6 @@ namespace System.Runtime.Intrinsics.X86
         /// int _mm_extract_epi8 (__m128i a, const int imm8)
         ///   PEXTRB reg/m8, xmm, imm8
         /// </summary>
-        public static sbyte Extract(Vector128<sbyte> value, byte index) => Extract(value, index);
-        /// <summary>
-        /// int _mm_extract_epi8 (__m128i a, const int imm8)
-        ///   PEXTRB reg/m8, xmm, imm8
-        /// </summary>
         public static byte Extract(Vector128<byte> value, byte index) => Extract(value, index);
         /// <summary>
         /// int _mm_extract_epi32 (__m128i a, const int imm8)
@@ -283,7 +278,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_insert_ps (__m128 a, __m128 b, const int imm8)
         ///   INSERTPS xmm, xmm/m32, imm8
         /// </summary>
-        public static Vector128<float> Insert(Vector128<float> value, float data, byte index) => Insert(value, data, index);
+        public static Vector128<float> Insert(Vector128<float> value, Vector128<float> data, byte index) => Insert(value, data, index);
 
         /// <summary>
         /// __m128i _mm_max_epi8 (__m128i a, __m128i b)

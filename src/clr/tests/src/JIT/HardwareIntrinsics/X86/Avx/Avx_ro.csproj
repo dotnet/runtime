@@ -45,12 +45,8 @@
     <Compile Include="DuplicateEvenIndexed.Single.cs" />
     <Compile Include="DuplicateOddIndexed.Single.cs" />
     <Compile Include="Extract.Byte.1.cs" />
-    <Compile Include="Extract.SByte.1.cs" />
     <Compile Include="Extract.Byte.20.cs" />
-    <Compile Include="Extract.SByte.20.cs" />
-    <Compile Include="Extract.Int16.1.cs" />
     <Compile Include="Extract.UInt16.1.cs" />
-    <Compile Include="Extract.Int16.11.cs" />
     <Compile Include="Extract.UInt16.11.cs" />
     <Compile Include="Extract.Int32.1.cs" />
     <Compile Include="Extract.UInt32.1.cs" />
@@ -61,8 +57,6 @@
     <Compile Include="Extract.Int64.3.cs" />
     <Compile Include="Extract.UInt64.3.cs" />
     <Compile Include="Extract.Byte.52.cs" />
-    <Compile Include="Extract.SByte.52.cs" />
-    <Compile Include="Extract.Int16.27.cs" />
     <Compile Include="Extract.UInt16.27.cs" />
     <Compile Include="Extract.Int32.22.cs" />
     <Compile Include="Extract.UInt32.22.cs" />
