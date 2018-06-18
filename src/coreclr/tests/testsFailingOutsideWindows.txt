@@ -1,7 +1,6 @@
 baseservices/threading/paramthreadstart/ThreadStartString_1/ThreadStartString_1.sh
 CoreMangLib/cti/system/multicastdelegate/MulticastDelegateCtor/MulticastDelegateCtor.sh
 CoreMangLib/cti/system/runtime/interopservices/marshal/MarshalGetLastWin32Error_PSC/MarshalGetLastWin32Error_PSC.sh
-JIT/Directed/StructABI/StructABI/StructABI.sh
 JIT/Directed/UnrollLoop/loop6_cs_d/loop6_cs_d.sh
 JIT/Directed/UnrollLoop/loop6_cs_do/loop6_cs_do.sh
 JIT/Directed/UnrollLoop/loop6_cs_r/loop6_cs_r.sh
