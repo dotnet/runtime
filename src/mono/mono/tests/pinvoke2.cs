@@ -172,6 +172,13 @@ public unsafe class Tests {
 		}
 	}
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BStrStruct
+    {
+        [MarshalAs(UnmanagedType.BStr)]
+        public string bstr;
+    }
+
 	[DllImport ("libnot-found", EntryPoint="not_found")]
 	public static extern int mono_library_not_found ();
 
@@ -2091,5 +2098,17 @@ public unsafe class Tests {
 			return 2;
 		return 0;
 	}
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_bstr")]
+	public static extern int mono_test_marshal_bstr ([In] ref BStrStruct p);
+
+	public static int test_0_bstr () {
+		var p = new BStrStruct { bstr = "Hello" };
+
+		mono_test_marshal_bstr (ref p);
+
+		return 0;
+	}
+
 }
 

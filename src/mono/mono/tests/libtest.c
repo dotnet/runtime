@@ -7634,3 +7634,7 @@ mono_test_setjmp_and_call (VoidVoidCallback managedCallback, intptr_t *out_handl
 	}
 }
 
+LIBTEST_API void STDCALL
+mono_test_marshal_bstr (void *ptr)
+{
+}

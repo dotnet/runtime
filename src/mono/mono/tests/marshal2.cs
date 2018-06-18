@@ -35,7 +35,8 @@ public class Tests {
 		public SimpleObj emb2;
 		public string s2;
 		public double x;
-		[MarshalAs (UnmanagedType.ByValArray, SizeConst=2)] public char[] a2;
+		[MarshalAs (UnmanagedType.ByValArray, SizeConst=2)]
+		public char[] a2;
 	}
 
 	[StructLayout (LayoutKind.Sequential, CharSet=CharSet.Ansi)]

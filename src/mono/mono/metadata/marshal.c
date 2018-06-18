@@ -5282,13 +5282,14 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 			break;
 #endif
 		case MONO_MARSHAL_CONV_STR_LPSTR:
-		case MONO_MARSHAL_CONV_STR_BSTR:
 		case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 		case MONO_MARSHAL_CONV_STR_TBSTR:
 		case MONO_MARSHAL_CONV_STR_UTF8STR:
 			mono_marshal_free (*(gpointer *)cpos);
 			break;
-
+		case MONO_MARSHAL_CONV_STR_BSTR:
+			mono_free_bstr (*(gpointer*)cpos);
+			break;
 		default:
 			continue;
 		}
