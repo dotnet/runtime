@@ -226,9 +226,8 @@ bool parse_known_args(
     {
         pal::string_t arg = argv[arg_i];
         pal::string_t arg_lower = pal::to_lower(arg);
-        if (std::find_if(known_opts.begin(), known_opts.end(), 
-                        [&value_to_look = arg_lower]
-                        (const host_option& hostoption) -> bool { return value_to_look == hostoption.option; })
+        if (std::find_if(known_opts.begin(), known_opts.end(),
+            [&](const host_option& hostoption) { return arg_lower == hostoption.option; })
             == known_opts.end())
         {
             // Unknown argument.

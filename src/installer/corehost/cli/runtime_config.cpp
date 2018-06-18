@@ -85,7 +85,7 @@ bool runtime_config_t::parse_opts(const json_value& opts)
         {
             m_properties[property.first] = property.second.is_string()
                 ? property.second.as_string()
-                : property.second.to_string();
+                : property.second.serialize();
         }
     }
 
