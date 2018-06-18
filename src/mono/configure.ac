@@ -3749,6 +3749,9 @@ if test "x$enable_llvm" = "xyes"; then
       if test "x$LLVM_CONFIG" = "xno"; then
    	     AC_MSG_ERROR([llvm-config not found.])
       fi
+      if test "x$with_llvm" = "x"; then
+         with_llvm=`$LLVM_CONFIG --prefix`
+      fi
    fi
 
    llvm_codegen="x86codegen"
