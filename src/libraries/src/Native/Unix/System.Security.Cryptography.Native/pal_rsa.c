@@ -5,32 +5,32 @@
 #include "pal_rsa.h"
 #include "pal_utilities.h"
 
-extern "C" RSA* CryptoNative_RsaCreate()
+RSA* CryptoNative_RsaCreate()
 {
     return RSA_new();
 }
 
-extern "C" int32_t CryptoNative_RsaUpRef(RSA* rsa)
+int32_t CryptoNative_RsaUpRef(RSA* rsa)
 {
     return RSA_up_ref(rsa);
 }
 
-extern "C" void CryptoNative_RsaDestroy(RSA* rsa)
+void CryptoNative_RsaDestroy(RSA* rsa)
 {
-    if (rsa != nullptr)
+    if (rsa != NULL)
     {
         RSA_free(rsa);
     }
 }
 
-extern "C" RSA* CryptoNative_DecodeRsaPublicKey(const uint8_t* buf, int32_t len)
+RSA* CryptoNative_DecodeRsaPublicKey(const uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {
-        return nullptr;
+        return NULL;
     }
 
-    return d2i_RSAPublicKey(nullptr, &buf, len);
+    return d2i_RSAPublicKey(NULL, &buf, len);
 }
 
 static int GetOpenSslPadding(RsaPadding padding)
@@ -50,7 +50,7 @@ static int GetOpenSslPadding(RsaPadding padding)
 
 static int HasNoPrivateKey(RSA* rsa)
 {
-    if (rsa == nullptr)
+    if (rsa == NULL)
         return 1;
 
     // Shared pointer, don't free.
@@ -72,23 +72,23 @@ static int HasNoPrivateKey(RSA* rsa)
 
     // The module is documented as accepting either d or the full set of CRT parameters (p, q, dp, dq, qInv)
     // So if we see d, we're good. Otherwise, if any of the rest are missing, we're public-only.
-    if (rsa->d != nullptr)
+    if (rsa->d != NULL)
         return 0;
 
-    if (rsa->p == nullptr || rsa->q == nullptr || rsa->dmp1 == nullptr || rsa->dmq1 == nullptr || rsa->iqmp == nullptr)
+    if (rsa->p == NULL || rsa->q == NULL || rsa->dmp1 == NULL || rsa->dmq1 == NULL || rsa->iqmp == NULL)
         return 1;
 
     return 0;
 }
 
-extern "C" int32_t
+int32_t
 CryptoNative_RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
     int openSslPadding = GetOpenSslPadding(padding);
     return RSA_public_encrypt(flen, from, to, rsa, openSslPadding);
 }
 
-extern "C" int32_t
+int32_t
 CryptoNative_RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
     if (HasNoPrivateKey(rsa))
@@ -101,7 +101,7 @@ CryptoNative_RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, R
     return RSA_private_decrypt(flen, from, to, rsa, openSslPadding);
 }
 
-extern "C" int32_t CryptoNative_RsaSignPrimitive(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa)
+int32_t CryptoNative_RsaSignPrimitive(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa)
 {
     if (HasNoPrivateKey(rsa))
     {
@@ -112,25 +112,25 @@ extern "C" int32_t CryptoNative_RsaSignPrimitive(int32_t flen, const uint8_t* fr
     return RSA_private_encrypt(flen, from, to, rsa, RSA_NO_PADDING);
 }
 
-extern "C" int32_t CryptoNative_RsaVerificationPrimitive(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa)
+int32_t CryptoNative_RsaVerificationPrimitive(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa)
 {
     return RSA_public_decrypt(flen, from, to, rsa, RSA_NO_PADDING);
 }
 
-extern "C" int32_t CryptoNative_RsaSize(RSA* rsa)
+int32_t CryptoNative_RsaSize(RSA* rsa)
 {
     return RSA_size(rsa);
 }
 
-extern "C" int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, BIGNUM* e)
+int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, BIGNUM* e)
 {
-    return RSA_generate_key_ex(rsa, bits, e, nullptr);
+    return RSA_generate_key_ex(rsa, bits, e, NULL);
 }
 
-extern "C" int32_t
+int32_t
 CryptoNative_RsaSign(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigret, int32_t* siglen, RSA* rsa)
 {
-    if (siglen == nullptr)
+    if (siglen == NULL)
     {
         assert(false);
         return 0;
@@ -149,26 +149,26 @@ CryptoNative_RsaSign(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigr
 
     // If the digest itself isn't known then RSA_R_UNKNOWN_ALGORITHM_TYPE will get reported, but
     // we have to check that the digest size matches what we expect.
-    if (digest != nullptr && mlen != EVP_MD_size(digest))
+    if (digest != NULL && mlen != EVP_MD_size(digest))
     {
         ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_SIGN, RSA_R_INVALID_MESSAGE_LENGTH, __FILE__, __LINE__);
         return 0;
     }
 
     unsigned int unsignedSigLen = 0;
-    int32_t ret = RSA_sign(type, m, UnsignedCast(mlen), sigret, &unsignedSigLen, rsa);
+    int32_t ret = RSA_sign(type, m, Int32ToUint32(mlen), sigret, &unsignedSigLen, rsa);
     assert(unsignedSigLen <= INT32_MAX);
-    *siglen = static_cast<int32_t>(unsignedSigLen);
+    *siglen = (int32_t)unsignedSigLen;
     return ret;
 }
 
-extern "C" int32_t
+int32_t
 CryptoNative_RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa)
 {
-    return RSA_verify(type, m, UnsignedCast(mlen), sigbuf, UnsignedCast(siglen), rsa);
+    return RSA_verify(type, m, Int32ToUint32(mlen), sigbuf, Int32ToUint32(siglen), rsa);
 }
 
-extern "C" int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
+int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
                                                  BIGNUM** n,
                                                  BIGNUM** e,
                                                  BIGNUM** d,
@@ -184,21 +184,21 @@ extern "C" int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
 
         // since these parameters are 'out' parameters in managed code, ensure they are initialized
         if (n)
-            *n = nullptr;
+            *n = NULL;
         if (e)
-            *e = nullptr;
+            *e = NULL;
         if (d)
-            *d = nullptr;
+            *d = NULL;
         if (p)
-            *p = nullptr;
+            *p = NULL;
         if (dmp1)
-            *dmp1 = nullptr;
+            *dmp1 = NULL;
         if (q)
-            *q = nullptr;
+            *q = NULL;
         if (dmq1)
-            *dmq1 = nullptr;
+            *dmq1 = NULL;
         if (iqmp)
-            *iqmp = nullptr;
+            *iqmp = NULL;
 
         return 0;
     }
@@ -217,27 +217,27 @@ extern "C" int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
 
 static int32_t SetRsaParameter(BIGNUM** rsaFieldAddress, uint8_t* buffer, int32_t bufferLength)
 {
-    assert(rsaFieldAddress != nullptr);
+    assert(rsaFieldAddress != NULL);
     if (rsaFieldAddress)
     {
         if (!buffer || !bufferLength)
         {
-            *rsaFieldAddress = nullptr;
+            *rsaFieldAddress = NULL;
             return 1;
         }
         else
         {
-            BIGNUM* bigNum = BN_bin2bn(buffer, bufferLength, nullptr);
+            BIGNUM* bigNum = BN_bin2bn(buffer, bufferLength, NULL);
             *rsaFieldAddress = bigNum;
 
-            return bigNum != nullptr;
+            return bigNum != NULL;
         }
     }
 
     return 0;
 }
 
-extern "C" int32_t CryptoNative_SetRsaParameters(RSA* rsa,
+int32_t CryptoNative_SetRsaParameters(RSA* rsa,
                                               uint8_t* n,
                                               int32_t nLength,
                                               uint8_t* e,

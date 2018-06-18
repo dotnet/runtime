@@ -5,20 +5,20 @@
 #include "pal_dsa.h"
 #include "pal_utilities.h"
 
-extern "C" int32_t CryptoNative_DsaUpRef(DSA* dsa)
+int32_t CryptoNative_DsaUpRef(DSA* dsa)
 {
     return DSA_up_ref(dsa);
 }
 
-extern "C" void CryptoNative_DsaDestroy(DSA* dsa)
+void CryptoNative_DsaDestroy(DSA* dsa)
 {
-    if (dsa != nullptr)
+    if (dsa != NULL)
     {
         DSA_free(dsa);
     }
 }
 
-extern "C" int32_t CryptoNative_DsaGenerateKey(DSA** dsa, int32_t bits)
+int32_t CryptoNative_DsaGenerateKey(DSA** dsa, int32_t bits)
 {
     *dsa = DSA_new();
     if (!dsa)
@@ -27,47 +27,47 @@ extern "C" int32_t CryptoNative_DsaGenerateKey(DSA** dsa, int32_t bits)
         return 0;
     }
 
-    if (!DSA_generate_parameters_ex(*dsa, bits, nullptr, 0, nullptr, nullptr, nullptr) ||
+    if (!DSA_generate_parameters_ex(*dsa, bits, NULL, 0, NULL, NULL, NULL) ||
         !DSA_generate_key(*dsa))
     {
         DSA_free(*dsa);
-        *dsa = nullptr;
+        *dsa = NULL;
         return 0;
     }
 
     return 1;
 }
 
-extern "C" int32_t CryptoNative_DsaSizeSignature(DSA* dsa)
+int32_t CryptoNative_DsaSizeSignature(DSA* dsa)
 {
     return DSA_size(dsa);
 }
 
-extern "C" int32_t CryptoNative_DsaSizeP(DSA* dsa)
+int32_t CryptoNative_DsaSizeP(DSA* dsa)
 {
     return BN_num_bytes(dsa->p);
 }
 
-extern "C" int32_t CryptoNative_DsaSizeQ(DSA* dsa)
+int32_t CryptoNative_DsaSizeQ(DSA* dsa)
 {
     return BN_num_bytes(dsa->q);
 }
 
-extern "C" int32_t CryptoNative_DsaSign(
+int32_t CryptoNative_DsaSign(
     DSA* dsa,
     const uint8_t* hash,
     int32_t hashLength,
     uint8_t* refsignature,
     int32_t* outSignatureLength)
 {
-    if (outSignatureLength == nullptr || dsa == nullptr)
+    if (outSignatureLength == NULL || dsa == NULL)
     {
         assert(false);
         return 0;
     }
 
     // DSA_OpenSSL() returns a shared pointer, no need to free/cache.
-    if (dsa->meth == DSA_OpenSSL() && dsa->priv_key == nullptr)
+    if (dsa->meth == DSA_OpenSSL() && dsa->priv_key == NULL)
     {
         *outSignatureLength = 0;
         ERR_PUT_error(ERR_LIB_DSA, DSA_F_DSA_DO_SIGN, DSA_R_MISSING_PARAMETERS, __FILE__, __LINE__);
@@ -83,11 +83,11 @@ extern "C" int32_t CryptoNative_DsaSign(
     }
 
     assert(unsignedSigLen <= INT32_MAX);
-    *outSignatureLength = static_cast<int32_t>(unsignedSigLen);
+    *outSignatureLength = (int32_t)unsignedSigLen;
     return 1;
 }
 
-extern "C" int32_t CryptoNative_DsaVerify(
+int32_t CryptoNative_DsaVerify(
     DSA* dsa,
     const uint8_t* hash,
     int32_t hashLength,
@@ -109,7 +109,7 @@ extern "C" int32_t CryptoNative_DsaVerify(
     return 1;
 }
 
-extern "C" int32_t CryptoNative_GetDsaParameters(
+int32_t CryptoNative_GetDsaParameters(
     const DSA* dsa,
     BIGNUM** p, int32_t* pLength,
     BIGNUM** q, int32_t* qLength,
@@ -122,11 +122,11 @@ extern "C" int32_t CryptoNative_GetDsaParameters(
         assert(false);
 
         // since these parameters are 'out' parameters in managed code, ensure they are initialized
-        if (p) *p = nullptr; if (pLength) *pLength = 0;
-        if (q) *q = nullptr; if (qLength) *qLength = 0;
-        if (g) *g = nullptr; if (gLength) *gLength = 0;
-        if (y) *y = nullptr; if (yLength) *yLength = 0;
-        if (x) *x = nullptr; if (xLength) *xLength = 0;
+        if (p) *p = NULL; if (pLength) *pLength = 0;
+        if (q) *q = NULL; if (qLength) *qLength = 0;
+        if (g) *g = NULL; if (gLength) *gLength = 0;
+        if (y) *y = NULL; if (yLength) *yLength = 0;
+        if (x) *x = NULL; if (xLength) *xLength = 0;
         return 0;
     }
     
@@ -137,34 +137,34 @@ extern "C" int32_t CryptoNative_GetDsaParameters(
 
     // dsa->priv_key is optional
     *x = dsa->priv_key;
-    *xLength = (*x == nullptr) ? 0 : BN_num_bytes(*x);
+    *xLength = (*x == NULL) ? 0 : BN_num_bytes(*x);
 
     return 1;
 }
 
 static int32_t SetDsaParameter(BIGNUM** dsaFieldAddress, uint8_t* buffer, int32_t bufferLength)
 {
-    assert(dsaFieldAddress != nullptr);
+    assert(dsaFieldAddress != NULL);
     if (dsaFieldAddress)
     {
         if (!buffer || !bufferLength)
         {
-            *dsaFieldAddress = nullptr;
+            *dsaFieldAddress = NULL;
             return 1;
         }
         else
         {
-            BIGNUM* bigNum = BN_bin2bn(buffer, bufferLength, nullptr);
+            BIGNUM* bigNum = BN_bin2bn(buffer, bufferLength, NULL);
             *dsaFieldAddress = bigNum;
 
-            return bigNum != nullptr;
+            return bigNum != NULL;
         }
     }
 
     return 0;
 }
 
-extern "C" int32_t CryptoNative_DsaKeyCreateByExplicitParameters(
+int32_t CryptoNative_DsaKeyCreateByExplicitParameters(
     DSA** outDsa,
     uint8_t* p,
     int32_t pLength,

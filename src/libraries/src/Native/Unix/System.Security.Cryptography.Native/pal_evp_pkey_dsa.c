@@ -4,12 +4,12 @@
 
 #include "pal_evp_pkey_dsa.h"
 
-extern "C" DSA* CryptoNative_EvpPkeyGetDsa(EVP_PKEY* pkey)
+DSA* CryptoNative_EvpPkeyGetDsa(EVP_PKEY* pkey)
 {
     return EVP_PKEY_get1_DSA(pkey);
 }
 
-extern "C" int32_t CryptoNative_EvpPkeySetDsa(EVP_PKEY* pkey, DSA* dsa)
+int32_t CryptoNative_EvpPkeySetDsa(EVP_PKEY* pkey, DSA* dsa)
 {
     return EVP_PKEY_set1_DSA(pkey, dsa);
 }

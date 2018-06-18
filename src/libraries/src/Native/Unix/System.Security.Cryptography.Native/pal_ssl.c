@@ -6,35 +6,36 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdbool.h>
 
-static_assert(PAL_SSL_ERROR_NONE == SSL_ERROR_NONE, "");
-static_assert(PAL_SSL_ERROR_SSL == SSL_ERROR_SSL, "");
-static_assert(PAL_SSL_ERROR_WANT_READ == SSL_ERROR_WANT_READ, "");
-static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE, "");
-static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL, "");
-static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN, "");
+c_static_assert(PAL_SSL_ERROR_NONE == SSL_ERROR_NONE);
+c_static_assert(PAL_SSL_ERROR_SSL == SSL_ERROR_SSL);
+c_static_assert(PAL_SSL_ERROR_WANT_READ == SSL_ERROR_WANT_READ);
+c_static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE);
+c_static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL);
+c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
 
-extern "C" int32_t CryptoNative_EnsureOpenSslInitialized();
+int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
-extern "C" void CryptoNative_EnsureLibSslInitialized()
+void CryptoNative_EnsureLibSslInitialized()
 {
     CryptoNative_EnsureOpenSslInitialized();
     SSL_library_init();
     SSL_load_error_strings();
 }
 
-extern "C" const SSL_METHOD* CryptoNative_SslV2_3Method()
+const SSL_METHOD* CryptoNative_SslV2_3Method()
 {
     const SSL_METHOD* method = SSLv23_method();
-    assert(method != nullptr);
+    assert(method != NULL);
     return method;
 }
 
-extern "C" SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
+SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
 {
     SSL_CTX* ctx = SSL_CTX_new(method);
 
-    if (ctx != nullptr)
+    if (ctx != NULL)
     {
         // As of OpenSSL 1.1.0, compression is disabled by default. In case an older build
         // is used, ensure it's disabled.
@@ -56,7 +57,7 @@ static long TrySetECDHNamedCurve(SSL_CTX* ctx)
 	result = SSL_CTX_set_ecdh_auto(ctx, 1);
 #else
 	EC_KEY *ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
-	if (ecdh != nullptr)
+	if (ecdh != NULL)
 	{
 		result = SSL_CTX_set_tmp_ecdh(ctx, ecdh);
 		EC_KEY_free(ecdh);
@@ -66,7 +67,7 @@ static long TrySetECDHNamedCurve(SSL_CTX* ctx)
 	return result;
 }
 
-extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
+void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
     // protocols may be 0, meaning system default, in which case let OpenSSL do what OpenSSL wants.
     if (protocols == 0)
@@ -108,12 +109,12 @@ extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols proto
     }
 }
 
-extern "C" SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
+SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
 {
     return SSL_new(ctx);
 }
 
-extern "C" int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
+int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
 {
     // This pops off "old" errors left by other operations
     // until the first error is equal to the last one, 
@@ -128,7 +129,7 @@ extern "C" int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
     return SSL_get_error(ssl, ret);
 }
 
-extern "C" void CryptoNative_SslDestroy(SSL* ssl)
+void CryptoNative_SslDestroy(SSL* ssl)
 {
     if (ssl)
     {
@@ -136,7 +137,7 @@ extern "C" void CryptoNative_SslDestroy(SSL* ssl)
     }
 }
 
-extern "C" void CryptoNative_SslCtxDestroy(SSL_CTX* ctx)
+void CryptoNative_SslCtxDestroy(SSL_CTX* ctx)
 {
     if (ctx)
     {
@@ -144,36 +145,36 @@ extern "C" void CryptoNative_SslCtxDestroy(SSL_CTX* ctx)
     }
 }
 
-extern "C" void CryptoNative_SslSetConnectState(SSL* ssl)
+void CryptoNative_SslSetConnectState(SSL* ssl)
 {
     SSL_set_connect_state(ssl);
 }
 
-extern "C" void CryptoNative_SslSetAcceptState(SSL* ssl)
+void CryptoNative_SslSetAcceptState(SSL* ssl)
 {
     SSL_set_accept_state(ssl);
 }
 
-extern "C" const char* CryptoNative_SslGetVersion(SSL* ssl)
+const char* CryptoNative_SslGetVersion(SSL* ssl)
 {
     return SSL_get_version(ssl);
 }
 
-extern "C" int32_t CryptoNative_SslGetFinished(SSL* ssl, void* buf, int32_t count)
+int32_t CryptoNative_SslGetFinished(SSL* ssl, void* buf, int32_t count)
 {
-    size_t result = SSL_get_finished(ssl, buf, size_t(count));
+    size_t result = SSL_get_finished(ssl, buf, (size_t)count);
     assert(result <= INT32_MAX);
-    return static_cast<int32_t>(result);
+    return (int32_t)result;
 }
 
-extern "C" int32_t CryptoNative_SslGetPeerFinished(SSL* ssl, void* buf, int32_t count)
+int32_t CryptoNative_SslGetPeerFinished(SSL* ssl, void* buf, int32_t count)
 {
-    size_t result = SSL_get_peer_finished(ssl, buf, size_t(count));
+    size_t result = SSL_get_peer_finished(ssl, buf, (size_t)count);
     assert(result <= INT32_MAX);
-    return static_cast<int32_t>(result);
+    return (int32_t)result;
 }
 
-extern "C" int32_t CryptoNative_SslSessionReused(SSL* ssl)
+int32_t CryptoNative_SslSessionReused(SSL* ssl)
 {
     return SSL_session_reused(ssl) == 1;
 }
@@ -191,115 +192,115 @@ static bool StringSpanEquals(const char* lhs, const char* rhs, size_t lhsLength)
 static CipherAlgorithmType MapCipherAlgorithmType(const char* encryption, size_t encryptionLength)
 {
     if (StringSpanEquals(encryption, "DES(56)", encryptionLength))
-        return CipherAlgorithmType::Des;
+        return Des;
     if (StringSpanEquals(encryption, "3DES(168)", encryptionLength))
-        return CipherAlgorithmType::TripleDes;
+        return TripleDes;
     if (StringSpanEquals(encryption, "RC4(128)", encryptionLength))
-        return CipherAlgorithmType::Rc4;
+        return Rc4;
     if (StringSpanEquals(encryption, "RC2(128)", encryptionLength))
-        return CipherAlgorithmType::Rc2;
+        return Rc2;
     if (StringSpanEquals(encryption, "None", encryptionLength))
-        return CipherAlgorithmType::Null;
+        return Null;
     if (StringSpanEquals(encryption, "IDEA(128)", encryptionLength))
-        return CipherAlgorithmType::SSL_IDEA;
+        return SSL_IDEA;
     if (StringSpanEquals(encryption, "SEED(128)", encryptionLength))
-        return CipherAlgorithmType::SSL_SEED;
+        return SSL_SEED;
     if (StringSpanEquals(encryption, "AES(128)", encryptionLength))
-        return CipherAlgorithmType::Aes128;
+        return Aes128;
     if (StringSpanEquals(encryption, "AES(256)", encryptionLength))
-        return CipherAlgorithmType::Aes256;
+        return Aes256;
     if (StringSpanEquals(encryption, "Camellia(128)", encryptionLength))
-        return CipherAlgorithmType::SSL_CAMELLIA128;
+        return SSL_CAMELLIA128;
     if (StringSpanEquals(encryption, "Camellia(256)", encryptionLength))
-        return CipherAlgorithmType::SSL_CAMELLIA256;
+        return SSL_CAMELLIA256;
     if (StringSpanEquals(encryption, "GOST89(256)", encryptionLength))
-        return CipherAlgorithmType::SSL_eGOST2814789CNT;
+        return SSL_eGOST2814789CNT;
     if (StringSpanEquals(encryption, "AESGCM(128)", encryptionLength))
-        return CipherAlgorithmType::Aes128;
+        return Aes128;
     if (StringSpanEquals(encryption, "AESGCM(256)", encryptionLength))
-        return CipherAlgorithmType::Aes256;
+        return Aes256;
 
-    return CipherAlgorithmType::None;
+    return CipherAlgorithmType_None;
 }
 
 static ExchangeAlgorithmType MapExchangeAlgorithmType(const char* keyExchange, size_t keyExchangeLength)
 {
     if (StringSpanEquals(keyExchange, "RSA", keyExchangeLength))
-        return ExchangeAlgorithmType::RsaKeyX;
+        return RsaKeyX;
     if (StringSpanEquals(keyExchange, "DH/RSA", keyExchangeLength))
-        return ExchangeAlgorithmType::DiffieHellman;
+        return DiffieHellman;
     if (StringSpanEquals(keyExchange, "DH/DSS", keyExchangeLength))
-        return ExchangeAlgorithmType::DiffieHellman;
+        return DiffieHellman;
     if (StringSpanEquals(keyExchange, "DH", keyExchangeLength))
-        return ExchangeAlgorithmType::DiffieHellman;
+        return DiffieHellman;
     if (StringSpanEquals(keyExchange, "KRB5", keyExchangeLength))
-        return ExchangeAlgorithmType::SSL_kKRB5;
+        return SSL_kKRB5;
     if (StringSpanEquals(keyExchange, "ECDH", keyExchangeLength))
-        return ExchangeAlgorithmType::SSL_ECDHE;
+        return SSL_ECDHE;
     if (StringSpanEquals(keyExchange, "ECDH/RSA", keyExchangeLength))
-        return ExchangeAlgorithmType::SSL_ECDH;
+        return SSL_ECDH;
     if (StringSpanEquals(keyExchange, "ECDH/ECDSA", keyExchangeLength))
-        return ExchangeAlgorithmType::SSL_ECDSA;
+        return SSL_ECDSA;
     if (StringSpanEquals(keyExchange, "PSK", keyExchangeLength))
-        return ExchangeAlgorithmType::SSL_kPSK;
+        return SSL_kPSK;
     if (StringSpanEquals(keyExchange, "GOST", keyExchangeLength))
-        return ExchangeAlgorithmType::SSL_kGOST;
+        return SSL_kGOST;
     if (StringSpanEquals(keyExchange, "SRP", keyExchangeLength))
-        return ExchangeAlgorithmType::SSL_kSRP;
+        return SSL_kSRP;
 
-    return ExchangeAlgorithmType::None;
+    return ExchangeAlgorithmType_None;
 }
 
 static void GetHashAlgorithmTypeAndSize(const char* mac,
                                         size_t macLength,
-                                        HashAlgorithmType& dataHashAlg,
-                                        DataHashSize& hashKeySize)
+                                        HashAlgorithmType* dataHashAlg,
+                                        DataHashSize* hashKeySize)
 {
     if (StringSpanEquals(mac, "MD5", macLength))
     {
-        dataHashAlg = HashAlgorithmType::Md5;
-        hashKeySize = DataHashSize::MD5_HashKeySize;
+        *dataHashAlg = Md5;
+        *hashKeySize = MD5_HashKeySize;
         return;
     }
     if (StringSpanEquals(mac, "SHA1", macLength))
     {
-        dataHashAlg = HashAlgorithmType::Sha1;
-        hashKeySize = DataHashSize::SHA1_HashKeySize;
+        *dataHashAlg = Sha1;
+        *hashKeySize = SHA1_HashKeySize;
         return;
     }
     if (StringSpanEquals(mac, "GOST94", macLength))
     {
-        dataHashAlg = HashAlgorithmType::SSL_GOST94;
-        hashKeySize = DataHashSize::GOST_HashKeySize;
+        *dataHashAlg = SSL_GOST94;
+        *hashKeySize = GOST_HashKeySize;
         return;
     }
     if (StringSpanEquals(mac, "GOST89", macLength))
     {
-        dataHashAlg = HashAlgorithmType::SSL_GOST89;
-        hashKeySize = DataHashSize::GOST_HashKeySize;
+        *dataHashAlg = SSL_GOST89;
+        *hashKeySize = GOST_HashKeySize;
         return;
     }
     if (StringSpanEquals(mac, "SHA256", macLength))
     {
-        dataHashAlg = HashAlgorithmType::SSL_SHA256;
-        hashKeySize = DataHashSize::SHA256_HashKeySize;
+        *dataHashAlg = SSL_SHA256;
+        *hashKeySize = SHA256_HashKeySize;
         return;
     }
     if (StringSpanEquals(mac, "SHA384", macLength))
     {
-        dataHashAlg = HashAlgorithmType::SSL_SHA384;
-        hashKeySize = DataHashSize::SHA384_HashKeySize;
+        *dataHashAlg = SSL_SHA384;
+        *hashKeySize = SHA384_HashKeySize;
         return;
     }
     if (StringSpanEquals(mac, "AEAD", macLength))
     {
-        dataHashAlg = HashAlgorithmType::SSL_AEAD;
-        hashKeySize = DataHashSize::Default;
+        *dataHashAlg = SSL_AEAD;
+        *hashKeySize = Default;
         return;
     }
 
-    dataHashAlg = HashAlgorithmType::None;
-    hashKeySize = DataHashSize::Default;
+    *dataHashAlg = HashAlgorithmType_None;
+    *hashKeySize = Default;
 }
 
 /*
@@ -309,11 +310,11 @@ Given a keyName string like "Enc=XXX", parses the description string and returns
 Returns a value indicating whether the pattern starting with keyName was found in description.
 */
 static bool GetDescriptionValue(
-    const char* description, const char* keyName, size_t keyNameLength, const char** value, size_t& valueLength)
+    const char* description, const char* keyName, size_t keyNameLength, const char** value, size_t* valueLength)
 {
     // search for keyName in description
     const char* keyNameStart = strstr(description, keyName);
-    if (keyNameStart != nullptr)
+    if (keyNameStart != NULL)
     {
         // set valueStart to the beginning of the value
         const char* valueStart = keyNameStart + keyNameLength;
@@ -326,55 +327,56 @@ static bool GetDescriptionValue(
         }
 
         *value = valueStart;
-        valueLength = index;
+        *valueLength = index;
         return true;
     }
 
     return false;
 }
 
+#define descriptionLength 256
+
 /*
 Parses the Kx, Enc, and Mac values out of the SSL_CIPHER_description and
 maps the values to the corresponding .NET enum value.
 */
 static bool GetSslConnectionInfoFromDescription(const SSL_CIPHER* cipher,
-                                                CipherAlgorithmType& dataCipherAlg,
-                                                ExchangeAlgorithmType& keyExchangeAlg,
-                                                HashAlgorithmType& dataHashAlg,
-                                                DataHashSize& hashKeySize)
+                                                CipherAlgorithmType* dataCipherAlg,
+                                                ExchangeAlgorithmType* keyExchangeAlg,
+                                                HashAlgorithmType* dataHashAlg,
+                                                DataHashSize* hashKeySize)
 {
-    const int descriptionLength = 256;
-    char description[descriptionLength] = {};
+    char description[descriptionLength] = { 0 };
     SSL_CIPHER_description(cipher, description, descriptionLength - 1); // ensure description is NULL-terminated
 
     const char* keyExchange;
     size_t keyExchangeLength;
-    if (!GetDescriptionValue(description, "Kx=", 3, &keyExchange, keyExchangeLength))
+    if (!GetDescriptionValue(description, "Kx=", 3, &keyExchange, &keyExchangeLength))
     {
         return false;
     }
 
     const char* encryption;
     size_t encryptionLength;
-    if (!GetDescriptionValue(description, "Enc=", 4, &encryption, encryptionLength))
+    if (!GetDescriptionValue(description, "Enc=", 4, &encryption, &encryptionLength))
     {
         return false;
     }
 
     const char* mac;
     size_t macLength;
-    if (!GetDescriptionValue(description, "Mac=", 4, &mac, macLength))
+    if (!GetDescriptionValue(description, "Mac=", 4, &mac, &macLength))
     {
         return false;
     }
 
-    keyExchangeAlg = MapExchangeAlgorithmType(keyExchange, keyExchangeLength);
-    dataCipherAlg = MapCipherAlgorithmType(encryption, encryptionLength);
+    *keyExchangeAlg = MapExchangeAlgorithmType(keyExchange, keyExchangeLength);
+    *dataCipherAlg = MapCipherAlgorithmType(encryption, encryptionLength);
     GetHashAlgorithmTypeAndSize(mac, macLength, dataHashAlg, hashKeySize);
     return true;
 }
 
-extern "C" int32_t CryptoNative_GetSslConnectionInfo(SSL* ssl,
+int32_t CryptoNative_GetSslConnectionInfo(SSL* ssl,
                                                      CipherAlgorithmType* dataCipherAlg,
                                                      ExchangeAlgorithmType* keyExchangeAlg,
                                                      HashAlgorithmType* dataHashAlg,
@@ -395,7 +397,7 @@ extern "C" int32_t CryptoNative_GetSslConnectionInfo(SSL* ssl,
     }
 
     *dataKeySize = cipher->alg_bits;
-    if (GetSslConnectionInfoFromDescription(cipher, *dataCipherAlg, *keyExchangeAlg, *dataHashAlg, *hashKeySize))
+    if (GetSslConnectionInfoFromDescription(cipher, dataCipherAlg, keyExchangeAlg, dataHashAlg, hashKeySize))
     {
         return 1;
     }
@@ -404,104 +406,104 @@ err:
     assert(false);
 
     if (dataCipherAlg)
-        *dataCipherAlg = CipherAlgorithmType::None;
+        *dataCipherAlg = CipherAlgorithmType_None;
     if (keyExchangeAlg)
-        *keyExchangeAlg = ExchangeAlgorithmType::None;
+        *keyExchangeAlg = ExchangeAlgorithmType_None;
     if (dataHashAlg)
-        *dataHashAlg = HashAlgorithmType::None;
+        *dataHashAlg = HashAlgorithmType_None;
     if (dataKeySize)
         *dataKeySize = 0;
     if (hashKeySize)
-        *hashKeySize = DataHashSize::Default;
+        *hashKeySize = Default;
 
     return 0;
 }
 
-extern "C" int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num)
+int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num)
 {
     return SSL_write(ssl, buf, num);
 }
 
-extern "C" int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num)
+int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num)
 {
     return SSL_read(ssl, buf, num);
 }
 
-extern "C" int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
+int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
 {
     return SSL_renegotiate_pending(ssl) != 0;
 }
 
-extern "C" int32_t CryptoNative_SslShutdown(SSL* ssl)
+int32_t CryptoNative_SslShutdown(SSL* ssl)
 {
     ERR_clear_error();
     return SSL_shutdown(ssl);
 }
 
-extern "C" void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
+void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
 {
     SSL_set_bio(ssl, rbio, wbio);
 }
 
-extern "C" int32_t CryptoNative_SslDoHandshake(SSL* ssl)
+int32_t CryptoNative_SslDoHandshake(SSL* ssl)
 {
     ERR_clear_error();
     return SSL_do_handshake(ssl);
 }
 
-extern "C" int32_t CryptoNative_IsSslStateOK(SSL* ssl)
+int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 {
     return SSL_state(ssl) == SSL_ST_OK;
 }
 
-extern "C" X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
+X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
     return SSL_get_peer_certificate(ssl);
 }
 
-extern "C" X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
+X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
 {
     return SSL_get_peer_cert_chain(ssl);
 }
 
-extern "C" int32_t CryptoNative_SslCtxUseCertificate(SSL_CTX* ctx, X509* x)
+int32_t CryptoNative_SslCtxUseCertificate(SSL_CTX* ctx, X509* x)
 {
     return SSL_CTX_use_certificate(ctx, x);
 }
 
-extern "C" int32_t CryptoNative_SslCtxUsePrivateKey(SSL_CTX* ctx, EVP_PKEY* pkey)
+int32_t CryptoNative_SslCtxUsePrivateKey(SSL_CTX* ctx, EVP_PKEY* pkey)
 {
     return SSL_CTX_use_PrivateKey(ctx, pkey);
 }
 
-extern "C" int32_t CryptoNative_SslCtxCheckPrivateKey(SSL_CTX* ctx)
+int32_t CryptoNative_SslCtxCheckPrivateKey(SSL_CTX* ctx)
 {
     return SSL_CTX_check_private_key(ctx);
 }
 
-extern "C" void CryptoNative_SslCtxSetQuietShutdown(SSL_CTX* ctx)
+void CryptoNative_SslCtxSetQuietShutdown(SSL_CTX* ctx)
 {
     SSL_CTX_set_quiet_shutdown(ctx, 1);
 }
 
-extern "C" void CryptoNative_SslSetQuietShutdown(SSL* ssl, int mode)
+void CryptoNative_SslSetQuietShutdown(SSL* ssl, int mode)
 {
     SSL_set_quiet_shutdown(ssl, mode);
 }
 
-extern "C" X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
+X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
 {
     return SSL_get_client_CA_list(ssl);
 }
 
-extern "C" void CryptoNative_SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback)
+void CryptoNative_SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback)
 {
     int mode = SSL_VERIFY_PEER;
 
     SSL_CTX_set_verify(ctx, mode, callback);
 }
 
-extern "C" void
+void
 CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallbackCallback callback, void* arg)
 {
     SSL_CTX_set_cert_verify_callback(ctx, callback, arg);
@@ -514,36 +516,36 @@ CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallba
 #define SSL_TXT_AllIncludingNull SSL_TXT_ALL SSL_TXT_Separator SSL_TXT_eNULL
 #define SSL_TXT_NotAnon SSL_TXT_Separator SSL_TXT_Exclusion SSL_TXT_aNULL
 
-extern "C" int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
+int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 {
-    const char* cipherString = nullptr;
+    const char* cipherString = NULL;
     switch (policy)
     {
-        case EncryptionPolicy::RequireEncryption:
+        case RequireEncryption:
             cipherString = SSL_TXT_ALL SSL_TXT_NotAnon;
             break;
 
-        case EncryptionPolicy::AllowNoEncryption:
+        case AllowNoEncryption:
             cipherString = SSL_TXT_AllIncludingNull;
             break;
 
-        case EncryptionPolicy::NoEncryption:
+        case NoEncryption:
             cipherString = SSL_TXT_eNULL;
             break;
     }
 
-    assert(cipherString != nullptr);
+    assert(cipherString != NULL);
 
     return SSL_CTX_set_cipher_list(ctx, cipherString);
 }
 
 
-extern "C" void CryptoNative_SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback)
+void CryptoNative_SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback)
 {
     SSL_CTX_set_client_cert_cb(ctx, callback);
 }
 
-extern "C" int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
+int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
 {
     if (!x509 || !ssl)
     {
@@ -559,7 +561,7 @@ extern "C" int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
     return 0;
 }
 
-extern "C" void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, void* arg)
+void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, void* arg)
 {
 #if HAVE_OPENSSL_ALPN
     if (API_EXISTS(SSL_CTX_set_alpn_select_cb))
@@ -573,7 +575,7 @@ extern "C" void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCa
 #endif
 }
 
-extern "C" int32_t CryptoNative_SslCtxSetAlpnProtos(SSL_CTX* ctx, const uint8_t* protos, uint32_t protos_len)
+int32_t CryptoNative_SslCtxSetAlpnProtos(SSL_CTX* ctx, const uint8_t* protos, uint32_t protos_len)
 {
 #if HAVE_OPENSSL_ALPN
     if (API_EXISTS(SSL_CTX_set_alpn_protos))
@@ -591,7 +593,7 @@ extern "C" int32_t CryptoNative_SslCtxSetAlpnProtos(SSL_CTX* ctx, const uint8_t*
     }
 }
 
-extern "C" void CryptoNative_SslGet0AlpnSelected(SSL* ssl, const uint8_t** protocol, uint32_t* len)
+void CryptoNative_SslGet0AlpnSelected(SSL* ssl, const uint8_t** protocol, uint32_t* len)
 {
 #if HAVE_OPENSSL_ALPN
     if (API_EXISTS(SSL_get0_alpn_selected))
@@ -603,13 +605,13 @@ extern "C" void CryptoNative_SslGet0AlpnSelected(SSL* ssl, const uint8_t** proto
     (void)ssl;
 #endif
     {
-        *protocol = nullptr;
+        *protocol = NULL;
         *len = 0;
     }
 }
 
-extern "C" int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, const uint8_t* name)
+int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, uint8_t* name)
 {
-    return static_cast<int32_t>(SSL_set_tlsext_host_name(ssl, const_cast<unsigned char*>(name)));
+    return (int32_t)SSL_set_tlsext_host_name(ssl, name);
 }
 

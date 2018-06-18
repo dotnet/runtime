@@ -4,46 +4,46 @@
 
 #include "pal_pkcs12.h"
 
-extern "C" PKCS12* CryptoNative_DecodePkcs12(const uint8_t* buf, int32_t len)
+PKCS12* CryptoNative_DecodePkcs12(const uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {
-        return nullptr;
+        return NULL;
     }
 
-    return d2i_PKCS12(nullptr, &buf, len);
+    return d2i_PKCS12(NULL, &buf, len);
 }
 
-extern "C" PKCS12* CryptoNative_DecodePkcs12FromBio(BIO* bio)
+PKCS12* CryptoNative_DecodePkcs12FromBio(BIO* bio)
 {
-    return d2i_PKCS12_bio(bio, nullptr);
+    return d2i_PKCS12_bio(bio, NULL);
 }
 
-extern "C" void CryptoNative_Pkcs12Destroy(PKCS12* p12)
+void CryptoNative_Pkcs12Destroy(PKCS12* p12)
 {
-    if (p12 != nullptr)
+    if (p12 != NULL)
     {
         PKCS12_free(p12);
     }
 }
 
-extern "C" PKCS12* CryptoNative_Pkcs12Create(char* pass, EVP_PKEY* pkey, X509* cert, X509Stack* ca)
+PKCS12* CryptoNative_Pkcs12Create(char* pass, EVP_PKEY* pkey, X509* cert, X509Stack* ca)
 {
     return PKCS12_create(
-        pass, nullptr, pkey, cert, ca, NID_undef, NID_undef, PKCS12_DEFAULT_ITER, PKCS12_DEFAULT_ITER, 0);
+        pass, NULL, pkey, cert, ca, NID_undef, NID_undef, PKCS12_DEFAULT_ITER, PKCS12_DEFAULT_ITER, 0);
 }
 
-extern "C" int32_t CryptoNative_GetPkcs12DerSize(PKCS12* p12)
+int32_t CryptoNative_GetPkcs12DerSize(PKCS12* p12)
 {
-    return i2d_PKCS12(p12, nullptr);
+    return i2d_PKCS12(p12, NULL);
 }
 
-extern "C" int32_t CryptoNative_EncodePkcs12(PKCS12* p12, uint8_t* buf)
+int32_t CryptoNative_EncodePkcs12(PKCS12* p12, uint8_t* buf)
 {
     return i2d_PKCS12(p12, &buf);
 }
 
-extern "C" int32_t CryptoNative_Pkcs12Parse(PKCS12* p12, const char* pass, EVP_PKEY** pkey, X509** cert, X509Stack** ca)
+int32_t CryptoNative_Pkcs12Parse(PKCS12* p12, const char* pass, EVP_PKEY** pkey, X509** cert, X509Stack** ca)
 {
     int32_t ret = PKCS12_parse(p12, pass, pkey, cert, ca);
 
@@ -60,8 +60,8 @@ extern "C" int32_t CryptoNative_Pkcs12Parse(PKCS12* p12, const char* pass, EVP_P
         // placed in.
         // If those handles make it back into managed code they will crash 
         // the coreclr when Disposed.
-        *pkey = nullptr;
-        *cert = nullptr;
+        *pkey = NULL;
+        *cert = NULL;
     }
 
     return ret;
