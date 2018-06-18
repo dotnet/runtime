@@ -23,22 +23,22 @@ struct digest_ctx_st
     } d;
 };
 
-extern "C" void AppleCryptoNative_DigestFree(DigestCtx* pDigest)
+void AppleCryptoNative_DigestFree(DigestCtx* pDigest)
 {
-    if (pDigest != nullptr)
+    if (pDigest != NULL)
     {
         free(pDigest);
     }
 }
 
-extern "C" DigestCtx* AppleCryptoNative_DigestCreate(PAL_HashAlgorithm algorithm, int32_t* pcbDigest)
+DigestCtx* AppleCryptoNative_DigestCreate(PAL_HashAlgorithm algorithm, int32_t* pcbDigest)
 {
-    if (pcbDigest == nullptr)
-        return nullptr;
+    if (pcbDigest == NULL)
+        return NULL;
 
-    DigestCtx* digestCtx = reinterpret_cast<DigestCtx*>(malloc(sizeof(DigestCtx)));
-    if (digestCtx == nullptr)
-        return nullptr;
+    DigestCtx* digestCtx = (DigestCtx*)malloc(sizeof(DigestCtx));
+    if (digestCtx == NULL)
+        return NULL;
 
     digestCtx->algorithm = algorithm;
 
@@ -67,21 +67,21 @@ extern "C" DigestCtx* AppleCryptoNative_DigestCreate(PAL_HashAlgorithm algorithm
         default:
             *pcbDigest = -1;
             free(digestCtx);
-            return nullptr;
+            return NULL;
     }
 
     digestCtx->cbDigest = *pcbDigest;
     return digestCtx;
 }
 
-extern "C" int32_t AppleCryptoNative_DigestUpdate(DigestCtx* ctx, uint8_t* pBuf, int32_t cbBuf)
+int32_t AppleCryptoNative_DigestUpdate(DigestCtx* ctx, uint8_t* pBuf, int32_t cbBuf)
 {
     if (cbBuf == 0)
         return 1;
-    if (ctx == nullptr || pBuf == nullptr)
+    if (ctx == NULL || pBuf == NULL)
         return -1;
 
-    CC_LONG bufSize = static_cast<CC_LONG>(cbBuf);
+    CC_LONG bufSize = (CC_LONG)cbBuf;
 
     switch (ctx->algorithm)
     {
@@ -100,9 +100,9 @@ extern "C" int32_t AppleCryptoNative_DigestUpdate(DigestCtx* ctx, uint8_t* pBuf,
     }
 }
 
-extern "C" int32_t AppleCryptoNative_DigestFinal(DigestCtx* ctx, uint8_t* pOutput, int32_t cbOutput)
+int32_t AppleCryptoNative_DigestFinal(DigestCtx* ctx, uint8_t* pOutput, int32_t cbOutput)
 {
-    if (ctx == nullptr || pOutput == nullptr || cbOutput < ctx->cbDigest)
+    if (ctx == NULL || pOutput == NULL || cbOutput < ctx->cbDigest)
         return -1;
 
     int32_t ret = 0;

@@ -9,11 +9,11 @@ static bool CheckTrustMatch(SecCertificateRef cert,
                             SecTrustSettingsResult result,
                             OSStatus* pOSStatus)
 {
-    CFArrayRef settings = nullptr;
+    CFArrayRef settings = NULL;
     *pOSStatus = SecTrustSettingsCopyTrustSettings(cert, domain, &settings);
     bool isMatch = false;
 
-    if (*pOSStatus == noErr && settings != nullptr)
+    if (*pOSStatus == noErr && settings != NULL)
     {
         CFIndex count = CFArrayGetCount(settings);
 
@@ -26,8 +26,8 @@ static bool CheckTrustMatch(SecCertificateRef cert,
         }
         else
         {
-            auto dictionaryTypeId = CFDictionaryGetTypeID();
-            auto numberTypeId = CFNumberGetTypeID();
+            CFTypeID dictionaryTypeId = CFDictionaryGetTypeID();
+            CFTypeID numberTypeId = CFNumberGetTypeID();
 
             for (CFIndex i = 0; i < count; i++)
             {
@@ -38,7 +38,7 @@ static bool CheckTrustMatch(SecCertificateRef cert,
                     continue;
                 }
 
-                CFDictionaryRef dict = reinterpret_cast<CFDictionaryRef>(obj);
+                CFDictionaryRef dict = (CFDictionaryRef)obj;
 
                 if (CFDictionaryGetCount(dict) > 1)
                 {
@@ -54,10 +54,11 @@ static bool CheckTrustMatch(SecCertificateRef cert,
 
                 CFTypeRef val = CFDictionaryGetValue(dict, kSecTrustSettingsResult);
 
-                if (val != nullptr && CFGetTypeID(val) == numberTypeId)
+                if (val != NULL && CFGetTypeID(val) == numberTypeId)
                 {
-                    CFNumberRef cfNum = reinterpret_cast<CFNumberRef>(val);
-                    SecTrustSettingsResult trustValue = {};
+                    CFNumberRef cfNum = (CFNumberRef)val;
+                    SecTrustSettingsResult trustValue;
+                    memset(&trustValue, 0, sizeof(SecTrustSettingsResult));
 
                     if (CFNumberGetValue(cfNum, kCFNumberSInt32Type, &trustValue))
                     {
@@ -69,48 +70,50 @@ static bool CheckTrustMatch(SecCertificateRef cert,
         }
     }
 
-    if (settings != nullptr)
+    if (settings != NULL)
         CFRelease(settings);
 
     return isMatch;
 }
+
+typedef const struct OpaqueSecCertificateRef * ConstSecCertificateRef;
 
 static int32_t EnumerateTrust(SecTrustSettingsDomain domain,
                               SecTrustSettingsResult result,
                               CFMutableArrayRef* pCertsRef,
                               int32_t* pOSStatus)
 {
-    if (pOSStatus != nullptr)
+    if (pOSStatus != NULL)
         *pOSStatus = noErr;
 
-    if (pCertsRef == nullptr || pOSStatus == nullptr)
+    if (pCertsRef == NULL || pOSStatus == NULL)
         return -1;
 
     CFMutableArrayRef outArray;
 
-    if (*pCertsRef != nullptr)
+    if (*pCertsRef != NULL)
     {
         outArray = *pCertsRef;
     }
     else
     {
-        outArray = CFArrayCreateMutable(nullptr, 0, &kCFTypeArrayCallBacks);
+        outArray = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
         *pCertsRef = outArray;
     }
 
-    if (outArray == nullptr)
+    if (outArray == NULL)
     {
         *pOSStatus = errSecAllocate;
         return 0;
     }
 
-    CFArrayRef certsWithTrusts = nullptr;
+    CFArrayRef certsWithTrusts = NULL;
     *pOSStatus = SecTrustSettingsCopyCertificates(domain, &certsWithTrusts);
 
     if (*pOSStatus == noErr)
     {
         CFIndex count = CFArrayGetCount(certsWithTrusts);
-        auto certTypeId = SecCertificateGetTypeID();
+        CFTypeID certTypeId = SecCertificateGetTypeID();
 
         for (CFIndex i = 0; i < count; i++)
         {
@@ -121,7 +124,7 @@ static int32_t EnumerateTrust(SecTrustSettingsDomain domain,
                 continue;
             }
 
-            SecCertificateRef cert = reinterpret_cast<SecCertificateRef>(const_cast<void*>(obj));
+            SecCertificateRef cert = (ConstSecCertificateRef)obj;
             bool isMatch = CheckTrustMatch(cert, domain, result, pOSStatus);
 
             if (*pOSStatus != noErr)
@@ -142,7 +145,7 @@ static int32_t EnumerateTrust(SecTrustSettingsDomain domain,
         *pOSStatus = noErr;
     }
 
-    if (certsWithTrusts != nullptr)
+    if (certsWithTrusts != NULL)
     {
         CFRelease(certsWithTrusts);
     }
@@ -154,29 +157,29 @@ static int32_t EnumerateTrust(SecTrustSettingsDomain domain,
     if (ret == 0 || CFArrayGetCount(outArray) == 0)
     {
         CFRelease(outArray);
-        *pCertsRef = nullptr;
+        *pCertsRef = NULL;
     }
 
     return ret;
 }
 
-extern "C" int32_t AppleCryptoNative_StoreEnumerateUserRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut)
+int32_t AppleCryptoNative_StoreEnumerateUserRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut)
 {
-    if (pCertsOut != nullptr)
-        *pCertsOut = nullptr;
+    if (pCertsOut != NULL)
+        *pCertsOut = NULL;
 
     return EnumerateTrust(kSecTrustSettingsDomainUser,
                           kSecTrustSettingsResultTrustRoot,
-                          const_cast<CFMutableArrayRef*>(pCertsOut),
+                          pCertsOut,
                           pOSStatusOut);
 }
 
-extern "C" int32_t AppleCryptoNative_StoreEnumerateMachineRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut)
+int32_t AppleCryptoNative_StoreEnumerateMachineRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut)
 {
-    if (pCertsOut != nullptr)
-        *pCertsOut = nullptr;
+    if (pCertsOut != NULL)
+        *pCertsOut = NULL;
 
-    CFMutableArrayRef* pCertsRef = const_cast<CFMutableArrayRef*>(pCertsOut);
+    CFMutableArrayRef* pCertsRef = pCertsOut;
 
     int32_t ret =
         EnumerateTrust(kSecTrustSettingsDomainAdmin, kSecTrustSettingsResultTrustRoot, pCertsRef, pOSStatusOut);
@@ -189,23 +192,23 @@ extern "C" int32_t AppleCryptoNative_StoreEnumerateMachineRoot(CFArrayRef* pCert
     return ret;
 }
 
-extern "C" int32_t AppleCryptoNative_StoreEnumerateUserDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut)
+int32_t AppleCryptoNative_StoreEnumerateUserDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut)
 {
-    if (pCertsOut != nullptr)
-        *pCertsOut = nullptr;
+    if (pCertsOut != NULL)
+        *pCertsOut = NULL;
 
     return EnumerateTrust(kSecTrustSettingsDomainUser,
                           kSecTrustSettingsResultDeny,
-                          const_cast<CFMutableArrayRef*>(pCertsOut),
+                          pCertsOut,
                           pOSStatusOut);
 }
 
-extern "C" int32_t AppleCryptoNative_StoreEnumerateMachineDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut)
+int32_t AppleCryptoNative_StoreEnumerateMachineDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut)
 {
-    if (pCertsOut != nullptr)
-        *pCertsOut = nullptr;
+    if (pCertsOut != NULL)
+        *pCertsOut = NULL;
 
-    CFMutableArrayRef* pCertsRef = const_cast<CFMutableArrayRef*>(pCertsOut);
+    CFMutableArrayRef* pCertsRef = pCertsOut;
 
     int32_t ret = EnumerateTrust(kSecTrustSettingsDomainAdmin, kSecTrustSettingsResultDeny, pCertsRef, pOSStatusOut);
 

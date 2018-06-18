@@ -4,15 +4,15 @@
 
 #include "pal_ssl.h"
 
-extern "C" SSLContextRef AppleCryptoNative_SslCreateContext(int32_t isServer)
+SSLContextRef AppleCryptoNative_SslCreateContext(int32_t isServer)
 {
     if (isServer != 0 && isServer != 1)
-        return nullptr;
+        return NULL;
 
-    return SSLCreateContext(nullptr, isServer ? kSSLServerSide : kSSLClientSide, kSSLStreamType);
+    return SSLCreateContext(NULL, isServer ? kSSLServerSide : kSSLClientSide, kSSLStreamType);
 }
 
-extern "C" int32_t AppleCryptoNative_SslSetAcceptClientCert(SSLContextRef sslContext)
+int32_t AppleCryptoNative_SslSetAcceptClientCert(SSLContextRef sslContext)
 {
     // NULL and other illegal values are handled by the underlying API
     return SSLSetClientSideAuthenticate(sslContext, kTryAuthenticate);
@@ -38,7 +38,7 @@ static SSLProtocol PalSslProtocolToSslProtocol(PAL_SslProtocol palProtocolId)
     }
 }
 
-extern "C" int32_t AppleCryptoNative_SslSetMinProtocolVersion(SSLContextRef sslContext, PAL_SslProtocol sslProtocol)
+int32_t AppleCryptoNative_SslSetMinProtocolVersion(SSLContextRef sslContext, PAL_SslProtocol sslProtocol)
 {
     SSLProtocol protocol = PalSslProtocolToSslProtocol(sslProtocol);
 
@@ -49,7 +49,7 @@ extern "C" int32_t AppleCryptoNative_SslSetMinProtocolVersion(SSLContextRef sslC
     return SSLSetProtocolVersionMin(sslContext, protocol);
 }
 
-extern "C" int32_t AppleCryptoNative_SslSetMaxProtocolVersion(SSLContextRef sslContext, PAL_SslProtocol sslProtocol)
+int32_t AppleCryptoNative_SslSetMaxProtocolVersion(SSLContextRef sslContext, PAL_SslProtocol sslProtocol)
 {
     SSLProtocol protocol = PalSslProtocolToSslProtocol(sslProtocol);
 
@@ -60,30 +60,30 @@ extern "C" int32_t AppleCryptoNative_SslSetMaxProtocolVersion(SSLContextRef sslC
     return SSLSetProtocolVersionMax(sslContext, protocol);
 }
 
-extern "C" int32_t
+int32_t
 AppleCryptoNative_SslCopyCertChain(SSLContextRef sslContext, SecTrustRef* pChainOut, int32_t* pOSStatus)
 {
-    if (pChainOut != nullptr)
-        *pChainOut = nullptr;
-    if (pOSStatus != nullptr)
+    if (pChainOut != NULL)
+        *pChainOut = NULL;
+    if (pOSStatus != NULL)
         *pOSStatus = noErr;
 
-    if (sslContext == nullptr || pChainOut == nullptr || pOSStatus == nullptr)
+    if (sslContext == NULL || pChainOut == NULL || pOSStatus == NULL)
         return -1;
 
     *pOSStatus = SSLCopyPeerTrust(sslContext, pChainOut);
     return *pOSStatus == noErr;
 }
 
-extern "C" int32_t
+int32_t
 AppleCryptoNative_SslCopyCADistinguishedNames(SSLContextRef sslContext, CFArrayRef* pArrayOut, int32_t* pOSStatus)
 {
-    if (pArrayOut != nullptr)
-        *pArrayOut = nullptr;
-    if (pOSStatus != nullptr)
+    if (pArrayOut != NULL)
+        *pArrayOut = NULL;
+    if (pOSStatus != NULL)
         *pOSStatus = noErr;
 
-    if (sslContext == nullptr || pArrayOut == nullptr || pOSStatus == nullptr)
+    if (sslContext == NULL || pArrayOut == NULL || pOSStatus == NULL)
         return -1;
 
     *pOSStatus = SSLCopyDistinguishedNames(sslContext, pArrayOut);
@@ -96,7 +96,7 @@ static int32_t AppleCryptoNative_SslSetSessionOption(SSLContextRef sslContext,
                                                      int32_t value,
                                                      int32_t* pOSStatus)
 {
-    if (sslContext == nullptr)
+    if (sslContext == NULL)
         return -1;
 
     if (value != 0 && value != 1)
@@ -107,33 +107,33 @@ static int32_t AppleCryptoNative_SslSetSessionOption(SSLContextRef sslContext,
     return *pOSStatus == noErr;
 }
 
-extern "C" int32_t
+int32_t
 AppleCryptoNative_SslSetBreakOnServerAuth(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
 {
     return AppleCryptoNative_SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnServerAuth, setBreak, pOSStatus);
 }
 
-extern "C" int32_t
+int32_t
 AppleCryptoNative_SslSetBreakOnClientAuth(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
 {
     return AppleCryptoNative_SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnClientAuth, setBreak, pOSStatus);
 }
 
-extern "C" int32_t AppleCryptoNative_SslSetCertificate(SSLContextRef sslContext, CFArrayRef certRefs)
+int32_t AppleCryptoNative_SslSetCertificate(SSLContextRef sslContext, CFArrayRef certRefs)
 {
     // The underlying call handles NULL inputs, so just pass it through
     return SSLSetCertificate(sslContext, certRefs);
 }
 
-extern "C" int32_t AppleCryptoNative_SslSetTargetName(SSLContextRef sslContext,
-                                                      const char* pszTargetName,
-                                                      int32_t cbTargetName,
-                                                      int32_t* pOSStatus)
+int32_t AppleCryptoNative_SslSetTargetName(SSLContextRef sslContext,
+                                           const char* pszTargetName,
+                                           int32_t cbTargetName,
+                                           int32_t* pOSStatus)
 {
-    if (pOSStatus != nullptr)
+    if (pOSStatus != NULL)
         *pOSStatus = noErr;
 
-    if (sslContext == nullptr || pszTargetName == nullptr || pOSStatus == nullptr)
+    if (sslContext == NULL || pszTargetName == NULL || pOSStatus == NULL)
         return -1;
 
     if (cbTargetName < 0)
@@ -147,21 +147,21 @@ extern "C" int32_t AppleCryptoNative_SslSetTargetName(SSLContextRef sslContext,
     // listen to this.  So, if we've already set it, don't set it again.
     if (*pOSStatus == noErr && currentLength == 0)
     {
-        *pOSStatus = SSLSetPeerDomainName(sslContext, pszTargetName, static_cast<size_t>(cbTargetName));
+        *pOSStatus = SSLSetPeerDomainName(sslContext, pszTargetName, (size_t)cbTargetName);
     }
 
     return *pOSStatus == noErr;
 }
 
-extern "C" int32_t
+int32_t
 AppleCryptoNative_SslSetIoCallbacks(SSLContextRef sslContext, SSLReadFunc readFunc, SSLWriteFunc writeFunc)
 {
     return SSLSetIOFuncs(sslContext, readFunc, writeFunc);
 }
 
-extern "C" PAL_TlsHandshakeState AppleCryptoNative_SslHandshake(SSLContextRef sslContext)
+PAL_TlsHandshakeState AppleCryptoNative_SslHandshake(SSLContextRef sslContext)
 {
-    if (sslContext == nullptr)
+    if (sslContext == NULL)
         return PAL_TlsHandshakeState_Unknown;
 
     OSStatus osStatus = SSLHandshake(sslContext);
@@ -194,34 +194,34 @@ static PAL_TlsIo OSStatusToPAL_TlsIo(OSStatus status)
     }
 }
 
-extern "C" PAL_TlsIo
+PAL_TlsIo
 AppleCryptoNative_SslWrite(SSLContextRef sslContext, const uint8_t* buf, uint32_t bufLen, uint32_t* bytesWritten)
 {
-    if (bytesWritten == nullptr)
+    if (bytesWritten == NULL)
         return PAL_TlsIo_Unknown;
 
-    size_t expected = static_cast<size_t>(bufLen);
+    size_t expected = (size_t)bufLen;
     size_t totalWritten;
 
     OSStatus status = SSLWrite(sslContext, buf, expected, &totalWritten);
 
     if (status != noErr)
     {
-        *bytesWritten = static_cast<uint32_t>(totalWritten);
+        *bytesWritten = (uint32_t)totalWritten;
         return OSStatusToPAL_TlsIo(status);
     }
 
     return PAL_TlsIo_Success;
 }
 
-extern "C" PAL_TlsIo
+PAL_TlsIo
 AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint32_t bufLen, uint32_t* written)
 {
-    if (written == nullptr)
+    if (written == NULL)
         return PAL_TlsIo_Unknown;
 
     size_t writtenSize = 0;
-    size_t bufSize = static_cast<size_t>(bufLen);
+    size_t bufSize = (size_t)bufLen;
 
     OSStatus status = SSLRead(sslContext, buf, bufSize, &writtenSize);
 
@@ -232,11 +232,12 @@ AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint32_t bufLe
         return PAL_TlsIo_Unknown;
     }
 
-    *written = static_cast<uint32_t>(writtenSize);
+    *written = (uint32_t)writtenSize;
 
     if (writtenSize == 0 && status == errSSLWouldBlock)
     {
-        SSLSessionState state = {};
+        SSLSessionState state;
+        memset(&state, 0, sizeof(SSLSessionState));
         OSStatus localStatus = SSLGetSessionState(sslContext, &state);
 
         if (localStatus == noErr && state == kSSLHandshake)
@@ -248,25 +249,25 @@ AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint32_t bufLe
     return OSStatusToPAL_TlsIo(status);
 }
 
-extern "C" int32_t
+int32_t
 AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore)
 {
-    if (sslContext == nullptr || notBefore == nullptr)
+    if (sslContext == NULL || notBefore == NULL)
         return -1;
-    if (cfHostname == nullptr)
+    if (cfHostname == NULL)
         return -2;
 
     SecPolicyRef sslPolicy = SecPolicyCreateSSL(true, cfHostname);
 
-    if (sslPolicy == nullptr)
+    if (sslPolicy == NULL)
         return -3;
 
     CFMutableArrayRef certs = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
 
-    if (certs == nullptr)
+    if (certs == NULL)
         return -4;
 
-    SecTrustRef existingTrust = nullptr;
+    SecTrustRef existingTrust = NULL;
     OSStatus osStatus = SSLCopyPeerTrust(sslContext, &existingTrust);
 
     if (osStatus != noErr)
@@ -277,7 +278,7 @@ AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHos
 
     CFMutableArrayRef anchors = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
 
-    if (anchors == nullptr)
+    if (anchors == NULL)
     {
         CFRelease(certs);
         return -6;
@@ -298,7 +299,7 @@ AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHos
         }
     }
 
-    SecTrustRef trust = nullptr;
+    SecTrustRef trust = NULL;
     osStatus = SecTrustCreateWithCertificates(certs, sslPolicy, &trust);
     int32_t ret = INT_MIN;
 
@@ -314,7 +315,8 @@ AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHos
 
     if (osStatus == noErr)
     {
-        SecTrustResultType trustResult = {};
+        SecTrustResultType trustResult;
+        memset(&trustResult, 0, sizeof(SecTrustResultType));
 
         osStatus = SecTrustEvaluate(trust, &trustResult);
 
@@ -336,30 +338,30 @@ AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHos
         }
     }
 
-    if (trust != nullptr)
+    if (trust != NULL)
         CFRelease(trust);
 
-    if (certs != nullptr)
+    if (certs != NULL)
         CFRelease(certs);
 
-    if (anchors != nullptr)
+    if (anchors != NULL)
         CFRelease(anchors);
 
     CFRelease(sslPolicy);
     return ret;
 }
 
-extern "C" int32_t AppleCryptoNative_SslShutdown(SSLContextRef sslContext)
+int32_t AppleCryptoNative_SslShutdown(SSLContextRef sslContext)
 {
     return SSLClose(sslContext);
 }
 
-extern "C" int32_t AppleCryptoNative_SslGetProtocolVersion(SSLContextRef sslContext, PAL_SslProtocol* pProtocol)
+int32_t AppleCryptoNative_SslGetProtocolVersion(SSLContextRef sslContext, PAL_SslProtocol* pProtocol)
 {
-    if (pProtocol != nullptr)
+    if (pProtocol != NULL)
         *pProtocol = 0;
 
-    if (sslContext == nullptr || pProtocol == nullptr)
+    if (sslContext == NULL || pProtocol == NULL)
         return errSecParam;
 
     SSLProtocol protocol = kSSLProtocolUnknown;
@@ -386,9 +388,9 @@ extern "C" int32_t AppleCryptoNative_SslGetProtocolVersion(SSLContextRef sslCont
     return osStatus;
 }
 
-extern "C" int32_t AppleCryptoNative_SslGetCipherSuite(SSLContextRef sslContext, uint32_t* pCipherSuiteOut)
+int32_t AppleCryptoNative_SslGetCipherSuite(SSLContextRef sslContext, uint32_t* pCipherSuiteOut)
 {
-    if (pCipherSuiteOut == nullptr)
+    if (pCipherSuiteOut == NULL)
         *pCipherSuiteOut = 0;
 
     return SSLGetNegotiatedCipher(sslContext, pCipherSuiteOut);

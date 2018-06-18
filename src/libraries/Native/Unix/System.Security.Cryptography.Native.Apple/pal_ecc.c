@@ -4,23 +4,23 @@
 
 #include "pal_ecc.h"
 
-extern "C" int32_t AppleCryptoNative_EccGenerateKey(
+int32_t AppleCryptoNative_EccGenerateKey(
     int32_t keySizeBits, SecKeychainRef tempKeychain, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus)
 {
-    if (pPublicKey != nullptr)
-        *pPublicKey = nullptr;
-    if (pPrivateKey != nullptr)
-        *pPrivateKey = nullptr;
+    if (pPublicKey != NULL)
+        *pPublicKey = NULL;
+    if (pPrivateKey != NULL)
+        *pPrivateKey = NULL;
 
-    if (pPublicKey == nullptr || pPrivateKey == nullptr || pOSStatus == nullptr)
+    if (pPublicKey == NULL || pPrivateKey == NULL || pOSStatus == NULL)
         return kErrorBadInput;
 
-    CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(nullptr, 2, &kCFTypeDictionaryKeyCallBacks, nullptr);
+    CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(NULL, 2, &kCFTypeDictionaryKeyCallBacks, NULL);
 
-    CFNumberRef cfKeySizeValue = CFNumberCreate(nullptr, kCFNumberIntType, &keySizeBits);
+    CFNumberRef cfKeySizeValue = CFNumberCreate(NULL, kCFNumberIntType, &keySizeBits);
     OSStatus status;
 
-    if (attributes != nullptr && cfKeySizeValue != nullptr)
+    if (attributes != NULL && cfKeySizeValue != NULL)
     {
         CFDictionaryAddValue(attributes, kSecAttrKeyType, kSecAttrKeyTypeEC);
         CFDictionaryAddValue(attributes, kSecAttrKeySizeInBits, cfKeySizeValue);
@@ -43,18 +43,18 @@ extern "C" int32_t AppleCryptoNative_EccGenerateKey(
         status = errSecAllocate;
     }
 
-    if (attributes != nullptr)
+    if (attributes != NULL)
         CFRelease(attributes);
-    if (cfKeySizeValue != nullptr)
+    if (cfKeySizeValue != NULL)
         CFRelease(cfKeySizeValue);
 
     *pOSStatus = status;
     return status == noErr;
 }
 
-extern "C" uint64_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey)
+uint64_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey)
 {
-    if (publicKey == nullptr)
+    if (publicKey == NULL)
     {
         return 0;
     }

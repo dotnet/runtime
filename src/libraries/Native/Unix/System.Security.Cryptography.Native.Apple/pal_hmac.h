@@ -6,13 +6,14 @@
 
 #include "pal_digest.h"
 #include "pal_types.h"
+#include "pal_compiler.h"
 
 typedef struct hmac_ctx_st HmacCtx;
 
 /*
 Free a HmacCtx created by AppleCryptoNative_HmacCreate
 */
-extern "C" void AppleCryptoNative_HmacFree(HmacCtx* pHmac);
+DLLEXPORT void AppleCryptoNative_HmacFree(HmacCtx* pHmac);
 
 /*
 Create an HmacCtx for the specified algorithm, receiving the hash output size in pcbHmac.
@@ -22,25 +23,25 @@ it should be freed via AppleCryptoNative_HmacFree regardless of a negative pbHma
 
 Returns NULL on error, an unkeyed HmacCtx otherwise.
 */
-extern "C" HmacCtx* AppleCryptoNative_HmacCreate(PAL_HashAlgorithm algorithm, int32_t* pcbHmac);
+DLLEXPORT HmacCtx* AppleCryptoNative_HmacCreate(PAL_HashAlgorithm algorithm, int32_t* pcbHmac);
 
 /*
 Initialize an HMAC to the correct key and start state.
 
 Returns 1 on success, 0 on error.
 */
-extern "C" int32_t AppleCryptoNative_HmacInit(HmacCtx* ctx, uint8_t* pbKey, int32_t cbKey);
+DLLEXPORT int32_t AppleCryptoNative_HmacInit(HmacCtx* ctx, uint8_t* pbKey, int32_t cbKey);
 
 /*
 Add data into the HMAC
 
 Returns 1 on success, 0 on error.
 */
-extern "C" int32_t AppleCryptoNative_HmacUpdate(HmacCtx* ctx, uint8_t* pbData, int32_t cbData);
+DLLEXPORT int32_t AppleCryptoNative_HmacUpdate(HmacCtx* ctx, uint8_t* pbData, int32_t cbData);
 
 /*
 Complete the HMAC and copy the result into pbOutput.
 
 Returns 1 on success, 0 on error.
 */
-extern "C" int32_t AppleCryptoNative_HmacFinal(HmacCtx* ctx, uint8_t* pbOutput);
+DLLEXPORT int32_t AppleCryptoNative_HmacFinal(HmacCtx* ctx, uint8_t* pbOutput);

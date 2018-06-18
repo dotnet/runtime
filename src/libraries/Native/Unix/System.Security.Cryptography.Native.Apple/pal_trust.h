@@ -5,6 +5,7 @@
 #pragma once
 
 #include "pal_types.h"
+#include "pal_compiler.h"
 
 #include <Security/Security.h>
 
@@ -18,7 +19,7 @@ pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs fou
 (including a single match).
 pOSStatus: Receives the last OSStatus value.
 */
-extern "C" int32_t AppleCryptoNative_StoreEnumerateUserRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+DLLEXPORT int32_t AppleCryptoNative_StoreEnumerateUserRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
 
 /*
 Enumerate the certificates which are root trusted by the machine ("admin" and "system" domains).
@@ -33,11 +34,11 @@ pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs fou
 (including a single match).
 pOSStatus: Receives the last OSStatus value.
 */
-extern "C" int32_t AppleCryptoNative_StoreEnumerateMachineRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+DLLEXPORT int32_t AppleCryptoNative_StoreEnumerateMachineRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
 
-extern "C" int32_t AppleCryptoNative_StoreEnumerateUserDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+DLLEXPORT int32_t AppleCryptoNative_StoreEnumerateUserDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
 
-extern "C" int32_t AppleCryptoNative_StoreEnumerateMachineDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+DLLEXPORT int32_t AppleCryptoNative_StoreEnumerateMachineDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
 
 /*
 Enumerate the certificates which are disallowed by the user.
@@ -49,7 +50,7 @@ pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs fou
 (including a single match).
 pOSStatus: Receives the last OSStatus value.
 */
-extern "C" int32_t AppleCryptoNative_StoreEnumerateUserRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+DLLEXPORT int32_t AppleCryptoNative_StoreEnumerateUserRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
 
 /*
 Enumerate the certificates which are disallowed by the machine ("admin" and "system" domains).
@@ -64,4 +65,4 @@ pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs fou
 (including a single match).
 pOSStatus: Receives the last OSStatus value.
 */
-extern "C" int32_t AppleCryptoNative_StoreEnumerateMachineRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+DLLEXPORT int32_t AppleCryptoNative_StoreEnumerateMachineRoot(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
