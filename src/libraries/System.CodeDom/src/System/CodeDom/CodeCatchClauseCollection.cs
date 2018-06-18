@@ -22,8 +22,8 @@ namespace System.CodeDom
 
         public CodeCatchClause this[int index]
         {
-            get { return ((CodeCatchClause)(List[index])); }
-            set { List[index] = value; }
+            get => ((CodeCatchClause)(List[index]));
+            set => List[index] = value;
         }
 
         public int Add(CodeCatchClause value) => List.Add(value);

@@ -10,7 +10,7 @@ using System.Reflection;
 using System.Text;
 using Xunit;
 
-namespace System.CodeDom.Tests
+namespace System.CodeDom.Compiler.Tests
 {
     public abstract class CodeGenerationTests : RemoteExecutorTestBase
     {

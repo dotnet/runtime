@@ -22,8 +22,8 @@ namespace System.CodeDom
 
         public CodeStatement this[int index]
         {
-            get { return (CodeStatement)List[index]; }
-            set { List[index] = value; }
+            get => (CodeStatement)List[index];
+            set => List[index] = value;
         }
 
         public int Add(CodeStatement value) => List.Add(value);

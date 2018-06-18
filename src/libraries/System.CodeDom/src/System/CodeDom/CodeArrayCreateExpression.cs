@@ -69,8 +69,8 @@ namespace System.CodeDom
 
         public CodeTypeReference CreateType
         {
-            get { return _createType ?? (_createType = new CodeTypeReference("")); }
-            set { _createType = value; }
+            get => _createType ?? (_createType = new CodeTypeReference(""));
+            set => _createType = value;
         }
 
         public CodeExpressionCollection Initializers => _initializers;

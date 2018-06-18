@@ -25,8 +25,8 @@ namespace System.CodeDom
 
         public CodeTypeReference ReturnType
         {
-            get { return _returnType ?? (_returnType = new CodeTypeReference("")); }
-            set { _returnType = value; }
+            get => _returnType ?? (_returnType = new CodeTypeReference(""));
+            set => _returnType = value;
         }
 
         public CodeParameterDeclarationExpressionCollection Parameters { get; } = new CodeParameterDeclarationExpressionCollection();
