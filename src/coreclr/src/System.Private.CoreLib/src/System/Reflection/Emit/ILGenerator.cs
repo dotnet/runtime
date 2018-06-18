@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+//
 
 using System;
 using System.Diagnostics.SymbolStore;
@@ -991,7 +991,7 @@ namespace System.Reflection.Emit
                 this.Emit(OpCodes.Endfinally);
             }
 
-            //Check if we've alredy set this label.
+            //Check if we've already set this label.
             //The only reason why we might have set this is if we have a finally block.
             if (m_labelList[endLabel.GetLabelValue()] == -1)
             {
@@ -1092,7 +1092,7 @@ namespace System.Reflection.Emit
             Label finallyEndLabel = this.DefineLabel();
             current.SetFinallyEndLabel(finallyEndLabel);
 
-            // generate leave for try clause                                                  
+            // generate leave for try clause
             this.Emit(OpCodes.Leave, finallyEndLabel);
             if (catchEndAddr == 0)
                 catchEndAddr = m_length;
@@ -1576,7 +1576,7 @@ namespace System.Reflection.Emit
         // WARNING: This is not a generic function to determine the innerness
         // of an exception.  This is somewhat of a mis-nomer.  This gives a
         // random result for cases where the two exceptions being compared do
-        // not having a nesting relation. 
+        // not having a nesting relation.
         internal bool IsInner(__ExceptionInfo exc)
         {
             Debug.Assert(exc != null);
@@ -1824,7 +1824,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            // cannot find an existing document so add one to the array                                       
+            // cannot find an existing document so add one to the array
             EnsureCapacity();
             m_iLastFound = m_DocumentCount;
             m_Documents[m_iLastFound] = new REDocument(document);

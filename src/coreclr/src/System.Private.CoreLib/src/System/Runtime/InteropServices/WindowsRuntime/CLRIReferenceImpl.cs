@@ -105,7 +105,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         //
-        // IList & ICollection methods. 
+        // IList & ICollection methods.
         // This enables two-way data binding and index access in Jupiter
         //
         Object IList.this[int index]
@@ -393,7 +393,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
             else
             {
-                // All WinRT reference type (including arbitary managed type) will be PropertyType.ObjectArray
+                // All WinRT reference type (including arbitrary managed type) will be PropertyType.ObjectArray
                 return new CLRIReferenceArrayImpl<Object>(PropertyType.InspectableArray, (Object[])obj);
             }
         }
