@@ -13,7 +13,7 @@ namespace System.Reflection
     internal unsafe sealed class RtFieldInfo : RuntimeFieldInfo, IRuntimeFieldInfo
     {
         #region Private Data Members
-        // agressive caching
+        // aggressive caching
         private IntPtr m_fieldHandle;
         private FieldAttributes m_fieldAttributes;
         // lazy caching
@@ -43,7 +43,7 @@ namespace System.Reflection
                     }
 
                     // If the invocationFlags are still 0, then
-                    // this should be an usable field, determine the other flags 
+                    // this should be an usable field, determine the other flags
                     if (invocationFlags == 0)
                     {
                         if ((m_fieldAttributes & FieldAttributes.InitOnly) != (FieldAttributes)0)
@@ -159,8 +159,8 @@ namespace System.Reflection
         // UnsafeSetValue doesn't perform any consistency or visibility check.
         // It is the caller's responsibility to ensure the operation is safe.
         // When the caller needs to perform visibility checks they should call
-        // InternalSetValue() instead. When the caller needs to perform 
-        // consistency checks they should call CheckConsistency() before 
+        // InternalSetValue() instead. When the caller needs to perform
+        // consistency checks they should call CheckConsistency() before
         // calling this method.
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
@@ -209,8 +209,8 @@ namespace System.Reflection
         // UnsafeGetValue doesn't perform any consistency or visibility check.
         // It is the caller's responsibility to ensure the operation is safe.
         // When the caller needs to perform visibility checks they should call
-        // InternalGetValue() instead. When the caller needs to perform 
-        // consistency checks they should call CheckConsistency() before 
+        // InternalGetValue() instead. When the caller needs to perform
+        // consistency checks they should call CheckConsistency() before
         // calling this method.
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
@@ -268,7 +268,7 @@ namespace System.Reflection
 
         #endregion
 
-        #region FieldInfo Overrides        
+        #region FieldInfo Overrides
         public override Object GetValue(Object obj)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;

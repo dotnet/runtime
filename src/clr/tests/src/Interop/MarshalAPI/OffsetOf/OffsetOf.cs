@@ -95,7 +95,7 @@ internal struct ExplicitLayoutTest
     // 7 bytes of padding
 }
 
-internal struct FieldAlignementTest
+internal struct FieldAlignmentTest
 {
     public byte m_byte1; // 1 byte
     // 1 byte of padding
@@ -127,7 +127,7 @@ internal struct FieldAlignementTest
     // 7 bytes of padding
 }
 
-struct FieldAlignementTest_Decimal
+struct FieldAlignmentTest_Decimal
 {
     public byte b; // 1 byte
     // 7 bytes of padding
@@ -137,13 +137,13 @@ struct FieldAlignementTest_Decimal
     // This is because unlike fields of other types well known to mcg (like long, char etc.)
     // which need to be aligned according to their byte size, decimal is really a struct
     // with 8 byte alignment requirement.
-    public FieldAlignementTest p; // 80 bytes (72 bytes on x86/Unix)
+    public FieldAlignmentTest p; // 80 bytes (72 bytes on x86/Unix)
 
     public short s; // 2 bytes
     // 6 bytes of padding
 }
 
-struct FieldAlignementTest_Guid
+struct FieldAlignmentTest_Guid
 {
     public byte b; // 1 byte
     // 3 bytes of padding
@@ -155,7 +155,7 @@ struct FieldAlignementTest_Guid
     // 2 bytes of padding
 }
 
-struct FieldAlignementTest_Variant
+struct FieldAlignmentTest_Variant
 {
     public byte b; // 1 byte
     // 7 bytes of padding
@@ -171,7 +171,7 @@ struct FieldAlignementTest_Variant
 
 public class OffsetTest
 {
-    
+
     public static void NullParameter()
     {
         Assert.Throws<ArgumentNullException>(() => Marshal.OffsetOf(null, null));
@@ -179,25 +179,25 @@ public class OffsetTest
         Assert.Throws<ArgumentNullException>(() => Marshal.OffsetOf(null, "abcd"));
     }
 
-    
+
     public static void NonExistField()
     {
         Assert.Throws<ArgumentException>(() => Marshal.OffsetOf(typeof(NonExistField), "NonExistField"));
     }
 
-    
+
     public static void NoLayoutClass()
     {
         Assert.Throws<ArgumentException>(() => Marshal.OffsetOf(typeof(NoLayoutPoint), "x"));
     }
 
-    
+
     public static void StructField()
     {
         Assert.AreEqual(new IntPtr(4), Marshal.OffsetOf(typeof(someStruct), "var"));
     }
 
-    
+
     public static void ClassExplicitField()
     {
         Assert.AreEqual(new IntPtr(0), Marshal.OffsetOf(typeof(MySystemTime), "wYear"));
@@ -205,24 +205,24 @@ public class OffsetTest
         Assert.AreEqual(new IntPtr(14), Marshal.OffsetOf(typeof(MySystemTime), "wMilliseconds"));
     }
 
-    
+
     public static void ClassSequentialField()
     {
         Assert.AreEqual(new IntPtr(0), Marshal.OffsetOf(typeof(MyPoint), "x"));
         Assert.AreEqual(new IntPtr(4), Marshal.OffsetOf(typeof(MyPoint), "y"));
     }
 
-    
+
     public static void ProjectedType()
     {
-#if BUG_1212387        
+#if BUG_1212387
         Assert.AreEqual(new IntPtr(0), Marshal.OffsetOf(typeof(Windows.Foundation.Point), "_x"));
         Assert.AreEqual(new IntPtr(1), Marshal.OffsetOf(typeof(Windows.UI.Color), "_R"));
-#endif        
+#endif
     }
 
 
-    
+
     public static void TestExplicitLayout()
     {
         var t = typeof(ExplicitLayoutTest);
@@ -247,10 +247,10 @@ public class OffsetTest
         Assert.AreEqual(new IntPtr(48), Marshal.OffsetOf(t, "m_char1"));
     }
 
-    
+
     public static void TestFieldAlignment()
     {
-        var t = typeof(FieldAlignementTest);
+        var t = typeof(FieldAlignmentTest);
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
         {
             Assert.AreEqual(80, Marshal.SizeOf(t));
@@ -293,10 +293,10 @@ public class OffsetTest
         }
     }
 
-    
+
     public static void TestFieldAlignment_Decimal()
     {
-        var t = typeof(FieldAlignementTest_Decimal);
+        var t = typeof(FieldAlignmentTest_Decimal);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
         {
@@ -320,10 +320,10 @@ public class OffsetTest
         }
     }
 
-    
+
     public static void TestFieldAlignment_Guid()
     {
-        var t = typeof(FieldAlignementTest_Guid);
+        var t = typeof(FieldAlignmentTest_Guid);
         Assert.AreEqual(24, Marshal.SizeOf(t));
 
         Assert.AreEqual(new IntPtr(0), Marshal.OffsetOf(t, "b"));
@@ -331,10 +331,10 @@ public class OffsetTest
         Assert.AreEqual(new IntPtr(20), Marshal.OffsetOf(t, "s"));
     }
 
-    
+
     public static void TestFieldAlignment_Variant()
     {
-        var t = typeof(FieldAlignementTest_Variant);
+        var t = typeof(FieldAlignmentTest_Variant);
 
         Assert.AreEqual(new IntPtr(0), Marshal.OffsetOf(t, "b"));
         Assert.AreEqual(new IntPtr(8), Marshal.OffsetOf(t, "v"));
@@ -357,7 +357,7 @@ public class OffsetTest
 
     public static int Main(String[] args)
     {
-        //https://github.com/dotnet/coreclr/issues/2075  
+        //https://github.com/dotnet/coreclr/issues/2075
         //TestFieldAlignment_Variant();
         TestFieldAlignment_Guid();
         TestFieldAlignment_Decimal();
