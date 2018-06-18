@@ -80,9 +80,9 @@ static GENERATE_GET_CLASS_WITH_CACHE (sta_thread_attribute, "System", "STAThread
 static GENERATE_GET_CLASS_WITH_CACHE (activation_services, "System.Runtime.Remoting.Activation", "ActivationServices")
 
 
-#define ldstr_lock() mono_os_mutex_lock (&ldstr_section)
-#define ldstr_unlock() mono_os_mutex_unlock (&ldstr_section)
-static mono_mutex_t ldstr_section;
+#define ldstr_lock() mono_coop_mutex_lock (&ldstr_section)
+#define ldstr_unlock() mono_coop_mutex_unlock (&ldstr_section)
+static MonoCoopMutex ldstr_section;
 
 
 /**
@@ -279,7 +279,7 @@ mono_type_initialization_init (void)
 	mono_coop_mutex_init_recursive (&type_initialization_section);
 	type_initialization_hash = g_hash_table_new (NULL, NULL);
 	blocked_thread_hash = g_hash_table_new (NULL, NULL);
-	mono_os_mutex_init_recursive (&ldstr_section);
+	mono_coop_mutex_init (&ldstr_section);
 	mono_register_jit_icall (ves_icall_string_alloc, "ves_icall_string_alloc", mono_create_icall_signature ("object int"), FALSE);
 }
 
@@ -294,7 +294,7 @@ mono_type_initialization_cleanup (void)
 	g_hash_table_destroy (type_initialization_hash);
 	type_initialization_hash = NULL;
 #endif
-	mono_os_mutex_destroy (&ldstr_section);
+	mono_coop_mutex_destroy (&ldstr_section);
 	g_hash_table_destroy (blocked_thread_hash);
 	blocked_thread_hash = NULL;
 
