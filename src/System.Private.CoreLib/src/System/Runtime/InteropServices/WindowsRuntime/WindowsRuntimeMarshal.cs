@@ -1122,7 +1122,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         /// for the application to be invoked to process the error.
         /// </summary>
         /// <returns>true if the error was reported, false if not (ie running on Win8)</returns>
-        // [FriendAccessAllowed]
         internal static bool ReportUnhandledError(Exception e)
         {
             // Only report to the WinRT global exception handler in modern apps
