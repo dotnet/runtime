@@ -183,7 +183,6 @@ namespace System
             }
         }
 
-        // [FriendAccessAllowed]
         internal void AddExceptionDataForRestrictedErrorInfo(
             string restrictedError,
             string restrictedErrorReference,
