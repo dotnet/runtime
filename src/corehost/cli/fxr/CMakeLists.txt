@@ -10,9 +10,8 @@ if(WIN32)
     add_compile_options($<$<CONFIG:Debug>:/MTd>)
 else()
     add_compile_options(-fPIC)
+    add_compile_options(-fvisibility=hidden)
 endif()
-
-add_compile_options(-fvisibility=hidden)
 
 include(../setup.cmake)
 

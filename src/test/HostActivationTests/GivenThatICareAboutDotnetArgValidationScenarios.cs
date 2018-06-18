@@ -88,6 +88,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
                 .HaveStdErrContaining($"dotnet exec needs a managed .dll or .exe extension. The application specified was '{assemblyName}'");
         }
 
+        [Fact]
+        public void Detect_Missing_Argument_Value()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+
+            dotnet.Exec("--fx-version")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Fail()
+                .And
+                .HaveStdErrContaining($"Failed to parse supported options or their values:");
+        }
 
         // Return a non-exisitent path that contains a mix of / and \
         private string GetNonexistentAndUnnormalizedPath()
