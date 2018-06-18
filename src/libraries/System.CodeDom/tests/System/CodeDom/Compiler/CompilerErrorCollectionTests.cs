@@ -5,10 +5,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.CodeDom.Compiler;
+using System.CodeDom.Tests;
 using Xunit;
 
-namespace System.CodeDom.Tests
+namespace System.CodeDom.Compiler.Tests
 {
     public class CompilerErrorCollectionTests : CodeCollectionTestBase<CompilerErrorCollection, CompilerError>
     {

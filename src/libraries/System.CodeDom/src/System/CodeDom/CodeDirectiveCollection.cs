@@ -22,8 +22,8 @@ namespace System.CodeDom
 
         public CodeDirective this[int index]
         {
-            get { return (CodeDirective)List[index]; }
-            set { List[index] = value; }
+            get => (CodeDirective)List[index];
+            set => List[index] = value;
         }
 
         public int Add(CodeDirective value) => List.Add(value);
