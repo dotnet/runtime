@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
-using System.Reflection;
-using System.Runtime.Serialization;
 using Xunit;
 
 namespace System.CodeDom.Tests

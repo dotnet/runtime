@@ -23,8 +23,8 @@ namespace System.CodeDom
 
         public CodeEventReferenceExpression Event
         {
-            get { return _eventRef ?? (_eventRef = new CodeEventReferenceExpression()); }
-            set { _eventRef = value; }
+            get => _eventRef ?? (_eventRef = new CodeEventReferenceExpression());
+            set => _eventRef = value;
         }
 
         public CodeExpression Listener { get; set; }
