@@ -2438,7 +2438,7 @@ inline
             int actualOffset   = (spOffset + addrModeOffset);
             int ldrEncodeLimit = (varTypeIsFloating(type) ? 0x3FC : 0xFFC);
             // Use ldr sp imm encoding.
-            if (lvaDoneFrameLayout == FINAL_FRAME_LAYOUT || opts.MinOpts() || (actualOffset <= ldrEncodeLimit))
+            if (opts.MinOpts() || (actualOffset <= ldrEncodeLimit))
             {
                 offset    = spOffset;
                 *pBaseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : REG_SPBASE;
@@ -2448,16 +2448,13 @@ inline
             {
                 *pBaseReg = REG_FPBASE;
             }
-            // Use a single movw. prefer locals.
-            else if (actualOffset <= 0xFFFC) // Fix 383910 ARM ILGEN
+            // Otherwise, use SP. This is either (1) a small positive offset using a single movw, (2)
+            // a large offset using movw/movt. In either case, we must have already reserved
+            // the "reserved register".
+            else
             {
                 offset    = spOffset;
                 *pBaseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : REG_SPBASE;
-            }
-            // Use movw, movt.
-            else
-            {
-                *pBaseReg = REG_FPBASE;
             }
         }
     }
