@@ -202,7 +202,11 @@ QueryPerformanceCounter(
     PERF_ENTRY(QueryPerformanceCounter);
     ENTRY("QueryPerformanceCounter()\n");
     do
-#if HAVE_CLOCK_MONOTONIC
+#if HAVE_MACH_ABSOLUTE_TIME
+    {
+        lpPerformanceCount->QuadPart = (LONGLONG)mach_absolute_time();
+    }
+#elif HAVE_CLOCK_MONOTONIC
     {
         struct timespec ts;
         if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
@@ -213,10 +217,6 @@ QueryPerformanceCounter(
         }
         lpPerformanceCount->QuadPart = 
             (LONGLONG)ts.tv_sec * (LONGLONG)tccSecondsToNanoSeconds + (LONGLONG)ts.tv_nsec;
-    }
-#elif HAVE_MACH_ABSOLUTE_TIME
-    {
-        lpPerformanceCount->QuadPart = (LONGLONG)mach_absolute_time();
     }
 #elif HAVE_GETHRTIME
     {
@@ -264,9 +264,7 @@ QueryPerformanceFrequency(
     BOOL retval = TRUE;
     PERF_ENTRY(QueryPerformanceFrequency);
     ENTRY("QueryPerformanceFrequency()\n");
-#if HAVE_GETHRTIME || HAVE_READ_REAL_TIME || HAVE_CLOCK_MONOTONIC
-    lpFrequency->QuadPart = (LONGLONG)tccSecondsToNanoSeconds;
-#elif HAVE_MACH_ABSOLUTE_TIME
+#if HAVE_MACH_ABSOLUTE_TIME
     // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
     if (s_TimebaseInfo.denom == 0)
     {
@@ -277,9 +275,11 @@ QueryPerformanceFrequency(
     {
         lpFrequency->QuadPart = (LONGLONG)tccSecondsToNanoSeconds * ((LONGLONG)s_TimebaseInfo.denom / (LONGLONG)s_TimebaseInfo.numer);
     }
+#elif HAVE_GETHRTIME || HAVE_READ_REAL_TIME || HAVE_CLOCK_MONOTONIC
+    lpFrequency->QuadPart = (LONGLONG)tccSecondsToNanoSeconds;
 #else
     lpFrequency->QuadPart = (LONGLONG)tccSecondsToMicroSeconds;
-#endif // HAVE_GETHRTIME || HAVE_READ_REAL_TIME || HAVE_CLOCK_MONOTONIC 
+#endif // HAVE_MACH_ABSOLUTE_TIME
     LOGEXIT("QueryPerformanceFrequency\n");
     PERF_EXIT(QueryPerformanceFrequency);
     return retval;
@@ -338,7 +338,17 @@ GetTickCount64()
 {
     ULONGLONG retval = 0;
 
-#if HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
+#if HAVE_MACH_ABSOLUTE_TIME
+    {
+        // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
+        if (s_TimebaseInfo.denom == 0)
+        {
+            ASSERT("s_TimebaseInfo is uninitialized.\n");
+            goto EXIT;
+        }
+        retval = (mach_absolute_time() * s_TimebaseInfo.numer / s_TimebaseInfo.denom) / tccMillieSecondsToNanoSeconds;
+    }
+#elif HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
     {
         clockid_t clockType = 
 #if HAVE_CLOCK_MONOTONIC_COARSE
@@ -353,16 +363,6 @@ GetTickCount64()
             goto EXIT;
         }
         retval = (ts.tv_sec * tccSecondsToMillieSeconds)+(ts.tv_nsec / tccMillieSecondsToNanoSeconds);
-    }
-#elif HAVE_MACH_ABSOLUTE_TIME
-    {
-        // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
-        if (s_TimebaseInfo.denom == 0)
-        {
-            ASSERT("s_TimebaseInfo is uninitialized.\n");
-            goto EXIT;
-        }
-        retval = (mach_absolute_time() * s_TimebaseInfo.numer / s_TimebaseInfo.denom) / tccMillieSecondsToNanoSeconds;
     }
 #elif HAVE_GETHRTIME
     {
