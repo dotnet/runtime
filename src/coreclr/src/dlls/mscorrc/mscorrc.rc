@@ -845,22 +845,14 @@ BEGIN
     COR_E_REMOTING                          "An error relating to remoting occurred during the load of file or assembly '%1'."
     COR_E_SERIALIZATION                     "An error relating to serialization occurred during the load of file or assembly '%1'."
     COR_E_SECURITY                          "A security violation has occurred."
-    IDS_EE_INVALID_STRONGNAME               "Strong name validation failed for assembly '%s'.  The file may have been tampered with or it was delay signed, but not fully signed with the correct private key."
-    IDS_EE_INVALID_STRONGNAME_TITLE         "Strong name validation failed."
-    IDS_EE_INVALID_DELEGATE_LAYOUT          "Invalid delegate layout."
     IDS_EE_PROC_NOT_FOUND                   "A procedure imported by '%1' could not be loaded."
     IDS_EE_SIMD_NGEN_DISALLOWED             "Target-dependent SIMD vector types may not be used with ngen."
-    IDS_EE_SIMD_PARTIAL_TRUST_DISALLOWED    "SIMD intrinsics may not be used by partial trust applications."
     IDS_IBC_MISSING_EXTERNAL_TYPE           "The generic type specified by the IBC data is not available to this assembly"
     IDS_IBC_MISSING_EXTERNAL_METHOD         "The generic method specified by the IBC data is not available to this assembly"
     IDS_EE_HWINTRINSIC_NGEN_DISALLOWED      "Hardware intrinsics may not be used with ngen."
 
     IDS_INET_E_CANNOT_CONNECT               "Cannot connect to URL for '%1'."
     IDS_INET_E_RESOURCE_NOT_FOUND           "The server or proxy was not found for '%1'."
-    IDS_INET_E_OBJECT_NOT_FOUND             "The actual object was not found for '%1'."
-    IDS_INET_E_DATA_NOT_AVAILABLE           "Connection was established, but data cannot be retrieved for '%1'."
-    IDS_INET_E_DOWNLOAD_FAILURE             "WinInet download failed for URL '%1'."
-    IDS_INET_E_UNKNOWN_PROTOCOL             "Unknown URL protocol: '%1'."
     IDS_INET_E_CONNECTION_TIMEOUT           "Connection timeout for URL '%1'."
     IDS_INET_E_SECURITY_PROBLEM             "Security problem encountered when connecting to URL for '%1'."
 
@@ -982,7 +974,6 @@ BEGIN
     IDS_EE_NDIRECT_UNSUPPORTED_SIG          "Method's type signature is not PInvoke compatible."
     IDS_EE_COM_UNSUPPORTED_SIG              "Method's type signature is not Interop compatible."
     IDS_EE_COM_UNSUPPORTED_TYPE             "The method returned a COM Variant type that is not Interop compatible."
-    IDS_EE_COM_UNSUPPORTED_VT_RECORD        "The method returned a VT_RECORD Variant, which is not supported by Interop."
     IDS_EE_NDIRECT_BADNATL                  "Invalid PInvoke or UnmanagedFunctionPointer metadata format."
     IDS_EE_NDIRECT_BADNATL_CALLCONV         "Invalid PInvoke or UnmanagedFunctionPointer calling convention."
     IDS_EE_NDIRECT_BADNATL_VARARGS_CALLCONV "Invalid PInvoke calling convention. Vararg functions must use the cdecl calling convention."
@@ -996,44 +987,23 @@ BEGIN
     IDS_EE_CLASS_CONSTRAINTS_VIOLATION      "GenericArguments[%1], '%2', on '%3' violates the constraint of type parameter '%4'."
     IDS_EE_METHOD_CONSTRAINTS_VIOLATION     "Method %1.%2: type argument '%3' violates the constraint of type parameter '%4'."
     IDS_EE_NOSYNCHRONIZED                   "Synchronized attribute cannot be used with this method type."
-    IDS_EE_LOAD_NO_MAIN                     "Main method not found for type '%1'."
     IDS_EE_LOAD_BAD_MAIN_SIG                "Main method for type '%1' has invalid signature."
-    IDS_EE_LOAD_CIRCULAR_DEPENDENCY         "A circular dependency was detected when loading file or assembly '%1'."
-
+    
     IDS_EE_FILE_NOT_FOUND                   "File or assembly name '%1' was not found."
 
-    IDS_EE_TOO_MANY_OPEN_FILES              "The system cannot open file '%1'.  There may be too many open files."
-    IDS_EE_SHARING_VIOLATION                "Cannot access file '%1' because it is being used by another process."
-    IDS_EE_LOCK_VIOLATION                   "Cannot access file '%1' because another process has locked a portion of the file."
-    IDS_EE_OPEN_FAILED                      "Cannot open file '%1'."
-    IDS_EE_INVALID_NAME                     "The filename, directory name, or volume label syntax is incorrect: '%1'."
-    IDS_EE_UNRECOGNIZED_VOLUME              "The volume does not contain a recognized file system."
-    IDS_EE_FILE_INVALID                     "'%1' is not a valid file."
-    IDS_EE_FILE_CORRUPT                     "The file or directory for '%1' is corrupt and unreadable."
-    IDS_EE_DISK_CORRUPT                     "The disk structure is corrupt and unreadable.  Unable to load '%1'."
-    IDS_EE_DISK_FULL                        "There is not enough space on the disk.  Unable to load '%1'."
-
+    
     E_ACCESSDENIED                          "Access is denied: '%1'."
     COR_E_BADIMAGEFORMAT                    "The format of the file '%1' is invalid."
     COR_E_NEWER_RUNTIME                     "The assembly is built by a runtime newer than the currently loaded runtime, and cannot be loaded."
     IDS_EE_BAD_USER_PROFILE                 "The specified user does not have a valid profile.  Unable to load '%1'."
     IDS_EE_ALREADY_EXISTS                   "Cannot create/shadow copy '%1' when that file already exists."
-    IDS_EE_DLL_INIT_FAILED                  "The dll initialization routine failed for file '%1'."
-    IDS_EE_LOAD_UNEXPECTED                  "Unexpected error occurred loading type '%1'."
-    IDS_EE_AMBIGUOUSINVOKE                  "Multiple methods named Invoke."
-    IDS_EE_CALLBACK_UNSUPPORTED_SIG         "Method's type signature contains a type that cannot be automatically converted."
-    IDS_EE_NOTADELEGATE                     "Function pointer was not created by a Delegate."
     IDS_EE_NOTNDIRECT                       "Not a PInvoke method."
-    IDS_EE_METADATA_ERROR                   "Error loading file '%s'.\n%s."
     IDS_EE_ERRORTITLE                       "Error"
     IDS_EE_ERRORMESSAGETEMPLATE             "Error 0x%08x.\n\n%s."
-    IDS_EE_ERRORMESSAGETEXTTEMPLATE         "Error: %s."
     IDS_EE_TWO_LOADED_MSCOREE_TITLE         "MSCOREE.DLL load error."
     IDS_EE_TWO_LOADED_MSCOREE_MSG           "Two different copies of MSCORWKS.DLL have been loaded.\n\nFirst copy:\n%s\n\nSecond copy:\n%s\n\nThis is typically caused by having a registered MSCOREE.DLL that is different\nfrom the one that is statically linked with the application."
-    IDS_EE_CUST_MARSHALER_ON_INVALID_TYPE   "Custom marshalers can only be specified for classes."
     IDS_EE_RETHROW_NOT_ALLOWED              "No exception available to rethrow."
     IDS_EE_INVALID_OLE_VARIANT              "Specified OLE variant is invalid."
-    IDS_EE_FAILED_TO_LOAD                   "Exception from HRESULT: 0x%1.  Failed to load '%2'."
     IDS_EE_TO_MANY_ARGUMENTS_IN_MAIN        "Signature for the entry point has too many arguments."
     IDS_EE_FAILED_TO_FIND_MAIN              "Entry point not found in assembly '%1'."
     IDS_EE_ILLEGAL_TOKEN_FOR_MAIN           "Specified entry point in assembly '%1' is not a legal method."
@@ -1061,7 +1031,6 @@ BEGIN
     IDS_EE_BADMARSHAL_WINRT_MARSHAL_AS      "Invalid managed/unmanaged type combination (Windows Runtime parameters and fields must not have a MarshalAs attribute set)."
     IDS_EE_BADMARSHAL_WINRT_MISSING_GUID    "Invalid managed/unmanaged type combination (Windows Runtime interfaces, classes and delegates must have a Guid or a default interface)."
     IDS_EE_BADMARSHAL_WINRT_DELEGATE        "Invalid managed/unmanaged type combination (Delegates must be Windows Runtime delegates)."
-    IDS_EE_BADMARSHAL_WINRT_COPYCTOR        "Windows Runtime marshaler does not support types with copy constructor."
     IDS_EE_BADMARSHAL_DEFAULTIFACE_NOT_WINRT_IFACE "The default interface must refer to a Windows Runtime interface with a GUID."
     IDS_EE_BADMARSHAL_DEFAULTIFACE_NOT_SUBTYPE "The default interface must refer to an interface that is implemented by the type."
     IDS_EE_BADMARSHAL_DATETIMEOFFSET        "Invalid managed/unmanaged type combination (the DateTimeOffset structure must be paired with Struct)."
@@ -1112,13 +1081,9 @@ BEGIN
     IDS_EE_BADMARSHAL_PTRSUBTYPE            "Pointers cannot reference managed objects.  Use ByRef instead."
     IDS_EE_BADMARSHAL_PTRNONBLITTABLE       "Pointers cannot reference marshaled structures.  Use ByRef instead."
     IDS_EE_BADMARSHAL_RESTRICTION           "This type can only be marshaled in restricted ways."
-    IDS_EE_BADMARSHAL_CHARARRAYRESTRICTION  "Ansi char arrays cannot be marshaled as ByRef or as unmanaged-to-managed parameters."
     IDS_EE_BADMARSHAL_ASANYRESTRICTION      "AsAny cannot be used on return types, ByRef parameters, ArrayWithOffset, or parameters passed from unmanaged to managed."
     IDS_EE_BADMARSHAL_VBBYVALSTRRESTRICTION "VBByRefStr can only be used in combination with in/out, ByRef managed-to-unmanaged strings."
     IDS_EE_BADMARSHAL_AWORESTRICTION        "ArrayWithOffsets can only be marshaled as inout, non-ByRef, managed-to-unmanaged parameters."
-    IDS_EE_BADMARSHAL_BVCRESTRICTION        "Internal error."
-    IDS_EE_BADMARSHAL_COPYCTORRESTRICTION   "Classes with copy-ctors can only be marshaled non-ByRef."
-    IDS_EE_BADMARSHAL_VCRESTRICTION         "Internal error."
     IDS_EE_BADMARSHAL_ARGITERATORRESTRICTION "ArgIterators cannot be marshaled ByRef."
     IDS_EE_BADMARSHAL_HANDLEREFRESTRICTION  "HandleRefs cannot be marshaled ByRef or from unmanaged to managed."
     IDS_EE_BADMARSHAL_SAFEHANDLENATIVETOCOM "SafeHandles cannot be marshaled from unmanaged to managed."
@@ -1131,7 +1096,6 @@ BEGIN
     IDS_EE_BADMARSHAL_NOTMARSHALABLE        "The type definition of this field has layout information but has an invalid managed/unmanaged type combination or is unmarshalable."
     IDS_EE_BADMARSHAL_BADMETADATA           "Invalid marshaling metadata."
     IDS_EE_BADMARSHAL_CUSTOMMARSHALER       "Custom marshalers are only allowed on classes, strings, arrays, and boxed value types."
-    IDS_EE_BADMARSHAL_BADSAFEARRAYSUBTYPE   "Invalid SafeArraySubType/managed element type combination." 
     IDS_EE_BADMARSHAL_GENERICS_RESTRICTION  "Generic types cannot be marshaled."
 
     IDS_EE_BADMARSHALPARAM_STRINGBUILDER    "Invalid managed/unmanaged type combination (StringBuilders must be paired with LPStr, LPWStr, or LPTStr)."
@@ -1169,7 +1133,6 @@ BEGIN
     IDS_EE_WINRT_IID_ILLEGALTYPE                "Unable to compute GUID for type '%1' because the instantiation contains types that are not supported by Windows Runtime."
     IDS_EE_WINRT_IID_NODEFAULTINTERFACE         "Unable to compute GUID because type '%1' does not have a default Windows Runtime interface."
     IDS_EE_WINRT_ATTRIBUTES_NOT_INVOKABLE       "Cannot construct type '%1'.  Windows Runtime attribute types are not constructable."
-    IDS_EE_WINRT_TYPE_IN_ORDINARY_ASSEMBLY      "Windows Runtime types can only be declared in Windows Runtime assemblies."
     IDS_EE_WINRT_TYPE_NOT_REGISTERED            "Requested Windows Runtime type '%1' is not registered."
     IDS_EE_WINRT_NOT_FACTORY_FOR_TYPE           "Windows Runtime factory '%1' is not a factory for Windows Runtime type '%2'."
     IDS_EE_WINRT_INVALID_FACTORY_FOR_TYPE       "Windows Runtime type '%1' has a invalid Windows Runtime factory"
@@ -1180,10 +1143,8 @@ BEGIN
     IDS_EE_ADUNLOAD_IN_FINALIZER            "AppDomain cannot be unloaded during object finalization."
     IDS_EE_ADUNLOAD_DEFAULT                 "The default domain cannot be unloaded."
     IDS_EE_ADUNLOAD_CANT_UNWIND_THREAD      "AppDomain cannot be unloaded because the thread '%1' cannot be unwound out of it."
-    IDS_EE_ADUNLOAD_NOT_LOCAL               "AppDomain cannot be unloaded because it is not local to the current process."
-
+    
     IDS_CLASSLOAD_TYPEWRONGNUMGENERICARGS      "The generic type '%1' was used with the wrong number of generic arguments in assembly '%2'."
-    IDS_CLASSLOAD_METHODWRONGNUMGENERICARGS    "A method in the type '%1' from assembly '%2' was used with the wrong number of generic arguments."
     IDS_CLASSLOAD_INVALIDINSTANTIATION    "The generic type '%1' was used with an invalid instantiation in assembly '%2'."
     IDS_CLASSLOAD_VARIANCE_IN_METHOD_ARG    "Could not load type '%1' from assembly '%2' because a covariant or contravariant type parameter was used illegally in the signature for an argument in method '%3'."
     IDS_CLASSLOAD_VARIANCE_IN_METHOD_RESULT "Could not load type '%1' from assembly '%2' because a covariant or contravariant type parameter was used illegally in the signature for the result type in method '%3'."
@@ -1191,8 +1152,6 @@ BEGIN
     IDS_CLASSLOAD_VARIANCE_IN_CONSTRAINT    "Could not load type '%1' from assembly '%2' because a covariant or contravariant type parameter was used illegally in a type parameter constraint in method '%3'."
     IDS_CLASSLOAD_VARIANCE_CLASS            "Could not load type '%1' from assembly '%2' because it declares a covariant or contravariant type parameter and is not an interface or delegate."
     IDS_CLASSLOAD_BADVARIANCE               "Could not load type '%1' from assembly '%2' because it uses an illegal variance annotation on a type parameter."
-    IDS_CLASSLOAD_GENERIC_CONTEXT_BOUND_OBJECT "Generic context-bound objects are not supported."
-    IDS_CLASSLOAD_COLLECTIBLE_CONTEXT_BOUND_OBJECT "Collectible context-bound objects are not supported."
     IDS_CLASSLOAD_CONTEXT_BOUND_GENERIC_METHOD "Context-bound objects with generic methods are not supported."
     IDS_CLASSLOAD_ENUM_EXTRA_GENERIC_TYPE_PARAM "Enumerated types cannot have any generic type parameters, beyond any inherited from their enclosing type (for nested enums)."
 	IDS_CLASSLOAD_GENERICTYPE_RECURSIVE     "Could not load type '%1' from assembly '%2' because it has recursive generic definition."
@@ -1200,12 +1159,9 @@ BEGIN
 
     IDS_CLASSLOAD_GENERAL                   "Could not load type '%1' from assembly '%2'."
     IDS_CLASSLOAD_TYPESPEC                  "Could not load TypeSpec from assembly '%2'."
-    IDS_CLASSLOAD_MODULELOAD                "Could not load type '%1' because the module containing it from assembly '%2' failed to load."
-    IDS_CLASSLOAD_ASSEMBLYLOAD              "Could not load type '%1' because the assembly containing it failed to load."
     IDS_CLASSLOAD_SEALEDPARENT              "Could not load type '%1' from assembly '%2' because the parent type is sealed."
     IDS_CLASSLOAD_BADFORMAT                 "Could not load type '%1' from assembly '%2' because the format is invalid."
     IDS_CLASSLOAD_CANTCREATEARRAYCLASS      "Could not create array type '%1' from assembly '%2'."
-    IDS_CLASSLOAD_NOCLSIDREG                "No server registered or could not load class for CLSID %1."
     IDS_CLASSLOAD_MISSINGMETHOD             "Could not load type '%1' from assembly '%2' because the method '%3' could not be loaded."
     IDS_CLASSLOAD_FIELDTOOLARGE             "Size of field of type '%1' from assembly '%2' is too large."
     IDS_CLASSLOAD_CANTEXTEND                "Type '%1' from assembly '%2' cannot extend from any other type."
@@ -1229,25 +1185,18 @@ BEGIN
     IDS_CLASSLOAD_BYREFLIKE_STATICFIELD     "A value type containing a by-ref instance field, such as Span<T>, cannot be used as the type for a static field."
     IDS_CLASSLOAD_BYREFLIKE_NOTVALUECLASSFIELD "A value type containing a by-ref instance field, such as Span<T>, cannot be used as the type for a class instance field."
 
-    IDS_CLASSLOAD_BAD_NAME                  "Type name '%1' from assembly '%2' is invalid."
     IDS_CLASSLOAD_RANK_TOOLARGE             "'%1' from assembly '%2' has too many dimensions."
-    IDS_CLASSLOAD_BAD_MANAGED_RVA           "Managed method '%3' on type '%1' from assembly '%2' is not supported."
     IDS_CLASSLOAD_BAD_UNMANAGED_RVA         "Native method '%3' on type '%1' from assembly '%2' is not supported."
-    IDS_CLASSLOAD_INHERITANCECHECK          "Type '%1' from assembly '%2' does not have sufficient permission to override super type methods."
     IDS_CLASSLOAD_NOMETHOD_NAME             "Type '%1' from assembly '%2' has a method with no name."
 
     IDS_CLASSLOAD_ZEROSIZE                  "Type '%1' from assembly '%2' has zero size."
     IDS_CLASSLOAD_EXPLICIT_LAYOUT           "Could not load type '%1' from assembly '%2' because it contains an object field at offset %3 that is incorrectly aligned or overlapped by a non-object field."
-    IDS_CLASSLOAD_UNVERIFIABLE_FIELD_LAYOUT "Could not load type '%1' from assembly '%2' because objects overlapped at offset %3 and the assembly must be verifiable."
-    IDS_CLASSLOAD_PRIVATEVIRTUAL            "Private method '%3' on type '%1' from assembly '%2' cannot be virtual."
     IDS_CLASSLOAD_BADSPECIALMETHOD          "Constructor '%3' on type '%1' from assembly '%2' does not have the correct name or signature."
     IDS_CLASSLOAD_MI_DECLARATIONNOTFOUND    "Method override '%3' on type '%1' from assembly '%2' cannot find a method to replace."
     IDS_CLASSLOAD_MI_MULTIPLEOVERRIDES      "Method '%3' on type '%1' from assembly '%2' is overriding a method that has been overridden."
-    IDS_CLASSLOAD_MI_OVERRIDEIMPL           "Method '%3' on type '%1' from assembly '%2' is overriding a method impl."
     IDS_CLASSLOAD_MI_ACCESS_FAILURE         "Method '%3' on type '%1' from assembly '%2' is overriding a method that is not visible from that assembly."
     IDS_CLASSLOAD_MI_BADSIGNATURE           "Method '%3' on type '%1' from assembly '%2' tried to override a method with a different signature."
     IDS_CLASSLOAD_MI_NOTIMPLEMENTED         "Type '%1' from assembly '%2' tried to override method '%3' but does not implement or inherit that method."
-    IDS_CLASSLOAD_MI_VIRTUALMISMATCH        "Method '%3' on type '%1' from assembly '%2' tried to implement a method declaration with a different virtual state."
     IDS_CLASSLOAD_MI_MUSTBEVIRTUAL          "Method '%3' on type '%1' from assembly '%2' must be virtual to implement a method on an interface or super type."
     IDS_CLASSLOAD_MI_BAD_SIG                "Type '%1' from assembly '%2' contains an invalid method implementation signature."
     IDS_CLASSLOAD_MI_FINAL_IMPL             "Method implementation on an interface '%1' from assembly '%2' must be a final method."
@@ -1259,12 +1208,10 @@ BEGIN
     SECURITY_E_UNVERIFIABLE                 "Unverifiable assembly '%1' failed policy check."
     IDS_CLASSLOAD_BAD_FIELD                 "Type '%1' from assembly '%2' has a field of an illegal type."
     IDS_CLASSLOAD_MI_ILLEGAL_BODY           "Body referenced in a method implementation must be defined in the same type.  Type: '%1'.  Assembly: '%2'."
-    IDS_CLASSLOAD_MI_ILLEGAL_STATIC         "Body referenced in a method implementation cannot be static.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_ILLEGAL_TOKEN_BODY     "Body token used in a method implementation is out of range.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_ILLEGAL_TOKEN_DECL     "Declaration token used in a method implementation is out of range.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_SEALED_DECL            "Declaration referenced in a method implementation cannot be on a sealed type.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_FINAL_DECL             "Declaration referenced in a method implementation cannot be a final method.  Type: '%1'.  Assembly: '%2'."
-    IDS_CLASSLOAD_MI_PRIVATE_DECL           "The declaration referenced in a method implementation is inaccessible.  Type: '%1' Assembly: '%2'"
     IDS_CLASSLOAD_MI_NONVIRTUAL_DECL        "Declaration referenced in a method implementation must be a virtual method.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_BODY_DECL_MISMATCH     "Signature of the body and declaration in a method implementation do not match.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_MISSING_SIG_BODY       "Signature for the body in a method implementation cannot be found.  Type: '%1'.  Assembly: '%2'."
@@ -1273,29 +1220,20 @@ BEGIN
     IDS_CLASSLOAD_EQUIVALENTSTRUCTMETHODS   "Could not load the structure '%1' from assembly '%2'. The structure is marked as eligible for type equivalence, but it has a method."
     IDS_CLASSLOAD_EQUIVALENTSTRUCTFIELDS    "Could not load the structure '%1' from assembly '%2'. The structure is marked as eligible for type equivalence, but it has a static or non-public field."
     IDS_CLASSLOAD_EQUIVALENTBADTYPE         "Could not load type '%1' from assembly '%2'. The type is marked as eligible for type equivalence, but either it has generic parameters, or it is not a structure, COM imported interface, enumeration, or delegate."
-    IDS_CLASSLOAD_EQUIVALENTNOTTRUSTED      "Could not load type '%1' from assembly '%2'. The type is marked as eligible for type equivalence, but the containing assembly is not loaded as fully trusted."
-    IDS_CLASSLOAD_EQUIVALENTNOTPUBLIC       "Could not load type '%1' from assembly '%2'. The type is marked as eligible for type equivalence, but it is not marked as public."
     IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR "Could not execute the method because either the method itself or the containing type is not fully instantiated."
     IDS_CLASSLOAD_WRONGCPU                  "Could not load file or assembly '%1'. This assembly was compiled for a different processor."
 
     IDS_CANNOT_MARSHAL                      "Type '%1' cannot be marshaled as an unmanaged structure; no meaningful size or offset can be computed."
-    IDS_PINVOKE_STRINGBUILDEROVERFLOW       "Warning: A StringBuilder buffer has been overflowed by unmanaged code.  The process may become unstable.  Insufficient capacity allocated to the StringBuilder before marshaling it."
-
+    
     IDS_INVALID_REDIM                       "Illegal attempt to replace or redimension a fixed or locked SafeArray."
 
     IDS_INVALID_PINVOKE_CALLCONV            "Invalid unmanaged calling convention: must be one of stdcall, cdecl, or thiscall."
     IDS_NOLAYOUT_IN_EMBEDDED_VALUECLASS     "Type could not be marshaled because an embedded valuetype has no layout information."
     IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was not given an explicit offset."
-    IDS_UNI2ANSI_FAILURE_IN_NSTRUCT         "Type could not be marshaled because an embedded string could not be converted from Unicode to ANSI."
     IDS_WRONGSIZEARRAY_IN_NSTRUCT           "Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout."
-    IDS_UNI2ANSI_FAILURE                    "Failure converting Unicode string to ANSI."
-    IDS_ANSI2UNI_FAILURE                    "Failure converting ANSI string to Unicode."
-
+    
     IDS_EE_INVALIDLCIDPARAM                 "The value of the LCID conversion attribute must not exceed the number of parameters."
 
-    IDS_ENCODEDPERMSET_DECODEFAILURE        "Failure decoding embedded permission set object."
-    IDS_ENCODEDPERMSETCOLLECTION_DECODEFAILURE        "Failure decoding embedded permission set collection object."
-    IDS_BAD_MSCORLIB                        "Mscorlib.dll is missing types required by security."
     IDS_EE_INVALIDCOMSOURCEITF              "The list of COM source interfaces for type '%1' contains non interface or generic type '%2'."
     IDS_EE_CANNOT_COERCE_BYREF_VARIANT      "Object cannot be coerced to the original type of the ByRef VARIANT it was obtained from."
     IDS_EE_WRAPPER_MUST_HAVE_DEF_CONS       "The new wrapper type must have an empty constructor."
@@ -1308,8 +1246,7 @@ BEGIN
     IDS_EE_CALLBACK_NOT_CALLED_FROM_CCTOR   "Function can only be called from inside the class constructor of a class derived from a COM imported class."
     IDS_EE_CALLBACK_ALREADY_REGISTERED      "Base type has already registered a type creation callback."
     IDS_EE_CANNOTCAST                       "Unable to cast object of type '%1' to type '%2'."
-    IDS_EE_CANNOTCASTPROXY                  "Unable to cast transparent proxy to type '%1'."
-
+    
     IDS_EE_CANNOTCASTSAME                   "[A]%1 cannot be cast to [B]%2. %3. %4."
     IDS_EE_CANNOTCAST_HELPER_PATH           "Type %s originates from '%s' in the context '%s' at location '%s'"
     IDS_EE_CANNOTCAST_HELPER_BYTE           "Type %s originates from '%s' in the context '%s' in a byte array"
@@ -1318,7 +1255,6 @@ BEGIN
     IDS_EE_BAD_COMEXTENDS_CLASS             "Types extending from COM objects should override all methods of an interface implemented by the base COM class."
     IDS_EE_INTERFACE_NOT_DISPATCH_BASED     "The interface does not support late bound calls since it does not derive from IDispatch."
     IDS_EE_MARSHAL_UNMAPPABLE_CHAR          "Cannot marshal: Encountered unmappable character."
-    IDS_EE_VTRECORD_SECURITY                "Structures defined in untrusted code cannot be marshaled to and from native code as either parameters or return values."
     
     // Errors associated with parsing security custom attributes at compile time.
     CORSECATTR_E_BAD_ATTRIBUTE              "Invalid custom attribute."
@@ -1344,11 +1280,8 @@ BEGIN
     CORSECATTR_E_EXCEPTION                  "Unexpected exception processing attribute - '%s'."
     CORSECATTR_E_EXCEPTION_HR                "Unexpected exception processing attribute - HRESULT 0x%08X."
 
-    IDS_EE_OFFSETOF_NOFIELDFOUND            "Field passed in is not a marshaled member of the type '%1'."
     IDS_EE_COPY_OUTOFRANGE                   "Requested range extends past the end of the array."
-    IDS_EE_CANNOTPIN                         "Object type cannot be pinned."
     IDS_EE_ARRAYWITHOFFSETOVERFLOW           "ArrayWithOffset: offset exceeds array size."
-    IDS_EE_OUTOFLOCALS                      "Ran out of internal resource while executing marshaling operation.  Possible cause: overly complex method signature."
     IDS_EE_NOCUSTOMMARSHALER                "A call to GetInstance() for custom marshaler '%1' returned null, which is not allowed."
     IDS_EE_SIZECONTROLOUTOFRANGE            "Array size control parameter index is out of range."
     IDS_EE_SIZECONTROLBADTYPE               "Array size control parameter type not supported."
@@ -1356,23 +1289,15 @@ BEGIN
     IDS_EE_SAFEARRAYSZARRAYMISMATCH         "SafeArray cannot be marshaled to this array type because it has either nonzero lower bounds or more than one dimension."
 
     IDS_EE_REFLECTIONONLYGETTYPE_NOASSEMBLY "Explicit assembly name must be specified when loading a type as ReflectionOnly"
-    IDS_EE_REFLECTIONONLY_LOADFROM          "API restriction: The assembly '%1' has already loaded from a different location. It cannot be loaded from a new location within the same appdomain."
     IDS_EE_REFLECTIONONLY_LOADFAILURE       "Cannot resolve dependency to assembly '%1' because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event."
-    IDS_EE_REFLECTIONONLY_WINRT_LOADFAILURE "Cannot resolve dependency to Windows Runtime type '%1'. When using the ReflectionOnly APIs, dependent Windows Runtime assemblies must be resolved on demand through the ReflectionOnlyNamespaceResolve event."
-    IDS_EE_REFLECTIONONLY_WINRT_LOADFAILURE_THIRDPARTY "To resolve a namespace from a custom Windows Runtime component, you must supply the packageGraphFilePaths argument to ResolveNamespace."
-    IDS_EE_REFLECTIONONLY_WINRT_INVALIDASSEMBLY "Returning a .NET Framework assembly to resolve a Windows Runtime reference is not supported."
     IDS_EE_WINRT_LOADFAILURE                "Could not find Windows Runtime type '%1'."
     IDS_EE_WINRT_THIRDPARTY_NOTSUPPORTED    "Types from custom Windows Runtime components are not supported in desktop applications."
 
     IDS_EE_ASSEMBLY_GETTYPE_CANNONT_HAVE_ASSEMBLY_SPEC "Type names passed to Assembly.GetType() must not specify an assembly."
-    IDS_EE_IJWLOAD_CROSSVERSION_DISALLOWED  "Mixed mode assembly is built against version '%1' of the runtime and cannot be loaded in the %2 runtime without additional configuration information."
-    IDS_EE_IJWLOAD_MULTIRUNTIME_DISALLOWED  "Mixed mode assembly cannot be loaded into version '%1' of the runtime because it is already loaded into version '%2'."
     IDS_EE_CANNOT_HAVE_ASSEMBLY_SPEC        "Unexpected assembly-qualifier in a typename."
     IDS_EE_NEEDS_ASSEMBLY_SPEC              "Typename needs an assembly qualifier."
 
     IDS_EE_FILELOAD_ERROR_GENERIC           "Could not load file or assembly '%1'. %2"
-
-    IDS_EE_CRYPTO_UNKNOWN_OPERATION         "Unknown import key operation specified."
 
     IDS_EE_LOCAL_COGETCLASSOBJECT_FAILED    "Retrieving the COM class factory for component with CLSID %2 failed due to the following error: %1 %3."
     IDS_EE_REMOTE_COGETCLASSOBJECT_FAILED   "Retrieving the COM class factory for remote component with CLSID %2 from machine %3 failed due to the following error: %1 %3."
@@ -1393,17 +1318,13 @@ BEGIN
 
     IDS_EE_MISSING_FIELD                    "Field not found: '%1'."
     IDS_EE_MISSING_METHOD                   "Method not found: '%1'."
-    IDS_EE_MSCOREE_MISSING                  "MSCOREE is not loaded."
-    IDS_EE_MSCOREE_MISSING_ENTRYPOINT       "Missing entrypoint in MSCOREE: '%1'."
-
-    IDS_EE_PINVOKE_NOREFFORSIZEIS           "Cannot use SizeParamIndex for ByRef array parameters."
+    
     IDS_EE_NO_IDISPATCH                     "This object cannot be marshaled as an IDispatch."
     IDS_EE_NO_BACKING_CLASS_FACTORY         "An instance of the __ComObject type cannot be created unless the type has been obtained using GetTypeFromProgID or GetTypeFromCLSID."
 
     IDS_EE_SIGTOOCOMPLEX                    "Internal limitation: method signature is too complex or too large."
     IDS_EE_STRUCTTOOCOMPLEX                 "Internal limitation: structure is too complex or too large."
     IDS_EE_STRUCTARRAYTOOLARGE              "Array size exceeds addressing limitations."
-    IDS_EE_TOOMANYASSOCIATES                "Internal limitation: too many property methods associated with this method."
     IDS_EE_TOOMANYFIELDS                    "Internal limitation: too many fields."
 
     IDS_EE_UNHANDLED_EXCEPTION              "Unhandled Exception:"
@@ -1417,7 +1338,6 @@ BEGIN
 
     IDS_EE_ARRAY_DIMENSIONS_EXCEEDED        "Array dimensions exceeded supported range."
 
-    IDS_EE_CANNOT_LOAD_JIT                  "Unable to load JIT Compiler: (%s): file may be missing or corrupt. Please check or rerun setup."
     IDS_EE_PROFILING_FAILURE                "Profiling failure"
 
 
@@ -1431,9 +1351,6 @@ BEGIN
 
     IDS_EE_THREADSTART_STATE                "Thread is running or terminated; it cannot restart."
     IDS_EE_THREAD_CANNOT_GET                "Unable to retrieve thread information."
-    IDS_EE_THREAD_SUSPEND_NON_RUNNING       "Thread is not running; it cannot be suspended."
-    IDS_EE_THREAD_RESUME_NON_RUNNING        "Thread is not running; it cannot be resumed."
-    IDS_EE_THREAD_RESUME_NON_USER_SUSPEND   "Thread is not user-suspended; it cannot be resumed."
     IDS_EE_THREAD_DEAD_PRIORITY             "Thread is dead; priority cannot be accessed."
     IDS_EE_THREAD_PRIORITY_FAIL             "Unable to set thread priority."
     IDS_EE_THREAD_DEAD_STATE                "Thread is dead; state cannot be accessed."
@@ -1443,22 +1360,11 @@ BEGIN
     IDS_EE_THREAD_DEADLOCK_VICTIM           "The current thread has been chosen as a deadlock victim."
 
     IDS_EE_PATH_TOO_LONG                    "The path is too long after being fully qualified.  Make sure the full path is less than 260 characters and the directory name is less than 248 characters."
-    IDS_EE_PATH_HAS_IMPROPER_CHAR           "The path contains illegal characters."
-    IDS_EE_PATH_ILLEGAL                     "The path is not of a legal form."
-    IDS_EE_PATH_INVALID_UNCPATH             "The UNC path should be of the form \\\\server\\share."
-    IDS_EE_PATH_GLOBALROOT                  "Paths starting with \\\\?\\GlobalRoot are internal to the kernel and should not be opened by managed applications."
-
-    IDS_CLASSLOAD_BADOVERLAP                "Illegal layout for type '%1' from assembly '%2': valuetypes with non-public fields may not overlap with other fields."
-
-    IDS_EE_SID_TIMEOUT                      "Lookup of token information timed out."
-
+    
     IDS_EE_INVALID_SAFEARRAY                "Specified SAFEARRAY is invalid."
 
     IDS_EE_METHOD_NOT_FOUND_ON_EV_PROV      "Method '%1' of COM event interface '%2' is not present on event provider '%3'."
     IDS_EE_BAD_COMEVENTITF_CLASS            "Methods on COM event interfaces must take a single delegate derived class as a parameter and have a void return type."
-
-    IDS_EE_COREXEMAIN_FAILED_TEXT           "Could not run the given program.  _CorExeMain failed."
-    IDS_EE_COREXEMAIN_FAILED_TITLE          "The Common Language Runtime could not run the given program."
 
     IDS_EE_ICUSTOMMARSHALERNOTIMPL          "Custom marshaler '%1' does not implement the ICustomMarshaler interface."
     IDS_EE_GETINSTANCENOTIMPL               "Custom marshaler '%1' does not implement a static GetInstance method that takes a single string parameter and returns an ICustomMarshaler."
@@ -1476,15 +1382,10 @@ BEGIN
     IDS_EE_SH_FIELD_INVALID_OPERATION       "Structures containing SafeHandle fields are not allowed in this operation."
     IDS_EE_CANNOT_CREATE_SAFEHANDLE_FIELD   "SafeHandle fields cannot be created from an unmanaged handle."
     IDS_EE_SH_IN_VARIANT_NOT_SUPPORTED      "SafeHandle derived types cannot be stored in Variants."
-    IDS_CLASSLOAD_SH_SUBCLASS_FINALIZER     "SafeHandle subclasses may not override the finalizer. Put logic in ReleaseHandle instead."
-
-    IDS_EE_CRITICALHANDLECLOSED             "Critical handle has been closed"
-
-    IDS_EE_CH_FIELD_INVALID_OPERATION       "Structures containing CriticalHandle fields are not allowed in this operation."
+    
     IDS_EE_CANNOT_CREATE_CRITICALHANDLE_FIELD "CriticalHandle fields cannot be created from an unmanaged handle."
     IDS_EE_CH_IN_VARIANT_NOT_SUPPORTED      "CriticalHandle derived types cannot be stored in Variants."
-    IDS_CLASSLOAD_CH_SUBCLASS_FINALIZER     "CriticalHandle subclasses may not override the finalizer. Put logic in ReleaseHandle instead."
-
+    
     IDS_EE_VAR_WRAP_IN_VAR_NOT_SUPPORTED    "VariantWrappers cannot be stored in Variants."
     IDS_EE_RECORD_NON_SUPPORTED_FIELDS      "The structure contains fields that are not supported in unmanaged records."
 
@@ -1494,8 +1395,6 @@ BEGIN
 
     IDS_CLASSLOAD_ASSEMBLY_RESOLVE_RETURNED_INTROSPECTION "AssemblyResolveEvent handlers cannot return Assemblies loaded for reflection only."
     IDS_CLASSLOAD_ASSEMBLY_RESOLVE_RETURNED_EXECUTION     "ReflectionOnlyAssemblyResolve handlers must return Assemblies loaded for reflection only." 
-
-    IDS_CLASSLOAD_MODULE_RESOLVE_INTROSPECTION_MISMATCH "ModuleResolveEvent returned an incompatible Module. ReflectionOnly assemblies cannot bind to normal Modules, nor vice-versa."
 
     IDS_CLASSLOAD_OVERLAPPING_INTERFACES "The type '%1' in assembly '%2' has a contracting interface set for some instantiations"
     
@@ -1507,9 +1406,7 @@ BEGIN
     IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_PARENT_METHOD_IMPL "Method '%3' on type '%1' from assembly '%2' tried to explicitly implement a parent method with weaker type parameter constraints."
     IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_INTERFACE_METHOD_IMPL "Method '%3' on type '%1' from assembly '%2' tried to explicitly implement an interface method with weaker type parameter constraints."
     IDS_CLASSLOAD_EXPLICIT_GENERIC "Could not load type '%1' from assembly '%2' because generic types cannot have explicit layout."
-    IDS_EE_CONFIGPARSER_ERROR_CAPTION   "Configuration parser error"
-    IDS_EE_CONFIGPARSER_ERROR           "Error parsing %s\nParser returned error 0x%08X."
-
+    
     IDS_EE_COM_INVISIBLE_PARENT "This type has a ComVisible(false) parent in its hierarchy, therefore QueryInterface calls for IDispatch or class interfaces are disallowed."
 
     IDS_EE_COMIMPORT_METHOD_NO_INTERFACE    "Method '%1' in ComImport class '%2' must implement an interface method."
@@ -1521,11 +1418,9 @@ BEGIN
     IDS_CLASSLOAD_BAD_VARIANCE_SIG          "Type contains improperly formed type variance signature."
     IDS_CLASSLOAD_VARIANCE_IN_DELEGATE      "Could not load type '%1' from assembly '%2' because it declares a field in a covariant type."
     IDS_CLASSLOAD_TOO_MANY_METHODS          "Type '%1' from assembly '%2' contains more methods than the current implementation allows."
-    IDS_LOADINTROSPECTION_DISALLOWED        "Illegal to load assemblies for ReflectionOnly in a verification domain."
     IDS_EE_CODEEXECUTION_ASSEMBLY_FOR_PASSIVE_DOMAIN_ONLY "File '%1' was loaded in a passive domain in a manner that makes it unable to run."
     IDS_CLASSLOAD_MI_CANNOT_OVERRIDE        "Cannot override runtime implemented method '%3' on type '%1' from assembly '%2'."
 
-    IDS_EE_WRONG_METADATA_VERSION           "'%1' has an incompatible metadata format. The assembly must be compiled using metadata format '%2'."
     IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR   "Collectible type '%1' has unsupported FixedAddressValueTypeAttribute applied to a field."
     IDS_EE_JIT_COMPILER_ERROR               "The JIT compiler encountered invalid IL code or an internal limitation."
     IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED  "Invalid managed/unmanaged type combination (Marshaling to and from COM VARIANTs isn't supported)."
@@ -1535,19 +1430,7 @@ BEGIN
     IDS_E_METHODACCESS                      "Attempt by method '%1' to access method '%2' failed.%3"
     IDS_E_TYPEACCESS                        "Attempt by method '%1' to access type '%2' failed.%3"
 
-    IDS_EE_TORNSTATE                        "Unexpected change made to file '%1'."
-
     IDS_INVOKE_NULLREF_RETURNED             "The target method returned a null reference."
-END
-
-// These strings are generated from within the EE for streams
-STRINGTABLE DISCARDABLE 
-BEGIN
-    IDS_STREAMS_FILE_EOF                     "Reached the end of the file."
-    IDS_STREAMS_FILE_OPEN                    "File has not been opened."
-    IDS_STREAMS_FILE_BUFFER                  "Buffer is shorter than requested bytes."
-    IDS_STREAMS_FILE_NAME                    "File name was not supplied."
-    IDS_STREAMS_SEEK_MODIFIER                "Undefined seek modifier."
 END
 
 // These strings are used for Event Log Entry
@@ -1573,29 +1456,14 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN 
-    IDS_FAIL_CAPTION                         "Configuration error."
     IDS_COMPLUS_ERROR                        "CLR error: %lx.\n The program will now terminate."
     IDS_FATAL_ERROR                         "Fatal error"     
     IDS_ERROR                               "Error"
-    IDS_INVALID_VARIANT_MSG                  "An invalid VARIANT has been passed as argument %i of method '%s' of type '%s'.  If this argument is meant to be an interface pointer, add [MarshalAs(UnmanagedType.Interface)] to the managed definition of the argument.\n\nClick CANCEL to break into the debugger and OK to continue."
-    IDS_INVALID_VARIANT_CAPTION              "Invalid VARIANT."
-
-    IDS_DEBUG_DIFF_BUILDS_ERR                "Warning: Components of the Common Language Runtime debugging services are from different builds.\nContinuing to run will cause unpredictable results.\n\nIn-process component (mscoree.dll) is version %d.%d (%s)\nOut-of-process component (mscordbi.dll) is version %d.%d (%s).\n."
-    IDS_DEBUG_NO_DEBUGGER_FOUND              "No debugger found."
+    
     IDS_DEBUG_UNHANDLEDEXCEPTION_IPC         "INTERNAL ERROR:\n\nUnhandled exception in Debugger::HandleIPCEvent.\n\nEvent ID=0x%x.\n\nException code=0x%08x, Eip=0x%08x.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\n"
     IDS_DEBUG_UNHANDLED_EXCEPTION_MSG        "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application."
     IDS_DEBUG_USER_BREAKPOINT_MSG            "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint."
 
-    IDS_DBI_ERRLOG_CATAGORY                  "DebuggerError"
-    IDS_DBI_EXCEPTION_ON_UNKNOWN_THREAD_MSG  "Ignoring managed exception from unknown thread."
-
-    IDS_EE_NOTSUPPORTED_CATCHBEFORETRY       "Catch handler cannot precede try block."
-
-    IDS_PERFORMANCEMON_WINNT_ERR             "Performance Monitor Extension DLL for CLR.  This can only be used on Windows NT."
-    IDS_PERFORMANCEMON_WINNT_TITLE           "Could not load on non-Windows NT system."
-    
-    IDS_WATSON_DEBUG_BREAK_INTRO_BOLD        "%General_AppName% has encountered a user-defined breakpoint." 
-    IDS_WATSON_DEBUG_BREAK_INTRO_REG         "A breakpoint in an application indicates a program error.  After this dialog is dismissed, the application will continue running, but it may be in an unstable state." 
 END
 
 
@@ -1862,11 +1730,6 @@ BEGIN
 
     VER_E_TYPELOAD           "Type load failed."
     VER_E_PE_LOAD            "Module load failed."
-
-    IDS_VER_E_FORMATTING     "Error formatting message."
-    IDS_VER_E_ILERROR        "[IL]: Error: "
-    IDS_VER_E_GLOBAL         "<GlobalFunction>"
-    IDS_VER_E_MDTOKEN        "[mdToken=0x%x]"
 END
 
 // Security error messages
@@ -1874,47 +1737,23 @@ STRINGTABLE DISCARDABLE
 BEGIN
         SN_CRYPTOAPI_CALL_FAILED        "StrongName APIs not supported on system."
         SN_NO_SUITABLE_CSP              "StrongName APIs could not locate a matching CSP."
-        SN_NO_SUITABLE_CSP_NAME         "StrongName APIs could not locate a matching CSP for assembly '%1'."
         SN_E_PUBLICKEY_MISMATCH         "Key pair does not match public key from assembly '%1'."
-END
-
-// Object clone error messages. Most of these have corresponding resources in mscorlib (see mscorlib.txt)
-STRINGTABLE DISCARDABLE 
-BEGIN
-    IDS_SERIALIZATION_NONSERTYPE        "Type '%1' in assembly '%2' is not marked as serializable."
-    IDS_SERIALIZATION_CTOR_NOT_FOUND    "The constructor to deserialize an object of type '%1' was not found."
-    IDS_SERIALIZATION_WRONGFIELDTYPE    "Possible version mismatch. Field '%1' in class '%2' has mismatched types." 
-    IDS_SERIALIZATION_UNRESOLVED_SPECIAL_OBJECT "Not all delayed fixup objects could be resolved.  Such objects could be cyclic IObjectReferences, IObjectReferences that return other IObjectReferences too many times (i.e. objects with too long an IObjectReference chain) or nested valuetypes."
-    IDS_SERIALIZATION_UNRESOLVED_TYPE   "Type is not resolved for member '%1,%2'." 
-    IDS_SERIALIZATION_NONFREEZABLE_TYPE "Type '%1' in assembly '%2' cannot be persisted into the native image." 
-    IDS_SERIALIZATION_BAD_ISER_TYPE     "ISerializable type '%1' tried to deserialize itself as type '%2' which is an invalid type."
-    IDS_REMOTING_SERVER_DISCONNECTED    "Object '%1' has been disconnected or does not exist at the server."
-    IDS_REMOTING_METHODMISSING          "The method '%1' was not found on type '%2'." 
-    IDS_CLASSLOAD_TOO_MANY_VTS_METHODS  "Type '%1' in assembly '%2' has more than one method with the following custom attribute '%3'."
-    IDS_CLASSLOAD_INVALID_VTS_SIG       "Type '%1' in assembly '%2' has method '%3' with an incorrect signature for the serialization attribute that it is decorated with."
-    IDS_CLASSLOAD_INVALID_VTS_METHOD    "Type '%1' in assembly '%2' has method '%3' which is either static, virtual, abstract or generic, but is marked as being a serialization callback method."
-    IDS_SERIALIZATION_MISSING_FIELD     "Member '%1' in class '%2' is not present in the serialized stream and is not marked with System.Runtime.Serialization.OptionalFieldAttribute."
 END
 
 // General prompt strings.
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDS_GENERAL_SVC_DESCRIPTION         "Notifies a subscribing client when a specified process is initializing the CLR.  If this service is stopped, the client will not receive such notification.  If this service is disabled, any services that explicitly depend on it will fail to start."
     IDS_RTL                             "RTL_False"    //  change this to RTL_True on Arabic/Hebrew system
 END
 
 // BAD_FORMAT_ASSERT error messages
 STRINGTABLE DISCARDABLE
 BEGIN
-        BFA_INVALID_FILE_TOKEN                  "Invalid file token."
         BFA_INVALID_TOKEN_TYPE                  "Invalid token type."
-        BFA_INVALID_ENTRYPOINT_TOKEN            "Invalid entry point token."
         BFA_INVALID_TOKEN                       "Invalid token."
-        BFA_INVALID_TOKEN_VTABLE                "Invalid token in v-table fix-up table; use ildasm to find code generation error."
         BFA_UNABLE_TO_GET_NESTED_PROPS          "Unable to get nested type properties."
         BFA_METHOD_TOKEN_OUT_OF_RANGE           "Method token out of range."
         BFA_METHOD_NAME_TOO_LONG                "Method name too long."
-        BFA_METHOD_NAME_NOT_TERMINATED          "Method name is not null terminated."
         BFA_METHOD_IN_A_ENUM                    "Method in an Enum."
         BFA_METHOD_WITH_NONZERO_RVA             "Method with non-zero RVA in an Import."
         BFA_ABSTRACT_METHOD_WITH_RVA            "Abstract method with non-zero RVA."
@@ -1944,7 +1783,6 @@ BEGIN
         BFA_INSTANCE_FIELD_IN_INT               "Instance Field in an Interface."
         BFA_INSTANCE_FIELD_IN_ENUM              "No Instance Field in an Enum."
         BFA_NONVIRT_NO_SEARCH                   "Non-virtual methods should not be searched."
-        BFA_CANT_BE_INIT_METHOD                 "This method cannot be an Init Method."
         BFA_MANAGED_NATIVE_NYI                  "Managed native not presently supported."
         BFA_BAD_IMPL_FLAGS                      "Bad implementation flags."
         BFA_BAD_UNMANAGED_ENTRY_POINT           "Bad unmanaged code entry point."
@@ -1956,7 +1794,6 @@ BEGIN
         BFA_MISSING_DELEGATE_METHOD             "Missing definition for required runtime implemented delegate method."
         BFA_MULT_TYPE_SAME_NAME                 "Duplicate type with name '%1' in assembly '%2'."
         BFA_INVALID_METHOD_TOKEN                "Bad method token."
-        BFA_CANT_GET_LINKREF                    "Cannot get LinkRef."
         BFA_ECALLS_MUST_BE_IN_SYS_MOD           "ECall methods must be packaged into a system module."
         BFA_CANT_GET_CLASSLAYOUT                "Could not get classlayout."
         BFA_CALLCONV_NOT_LOCAL_SIG              "Signature is not IMAGE_CEE_CS_CALLCONV_LOCAL_SIG."
@@ -1964,7 +1801,6 @@ BEGIN
         BFA_BAD_IL_RANGE                        "Bad IL range."
         BFA_METHODDEF_WO_TYPEDEF_PARENT         "MethodDef without TypeDef as Parent."
         BFA_METHODDEF_PARENT_NO_MEMBERS         "MethodSpec or MemberRef has parent with no members."
-        BFA_MUST_USE_MEMBERREF_W_FIELD_GEN      "Fields inside generic classes must be referenced using MemberRefs, even in the same module as the class."
         BFA_INVALID_TOKEN_IN_MANIFESTRES        "Invalid token saved in ManifestResource."
         BFA_EMPTY_ASSEMDEF_NAME                 "Empty assembly simple name."
         BFA_BAD_IL                              "Bad IL format."
@@ -1979,13 +1815,10 @@ BEGIN
         BFA_BAD_CLASS_INT_CA                    "The ClassInterface custom attribute is invalid."
         BFA_BAD_CLASS_INT_CA_FORMAT             "ClassInterface custom attribute does not have the right format."
         BFA_BAD_COMPLUS_SIG                     "Illegal or unimplemented ELEM_TYPE in signature."
-        BFA_TYPE_FWD_CHAIN_TOO_LONG             "Type forwarding chain is too long or is recursive."
         BFA_BAD_ELEM_IN_SIZEOF                  "Bad element type in SizeOf."
         BFA_BAD_CA_HEADER                       "Malformed custom attribute header."
-        BFA_BAD_CA_STRING                       "Malformed custom attribute string."
         BFA_BAD_STRING_TOKEN                    "Bad string token."
         BFA_BAD_STRING_TOKEN_RANGE              "No string associated with token."
-        BFA_FIXUP_WRONG_PLATFORM                "Image has a platform-specific fixup type that is not compatible with this platform."
         BFA_UNEXPECTED_GENERIC_TOKENTYPE        "Token specifying generic type must be either a typeref or typedef."
         BFA_MDARRAY_BADRANK                     "Array rank may not be zero."
         BFA_SDARRAY_BADRANK                     "Single-dimensional array rank must be one."
@@ -1996,14 +1829,11 @@ BEGIN
         BFA_NOFIND_EXPORTED_TYPE                "Could not find exported type in metadata."
         BFA_NOT_AN_ARRAY                        "Expected array type."
         BFA_EXPECTED_METHODDEF_OR_MEMBERREF     "Generic member ref must be of type MethodDef or MemberRef."
-        BFA_EXPECTED_INTERFACE                  "Expected interface."
-        BFA_INVALID_CA_TYPESPEC                 "Custom attributes that are TypeSpecs must be of type ELEMENT_TYPE_VALUETYPE or ELEMENT_TYPE_CLASS."
         BFA_UNEXPECTED_FIELD_SIGNATURE          "An unexpected field signature was found."
         BFA_UNEXPECTED_TOKEN_AFTER_CLASSVALTYPE "A valid typedef or typeref token is expected to follow a ELEMENT_TYPE_CLASS or ELEMENT_TYPE_VALUETYPE."
         BFA_FNPTR_CANNOT_BE_A_FIELD             "A ELEMENT_TYPE_FNPTR cannot have a field signature."
         BFA_FNPTR_CANNOT_BE_GENERIC             "A ELEMENT_TYPE_FNPTR cannot be generic."
         BFA_UNEXPECTED_TOKEN_AFTER_GENINST      "A valid typedef or typeref token is expected to follow a ELEMENT_TYPE_GENERICINST."
-        BFA_ONLY_VOID_PTR_IN_ARGS               "Only pointer to void allowed in function arguments."
         BFA_TYPEDBYREFCANNOTHAVEBYREF           "An ELEMENT_TYPE_TYPEDBYREF cannot have a ELEMENT_TYPE_BYREF modifier."
         BFA_REFERENCE_ASSEMBLY                  "Cannot load a reference assembly for execution."
 
@@ -2047,13 +1877,7 @@ BEGIN
         IDS_E_PROF_TIMEOUT_WAITING_FOR_CONCURRENT_GC    "Profiler timed out on waiting for concurrent GC to finish after '%d' milliseconds. Please configure your profiler to increase its attaching time out value or consult the documentation for the COMPlus_ProfAPI_AttachProfilerMinTimeoutInMs environment variable and try again. Profiler CLSID: '%s'."
   END
 
-// Dialog box buttons
-STRINGTABLE DISCARDABLE 
-BEGIN
-    IDS_DIALOG_BOX_ABORT_BUTTON         "&Abort"
-    IDS_DIALOG_BOX_DEBUG_BUTTON         "&Debug"
-    IDS_DIALOG_BOX_IGNORE_BUTTON        "&Ignore"
-END
+
 
 
 STRINGTABLE DISCARDABLE 
