@@ -5,7 +5,7 @@
 /*
  * Some comments about the test:
  * Expected: The code runs and completes successfully.
- * Acutal: The application hangs when it is run.
+ * Actual: The application hangs when it is run.
  * The csharp compiler seems to be generating the same IL in both the cases.
  *
  * Some comments about the bug:

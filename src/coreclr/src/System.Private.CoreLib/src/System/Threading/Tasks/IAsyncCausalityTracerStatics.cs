@@ -42,7 +42,7 @@ namespace Windows.Foundation.Diagnostics
 
     // We need this dummy class to satisfy a QI when the TracingStatusChangedHandler
     // after being stored in a GIT cookie and then called by the WinRT API. This usually
-    // happens when calling a MAnaged WinMD which access this feature.
+    // happens when calling a Managed WinMD which access this feature.
     [ComImport]
     [Guid("410B7711-FF3B-477F-9C9A-D2EFDA302DC3")]
     [WindowsRuntimeImport]
