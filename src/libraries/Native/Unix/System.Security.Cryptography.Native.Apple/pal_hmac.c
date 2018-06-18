@@ -10,9 +10,9 @@ struct hmac_ctx_st
     CCHmacContext hmac;
 };
 
-extern "C" void AppleCryptoNative_HmacFree(HmacCtx* pHmac)
+void AppleCryptoNative_HmacFree(HmacCtx* pHmac)
 {
-    if (pHmac != nullptr)
+    if (pHmac != NULL)
     {
         free(pHmac);
     }
@@ -57,21 +57,21 @@ static int32_t GetHmacOutputSize(PAL_HashAlgorithm algorithm)
     }
 }
 
-extern "C" HmacCtx* AppleCryptoNative_HmacCreate(PAL_HashAlgorithm algorithm, int32_t* pcbHmac)
+HmacCtx* AppleCryptoNative_HmacCreate(PAL_HashAlgorithm algorithm, int32_t* pcbHmac)
 {
-    if (pcbHmac == nullptr)
-        return nullptr;
+    if (pcbHmac == NULL)
+        return NULL;
 
     CCHmacAlgorithm appleAlgId = PalAlgorithmToAppleAlgorithm(algorithm);
 
     if (appleAlgId == UINT_MAX)
     {
         *pcbHmac = -1;
-        return nullptr;
+        return NULL;
     }
 
-    HmacCtx* hmacCtx = reinterpret_cast<HmacCtx*>(malloc(sizeof(HmacCtx)));
-    if (hmacCtx == nullptr)
+    HmacCtx* hmacCtx = (HmacCtx*)malloc(sizeof(HmacCtx));
+    if (hmacCtx == NULL)
         return hmacCtx;
 
     hmacCtx->appleAlgId = appleAlgId;
@@ -79,33 +79,33 @@ extern "C" HmacCtx* AppleCryptoNative_HmacCreate(PAL_HashAlgorithm algorithm, in
     return hmacCtx;
 }
 
-extern "C" int32_t AppleCryptoNative_HmacInit(HmacCtx* ctx, uint8_t* pbKey, int32_t cbKey)
+int32_t AppleCryptoNative_HmacInit(HmacCtx* ctx, uint8_t* pbKey, int32_t cbKey)
 {
-    if (ctx == nullptr || cbKey < 0)
+    if (ctx == NULL || cbKey < 0)
         return 0;
-    if (cbKey != 0 && pbKey == nullptr)
+    if (cbKey != 0 && pbKey == NULL)
         return 0;
 
     // No return value
-    CCHmacInit(&ctx->hmac, ctx->appleAlgId, pbKey, static_cast<size_t>(cbKey));
+    CCHmacInit(&ctx->hmac, ctx->appleAlgId, pbKey, (size_t)cbKey);
     return 1;
 }
 
-extern "C" int32_t AppleCryptoNative_HmacUpdate(HmacCtx* ctx, uint8_t* pbData, int32_t cbData)
+int32_t AppleCryptoNative_HmacUpdate(HmacCtx* ctx, uint8_t* pbData, int32_t cbData)
 {
     if (cbData == 0)
         return 1;
-    if (ctx == nullptr || pbData == nullptr)
+    if (ctx == NULL || pbData == NULL)
         return 0;
 
     // No return value
-    CCHmacUpdate(&ctx->hmac, pbData, static_cast<size_t>(cbData));
+    CCHmacUpdate(&ctx->hmac, pbData, (size_t)cbData);
     return 1;
 }
 
-extern "C" int32_t AppleCryptoNative_HmacFinal(HmacCtx* ctx, uint8_t* pbOutput)
+int32_t AppleCryptoNative_HmacFinal(HmacCtx* ctx, uint8_t* pbOutput)
 {
-    if (ctx == nullptr || pbOutput == nullptr)
+    if (ctx == NULL || pbOutput == NULL)
         return 0;
 
     // No return value

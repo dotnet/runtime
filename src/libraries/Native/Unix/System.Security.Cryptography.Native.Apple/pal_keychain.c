@@ -4,15 +4,15 @@
 
 #include "pal_keychain.h"
 
-extern "C" int32_t AppleCryptoNative_SecKeychainItemCopyKeychain(SecKeychainItemRef item, SecKeychainRef* pKeychainOut)
+int32_t AppleCryptoNative_SecKeychainItemCopyKeychain(SecKeychainItemRef item, SecKeychainRef* pKeychainOut)
 {
-    if (pKeychainOut != nullptr)
-        *pKeychainOut = nullptr;
+    if (pKeychainOut != NULL)
+        *pKeychainOut = NULL;
 
-    if (item == nullptr)
+    if (item == NULL)
         return errSecNoSuchKeychain;
 
-    auto itemType = CFGetTypeID(item);
+     CFTypeID itemType = CFGetTypeID(item);
 
     if (itemType == SecKeyGetTypeID() || itemType == SecIdentityGetTypeID() || itemType == SecCertificateGetTypeID())
     {
@@ -35,39 +35,39 @@ extern "C" int32_t AppleCryptoNative_SecKeychainItemCopyKeychain(SecKeychainItem
     return errSecParam;
 }
 
-extern "C" int32_t AppleCryptoNative_SecKeychainCreate(const char* pathName,
-                                                       uint32_t passphraseLength,
-                                                       const uint8_t* passphraseUtf8,
-                                                       SecKeychainRef* pKeychainOut)
+int32_t AppleCryptoNative_SecKeychainCreate(const char* pathName,
+                                            uint32_t passphraseLength,
+                                            const uint8_t* passphraseUtf8,
+                                            SecKeychainRef* pKeychainOut)
 {
-    return SecKeychainCreate(pathName, passphraseLength, passphraseUtf8, false, nullptr, pKeychainOut);
+    return SecKeychainCreate(pathName, passphraseLength, passphraseUtf8, false, NULL, pKeychainOut);
 }
 
-extern "C" int32_t AppleCryptoNative_SecKeychainDelete(SecKeychainRef keychain)
+int32_t AppleCryptoNative_SecKeychainDelete(SecKeychainRef keychain)
 {
     return SecKeychainDelete(keychain);
 }
 
-extern "C" int32_t AppleCryptoNative_SecKeychainCopyDefault(SecKeychainRef* pKeychainOut)
+int32_t AppleCryptoNative_SecKeychainCopyDefault(SecKeychainRef* pKeychainOut)
 {
-    if (pKeychainOut != nullptr)
-        *pKeychainOut = nullptr;
+    if (pKeychainOut != NULL)
+        *pKeychainOut = NULL;
 
     return SecKeychainCopyDefault(pKeychainOut);
 }
 
-extern "C" int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath, SecKeychainRef* pKeychainOut)
+int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath, SecKeychainRef* pKeychainOut)
 {
-    if (pKeychainOut != nullptr)
-        *pKeychainOut = nullptr;
+    if (pKeychainOut != NULL)
+        *pKeychainOut = NULL;
 
-    if (pszKeychainPath == nullptr)
+    if (pszKeychainPath == NULL)
         return errSecParam;
 
     return SecKeychainOpen(pszKeychainPath, pKeychainOut);
 }
 
-extern "C" int32_t AppleCryptoNative_SetKeychainNeverLock(SecKeychainRef keychain)
+int32_t AppleCryptoNative_SetKeychainNeverLock(SecKeychainRef keychain)
 {
     SecKeychainSettings settings = {
         .version = SEC_KEYCHAIN_SETTINGS_VERS1, .useLockInterval = 0, .lockOnSleep = 0, .lockInterval = INT_MAX,
@@ -79,28 +79,28 @@ extern "C" int32_t AppleCryptoNative_SetKeychainNeverLock(SecKeychainRef keychai
 static int32_t
 EnumerateKeychain(SecKeychainRef keychain, CFStringRef matchType, CFArrayRef* pCertsOut, int32_t* pOSStatus)
 {
-    if (pCertsOut != nullptr)
-        *pCertsOut = nullptr;
-    if (pOSStatus != nullptr)
+    if (pCertsOut != NULL)
+        *pCertsOut = NULL;
+    if (pOSStatus != NULL)
         *pOSStatus = noErr;
 
-    assert(matchType != nullptr);
+    assert(matchType != NULL);
 
-    if (keychain == nullptr || pCertsOut == nullptr || pOSStatus == nullptr)
+    if (keychain == NULL || pCertsOut == NULL || pOSStatus == NULL)
         return -1;
 
     CFMutableDictionaryRef query = CFDictionaryCreateMutable(
         kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 
-    if (query == nullptr)
+    if (query == NULL)
         return -2;
 
     int32_t ret = 0;
-    CFTypeRef result = nullptr;
+    CFTypeRef result = NULL;
     CFArrayRef searchList = CFArrayCreate(
-        nullptr, const_cast<const void**>(reinterpret_cast<void**>(&keychain)), 1, &kCFTypeArrayCallBacks);
+        NULL, (void**)(&keychain), 1, &kCFTypeArrayCallBacks);
 
-    if (searchList == nullptr)
+    if (searchList == NULL)
     {
         ret = -3;
     }
@@ -115,14 +115,14 @@ EnumerateKeychain(SecKeychainRef keychain, CFStringRef matchType, CFArrayRef* pC
 
         if (*pOSStatus == noErr)
         {
-            if (result == nullptr || CFGetTypeID(result) != CFArrayGetTypeID())
+            if (result == NULL || CFGetTypeID(result) != CFArrayGetTypeID())
             {
                 ret = -3;
             }
             else
             {
                 CFRetain(result);
-                *pCertsOut = reinterpret_cast<CFArrayRef>(result);
+                *pCertsOut = (CFArrayRef)result;
                 ret = 1;
             }
         }
@@ -137,25 +137,25 @@ EnumerateKeychain(SecKeychainRef keychain, CFStringRef matchType, CFArrayRef* pC
         }
     }
 
-    if (searchList != nullptr)
+    if (searchList != NULL)
         CFRelease(searchList);
 
-    if (result != nullptr)
+    if (result != NULL)
         CFRelease(result);
 
     CFRelease(query);
     return ret;
 }
 
-extern "C" int32_t
+int32_t
 AppleCryptoNative_SecKeychainEnumerateCerts(SecKeychainRef keychain, CFArrayRef* pCertsOut, int32_t* pOSStatus)
 {
     return EnumerateKeychain(keychain, kSecClassCertificate, pCertsOut, pOSStatus);
 }
 
-extern "C" int32_t AppleCryptoNative_SecKeychainEnumerateIdentities(SecKeychainRef keychain,
-                                                                    CFArrayRef* pIdentitiesOut,
-                                                                    int32_t* pOSStatus)
+int32_t AppleCryptoNative_SecKeychainEnumerateIdentities(SecKeychainRef keychain,
+                                                         CFArrayRef* pIdentitiesOut,
+                                                         int32_t* pOSStatus)
 {
     return EnumerateKeychain(keychain, kSecClassIdentity, pIdentitiesOut, pOSStatus);
 }
@@ -165,21 +165,21 @@ static OSStatus DeleteInKeychain(CFTypeRef needle, SecKeychainRef haystack)
     CFMutableDictionaryRef query = CFDictionaryCreateMutable(
         kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 
-    if (query == nullptr)
+    if (query == NULL)
         return errSecAllocate;
 
     CFArrayRef searchList = CFArrayCreate(
-        nullptr, const_cast<const void**>(reinterpret_cast<void**>(&haystack)), 1, &kCFTypeArrayCallBacks);
+        NULL, (void**)(&haystack), 1, &kCFTypeArrayCallBacks);
 
-    if (searchList == nullptr)
+    if (searchList == NULL)
     {
         CFRelease(query);
         return errSecAllocate;
     }
 
-    CFArrayRef itemMatch = CFArrayCreate(nullptr, reinterpret_cast<const void**>(&needle), 1, &kCFTypeArrayCallBacks);
+    CFArrayRef itemMatch = CFArrayCreate(NULL, (const void**)(&needle), 1, &kCFTypeArrayCallBacks);
 
-    if (itemMatch == nullptr)
+    if (itemMatch == NULL)
     {
         CFRelease(searchList);
         CFRelease(query);
@@ -216,29 +216,32 @@ static OSStatus DeleteInKeychain(CFTypeRef needle, SecKeychainRef haystack)
     return status;
 }
 
-extern "C" int32_t
+typedef const struct OpaqueSecCertificateRef * ConstSecCertificateRef;
+typedef const struct OpaqueSecIdentityRef * ConstSecIdentityRef;
+
+int32_t
 AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus)
 {
-    if (pOSStatus != nullptr)
+    if (pOSStatus != NULL)
         *pOSStatus = noErr;
 
-    if (certOrIdentity == nullptr || keychain == nullptr || pOSStatus == nullptr)
+    if (certOrIdentity == NULL || keychain == NULL || pOSStatus == NULL)
         return -1;
 
-    SecCertificateRef cert = nullptr;
-    SecKeyRef privateKey = nullptr;
+    SecCertificateRef cert = NULL;
+    SecKeyRef privateKey = NULL;
 
-    auto inputType = CFGetTypeID(certOrIdentity);
+    CFTypeID inputType = CFGetTypeID(certOrIdentity);
     OSStatus status = noErr;
 
     if (inputType == SecCertificateGetTypeID())
     {
-        cert = reinterpret_cast<SecCertificateRef>(const_cast<void*>(certOrIdentity));
+        cert = (ConstSecCertificateRef)certOrIdentity;
         CFRetain(cert);
     }
     else if (inputType == SecIdentityGetTypeID())
     {
-        SecIdentityRef identity = reinterpret_cast<SecIdentityRef>(const_cast<void*>(certOrIdentity));
+        SecIdentityRef identity = (ConstSecIdentityRef)certOrIdentity;
         status = SecIdentityCopyCertificate(identity, &cert);
 
         if (status == noErr)
@@ -251,15 +254,15 @@ AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecKeychainR
         return -1;
     }
 
-    SecKeychainItemRef itemCopy = nullptr;
+    SecKeychainItemRef itemCopy = NULL;
 
     // Copy the private key into the new keychain first, because it can fail due to
     // non-exportability. Certificates can only fail for things like I/O errors saving the
     // keychain back to disk.
-    if (status == noErr && privateKey != nullptr)
+    if (status == noErr && privateKey != NULL)
     {
         status =
-            SecKeychainItemCreateCopy(reinterpret_cast<SecKeychainItemRef>(privateKey), keychain, nullptr, &itemCopy);
+            SecKeychainItemCreateCopy((SecKeychainItemRef)privateKey, keychain, NULL, &itemCopy);
     }
 
     if (status == errSecDuplicateItem)
@@ -267,18 +270,18 @@ AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecKeychainR
         status = noErr;
     }
 
-    // Since we don't care about the itemCopy we'd ideally pass nullptr to SecKeychainItemCreateCopy,
+    // Since we don't care about the itemCopy we'd ideally pass NULL to SecKeychainItemCreateCopy,
     // but even though the documentation says it can be null, clang gives an error that null isn't
     // allowed.
-    if (itemCopy != nullptr)
+    if (itemCopy != NULL)
     {
         CFRelease(itemCopy);
-        itemCopy = nullptr;
+        itemCopy = NULL;
     }
 
-    if (status == noErr && cert != nullptr)
+    if (status == noErr && cert != NULL)
     {
-        status = SecKeychainItemCreateCopy(reinterpret_cast<SecKeychainItemRef>(cert), keychain, nullptr, &itemCopy);
+        status = SecKeychainItemCreateCopy((SecKeychainItemRef)cert, keychain, NULL, &itemCopy);
     }
 
     if (status == errSecDuplicateItem)
@@ -286,51 +289,51 @@ AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecKeychainR
         status = noErr;
     }
 
-    if (itemCopy != nullptr)
+    if (itemCopy != NULL)
     {
         CFRelease(itemCopy);
-        itemCopy = nullptr;
+        itemCopy = NULL;
     }
 
-    if (privateKey != nullptr)
+    if (privateKey != NULL)
     {
         CFRelease(privateKey);
-        privateKey = nullptr;
+        privateKey = NULL;
     }
 
-    if (cert != nullptr)
+    if (cert != NULL)
     {
         CFRelease(cert);
-        cert = nullptr;
+        cert = NULL;
     }
 
     *pOSStatus = status;
     return status == noErr;
 }
 
-extern "C" int32_t
+int32_t
 AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus)
 {
-    if (pOSStatus != nullptr)
+    if (pOSStatus != NULL)
         *pOSStatus = noErr;
 
-    if (certOrIdentity == nullptr || keychain == nullptr || pOSStatus == nullptr)
+    if (certOrIdentity == NULL || keychain == NULL || pOSStatus == NULL)
         return -1;
 
-    SecCertificateRef cert = nullptr;
-    SecIdentityRef identity = nullptr;
+    SecCertificateRef cert = NULL;
+    SecIdentityRef identity = NULL;
 
-    auto inputType = CFGetTypeID(certOrIdentity);
+    CFTypeID inputType = CFGetTypeID(certOrIdentity);
     OSStatus status = noErr;
 
     if (inputType == SecCertificateGetTypeID())
     {
-        cert = reinterpret_cast<SecCertificateRef>(const_cast<void*>(certOrIdentity));
+        cert = (ConstSecCertificateRef)certOrIdentity;
         CFRetain(cert);
     }
     else if (inputType == SecIdentityGetTypeID())
     {
-        identity = reinterpret_cast<SecIdentityRef>(const_cast<void*>(certOrIdentity));
+        identity = (ConstSecIdentityRef)certOrIdentity;
         status = SecIdentityCopyCertificate(identity, &cert);
 
         if (status != noErr)
@@ -347,17 +350,17 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeycha
     const int32_t kErrorUserTrust = 2;
     const int32_t kErrorAdminTrust = 3;
 
-    CFArrayRef settings = nullptr;
+    CFArrayRef settings = NULL;
 
     if (status == noErr)
     {
         status = SecTrustSettingsCopyTrustSettings(cert, kSecTrustSettingsDomainUser, &settings);
     }
 
-    if (settings != nullptr)
+    if (settings != NULL)
     {
         CFRelease(settings);
-        settings = nullptr;
+        settings = NULL;
     }
 
     if (status == noErr)
@@ -368,10 +371,10 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeycha
 
     status = SecTrustSettingsCopyTrustSettings(cert, kSecTrustSettingsDomainAdmin, &settings);
 
-    if (settings != nullptr)
+    if (settings != NULL)
     {
         CFRelease(settings);
-        settings = nullptr;
+        settings = NULL;
     }
 
     if (status == noErr)
