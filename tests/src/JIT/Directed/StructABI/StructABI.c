@@ -85,6 +85,14 @@ struct PointerFloatAndByte
 	uint8_t Byte;
 };
 
+struct ShortIntFloatIntPtr
+{
+	__int16 Short;
+	__int32 Int;
+	float Float;
+	__int32* Pointer;
+};
+
 struct TwoLongs
 {
     uint64_t Long1;
@@ -259,6 +267,11 @@ DLLEXPORT struct ByteFloatAndPointer EchoByteFloatAndPointer(struct ByteFloatAnd
 }
 
 DLLEXPORT struct PointerFloatAndByte EchoPointerFloatAndByte(struct PointerFloatAndByte value)
+{
+	return value;
+}
+
+DLLEXPORT struct ShortIntFloatIntPtr EchoShortIntFloatIntPtr(struct ShortIntFloatIntPtr value)
 {
 	return value;
 }
