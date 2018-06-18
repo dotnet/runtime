@@ -6387,6 +6387,12 @@ namespace System.Runtime.CompilerServices
         public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
     }
+    [System.AttributeUsage((System.AttributeTargets)(2048), AllowMultiple = false, Inherited = false)]
+    public sealed class CallerArgumentExpressionAttribute : System.Attribute
+    {
+        public CallerArgumentExpressionAttribute(string parameterName) { }
+        public string ParameterName { get { throw null; } }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited=false)]
     public sealed partial class CallerFilePathAttribute : System.Attribute
     {
