@@ -8,44 +8,44 @@
 #define kCFCoreFoundationVersionNumber10_12 1348.00
 #endif
 
-extern "C" SecPolicyRef AppleCryptoNative_X509ChainCreateDefaultPolicy()
+SecPolicyRef AppleCryptoNative_X509ChainCreateDefaultPolicy()
 {
     // Disable on macOS 10.11 and lower due to segfaults within Security.framework.
     if (kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber10_12)
-        return nullptr;
+        return NULL;
 
     return SecPolicyCreateBasicX509();
 }
 
-extern "C" SecPolicyRef AppleCryptoNative_X509ChainCreateRevocationPolicy()
+SecPolicyRef AppleCryptoNative_X509ChainCreateRevocationPolicy()
 {
     return SecPolicyCreateRevocation(kSecRevocationUseAnyAvailableMethod | kSecRevocationRequirePositiveResponse);
 }
 
-extern "C" int32_t
+int32_t
 AppleCryptoNative_X509ChainCreate(CFTypeRef certs, CFTypeRef policies, SecTrustRef* pTrustOut, int32_t* pOSStatus)
 {
-    if (pTrustOut != nullptr)
-        *pTrustOut = nullptr;
-    if (pOSStatus != nullptr)
+    if (pTrustOut != NULL)
+        *pTrustOut = NULL;
+    if (pOSStatus != NULL)
         *pOSStatus = noErr;
 
-    if (certs == nullptr || policies == nullptr || pTrustOut == nullptr || pOSStatus == nullptr)
+    if (certs == NULL || policies == NULL || pTrustOut == NULL || pOSStatus == NULL)
         return -1;
 
     *pOSStatus = SecTrustCreateWithCertificates(certs, policies, pTrustOut);
     return *pOSStatus == noErr;
 }
 
-extern "C" int32_t AppleCryptoNative_X509ChainEvaluate(SecTrustRef chain,
-                                                       CFDateRef cfEvaluationTime,
-                                                       bool allowNetwork,
-                                                       int32_t* pOSStatus)
+int32_t AppleCryptoNative_X509ChainEvaluate(SecTrustRef chain,
+                                            CFDateRef cfEvaluationTime,
+                                            bool allowNetwork,
+                                            int32_t* pOSStatus)
 {
-    if (pOSStatus != nullptr)
+    if (pOSStatus != NULL)
         *pOSStatus = noErr;
 
-    if (chain == nullptr || pOSStatus == nullptr)
+    if (chain == NULL || pOSStatus == NULL)
         return -1;
 
     *pOSStatus = SecTrustSetVerifyDate(chain, cfEvaluationTime);
@@ -85,39 +85,39 @@ extern "C" int32_t AppleCryptoNative_X509ChainEvaluate(SecTrustRef chain,
     return 1;
 }
 
-extern "C" int64_t AppleCryptoNative_X509ChainGetChainSize(SecTrustRef chain)
+int64_t AppleCryptoNative_X509ChainGetChainSize(SecTrustRef chain)
 {
-    if (chain == nullptr)
+    if (chain == NULL)
         return -1;
 
     return SecTrustGetCertificateCount(chain);
 }
 
-extern "C" SecCertificateRef AppleCryptoNative_X509ChainGetCertificateAtIndex(SecTrustRef chain, int64_t index)
+SecCertificateRef AppleCryptoNative_X509ChainGetCertificateAtIndex(SecTrustRef chain, int64_t index)
 {
-    if (chain == nullptr || index < 0)
-        return nullptr;
+    if (chain == NULL || index < 0)
+        return NULL;
 
     return SecTrustGetCertificateAtIndex(chain, index);
 }
 
-extern "C" CFArrayRef AppleCryptoNative_X509ChainGetTrustResults(SecTrustRef chain)
+CFArrayRef AppleCryptoNative_X509ChainGetTrustResults(SecTrustRef chain)
 {
-    if (chain == nullptr)
+    if (chain == NULL)
     {
-        return nullptr;
+        return NULL;
     }
 
     CFDictionaryRef detailsAndStuff = SecTrustCopyResult(chain);
-    CFArrayRef details = nullptr;
+    CFArrayRef details = NULL;
 
-    if (detailsAndStuff != nullptr)
+    if (detailsAndStuff != NULL)
     {
         CFTypeRef detailsPtr = CFDictionaryGetValue(detailsAndStuff, CFSTR("TrustResultDetails"));
 
-        if (detailsPtr != nullptr)
+        if (detailsPtr != NULL)
         {
-            details = reinterpret_cast<CFArrayRef>(const_cast<void*>(detailsPtr));
+            details = (CFArrayRef)detailsPtr;
             CFRetain(details);
         }
     }
@@ -131,9 +131,9 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
     // Windows (and therefore .NET) certificate status codes are defined on an int32_t.
     // The top 32 bits will be used to convey error information, the bottom 32 bits
     // as a data aggregator for the status codes.
-    uint64_t* pStatus = reinterpret_cast<uint64_t*>(context);
+    uint64_t* pStatus = (uint64_t*)context;
 
-    if (key == nullptr)
+    if (key == NULL)
     {
         return;
     }
@@ -151,7 +151,7 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
     }
 
     (void)value;
-    CFStringRef keyString = reinterpret_cast<CFStringRef>(key);
+    CFStringRef keyString = (CFStringRef)key;
 
     if (CFEqual(keyString, CFSTR("NotValidBefore")) || CFEqual(keyString, CFSTR("ValidLeaf")) ||
         CFEqual(keyString, CFSTR("ValidIntermediates")) || CFEqual(keyString, CFSTR("ValidRoot")) ||
@@ -199,19 +199,19 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
     }
 }
 
-extern "C" int32_t AppleCryptoNative_X509ChainGetStatusAtIndex(CFArrayRef details, int64_t index, int32_t* pdwStatus)
+int32_t AppleCryptoNative_X509ChainGetStatusAtIndex(CFArrayRef details, int64_t index, int32_t* pdwStatus)
 {
-    if (pdwStatus != nullptr)
+    if (pdwStatus != NULL)
         *pdwStatus = -1;
 
-    if (details == nullptr || index < 0 || pdwStatus == nullptr)
+    if (details == NULL || index < 0 || pdwStatus == NULL)
     {
         return -1;
     }
 
     CFTypeRef element = CFArrayGetValueAtIndex(details, index);
 
-    if (element == nullptr)
+    if (element == NULL)
     {
         return -2;
     }
@@ -222,14 +222,14 @@ extern "C" int32_t AppleCryptoNative_X509ChainGetStatusAtIndex(CFArrayRef detail
     }
 
     uint64_t status = 0;
-    CFDictionaryRef statusCodes = reinterpret_cast<CFDictionaryRef>(const_cast<void*>(element));
+    CFDictionaryRef statusCodes = (CFDictionaryRef)element;
     CFDictionaryApplyFunction(statusCodes, MergeStatusCodes, &status);
 
-    *pdwStatus = static_cast<int32_t>(status);
-    return static_cast<int32_t>(status >> 32);
+    *pdwStatus = (int32_t)status;
+    return (int32_t)(status >> 32);
 }
 
-extern "C" int32_t AppleCryptoNative_GetOSStatusForChainStatus(PAL_X509ChainStatusFlags chainStatusFlag)
+int32_t AppleCryptoNative_GetOSStatusForChainStatus(PAL_X509ChainStatusFlags chainStatusFlag)
 {
     switch (chainStatusFlag)
     {

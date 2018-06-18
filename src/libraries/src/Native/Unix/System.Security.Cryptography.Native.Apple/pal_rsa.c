@@ -7,25 +7,25 @@
 static int32_t ExecuteCFDataTransform(
     SecTransformRef xform, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut);
 
-extern "C" int32_t AppleCryptoNative_RsaGenerateKey(
+int32_t AppleCryptoNative_RsaGenerateKey(
     int32_t keySizeBits, SecKeychainRef tempKeychain, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus)
 {
-    if (pPublicKey != nullptr)
-        *pPublicKey = nullptr;
-    if (pPrivateKey != nullptr)
-        *pPrivateKey = nullptr;
+    if (pPublicKey != NULL)
+        *pPublicKey = NULL;
+    if (pPrivateKey != NULL)
+        *pPrivateKey = NULL;
 
-    if (pPublicKey == nullptr || pPrivateKey == nullptr || pOSStatus == nullptr)
+    if (pPublicKey == NULL || pPrivateKey == NULL || pOSStatus == NULL)
         return kErrorBadInput;
     if (keySizeBits < 384 || keySizeBits > 16384)
         return -2;
 
-    CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(nullptr, 2, &kCFTypeDictionaryKeyCallBacks, nullptr);
+    CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(NULL, 2, &kCFTypeDictionaryKeyCallBacks, NULL);
 
-    CFNumberRef cfKeySizeValue = CFNumberCreate(nullptr, kCFNumberIntType, &keySizeBits);
+    CFNumberRef cfKeySizeValue = CFNumberCreate(NULL, kCFNumberIntType, &keySizeBits);
     OSStatus status;
 
-    if (attributes != nullptr && cfKeySizeValue != nullptr)
+    if (attributes != NULL && cfKeySizeValue != NULL)
     {
         CFDictionaryAddValue(attributes, kSecAttrKeyType, kSecAttrKeyTypeRSA);
         CFDictionaryAddValue(attributes, kSecAttrKeySizeInBits, cfKeySizeValue);
@@ -48,9 +48,9 @@ extern "C" int32_t AppleCryptoNative_RsaGenerateKey(
         status = errSecAllocate;
     }
 
-    if (attributes != nullptr)
+    if (attributes != NULL)
         CFRelease(attributes);
-    if (cfKeySizeValue != nullptr)
+    if (cfKeySizeValue != NULL)
         CFRelease(cfKeySizeValue);
 
     *pOSStatus = status;
@@ -80,19 +80,19 @@ static int32_t ExecuteOaepTransform(SecTransformRef xform,
     return ExecuteCFDataTransform(xform, pbData, cbData, pDataOut, pErrorOut);
 }
 
-extern "C" int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey,
-                                                    uint8_t* pbData,
-                                                    int32_t cbData,
-                                                    PAL_HashAlgorithm mfgAlgorithm,
-                                                    CFDataRef* pDecryptedOut,
-                                                    CFErrorRef* pErrorOut)
+int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey,
+                                         uint8_t* pbData,
+                                         int32_t cbData,
+                                         PAL_HashAlgorithm mfgAlgorithm,
+                                         CFDataRef* pDecryptedOut,
+                                         CFErrorRef* pErrorOut)
 {
-    if (pDecryptedOut != nullptr)
-        *pDecryptedOut = nullptr;
-    if (pErrorOut != nullptr)
-        *pErrorOut = nullptr;
+    if (pDecryptedOut != NULL)
+        *pDecryptedOut = NULL;
+    if (pErrorOut != NULL)
+        *pErrorOut = NULL;
 
-    if (privateKey == nullptr || pbData == nullptr || cbData < 0 || pDecryptedOut == nullptr || pErrorOut == nullptr)
+    if (privateKey == NULL || pbData == NULL || cbData < 0 || pDecryptedOut == NULL || pErrorOut == NULL)
     {
         return kErrorBadInput;
     }
@@ -100,9 +100,9 @@ extern "C" int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey,
     int32_t ret = kErrorSeeError;
     SecTransformRef decryptor = SecDecryptTransformCreate(privateKey, pErrorOut);
 
-    if (decryptor != nullptr)
+    if (decryptor != NULL)
     {
-        if (*pErrorOut == nullptr)
+        if (*pErrorOut == NULL)
         {
             ret = ExecuteOaepTransform(decryptor, pbData, cbData, mfgAlgorithm, pDecryptedOut, pErrorOut);
         }
@@ -113,15 +113,15 @@ extern "C" int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey,
     return ret;
 }
 
-extern "C" int32_t AppleCryptoNative_RsaDecryptPkcs(
+int32_t AppleCryptoNative_RsaDecryptPkcs(
     SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDecryptedOut, CFErrorRef* pErrorOut)
 {
-    if (pDecryptedOut != nullptr)
-        *pDecryptedOut = nullptr;
-    if (pErrorOut != nullptr)
-        *pErrorOut = nullptr;
+    if (pDecryptedOut != NULL)
+        *pDecryptedOut = NULL;
+    if (pErrorOut != NULL)
+        *pErrorOut = NULL;
 
-    if (privateKey == nullptr || pbData == nullptr || cbData < 0 || pDecryptedOut == nullptr || pErrorOut == nullptr)
+    if (privateKey == NULL || pbData == NULL || cbData < 0 || pDecryptedOut == NULL || pErrorOut == NULL)
     {
         return kErrorBadInput;
     }
@@ -129,9 +129,9 @@ extern "C" int32_t AppleCryptoNative_RsaDecryptPkcs(
     int32_t ret = kErrorSeeError;
     SecTransformRef decryptor = SecDecryptTransformCreate(privateKey, pErrorOut);
 
-    if (decryptor != nullptr)
+    if (decryptor != NULL)
     {
-        if (*pErrorOut == nullptr)
+        if (*pErrorOut == NULL)
         {
             ret = ExecuteCFDataTransform(decryptor, pbData, cbData, pDecryptedOut, pErrorOut);
         }
@@ -142,19 +142,19 @@ extern "C" int32_t AppleCryptoNative_RsaDecryptPkcs(
     return ret;
 }
 
-extern "C" int32_t AppleCryptoNative_RsaEncryptOaep(SecKeyRef publicKey,
-                                                    uint8_t* pbData,
-                                                    int32_t cbData,
-                                                    PAL_HashAlgorithm mgfAlgorithm,
-                                                    CFDataRef* pEncryptedOut,
-                                                    CFErrorRef* pErrorOut)
+int32_t AppleCryptoNative_RsaEncryptOaep(SecKeyRef publicKey,
+                                         uint8_t* pbData,
+                                         int32_t cbData,
+                                         PAL_HashAlgorithm mgfAlgorithm,
+                                         CFDataRef* pEncryptedOut,
+                                         CFErrorRef* pErrorOut)
 {
-    if (pEncryptedOut != nullptr)
-        *pEncryptedOut = nullptr;
-    if (pErrorOut != nullptr)
-        *pErrorOut = nullptr;
+    if (pEncryptedOut != NULL)
+        *pEncryptedOut = NULL;
+    if (pErrorOut != NULL)
+        *pErrorOut = NULL;
 
-    if (publicKey == nullptr || pbData == nullptr || cbData < 0 || pEncryptedOut == nullptr || pErrorOut == nullptr)
+    if (publicKey == NULL || pbData == NULL || cbData < 0 || pEncryptedOut == NULL || pErrorOut == NULL)
     {
         return kErrorBadInput;
     }
@@ -162,9 +162,9 @@ extern "C" int32_t AppleCryptoNative_RsaEncryptOaep(SecKeyRef publicKey,
     int32_t ret = kErrorSeeError;
     SecTransformRef encryptor = SecEncryptTransformCreate(publicKey, pErrorOut);
 
-    if (encryptor != nullptr)
+    if (encryptor != NULL)
     {
-        if (*pErrorOut == nullptr)
+        if (*pErrorOut == NULL)
         {
             ret = ExecuteOaepTransform(encryptor, pbData, cbData, mgfAlgorithm, pEncryptedOut, pErrorOut);
         }
@@ -175,15 +175,15 @@ extern "C" int32_t AppleCryptoNative_RsaEncryptOaep(SecKeyRef publicKey,
     return ret;
 }
 
-extern "C" int32_t AppleCryptoNative_RsaEncryptPkcs(
+int32_t AppleCryptoNative_RsaEncryptPkcs(
     SecKeyRef publicKey, uint8_t* pbData, int32_t cbData, CFDataRef* pEncryptedOut, CFErrorRef* pErrorOut)
 {
-    if (pEncryptedOut != nullptr)
-        *pEncryptedOut = nullptr;
-    if (pErrorOut != nullptr)
-        *pErrorOut = nullptr;
+    if (pEncryptedOut != NULL)
+        *pEncryptedOut = NULL;
+    if (pErrorOut != NULL)
+        *pErrorOut = NULL;
 
-    if (publicKey == nullptr || pbData == nullptr || cbData < 0 || pEncryptedOut == nullptr || pErrorOut == nullptr)
+    if (publicKey == NULL || pbData == NULL || cbData < 0 || pEncryptedOut == NULL || pErrorOut == NULL)
     {
         return kErrorBadInput;
     }
@@ -191,9 +191,9 @@ extern "C" int32_t AppleCryptoNative_RsaEncryptPkcs(
     int32_t ret = kErrorSeeError;
     SecTransformRef encryptor = SecEncryptTransformCreate(publicKey, pErrorOut);
 
-    if (encryptor != nullptr)
+    if (encryptor != NULL)
     {
-        if (*pErrorOut == nullptr)
+        if (*pErrorOut == NULL)
         {
             ret = ExecuteCFDataTransform(encryptor, pbData, cbData, pEncryptedOut, pErrorOut);
         }
@@ -207,21 +207,21 @@ extern "C" int32_t AppleCryptoNative_RsaEncryptPkcs(
 static int32_t ExecuteCFDataTransform(
     SecTransformRef xform, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
 {
-    if (xform == nullptr || pbData == nullptr || cbData < 0 || pDataOut == nullptr || pErrorOut == nullptr)
+    if (xform == NULL || pbData == NULL || cbData < 0 || pDataOut == NULL || pErrorOut == NULL)
     {
         return kErrorBadInput;
     }
 
-    *pDataOut = nullptr;
-    *pErrorOut = nullptr;
+    *pDataOut = NULL;
+    *pErrorOut = NULL;
 
-    CFTypeRef xformOutput = nullptr;
-    CFDataRef cfData = nullptr;
+    CFTypeRef xformOutput = NULL;
+    CFDataRef cfData = NULL;
     int32_t ret = INT_MIN;
 
-    cfData = CFDataCreateWithBytesNoCopy(nullptr, pbData, cbData, kCFAllocatorNull);
+    cfData = CFDataCreateWithBytesNoCopy(NULL, pbData, cbData, kCFAllocatorNull);
 
-    if (cfData == nullptr)
+    if (cfData == NULL)
     {
         // This probably means that there wasn't enough memory available, but no
         // particular failure cases are described.
@@ -236,7 +236,7 @@ static int32_t ExecuteCFDataTransform(
 
     xformOutput = SecTransformExecute(xform, pErrorOut);
 
-    if (xformOutput == nullptr || *pErrorOut != nullptr)
+    if (xformOutput == NULL || *pErrorOut != NULL)
     {
         ret = kErrorSeeError;
         goto cleanup;
@@ -244,7 +244,7 @@ static int32_t ExecuteCFDataTransform(
 
     if (CFGetTypeID(xformOutput) == CFDataGetTypeID())
     {
-        CFDataRef cfDataOut = reinterpret_cast<CFDataRef>(const_cast<void*>(xformOutput));
+        CFDataRef cfDataOut = (CFDataRef)xformOutput;
         CFRetain(cfDataOut);
         *pDataOut = cfDataOut;
         ret = 1;
@@ -255,12 +255,12 @@ static int32_t ExecuteCFDataTransform(
     }
 
 cleanup:
-    if (xformOutput != nullptr)
+    if (xformOutput != NULL)
     {
         CFRelease(xformOutput);
     }
 
-    if (cfData != nullptr)
+    if (cfData != NULL)
     {
         CFRelease(cfData);
     }
@@ -276,33 +276,33 @@ static int32_t RsaPrimitive(SecKeyRef key,
                             SecKeyAlgorithm algorithm,
                             CFDataRef func(SecKeyRef, SecKeyAlgorithm, CFDataRef, CFErrorRef*))
 {
-    if (pDataOut != nullptr)
-        *pDataOut = nullptr;
-    if (pErrorOut != nullptr)
-        *pErrorOut = nullptr;
+    if (pDataOut != NULL)
+        *pDataOut = NULL;
+    if (pErrorOut != NULL)
+        *pErrorOut = NULL;
 
-    if (key == nullptr || pbData == nullptr || cbData < 0 || pDataOut == nullptr || pErrorOut == nullptr)
+    if (key == NULL || pbData == NULL || cbData < 0 || pDataOut == NULL || pErrorOut == NULL)
     {
         return kErrorBadInput;
     }
 
-    assert(func != nullptr);
+    assert(func != NULL);
 
-    CFDataRef input = CFDataCreateWithBytesNoCopy(nullptr, pbData, cbData, kCFAllocatorNull);
+    CFDataRef input = CFDataCreateWithBytesNoCopy(NULL, pbData, cbData, kCFAllocatorNull);
     CFDataRef output = func(key, algorithm, input, pErrorOut);
 
-    if (*pErrorOut != nullptr)
+    if (*pErrorOut != NULL)
     {
-        if (output != nullptr)
+        if (output != NULL)
         {
             CFRelease(output);
-            output = nullptr;
+            output = NULL;
         }
 
         return kErrorSeeError;
     }
 
-    if (output == nullptr)
+    if (output == NULL)
     {
         return kErrorUnknownState;
     }
@@ -311,28 +311,28 @@ static int32_t RsaPrimitive(SecKeyRef key,
     return 1;
 }
 
-extern "C" int32_t AppleCryptoNative_RsaSignaturePrimitive(
+int32_t AppleCryptoNative_RsaSignaturePrimitive(
     SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
 {
     return RsaPrimitive(
         privateKey, pbData, cbData, pDataOut, pErrorOut, kSecKeyAlgorithmRSASignatureRaw, SecKeyCreateSignature);
 }
 
-extern "C" int32_t AppleCryptoNative_RsaDecryptionPrimitive(
+int32_t AppleCryptoNative_RsaDecryptionPrimitive(
     SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
 {
     return RsaPrimitive(
         privateKey, pbData, cbData, pDataOut, pErrorOut, kSecKeyAlgorithmRSAEncryptionRaw, SecKeyCreateDecryptedData);
 }
 
-extern "C" int32_t AppleCryptoNative_RsaEncryptionPrimitive(
+int32_t AppleCryptoNative_RsaEncryptionPrimitive(
     SecKeyRef publicKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
 {
     return RsaPrimitive(
         publicKey, pbData, cbData, pDataOut, pErrorOut, kSecKeyAlgorithmRSAEncryptionRaw, SecKeyCreateEncryptedData);
 }
 
-extern "C" int32_t AppleCryptoNative_RsaVerificationPrimitive(
+int32_t AppleCryptoNative_RsaVerificationPrimitive(
     SecKeyRef publicKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
 {
     // Since there's not an API which will give back the still-padded signature block with

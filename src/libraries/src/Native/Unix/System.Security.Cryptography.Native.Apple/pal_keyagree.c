@@ -4,24 +4,24 @@
 
 #include "pal_keyagree.h"
 
-extern "C" int32_t
+int32_t
 AppleCryptoNative_EcdhKeyAgree(SecKeyRef privateKey, SecKeyRef publicKey, CFDataRef* pAgreeOut, CFErrorRef* pErrorOut)
 {
-    if (pAgreeOut != nullptr)
-        *pAgreeOut = nullptr;
-    if (pErrorOut != nullptr)
-        *pErrorOut = nullptr;
+    if (pAgreeOut != NULL)
+        *pAgreeOut = NULL;
+    if (pErrorOut != NULL)
+        *pErrorOut = NULL;
 
-    if (privateKey == nullptr || publicKey == nullptr)
+    if (privateKey == NULL || publicKey == NULL)
         return kErrorBadInput;
 
-    CFDictionaryRef dict = nullptr;
+    CFDictionaryRef dict = NULL;
 
     *pAgreeOut =
         SecKeyCopyKeyExchangeResult(privateKey, kSecKeyAlgorithmECDHKeyExchangeStandard, publicKey, dict, pErrorOut);
 
-    if (*pErrorOut != nullptr)
+    if (*pErrorOut != NULL)
         return kErrorSeeError;
 
-    return *pAgreeOut != nullptr;
+    return *pAgreeOut != NULL;
 }
