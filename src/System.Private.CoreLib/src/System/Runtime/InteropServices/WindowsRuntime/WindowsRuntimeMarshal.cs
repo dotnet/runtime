@@ -133,7 +133,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
 
             // Push a new token into this list
-            // Returns true if you need to copy back this list into the dictionary (so that you 
+            // Returns true if you need to copy back this list into the dictionary (so that you
             // don't lose change outside the dictionary). false otherwise.
             public bool Push(EventRegistrationToken token)
             {
@@ -186,25 +186,25 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             //
             // The full structure of this table is:
             //   object the event is being registered on ->
-            //      Table [RemoveMethod] -> 
+            //      Table [RemoveMethod] ->
             //        Table [Handler] -> Token
             //
             // Note: There are a couple of optimizations I didn't do here because they don't make sense for managed events:
             // 1.  Flatten the event cache (see EventCacheKey in native WinRT event implementation below)
             //
-            //     This is because managed events use ConditionalWeakTable to hold Objects->(Event->(Handler->Tokens)), 
-            //     and when object goes away everything else will be nicely cleaned up. If I flatten it like native WinRT events, 
-            //     I'll have to use Dictionary (as ConditionalWeakTable won't work - nobody will hold the new key alive anymore) 
-            //     instead, and that means I'll have to add more code from native WinRT events into managed WinRT event to support 
-            //     self-cleanup in the finalization, as well as reader/writer lock to protect against race conditions in the finalization, 
+            //     This is because managed events use ConditionalWeakTable to hold Objects->(Event->(Handler->Tokens)),
+            //     and when object goes away everything else will be nicely cleaned up. If I flatten it like native WinRT events,
+            //     I'll have to use Dictionary (as ConditionalWeakTable won't work - nobody will hold the new key alive anymore)
+            //     instead, and that means I'll have to add more code from native WinRT events into managed WinRT event to support
+            //     self-cleanup in the finalization, as well as reader/writer lock to protect against race conditions in the finalization,
             //     which adds a lot more complexity and doesn't really worth it.
-            // 
-            // 2.  Use conditionalWeakTable to hold Handler->Tokens. 
-            // 
-            //     The reason is very simple - managed object use dictionary (see EventRegistrationTokenTable) to hold delegates alive. 
-            //     If the delegates aren't alive, it means either they have been unsubscribed, or the object itself is gone, 
+            //
+            // 2.  Use conditionalWeakTable to hold Handler->Tokens.
+            //
+            //     The reason is very simple - managed object use dictionary (see EventRegistrationTokenTable) to hold delegates alive.
+            //     If the delegates aren't alive, it means either they have been unsubscribed, or the object itself is gone,
             //     and in either case, they've been already taken care of.
-            // 
+            //
             internal volatile static
                 ConditionalWeakTable<object, Dictionary<MethodInfo, Dictionary<object, EventRegistrationTokenList>>> s_eventRegistrations =
                     new ConditionalWeakTable<object, Dictionary<MethodInfo, Dictionary<object, EventRegistrationTokenList>>>();
@@ -290,12 +290,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                     // Select a registration token to unregister
                     // We don't care which one but I'm returning the last registered token to be consistent
-                    // with native event registration implementation                    
+                    // with native event registration implementation
                     bool moreItems = tokens.Pop(out token);
                     if (!moreItems)
                     {
                         // Remove it from cache if this list become empty
-                        // This must be done because EventRegistrationTokenList now becomes invalid 
+                        // This must be done because EventRegistrationTokenList now becomes invalid
                         // (mostly because there is no safe default value for EventRegistrationToken to express 'no token')
                         // NOTE: We should try to remove registrationTokens itself from cache if it is empty, otherwise
                         // we could run into a race condition where one thread removes it from cache and another thread adds
@@ -374,11 +374,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             //
             // EventRegistrationTokenListWithCount
-            // 
+            //
             // A list of EventRegistrationTokens that maintains a count
             //
             // The reason this needs to be a separate class is that we need a finalizer for this class
-            // If the delegate is collected, it will take this list away with it (due to dependent handles), 
+            // If the delegate is collected, it will take this list away with it (due to dependent handles),
             // and we need to remove the PerInstancEntry from cache
             // See ~EventRegistrationTokenListWithCount for more details
             //
@@ -495,7 +495,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             //
             // The full structure of this table is:
             //   EventCacheKey (instanceKey, eventMethod) -> EventCacheEntry (Handler->tokens)
-            //   
+            //
             // A InstanceKey is the IUnknown * or static type instance
             //
             // Couple of things to note:
@@ -503,12 +503,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // based on the same COM object. For example:
             //    m_canvas.GetAt(0).Event += Func;
             //    m_canvas.GetAt(0).Event -= Func;  // GetAt(0) might create a new RCW
-            // 
+            //
             // 2. Handler->Token is a ConditionalWeakTable because we don't want to keep the delegate alive
-            // and we want EventRegistrationTokenListWithCount to be finalized after the delegate is no longer alive 
+            // and we want EventRegistrationTokenListWithCount to be finalized after the delegate is no longer alive
             // 3. It is possible another COM object is created at the same address
-            // before the entry in cache is destroyed. More specifically, 
-            //   a. The same delegate is being unsubscribed. In this case we'll give them a 
+            // before the entry in cache is destroyed. More specifically,
+            //   a. The same delegate is being unsubscribed. In this case we'll give them a
             //   stale token - unlikely to be a problem
             //   b. The same delegate is subscribed then unsubscribed. We need to make sure give
             //   them the latest token in this case. This is guaranteed by always giving the last token and always use equality to
@@ -553,7 +553,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 object instanceKey = GetInstanceKey(removeMethod);
 
                 // Call addMethod outside of RW lock
-                // At this point we don't need to worry about race conditions and we can avoid deadlocks 
+                // At this point we don't need to worry about race conditions and we can avoid deadlocks
                 // if addMethod waits on finalizer thread
                 // If we later throw we need to remove the method
                 EventRegistrationToken token = addMethod(handler);
@@ -579,7 +579,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                             //
                             // We need to find the key that equals to this handler
                             // Suppose we have 3 handlers A, B, C that are equal (refer to the same object and method),
-                            // the first handler (let's say A) will be used as the key and holds all the tokens. 
+                            // the first handler (let's say A) will be used as the key and holds all the tokens.
                             // We don't need to hold onto B and C, because the COM object itself will keep them alive,
                             // and they won't die anyway unless the COM object dies or they get unsubscribed.
                             // It may appear that it is fine to hold A, B, C, and add them and their corresponding tokens
@@ -711,7 +711,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         // (but with the same object/method), so we need to find the first delegate that matches
                         // and unsubscribe it
                         // It actually doesn't matter which delegate - as long as it matches
-                        // Note that inside TryGetValueWithValueEquality we assumes that any delegate 
+                        // Note that inside TryGetValueWithValueEquality we assumes that any delegate
                         // with the same value equality would have the same hash code
                         object key = FindEquivalentKeyUnsafe(registrationTokens, handler, out tokens);
                         Debug.Assert((key != null && tokens != null) || (key == null && tokens == null),
@@ -736,7 +736,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         {
                             // Remove it from (handler)->(tokens)
                             // NOTE: We should not check whether registrationTokens has 0 entries and remove it from the cache
-                            // (just like managed event implementation), because this might have raced with the finalizer of 
+                            // (just like managed event implementation), because this might have raced with the finalizer of
                             // EventRegistrationTokenList
                             registrationTokens.Remove(key);
                         }
@@ -750,7 +750,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
 
                 // Call removeMethod outside of RW lock
-                // At this point we don't need to worry about race conditions and we can avoid deadlocks 
+                // At this point we don't need to worry about race conditions and we can avoid deadlocks
                 // if removeMethod waits on finalizer thread
                 removeMethod(token);
             }
@@ -814,13 +814,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             ///
             /// <summary>
             /// A reader-writer lock implementation that is intended to be simple, yet very
-            /// efficient.  In particular only 1 interlocked operation is taken for any lock 
+            /// efficient.  In particular only 1 interlocked operation is taken for any lock
             /// operation (we use spin locks to achieve this).  The spin lock is never held
             /// for more than a few instructions (in particular, we never call event APIs
-            /// or in fact any non-trivial API while holding the spin lock).   
-            /// 
-            /// Currently this ReaderWriterLock does not support recursion, however it is 
-            /// not hard to add 
+            /// or in fact any non-trivial API while holding the spin lock).
+            ///
+            /// Currently this ReaderWriterLock does not support recursion, however it is
+            /// not hard to add
             /// </summary>
             internal class MyReaderWriterLock
             {
@@ -830,20 +830,20 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 private int myLock;
 
                 // Who owns the lock owners > 0 => readers
-                // owners = -1 means there is one writer.  Owners must be >= -1.  
+                // owners = -1 means there is one writer.  Owners must be >= -1.
                 private int owners;
 
-                // These variables allow use to avoid Setting events (which is expensive) if we don't have to. 
-                private uint numWriteWaiters;        // maximum number of threads that can be doing a WaitOne on the writeEvent 
+                // These variables allow use to avoid Setting events (which is expensive) if we don't have to.
+                private uint numWriteWaiters;        // maximum number of threads that can be doing a WaitOne on the writeEvent
                 private uint numReadWaiters;         // maximum number of threads that can be doing a WaitOne on the readEvent
 
-                // conditions we wait on. 
-                private EventWaitHandle writeEvent;    // threads waiting to aquire a write lock go here.
-                private EventWaitHandle readEvent;     // threads waiting to aquire a read lock go here (will be released in bulk)
+                // conditions we wait on.
+                private EventWaitHandle writeEvent;    // threads waiting to acquire a write lock go here.
+                private EventWaitHandle readEvent;     // threads waiting to acquire a read lock go here (will be released in bulk)
 
                 internal MyReaderWriterLock()
                 {
-                    // All state can start out zeroed. 
+                    // All state can start out zeroed.
                 }
 
                 internal void AcquireReaderLock(int millisecondsTimeout)
@@ -852,7 +852,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     for (;;)
                     {
                         // We can enter a read lock if there are only read-locks have been given out
-                        // and a writer is not trying to get in.  
+                        // and a writer is not trying to get in.
                         if (owners >= 0 && numWriteWaiters == 0)
                         {
                             // Good case, there is no contention, we are basically done
@@ -860,11 +860,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                             break;
                         }
 
-                        // Drat, we need to wait.  Mark that we have waiters and wait.  
-                        if (readEvent == null)      // Create the needed event 
+                        // Drat, we need to wait.  Mark that we have waiters and wait.
+                        if (readEvent == null)      // Create the needed event
                         {
                             LazyCreateEvent(ref readEvent, false);
-                            continue;   // since we left the lock, start over. 
+                            continue;   // since we left the lock, start over.
                         }
 
                         WaitOnEvent(readEvent, ref numReadWaiters, millisecondsTimeout);
@@ -888,7 +888,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         if (writeEvent == null)     // create the needed event.
                         {
                             LazyCreateEvent(ref writeEvent, true);
-                            continue;   // since we left the lock, start over. 
+                            continue;   // since we left the lock, start over.
                         }
 
                         WaitOnEvent(writeEvent, ref numWriteWaiters, millisecondsTimeout);
@@ -916,7 +916,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 /// A routine for lazily creating a event outside the lock (so if errors
                 /// happen they are outside the lock and that we don't do much work
                 /// while holding a spin lock).  If all goes well, reenter the lock and
-                /// set 'waitEvent' 
+                /// set 'waitEvent'
                 /// </summary>
                 private void LazyCreateEvent(ref EventWaitHandle waitEvent, bool makeAutoResetEvent)
                 {
@@ -930,12 +930,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     else
                         newEvent = new ManualResetEvent(false);
                     EnterMyLock();
-                    if (waitEvent == null)          // maybe someone snuck in. 
+                    if (waitEvent == null)          // maybe someone snuck in.
                         waitEvent = newEvent;
                 }
 
                 /// <summary>
-                /// Waits on 'waitEvent' with a timeout of 'millisceondsTimeout.  
+                /// Waits on 'waitEvent' with a timeout of 'millisceondsTimeout.
                 /// Before the wait 'numWaiters' is incremented and is restored before leaving this routine.
                 /// </summary>
                 private void WaitOnEvent(EventWaitHandle waitEvent, ref uint numWaiters, int millisecondsTimeout)
@@ -946,7 +946,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     numWaiters++;
 
                     bool waitSuccessful = false;
-                    ExitMyLock();      // Do the wait outside of any lock 
+                    ExitMyLock();      // Do the wait outside of any lock
                     try
                     {
                         if (!waitEvent.WaitOne(millisecondsTimeout, false))
@@ -958,13 +958,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     {
                         EnterMyLock();
                         --numWaiters;
-                        if (!waitSuccessful)        // We are going to throw for some reason.  Exit myLock. 
+                        if (!waitSuccessful)        // We are going to throw for some reason.  Exit myLock.
                             ExitMyLock();
                     }
                 }
 
                 /// <summary>
-                /// Determines the appropriate events to set, leaves the locks, and sets the events. 
+                /// Determines the appropriate events to set, leaves the locks, and sets the events.
                 /// </summary>
                 private void ExitAndWakeUpAppropriateWaiters()
                 {
@@ -973,12 +973,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     if (owners == 0 && numWriteWaiters > 0)
                     {
                         ExitMyLock();      // Exit before signaling to improve efficiency (wakee will need the lock)
-                        writeEvent.Set();   // release one writer. 
+                        writeEvent.Set();   // release one writer.
                     }
                     else if (owners >= 0 && numReadWaiters != 0)
                     {
                         ExitMyLock();    // Exit before signaling to improve efficiency (wakee will need the lock)
-                        readEvent.Set();  // release all readers. 
+                        readEvent.Set();  // release all readers.
                     }
                     else
                         ExitMyLock();
@@ -995,9 +995,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     for (int i = 0; ; i++)
                     {
                         if (i < 3 && Environment.ProcessorCount > 1)
-                            Thread.SpinWait(20);    // Wait a few dozen instructions to let another processor release lock. 
+                            Thread.SpinWait(20);    // Wait a few dozen instructions to let another processor release lock.
                         else
-                            Thread.Sleep(0);        // Give up my quantum.  
+                            Thread.Sleep(0);        // Give up my quantum.
 
                         if (Interlocked.CompareExchange(ref myLock, 1, 0) == 0)
                             return;
@@ -1210,8 +1210,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         //
         // Get activation factory object for a specified WinRT type
         // If the WinRT type is a native type, we'll always create a unique RCW for it,
-        // This is necessary because WinRT factories are often implemented as a singleton, 
-        // and getting back a RCW for such WinRT factory would usually get back a RCW from 
+        // This is necessary because WinRT factories are often implemented as a singleton,
+        // and getting back a RCW for such WinRT factory would usually get back a RCW from
         // another apartment, even if the interface pointe returned from GetActivationFactory
         // is a raw pointer. As a result, user would randomly get back RCWs for activation
         // factories from other apartments and make transiton to those apartments and cause
@@ -1230,7 +1230,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
 #if FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
                 return GetManagedActivationFactory(type);
-#else 
+#else
                 // Managed factories are not supported so as to minimize public surface (and test effort)
                 throw new NotSupportedException();
 #endif
