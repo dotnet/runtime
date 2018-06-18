@@ -614,11 +614,6 @@ namespace System.Runtime.Intrinsics.X86
         /// int _mm_extract_epi16 (__m128i a,  int immediate)
         ///   PEXTRW reg, xmm, imm8
         /// </summary>
-        public static short Extract(Vector128<short> value, byte index) => Extract(value, index);
-        /// <summary>
-        /// int _mm_extract_epi16 (__m128i a,  int immediate)
-        ///   PEXTRW reg, xmm, imm8
-        /// </summary>
         public static ushort Extract(Vector128<ushort> value, byte index) => Extract(value, index);
 
         /// <summary>
