@@ -2475,7 +2475,7 @@ static void
 mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 {
 	MonoJitDynamicMethodInfo *ji;
-	gboolean destroy = TRUE;
+	gboolean destroy = TRUE, removed;
 	GHashTableIter iter;
 	MonoJumpList *jlist;
 	MonoJitDomainInfo *info = domain_jit_info (domain);
@@ -2484,9 +2484,9 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 
 	if (mono_use_interpreter) {
 		mono_domain_jit_code_hash_lock (domain);
-		/* InterpMethod is allocated in the domain mempool */
-		if (mono_internal_hash_table_lookup (&info->interp_code_hash, method))
-			mono_internal_hash_table_remove (&info->interp_code_hash, method);
+		/* InterpMethod is allocated in the domain mempool. We might haven't
+		 * allocated an InterpMethod for this instance yet */
+		mono_internal_hash_table_remove (&info->interp_code_hash, method);
 		mono_domain_jit_code_hash_unlock (domain);
 	}
 
@@ -2503,7 +2503,8 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	mono_domain_lock (domain);
 	g_hash_table_remove (info->dynamic_code_hash, method);
 	mono_domain_jit_code_hash_lock (domain);
-	mono_internal_hash_table_remove (&domain->jit_code_hash, method);
+	removed = mono_internal_hash_table_remove (&domain->jit_code_hash, method);
+	g_assert (removed);
 	mono_domain_jit_code_hash_unlock (domain);
 	g_hash_table_remove (info->jump_trampoline_hash, method);
 	g_hash_table_remove (info->seq_points, method);

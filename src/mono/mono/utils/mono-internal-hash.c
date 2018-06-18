@@ -106,7 +106,7 @@ mono_internal_hash_table_insert (MonoInternalHashTable *table,
 	resize_if_needed (table);
 }
 
-void
+gboolean
 mono_internal_hash_table_remove (MonoInternalHashTable *table, gpointer key)
 {
 	gint hash = HASH (key, table->hash_func, table->size);
@@ -119,9 +119,9 @@ mono_internal_hash_table_remove (MonoInternalHashTable *table, gpointer key)
 		{
 			*value = *(table->next_value (*value));
 			--table->num_entries;
-			return;
+			return TRUE;
 		}
 	}
 
-	g_assert (0);
+	return FALSE;
 }
