@@ -6,25 +6,25 @@
 
 #include <assert.h>
 
-extern "C" void CryptoNative_EcKeyDestroy(EC_KEY* r)
+void CryptoNative_EcKeyDestroy(EC_KEY* r)
 {
     EC_KEY_free(r);
 }
 
 // For backwards compatibility
-extern "C" EC_KEY* CryptoNative_EcKeyCreateByCurveName(int32_t nid)
+EC_KEY* CryptoNative_EcKeyCreateByCurveName(int32_t nid)
 {
     return EC_KEY_new_by_curve_name(nid);
 }
 
-extern "C" EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
+EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
 {
     // oid can be friendly name or value
     int nid = OBJ_txt2nid(oid);
     return CryptoNative_EcKeyCreateByCurveName(nid);
 }
 
-extern "C" int32_t CryptoNative_EcKeyGenerateKey(EC_KEY* eckey)
+int32_t CryptoNative_EcKeyGenerateKey(EC_KEY* eckey)
 {
     if (!EC_KEY_generate_key(eckey))
         return 0;
@@ -32,12 +32,12 @@ extern "C" int32_t CryptoNative_EcKeyGenerateKey(EC_KEY* eckey)
     return EC_KEY_check_key(eckey);
 }
 
-extern "C" int32_t CryptoNative_EcKeyUpRef(EC_KEY* r)
+int32_t CryptoNative_EcKeyUpRef(EC_KEY* r)
 {
     return EC_KEY_up_ref(r);
 }
 
-extern "C" int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
+int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
 {
     if (!keySize)
         return 0;
@@ -57,15 +57,15 @@ extern "C" int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize
 }
 
 // For backwards compatibility
-extern "C" int32_t CryptoNative_EcKeyGetCurveName(const EC_KEY* key)
+int32_t CryptoNative_EcKeyGetCurveName(const EC_KEY* key)
 {
-    if (key == nullptr)
+    if (key == NULL)
     {
         return NID_undef;
     }
 
     const EC_GROUP* group = EC_KEY_get0_group(key);
-    if (group == nullptr)
+    if (group == NULL)
     {
         return NID_undef;
     }
@@ -73,7 +73,7 @@ extern "C" int32_t CryptoNative_EcKeyGetCurveName(const EC_KEY* key)
     return EC_GROUP_get_curve_name(group);
 }
 
-extern "C" int32_t CryptoNative_EcKeyGetCurveName2(const EC_KEY* key, int32_t* nidName)
+int32_t CryptoNative_EcKeyGetCurveName2(const EC_KEY* key, int32_t* nidName)
 {
     if (!nidName)
         return 0;

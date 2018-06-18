@@ -5,76 +5,79 @@
 #include "pal_evp_cipher.h"
 
 #include <assert.h>
-#include <memory>
 
 #define SUCCESS 1
 #define KEEP_CURRENT_DIRECTION -1
 
-extern "C" EVP_CIPHER_CTX*
+EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreate(const EVP_CIPHER* type, uint8_t* key, unsigned char* iv, int32_t enc)
 {
     return CryptoNative_EvpCipherCreate2(type, key, 0, 0, iv, enc);
 }
 
-extern "C" EVP_CIPHER_CTX*
+EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, unsigned char* iv, int32_t enc)
 {
-    std::unique_ptr<EVP_CIPHER_CTX> ctx(new (std::nothrow) EVP_CIPHER_CTX);
-    if (ctx == nullptr)
+    EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)malloc(sizeof(EVP_CIPHER_CTX));
+    if (ctx == NULL)
     {
         // Allocation failed
-        return nullptr;
+        return NULL;
     }
 
-    EVP_CIPHER_CTX_init(ctx.get());
+    EVP_CIPHER_CTX_init(ctx);
 
     // Perform partial initialization so we can set the key lengths
-    int ret = EVP_CipherInit_ex(ctx.get(), type, nullptr, nullptr, nullptr, 0);
+    int ret = EVP_CipherInit_ex(ctx, type, NULL, NULL, NULL, 0);
     if (!ret)
     {
-        return nullptr;
+        free(ctx);
+        return NULL;
     }
 
     if (keyLength > 0)
     {
         // Necessary when the default key size is different than current
-        ret = EVP_CIPHER_CTX_set_key_length(ctx.get(), keyLength / 8);
+        ret = EVP_CIPHER_CTX_set_key_length(ctx, keyLength / 8);
         if (!ret)
         {
-            return nullptr;
+            free(ctx);
+            return NULL;
         }
     }
 
     if (effectiveKeyLength > 0)
     {
         // Necessary for RC2
-        ret = EVP_CIPHER_CTX_ctrl(ctx.get(), EVP_CTRL_SET_RC2_KEY_BITS, effectiveKeyLength, nullptr);
+        ret = EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_RC2_KEY_BITS, effectiveKeyLength, NULL);
         if (ret <= 0)
         {
-            return nullptr;
+            free(ctx);
+            return NULL;
         }
     }
 
     // Perform final initialization specifying the remaining arguments
-    ret = EVP_CipherInit_ex(ctx.get(), nullptr, nullptr, key, iv, enc);
+    ret = EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, enc);
     if (!ret)
     {
-        return nullptr;
+        free(ctx);
+        return NULL;
     }
 
-    return ctx.release();
+    return ctx;
 }
 
-extern "C" void CryptoNative_EvpCipherDestroy(EVP_CIPHER_CTX* ctx)
+void CryptoNative_EvpCipherDestroy(EVP_CIPHER_CTX* ctx)
 {
-    if (ctx != nullptr)
+    if (ctx != NULL)
     {
         EVP_CIPHER_CTX_cleanup(ctx);
-        delete ctx;
+        free(ctx);
     }
 }
 
-extern "C" int32_t CryptoNative_EvpCipherReset(EVP_CIPHER_CTX* ctx)
+int32_t CryptoNative_EvpCipherReset(EVP_CIPHER_CTX* ctx)
 {
     // EVP_CipherInit_ex with all nulls preserves the algorithm, resets the IV,
     // and maintains the key.
@@ -85,15 +88,15 @@ extern "C" int32_t CryptoNative_EvpCipherReset(EVP_CIPHER_CTX* ctx)
     // But since we have a different object returned for CreateEncryptor
     // and CreateDecryptor we don't need to worry about that.
 
-    return EVP_CipherInit_ex(ctx, nullptr, nullptr, nullptr, nullptr, KEEP_CURRENT_DIRECTION);
+    return EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, KEEP_CURRENT_DIRECTION);
 }
 
-extern "C" int32_t CryptoNative_EvpCipherCtxSetPadding(EVP_CIPHER_CTX* x, int32_t padding)
+int32_t CryptoNative_EvpCipherCtxSetPadding(EVP_CIPHER_CTX* x, int32_t padding)
 {
     return EVP_CIPHER_CTX_set_padding(x, padding);
 }
 
-extern "C" int32_t
+int32_t
 CryptoNative_EvpCipherUpdate(EVP_CIPHER_CTX* ctx, uint8_t* out, int32_t* outl, unsigned char* in, int32_t inl)
 {
     int outLength;
@@ -106,7 +109,7 @@ CryptoNative_EvpCipherUpdate(EVP_CIPHER_CTX* ctx, uint8_t* out, int32_t* outl, u
     return ret;
 }
 
-extern "C" int32_t CryptoNative_EvpCipherFinalEx(EVP_CIPHER_CTX* ctx, uint8_t* outm, int32_t* outl)
+int32_t CryptoNative_EvpCipherFinalEx(EVP_CIPHER_CTX* ctx, uint8_t* outm, int32_t* outl)
 {
     int outLength;
     int32_t ret = EVP_CipherFinal_ex(ctx, outm, &outLength);
@@ -118,62 +121,62 @@ extern "C" int32_t CryptoNative_EvpCipherFinalEx(EVP_CIPHER_CTX* ctx, uint8_t* o
     return ret;
 }
 
-extern "C" const EVP_CIPHER* CryptoNative_EvpAes128Ecb()
+const EVP_CIPHER* CryptoNative_EvpAes128Ecb()
 {
     return EVP_aes_128_ecb();
 }
 
-extern "C" const EVP_CIPHER* CryptoNative_EvpAes128Cbc()
+const EVP_CIPHER* CryptoNative_EvpAes128Cbc()
 {
     return EVP_aes_128_cbc();
 }
 
-extern "C" const EVP_CIPHER* CryptoNative_EvpAes192Ecb()
+const EVP_CIPHER* CryptoNative_EvpAes192Ecb()
 {
     return EVP_aes_192_ecb();
 }
 
-extern "C" const EVP_CIPHER* CryptoNative_EvpAes192Cbc()
+const EVP_CIPHER* CryptoNative_EvpAes192Cbc()
 {
     return EVP_aes_192_cbc();
 }
 
-extern "C" const EVP_CIPHER* CryptoNative_EvpAes256Ecb()
+const EVP_CIPHER* CryptoNative_EvpAes256Ecb()
 {
     return EVP_aes_256_ecb();
 }
 
-extern "C" const EVP_CIPHER* CryptoNative_EvpAes256Cbc()
+const EVP_CIPHER* CryptoNative_EvpAes256Cbc()
 {
     return EVP_aes_256_cbc();
 }
 
-extern "C" const EVP_CIPHER* CryptoNative_EvpDesEcb()
+const EVP_CIPHER* CryptoNative_EvpDesEcb()
 {
     return EVP_des_ecb();
 }
 
-extern "C" const EVP_CIPHER* CryptoNative_EvpDesCbc()
+const EVP_CIPHER* CryptoNative_EvpDesCbc()
 {
     return EVP_des_cbc();
 }
 
-extern "C" const EVP_CIPHER* CryptoNative_EvpDes3Ecb()
+const EVP_CIPHER* CryptoNative_EvpDes3Ecb()
 {
     return EVP_des_ede3();
 }
 
-extern "C" const EVP_CIPHER* CryptoNative_EvpDes3Cbc()
+const EVP_CIPHER* CryptoNative_EvpDes3Cbc()
 {
     return EVP_des_ede3_cbc();
 }
 
-extern "C" const EVP_CIPHER* CryptoNative_EvpRC2Ecb()
+const EVP_CIPHER* CryptoNative_EvpRC2Ecb()
 {
     return EVP_rc2_ecb();
 }
 
-extern "C" const EVP_CIPHER* CryptoNative_EvpRC2Cbc()
+const EVP_CIPHER* CryptoNative_EvpRC2Cbc()
 {
     return EVP_rc2_cbc();
 }

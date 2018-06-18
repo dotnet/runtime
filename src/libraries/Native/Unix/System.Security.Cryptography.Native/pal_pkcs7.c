@@ -4,53 +4,53 @@
 
 #include "pal_pkcs7.h"
 
-extern "C" PKCS7* CryptoNative_PemReadBioPkcs7(BIO* bp)
+PKCS7* CryptoNative_PemReadBioPkcs7(BIO* bp)
 {
-    return PEM_read_bio_PKCS7(bp, nullptr, nullptr, nullptr);
+    return PEM_read_bio_PKCS7(bp, NULL, NULL, NULL);
 }
 
-extern "C" PKCS7* CryptoNative_DecodePkcs7(const uint8_t* buf, int32_t len)
+PKCS7* CryptoNative_DecodePkcs7(const uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {
-        return nullptr;
+        return NULL;
     }
 
-    return d2i_PKCS7(nullptr, &buf, len);
+    return d2i_PKCS7(NULL, &buf, len);
 }
 
-extern "C" PKCS7* CryptoNative_D2IPkcs7Bio(BIO* bp)
+PKCS7* CryptoNative_D2IPkcs7Bio(BIO* bp)
 {
-    return d2i_PKCS7_bio(bp, nullptr);
+    return d2i_PKCS7_bio(bp, NULL);
 }
 
-extern "C" PKCS7* CryptoNative_Pkcs7CreateSigned()
+PKCS7* CryptoNative_Pkcs7CreateSigned()
 {
     PKCS7* pkcs7 = PKCS7_new();
 
-    if (pkcs7 == nullptr)
+    if (pkcs7 == NULL)
     {
-        return nullptr;
+        return NULL;
     }
 
     if (!PKCS7_set_type(pkcs7, NID_pkcs7_signed) || !PKCS7_content_new(pkcs7, NID_pkcs7_data))
     {
         PKCS7_free(pkcs7);
-        return nullptr;
+        return NULL;
     }
 
     return pkcs7;
 }
 
-extern "C" void CryptoNative_Pkcs7Destroy(PKCS7* p7)
+void CryptoNative_Pkcs7Destroy(PKCS7* p7)
 {
-    if (p7 != nullptr)
+    if (p7 != NULL)
     {
         PKCS7_free(p7);
     }
 }
 
-extern "C" int32_t CryptoNative_GetPkcs7Certificates(PKCS7* p7, X509Stack** certs)
+int32_t CryptoNative_GetPkcs7Certificates(PKCS7* p7, X509Stack** certs)
 {
     if (!p7 || !certs)
     {
@@ -70,9 +70,9 @@ extern "C" int32_t CryptoNative_GetPkcs7Certificates(PKCS7* p7, X509Stack** cert
     return 0;
 }
 
-extern "C" int32_t CryptoNative_Pkcs7AddCertificate(PKCS7* p7, X509* x509)
+int32_t CryptoNative_Pkcs7AddCertificate(PKCS7* p7, X509* x509)
 {
-    if (p7 == nullptr || x509 == nullptr)
+    if (p7 == NULL || x509 == NULL)
     {
         return 0;
     }
@@ -80,12 +80,12 @@ extern "C" int32_t CryptoNative_Pkcs7AddCertificate(PKCS7* p7, X509* x509)
     return PKCS7_add_certificate(p7, x509);
 }
 
-extern "C" int32_t CryptoNative_GetPkcs7DerSize(PKCS7* p7)
+int32_t CryptoNative_GetPkcs7DerSize(PKCS7* p7)
 {
-    return i2d_PKCS7(p7, nullptr);
+    return i2d_PKCS7(p7, NULL);
 }
 
-extern "C" int32_t CryptoNative_EncodePkcs7(PKCS7* p7, uint8_t* buf)
+int32_t CryptoNative_EncodePkcs7(PKCS7* p7, uint8_t* buf)
 {
     return i2d_PKCS7(p7, &buf);
 }
