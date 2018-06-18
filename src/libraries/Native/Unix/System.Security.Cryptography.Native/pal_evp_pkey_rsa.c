@@ -4,12 +4,12 @@
 
 #include "pal_evp_pkey_rsa.h"
 
-extern "C" RSA* CryptoNative_EvpPkeyGetRsa(EVP_PKEY* pkey)
+RSA* CryptoNative_EvpPkeyGetRsa(EVP_PKEY* pkey)
 {
     return EVP_PKEY_get1_RSA(pkey);
 }
 
-extern "C" int32_t CryptoNative_EvpPkeySetRsa(EVP_PKEY* pkey, RSA* rsa)
+int32_t CryptoNative_EvpPkeySetRsa(EVP_PKEY* pkey, RSA* rsa)
 {
     return EVP_PKEY_set1_RSA(pkey, rsa);
 }

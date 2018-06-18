@@ -4,20 +4,20 @@
 
 #include "pal_evp_pkey.h"
 
-extern "C" EVP_PKEY* CryptoNative_EvpPkeyCreate()
+EVP_PKEY* CryptoNative_EvpPkeyCreate()
 {
     return EVP_PKEY_new();
 }
 
-extern "C" void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey)
+void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey)
 {
-    if (pkey != nullptr)
+    if (pkey != NULL)
     {
         EVP_PKEY_free(pkey);
     }
 }
 
-extern "C" int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)
+int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)
 {
     if (!pkey)
     {

@@ -4,12 +4,12 @@
 
 #include "pal_evp_pkey_eckey.h"
 
-extern "C" EC_KEY* CryptoNative_EvpPkeyGetEcKey(EVP_PKEY* pkey)
+EC_KEY* CryptoNative_EvpPkeyGetEcKey(EVP_PKEY* pkey)
 {
     return EVP_PKEY_get1_EC_KEY(pkey);
 }
 
-extern "C" int32_t CryptoNative_EvpPkeySetEcKey(EVP_PKEY* pkey, EC_KEY* key)
+int32_t CryptoNative_EvpPkeySetEcKey(EVP_PKEY* pkey, EC_KEY* key)
 {
     return EVP_PKEY_set1_EC_KEY(pkey, key);
 }

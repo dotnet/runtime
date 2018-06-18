@@ -6,7 +6,7 @@
 
 #include <assert.h>
 
-extern "C" const char* CryptoNative_GetX509RootStorePath()
+const char* CryptoNative_GetX509RootStorePath()
 {
     const char* dir = getenv(X509_get_default_cert_dir_env());
 
@@ -18,7 +18,7 @@ extern "C" const char* CryptoNative_GetX509RootStorePath()
     return dir;
 }
 
-extern "C" const char* CryptoNative_GetX509RootStoreFile()
+const char* CryptoNative_GetX509RootStoreFile()
 {
     const char* file = getenv(X509_get_default_cert_file_env());
 
