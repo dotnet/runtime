@@ -12,6 +12,26 @@ using System.Text;
 
 namespace R2RDump
 {
+    public enum Amd64Registers
+    {
+        EAX = 0,
+        ECX = 1,
+        EDX = 2,
+        EBX = 3,
+        ESP = 4,
+        EBP = 5,
+        ESI = 6,
+        EDI = 7,
+        E8 = 8,
+        E9 = 9,
+        E10 = 10,
+        E11 = 11,
+        E12 = 12,
+        E13 = 13,
+        E14 = 14,
+        E15 = 15,
+    }
+
     class R2RReader
     {
         private readonly PEReader _peReader;
@@ -208,6 +228,7 @@ namespace R2RDump
                     continue;
                 curOffset = runtimeFunctionOffset + runtimeFunctionId * runtimeFunctionSize;
                 GcInfo gcInfo = null;
+                int codeOffset = 0;
                 do
                 {
                     int startRva = NativeReader.ReadInt32(Image, ref curOffset);
@@ -225,8 +246,10 @@ namespace R2RDump
                         gcInfo = new GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
                     }
 
-                    method.RuntimeFunctions.Add(new RuntimeFunction(runtimeFunctionId, startRva, endRva, unwindRva, method, unwindInfo, gcInfo));
+                    RuntimeFunction rtf = new RuntimeFunction(runtimeFunctionId, startRva, endRva, unwindRva, codeOffset, method, unwindInfo, gcInfo);
+                    method.RuntimeFunctions.Add(rtf);
                     runtimeFunctionId++;
+                    codeOffset += rtf.Size;
                 }
                 while (runtimeFunctionId < isEntryPoint.Length && !isEntryPoint[runtimeFunctionId]);
             }
