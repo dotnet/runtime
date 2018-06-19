@@ -454,6 +454,7 @@ common_sources = \
 	debugger-agent.h 	\
 	debugger-engine.h	\
 	debugger-agent-stubs.c	\
+	debugger-state-machine.h	\
 	xdebug.c			\
 	mini-llvm.h			\
 	mini-llvm-cpp.h	\
@@ -641,7 +642,7 @@ if !WASM
 extra_libmono_dbg_source = debugger-engine.c
 endif
 
-libmono_dbg_la_SOURCES = debugger-agent.c $(extra_libmono_dbg_source)
+libmono_dbg_la_SOURCES = debugger-agent.c debugger-state-machine.c $(extra_libmono_dbg_source)
 libmono_dbg_la_CFLAGS = $(mono_CFLAGS)
 if BITCODE
 if DISABLE_DEBUGGER_AGENT

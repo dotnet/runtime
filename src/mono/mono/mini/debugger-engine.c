@@ -18,6 +18,7 @@
 #include "seq-points.h"
 #include "aot-runtime.h"
 #include "debugger-engine.h"
+#include "debugger-state-machine.h"
 
 /*
  * Logging support
@@ -459,6 +460,7 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	}
 
 	g_ptr_array_add (breakpoints, bp);
+	mono_debugger_log_add_bp (bp, bp->method, bp->il_offset);
 	mono_loader_unlock ();
 
 	g_ptr_array_free (methods, TRUE);
@@ -488,6 +490,7 @@ mono_de_clear_breakpoint (MonoBreakpoint *bp)
 	}
 
 	mono_loader_lock ();
+	mono_debugger_log_remove_bp (bp, bp->method, bp->il_offset);
 	g_ptr_array_remove (breakpoints, bp);
 	mono_loader_unlock ();
 

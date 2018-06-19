@@ -73,6 +73,7 @@
 #include <mono/utils/networking.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/w32api.h>
+#include "debugger-state-machine.h"
 #include "debugger-agent.h"
 #include "mini.h"
 #include "seq-points.h"
@@ -165,7 +166,7 @@ struct _InvokeData
 	InvokeData *last_invoke;
 };
 
-typedef struct {
+struct _DebuggerTlsData {
 	MonoThreadUnwindState context;
 
 	/* This is computed on demand when it is requested using the wire protocol */
@@ -210,6 +211,7 @@ typedef struct {
 	guint32 resume_count;
 
 	MonoInternalThread *thread;
+	intptr_t thread_id;
 
 	/*
 	 * Information about the frame which transitioned to native code for running
@@ -249,7 +251,10 @@ typedef struct {
 
 	/* The currently unloading appdomain */
 	MonoDomain *domain_unloading;
-} DebuggerTlsData;
+
+	// The state that the debugger expects the thread to be in
+	MonoDebuggerThreadState thread_state;
+};
 
 typedef struct {
 	const char *name;
@@ -857,6 +862,48 @@ debugger_agent_parse_options (char *options)
 	}
 }
 
+void
+mono_debugger_set_thread_state (DebuggerTlsData *tls, MonoDebuggerThreadState expected, MonoDebuggerThreadState set)
+{
+	g_assertf (tls, "Cannot get state of null thread", NULL);
+
+	g_assert (tls->thread_state == expected);
+
+	tls->thread_state = set;
+
+	return;
+}
+
+MonoDebuggerThreadState
+mono_debugger_get_thread_state (DebuggerTlsData *tls)
+{
+	g_assertf (tls, "Cannot get state of null thread", NULL);
+
+	return tls->thread_state;
+}
+
+gsize
+mono_debugger_tls_thread_id (DebuggerTlsData *tls)
+{
+	if (!tls)
+		return 0;
+
+	return tls->thread_id;
+}
+
+// Only call this function with the loader lock held
+MonoGHashTable *
+mono_debugger_get_thread_states (void)
+{
+	return thread_to_tls;
+}
+
+gboolean
+mono_debugger_is_disconnected (void)
+{
+	return disconnected;
+}
+
 static void
 debugger_agent_init (void)
 {
@@ -920,6 +967,8 @@ debugger_agent_init (void)
 	ids_init ();
 	objrefs_init ();
 	suspend_init ();
+
+	mono_debugger_log_init ();
 
 	mini_get_debug_options ()->gen_sdb_seq_points = TRUE;
 	/* 
@@ -2901,6 +2950,7 @@ suspend_current (void)
 		mono_coop_sem_post (&suspend_sem);
 	}
 
+	mono_debugger_log_suspend (tls);
 	DEBUG_PRINTF (1, "[%p] Suspended.\n", (gpointer) (gsize) mono_native_thread_id_get ());
 
 	while (suspend_count - tls->resume_count > 0) {
@@ -2914,6 +2964,7 @@ suspend_current (void)
 
 	mono_coop_mutex_unlock (&suspend_mutex);
 
+	mono_debugger_log_resume (tls);
 	DEBUG_PRINTF (1, "[%p] Resumed.\n", (gpointer) (gsize) mono_native_thread_id_get ());
 
 	if (tls->pending_invoke) {
@@ -3743,6 +3794,11 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 
 	send_success = send_packet (CMD_SET_EVENT, CMD_COMPOSITE, &buf);
 
+	if (send_success) {
+		DebuggerTlsData *tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
+		mono_debugger_log_event (tls, event_to_string (event), buf.buf, buffer_len (&buf));
+	}
+
 	buffer_free (&buf);
 
 	g_slist_free (events);
@@ -3851,6 +3907,8 @@ thread_startup (MonoProfiler *prof, uintptr_t tid)
 	tls = g_new0 (DebuggerTlsData, 1);
 	MONO_GC_REGISTER_ROOT_SINGLE (tls->thread, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Reference");
 	tls->thread = thread;
+	// Do so we have thread id even after termination
+	tls->thread_id = (intptr_t) thread->tid;
 	mono_native_tls_set_value (debugger_tls_id, tls);
 
 	DEBUG_PRINTF (1, "[%p] Thread started, obj=%p, tls=%p.\n", (gpointer)tid, thread, tls);
@@ -4563,6 +4621,8 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 	g_assert (found_sp);
 
 	DEBUG_PRINTF (1, "[%p] Breakpoint hit, method=%s, ip=%p, [il=0x%x,native=0x%x].\n", (gpointer) (gsize) mono_native_thread_id_get (), method->name, ip, sp.il_offset, native_offset);
+
+	mono_debugger_log_bp_hit (tls, method, sp.il_offset);
 
 	bp = NULL;
 	mono_de_collect_breakpoints_by_sp (&sp, ji, ss_reqs_orig, bp_reqs);
@@ -10185,6 +10245,8 @@ debugger_thread (void *arg)
 
 	DEBUG_PRINTF (1, "[dbg] Agent thread started, pid=%p\n", (gpointer) (gsize) mono_native_thread_id_get ());
 
+	gboolean log_each_step = g_hasenv ("MONO_DEBUGGER_LOG_AFTER_COMMAND");
+
 	debugger_thread_id = mono_native_thread_id_get ();
 
 	MonoInternalThread *internal = mono_thread_internal_current ();
@@ -10232,17 +10294,16 @@ debugger_thread (void *arg)
 		}
 
 		g_assert (flags == 0);
+		const char *cmd_str;
+		char cmd_num [256];
+
+		cmd_str = cmd_to_string (command_set, command);
+		if (!cmd_str) {
+			sprintf (cmd_num, "%d", command);
+			cmd_str = cmd_num;
+		}
 
 		if (log_level) {
-			const char *cmd_str;
-			char cmd_num [256];
-
-			cmd_str = cmd_to_string (command_set, command);
-			if (!cmd_str) {
-				sprintf (cmd_num, "%d", command);
-				cmd_str = cmd_num;
-			}
-			
 			DEBUG_PRINTF (1, "[dbg] Command %s(%s) [%d][at=%lx].\n", command_set_to_string (command_set), cmd_str, id, (long)mono_100ns_ticks () / 10000);
 		}
 
@@ -10328,6 +10389,8 @@ debugger_thread (void *arg)
 			}
 		}
 
+		mono_debugger_log_command (command_set_to_string (command_set), cmd_str, buf.buf, buffer_len (&buf));
+
 		if (err == ERR_NONE && command_set == CMD_SET_VM && command == CMD_VM_STOP_BUFFERING) {
 			send_buffered_reply_packets ();
 			buffer_replies = FALSE;
@@ -10335,6 +10398,14 @@ debugger_thread (void *arg)
 
 		g_free (data);
 		buffer_free (&buf);
+
+		if (log_each_step) {
+			char *debugger_log = mono_debugger_state_str ();
+			if (debugger_log) {
+				fprintf (stderr, "Debugger state: %s\n", debugger_log);
+				g_free (debugger_log);
+			}
+		}
 
 		if (command_set == CMD_SET_VM && (command == CMD_VM_DISPOSE || command == CMD_VM_EXIT))
 			break;

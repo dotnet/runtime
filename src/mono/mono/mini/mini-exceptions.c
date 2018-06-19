@@ -70,6 +70,7 @@
 #include <mono/utils/mono-error.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-state.h>
+#include <mono/mini/debugger-state-machine.h>
 
 #include "mini.h"
 #include "trace.h"
@@ -3168,6 +3169,11 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 	mono_runtime_printf_err ("\nNo native Android stacktrace (see debuggerd output).\n");
 #endif
 #endif
+
+	char *debugger_log = mono_debugger_state_str ();
+	if (debugger_log) {
+		fprintf (stderr, "\n\tDebugger session state:\n%s\n", debugger_log);
+	}
 
 	/*
 	 * A SIGSEGV indicates something went very wrong so we can no longer depend

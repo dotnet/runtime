@@ -5,6 +5,10 @@
 #ifndef __MONO_DEBUGGER_ENGINE_H__
 #define __MONO_DEBUGGER_ENGINE_H__
 
+#include "mini.h"
+#include <mono/metadata/seq-points-data.h>
+#include <mono/mini/debugger-state-machine.h>
+
 /*
 FIXME:
 - Move EventKind back to debugger-agent.c as it contains sdb wire protocol constants.
@@ -190,6 +194,20 @@ typedef int DbgEngineErrorCode;
 // Error codes MUST match those of sdb for now
 #define DE_ERR_NOT_IMPLEMENTED 100
 
+MonoGHashTable *
+mono_debugger_get_thread_states (void);
+
+gboolean
+mono_debugger_is_disconnected (void);
+
+gsize
+mono_debugger_tls_thread_id (DebuggerTlsData *debuggerTlsData);
+
+void
+mono_debugger_set_thread_state (DebuggerTlsData *ref, MonoDebuggerThreadState expected, MonoDebuggerThreadState set);
+
+MonoDebuggerThreadState
+mono_debugger_get_thread_state (DebuggerTlsData *ref);
 
 void mono_de_init (void);
 void mono_de_cleanup (void);
