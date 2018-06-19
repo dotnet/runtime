@@ -213,11 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 0ba106c8-81a0-407f-99a1-928448c1eb62 */
-    0x0ba106c8,
-    0x81a0,
-    0x407f,
-    {0x99, 0xa1, 0x92, 0x84, 0x48, 0xc1, 0xeb, 0x62}
+SELECTANY const GUID JITEEVersionIdentifier = { /* dc72a60f-22f2-49fb-809f-00077f3eb1a8 */
+    0xdc72a60f,
+    0x22f2,
+    0x49fb,
+    { 0x80, 0x9f, 0x0, 0x7, 0x7f, 0x3e, 0xb1, 0xa8}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3152,6 +3152,12 @@ public:
     virtual void* getTailCallCopyArgsThunk (
                     CORINFO_SIG_INFO       *pSig,
                     CorInfoHelperTailCallSpecialHandling flags
+                    ) = 0;
+
+    // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
+    virtual bool convertPInvokeCalliToCall(
+                    CORINFO_RESOLVED_TOKEN * pResolvedToken,
+                    bool fMustConvert
                     ) = 0;
 };
 

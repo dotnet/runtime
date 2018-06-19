@@ -2436,6 +2436,41 @@ InfoAccessType MethodContext::repConstructStringLiteral(CORINFO_MODULE_HANDLE mo
     return (InfoAccessType)temp2.B;
 }
 
+void MethodContext::recConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert, bool result)
+{
+    if (ConvertPInvokeCalliToCall == nullptr)
+        ConvertPInvokeCalliToCall = new LightWeightMap<DLD, DWORDLONG>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                   // out padding too
+    key.A = (DWORDLONG)pResolvedToken->tokenScope;
+    key.B = (DWORD)pResolvedToken->token;
+
+    DWORDLONG value = (DWORDLONG)(result ? pResolvedToken->hMethod : 0);
+
+    ConvertPInvokeCalliToCall->Add(key, value);
+    DEBUG_REC(dmpConvertPInvokeCalliToCall(key, value));
+}
+void MethodContext::dmpConvertPInvokeCalliToCall(DLD key, DWORDLONG value)
+{
+    printf("ConvertPInvokeCalliToCall key mod-%016llX tok-%08X, value %016llX", key.A, key.B, value);
+}
+bool MethodContext::repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                   // out padding too
+    key.A = (DWORDLONG)pResolvedToken->tokenScope;
+    key.B = (DWORD)pResolvedToken->token;
+
+    DWORDLONG value = ConvertPInvokeCalliToCall->Get(key);
+    DEBUG_REP(dmpGetArgType(key, value));
+
+    pResolvedToken->hMethod = (CORINFO_METHOD_HANDLE)value;
+    return value != 0;
+}
+
 void MethodContext::recEmptyStringLiteral(void** pValue, InfoAccessType result)
 {
     if (EmptyStringLiteral == nullptr)
