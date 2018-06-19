@@ -810,6 +810,13 @@ inline SIZE_T THREADSilentGetCurrentThreadId() {
     pthread_threadid_np(pthread_self(), &tid);
     return (SIZE_T)tid;
 }
+#elif defined(__FreeBSD__)
+#include <sys/thr.h>
+inline SIZE_T THREADSilentGetCurrentThreadId() {
+    long tid;
+    thr_self(&tid);
+    return (SIZE_T)tid;
+}
 #elif defined(__NetBSD__)
 #include <lwp.h>
 #define THREADSilentGetCurrentThreadId() (SIZE_T)_lwp_self()
