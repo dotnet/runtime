@@ -38,6 +38,8 @@ namespace R2RDump
         /// </summary>
         public int UnwindRVA { get; }
 
+        public int CodeOffset { get; set; }
+
         /// <summary>
         /// The method that this runtime function belongs to
         /// </summary>
@@ -45,7 +47,7 @@ namespace R2RDump
 
         public UnwindInfo UnwindInfo { get; }
 
-        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, R2RMethod method, UnwindInfo unwindInfo, GcInfo gcInfo)
+        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, int codeOffset, R2RMethod method, UnwindInfo unwindInfo, GcInfo gcInfo)
         {
             Id = id;
             StartAddress = startRva;
@@ -60,6 +62,7 @@ namespace R2RDump
             {
                 Size = gcInfo.CodeLength;
             }
+            CodeOffset = codeOffset;
             method.GcInfo = gcInfo;
         }
 
