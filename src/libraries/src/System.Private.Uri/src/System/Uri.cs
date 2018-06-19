@@ -5367,7 +5367,7 @@ namespace System
             // Same path except that path1 ended with a file name and path2 didn't
             if (relPath.Length == 0 && path2.Length - 1 == si)
                 return "./"; // Truncate the file name
-            return relPath.ToString() + path2.Substring(si + 1);
+            return relPath.Append(path2.AsSpan(si + 1)).ToString();
         }
 
         //
