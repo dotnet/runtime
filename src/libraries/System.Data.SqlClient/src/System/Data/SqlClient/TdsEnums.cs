@@ -202,6 +202,7 @@ namespace System.Data.SqlClient
         public const byte FEATUREEXT_TERMINATOR = 0xFF;
         public const byte FEATUREEXT_SRECOVERY = 0x01;
         public const byte FEATUREEXT_GLOBALTRANSACTIONS = 0x05;
+        public const byte FEATUREEXT_UTF8SUPPORT = 0x0A;
 
         [Flags]
         public enum FeatureExtension : uint
@@ -209,8 +210,9 @@ namespace System.Data.SqlClient
             None = 0,
             SessionRecovery = 1,
             GlobalTransactions = 8,
+            UTF8Support = 512,
         }
-
+        public const uint UTF8_IN_TDSCOLLATION = 0x4000000;
 
         //    Loginrec defines
         public const byte MAX_LOG_NAME = 30;              // TDS 4.2 login rec max name length
