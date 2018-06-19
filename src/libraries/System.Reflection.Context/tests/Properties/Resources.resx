@@ -59,6 +59,6 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Reason" xml:space="preserve">
-    <value>This manifest is discovered by one of the projection tests. Do not delete!</value>
+    <value>This manifest is discovered by the CustomAssemblyTests.GetManifestResourceInfoTest. Do not delete!</value>
   </data>
 </root>
