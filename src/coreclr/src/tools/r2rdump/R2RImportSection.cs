@@ -3,21 +3,53 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.Reflection.PortableExecutable;
 using System.Text;
 
 namespace R2RDump
 {
     struct R2RImportSection
     {
-        public enum ImportSectionType
+        public enum CorCompileImportType
         {
-            READYTORUN_IMPORT_SECTION_TYPE_UNKNOWN = 0,
+            CORCOMPILE_IMPORT_TYPE_UNKNOWN = 0,
+            CORCOMPILE_IMPORT_TYPE_EXTERNAL_METHOD = 1,
+            CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH = 2,
+            CORCOMPILE_IMPORT_TYPE_STRING_HANDLE = 3,
+            CORCOMPILE_IMPORT_TYPE_TYPE_HANDLE = 4,
+            CORCOMPILE_IMPORT_TYPE_METHOD_HANDLE = 5,
+            CORCOMPILE_IMPORT_TYPE_VIRTUAL_METHOD = 6,
         };
 
-        public enum ImportSectionFlags
+        public enum CorCompileImportFlags
         {
-            READYTORUN_IMPORT_SECTION_FLAGS_EAGER = 0x0001,
+            CORCOMPILE_IMPORT_FLAGS_EAGER = 0x0001,   // Section at module load time.
+            CORCOMPILE_IMPORT_FLAGS_CODE = 0x0002,   // Section contains code.
+            CORCOMPILE_IMPORT_FLAGS_PCODE = 0x0004,   // Section contains pointers to code.
         };
+
+        public struct ImportSectionEntry
+        {
+            public long Section { get; }
+            public uint SignatureRVA { get; }
+            public uint Signature { get; }
+            public ImportSectionEntry(long section, uint signatureRVA, uint signature)
+            {
+                Section = section;
+                SignatureRVA = signatureRVA;
+                Signature = signature;
+            }
+
+            public override string ToString()
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine($"\tSection: 0x{Section:X8} ({Section})");
+                sb.AppendLine($"\tSignatureRVA: 0x{SignatureRVA:X8} ({SignatureRVA})");
+                sb.AppendLine($"\tSection: 0x{Signature:X8} ({Signature})");
+                return sb.ToString();
+            }
+        }
 
         /// <summary>
         /// Section containing values to be fixed up
@@ -28,12 +60,12 @@ namespace R2RDump
         /// <summary>
         /// One or more of ImportSectionFlags
         /// </summary>
-        public ushort Flags { get; }
+        public CorCompileImportFlags Flags { get; }
 
         /// <summary>
         /// One of ImportSectionType
         /// </summary>
-        public ImportSectionType Type { get; }
+        public CorCompileImportType Type { get; }
 
         /// <summary>
         /// 
@@ -43,34 +75,49 @@ namespace R2RDump
         /// <summary>
         /// RVA of optional signature descriptors
         /// </summary>
-        public int Signatures { get; }
+        public int SignatureRVA { get; }
+        public List<ImportSectionEntry> Entries { get; }
 
         /// <summary>
         /// RVA of optional auxiliary data (typically GC info)
         /// </summary>
-        public int AuxiliaryData { get; }
+        public int AuxiliaryDataRVA { get; }
+        public GcInfo AuxiliaryData { get; }
 
-        public R2RImportSection(int rva, int size, ushort flags, byte type, byte entrySize, int sig, int data)
+        public R2RImportSection(byte[] image, int rva, int size, CorCompileImportFlags flags, byte type, byte entrySize, int signatureRVA, List<ImportSectionEntry> entries, int auxDataRVA, int auxDataOffset, Machine machine, ushort majorVersion)
         {
             SectionRVA = rva;
             SectionSize = size;
             Flags = flags;
-            Type = (ImportSectionType)type;
+            Type = (CorCompileImportType)type;
             EntrySize = entrySize;
-            Signatures = sig;
-            AuxiliaryData = data;
+
+            SignatureRVA = signatureRVA;
+            Entries = entries;
+
+            AuxiliaryDataRVA = auxDataRVA;
+            AuxiliaryData = null;
+            if (AuxiliaryDataRVA != 0)
+            {
+                AuxiliaryData = new GcInfo(image, auxDataOffset, machine, majorVersion);
+            }
         }
 
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"SectionRVA: 0x{SectionRVA:X8}");
+            sb.AppendLine($"SectionRVA: 0x{SectionRVA:X8} ({SectionRVA})");
             sb.AppendLine($"SectionSize: {SectionSize} bytes");
-            sb.AppendLine($"Flags: {Enum.GetName(typeof(ImportSectionFlags), Flags)}({Flags})");
+            sb.AppendLine($"Flags: {Flags}");
             sb.AppendLine($"Type: {Type}");
             sb.AppendLine($"EntrySize: {EntrySize}");
-            sb.AppendLine($"Signatures: 0x{Signatures:X8}");
-            sb.AppendLine($"AuxiliaryData: {AuxiliaryData}");
+            sb.AppendLine($"SignatureRVA: 0x{SignatureRVA:X8} ({SignatureRVA})");
+            sb.AppendLine($"AuxiliaryDataRVA: 0x{AuxiliaryDataRVA:X8} ({AuxiliaryDataRVA})");
+            if (AuxiliaryDataRVA != 0)
+            {
+                sb.AppendLine("AuxiliaryData:");
+                sb.AppendLine(AuxiliaryData.ToString());
+            }
             return sb.ToString();
         }
     }

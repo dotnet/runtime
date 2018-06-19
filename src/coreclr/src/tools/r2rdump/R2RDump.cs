@@ -286,7 +286,31 @@ namespace R2RDump
                 case R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS:
                     foreach (R2RImportSection importSection in r2r.ImportSections)
                     {
-                        _writer.WriteLine(importSection.ToString());
+                        _writer.Write(importSection.ToString());
+                        if (_raw && importSection.Entries.Count != 0)
+                        {
+                            if (importSection.SectionRVA != 0)
+                            {
+                                _writer.WriteLine("Section Bytes:");
+                                DumpBytes(r2r, importSection.SectionRVA, (uint)importSection.SectionSize);
+                            }
+                            if (importSection.SignatureRVA != 0)
+                            {
+                                _writer.WriteLine("Signature Bytes:");
+                                DumpBytes(r2r, importSection.SignatureRVA, (uint)importSection.Entries.Count * sizeof(int));
+                            }
+                            if (importSection.AuxiliaryDataRVA != 0)
+                            {
+                                _writer.WriteLine("AuxiliaryData Bytes:");
+                                DumpBytes(r2r, importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size);
+                            }
+                        }
+                        foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
+                        {
+                            _writer.WriteLine();
+                            _writer.WriteLine(entry.ToString());
+                        }
+                        _writer.WriteLine();
                     }
                     break;
             }
