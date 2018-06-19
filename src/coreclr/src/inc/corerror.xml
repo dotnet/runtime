@@ -86,16 +86,6 @@
 	<Comment> Typelib import: progress report. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x13116d">
-	<SymbolicName>TLBX_I_PIA_REGISTERED_FOR_TLB</SymbolicName>
-	<Comment> Primary interop assembly '{0}' is already registered for type library '{1}'. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x13116e">
-	<SymbolicName>TLBX_I_AGNOSTIC_ASSEMBLY</SymbolicName>
-	<Comment> Importing a type library into a platform agnostic assembly.  This can cause errors if the type library is not truly platform agnostic. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x13116f">
 	<SymbolicName>TLBX_I_USEIUNKNOWN</SymbolicName>
 	<Comment> Typelib export: substituted IUnknown for type. </Comment>
@@ -114,21 +104,6 @@
 <HRESULT NumericValue="0x131173">
 	<SymbolicName>TLBX_W_WARNING_MESSAGE</SymbolicName>
 	<Comment> Typelib export: Warning message wrapper. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131174">
-	<SymbolicName>TLBX_W_ASSEMBLY_HAS_EMBEDDED_TLB</SymbolicName>
-	<Comment> Type library is being exported for assembly '{0}' which already contains an embedded type library </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131175">
-	<SymbolicName>TLBX_W_CROSS_COMPILE_NO_REFS</SymbolicName>
-	<Comment> When cross-compiling, all type library references should be included on the command line to ensure the correct bit-specific type libraries are loaded. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131176">
-	<SymbolicName>TLBX_W_PURE_CROSS_COMPILE</SymbolicName>
-	<Comment> Performing cross-compile of 32-bit non-agnostic assembly to 64-bit type library or 64-bit non-agnostic assembly to 32-bit type library.  This is dangerous as pointer sizes and processor dependence will likely cause incompatibility between the assembly and resultant type library. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x131179">
@@ -3592,11 +3567,6 @@
   <Comment> Concurrent GC mode is enabled, which prevents use of COR_PRF_MONITOR_GC </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131377">
-    <SymbolicName>CORPROF_E_INCONSISTENT_FLAGS_WITH_HOST_PROTECTION_SETTING</SymbolicName>
-    <Comment> Host enforces host protection attributes, which prevents use of COR_PRF_USE_PROFILE_IMAGES, COR_PRF_MONITOR_CODE_TRANSITIONS, and COR_PRF_MONITOR_ENTERLEAVE </Comment>
-</HRESULT>
-    
 <HRESULT NumericValue="0x80131378">
     <SymbolicName>CORPROF_E_DEBUGGING_DISABLED</SymbolicName>
     <Comment> This functionality requires CoreCLR debugging to be enabled. </Comment>
@@ -3622,19 +3592,9 @@
   <Comment> This call is not supported unless ReJIT is first enabled during initialization by setting COR_PRF_ENABLE_REJIT via SetEventMask. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x8013137D">
-  <SymbolicName>CORPROF_E_ACTIVE_REJIT_REQUEST_NOT_FOUND</SymbolicName>
-  <Comment> Could not revert the specified method, because a corresponding active ReJIT request was not found. Either the method was never requested to be reJITted OR the method was already reverted. </Comment>
-</HRESULT>
-  
 <HRESULT NumericValue="0x8013137E">
     <SymbolicName>CORPROF_E_FUNCTION_IS_COLLECTIBLE</SymbolicName>
     <Comment> The specified function is instantiated into a collectible assembly, and is thus not supported by this API method. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013137F">
-    <SymbolicName>CORPROF_E_REJIT_REQUIRES_DISABLE_NGEN</SymbolicName>
-    <Comment> If the profiler specifies COR_PRF_ENABLE_REJIT to SetEventMask, it must also specify COR_PRF_DISABLE_ALL_NGEN_IMAGES. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131380">
@@ -3946,10 +3906,6 @@
 	<SymbolicName>CORSECATTR_E_EXCEPTION_HR</SymbolicName>
 	<Message>"Unexpected exception."</Message>
 	<Comment> Unexpected exception </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131450">
-	<SymbolicName>ISS_E_ISOSTORE_START</SymbolicName>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131450">
@@ -5636,119 +5592,8 @@
 	<Message>"Ldtoken instruction required before call to System.Runtime.CompilerServices.InitializeArray."</Message>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131904">
-	<SymbolicName>COR_E_SqlException</SymbolicName>
-	<Comment> System.Data.SqlClient.SqlClientException </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131920">
 	<SymbolicName>COR_E_Data</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131921">
-	<SymbolicName>COR_E_DataDeletedRowInaccessible</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131922">
-	<SymbolicName>COR_E_DataDuplicateName</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131923">
-	<SymbolicName>COR_E_DataInRowChangingEvent</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131924">
-	<SymbolicName>COR_E_DataInvalidConstraint</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131925">
-	<SymbolicName>COR_E_DataMissingPrimaryKey</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131926">
-	<SymbolicName>COR_E_DataNoNullAllowed</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131927">
-	<SymbolicName>COR_E_DataReadOnly</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131928">
-	<SymbolicName>COR_E_DataRowNotInTable</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131929">
-	<SymbolicName>COR_E_DataVersionNotFound</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013192a">
-	<SymbolicName>COR_E_DataConstraint</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013192b">
-	<SymbolicName>COR_E_StrongTyping</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131930">
-	<SymbolicName>COR_E_SqlType</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131931">
-	<SymbolicName>COR_E_SqlNullValue</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131932">
-	<SymbolicName>COR_E_SqlTruncate</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131933">
-	<SymbolicName>COR_E_AdapterMapping</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131934">
-	<SymbolicName>COR_E_DataAdapter</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131935">
-	<SymbolicName>COR_E_DBConcurrency</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131936">
-	<SymbolicName>COR_E_OperationAborted</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131937">
-	<SymbolicName>COR_E_InvalidUdt</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131937">
-	<SymbolicName>COR_E_OdbcException</SymbolicName>
-	<Comment> System.Data.Odbc.OdbcException </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131938">
-	<SymbolicName>COR_E_OracleException</SymbolicName>
-	<Comment> System.Data.OracleClient.OracleException </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131940">
-	<SymbolicName>COR_E_Xml</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131941">
-	<SymbolicName>COR_E_XmlSchema</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131942">
-	<SymbolicName>COR_E_XmlXslt</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131943">
-	<SymbolicName>COR_E_XmlXPath</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131944">
-	<SymbolicName>COR_E_XmlQuery</SymbolicName>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131b00">
