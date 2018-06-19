@@ -16,9 +16,20 @@ namespace System.Net.NetworkInformation.Tests
         public const string PayloadAsString = "'Post hoc ergo propter hoc'. 'After it, therefore because of it'. It means one thing follows the other, therefore it was caused by the other. But it's not always true. In fact it's hardly ever true.";
         public static readonly byte[] PayloadAsBytes = Encoding.UTF8.GetBytes(TestSettings.PayloadAsString);
 
-        public static async Task<IPAddress> GetLocalIPAddress()
+        public static IPAddress GetLocalIPAddress()
+        {
+            IPHostEntry hostEntry = Dns.GetHostEntry(LocalHost);
+            return GetIPAddressForHost(hostEntry);
+        }
+
+        public static async Task<IPAddress> GetLocalIPAddressAsync()
         {
             IPHostEntry hostEntry = await Dns.GetHostEntryAsync(LocalHost);
+            return GetIPAddressForHost(hostEntry);
+        }
+
+        private static IPAddress GetIPAddressForHost(IPHostEntry hostEntry)
+        {
             IPAddress ret = null;
 
             foreach (IPAddress address in hostEntry.AddressList)
