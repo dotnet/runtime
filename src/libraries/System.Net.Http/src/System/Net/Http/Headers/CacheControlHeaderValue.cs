@@ -232,14 +232,14 @@ namespace System.Net.Http.Headers
             {
                 AppendValueWithSeparatorIfRequired(sb, maxAgeString);
                 sb.Append('=');
-                sb.Append(((int)_maxAge.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo));
+                sb.Append((int)_maxAge.Value.TotalSeconds);
             }
 
             if (_sharedMaxAge.HasValue)
             {
                 AppendValueWithSeparatorIfRequired(sb, sharedMaxAgeString);
                 sb.Append('=');
-                sb.Append(((int)_sharedMaxAge.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo));
+                sb.Append((int)_sharedMaxAge.Value.TotalSeconds);
             }
 
             if (_maxStale)
@@ -248,7 +248,7 @@ namespace System.Net.Http.Headers
                 if (_maxStaleLimit.HasValue)
                 {
                     sb.Append('=');
-                    sb.Append(((int)_maxStaleLimit.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo));
+                    sb.Append((int)_maxStaleLimit.Value.TotalSeconds);
                 }
             }
 
@@ -256,7 +256,7 @@ namespace System.Net.Http.Headers
             {
                 AppendValueWithSeparatorIfRequired(sb, minFreshString);
                 sb.Append('=');
-                sb.Append(((int)_minFresh.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo));
+                sb.Append((int)_minFresh.Value.TotalSeconds);
             }
 
             if (_privateField)
