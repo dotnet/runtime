@@ -170,8 +170,7 @@ namespace System.ComponentModel.DataAnnotations
                 }
                 if (inputControlParameters.Length % 2 != 0)
                 {
-                    throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture,
-                        SR.UIHintImplementation_NeedEvenNumberOfControlParameters));
+                    throw new InvalidOperationException(SR.UIHintImplementation_NeedEvenNumberOfControlParameters);
                 }
 
                 for (int i = 0; i < inputControlParameters.Length; i += 2)
@@ -180,31 +179,21 @@ namespace System.ComponentModel.DataAnnotations
                     object value = inputControlParameters[i + 1];
                     if (key == null)
                     {
-                        throw new InvalidOperationException(
-                            string.Format(
-                                CultureInfo.CurrentCulture,
-                                SR.UIHintImplementation_ControlParameterKeyIsNull,
-                                i));
+                        throw new InvalidOperationException(SR.Format(SR.UIHintImplementation_ControlParameterKeyIsNull, i));
                     }
 
                     if (!(key is string keyString))
                     {
-                        throw new InvalidOperationException(
-                            string.Format(
-                                CultureInfo.CurrentCulture,
-                                SR.UIHintImplementation_ControlParameterKeyIsNotAString,
-                                i,
-                                inputControlParameters[i].ToString()));
+                        throw new InvalidOperationException(SR.Format(SR.UIHintImplementation_ControlParameterKeyIsNotAString,
+                                                            i,
+                                                            inputControlParameters[i].ToString()));
                     }
 
                     if (controlParameters.ContainsKey(keyString))
                     {
-                        throw new InvalidOperationException(
-                            string.Format(
-                                CultureInfo.CurrentCulture,
-                                SR.UIHintImplementation_ControlParameterKeyOccursMoreThanOnce,
-                                i,
-                                keyString));
+                        throw new InvalidOperationException(SR.Format(SR.UIHintImplementation_ControlParameterKeyOccursMoreThanOnce,
+                                                            i,
+                                                            keyString));
                     }
 
                     controlParameters[keyString] = value;

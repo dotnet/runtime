@@ -91,8 +91,7 @@ namespace System.ComponentModel.DataAnnotations
 
             if (MaximumLength < MinimumLength)
             {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture,
-                    SR.RangeAttribute_MinGreaterThanMax, MaximumLength, MinimumLength));
+                throw new InvalidOperationException(SR.Format(SR.RangeAttribute_MinGreaterThanMax, MaximumLength, MinimumLength));
             }
         }
     }

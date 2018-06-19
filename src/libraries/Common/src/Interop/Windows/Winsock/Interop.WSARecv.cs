@@ -40,15 +40,15 @@ internal static partial class Interop
 
         internal static unsafe SocketError WSARecv(
             IntPtr socketHandle,
-            WSABuffer[] buffers,
+            Span<WSABuffer> buffers,
             int bufferCount,
             out int bytesTransferred,
             ref SocketFlags socketFlags,
             NativeOverlapped* overlapped,
             IntPtr completionRoutine)
         {
-            Debug.Assert(buffers != null && buffers.Length > 0 );
-            fixed (WSABuffer* buffersPtr = &buffers[0])
+            Debug.Assert(!buffers.IsEmpty);
+            fixed (WSABuffer* buffersPtr = &MemoryMarshal.GetReference(buffers))
             {
                 return WSARecv(socketHandle, buffersPtr, bufferCount, out bytesTransferred, ref socketFlags, overlapped, completionRoutine);
             }
