@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{2D694AC8-A12F-4622-9405-74E20EC40C3A}</ProjectGuid>
     <AssemblyName>System.ComponentModel.Composition</AssemblyName>
+    <RootNamespace></RootNamespace> <!-- CommonStrings needs RootNamespace to be empty -->
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
