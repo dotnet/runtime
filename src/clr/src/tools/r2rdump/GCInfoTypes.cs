@@ -207,10 +207,9 @@ namespace R2RDump
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            string tab4 = new string(' ', 16);
 
-            sb.AppendLine($"{tab4}SpOffset: {SpOffset}");
-            sb.Append($"{tab4}Base: {Enum.GetName(typeof(GcStackSlotBase), Base)}");
+            sb.AppendLine($"\t\t\t\tSpOffset: {SpOffset}");
+            sb.Append($"\t\t\t\tBase: {Enum.GetName(typeof(GcStackSlotBase), Base)}");
 
             return sb.ToString();
         }
