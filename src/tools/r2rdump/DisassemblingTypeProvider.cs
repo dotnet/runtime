@@ -43,7 +43,7 @@ namespace R2RDump
             if ((definition.Attributes & TypeAttributes.NestedPublic) != 0 || (definition.Attributes & TypeAttributes.NestedFamily) != 0)
             {
                 TypeDefinitionHandle declaringTypeHandle = definition.GetDeclaringType();
-                return GetTypeFromDefinition(reader, declaringTypeHandle, 0) + "/" + name;
+                return GetTypeFromDefinition(reader, declaringTypeHandle, 0) + "." + name;
             }
 
             return name;
