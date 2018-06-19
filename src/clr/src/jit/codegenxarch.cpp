@@ -7903,17 +7903,17 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 
 #ifdef UNIX_AMD64_ABI
 
-        if (varTypeIsStruct(targetType))
+        if (data->OperIs(GT_FIELD_LIST))
+        {
+            genPutArgStkFieldList(putArgStk, baseVarNum);
+            return;
+        }
+        else if (varTypeIsStruct(targetType))
         {
             m_stkArgVarNum = baseVarNum;
             m_stkArgOffset = putArgStk->getArgOffset();
             genPutStructArgStk(putArgStk);
             m_stkArgVarNum = BAD_VAR_NUM;
-            return;
-        }
-        else if (data->OperIs(GT_FIELD_LIST))
-        {
-            genPutArgStkFieldList(putArgStk, baseVarNum);
             return;
         }
 #endif // UNIX_AMD64_ABI
