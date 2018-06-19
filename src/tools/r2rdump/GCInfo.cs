@@ -59,13 +59,12 @@ namespace R2RDump
             public override string ToString()
             {
                 StringBuilder sb = new StringBuilder();
-                string tab2 = new string(' ', 8);
 
-                sb.AppendLine($"{tab2}CodeOffset: {CodeOffset}");
-                sb.AppendLine($"{tab2}SlotId: {SlotId}");
-                sb.AppendLine($"{tab2}IsLive: {IsLive}");
-                sb.AppendLine($"{tab2}ChunkId: {ChunkId}");
-                sb.Append($"{tab2}--------------------");
+                sb.AppendLine($"\t\tCodeOffset: {CodeOffset}");
+                sb.AppendLine($"\t\tSlotId: {SlotId}");
+                sb.AppendLine($"\t\tIsLive: {IsLive}");
+                sb.AppendLine($"\t\tChunkId: {ChunkId}");
+                sb.Append($"\t\t--------------------");
 
                 return sb.ToString();
             }
@@ -237,19 +236,18 @@ namespace R2RDump
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            string tab = "    ";
 
-            sb.AppendLine($"{tab}Version: {Version}");
-            sb.AppendLine($"{tab}CodeLength: {CodeLength}");
-            sb.AppendLine($"{tab}ReturnKind: {Enum.GetName(typeof(ReturnKinds), ReturnKind)}");
-            sb.AppendLine($"{tab}ValidRangeStart: {ValidRangeStart}");
-            sb.AppendLine($"{tab}ValidRangeEnd: {ValidRangeEnd}");
+            sb.AppendLine($"\tVersion: {Version}");
+            sb.AppendLine($"\tCodeLength: {CodeLength}");
+            sb.AppendLine($"\tReturnKind: {Enum.GetName(typeof(ReturnKinds), ReturnKind)}");
+            sb.AppendLine($"\tValidRangeStart: {ValidRangeStart}");
+            sb.AppendLine($"\tValidRangeEnd: {ValidRangeEnd}");
             if (SecurityObjectStackSlot != -1)
-                sb.AppendLine($"{tab}SecurityObjectStackSlot: caller.sp{SecurityObjectStackSlot:+#;-#;+0}");
+                sb.AppendLine($"\tSecurityObjectStackSlot: caller.sp{SecurityObjectStackSlot:+#;-#;+0}");
 
             if (GSCookieStackSlot != -1)
             {
-                sb.AppendLine($"{tab}GSCookieStackSlot: caller.sp{GSCookieStackSlot:+#;-#;+0}");
+                sb.AppendLine($"\tGSCookieStackSlot: caller.sp{GSCookieStackSlot:+#;-#;+0}");
                 sb.AppendLine($"GS cookie valid range: [{ValidRangeStart};{ValidRangeEnd})");
             }
 
@@ -257,55 +255,55 @@ namespace R2RDump
             {
                 if (_machine == Machine.Amd64)
                 {
-                    sb.AppendLine($"{tab}PSPSymStackSlot: initial.sp{PSPSymStackSlot:+#;-#;+0}");
+                    sb.AppendLine($"\tPSPSymStackSlot: initial.sp{PSPSymStackSlot:+#;-#;+0}");
                 }
                 else
                 {
-                    sb.AppendLine($"{tab}PSPSymStackSlot: caller.sp{PSPSymStackSlot:+#;-#;+0}");
+                    sb.AppendLine($"\tPSPSymStackSlot: caller.sp{PSPSymStackSlot:+#;-#;+0}");
                 }
             }
 
             if (GenericsInstContextStackSlot != -1)
             {
-                sb.AppendLine($"{tab}GenericsInstContextStackSlot: caller.sp{GenericsInstContextStackSlot:+#;-#;+0}");
+                sb.AppendLine($"\tGenericsInstContextStackSlot: caller.sp{GenericsInstContextStackSlot:+#;-#;+0}");
             }
 
             if (StackBaseRegister != 0xffffffff)
-                sb.AppendLine($"{tab}StackBaseRegister: {(Amd64Registers)StackBaseRegister}");
+                sb.AppendLine($"\tStackBaseRegister: {(Amd64Registers)StackBaseRegister}");
             if (_machine == Machine.Amd64)
             {
-                sb.AppendLine($"{tab}Wants Report Only Leaf: {_wantsReportOnlyLeaf}");
+                sb.AppendLine($"\tWants Report Only Leaf: {_wantsReportOnlyLeaf}");
             }
             else if (_machine == Machine.Arm || _machine == Machine.Arm64)
             {
-                sb.AppendLine($"{tab}Has Tailcalls: {_wantsReportOnlyLeaf}");
+                sb.AppendLine($"\tHas Tailcalls: {_wantsReportOnlyLeaf}");
             }
 
-            sb.AppendLine($"{tab}Size of parameter area: 0x{SizeOfStackOutgoingAndScratchArea:X}");
+            sb.AppendLine($"\tSize of parameter area: 0x{SizeOfStackOutgoingAndScratchArea:X}");
             if (SizeOfEditAndContinuePreservedArea != 0xffffffff)
-                sb.AppendLine($"{tab}SizeOfEditAndContinuePreservedArea: 0x{SizeOfEditAndContinuePreservedArea:X}");
+                sb.AppendLine($"\tSizeOfEditAndContinuePreservedArea: 0x{SizeOfEditAndContinuePreservedArea:X}");
             if (ReversePInvokeFrameStackSlot != -1)
-                sb.AppendLine($"{tab}ReversePInvokeFrameStackSlot: {ReversePInvokeFrameStackSlot}");
-            sb.AppendLine($"{tab}NumSafePoints: {NumSafePoints}");
-            sb.AppendLine($"{tab}NumInterruptibleRanges: {NumInterruptibleRanges}");
-            sb.AppendLine($"{tab}SafePointOffsets:");
+                sb.AppendLine($"\tReversePInvokeFrameStackSlot: {ReversePInvokeFrameStackSlot}");
+            sb.AppendLine($"\tNumSafePoints: {NumSafePoints}");
+            sb.AppendLine($"\tNumInterruptibleRanges: {NumInterruptibleRanges}");
+            sb.AppendLine($"\tSafePointOffsets:");
             foreach (uint offset in SafePointOffsets)
             {
-                sb.AppendLine($"{tab}{tab}{offset}");
+                sb.AppendLine($"\t\t{offset}");
             }
-            sb.AppendLine($"{tab}InterruptibleRanges:");
+            sb.AppendLine($"\tInterruptibleRanges:");
             foreach (InterruptibleRange range in InterruptibleRanges)
             {
-                sb.AppendLine($"{tab}{tab}start:{range.StartOffset}, end:{range.StopOffset}");
+                sb.AppendLine($"\t\tstart:{range.StartOffset}, end:{range.StopOffset}");
             }
-            sb.AppendLine($"{tab}SlotTable:");
+            sb.AppendLine($"\tSlotTable:");
             sb.Append(SlotTable.ToString());
-            sb.AppendLine($"{tab}Transitions:");
+            sb.AppendLine($"\tTransitions:");
             foreach (GcTransition trans in Transitions.Values)
             {
                 sb.AppendLine(trans.ToString());
             }
-            sb.AppendLine($"{tab}Size: {Size} bytes");
+            sb.AppendLine($"\tSize: {Size} bytes");
 
             return sb.ToString();
         }
