@@ -22,8 +22,8 @@ namespace System.CodeDom
 
         public CodeExpression this[int index]
         {
-            get { return (CodeExpression)List[index]; }
-            set { List[index] = value; }
+            get => (CodeExpression)List[index];
+            set => List[index] = value;
         }
 
         public int Add(CodeExpression value) => List.Add(value);

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -63,13 +64,10 @@ namespace System.Diagnostics.Tests
         {
             StackFrame stackFrame = CallMethod(1);
             MethodInfo expectedMethod = typeof(StackFrameTests).GetMethod(nameof(SkipFrames_CallMethod_ReturnsExpected));
-#if DEBUG
             Assert.Equal(expectedMethod, stackFrame.GetMethod());
-#else
-            Assert.NotEqual(expectedMethod, stackFrame.GetMethod());
-#endif
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public StackFrame CallMethod(int skipFrames) => new StackFrame(skipFrames);
 
         [Theory]
@@ -113,16 +111,12 @@ namespace System.Diagnostics.Tests
 
         public static IEnumerable<object[]> ToString_TestData()
         {
-#if DEBUG
             yield return new object[] { new StackFrame(), "MoveNext at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
             yield return new object[] { new StackFrame("FileName", 1, 2), "MoveNext at offset {offset} in file:line:column FileName:1:2" + Environment.NewLine };
             yield return new object[] { new StackFrame(int.MaxValue), "<null>" + Environment.NewLine };
             yield return new object[] { GenericMethod<string>(), "GenericMethod<T> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
             yield return new object[] { GenericMethod<string, int>(), "GenericMethod<T,U> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
             yield return new object[] { new ClassWithConstructor().StackFrame, ".ctor at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
-#else
-            yield break;
-#endif
         }
 
         [Theory]
@@ -136,12 +130,17 @@ namespace System.Diagnostics.Tests
             Assert.Equal(expectedToString, stackFrame.ToString());
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static StackFrame GenericMethod<T>() => new StackFrame();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static StackFrame GenericMethod<T, U>() => new StackFrame();
 
         private class ClassWithConstructor
         {
             public StackFrame StackFrame { get; }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public ClassWithConstructor() => StackFrame = new StackFrame();
         }
 
@@ -164,15 +163,9 @@ namespace System.Diagnostics.Tests
             {
                 Assert.Equal(StackFrame.OFFSET_UNKNOWN, stackFrame.GetILOffset());
             }
-#if !DEBUG
-            else if ((!PlatformDetection.IsFullFramework && isFileConstructor) || (PlatformDetection.IsFullFramework && !isFileConstructor && !isCurrentFrame && skipFrames == 0))
-            {
-                Assert.Equal(0, stackFrame.GetILOffset());
-            }
-#endif
             else
             {
-                Assert.True(stackFrame.GetILOffset() > 0, $"Expected GetILOffset() {stackFrame.GetILOffset()} for {stackFrame} to be greater than zero.");
+                Assert.True(stackFrame.GetILOffset() >= 0, $"Expected GetILOffset() {stackFrame.GetILOffset()} for {stackFrame} to be greater or equal to zero.");
             }
 
             // GetMethod returns null for unknown frames.

@@ -17,13 +17,13 @@ namespace System.CodeDom
 
         public CodeTypeReference Type
         {
-            get { return _type ?? (_type = new CodeTypeReference("")); }
-            set { _type = value; }
+            get => _type ?? (_type = new CodeTypeReference(""));
+            set => _type = value;
         }
 
         public bool HasGet
         {
-            get { return _hasGet || GetStatements.Count > 0; }
+            get => _hasGet || GetStatements.Count > 0;
             set
             {
                 _hasGet = value;
@@ -36,7 +36,7 @@ namespace System.CodeDom
 
         public bool HasSet
         {
-            get { return _hasSet || SetStatements.Count > 0; }
+            get => _hasSet || SetStatements.Count > 0;
             set
             {
                 _hasSet = value;

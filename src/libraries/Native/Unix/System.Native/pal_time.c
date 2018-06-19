@@ -42,14 +42,11 @@ int32_t SystemNative_GetTimestampResolution(uint64_t* resolution)
 {
     assert(resolution);
 
-#if HAVE_CLOCK_MONOTONIC
-    // Make sure we can call clock_gettime with MONOTONIC.  Stopwatch invokes
-    // GetTimestampResolution as the very first thing, and by calling this here
-    // to verify we can successfully, we don't have to branch in GetTimestamp.
-    struct timespec ts;
-    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) 
+#if HAVE_MACH_ABSOLUTE_TIME
+    mach_timebase_info_data_t mtid;
+    if (mach_timebase_info(&mtid) == KERN_SUCCESS)
     {
-        *resolution = SecondsToNanoSeconds;
+        *resolution = SecondsToNanoSeconds * ((uint64_t)(mtid.denom) / (uint64_t)(mtid.numer));
         return 1;
     }
     else
@@ -58,11 +55,14 @@ int32_t SystemNative_GetTimestampResolution(uint64_t* resolution)
         return 0;
     }
 
-#elif HAVE_MACH_ABSOLUTE_TIME
-    mach_timebase_info_data_t mtid;
-    if (mach_timebase_info(&mtid) == KERN_SUCCESS)
+#elif HAVE_CLOCK_MONOTONIC
+    // Make sure we can call clock_gettime with MONOTONIC.  Stopwatch invokes
+    // GetTimestampResolution as the very first thing, and by calling this here
+    // to verify we can successfully, we don't have to branch in GetTimestamp.
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) 
     {
-        *resolution = SecondsToNanoSeconds * ((uint64_t)(mtid.denom) / (uint64_t)(mtid.numer));
+        *resolution = SecondsToNanoSeconds;
         return 1;
     }
     else
@@ -82,16 +82,16 @@ int32_t SystemNative_GetTimestamp(uint64_t* timestamp)
 {
     assert(timestamp);
 
-#if HAVE_CLOCK_MONOTONIC
+#if HAVE_MACH_ABSOLUTE_TIME
+    *timestamp = mach_absolute_time();
+    return 1;
+
+#elif HAVE_CLOCK_MONOTONIC
     struct timespec ts;
     int result = clock_gettime(CLOCK_MONOTONIC, &ts);
     assert(result == 0); // only possible errors are if MONOTONIC isn't supported or &ts is an invalid address
     (void)result; // suppress unused parameter warning in release builds
     *timestamp = ((uint64_t)(ts.tv_sec) * SecondsToNanoSeconds) + (uint64_t)(ts.tv_nsec);
-    return 1;
-
-#elif HAVE_MACH_ABSOLUTE_TIME
-    *timestamp = mach_absolute_time();
     return 1;
 
 #else

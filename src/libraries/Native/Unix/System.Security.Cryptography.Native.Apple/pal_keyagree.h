@@ -5,6 +5,7 @@
 #pragma once
 
 #include "pal_seckey.h"
+#include "pal_compiler.h"
 
 #include <Security/Security.h>
 
@@ -13,5 +14,5 @@ Perform the EC Diffie-Hellman key agreement between the provided keys.
 
 Follows pal_seckey return conventions.
 */
-extern "C" int32_t
+DLLEXPORT int32_t
 AppleCryptoNative_EcdhKeyAgree(SecKeyRef privateKey, SecKeyRef publicKey, CFDataRef* pAgreeOut, CFErrorRef* pErrorOut);

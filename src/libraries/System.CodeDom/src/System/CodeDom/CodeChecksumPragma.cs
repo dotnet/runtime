@@ -21,8 +21,8 @@ namespace System.CodeDom
 
         public string FileName
         {
-            get { return _fileName ?? string.Empty; }
-            set { _fileName = value; }
+            get => _fileName ?? string.Empty;
+            set => _fileName = value;
         }
 
         public Guid ChecksumAlgorithmId { get; set; }

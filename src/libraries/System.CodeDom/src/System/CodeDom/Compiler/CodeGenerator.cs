@@ -39,8 +39,8 @@ namespace System.CodeDom.Compiler
 
         protected int Indent
         {
-            get { return _output.Indent; }
-            set { _output.Indent = value; }
+            get => _output.Indent;
+            set => _output.Indent = value;
         }
 
         protected abstract string NullToken { get; }
@@ -1147,10 +1147,7 @@ namespace System.CodeDom.Compiler
             OutputIdentifier(name);
         }
 
-        protected virtual void OutputIdentifier(string ident)
-        {
-            Output.Write(ident);
-        }
+        protected virtual void OutputIdentifier(string ident) => Output.Write(ident);
 
         protected virtual void OutputExpressionList(CodeExpressionCollection expressions)
         {
