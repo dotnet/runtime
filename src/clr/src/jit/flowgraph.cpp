@@ -4752,6 +4752,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
             }
             break;
 
+#if !defined(FEATURE_CORECLR)
             case CEE_CALLI:
 
                 // CEE_CALLI should not be inlined if the call indirect target has a calling convention other than
@@ -4784,6 +4785,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                     }
                 }
                 break;
+#endif // FEATURE_CORECLR
 
             case CEE_JMP:
                 retBlocks++;
