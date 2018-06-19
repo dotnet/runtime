@@ -4530,6 +4530,15 @@ namespace System.Globalization
         public string GetUnicode(string ascii, int index) { throw null; }
         public string GetUnicode(string ascii, int index, int count) { throw null; }
     }
+    public static partial class ISOWeek
+    {
+        public static int GetWeekOfYear(System.DateTime date) { throw null; }
+        public static int GetWeeksInYear(int year) { throw null; }
+        public static int GetYear(System.DateTime date) { throw null; }
+        public static System.DateTime GetYearEnd(int year) { throw null; }
+        public static System.DateTime GetYearStart(int year) { throw null; }
+        public static System.DateTime ToDateTime(int year, int week, System.DayOfWeek dayOfWeek) { throw null; }
+    }
     public partial class JapaneseCalendar : System.Globalization.Calendar
     {
         public JapaneseCalendar() { }
