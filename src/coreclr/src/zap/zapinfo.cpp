@@ -1690,6 +1690,13 @@ void* ZapInfo::getTailCallCopyArgsThunk (
     return m_pImage->GetWrappers()->GetStub(pStub);
 }
 
+bool ZapInfo::convertPInvokeCalliToCall(
+                    CORINFO_RESOLVED_TOKEN * pResolvedToken,
+                    bool fMustConvert)
+{
+    return false;
+}
+
 #ifdef FEATURE_READYTORUN_COMPILER
 ReadyToRunHelper MapReadyToRunHelper(CorInfoHelpFunc func, bool * pfOptimizeForSize)
 {
