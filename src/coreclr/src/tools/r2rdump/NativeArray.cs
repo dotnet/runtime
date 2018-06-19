@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
+
 namespace R2RDump
 {
     class NativeArray
@@ -10,6 +12,7 @@ namespace R2RDump
         private uint _baseOffset;
         private uint _nElements;
         private byte _entryIndexSize;
+        private byte[] _image;
 
         public NativeArray(byte[] image, uint offset)
         {
@@ -17,11 +20,30 @@ namespace R2RDump
             _baseOffset = NativeReader.DecodeUnsigned(image, offset, ref val);
             _nElements = (val >> 2);
             _entryIndexSize = (byte)(val & 3);
+            _image = image;
         }
 
         public uint GetCount()
         {
             return _nElements;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.AppendLine($"NativeArray Size: {_nElements}");
+            sb.AppendLine($"EntryIndexSize: {_entryIndexSize}");
+            for (uint i = 0; i < _nElements; i++)
+            {
+                int val = 0;
+                if (TryGetAt(_image, i, ref val))
+                {
+                    sb.AppendLine($"{i}: {val}");
+                }
+            }
+
+            return sb.ToString();
         }
 
         public bool TryGetAt(byte[] image, uint index, ref int pOffset)
