@@ -159,6 +159,7 @@ INLINE_OBSERVATION(REQUIRES_SAME_THIS,        bool,   "requires same this",     
 INLINE_OBSERVATION(RETURN_TYPE_MISMATCH,      bool,   "return type mismatch",          FATAL,       CALLSITE)
 INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",            FATAL,       CALLSITE)
 INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",               FATAL,       CALLSITE)
+INLINE_OBSERVATION(PINVOKE_EH,                bool,   "PInvoke call site with EH",     FATAL,       CALLSITE)
 
 // ------ Call Site Performance ------- 
 

@@ -1825,6 +1825,14 @@ InfoAccessType interceptor_ICJI::constructStringLiteral(CORINFO_MODULE_HANDLE mo
     return temp;
 }
 
+bool interceptor_ICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)
+{
+    mc->cr->AddCall("convertPInvokeCalliToCall");
+    bool result = original_ICorJitInfo->convertPInvokeCalliToCall(pResolvedToken, fMustConvert);
+    mc->recConvertPInvokeCalliToCall(pResolvedToken, fMustConvert, result);
+    return result;
+}
+
 InfoAccessType interceptor_ICJI::emptyStringLiteral(void** ppValue)
 {
     mc->cr->AddCall("emptyStringLiteral");
