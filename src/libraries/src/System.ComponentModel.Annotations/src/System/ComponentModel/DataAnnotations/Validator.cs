@@ -139,16 +139,13 @@ namespace System.ComponentModel.DataAnnotations
 
             if (validationContext != null && instance != validationContext.ObjectInstance)
             {
-                throw new ArgumentException(
-                    SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));
+                throw new ArgumentException(SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));
             }
 
             var result = true;
             var breakOnFirstError = (validationResults == null);
 
-            foreach (
-                var err in
-                    GetObjectValidationErrors(instance, validationContext, validateAllProperties, breakOnFirstError))
+            foreach (ValidationError err in GetObjectValidationErrors(instance, validationContext, validateAllProperties, breakOnFirstError))
             {
                 result = false;
 
@@ -283,8 +280,7 @@ namespace System.ComponentModel.DataAnnotations
             }
             if (instance != validationContext.ObjectInstance)
             {
-                throw new ArgumentException(
-                    SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));
+                throw new ArgumentException(SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));
             }
 
             GetObjectValidationErrors(instance, validationContext, validateAllProperties, false).FirstOrDefault()?.ThrowValidationException();
@@ -373,10 +369,8 @@ namespace System.ComponentModel.DataAnnotations
         {
             if (!CanBeAssigned(propertyType, value))
             {
-                throw new ArgumentException(
-                    string.Format(CultureInfo.CurrentCulture,
-                        SR.Validator_Property_Value_Wrong_Type, propertyName, propertyType),
-nameof(value));
+                throw new ArgumentException(SR.Format(SR.Validator_Property_Value_Wrong_Type, propertyName, propertyType),
+                                            nameof(value));
             }
         }
 

@@ -322,6 +322,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ConstructorInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeFormatException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\DefaultMemberAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilderAccess.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FlowControl.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Label.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Opcode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodeType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OperandType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PackingSize.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PEFileKinds.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\StackBehaviour.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ExceptionHandlingClauseOptions.cs" />
@@ -394,6 +404,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncMethodBuilderAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncStateMachineAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncValueTaskMethodBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerLineNumberAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerMemberNameAttribute.cs" />
@@ -577,6 +588,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LockRecursionException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ManualResetEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\NativeOverlapped.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ParameterizedThreadStart.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ReaderWriterLockSlim.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SemaphoreFullException.cs" />
@@ -893,5 +905,19 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Sse41.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Sse42.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Ssse3.PlatformNotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' == 'true' AND '$(Platform)' == 'arm64'">
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Aes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Base.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Sha1.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Sha256.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Simd.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureHardwareIntrinsics)' != 'true' OR '$(Platform)' != 'arm64'">
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Aes.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Base.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Sha1.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Sha256.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\Intrinsics\Arm\Arm64\Simd.PlatformNotSupported.cs" />
   </ItemGroup>
 </Project>

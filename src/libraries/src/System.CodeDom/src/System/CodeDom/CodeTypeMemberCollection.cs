@@ -22,8 +22,8 @@ namespace System.CodeDom
 
         public CodeTypeMember this[int index]
         {
-            get { return (CodeTypeMember)List[index]; }
-            set { List[index] = value; }
+            get => (CodeTypeMember)List[index];
+            set => List[index] = value;
         }
 
         public int Add(CodeTypeMember value) => List.Add(value);

@@ -4530,6 +4530,15 @@ namespace System.Globalization
         public string GetUnicode(string ascii, int index) { throw null; }
         public string GetUnicode(string ascii, int index, int count) { throw null; }
     }
+    public static partial class ISOWeek
+    {
+        public static int GetWeekOfYear(System.DateTime date) { throw null; }
+        public static int GetWeeksInYear(int year) { throw null; }
+        public static int GetYear(System.DateTime date) { throw null; }
+        public static System.DateTime GetYearEnd(int year) { throw null; }
+        public static System.DateTime GetYearStart(int year) { throw null; }
+        public static System.DateTime ToDateTime(int year, int week, System.DayOfWeek dayOfWeek) { throw null; }
+    }
     public partial class JapaneseCalendar : System.Globalization.Calendar
     {
         public JapaneseCalendar() { }
@@ -6386,6 +6395,12 @@ namespace System.Runtime.CompilerServices
         public void SetResult(TResult result) { }
         public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+    }
+    [System.AttributeUsage((System.AttributeTargets)(2048), AllowMultiple = false, Inherited = false)]
+    public sealed class CallerArgumentExpressionAttribute : System.Attribute
+    {
+        public CallerArgumentExpressionAttribute(string parameterName) { }
+        public string ParameterName { get { throw null; } }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited=false)]
     public sealed partial class CallerFilePathAttribute : System.Attribute

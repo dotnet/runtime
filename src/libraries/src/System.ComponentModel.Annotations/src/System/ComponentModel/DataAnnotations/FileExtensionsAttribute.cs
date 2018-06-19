@@ -48,14 +48,7 @@ namespace System.ComponentModel.DataAnnotations
 
         private bool ValidateExtension(string fileName)
         {
-            try
-            {
-                return ExtensionsParsed.Contains(Path.GetExtension(fileName).ToLowerInvariant());
-            }
-            catch (ArgumentException)
-            {
-                return false;
-            }
+            return ExtensionsParsed.Contains(Path.GetExtension(fileName).ToLowerInvariant());
         }
     }
 }

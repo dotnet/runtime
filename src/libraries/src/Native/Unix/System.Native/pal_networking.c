@@ -2329,7 +2329,7 @@ int32_t SystemNative_CreateSocketEventBuffer(int32_t count, struct SocketEvent**
 
     size_t bufferSize;
     if (!multiply_s(SocketEventBufferElementSize, (size_t)count, &bufferSize) ||
-        (*buffer = (struct SocketEvent*)malloc(SocketEventBufferElementSize * (size_t)count)) == NULL)
+        (*buffer = (struct SocketEvent*)malloc(bufferSize)) == NULL)
     {
         return Error_ENOMEM;
     }

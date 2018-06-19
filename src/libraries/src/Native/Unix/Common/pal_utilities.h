@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 
 #ifdef __cplusplus
 #include <limits>
@@ -196,3 +197,21 @@ static inline bool CheckInterrupted(int32_t result)
 }
 
 #endif // __cplusplus
+
+inline static uint32_t Int32ToUint32(int32_t value)
+{
+    assert(value >= 0);
+    return (uint32_t)value;
+}
+
+inline static size_t Int32ToSizeT(int32_t value)
+{
+    assert(value >= 0);
+    return (size_t)value;
+}
+
+inline static int32_t Uint32ToInt32(uint32_t value)
+{
+    assert(value <= INT_MAX);
+    return (int32_t)value;
+}

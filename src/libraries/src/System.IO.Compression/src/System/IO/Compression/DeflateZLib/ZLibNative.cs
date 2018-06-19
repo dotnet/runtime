@@ -137,6 +137,9 @@ namespace System.IO.Compression
                                                           // More is faster and better compression with more memory usage.
         public const int Deflate_NoCompressionMemLevel = 7;
 
+        public const byte GZip_Header_ID1 = 31;
+        public const byte GZip_Header_ID2 = 139;
+
         /**
          * Do not remove the nested typing of types inside of <code>System.IO.Compression.ZLibNative</code>.
          * This was done on purpose to:

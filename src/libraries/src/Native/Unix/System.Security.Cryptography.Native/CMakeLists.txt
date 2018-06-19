@@ -18,32 +18,32 @@ find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 set(NATIVECRYPTO_SOURCES
-    openssl.cpp
-    pal_asn1.cpp
-    pal_asn1_print.cpp
-    pal_bignum.cpp
-    pal_bio.cpp
-    pal_dsa.cpp
-    pal_ecdsa.cpp
-    pal_ecc_import_export.cpp
-    pal_eckey.cpp
-    pal_err.cpp
-    pal_evp.cpp
-    pal_evp_pkey.cpp
-    pal_evp_pkey_dsa.cpp
-    pal_evp_pkey_ecdh.cpp
-    pal_evp_pkey_eckey.cpp
-    pal_evp_pkey_rsa.cpp
-    pal_evp_cipher.cpp
-    pal_hmac.cpp
-    pal_pkcs12.cpp
-    pal_pkcs7.cpp
-    pal_rsa.cpp
-    pal_ssl.cpp
-    pal_x509.cpp
-    pal_x509_name.cpp
-    pal_x509_root.cpp
-    pal_x509ext.cpp
+    openssl.c
+    pal_asn1.c
+    pal_asn1_print.c
+    pal_bignum.c
+    pal_bio.c
+    pal_dsa.c
+    pal_ecdsa.c
+    pal_ecc_import_export.c
+    pal_eckey.c
+    pal_err.c
+    pal_evp.c
+    pal_evp_pkey.c
+    pal_evp_pkey_dsa.c
+    pal_evp_pkey_ecdh.c
+    pal_evp_pkey_eckey.c
+    pal_evp_pkey_rsa.c
+    pal_evp_cipher.c
+    pal_hmac.c
+    pal_pkcs12.c
+    pal_pkcs7.c
+    pal_rsa.c
+    pal_ssl.c
+    pal_x509.c
+    pal_x509_name.c
+    pal_x509_root.c
+    pal_x509ext.c
 )
 
 if (FEATURE_DISTRO_AGNOSTIC_SSL)
@@ -52,7 +52,7 @@ if (FEATURE_DISTRO_AGNOSTIC_SSL)
     endif()
 
     list(APPEND NATIVECRYPTO_SOURCES
-        opensslshim.cpp
+        opensslshim.c
     )
     add_definitions(-DFEATURE_DISTRO_AGNOSTIC_SSL)
 endif()

@@ -65,7 +65,7 @@ void SSL_CTX_set_alpn_select_cb(SSL_CTX* ctx, int (*cb) (SSL *ssl,
 void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsigned int* len);
 #endif
 
-#define API_EXISTS(fn) (fn != nullptr)
+#define API_EXISTS(fn) (fn != NULL)
 
 // List of all functions from the libssl that are used in the System.Security.Cryptography.Native.
 // Forgetting to add a function here results in build failure with message reporting the function
@@ -365,7 +365,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(EC_POINT_set_affine_coordinates_GF2m, false) \
     
 // Declare pointers to all the used OpenSSL functions
-#define PER_FUNCTION_BLOCK(fn, isRequired) extern decltype(fn)* fn##_ptr;
+#define PER_FUNCTION_BLOCK(fn, isRequired) extern __typeof(fn)* fn##_ptr;
 FOR_ALL_OPENSSL_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 

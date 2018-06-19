@@ -214,6 +214,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="reference">A reference to data.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
+        /// <returns>The lifetime of the returned span will not be validated for safety by span-aware languages.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> CreateSpan<T>(ref T reference, int length) => new Span<T>(ref reference, length);
 
@@ -224,6 +225,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="reference">A reference to data.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
+        /// <returns>The lifetime of the returned span will not be validated for safety by span-aware languages.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<T> CreateReadOnlySpan<T>(ref T reference, int length) => new ReadOnlySpan<T>(ref reference, length);
     }
