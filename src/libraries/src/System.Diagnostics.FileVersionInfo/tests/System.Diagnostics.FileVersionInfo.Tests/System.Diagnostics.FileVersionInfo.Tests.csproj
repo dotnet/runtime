@@ -45,7 +45,7 @@
     </ProjectReference>
   </ItemGroup>
   <Target Name="MangleTestAssemblyExtension"
-          AfterTargets="CopyFilesToOutputDirectory">
+          AfterTargets="PrepareForRun">
     <!-- Copy TestAssembly to file without .dll extension so that ILC preserves it as a data file rather than feeding it to the output executable. -->
     <Copy SourceFiles="$(TestPath)\System.Diagnostics.FileVersionInfo.TestAssembly.dll" DestinationFiles="$(TestPath)\System.Diagnostics.FileVersionInfo.TestAssembly.ildll" />
   </Target>
