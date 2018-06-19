@@ -12,6 +12,8 @@ namespace R2RDump
 {
     class CoreDisTools
     {
+        private const string _dll = "coredistools.dll";
+
         public enum TargetArch
         {
             Target_Host, // Target is the same as host architecture
@@ -21,23 +23,23 @@ namespace R2RDump
             Target_Arm64
         };
 
-        [DllImport("coredistools.dll")]
+        [DllImport(_dll)]
         public static extern IntPtr InitBufferedDisasm(TargetArch Target);
 
-        [DllImport("coredistools.dll")]
+        [DllImport(_dll)]
         public static extern void DumpCodeBlock(IntPtr Disasm, ulong Address, IntPtr Bytes, int Size);
 
-        [DllImport("coredistools.dll")]
+        [DllImport(_dll)]
         [return: MarshalAs(UnmanagedType.I4)]
         public static extern int DumpInstruction(IntPtr Disasm, ulong Address, IntPtr Bytes, int Size);
 
-        [DllImport("coredistools.dll")]
+        [DllImport(_dll)]
         public static extern IntPtr GetOutputBuffer();
 
-        [DllImport("coredistools.dll")]
+        [DllImport(_dll)]
         public static extern void ClearOutputBuffer();
 
-        [DllImport("coredistools.dll")]
+        [DllImport(_dll)]
         public static extern void FinishDisasm(IntPtr Disasm);
 
         public unsafe static string GetCodeBlock(IntPtr Disasm, RuntimeFunction rtf, int imageOffset, byte[] image)

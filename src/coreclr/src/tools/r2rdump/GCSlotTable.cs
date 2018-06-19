@@ -34,18 +34,17 @@ namespace R2RDump
             public override string ToString()
             {
                 StringBuilder sb = new StringBuilder();
-                string tab3 = new string(' ', 12);
 
                 if (StackSlot != null)
                 {
-                    sb.AppendLine($"{tab3}Stack:");
+                    sb.AppendLine($"\t\t\tStack:");
                     sb.AppendLine(StackSlot.ToString());
                 }
                 else
                 {
-                    sb.AppendLine($"{tab3}RegisterNumber: {RegisterNumber}");
+                    sb.AppendLine($"\t\t\tRegisterNumber: {RegisterNumber}");
                 }
-                sb.AppendLine($"{tab3}Flags: {Flags}");
+                sb.AppendLine($"\t\t\tFlags: {Flags}");
 
                 return sb.ToString();
             }
@@ -88,16 +87,14 @@ namespace R2RDump
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            string tab2 = new string(' ', 8);
-            string tab3 = new string(' ', 12);
 
-            sb.AppendLine($"{tab2}NumSlots({NumSlots}) = NumRegisters({NumRegisters}) + NumStackSlots({NumStackSlots}) + NumUntracked({NumUntracked})");
-            sb.AppendLine($"{tab2}GcSlots:");
-            sb.AppendLine($"{tab3}-------------------------");
+            sb.AppendLine($"\t\tNumSlots({NumSlots}) = NumRegisters({NumRegisters}) + NumStackSlots({NumStackSlots}) + NumUntracked({NumUntracked})");
+            sb.AppendLine($"\t\tGcSlots:");
+            sb.AppendLine($"\t\t\t-------------------------");
             foreach (GcSlot slot in GcSlots)
             {
                 sb.Append(slot.ToString());
-                sb.AppendLine($"{tab3}-------------------------");
+                sb.AppendLine($"\t\t\t-------------------------");
             }
 
             return sb.ToString();
