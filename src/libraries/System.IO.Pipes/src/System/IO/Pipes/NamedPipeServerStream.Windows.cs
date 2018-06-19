@@ -166,22 +166,23 @@ namespace System.IO.Pipes
             State = PipeState.Disconnected;
         }
 
-        // Gets the username of the connected client.  Not that we will not have access to the client's 
+        // Gets the username of the connected client.  Note that we will not have access to the client's 
         // username until it has written at least once to the pipe (and has set its impersonationLevel 
         // argument appropriately). 
-        public String GetImpersonationUserName()
+        public unsafe string GetImpersonationUserName()
         {
             CheckWriteOperations();
 
-            StringBuilder userName = new StringBuilder(Interop.Kernel32.CREDUI_MAX_USERNAME_LENGTH + 1);
+            const int UserNameMaxLength = Interop.Kernel32.CREDUI_MAX_USERNAME_LENGTH + 1;
+            char* userName = stackalloc char[UserNameMaxLength]; // ~1K
 
             if (!Interop.Kernel32.GetNamedPipeHandleState(InternalHandle, IntPtr.Zero, IntPtr.Zero,
-                IntPtr.Zero, IntPtr.Zero, userName, userName.Capacity))
+                IntPtr.Zero, IntPtr.Zero, userName, UserNameMaxLength))
             {
                 throw WinIOError(Marshal.GetLastWin32Error());
             }
 
-            return userName.ToString();
+            return new string(userName);
         }
 
         // -----------------------------
