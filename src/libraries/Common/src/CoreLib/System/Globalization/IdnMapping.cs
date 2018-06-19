@@ -638,10 +638,10 @@ namespace System.Globalization
 
                 // See if this section's ASCII or ACE
                 if (ascii.Length < c_strAcePrefix.Length + iAfterLastDot || 
-                    !ascii.Substring(iAfterLastDot,c_strAcePrefix.Length).Equals(c_strAcePrefix, StringComparison.OrdinalIgnoreCase))
+                    string.Compare(ascii, iAfterLastDot, c_strAcePrefix, 0, c_strAcePrefix.Length, StringComparison.OrdinalIgnoreCase) != 0)
                 {
                     // Its ASCII, copy it
-                    output.Append(ascii.Substring(iAfterLastDot, iNextDot - iAfterLastDot));
+                    output.Append(ascii, iAfterLastDot, iNextDot - iAfterLastDot);
                 }
                 else
                 {
