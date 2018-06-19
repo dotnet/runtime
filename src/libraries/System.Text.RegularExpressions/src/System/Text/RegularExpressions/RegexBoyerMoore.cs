@@ -40,16 +40,18 @@ namespace System.Text.RegularExpressions
             // We're doing this for your own protection. (Really, for speed.)
             Debug.Assert(pattern.Length != 0, "RegexBoyerMoore called with an empty string. This is bad for perf");
 
-            // We do the ToLower character by character for consistency.  With surrogate chars, doing
-            // a ToLower on the entire string could actually change the surrogate pair.  This is more correct
-            // linguistically, but since Regex doesn't support surrogates, it's more important to be
-            // consistent.
             if (caseInsensitive)
             {
-                StringBuilder sb = StringBuilderCache.Acquire(pattern.Length);
-                for (int i = 0; i < pattern.Length; i++)
-                    sb.Append(culture.TextInfo.ToLower(pattern[i]));
-                pattern = StringBuilderCache.GetStringAndRelease(sb);
+                pattern = string.Create(pattern.Length, (pattern, culture), (span, state) =>
+                {
+                    // We do the ToLower character by character for consistency.  With surrogate chars, doing
+                    // a ToLower on the entire string could actually change the surrogate pair.  This is more correct
+                    // linguistically, but since Regex doesn't support surrogates, it's more important to be
+                    // consistent.
+                    TextInfo textInfo = state.culture.TextInfo;
+                    for (int i = 0; i < state.pattern.Length; i++)
+                        span[i] = textInfo.ToLower(state.pattern[i]);
+                });
             }
 
             Pattern = pattern;

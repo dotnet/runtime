@@ -6,6 +6,7 @@
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_COMPILED</DefineConstants>
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
@@ -50,12 +51,13 @@
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Text\StringBuilderCache.cs">
-      <Link>Common\System\Text\StringBuilderCache.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\Collections\Generic\ValueListBuilder.cs">
       <Link>Common\System\Collections\Generic\ValueListBuilder.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+    </Compile>
+    <Compile Include="System\Text\ValueStringBuilder.Reverse.cs" />
   </ItemGroup>
   <!-- Files that enable compiled feature -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
