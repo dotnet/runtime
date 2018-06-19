@@ -360,7 +360,7 @@ And Here is the resulting code just prior to code generation:
    │  ┌──▌  const     struct4    0 REG rax $81
    └──▌  return    struct4    REG NA $140
 ```
-Finally, here is the resulting code that we were hoping to acheive:
+Finally, here is the resulting code that we were hoping to achieve:
 ```
   xor      eax, eax
 ```

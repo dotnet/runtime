@@ -55,7 +55,7 @@ Using native images
 -------------------
 
 Running CrossGen on an assembly creates a "native image" file, with the extension of `.ni.dll` or `.ni.exe`.
-You should include the native images in your app, either by replacing the original MSIL assmblies with the native images, or by putting the native images next to the MSIL assemblies.
+You should include the native images in your app, either by replacing the original MSIL assemblies with the native images, or by putting the native images next to the MSIL assemblies.
 When the native images are present, CoreCLR runtime will automatically use it instead of the original MSIL assemblies.
 
 Common errors
