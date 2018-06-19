@@ -381,5 +381,5 @@ A few (completely uncommited) thoughts on how this area of the code might evolve
 - On stack replacement requires that publication not only redirect new method invocations to a new version, but also continued execution of existing method invocations must redirect to a new version.
 - Performance improvements that utilize more memory / cpu efficient data structures.
 - Add new build pipeline stage accessible from managed code APIs to do self-modifying code.
-- Add new build pipeline stage accesible from out-of-process or maybe runtime managed that could handle hot-patching app deployment scenarios.
+- Add new build pipeline stage accessible from out-of-process or maybe runtime managed that could handle hot-patching app deployment scenarios.
 - Allow for an extensible set of stages rather than the current hard-coded set, perhaps to allow N profilers to all collaboratively edit. Some form of multi-profiler collaboration has long been requested and this seems a fairly powerful (and potentially way too complicated) form.

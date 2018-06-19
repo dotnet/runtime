@@ -43,7 +43,7 @@ It seems sensible for Microsoft to focus on opening up the JIT self-host
 (aka JITSH) tests first. A few other tasks are also Microsoft specific and are
 marked with (MS) below. 
 
-Other than that the priority, task list, and possibly assigments are open to
+Other than that the priority, task list, and possibly assignments are open to
 discussion.
 
 ### (MS) Bring up equivalent of the JITSH tests
