@@ -3,7 +3,8 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <NoWarn>CS3021;$(NoWarn)</NoWarn>
+    <DisableImplicitFrameworkDefines>true</DisableImplicitFrameworkDefines>
+    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
     
     <!--
     The Microsoft.NET.Sdk defaults the AssemblySearchPaths earlier than buildtools, so default

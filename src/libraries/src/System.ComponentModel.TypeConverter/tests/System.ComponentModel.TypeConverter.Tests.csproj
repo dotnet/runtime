@@ -3,6 +3,7 @@
     <ProjectGuid>{3F0326A1-9E19-4A6C-95CE-63E65C9D2030}</ProjectGuid>
     <DefineConstants>$(DefineConstants);FUNCTIONAL_TESTS</DefineConstants>
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
+    <RootNamespace></RootNamespace>
     <AssemblyVersion>9.9.9.9</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
