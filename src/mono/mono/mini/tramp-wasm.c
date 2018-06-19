@@ -52,7 +52,7 @@ gpointer
 mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 {
 	if (info)
-		*info = mono_tramp_info_create ("interp_to_native_trampoline", mono_wasm_interp_to_native_trampoline, 1, NULL, NULL);
+		*info = mono_tramp_info_create ("interp_to_native_trampoline", (guint8*)mono_wasm_interp_to_native_trampoline, 1, NULL, NULL);
 	return mono_wasm_interp_to_native_trampoline;
 }
 

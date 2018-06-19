@@ -477,7 +477,8 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			}
 
 			execve (arg0, actual_args, envp);
-			write_all (info_pipe [1], &errno, sizeof (int));
+			int const err = errno;
+			write_all (info_pipe [1], &err, sizeof (int));
 			exit (0);
 		}
 	} else if ((flags & G_SPAWN_DO_NOT_REAP_CHILD) == 0) {

@@ -3055,14 +3055,12 @@ mono_runtime_try_invoke_handle (MonoMethod *method, MonoObjectHandle obj, void *
 {
 	// FIXME? typing of params
 	MonoException *exc = NULL;
-	MonoObject *obj_raw = (obj && !MONO_HANDLE_IS_NULL (obj)) ? MONO_HANDLE_RAW (obj) : NULL;
-	obj_raw = mono_runtime_try_invoke (method, obj_raw, params, (MonoObject**)&exc, error);
-	obj = MONO_HANDLE_NEW (MonoObject, obj_raw);
+	MonoObject *obj_raw = mono_runtime_try_invoke (method, MONO_HANDLE_RAW (obj), params, (MonoObject**)&exc, error);
 
 	if (exc && is_ok (error))
 		mono_error_set_exception_instance (error, exc);
 
-	return obj;
+	return MONO_HANDLE_NEW (MonoObject, obj_raw);
 }
 
 /**
@@ -3114,9 +3112,7 @@ mono_runtime_invoke_checked (MonoMethod *method, void *obj, void **params, MonoE
 static MonoObjectHandle
 mono_runtime_invoke_handle (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error)
 {
-	MonoObject *obj_raw = (obj && !MONO_HANDLE_IS_NULL (obj)) ? MONO_HANDLE_RAW (obj) : NULL;
-	obj_raw = mono_runtime_invoke_checked (method, obj_raw, params, error);
-	return MONO_HANDLE_NEW (MonoObject, obj_raw);
+	return MONO_HANDLE_NEW (MonoObject, mono_runtime_invoke_checked (method, MONO_HANDLE_RAW (obj), params, error));
 }
 
 /**
@@ -4449,7 +4445,7 @@ serialize_or_deserialize_object (MonoObjectHandle obj, const gchar *method_name,
 	}
 
 	void *params [ ] = { MONO_HANDLE_RAW (obj) };
-	return mono_runtime_try_invoke_handle (*method, NULL, params, error);
+	return mono_runtime_try_invoke_handle (*method, NULL_HANDLE, params, error);
 }
 
 static MonoMethod *serialize_method;
@@ -4492,7 +4488,7 @@ make_transparent_proxy (MonoObjectHandle obj, MonoError *error)
 	MONO_HANDLE_SET (real_proxy, class_to_proxy, reflection_type);
 	MONO_HANDLE_SET (real_proxy, unwrapped_server, obj);
 
-	return mono_runtime_try_invoke_handle (get_proxy_method, real_proxy, NULL, error);
+	return mono_runtime_try_invoke_handle (get_proxy_method, MONO_HANDLE_CAST (MonoObject, real_proxy), NULL, error);
 return_null:
 	return mono_new_null ();
 }
@@ -5809,7 +5805,8 @@ mono_object_clone_handle (MonoObjectHandle obj, MonoError *error)
 	MonoClass* const klass = vtable->klass;
 
 	if (m_class_get_rank (klass))
-		return (MonoObjectHandle)mono_array_clone_in_domain (MONO_HANDLE_DOMAIN (obj), (MonoArrayHandle)obj, error);
+		return MONO_HANDLE_CAST (MonoObject, mono_array_clone_in_domain (MONO_HANDLE_DOMAIN (obj),
+			MONO_HANDLE_CAST (MonoArray, obj), error));
 
 	int const size = m_class_get_instance_size (klass);
 

@@ -6228,13 +6228,13 @@ ves_icall_System_Reflection_Module_ResolveSignature (MonoImage *image, guint32 t
 
 	/* FIXME: Support other tables ? */
 	if (table != MONO_TABLE_STANDALONESIG)
-		return MONO_HANDLE_CAST (MonoArray, NULL);
+		return NULL_HANDLE_ARRAY;
 
 	if (image_is_dynamic (image))
-		return MONO_HANDLE_CAST (MonoArray, NULL);
+		return NULL_HANDLE_ARRAY;
 
 	if ((idx == 0) || (idx > tables [MONO_TABLE_STANDALONESIG].rows))
-		return MONO_HANDLE_CAST (MonoArray, NULL);
+		return NULL_HANDLE_ARRAY;
 
 	sig = mono_metadata_decode_row_col (&tables [MONO_TABLE_STANDALONESIG], idx - 1, 0);
 
@@ -6243,7 +6243,7 @@ ves_icall_System_Reflection_Module_ResolveSignature (MonoImage *image, guint32 t
 
 	MonoArrayHandle res = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, len, error);
 	if (!is_ok (error))
-		return MONO_HANDLE_CAST (MonoArray, NULL);
+		return NULL_HANDLE_ARRAY;
 	uint32_t h;
 	gpointer array_base = MONO_ARRAY_HANDLE_PIN (res, guint8, 0, &h);
 	memcpy (array_base, ptr, len);
@@ -6410,7 +6410,7 @@ ves_icall_System_Delegate_AllocDelegateLike_internal (MonoDelegateHandle delegat
 	MonoClass *klass = mono_handle_class (delegate);
 	g_assert (mono_class_has_parent (klass, mono_defaults.multicastdelegate_class));
 
-	MonoMulticastDelegateHandle ret = (MonoMulticastDelegateHandle)mono_object_new_handle (MONO_HANDLE_DOMAIN (delegate), klass, error);
+	MonoMulticastDelegateHandle ret = MONO_HANDLE_CAST (MonoMulticastDelegate, mono_object_new_handle (MONO_HANDLE_DOMAIN (delegate), klass, error));
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoMulticastDelegate, NULL_HANDLE));
 
 	MONO_HANDLE_SETVAL (MONO_HANDLE_CAST (MonoDelegate, ret), invoke_impl, gpointer, mono_runtime_create_delegate_trampoline (klass));

@@ -1389,7 +1389,7 @@ register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly
 static MonoReflectionModuleBuilderHandle
 register_module (MonoDomain *domain, MonoReflectionModuleBuilderHandle res, MonoDynamicImage *module)
 {
-	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilderHandle, module, MONO_HANDLE_CAST (MonoObject, res), NULL);
+	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilder, module, MONO_HANDLE_CAST (MonoObject, res), NULL);
 }
 
 static gboolean
@@ -1536,10 +1536,10 @@ mono_type_array_get_and_resolve_with_modifiers (MonoArrayHandle types, MonoArray
 	MonoArrayHandle req_mods_handle = MONO_HANDLE_NEW (MonoArray, NULL);
 	MonoArrayHandle opt_mods_handle = MONO_HANDLE_NEW (MonoArray, NULL);
 
-	if (required_modifiers && !MONO_HANDLE_IS_NULL (required_modifiers))
+	if (!MONO_HANDLE_IS_NULL (required_modifiers))
 		MONO_HANDLE_ARRAY_GETREF (req_mods_handle, required_modifiers, idx);
 
-	if (optional_modifiers && !MONO_HANDLE_IS_NULL (optional_modifiers))
+	if (!MONO_HANDLE_IS_NULL (optional_modifiers))
 		MONO_HANDLE_ARRAY_GETREF (opt_mods_handle, optional_modifiers, idx);
 
 	MONO_HANDLE_ARRAY_GETREF (type, types, idx);
@@ -1640,7 +1640,7 @@ mono_reflection_type_get_underlying_system_type (MonoReflectionTypeHandle t, Mon
 	MonoMethod *usertype_method = mono_object_handle_get_virtual_method (MONO_HANDLE_CAST (MonoObject, t), method_get_underlying_system_type, error);
 	goto_if_nok (error, leave);
 
-	MONO_HANDLE_ASSIGN (rt, MONO_HANDLE_NEW (MonoReflectionType, mono_runtime_invoke_checked (usertype_method, MONO_HANDLE_RAW (t), NULL, error)));
+	MONO_HANDLE_ASSIGN (rt, MONO_HANDLE_CAST (MonoReflectionType, MONO_HANDLE_NEW (MonoObject, mono_runtime_invoke_checked (usertype_method, MONO_HANDLE_RAW (t), NULL, error))));
 
 leave:
 	HANDLE_FUNCTION_RETURN_REF (MonoReflectionType, rt);
@@ -1767,7 +1767,7 @@ mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref, MonoError *
 
 	MonoType* result = NULL;
 
-	g_assert (ref);
+	g_assert (!MONO_HANDLE_IS_NULL (ref));
 	if (MONO_HANDLE_IS_NULL (ref))
 		goto leave;
 	MonoType *t = MONO_HANDLE_GETVAL (ref, type);
@@ -1832,7 +1832,7 @@ mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref, MonoError *
 	} else if (is_sre_enum_builder (klass)) {
 		MonoReflectionEnumBuilderHandle ref_ebuilder = MONO_HANDLE_CAST (MonoReflectionEnumBuilder, ref);
 
-		MonoReflectionTypeHandle ref_tb = MONO_HANDLE_NEW_GET (MonoReflectionType, ref_ebuilder, tb);
+		MonoReflectionTypeHandle ref_tb = MONO_HANDLE_CAST (MonoReflectionType, MONO_HANDLE_NEW_GET (MonoReflectionTypeBuilder, ref_ebuilder, tb));
 		result = mono_reflection_type_handle_mono_type (ref_tb, error);
 	} else if (is_sre_type_builder (klass)) {
 		MonoReflectionTypeBuilderHandle ref_tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref);
@@ -1842,7 +1842,7 @@ mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref, MonoError *
 		mono_error_assert_ok (error);
 		result = MONO_HANDLE_GETVAL (ref, type);
 	} else {
-		g_error ("Cannot handle corlib user type %s", mono_type_full_name (m_class_get_byval_arg (mono_object_class(ref))));
+		g_error ("Cannot handle corlib user type %s", mono_type_full_name (m_class_get_byval_arg (mono_handle_class (ref))));
 	}
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (result);
@@ -1914,7 +1914,7 @@ method_builder_to_signature (MonoImage *image, MonoReflectionMethodBuilderHandle
 	sig = parameters_to_signature (image, params, required_modifiers, optional_modifiers, error);
 	return_val_if_nok (error, NULL);
 	sig->hasthis = MONO_HANDLE_GETVAL (method, attrs) & METHOD_ATTRIBUTE_STATIC? 0: 1;
-	MonoReflectionTypeHandle rtype = MONO_HANDLE_NEW_GET (MonoReflectionType, method, rtype);
+	MonoReflectionTypeHandle rtype = MONO_HANDLE_CAST (MonoReflectionType, MONO_HANDLE_NEW_GET (MonoObject, method, rtype));
 	if (!MONO_HANDLE_IS_NULL (rtype)) {
 		sig->ret = mono_reflection_type_handle_mono_type (rtype, error);
 		if (!is_ok (error)) {
@@ -1930,13 +1930,15 @@ method_builder_to_signature (MonoImage *image, MonoReflectionMethodBuilderHandle
 }
 
 static MonoMethodSignature*
-dynamic_method_to_signature (MonoReflectionDynamicMethodHandle method, MonoError *error) {
+dynamic_method_to_signature (MonoReflectionDynamicMethodHandle method, MonoError *error)
+{
 	HANDLE_FUNCTION_ENTER ();
 	MonoMethodSignature *sig = NULL;
 
 	error_init (error);
 
-	sig = parameters_to_signature (NULL, MONO_HANDLE_NEW_GET (MonoArray, method, parameters), NULL, NULL, error);
+	sig = parameters_to_signature (NULL, MONO_HANDLE_NEW_GET (MonoArray, method, parameters),
+		MONO_HANDLE_CAST (MonoArray, NULL_HANDLE), MONO_HANDLE_CAST (MonoArray, NULL_HANDLE), error);
 	goto_if_nok (error, leave);
 	sig->hasthis = MONO_HANDLE_GETVAL (method, attrs) & METHOD_ATTRIBUTE_STATIC? 0: 1;
 	MonoReflectionTypeHandle rtype = MONO_HANDLE_NEW_GET (MonoReflectionType, method, rtype);
@@ -2629,7 +2631,7 @@ reflection_setup_internal_class_internal (MonoReflectionTypeBuilderHandle ref_tb
 	goto_if_nok (error, leave);
 
 	// Do here so that the search inside of the parent can see the above type that's been set.
-	MonoReflectionTypeHandle ref_parent = MONO_HANDLE_NEW_GET (MonoReflectionType, ref_tb, parent);
+	MonoReflectionTypeHandle ref_parent = MONO_HANDLE_CAST (MonoReflectionType, MONO_HANDLE_NEW_GET (MonoObject, ref_tb, parent));
 	MonoType *parent_type = NULL;
 	if (!MONO_HANDLE_IS_NULL (ref_parent)) {
 		MonoClass *parent_klass = mono_handle_class (ref_parent);
@@ -2813,7 +2815,7 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 {
 	error_init (error);
 	
-	MonoReflectionMarshalAsAttributeHandle minfo = (MonoReflectionMarshalAsAttributeHandle)mono_object_new_handle (domain, mono_class_get_marshal_as_attribute_class (), error);
+	MonoReflectionMarshalAsAttributeHandle minfo = MONO_HANDLE_CAST (MonoReflectionMarshalAsAttribute, mono_object_new_handle (domain, mono_class_get_marshal_as_attribute_class (), error));
 	goto_if_nok (error, fail);
 	guint32 utype = spec->native;
 	MONO_HANDLE_SETVAL (minfo, utype, guint32, utype);
@@ -3625,7 +3627,7 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 			memcpy ((gpointer)def_values [i].data, p, len);
 		}
 
-		MonoObjectHandle field_builder_handle = MONO_HANDLE_NEW (MonoObject, fb);
+		MonoObjectHandle field_builder_handle = MONO_HANDLE_CAST (MonoObject, MONO_HANDLE_NEW (MonoReflectionFieldBuilder, fb));
 		mono_dynamic_image_register_token (tb->module->dynamic_image, mono_metadata_make_token (MONO_TABLE_FIELD, first_idx + i), field_builder_handle, MONO_DYN_IMAGE_TOK_NEW);
 	}
 
@@ -3936,7 +3938,7 @@ failure:
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 failure_unlocked:
-	return NULL;
+	return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
 }
 
 typedef struct {
@@ -4410,7 +4412,7 @@ MonoReflectionTypeHandle
 ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle tb, MonoError *error)
 {
 	g_assert_not_reached ();
-	return NULL;
+	return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
 }
 
 void 

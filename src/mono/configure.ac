@@ -696,6 +696,12 @@ if test x"$GCC" = xyes; then
 		# We require C99 with some GNU extensions, e.g. `linux` macro
 		CFLAGS="$CFLAGS -std=gnu99"
 
+		# FIXME incompatible-pointer-types requires gcc 5.x but should only warn with 4.x, on every invocation
+		# FIXME Windows builds have unrelated preexisting problems here.
+		if test x$host_win32 = xno; then
+		  CFLAGS="$CFLAGS -Werror=incompatible-pointer-types"
+		fi
+
 		# The runtime code does not respect ANSI C strict aliasing rules
 		CFLAGS="$CFLAGS -fno-strict-aliasing"
 

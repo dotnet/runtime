@@ -1751,7 +1751,7 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionTypeHandle ref_type, MonoErr
 	 * Constructor does not need to be called. Will be called later.
 	 */
 	MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
-	return_val_if_nok (error, NULL);
+	return_val_if_nok (error, NULL_HANDLE);
 	return mono_object_new_alloc_by_vtable (vtable, error);
 }
 

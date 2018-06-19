@@ -7271,8 +7271,8 @@ clean_path (gchar * path)
 	return clean;
 }
 
-static gchar *
-wrap_path (gchar * path)
+static const gchar *
+wrap_path (const gchar * path)
 {
 	int len;
 	if (!path)

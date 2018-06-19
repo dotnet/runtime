@@ -491,7 +491,7 @@ mono_domain_create_appdomain_checked (char *friendly_name, char *configuration_f
 	MonoDomain *result = NULL;
 
 	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
-	MonoAppDomainSetupHandle setup = (MonoAppDomainSetupHandle)mono_object_new_handle (mono_domain_get (), klass, error);
+	MonoAppDomainSetupHandle setup = MONO_HANDLE_CAST (MonoAppDomainSetup, mono_object_new_handle (mono_domain_get (), klass, error));
 	goto_if_nok (error, leave);
 	MonoStringHandle config_file;
 	if (configuration_file != NULL) {
@@ -560,15 +560,15 @@ copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetupHandle setup, MonoE
 	caller_domain = mono_domain_get ();
 	ads_class = mono_class_load_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
 
-	MonoAppDomainSetupHandle copy = (MonoAppDomainSetupHandle)mono_object_new_handle(domain, ads_class, error);
+	MonoAppDomainSetupHandle copy = MONO_HANDLE_CAST (MonoAppDomainSetup, mono_object_new_handle(domain, ads_class, error));
 	goto_if_nok (error, leave);
 
 	mono_domain_set_internal (domain);
 
-#define XCOPY_FIELD(dst,field,src,error)				\
+#define XCOPY_FIELD(type, dst, field, src, error)			\
 	do {								\
-		MonoObjectHandle src_val = MONO_HANDLE_NEW_GET (MonoObject, (src), field); \
-		MonoObjectHandle copied_val = mono_marshal_xdomain_copy_value_handle (src_val, error); \
+		TYPED_HANDLE_NAME (type) src_val = MONO_HANDLE_NEW_GET (type, (src), field); \
+		TYPED_HANDLE_NAME (type) copied_val = MONO_HANDLE_CAST (type, mono_marshal_xdomain_copy_value_handle (MONO_HANDLE_CAST (MonoObject, src_val), error)); \
 		goto_if_nok (error, leave);					\
 		MONO_HANDLE_SET ((dst),field,copied_val);		\
 	} while (0)
@@ -578,26 +578,26 @@ copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetupHandle setup, MonoE
 			MONO_HANDLE_SETVAL ((dst), field, type, MONO_HANDLE_GETVAL ((src),field)); \
 		} while (0)
 
-	XCOPY_FIELD (copy, application_base, setup, error);
-	XCOPY_FIELD (copy, application_name, setup, error);
-	XCOPY_FIELD (copy, cache_path, setup, error);
-	XCOPY_FIELD (copy, configuration_file, setup, error);
-	XCOPY_FIELD (copy, dynamic_base, setup, error);
-	XCOPY_FIELD (copy, license_file, setup, error);
-	XCOPY_FIELD (copy, private_bin_path, setup, error);
-	XCOPY_FIELD (copy, private_bin_path_probe, setup, error);
-	XCOPY_FIELD (copy, shadow_copy_directories, setup, error);
-	XCOPY_FIELD (copy, shadow_copy_files, setup, error);
+	XCOPY_FIELD (MonoString, copy, application_base, setup, error);
+	XCOPY_FIELD (MonoString, copy, application_name, setup, error);
+	XCOPY_FIELD (MonoString, copy, cache_path, setup, error);
+	XCOPY_FIELD (MonoString, copy, configuration_file, setup, error);
+	XCOPY_FIELD (MonoString, copy, dynamic_base, setup, error);
+	XCOPY_FIELD (MonoString, copy, license_file, setup, error);
+	XCOPY_FIELD (MonoString, copy, private_bin_path, setup, error);
+	XCOPY_FIELD (MonoString, copy, private_bin_path_probe, setup, error);
+	XCOPY_FIELD (MonoString, copy, shadow_copy_directories, setup, error);
+	XCOPY_FIELD (MonoString, copy, shadow_copy_files, setup, error);
 	COPY_VAL (copy, publisher_policy, MonoBoolean, setup);
 	COPY_VAL (copy, path_changed, MonoBoolean, setup);
 	COPY_VAL (copy, loader_optimization, int, setup);
 	COPY_VAL (copy, disallow_binding_redirects, MonoBoolean, setup);
 	COPY_VAL (copy, disallow_code_downloads, MonoBoolean, setup);
-	XCOPY_FIELD (copy, domain_initializer_args, setup, error);
+	XCOPY_FIELD (MonoArray, copy, domain_initializer_args, setup, error);
 	COPY_VAL (copy, disallow_appbase_probe, MonoBoolean, setup);
-	XCOPY_FIELD (copy, application_trust, setup, error);
-	XCOPY_FIELD (copy, configuration_bytes, setup, error);
-	XCOPY_FIELD (copy, serialized_non_primitives, setup, error);
+	XCOPY_FIELD (MonoObject, copy, application_trust, setup, error);
+	XCOPY_FIELD (MonoArray, copy, configuration_bytes, setup, error);
+	XCOPY_FIELD (MonoArray, copy, serialized_non_primitives, setup, error);
 
 #undef XCOPY_FIELD
 #undef COPY_VAL
@@ -624,7 +624,7 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 	/* FIXME: pin all those objects */
 	data = mono_domain_create();
 
-	MonoAppDomainHandle ad = (MonoAppDomainHandle)mono_object_new_handle (data, adclass, error);
+	MonoAppDomainHandle ad = MONO_HANDLE_CAST (MonoAppDomain, mono_object_new_handle (data, adclass, error));
 	goto_if_nok (error, leave);
 	MONO_HANDLE_SETVAL (ad, data, MonoDomain*, data);
 	data->domain = MONO_HANDLE_RAW (ad);
@@ -1222,7 +1222,7 @@ mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, Mo
 	params[1] = requesting ? MONO_HANDLE_RAW (requesting_handle) : NULL;
 	params [2] = &isrefonly;
 	MonoObject *exc = NULL;
-	MonoReflectionAssemblyHandle result = MONO_HANDLE_NEW (MonoReflectionAssembly, mono_runtime_try_invoke (method, domain->domain, params, &exc, error));
+	MonoReflectionAssemblyHandle result = MONO_HANDLE_CAST (MonoReflectionAssembly, MONO_HANDLE_NEW (MonoObject, mono_runtime_try_invoke (method, domain->domain, params, &exc, error)));
 	if (!is_ok (error) || exc != NULL) {
 		if (is_ok (error))
 			mono_error_set_exception_instance (error, (MonoException*)exc);
@@ -2372,7 +2372,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomainHandle ad, MonoStringHandl
 	gchar *name = NULL;
 	gboolean parsed;
 
-	g_assert (assRef);
+	g_assert (!MONO_HANDLE_IS_NULL (assRef));
 
 	name = mono_string_handle_to_utf8 (assRef, error);
 	goto_if_nok (error, fail);

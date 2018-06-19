@@ -1487,7 +1487,7 @@ mono_thread_construct_internal (MonoThreadObjectHandle this_obj_handle)
 
 	internal->state = ThreadState_Unstarted;
 
-	int const thread_gchandle = mono_gchandle_from_handle ((MonoObjectHandle)this_obj_handle, TRUE);
+	int const thread_gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, this_obj_handle), TRUE);
 
 	MonoThreadObject *this_obj = MONO_HANDLE_RAW (this_obj_handle);
 
@@ -1851,7 +1851,7 @@ byte_array_to_domain (MonoArrayHandle arr, MonoDomain *domain, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ()
 
-	if (!arr || MONO_HANDLE_IS_NULL (arr))
+	if (MONO_HANDLE_IS_NULL (arr))
 		return MONO_HANDLE_NEW (MonoArray, NULL);
 
 	if (MONO_HANDLE_DOMAIN (arr) == domain)

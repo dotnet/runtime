@@ -239,7 +239,7 @@ encode_reflection_type (MonoDynamicImage *assembly, MonoReflectionTypeHandle typ
 
 	error_init (error);
 
-	if (!type) {
+	if (MONO_HANDLE_IS_NULL (type)) {
 		sigbuffer_add_value (buf, MONO_TYPE_VOID);
 		return;
 	}

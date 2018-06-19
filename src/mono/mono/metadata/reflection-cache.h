@@ -95,7 +95,7 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 }
 
 #define CACHE_OBJECT(t,p,o,k) ((t) (cache_object (domain, (k), (p), (o))))
-#define CACHE_OBJECT_HANDLE(t,p,o,k) ((t) (cache_object_handle (domain, (k), (p), (o))))
+#define CACHE_OBJECT_HANDLE(t,p,o,k) (MONO_HANDLE_CAST (t, cache_object_handle (domain, (k), (p), (o))))
 
 static inline MonoObjectHandle
 check_object_handle (MonoDomain* domain, MonoClass *klass, gpointer item)
@@ -107,8 +107,7 @@ check_object_handle (MonoDomain* domain, MonoClass *klass, gpointer item)
 	if (!hash)
 		return MONO_HANDLE_NEW (MonoObject, NULL);
 
-	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_conc_g_hash_table_lookup (hash, &e));
-	return obj;
+	return MONO_HANDLE_NEW (MonoObject, mono_conc_g_hash_table_lookup (hash, &e));
 }
 
 
@@ -122,15 +121,15 @@ check_or_construct_handle (MonoDomain *domain, MonoClass *klass, gpointer item, 
 	if (!MONO_HANDLE_IS_NULL (obj))
 		return obj;
 	MONO_HANDLE_ASSIGN (obj, construct (domain, klass, item, user_data, error));
-	return_val_if_nok (error, NULL);
+	return_val_if_nok (error, NULL_HANDLE);
 	if (MONO_HANDLE_IS_NULL (obj))
 		return obj;
 	/* note no caching if there was an error in construction */
 	return cache_object_handle (domain, klass, item, obj);
 }
 
-
-#define CHECK_OR_CONSTRUCT_HANDLE(t,p,k,construct,ud) ((t) check_or_construct_handle (domain, (k), (p), (ud), error, (ReflectionCacheConstructFunc_handle) (construct)))
-
+#define CHECK_OR_CONSTRUCT_HANDLE(t,p,k,construct,ud) \
+	(MONO_HANDLE_CAST (t, check_or_construct_handle ( \
+		domain, (k), (p), (ud), error, (ReflectionCacheConstructFunc_handle) (construct))))
 
 #endif /*__MONO_METADATA_REFLECTION_CACHE_H__*/

@@ -110,9 +110,9 @@ mono_exception_new_by_name_domain (MonoDomain *domain, MonoImage *image,
 
 	goto_if_ok (error, exit);
 return_null:
-	MONO_HANDLE_ASSIGN (o, NULL);
+	MONO_HANDLE_ASSIGN (o, NULL_HANDLE);
 exit:
-	HANDLE_FUNCTION_RETURN_REF (MonoException, o);
+	HANDLE_FUNCTION_RETURN_REF (MonoException, MONO_HANDLE_CAST (MonoException, o));
 }
 
 /**
@@ -307,7 +307,7 @@ mono_exception_new_by_name_msg (MonoImage *image, const char *name_space,
 	}
 	goto exit;
 return_null:
-	MONO_HANDLE_ASSIGN (ex, NULL);
+	MONO_HANDLE_ASSIGN (ex, NULL_HANDLE);
 exit:
 	HANDLE_FUNCTION_RETURN_REF (MonoException, ex)
 }
@@ -691,7 +691,7 @@ mono_exception_new_argument (const char *arg, const char *msg, MonoError *error)
 	ex = mono_exception_new_by_name_msg (mono_get_corlib (), "System", "ArgumentException", msg, error);
 
 	if (arg && !MONO_HANDLE_IS_NULL (ex)) {
-		MonoArgumentExceptionHandle argex = (MonoArgumentExceptionHandle)ex;
+		MonoArgumentExceptionHandle argex = MONO_HANDLE_CAST (MonoArgumentException, ex);
 		MonoStringHandle arg_str = mono_string_new_handle (MONO_HANDLE_DOMAIN (ex), arg, error);
 		MONO_HANDLE_SET (argex, param_name, arg_str);
 	}
@@ -1016,7 +1016,7 @@ mono_get_exception_reflection_type_load_checked (MonoArrayHandle types, MonoArra
 	}
 	g_assert (method);
 
-	MonoExceptionHandle exc = MONO_HANDLE_NEW (MonoException, mono_object_new_checked (mono_domain_get (), klass, error));
+	MonoExceptionHandle exc = MONO_HANDLE_CAST (MonoException, MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (mono_domain_get (), klass, error)));
 	mono_error_assert_ok (error);
 
 	gpointer args [2];
@@ -1149,7 +1149,7 @@ ves_icall_Mono_Runtime_GetNativeStackTrace (MonoExceptionHandle exc, MonoError *
 	MonoStringHandle res;
 	error_init (error);
 
-	if (!exc) {
+	if (MONO_HANDLE_IS_NULL (exc)) {
 		mono_error_set_argument_null (error, "exception", "");
 		return NULL_HANDLE_STRING;
 	}

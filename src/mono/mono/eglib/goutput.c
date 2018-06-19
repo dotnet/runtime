@@ -187,7 +187,7 @@ to_android_priority (GLogLevelFlags log_level)
 #define LOG_MESSAGE_MAX_LEN 4096
 
 static void
-android_log_line (gint log_priority, const gchar *log_domain, gchar *log_message, gint log_len)
+android_log_line (gint log_priority, const gchar *log_domain, const gchar *log_message, gint log_len)
 {
 	gchar log_buf [LOG_MESSAGE_MAX_LEN];
 
@@ -204,7 +204,7 @@ static void
 android_log (gint log_priority, const gchar *log_domain, const gchar *log_message)
 {
 	gint log_message_len, log_message_p_len;
-	gchar *log_message_p;
+	const gchar *log_message_p;
 
 	log_message_len = strlen (log_message);
 	if (log_message_len <= LOG_MESSAGE_MAX_LEN) {
@@ -213,7 +213,7 @@ android_log (gint log_priority, const gchar *log_domain, const gchar *log_messag
 	}
 
 	for (log_message_p = log_message; log_message_p < log_message + log_message_len;) {
-		gchar *p = strstr (log_message_p, "\n");
+		const gchar *p = strstr (log_message_p, "\n");
 		if (p == NULL) {
 			/* There is no more "\n". */
 			android_log_line (log_priority, log_domain, log_message_p, LOG_MESSAGE_MAX_LEN - 1);

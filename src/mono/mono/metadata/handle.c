@@ -94,7 +94,7 @@ free_handle_chunk (HandleChunk *chunk)
 	g_free (chunk);
 }
 
-const MonoObjectHandle mono_null_value_handle = NULL;
+const MonoObjectHandle mono_null_value_handle;
 
 #define THIS_IS_AN_OK_NUMBER_OF_HANDLES 100
 
@@ -107,7 +107,11 @@ chunk_element (HandleChunk *chunk, int idx)
 static HandleChunkElem*
 handle_to_chunk_element (MonoObjectHandle o)
 {
+#if MONO_TYPE_SAFE_HANDLES
+	return (HandleChunkElem*)o.__raw;
+#else
 	return (HandleChunkElem*)o;
+#endif
 }
 
 /* Given a HandleChunkElem* search through the current handle stack to find its chunk and offset. */
@@ -240,7 +244,7 @@ retry:
 	goto retry;
 }
 
-MonoRawHandle
+gpointer
 #ifndef MONO_HANDLE_TRACK_OWNER
 mono_handle_new_interior (gpointer rawptr)
 #else
