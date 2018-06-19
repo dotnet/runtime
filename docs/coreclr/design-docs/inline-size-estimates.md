@@ -27,7 +27,7 @@ sort of size estimate `CallerSize'`.  The simplest estimate is that
 (1)  `CallerSize'` = `CallerSize + CalleeSize`
 ```
 
-However, calling conventions impose some addtional code overhead on
+However, calling conventions impose some additional code overhead on
 both the caller and callee. The caller must set up arguments in
 registers or on the stack, and if there is a return value, might need
 to move it or store it somewhere. It also might need to spill values
@@ -47,7 +47,7 @@ the number and kind of arguments passed from caller to callee.
 
 Note that it's entirely possible that `Overhead > CalleeSize`, so
 that `CallerSize' < CallerSize`, that is the inline not only results
-in faster code but also in smaller code. Indeed this state of affars
+in faster code but also in smaller code. Indeed this state of affairs
 is increasingly common with that advent of modern programming styles
 that emphasize building functionality out of lots of small procedures.
 
@@ -198,7 +198,7 @@ to be practical.
 Second, even if we could obtain the actual size of prospective inline
 candidates, we might not want to use this data. The final code
 sequence emitted by the compiler depends intimately on details of the
-target archtecture, runtime conventions (ABIs), and capabilites of the
+target architecture, runtime conventions (ABIs), and capabilites of the
 compiler phases that run after inlining. If we allow feedback into hey
 heuristics by incorporating data from these "downstream" sources, we
 introduce various forms of coupling that have important
