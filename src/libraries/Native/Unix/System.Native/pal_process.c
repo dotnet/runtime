@@ -363,6 +363,7 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 #define LIMIT_MAX(T) _Generic(((T)0), \
   unsigned int: UINT_MAX,             \
   unsigned long: ULONG_MAX,           \
+  long: LONG_MAX,                     \
   unsigned long long: ULLONG_MAX)
 
 // Because RLIM_INFINITY is different per-platform, use the max value of a uint64 (which is RLIM_INFINITY on Ubuntu)
