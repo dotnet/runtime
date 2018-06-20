@@ -2901,7 +2901,7 @@ int LinearScan::BuildSimple(GenTree* tree)
         assert((kind & GTK_SMPOP) != 0);
         srcCount = BuildBinaryUses(tree->AsOp());
     }
-    if (tree->IsValue() && !tree->IsUnusedValue())
+    if (tree->IsValue())
     {
         BuildDef(tree);
     }
