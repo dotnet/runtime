@@ -229,6 +229,8 @@ namespace R2RDump
                     XmlNode gcNode = _xmlDocument.CreateNode("element", "GcInfo", "");
                     methodNode.AppendChild(gcNode);
                     Serialize(method.GcInfo, gcNode);
+
+                    Serialize(new List<GcInfo.GcTransition>(method.GcInfo.Transitions.Values), gcNode);
                 }
                 else
                 {
@@ -271,7 +273,7 @@ namespace R2RDump
 
             if (_disasm)
             {
-                string disassembly = CoreDisTools.GetCodeBlock(_disassembler, rtf.StartAddress, r2r.GetOffset(rtf.StartAddress), r2r.Image, rtf.Size);
+                string disassembly = CoreDisTools.GetCodeBlock(_disassembler, rtf, r2r.GetOffset(rtf.StartAddress), r2r.Image);
                 if (_xml)
                 {
                     AddXMLNode("Disassembly", disassembly, rtfNode);
@@ -363,14 +365,8 @@ namespace R2RDump
             SkipLine();
         }
 
-        private void DumpSectionContents(R2RReader r2r, R2RSection section, XmlNode parentNode)
+        private void DumpSectionContents(R2RReader r2r, R2RSection section, XmlNode contentsNode)
         {
-            XmlNode contentsNode = null;
-            if (_xml)
-            {
-                contentsNode = _xmlDocument.CreateNode("element", "Contents", "");
-                parentNode.AppendChild(contentsNode);
-            }
             switch (section.Type)
             {
                 case R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES:
@@ -382,70 +378,119 @@ namespace R2RDump
                         _writer.WriteLine(availableTypes.ToString());
                     }
 
-                    foreach (string name in r2r.AvailableTypes)
+                    if (_xml)
                     {
-                        if (_xml)
-                        {
-                            AddXMLNode("AvailableType", name, contentsNode);
-                        }
-                        else
+                        Serialize(r2r.AvailableTypes, contentsNode);
+                    }
+                    else
+                    {
+                        foreach (string name in r2r.AvailableTypes)
                         {
                             _writer.WriteLine(name);
                         }
                     }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS:
-                    NativeArray methodEntryPoints = new NativeArray(r2r.Image, (uint)r2r.GetOffset(section.RelativeVirtualAddress));
-                    _writer.Write(methodEntryPoints.ToString());
+                    if (!_xml)
+                    {
+                        NativeArray methodEntryPoints = new NativeArray(r2r.Image, (uint)r2r.GetOffset(section.RelativeVirtualAddress));
+                        _writer.Write(methodEntryPoints.ToString());
+                    }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS:
-                    uint instanceSectionOffset = (uint)r2r.GetOffset(section.RelativeVirtualAddress);
-                    NativeParser instanceParser = new NativeParser(r2r.Image, instanceSectionOffset);
-                    NativeHashtable instMethodEntryPoints = new NativeHashtable(r2r.Image, instanceParser, (uint)(instanceSectionOffset + section.Size));
-                    _writer.Write(instMethodEntryPoints.ToString());
+                    if (!_xml)
+                    {
+                        uint instanceSectionOffset = (uint)r2r.GetOffset(section.RelativeVirtualAddress);
+                        NativeParser instanceParser = new NativeParser(r2r.Image, instanceSectionOffset);
+                        NativeHashtable instMethodEntryPoints = new NativeHashtable(r2r.Image, instanceParser, (uint)(instanceSectionOffset + section.Size));
+                        _writer.Write(instMethodEntryPoints.ToString());
+                    }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS:
-                    int rtfOffset = r2r.GetOffset(section.RelativeVirtualAddress);
-                    int rtfEndOffset = rtfOffset + section.Size;
-                    int rtfIndex = 0;
-                    while (rtfOffset < rtfEndOffset)
+                    if (!_xml)
                     {
-                        uint rva = NativeReader.ReadUInt32(r2r.Image, ref rtfOffset);
-                        _writer.WriteLine($"{rtfIndex}: 0x{rva:X8}");
-                        rtfIndex++;
+                        int rtfOffset = r2r.GetOffset(section.RelativeVirtualAddress);
+                        int rtfEndOffset = rtfOffset + section.Size;
+                        int rtfIndex = 0;
+                        while (rtfOffset < rtfEndOffset)
+                        {
+                            uint rva = NativeReader.ReadUInt32(r2r.Image, ref rtfOffset);
+                            _writer.WriteLine($"{rtfIndex}: 0x{rva:X8}");
+                            rtfIndex++;
+                        }
                     }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER:
-                    _writer.WriteLine(r2r.CompileIdentifier);
+                    if (!_xml)
+                    {
+                        _writer.WriteLine(r2r.CompileIdentifier);
+                    }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS:
                     foreach (R2RImportSection importSection in r2r.ImportSections)
                     {
-                        _writer.Write(importSection.ToString());
+                        if (_xml)
+                        {
+                            Serialize(importSection, contentsNode);
+                        }
+                        else
+                        {
+                            _writer.Write(importSection.ToString());
+                        }
                         if (_raw && importSection.Entries.Count != 0)
                         {
                             if (importSection.SectionRVA != 0)
                             {
-                                _writer.WriteLine("Section Bytes:");
-                                DumpBytes(r2r, importSection.SectionRVA, (uint)importSection.SectionSize);
+                                XmlNode bytesNode = null;
+                                if (_xml)
+                                {
+                                    bytesNode = _xmlDocument.CreateNode("element", "SectionBytes", "");
+                                    contentsNode.AppendChild(bytesNode);
+                                }
+                                else
+                                {
+                                    _writer.WriteLine("Section Bytes:");
+                                }
+                                DumpBytes(r2r, importSection.SectionRVA, (uint)importSection.SectionSize, bytesNode);
                             }
                             if (importSection.SignatureRVA != 0)
                             {
-                                _writer.WriteLine("Signature Bytes:");
-                                DumpBytes(r2r, importSection.SignatureRVA, (uint)importSection.Entries.Count * sizeof(int));
+                                XmlNode bytesNode = null;
+                                if (_xml)
+                                {
+                                    bytesNode = _xmlDocument.CreateNode("element", "SignatureBytes", "");
+                                    contentsNode.AppendChild(bytesNode);
+                                }
+                                else
+                                {
+                                    _writer.WriteLine("Signature Bytes:");
+                                }
+                                DumpBytes(r2r, importSection.SignatureRVA, (uint)importSection.Entries.Count * sizeof(int), bytesNode);
                             }
                             if (importSection.AuxiliaryDataRVA != 0)
                             {
-                                _writer.WriteLine("AuxiliaryData Bytes:");
-                                DumpBytes(r2r, importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size);
+                                XmlNode bytesNode = null;
+                                if (_xml)
+                                {
+                                    bytesNode = _xmlDocument.CreateNode("element", "AuxiliaryDataBytes", "");
+                                    contentsNode.AppendChild(bytesNode);
+                                }
+                                else
+                                {
+                                    _writer.WriteLine("AuxiliaryData Bytes:");
+                                }
+                                DumpBytes(r2r, importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size, bytesNode);
                             }
                         }
-                        foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
+                        if (!_xml)
                         {
+                            foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
+                            {
+                                _writer.WriteLine();
+                                _writer.WriteLine(entry.ToString());
+                            }
                             _writer.WriteLine();
-                            _writer.WriteLine(entry.ToString());
                         }
-                        _writer.WriteLine();
                     }
                     break;
             }

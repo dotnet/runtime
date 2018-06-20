@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.PortableExecutable;
 using System.Text;
+using System.Xml.Serialization;
 
 namespace R2RDump
 {
@@ -126,7 +127,8 @@ namespace R2RDump
         public GcSlotTable SlotTable { get; set; }
         public int Size { get; set; }
         public int Offset { get; set; }
-        public Dictionary<int, GcTransition> Transitions { get; set; }
+        [XmlIgnore]
+        public Dictionary<int, GcTransition> Transitions { get; }
 
         public GcInfo() { }
 
