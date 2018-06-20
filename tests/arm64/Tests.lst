@@ -90884,14 +90884,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
-[MaskLoad_r.cmd_11736]
-RelativePath=JIT\HardwareIntrinsics\X86\Avx\MaskLoad_r\MaskLoad_r.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Avx\MaskLoad_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
 [sharedgenerics_r.cmd_11737]
 RelativePath=Loader\classloader\DefaultInterfaceMethods\sharedgenerics\sharedgenerics_r\sharedgenerics_r.cmd
 WorkingDir=Loader\classloader\DefaultInterfaceMethods\sharedgenerics\sharedgenerics_r
@@ -91775,14 +91767,6 @@ HostStyle=0
 [CompareNotLessThanOrEqualScalar_r.cmd_11847]
 RelativePath=JIT\HardwareIntrinsics\X86\Sse2\CompareNotLessThanOrEqualScalar_r\CompareNotLessThanOrEqualScalar_r.cmd
 WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\CompareNotLessThanOrEqualScalar_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
-[MaskLoad_ro.cmd_11848]
-RelativePath=JIT\HardwareIntrinsics\X86\Avx\MaskLoad_ro\MaskLoad_ro.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Avx\MaskLoad_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
