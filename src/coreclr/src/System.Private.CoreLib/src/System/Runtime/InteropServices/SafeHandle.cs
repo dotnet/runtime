@@ -186,7 +186,7 @@ namespace System.Runtime.InteropServices
         // compatibility to support the handle properties returning IntPtrs on
         // many of our Framework classes.
         // Note that this method is dangerous for two reasons:
-        //  1) If the handle has been marked invalid with SetHandleasInvalid,
+        //  1) If the handle has been marked invalid with SetHandleAsInvalid,
         //     DangerousGetHandle will still return the original handle value.
         //  2) The handle returned may be recycled at any point. At best this means
         //     the handle might stop working suddenly. At worst, if the handle or
