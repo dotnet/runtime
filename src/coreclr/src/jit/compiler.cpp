@@ -4078,7 +4078,8 @@ void Compiler::compSetOptimizationLevel()
 
     if (!theMinOptsValue && (jitMinOpts > 0))
     {
-        unsigned methodCount     = Compiler::jitTotalMethodCompiled;
+        // jitTotalMethodCompiled does not include the method that is being compiled now, so make +1.
+        unsigned methodCount     = Compiler::jitTotalMethodCompiled + 1;
         unsigned methodCountMask = methodCount & 0xFFF;
         unsigned kind            = (jitMinOpts & 0xF000000) >> 24;
         switch (kind)
