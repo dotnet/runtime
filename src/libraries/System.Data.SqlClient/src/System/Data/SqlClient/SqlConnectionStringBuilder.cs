@@ -100,7 +100,6 @@ namespace System.Data.SqlClient
         private bool _pooling = DbConnectionStringDefaults.Pooling;
         private bool _replication = DbConnectionStringDefaults.Replication;
         private bool _userInstance = DbConnectionStringDefaults.UserInstance;
-        private PoolBlockingPeriod _poolBlockingPeriod = DbConnectionStringDefaults.PoolBlockingPeriod;
 
         private static string[] CreateValidKeywords()
         {
@@ -243,8 +242,9 @@ namespace System.Data.SqlClient
                         case Keywords.PacketSize: PacketSize = ConvertToInt32(value); break;
 
                         case Keywords.IntegratedSecurity: IntegratedSecurity = ConvertToIntegratedSecurity(value); break;
+#if netcoreapp
                         case Keywords.PoolBlockingPeriod: PoolBlockingPeriod = ConvertToPoolBlockingPeriod(keyword, value); break;
-
+#endif
                         case Keywords.Encrypt: Encrypt = ConvertToBoolean(value); break;
                         case Keywords.TrustServerCertificate: TrustServerCertificate = ConvertToBoolean(value); break;
                         case Keywords.Enlist: Enlist = ConvertToBoolean(value); break;
@@ -668,10 +668,6 @@ namespace System.Data.SqlClient
         {
             return DbConnectionStringBuilderUtil.ConvertToApplicationIntent(keyword, value);
         }
-        private static PoolBlockingPeriod ConvertToPoolBlockingPeriod(string keyword, object value)
-        {
-            return DbConnectionStringBuilderUtil.ConvertToPoolBlockingPeriod(keyword, value);
-        }
 
         private object GetAt(Keywords index)
         {
@@ -680,7 +676,9 @@ namespace System.Data.SqlClient
                 case Keywords.ApplicationIntent: return this.ApplicationIntent;
                 case Keywords.ApplicationName: return ApplicationName;
                 case Keywords.AttachDBFilename: return AttachDBFilename;
+#if netcoreapp
                 case Keywords.PoolBlockingPeriod: return PoolBlockingPeriod;
+#endif
                 case Keywords.ConnectTimeout: return ConnectTimeout;
                 case Keywords.CurrentLanguage: return CurrentLanguage;
                 case Keywords.DataSource: return DataSource;
@@ -755,9 +753,11 @@ namespace System.Data.SqlClient
                 case Keywords.AttachDBFilename:
                     _attachDBFilename = DbConnectionStringDefaults.AttachDBFilename;
                     break;
+#if netcoreapp
                 case Keywords.PoolBlockingPeriod:
                     _poolBlockingPeriod = DbConnectionStringDefaults.PoolBlockingPeriod;
                     break;
+#endif
                 case Keywords.ConnectTimeout:
                     _connectTimeout = DbConnectionStringDefaults.ConnectTimeout;
                     break;
@@ -862,11 +862,6 @@ namespace System.Data.SqlClient
         {
             Debug.Assert(DbConnectionStringBuilderUtil.IsValidApplicationIntentValue(value), "invalid value");
             base[DbConnectionStringKeywords.ApplicationIntent] = DbConnectionStringBuilderUtil.ApplicationIntentToString(value);
-        }
-        private void SetPoolBlockingPeriodValue(PoolBlockingPeriod value)
-        {
-            Debug.Assert(DbConnectionStringBuilderUtil.IsValidPoolBlockingPeriodValue(value), "Invalid value for PoolBlockingPeriod");
-            base[DbConnectionStringKeywords.PoolBlockingPeriod] = DbConnectionStringBuilderUtil.PoolBlockingPeriodToString(value);
         }
 
         public override bool ShouldSerialize(string keyword)
