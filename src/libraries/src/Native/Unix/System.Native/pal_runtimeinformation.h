@@ -10,15 +10,15 @@ BEGIN_EXTERN_C
 
 #include "pal_types.h"
 
-DLLEXPORT const char* SystemNative_GetUnixName();
+DLLEXPORT const char* SystemNative_GetUnixName(void);
 
-DLLEXPORT char* SystemNative_GetUnixRelease();
+DLLEXPORT char* SystemNative_GetUnixRelease(void);
 
 DLLEXPORT int32_t SystemNative_GetUnixVersion(char* version, int* capacity);
 
-DLLEXPORT int32_t SystemNative_GetOSArchitecture();
+DLLEXPORT int32_t SystemNative_GetOSArchitecture(void);
 
-DLLEXPORT int32_t SystemNative_GetProcessArchitecture();
+DLLEXPORT int32_t SystemNative_GetProcessArchitecture(void);
 
 enum 
 {

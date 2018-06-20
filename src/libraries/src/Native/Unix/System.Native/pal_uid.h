@@ -14,7 +14,7 @@ BEGIN_EXTERN_C
 /**
 * Passwd struct
 */
-struct Passwd
+typedef struct
 {
     char* Name;
     char* Password;
@@ -23,7 +23,7 @@ struct Passwd
     char* UserInfo;
     char* HomeDirectory;
     char* Shell;
-};
+} Passwd;
 
 /**
 * Gets a password structure for the given uid.
@@ -50,7 +50,7 @@ DLLEXPORT int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* bu
 *
 * Always succeeds.
 */
-DLLEXPORT uint32_t SystemNative_GetEUid();
+DLLEXPORT uint32_t SystemNative_GetEUid(void);
 
 /**
 * Gets and returns the effective group's identity.
@@ -58,7 +58,7 @@ DLLEXPORT uint32_t SystemNative_GetEUid();
 *
 * Always succeeds.
 */
-DLLEXPORT uint32_t SystemNative_GetEGid();
+DLLEXPORT uint32_t SystemNative_GetEGid(void);
 
 /**
 * Sets the effective user ID of the calling process

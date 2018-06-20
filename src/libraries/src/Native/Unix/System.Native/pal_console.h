@@ -37,20 +37,20 @@ enum
 /*
  * Window Size of the terminal
  */
-struct WinSize
+typedef struct
 {
     uint16_t Row;
     uint16_t Col;
     uint16_t XPixel;
     uint16_t YPixel;
-};
+} WinSize;
 
 /**
  * Gets the windows size of the terminal
  *
  * Returns 0 on success; otherwise, returns errorNo.
  */
-DLLEXPORT int32_t SystemNative_GetWindowSize(struct WinSize* windowsSize);
+DLLEXPORT int32_t SystemNative_GetWindowSize(WinSize* windowsSize);
 
 /**
  * Gets whether the specified file descriptor is for a terminal.

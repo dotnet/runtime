@@ -19,14 +19,14 @@ static int32_t ConvertNativePasswdToPalPasswd(int error, struct passwd* nativePw
     if (error != 0)
     {
         assert(error > 0);
-        *pwd = {}; // managed out param must be initialized
+        memset(pwd, 0, sizeof(Passwd)); // managed out param must be initialized
         return error;
     }
 
     // 0 returned with null result -> entry-not-found
-    if (result == nullptr)
+    if (result == NULL)
     {
-        *pwd = {}; // managed out param must be initialized
+        memset(pwd, 0, sizeof(Passwd)); // managed out param must be initialized
         return -1; // shim convention for entry-not-found
     }
 
@@ -42,10 +42,10 @@ static int32_t ConvertNativePasswdToPalPasswd(int error, struct passwd* nativePw
     return 0;
 }
 
-extern "C" int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen)
+int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buflen)
 {
-    assert(pwd != nullptr);
-    assert(buf != nullptr);
+    assert(pwd != NULL);
+    assert(buf != NULL);
     assert(buflen >= 0);
 
     if (buflen < 0)
@@ -54,15 +54,15 @@ extern "C" int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, 
     struct passwd nativePwd;
     struct passwd* result;
     int error;
-    while ((error = getpwuid_r(uid, &nativePwd, buf, UnsignedCast(buflen), &result)) == EINTR);
+    while ((error = getpwuid_r(uid, &nativePwd, buf, Int32ToSizeT(buflen), &result)) == EINTR);
 
     return ConvertNativePasswdToPalPasswd(error, &nativePwd, result, pwd);
 }
 
-extern "C" int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen)
+int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen)
 {
-    assert(pwd != nullptr);
-    assert(buf != nullptr);
+    assert(pwd != NULL);
+    assert(buf != NULL);
     assert(buflen >= 0);
 
     if (buflen < 0)
@@ -71,22 +71,22 @@ extern "C" int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* b
     struct passwd nativePwd;
     struct passwd* result;
     int error;
-    while ((error = getpwnam_r(name, &nativePwd, buf, UnsignedCast(buflen), &result)) == EINTR);
+    while ((error = getpwnam_r(name, &nativePwd, buf, Int32ToSizeT(buflen), &result)) == EINTR);
 
     return ConvertNativePasswdToPalPasswd(error, &nativePwd, result, pwd);
 }
 
-extern "C" uint32_t SystemNative_GetEUid()
+uint32_t SystemNative_GetEUid()
 {
     return geteuid();
 }
 
-extern "C" uint32_t SystemNative_GetEGid()
+uint32_t SystemNative_GetEGid()
 {
     return getegid();
 }
 
-extern "C" int32_t SystemNative_SetEUid(uid_t euid)
+int32_t SystemNative_SetEUid(uid_t euid)
 {
     return seteuid(euid);
 }

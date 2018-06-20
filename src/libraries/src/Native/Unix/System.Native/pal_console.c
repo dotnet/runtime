@@ -18,16 +18,16 @@
 #include <unistd.h>
 #include <poll.h>
 
-extern "C" int32_t SystemNative_GetWindowSize(WinSize* windowSize)
+int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 {
-    assert(windowSize != nullptr);
+    assert(windowSize != NULL);
 
 #if HAVE_IOCTL && HAVE_TIOCGWINSZ
     int error = ioctl(STDOUT_FILENO, TIOCGWINSZ, windowSize);
 
     if (error != 0)
     {
-        *windowSize = {}; // managed out param must be initialized
+        memset(windowSize, 0, sizeof(WinSize)); // managed out param must be initialized
     }
 
     return error;
@@ -37,30 +37,30 @@ extern "C" int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 #endif
 }
 
-extern "C" int32_t SystemNative_IsATty(intptr_t fd)
+int32_t SystemNative_IsATty(intptr_t fd)
 {
     return isatty(ToFileDescriptor(fd));
 }
 
-static char* g_keypadXmit = nullptr; // string used to enable application mode, from terminfo
+static char* g_keypadXmit = NULL; // string used to enable application mode, from terminfo
 
 static void WriteKeypadXmit() // used in a signal handler, must be signal-safe
 {
     // If a terminfo "application mode" keypad_xmit string has been supplied,
     // write it out to the terminal to enter the mode.
-    if (g_keypadXmit != nullptr)
+    if (g_keypadXmit != NULL)
     {
         ssize_t ret;
-        while (CheckInterrupted(ret = write(STDOUT_FILENO, g_keypadXmit, static_cast<size_t>(sizeof(char) * strlen(g_keypadXmit)))));
+        while (CheckInterrupted(ret = write(STDOUT_FILENO, g_keypadXmit, (size_t)(sizeof(char) * strlen(g_keypadXmit)))));
         assert(ret >= 0); // failure to change the mode should not prevent app from continuing
     }
 }
 
-extern "C" void SystemNative_SetKeypadXmit(const char* terminfoString)
+void SystemNative_SetKeypadXmit(const char* terminfoString)
 {
-    assert(terminfoString != nullptr);
+    assert(terminfoString != NULL);
 
-    if (g_keypadXmit != nullptr) // should only happen if initialization initially failed
+    if (g_keypadXmit != NULL) // should only happen if initialization initially failed
     {
         free(g_keypadXmit);
         assert(false && "g_keypadXmit was already initialized");
@@ -71,12 +71,12 @@ extern "C" void SystemNative_SetKeypadXmit(const char* terminfoString)
     WriteKeypadXmit();
 }
 
-static bool g_readInProgress = false;        // tracks whether a read is currently in progress, such that attributes have been changed
-static bool g_signalForBreak = true;         // tracks whether the terminal should send signals for breaks, such that attributes have been changed
-static bool g_haveInitTermios = false;       // whether g_initTermios has been initialized
-static struct termios g_initTermios = {};    // the initial attributes captured when Console was initialized
-static struct termios g_preReadTermios = {}; // the original attributes captured before a read; valid if g_readInProgress is true
-static struct termios g_currTermios = {};    // the current attributes set during a read; valid if g_readInProgress is true
+static bool g_readInProgress = false;   // tracks whether a read is currently in progress, such that attributes have been changed
+static bool g_signalForBreak = true;    // tracks whether the terminal should send signals for breaks, such that attributes have been changed
+static bool g_haveInitTermios = false;  // whether g_initTermios has been initialized
+static struct termios g_initTermios;    // the initial attributes captured when Console was initialized
+static struct termios g_preReadTermios; // the original attributes captured before a read; valid if g_readInProgress is true
+static struct termios g_currTermios;    // the current attributes set during a read; valid if g_readInProgress is true
 
 void UninitializeConsole()
 {
@@ -99,13 +99,13 @@ void UninitializeConsole()
 
 static void IncorporateBreak(struct termios *termios, int32_t signalForBreak)
 {
-    assert(termios != nullptr);
+    assert(termios != NULL);
     assert(signalForBreak == 0 || signalForBreak == 1);
 
     if (signalForBreak)
-        termios->c_lflag |= static_cast<uint32_t>(ISIG);
+        termios->c_lflag |= (uint32_t)ISIG;
     else
-        termios->c_lflag &= static_cast<uint32_t>(~ISIG);
+        termios->c_lflag &= (uint32_t)(~ISIG);
 }
 
 // In order to support Console.ReadKey(intercept: true), we need to disable echo and canonical mode.
@@ -118,7 +118,7 @@ static void IncorporateBreak(struct termios *termios, int32_t signalForBreak)
 // and the cons of the latter minimal and constrained to the one API that we've chosen the second approach.
 // Thus, InitializeConsoleBeforeRead is called to set up the state of the console, then a read is done,
 // and then UninitializeConsoleAfterRead is called.
-extern "C" void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
+void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
 {
     struct termios newTermios;
     if (tcgetattr(STDIN_FILENO, &newTermios) >= 0)
@@ -131,8 +131,8 @@ extern "C" void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8
             g_preReadTermios = newTermios;
         }
 
-        newTermios.c_iflag &= static_cast<uint32_t>(~(IXON | IXOFF));
-        newTermios.c_lflag &= static_cast<uint32_t>(~(ECHO | ICANON | IEXTEN));
+        newTermios.c_iflag &= (uint32_t)(~(IXON | IXOFF));
+        newTermios.c_lflag &= (uint32_t)(~(ECHO | ICANON | IEXTEN));
         newTermios.c_cc[VMIN] = minChars;
         newTermios.c_cc[VTIME] = decisecondsTimeout;
         IncorporateBreak(&newTermios, g_signalForBreak);
@@ -145,7 +145,7 @@ extern "C" void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8
     }
 }
 
-extern "C" void SystemNative_UninitializeConsoleAfterRead()
+void SystemNative_UninitializeConsoleAfterRead()
 {
     if (g_readInProgress)
     {
@@ -219,14 +219,14 @@ static int TranslatePalControlCharacterName(int name)
     }
 }
 
-extern "C" void SystemNative_GetControlCharacters(
+void SystemNative_GetControlCharacters(
     int32_t* controlCharacterNames, uint8_t* controlCharacterValues, int32_t controlCharacterLength,
     uint8_t* posixDisableValue)
 {
-    assert(controlCharacterNames != nullptr);
-    assert(controlCharacterValues != nullptr);
+    assert(controlCharacterNames != NULL);
+    assert(controlCharacterValues != NULL);
     assert(controlCharacterLength >= 0);
-    assert(posixDisableValue != nullptr);
+    assert(posixDisableValue != NULL);
 
 #ifdef _POSIX_VDISABLE
     *posixDisableValue = _POSIX_VDISABLE;
@@ -234,11 +234,13 @@ extern "C" void SystemNative_GetControlCharacters(
     *posixDisableValue = 0;
 #endif
 
-    memset(controlCharacterValues, *posixDisableValue, sizeof(uint8_t) * UnsignedCast(controlCharacterLength));
+    memset(controlCharacterValues, *posixDisableValue, sizeof(uint8_t) * Int32ToSizeT(controlCharacterLength));
 
     if (controlCharacterLength > 0)
     {
-        struct termios newTermios = {};
+        struct termios newTermios;
+        memset(&newTermios, 0, sizeof(struct termios));
+
         if (tcgetattr(STDIN_FILENO, &newTermios) >= 0)
         {
             for (int i = 0; i < controlCharacterLength; i++)
@@ -253,7 +255,7 @@ extern "C" void SystemNative_GetControlCharacters(
     }
 }
 
-extern "C" int32_t SystemNative_StdinReady()
+int32_t SystemNative_StdinReady()
 {
     SystemNative_InitializeConsoleBeforeRead(1, 0);
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
@@ -262,9 +264,9 @@ extern "C" int32_t SystemNative_StdinReady()
     return rv;
 }
 
-extern "C" int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
+int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
 {
-    assert(buffer != nullptr || bufferSize == 0);
+    assert(buffer != NULL || bufferSize == 0);
     assert(bufferSize >= 0);
 
      if (bufferSize < 0)
@@ -274,16 +276,16 @@ extern "C" int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
     }
 
     ssize_t count;
-    while (CheckInterrupted(count = read(STDIN_FILENO, buffer, UnsignedCast(bufferSize))));
-    return static_cast<int32_t>(count);
+    while (CheckInterrupted(count = read(STDIN_FILENO, buffer, Int32ToSizeT(bufferSize))));
+    return (int32_t)count;
 }
 
-extern "C" int32_t SystemNative_GetSignalForBreak()
+int32_t SystemNative_GetSignalForBreak()
 {
     return g_signalForBreak;
 }
 
-extern "C" int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
+int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 {
     assert(signalForBreak == 0 || signalForBreak == 1);
 
@@ -320,7 +322,7 @@ void ReinitializeConsole()
     WriteKeypadXmit();
 }
 
-extern "C" int32_t SystemNative_InitializeConsole()
+int32_t SystemNative_InitializeConsole()
 {
     if (!InitializeSignalHandling())
     {
