@@ -5497,11 +5497,12 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
         DISABLED(GC_TRIGGERS); // WaitUntilConcurrentGCComplete toggle GC mode, disabled because called by unmanaged thread
 
         // We assume that only the "real" helper thread ever calls this (not somebody doing helper thread duty).
+        PRECONDITION(ThreadStore::HoldingThreadStore());
         PRECONDITION(IsDbgHelperSpecialThread());
         PRECONDITION(GetThread() == NULL);
 
         // Iff we return true, then we have the TSL (or the aux lock used in workarounds).
-        POSTCONDITION(RETVAL == !!ThreadStore::HoldingThreadStore());
+        POSTCONDITION(ThreadStore::HoldingThreadStore());
     }
     CONTRACT_END;
 
@@ -5512,17 +5513,6 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
     // NOTE::NOTE::NOTE::NOTE::NOTE
     // This function has parallel logic in SuspendRuntime.  Please make
     // sure to make appropriate changes there as well.
-
-    bool alreadyHeldThreadStoreLock = ThreadStore::HoldingThreadStore();
-    if (!alreadyHeldThreadStoreLock)
-    {
-        // We use ThreadSuspend::SUSPEND_FOR_DEBUGGER_SWEEP here to avoid a deadlock which
-        // can occur due to the s_hAbortEvt event.  This event causes any thread trying
-        // to take the ThreadStore lock to wait for a GC to complete.  If a thread is
-        // in SuspendEE for a GC and suspends for the debugger, then this thread will
-        // deadlock if we do not pass in SUSPEND_FOR_DEBUGGER_SWEEP here.
-        ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_FOR_DEBUGGER_SWEEP);
-    }
 
     // From this point until the end of the function, consider all active thread
     // suspension to be in progress.  This is mainly to give the profiler API a hint
@@ -5668,10 +5658,6 @@ Label_MarkThreadAsSynced:
 
     // The CLR is not yet synced. We release the threadstore lock and return false.
     hldSuspendRuntimeInProgress.Release();
-    if (!alreadyHeldThreadStoreLock)
-    {
-        ThreadSuspend::UnlockThreadStore();
-    }
 
     RETURN false;
 }
