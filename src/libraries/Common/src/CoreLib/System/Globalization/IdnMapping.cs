@@ -281,7 +281,7 @@ namespace System.Globalization
 
             // Need to validate entire string length, 1 shorter if last char wasn't a dot
             if (unicode.Length > c_defaultNameLimit - (IsDot(unicode[unicode.Length - 1]) ? 0 : 1))
-                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize, 
+                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize,
                                                         c_defaultNameLimit - (IsDot(unicode[unicode.Length - 1]) ? 0 : 1)), nameof(unicode));
 
             // If last char wasn't a dot we need to check for trailing -
@@ -521,7 +521,7 @@ namespace System.Globalization
 
             // Throw if we're too long
             if (output.Length > c_defaultNameLimit - (IsDot(unicode[unicode.Length-1]) ? 0 : 1))
-                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize, 
+                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize,
                                                 c_defaultNameLimit - (IsDot(unicode[unicode.Length-1]) ? 0 : 1)), nameof(unicode));
             // Return our output string
             return output.ToString();
@@ -603,7 +603,7 @@ namespace System.Globalization
 
             // Throw if we're too long
             if (ascii.Length > c_defaultNameLimit - (IsDot(ascii[ascii.Length-1]) ? 0 : 1))
-                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize, 
+                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize,
                                             c_defaultNameLimit - (IsDot(ascii[ascii.Length-1]) ? 0 : 1)), nameof(ascii));
 
             // output stringbuilder
@@ -637,7 +637,7 @@ namespace System.Globalization
                     throw new ArgumentException(SR.Argument_IdnBadLabelSize, nameof(ascii));
 
                 // See if this section's ASCII or ACE
-                if (ascii.Length < c_strAcePrefix.Length + iAfterLastDot || 
+                if (ascii.Length < c_strAcePrefix.Length + iAfterLastDot ||
                     string.Compare(ascii, iAfterLastDot, c_strAcePrefix, 0, c_strAcePrefix.Length, StringComparison.OrdinalIgnoreCase) != 0)
                 {
                     // Its ASCII, copy it
@@ -715,7 +715,7 @@ namespace System.Globalization
 
                             i += (int)(digit * w);
                             int t = k <= bias ? c_tmin : k >= bias + c_tmax ? c_tmax : k - bias;
-                            if (digit < t) 
+                            if (digit < t)
                                 break;
                             Debug.Assert(c_punycodeBase != t, "[IdnMapping.punycode_decode]Expected t != c_punycodeBase (36)");
                             if (w > c_maxint / (c_punycodeBase - t))
@@ -777,7 +777,7 @@ namespace System.Globalization
                     bool bRightToLeft = false;
 
                     // Check for RTL.  If right-to-left, then 1st & last chars must be RTL
-                    BidiCategory eBidi = CharUnicodeInfo.GetBidiCategory(output.ToString(), iOutputAfterLastDot);
+                    BidiCategory eBidi = CharUnicodeInfo.GetBidiCategory(output, iOutputAfterLastDot);
                     if (eBidi == BidiCategory.RightToLeft || eBidi == BidiCategory.RightToLeftArabic)
                     {
                         // It has to be right to left.
@@ -788,11 +788,11 @@ namespace System.Globalization
                     for (int iTest = iOutputAfterLastDot; iTest < output.Length; iTest++)
                     {
                         // This might happen if we run into a pair
-                        if (Char.IsLowSurrogate(output.ToString(), iTest)) 
+                        if (Char.IsLowSurrogate(output[iTest]))
                             continue;
 
                         // Check to see if its LTR
-                        eBidi = CharUnicodeInfo.GetBidiCategory(output.ToString(), iTest);
+                        eBidi = CharUnicodeInfo.GetBidiCategory(output, iTest);
                         if ((bRightToLeft && eBidi == BidiCategory.LeftToRight) ||
                             (!bRightToLeft && (eBidi == BidiCategory.RightToLeft || eBidi == BidiCategory.RightToLeftArabic)))
                             throw new ArgumentException(SR.Argument_IdnBadBidi, nameof(ascii));
@@ -897,6 +897,5 @@ namespace System.Globalization
             //  0-25 map to a-z or A-Z
             return (char)(d + 'a');
         }
-        
     }
 }
