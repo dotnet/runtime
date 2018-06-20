@@ -10097,7 +10097,7 @@ emit_got (MonoAotCompile *acfg)
 	fprintf (acfg->fp, ".section __DATA, __bss\n");
 	emit_alignment (acfg, 8);
 	if (acfg->llvm)
-		emit_info_symbol (acfg, "jit_got");
+		emit_info_symbol (acfg, "jit_got", FALSE);
 	fprintf (acfg->fp, ".lcomm %s, %d\n", acfg->got_symbol, (int)(acfg->got_offset * sizeof (gpointer)));
 #else
 	emit_section_change (acfg, ".bss", 0);
