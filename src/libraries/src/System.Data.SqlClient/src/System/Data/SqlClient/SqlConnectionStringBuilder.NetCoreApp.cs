@@ -3,11 +3,25 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
+using System.Diagnostics;
 
 namespace System.Data.SqlClient
 {
     public sealed partial class SqlConnectionStringBuilder : DbConnectionStringBuilder
     {
+        private PoolBlockingPeriod _poolBlockingPeriod = DbConnectionStringDefaults.PoolBlockingPeriod;
+
+        private void SetPoolBlockingPeriodValue(PoolBlockingPeriod value)
+        {
+            Debug.Assert(DbConnectionStringBuilderUtil.IsValidPoolBlockingPeriodValue(value), "Invalid value for PoolBlockingPeriod");
+            base[DbConnectionStringKeywords.PoolBlockingPeriod] = DbConnectionStringBuilderUtil.PoolBlockingPeriodToString(value);
+        }
+
+        private static PoolBlockingPeriod ConvertToPoolBlockingPeriod(string keyword, object value)
+        {
+            return DbConnectionStringBuilderUtil.ConvertToPoolBlockingPeriod(keyword, value);
+        }
+
         public PoolBlockingPeriod PoolBlockingPeriod
         {
             get { return _poolBlockingPeriod; }
