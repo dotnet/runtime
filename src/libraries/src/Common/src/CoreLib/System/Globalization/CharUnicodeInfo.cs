@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 using System.Diagnostics;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -29,6 +30,7 @@ namespace System.Globalization
         internal const char HIGH_SURROGATE_END = '\udbff';
         internal const char LOW_SURROGATE_START = '\udc00';
         internal const char LOW_SURROGATE_END = '\udfff';
+        internal const int  HIGH_SURROGATE_RANGE = 0x3FF;
 
         internal const int UNICODE_CATEGORY_OFFSET = 0;
         internal const int BIDI_CATEGORY_OFFSET = 1;
@@ -56,10 +58,10 @@ namespace System.Globalization
             if (index < s.Length - 1)
             {
                 int temp1 = (int)s[index] - HIGH_SURROGATE_START;
-                if (temp1 >= 0 && temp1 <= 0x3ff)
+                if (temp1 >= 0 && temp1 <= HIGH_SURROGATE_RANGE)
                 {
                     int temp2 = (int)s[index + 1] - LOW_SURROGATE_START;
-                    if (temp2 >= 0 && temp2 <= 0x3ff)
+                    if (temp2 >= 0 && temp2 <= HIGH_SURROGATE_RANGE)
                     {
                         // Convert the surrogate to UTF32 and get the result.
                         return ((temp1 * 0x400) + temp2 + UNICODE_PLANE01_START);
@@ -68,6 +70,29 @@ namespace System.Globalization
             }
             return ((int)s[index]);
         }
+
+        internal static int InternalConvertToUtf32(StringBuilder s, int index)
+        {
+            Debug.Assert(s != null, "s != null");
+            Debug.Assert(index >= 0 && index < s.Length, "index < s.Length");
+
+            int c = (int)s[index];
+            if (index < s.Length - 1)
+            {
+                int temp1 = c - HIGH_SURROGATE_START;
+                if (temp1 >= 0 && temp1 <= HIGH_SURROGATE_RANGE)
+                {
+                    int temp2 = (int)s[index + 1] - LOW_SURROGATE_START;
+                    if (temp2 >= 0 && temp2 <= HIGH_SURROGATE_RANGE)
+                    {
+                        // Convert the surrogate to UTF32 and get the result.
+                        return ((temp1 * 0x400) + temp2 + UNICODE_PLANE01_START);
+                    }
+                }
+            }
+            return c;
+        }
+
         ////////////////////////////////////////////////////////////////////////
         //
         // Convert a character or a surrogate pair starting at index of string s
@@ -99,10 +124,10 @@ namespace System.Globalization
             if (index < s.Length - 1)
             {
                 int temp1 = (int)s[index] - HIGH_SURROGATE_START;
-                if (temp1 >= 0 && temp1 <= 0x3ff)
+                if (temp1 >= 0 && temp1 <= HIGH_SURROGATE_RANGE)
                 {
                     int temp2 = (int)s[index + 1] - LOW_SURROGATE_START;
-                    if (temp2 >= 0 && temp2 <= 0x3ff)
+                    if (temp2 >= 0 && temp2 <= HIGH_SURROGATE_RANGE)
                     {
                         // Convert the surrogate to UTF32 and get the result.
                         charLength++;
@@ -364,6 +389,14 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
+
+            return ((BidiCategory) InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET));
+        }
+
+        internal static BidiCategory GetBidiCategory(StringBuilder s, int index)
+        {
+            Debug.Assert(s != null, "s can not be null");
+            Debug.Assert(index >= 0 && index < s.Length, "invalid index"); ;
 
             return ((BidiCategory) InternalGetCategoryValue(InternalConvertToUtf32(s, index), BIDI_CATEGORY_OFFSET));
         }
