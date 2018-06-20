@@ -758,27 +758,30 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            if (_buckets != null)
+            int[] buckets = _buckets;
+            Entry[] entries = _entries;
+            int collisionCount = 0;
+            if (buckets != null)
             {
                 int hashCode = (_comparer?.GetHashCode(key) ?? key.GetHashCode()) & 0x7FFFFFFF;
-                int bucket = hashCode % _buckets.Length;
+                int bucket = hashCode % buckets.Length;
                 int last = -1;
-                // Value in _buckets is 1-based
-                int i = _buckets[bucket] - 1;
+                // Value in buckets is 1-based
+                int i = buckets[bucket] - 1;
                 while (i >= 0)
                 {
-                    ref Entry entry = ref _entries[i];
+                    ref Entry entry = ref entries[i];
 
                     if (entry.hashCode == hashCode && (_comparer?.Equals(entry.key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.key, key)))
                     {
                         if (last < 0)
                         {
-                            // Value in _buckets is 1-based
-                            _buckets[bucket] = entry.next + 1;
+                            // Value in buckets is 1-based
+                            buckets[bucket] = entry.next + 1;
                         }
                         else
                         {
-                            _entries[last].next = entry.next;
+                            entries[last].next = entry.next;
                         }
                         entry.hashCode = -1;
                         entry.next = _freeList;
@@ -799,6 +802,13 @@ namespace System.Collections.Generic
 
                     last = i;
                     i = entry.next;
+                    if (collisionCount >= entries.Length)
+                    {
+                        // The chain of entries forms a loop; which means a concurrent update has happened.
+                        // Break out of the loop and throw, rather than looping forever.
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    }
+                    collisionCount++;
                 }
             }
             return false;
@@ -814,27 +824,30 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            if (_buckets != null)
+            int[] buckets = _buckets;
+            Entry[] entries = _entries;
+            int collisionCount = 0;
+            if (buckets != null)
             {
                 int hashCode = (_comparer?.GetHashCode(key) ?? key.GetHashCode()) & 0x7FFFFFFF;
-                int bucket = hashCode % _buckets.Length;
+                int bucket = hashCode % buckets.Length;
                 int last = -1;
-                // Value in _buckets is 1-based
-                int i = _buckets[bucket] - 1;
+                // Value in buckets is 1-based
+                int i = buckets[bucket] - 1;
                 while (i >= 0)
                 {
-                    ref Entry entry = ref _entries[i];
+                    ref Entry entry = ref entries[i];
 
                     if (entry.hashCode == hashCode && (_comparer?.Equals(entry.key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.key, key)))
                     {
                         if (last < 0)
                         {
-                            // Value in _buckets is 1-based
-                            _buckets[bucket] = entry.next + 1;
+                            // Value in buckets is 1-based
+                            buckets[bucket] = entry.next + 1;
                         }
                         else
                         {
-                            _entries[last].next = entry.next;
+                            entries[last].next = entry.next;
                         }
 
                         value = entry.value;
@@ -858,6 +871,13 @@ namespace System.Collections.Generic
 
                     last = i;
                     i = entry.next;
+                    if (collisionCount >= entries.Length)
+                    {
+                        // The chain of entries forms a loop; which means a concurrent update has happened.
+                        // Break out of the loop and throw, rather than looping forever.
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    }
+                    collisionCount++;
                 }
             }
             value = default;
