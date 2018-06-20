@@ -337,6 +337,10 @@ Handle macros/functions
 #define TYPED_HANDLE_NAME(TYPE) TYPE ## Handle
 #define TYPED_OUT_HANDLE_NAME(TYPE) TYPE ## HandleOut
 
+// internal helpers:
+#define MONO_HANDLE_CAST_FOR(type) mono_handle_cast_##type
+#define MONO_HANDLE_TYPECHECK_FOR(type) mono_handle_typecheck_##type
+
 #ifdef MONO_HANDLE_TRACK_OWNER
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
@@ -354,10 +358,12 @@ Handle macros/functions
  *
  * typedef struct {
  *   MonoObject **__raw;
- * } MonoObjectHandlePayload;
+ * } MonoObjectHandlePayload,
+ *   MonoObjectHandle,
+ *   MonoObjectHandleOut;
  *
- * typedef MonoObjectHandlePayload MonoObjectHandle,
- *                                 MonoObjectHandleOut;
+ * Internal helper functions are also generated.
+ *
  * #else
  *
  * typedef struct {
@@ -371,10 +377,24 @@ Handle macros/functions
  */
 
 #if MONO_TYPE_SAFE_HANDLES
-#define TYPED_HANDLE_DECL(TYPE)						\
-	typedef struct { TYPE **__raw; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; \
-	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) TYPED_HANDLE_NAME (TYPE), \
-					         TYPED_OUT_HANDLE_NAME (TYPE)
+#define TYPED_HANDLE_DECL(TYPE)							\
+	typedef struct { TYPE **__raw; } TYPED_HANDLE_PAYLOAD_NAME (TYPE),	\
+					 TYPED_HANDLE_NAME (TYPE),		\
+					 TYPED_OUT_HANDLE_NAME (TYPE);		\
+/* Do not call these functions directly. Use MONO_HANDLE_NEW and MONO_HANDLE_CAST. */ \
+/* Another way to do this involved casting mono_handle_new function to a different type. */ \
+static inline MONO_ALWAYS_INLINE TYPED_HANDLE_NAME (TYPE) 	\
+MONO_HANDLE_CAST_FOR (TYPE) (gpointer a)			\
+{								\
+	TYPED_HANDLE_NAME (TYPE) b = { (TYPE**)a };		\
+	return b;						\
+}								\
+static inline MONO_ALWAYS_INLINE gpointer 			\
+MONO_HANDLE_TYPECHECK_FOR (TYPE) (TYPE *a)			\
+{								\
+	return a;						\
+}
+
 #else
 #define TYPED_HANDLE_DECL(TYPE)						\
 	typedef struct { TYPE *__raw; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; \
@@ -396,53 +416,33 @@ Handle macros/functions
 //XXX add functions to get/set raw, set field, set field to null, set array, set array to null
 #define MONO_HANDLE_DCL(TYPE, NAME) TYPED_HANDLE_NAME(TYPE) NAME = MONO_HANDLE_NEW (TYPE, (NAME ## _raw))
 
-#if defined (__GNUC__) && !defined (__clang__)
-static inline MONO_ALWAYS_INLINE gpointer
-mono_remove_function_type_to_suppress_gcc_warning (gpointer a)
-// gcc warning: function called through a non-compatible type
-// Passing the function through this function suppresses the warning.
-{
-	return a;
-}
+// With Visual C++ compiling as C, the type of a ternary expression
+// yielding two unrelated non-void pointers is the type of the first, plus a warning.
+// This can be used to simulate gcc typeof extension.
+// Otherwise we are forced to evaluate twice, or use C++.
+#ifdef _MSC_VER
+typedef struct _MonoTypeofCastHelper *MonoTypeofCastHelper; // a pointer type unrelated to anything else
+#define MONO_TYPEOF_CAST(typeexpr, expr) (0 ? (typeexpr) : (MonoTypeofCastHelper)(expr))
 #else
-#define mono_remove_function_type_to_suppress_gcc_warning(a) (a)
+#define MONO_TYPEOF_CAST(typeexpr, expr) ((typeof (typeexpr))(expr))
 #endif
 
 #if MONO_TYPE_SAFE_HANDLES
 
 #ifndef MONO_HANDLE_TRACK_OWNER
 
-// Structs cannot be cast to structs.
-// Therefore, cast the function pointer to change its return type and parameter type.
 #define MONO_HANDLE_NEW(type, object) \
-	(((TYPED_HANDLE_NAME (type)(*) (type*)) \
-		mono_remove_function_type_to_suppress_gcc_warning (mono_handle_new)) (object))
+	(MONO_HANDLE_CAST_FOR (type) (mono_handle_new (MONO_HANDLE_TYPECHECK_FOR (type) (object))))
 
 #else
 
-// Structs cannot be cast to structs.
-// Therefore, cast the function pointer to change its return type and parameter type.
 #define MONO_HANDLE_NEW(type, object) \
-	(((TYPED_HANDLE_NAME (type)(*) (type*, const char*)) \
-		mono_remove_function_type_to_suppress_gcc_warning (mono_handle_new)) ((object), HANDLE_OWNER))
+	(MONO_HANDLE_CAST_FOR (type) (mono_handle_new (MONO_HANDLE_TYPECHECK_FOR (type) (object, HANDLE_OWNER))))
 
 #endif
 
-// Structs cannot be cast to structs.
-// Therefore, cast the function pointer to change its return type.
-#define MONO_HANDLE_CAST(type, value) \
-	(((TYPED_HANDLE_NAME (type) (*) (gpointer)) \
-		mono_remove_function_type_to_suppress_gcc_warning (mono_handle_cast)) ((value).__raw))
-
-// With Visual C++ compiling as C, the type of a ternary expression
-// yielding two unrelated non-void pointers is the type of the first, plus a warning.
-// This can be used to simulate gcc typeof extension.
-// Otherwise we are forced to evaluate twice, or use C++.
-#ifdef _MSC_VER
-#define MONO_HANDLE_RAW(handle)     (0 ? *(handle).__raw : (MonoObject*)mono_handle_raw ((handle).__raw))
-#else
-#define MONO_HANDLE_RAW(handle)     ((typeof (*(handle).__raw))mono_handle_raw ((handle).__raw))
-#endif
+#define MONO_HANDLE_CAST(type, value) (MONO_HANDLE_CAST_FOR (type) ((value).__raw))
+#define MONO_HANDLE_RAW(handle)     (MONO_TYPEOF_CAST (*(handle).__raw, mono_handle_raw ((handle).__raw)))
 #define MONO_HANDLE_IS_NULL(handle) (mono_handle_is_null ((handle).__raw))
 
 #else // MONO_TYPE_SAFE_HANDLES
@@ -454,15 +454,7 @@ mono_remove_function_type_to_suppress_gcc_warning (gpointer a)
 #endif
 #define MONO_HANDLE_CAST(TYPE, VALUE) (TYPED_HANDLE_NAME(TYPE))( VALUE )
 
-// With Visual C++ compiling as C, the type of a ternary expression
-// yielding two unrelated non-void pointers is the type of the first, plus a warning.
-// This can be used to simulate gcc typeof extension.
-// Otherwise we are forced to evaluate twice, or use C++.
-#ifdef _MSC_VER
-#define MONO_HANDLE_RAW(handle)     (0 ? (handle)->__raw : (MonoObject*)mono_handle_raw (handle))
-#else
-#define MONO_HANDLE_RAW(handle)     ((typeof ((handle)->__raw))mono_handle_raw (handle))
-#endif
+#define MONO_HANDLE_RAW(handle)     (MONO_TYPEOF_CAST ((handle)->__raw, mono_handle_raw (handle)))
 #define MONO_HANDLE_IS_NULL(handle) (mono_handle_is_null (handle))
 
 #endif // MONO_TYPE_SAFE_HANDLES
@@ -606,7 +598,7 @@ mono_handle_cast (gpointer a)
 
 #endif
 
-static inline gboolean
+static inline MONO_ALWAYS_INLINE gboolean
 mono_handle_is_null (MonoRawHandle raw_handle)
 {
 	MONO_HANDLE_SUPPRESS_SCOPE (1);
@@ -619,7 +611,7 @@ mono_handle_is_null (MonoRawHandle raw_handle)
 #endif
 }
 
-static inline gpointer
+static inline MONO_ALWAYS_INLINE gpointer
 mono_handle_raw (MonoRawHandle raw_handle)
 {
 	MONO_HANDLE_SUPPRESS_SCOPE (1);
