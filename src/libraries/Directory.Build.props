@@ -2,7 +2,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <!-- Don't need Microsoft.Common.props to import Directory.Build.props again -->
+    <!--
+    For non-SDK projects that import this file and then import Microsoft.Common.props,
+    tell Microsoft.Common.props not to import Directory.Build.props again
+    -->
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
   </PropertyGroup>
 

@@ -2,7 +2,10 @@
 <Project ToolsVersion="14.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <!-- Don't need Microsoft.Common.targets to import Directory.Build.targets again -->
+    <!--
+    For non-SDK projects that import this file and then import Microsoft.Common.targets,
+    tell Microsoft.Common.targets not to import Directory.Build.targets again
+    -->
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>  
   </PropertyGroup>
   
