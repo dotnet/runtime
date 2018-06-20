@@ -11,7 +11,7 @@ BEGIN_EXTERN_C
 #include "pal_types.h"
 #include <linux/netlink.h>
 
-enum NetworkChangeKind
+typedef enum
 {
     None = -1,
     AddressAdded = 0,
@@ -19,9 +19,11 @@ enum NetworkChangeKind
     LinkAdded = 2,
     LinkRemoved = 3,
     AvailabilityChanged = 4,
-};
+} NetworkChangeKind;
 
-typedef void (*NetworkChangeEvent)(int32_t sock, enum NetworkChangeKind notificationKind);
+typedef enum Error Error;
+
+typedef void (*NetworkChangeEvent)(int32_t sock, NetworkChangeKind notificationKind);
 
 DLLEXPORT void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange);
 

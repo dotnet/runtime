@@ -118,11 +118,15 @@ template <typename T, size_t N>
 char(&_ArraySizeHelper(T(&array)[N]))[N];
 #define ARRAY_SIZE(array) (sizeof(_ArraySizeHelper(array)))
 
+#else // __cplusplus
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
+#endif // __cplusplus
+
 /**
  * Abstraction helper method to safely copy strings using strlcpy or strcpy_s
  * or a different safe copy method, depending on the current platform.
  */
-inline void SafeStringCopy(char* destination, size_t destinationSize, const char* source)
+inline static void SafeStringCopy(char* destination, size_t destinationSize, const char* source)
 {
 #if HAVE_STRCPY_S
     strcpy_s(destination, destinationSize, source);
@@ -132,26 +136,6 @@ inline void SafeStringCopy(char* destination, size_t destinationSize, const char
     snprintf(destination, destinationSize, "%s", source);
 #endif
 }
-
-/**
- * Overload of SafeStringCopy that takes a signed int32_t as buffer
- * size. Asserts that its positive, but defensively treats the size
- * as 0 (no-op) if it's negative.
- */
-inline void SafeStringCopy(char* destination, int32_t destinationSize, const char* source)
-{
-    assert(destinationSize >= 0);
-
-    if (destinationSize > 0)
-    {
-        size_t unsignedSize = UnsignedCast(destinationSize);
-        SafeStringCopy(destination, unsignedSize, source);
-    }
-}
-
-#else // __cplusplus
-#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
-#endif // __cplusplus
 
 /**
 * Converts an intptr_t to a file descriptor.
@@ -191,7 +175,7 @@ static inline bool CheckInterrupted(TInt result)
 
 #else
 
-static inline bool CheckInterrupted(int32_t result)
+static inline bool CheckInterrupted(ssize_t result)
 {
     return result < 0 && errno == EINTR;
 }

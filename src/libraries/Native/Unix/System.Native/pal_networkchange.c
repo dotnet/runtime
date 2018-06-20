@@ -19,55 +19,57 @@
 
 #pragma clang diagnostic ignored "-Wcast-align" // NLMSG_* macros trigger this
 
-extern "C" Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket)
+Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket)
 {
-    sockaddr_nl sa = {};
+    struct sockaddr_nl sa;
+    memset(&sa, 0, sizeof(struct sockaddr_nl));
+
     sa.nl_family = AF_NETLINK;
     sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR | RTMGRP_IPV4_ROUTE | RTMGRP_IPV6_ROUTE;
     int32_t sock = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
     if (sock == -1)
     {
         *retSocket = -1;
-        return static_cast<Error>(SystemNative_ConvertErrorPlatformToPal(errno));
+        return (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
     }
-    if (bind(sock, reinterpret_cast<sockaddr*>(&sa), sizeof(sa)) != 0)
+    if (bind(sock, (struct sockaddr*)(&sa), sizeof(sa)) != 0)
     {
         *retSocket = -1;
-        return static_cast<Error>(SystemNative_ConvertErrorPlatformToPal(errno));
+        return (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
     }
 
     *retSocket = sock;
     return Error_SUCCESS;
 }
 
-extern "C" Error SystemNative_CloseNetworkChangeListenerSocket(int32_t socket)
+Error SystemNative_CloseNetworkChangeListenerSocket(int32_t socket)
 {
     int err = close(socket);
-    return err == 0 || CheckInterrupted(err) ? Error_SUCCESS : static_cast<Error>(SystemNative_ConvertErrorPlatformToPal(errno));
+    return err == 0 || CheckInterrupted(err) ? Error_SUCCESS : (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
 }
 
-static NetworkChangeKind ReadNewLinkMessage(nlmsghdr* hdr)
+static NetworkChangeKind ReadNewLinkMessage(struct nlmsghdr* hdr)
 {
-    assert(hdr != nullptr);
-    ifinfomsg* ifimsg;
-    ifimsg = reinterpret_cast<ifinfomsg*>(NLMSG_DATA(hdr));
+    assert(hdr != NULL);
+    struct ifinfomsg* ifimsg;
+    ifimsg = (struct ifinfomsg*)NLMSG_DATA(hdr);
     if (ifimsg->ifi_family == AF_INET)
     {
         if ((ifimsg->ifi_flags & IFF_UP) != 0)
         {
-            return NetworkChangeKind::LinkAdded;
+            return LinkAdded;
         }
     }
 
-    return NetworkChangeKind::None;
+    return None;
 }
 
-extern "C" void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
+void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
 {
     char buffer[4096];
-    iovec iov = {buffer, sizeof(buffer)};
-    sockaddr_nl sanl;
-    msghdr msg = { .msg_name = reinterpret_cast<void*>(&sanl), .msg_namelen = sizeof(sockaddr_nl), .msg_iov = &iov, .msg_iovlen = 1 };
+    struct iovec iov = {buffer, sizeof(buffer)};
+    struct sockaddr_nl sanl;
+    struct msghdr msg = { .msg_name = (void*)(&sanl), .msg_namelen = sizeof(struct sockaddr_nl), .msg_iov = &iov, .msg_iovlen = 1 };
     ssize_t len;
     while (CheckInterrupted(len = recvmsg(sock, &msg, 0)));
     if (len == -1)
@@ -76,7 +78,8 @@ extern "C" void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetwo
         return;
     }
 
-    for (nlmsghdr* hdr = reinterpret_cast<nlmsghdr*>(buffer); NLMSG_OK(hdr, UnsignedCast(len)); NLMSG_NEXT(hdr, len))
+    assert(len >= 0);
+    for (struct nlmsghdr* hdr = (struct nlmsghdr*)buffer; NLMSG_OK(hdr, (size_t)len); NLMSG_NEXT(hdr, len))
     {
         switch (hdr->nlmsg_type)
         {
@@ -85,24 +88,24 @@ extern "C" void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetwo
             case NLMSG_ERROR:
                 return;
             case RTM_NEWADDR:
-                onNetworkChange(sock, NetworkChangeKind::AddressAdded);
+                onNetworkChange(sock, AddressAdded);
                 break;
             case RTM_DELADDR:
-                onNetworkChange(sock, NetworkChangeKind::AddressRemoved);
+                onNetworkChange(sock, AddressRemoved);
                 break;
             case RTM_NEWLINK:
                 onNetworkChange(sock, ReadNewLinkMessage(hdr));
                 break;
             case RTM_DELLINK:
-                onNetworkChange(sock, NetworkChangeKind::LinkRemoved);
+                onNetworkChange(sock, LinkRemoved);
                 break;
             case RTM_NEWROUTE:
             case RTM_DELROUTE:
             {
-                rtmsg* dataAsRtMsg = reinterpret_cast<rtmsg*>(NLMSG_DATA(hdr));
+                struct rtmsg* dataAsRtMsg = (struct rtmsg*)NLMSG_DATA(hdr);
                 if (dataAsRtMsg->rtm_table == RT_TABLE_MAIN)
                 {
-                    onNetworkChange(sock, NetworkChangeKind::AvailabilityChanged);
+                    onNetworkChange(sock, AvailabilityChanged);
                     return;
                 }
                 break;

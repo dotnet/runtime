@@ -9,25 +9,25 @@
 #include <string.h>
 #include <sys/utsname.h>
 
-extern "C" const char* SystemNative_GetUnixName()
+const char* SystemNative_GetUnixName()
 {
     return PAL_UNIX_NAME;
 }
 
-extern "C" char* SystemNative_GetUnixRelease()
+char* SystemNative_GetUnixRelease()
 {
     struct utsname _utsname;
     return uname(&_utsname) != -1 ?
         strdup(_utsname.release) :
-        nullptr;
+        NULL;
 }
 
-extern "C" int32_t SystemNative_GetUnixVersion(char* version, int* capacity)
+int32_t SystemNative_GetUnixVersion(char* version, int* capacity)
 {
     struct utsname _utsname;
     if (uname(&_utsname) != -1)
     {
-        int r = snprintf(version, static_cast<size_t>(*capacity), "%s %s %s", _utsname.sysname, _utsname.release, _utsname.version);
+        int r = snprintf(version, (size_t)(*capacity), "%s %s %s", _utsname.sysname, _utsname.release, _utsname.version);
         if (r > *capacity)
         {
             *capacity = r + 1;
@@ -43,7 +43,7 @@ extern "C" int32_t SystemNative_GetUnixVersion(char* version, int* capacity)
  1 - x64
  2 - ARM
  3 - ARM64 */
-extern "C" int32_t SystemNative_GetOSArchitecture()
+int32_t SystemNative_GetOSArchitecture()
 {
 #if defined(_ARM_)
     return ARCH_ARM;
@@ -63,7 +63,7 @@ extern "C" int32_t SystemNative_GetOSArchitecture()
 1 - x64
 2 - ARM
 3 - ARM64 */
-extern "C" int32_t SystemNative_GetProcessArchitecture()
+int32_t SystemNative_GetProcessArchitecture()
 {
 #if defined(_ARM_)
     return ARCH_ARM;
