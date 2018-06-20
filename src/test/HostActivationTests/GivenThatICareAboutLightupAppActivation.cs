@@ -348,7 +348,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
@@ -421,7 +421,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
