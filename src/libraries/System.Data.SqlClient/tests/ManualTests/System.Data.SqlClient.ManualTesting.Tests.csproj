@@ -6,6 +6,11 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup>
+    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
       <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
@@ -29,7 +34,6 @@
     <Compile Include="DataCommon\DataTestUtility.cs" />
     <Compile Include="DataCommon\ProxyServer.cs" />
     <Compile Include="DataCommon\SystemDataResourceManager.cs" />
-    <Compile Include="SQL\ConnectionPoolTest\PoolBlockPeriodTest.cs" />
     <Compile Include="SQL\ParameterTest\DateTimeVariantTest.cs" />
     <Compile Include="SQL\ParameterTest\OutputParameter.cs" />
     <Compile Include="SQL\ParameterTest\ParametersTest.cs" />
@@ -145,6 +149,9 @@
     <None Include="ProviderAgnostic\MultipleResultsTest\MultipleResultsTest.bsl" />
     <None Include="SQL\ParameterTest\SqlParameterTest_DebugMode.bsl" />
     <None Include="SQL\ParameterTest\SqlParameterTest_ReleaseMode.bsl" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="SQL\ConnectionPoolTest\PoolBlockPeriodTest.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="SQL\UdtTest\UDTs\Address\Address.csproj">

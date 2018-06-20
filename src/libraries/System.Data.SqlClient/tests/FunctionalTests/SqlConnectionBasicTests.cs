@@ -79,20 +79,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        public void PoolBlockingPeriodTest()
-        {
-            using (TestTdsServer server = TestTdsServer.StartTestServer())
-            {
-                SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(server.ConnectionString);
-                builder.PoolBlockingPeriod = PoolBlockingPeriod.Auto;
-                using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
-                {
-                    connection.Open();
-                }
-            }
-        }
-
-        [Fact]
         public void ClosedConnectionSchemaRetrieval()
         {
             using (SqlConnection connection = new SqlConnection(string.Empty))
