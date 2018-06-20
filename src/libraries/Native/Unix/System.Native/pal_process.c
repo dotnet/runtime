@@ -9,7 +9,6 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <limits>
 #include <limits.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -30,42 +29,42 @@
 #endif
 
 // Validate that our Signals enum values are correct for the platform
-static_assert(PAL_SIGKILL == SIGKILL, "");
+c_static_assert(PAL_SIGKILL == SIGKILL);
 
 // Validate that our SysLogPriority values are correct for the platform
-static_assert(PAL_LOG_EMERG == LOG_EMERG, "");
-static_assert(PAL_LOG_ALERT == LOG_ALERT, "");
-static_assert(PAL_LOG_CRIT == LOG_CRIT, "");
-static_assert(PAL_LOG_ERR == LOG_ERR, "");
-static_assert(PAL_LOG_WARNING == LOG_WARNING, "");
-static_assert(PAL_LOG_NOTICE == LOG_NOTICE, "");
-static_assert(PAL_LOG_INFO == LOG_INFO, "");
-static_assert(PAL_LOG_DEBUG == LOG_DEBUG, "");
-static_assert(PAL_LOG_KERN == LOG_KERN, "");
-static_assert(PAL_LOG_USER == LOG_USER, "");
-static_assert(PAL_LOG_MAIL == LOG_MAIL, "");
-static_assert(PAL_LOG_DAEMON == LOG_DAEMON, "");
-static_assert(PAL_LOG_AUTH == LOG_AUTH, "");
-static_assert(PAL_LOG_SYSLOG == LOG_SYSLOG, "");
-static_assert(PAL_LOG_LPR == LOG_LPR, "");
-static_assert(PAL_LOG_NEWS == LOG_NEWS, "");
-static_assert(PAL_LOG_UUCP == LOG_UUCP, "");
-static_assert(PAL_LOG_CRON == LOG_CRON, "");
-static_assert(PAL_LOG_AUTHPRIV == LOG_AUTHPRIV, "");
-static_assert(PAL_LOG_FTP == LOG_FTP, "");
-static_assert(PAL_LOG_LOCAL0 == LOG_LOCAL0, "");
-static_assert(PAL_LOG_LOCAL1 == LOG_LOCAL1, "");
-static_assert(PAL_LOG_LOCAL2 == LOG_LOCAL2, "");
-static_assert(PAL_LOG_LOCAL3 == LOG_LOCAL3, "");
-static_assert(PAL_LOG_LOCAL4 == LOG_LOCAL4, "");
-static_assert(PAL_LOG_LOCAL5 == LOG_LOCAL5, "");
-static_assert(PAL_LOG_LOCAL6 == LOG_LOCAL6, "");
-static_assert(PAL_LOG_LOCAL7 == LOG_LOCAL7, "");
+c_static_assert(PAL_LOG_EMERG == LOG_EMERG);
+c_static_assert(PAL_LOG_ALERT == LOG_ALERT);
+c_static_assert(PAL_LOG_CRIT == LOG_CRIT);
+c_static_assert(PAL_LOG_ERR == LOG_ERR);
+c_static_assert(PAL_LOG_WARNING == LOG_WARNING);
+c_static_assert(PAL_LOG_NOTICE == LOG_NOTICE);
+c_static_assert(PAL_LOG_INFO == LOG_INFO);
+c_static_assert(PAL_LOG_DEBUG == LOG_DEBUG);
+c_static_assert(PAL_LOG_KERN == LOG_KERN);
+c_static_assert(PAL_LOG_USER == LOG_USER);
+c_static_assert(PAL_LOG_MAIL == LOG_MAIL);
+c_static_assert(PAL_LOG_DAEMON == LOG_DAEMON);
+c_static_assert(PAL_LOG_AUTH == LOG_AUTH);
+c_static_assert(PAL_LOG_SYSLOG == LOG_SYSLOG);
+c_static_assert(PAL_LOG_LPR == LOG_LPR);
+c_static_assert(PAL_LOG_NEWS == LOG_NEWS);
+c_static_assert(PAL_LOG_UUCP == LOG_UUCP);
+c_static_assert(PAL_LOG_CRON == LOG_CRON);
+c_static_assert(PAL_LOG_AUTHPRIV == LOG_AUTHPRIV);
+c_static_assert(PAL_LOG_FTP == LOG_FTP);
+c_static_assert(PAL_LOG_LOCAL0 == LOG_LOCAL0);
+c_static_assert(PAL_LOG_LOCAL1 == LOG_LOCAL1);
+c_static_assert(PAL_LOG_LOCAL2 == LOG_LOCAL2);
+c_static_assert(PAL_LOG_LOCAL3 == LOG_LOCAL3);
+c_static_assert(PAL_LOG_LOCAL4 == LOG_LOCAL4);
+c_static_assert(PAL_LOG_LOCAL5 == LOG_LOCAL5);
+c_static_assert(PAL_LOG_LOCAL6 == LOG_LOCAL6);
+c_static_assert(PAL_LOG_LOCAL7 == LOG_LOCAL7);
 
 // Validate that out PriorityWhich values are correct for the platform
-static_assert(PAL_PRIO_PROCESS == static_cast<int>(PRIO_PROCESS), "");
-static_assert(PAL_PRIO_PGRP == static_cast<int>(PRIO_PGRP), "");
-static_assert(PAL_PRIO_USER == static_cast<int>(PRIO_USER), "");
+c_static_assert(PAL_PRIO_PROCESS == (int)PRIO_PROCESS);
+c_static_assert(PAL_PRIO_PGRP == (int)PRIO_PGRP);
+c_static_assert(PAL_PRIO_USER == (int)PRIO_USER);
 
 enum
 {
@@ -98,8 +97,8 @@ static ssize_t WriteSize(int fd, const void* buffer, size_t count)
         if (result > 0)
         {
             rv += result;
-            buffer = reinterpret_cast<const uint8_t*>(buffer) + result;
-            count -= static_cast<size_t>(result);
+            buffer = (const uint8_t*)buffer + result;
+            count -= (size_t)result;
         }
         else
         {
@@ -119,8 +118,8 @@ static ssize_t ReadSize(int fd, void* buffer, size_t count)
         if (result > 0)
         {
             rv += result;
-            buffer = reinterpret_cast<uint8_t*>(buffer) + result;
-            count -= static_cast<size_t>(result);
+            buffer = (uint8_t*)buffer + result;
+            count -= (size_t)result;
         }
         else
         {
@@ -140,7 +139,7 @@ static void ExitChild(int pipeToParent, int error)
     _exit(error != 0 ? error : EXIT_FAILURE);
 }
 
-extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
+int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
                                       const char* cwd,
@@ -160,8 +159,8 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
     int processId = -1;
 
     // Validate arguments
-    if (nullptr == filename || nullptr == argv || nullptr == envp || nullptr == stdinFd || nullptr == stdoutFd ||
-        nullptr == stderrFd || nullptr == childPid)
+    if (NULL == filename || NULL == argv || NULL == envp || NULL == stdinFd || NULL == stdoutFd ||
+        NULL == stderrFd || NULL == childPid)
     {
         assert(false && "null argument.");
         errno = EINVAL;
@@ -241,7 +240,7 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
         }
 
         // Change to the designated working directory, if one was specified
-        if (nullptr != cwd)
+        if (NULL != cwd)
         {
             int result;
             while (CheckInterrupted(result = chdir(cwd)));
@@ -262,7 +261,7 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
     *stdoutFd = stdoutFds[READ_END_OF_PIPE];
     *stderrFd = stderrFds[READ_END_OF_PIPE];
 
-done:
+done:;
     int priorErrno = errno;
 
     // Regardless of success or failure, close the parent's copy of the child's end of
@@ -316,16 +315,16 @@ done:
     return 0;
 }
 
-extern "C" FILE* SystemNative_POpen(const char* command, const char* type)
+FILE* SystemNative_POpen(const char* command, const char* type)
 {
-    assert(command != nullptr);
-    assert(type != nullptr);
+    assert(command != NULL);
+    assert(type != NULL);
     return popen(command, type);
 }
 
-extern "C" int32_t SystemNative_PClose(FILE* stream)
+int32_t SystemNative_PClose(FILE* stream)
 {
-    assert(stream != nullptr);
+    assert(stream != NULL);
     return pclose(stream);
 }
 
@@ -357,9 +356,14 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
             return RLIMIT_NOFILE;
     }
 
-    assert_msg(false, "Unknown RLIMIT value", static_cast<int>(value));
+    assert_msg(false, "Unknown RLIMIT value", (int)value);
     return -1;
 }
+
+#define LIMIT_MAX(T) _Generic(((T)0), \
+  unsigned int: UINT_MAX,             \
+  unsigned long: ULONG_MAX,           \
+  unsigned long long: ULLONG_MAX)
 
 // Because RLIM_INFINITY is different per-platform, use the max value of a uint64 (which is RLIM_INFINITY on Ubuntu)
 // to signify RLIM_INIFINITY; on OS X, where RLIM_INFINITY is slightly lower, we'll translate it to the correct value
@@ -367,15 +371,10 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 static rlim_t ConvertFromManagedRLimitInfinityToPalIfNecessary(uint64_t value)
 {
     // rlim_t type can vary per platform, so we also treat anything outside its range as infinite.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
-#pragma clang diagnostic ignored "-Wunknown-warning-option"
-#pragma clang diagnostic ignored "-Wtautological-type-limit-compare"
-    if (value == UINT64_MAX || value > std::numeric_limits<rlim_t>::max())
-#pragma clang diagnostic pop
+    if (value == UINT64_MAX || value > LIMIT_MAX(rlim_t))
         return RLIM_INFINITY;
 
-    return static_cast<rlim_t>(value);
+    return (rlim_t)value;
 }
 
 // Because RLIM_INFINITY is different per-platform, use the max value of a uint64 (which is RLIM_INFINITY on Ubuntu)
@@ -386,71 +385,80 @@ static uint64_t ConvertFromNativeRLimitInfinityToManagedIfNecessary(rlim_t value
     if (value == RLIM_INFINITY)
         return UINT64_MAX;
 
-    return UnsignedCast(value);
+    assert(value >= 0);
+    return (uint64_t)value;
 }
 
-static void ConvertFromRLimitManagedToPal(const RLimit& pal, rlimit& native)
+static void ConvertFromRLimitManagedToPal(const RLimit* pal, struct rlimit* native)
 {
-    native.rlim_cur = ConvertFromManagedRLimitInfinityToPalIfNecessary(pal.CurrentLimit);
-    native.rlim_max = ConvertFromManagedRLimitInfinityToPalIfNecessary(pal.MaximumLimit);
+    native->rlim_cur = ConvertFromManagedRLimitInfinityToPalIfNecessary(pal->CurrentLimit);
+    native->rlim_max = ConvertFromManagedRLimitInfinityToPalIfNecessary(pal->MaximumLimit);
 }
 
-static void ConvertFromPalRLimitToManaged(const rlimit& native, RLimit& pal)
+static void ConvertFromPalRLimitToManaged(const struct rlimit* native, RLimit* pal)
 {
-    pal.CurrentLimit = ConvertFromNativeRLimitInfinityToManagedIfNecessary(native.rlim_cur);
-    pal.MaximumLimit = ConvertFromNativeRLimitInfinityToManagedIfNecessary(native.rlim_max);
+    pal->CurrentLimit = ConvertFromNativeRLimitInfinityToManagedIfNecessary(native->rlim_cur);
+    pal->MaximumLimit = ConvertFromNativeRLimitInfinityToManagedIfNecessary(native->rlim_max);
 }
 
-extern "C" int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
+#if defined __USE_GNU && !defined __cplusplus
+typedef __rlimit_resource_t rlimitResource;
+typedef __priority_which_t priorityWhich;
+#else
+typedef int rlimitResource;
+typedef int priorityWhich;
+#endif
+
+int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
 {
-    assert(limits != nullptr);
+    assert(limits != NULL);
 
     int32_t platformLimit = ConvertRLimitResourcesPalToPlatform(resourceType);
-    rlimit internalLimit;
-    int result = getrlimit(platformLimit, &internalLimit);
+    struct rlimit internalLimit;
+    int result = getrlimit((rlimitResource)platformLimit, &internalLimit);
     if (result == 0)
     {
-        ConvertFromPalRLimitToManaged(internalLimit, *limits);
+        ConvertFromPalRLimitToManaged(&internalLimit, limits);
     }
     else
     {
-        *limits = {};
+        *limits = (RLimit){0,0};
     }
 
     return result;
 }
 
-extern "C" int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limits)
+int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limits)
 {
-    assert(limits != nullptr);
+    assert(limits != NULL);
 
     int32_t platformLimit = ConvertRLimitResourcesPalToPlatform(resourceType);
-    rlimit internalLimit;
-    ConvertFromRLimitManagedToPal(*limits, internalLimit);
-    return setrlimit(platformLimit, &internalLimit);
+    struct rlimit internalLimit;
+    ConvertFromRLimitManagedToPal(limits, &internalLimit);
+    return setrlimit((rlimitResource)platformLimit, &internalLimit);
 }
 
-extern "C" int32_t SystemNative_Kill(int32_t pid, int32_t signal)
+int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
     return kill(pid, signal);
 }
 
-extern "C" int32_t SystemNative_GetPid()
+int32_t SystemNative_GetPid()
 {
     return getpid();
 }
 
-extern "C" int32_t SystemNative_GetSid(int32_t pid)
+int32_t SystemNative_GetSid(int32_t pid)
 {
     return getsid(pid);
 }
 
-extern "C" void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
+void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
 {
-    syslog(static_cast<int>(priority), message, arg1);
+    syslog((int)priority, message, arg1);
 }
 
-extern "C" int32_t SystemNative_WaitIdAnyExitedNoHangNoWait()
+int32_t SystemNative_WaitIdAnyExitedNoHangNoWait()
 {
     siginfo_t siginfo;
     int32_t result;
@@ -467,9 +475,9 @@ extern "C" int32_t SystemNative_WaitIdAnyExitedNoHangNoWait()
     return result;
 }
 
-extern "C" int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
+int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
 {
-    assert(exitCode != nullptr);
+    assert(exitCode != NULL);
 
     int32_t result;
     int status;
@@ -494,7 +502,7 @@ extern "C" int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCo
     return result;
 }
 
-extern "C" int64_t SystemNative_PathConf(const char* path, PathConfName name)
+int64_t SystemNative_PathConf(const char* path, PathConfName name)
 {
     int32_t confValue = -1;
     switch (name)
@@ -530,7 +538,7 @@ extern "C" int64_t SystemNative_PathConf(const char* path, PathConfName name)
 
     if (confValue == -1)
     {
-        assert_msg(false, "Unknown PathConfName", static_cast<int>(name));
+        assert_msg(false, "Unknown PathConfName", (int)name);
         errno = EINVAL;
         return -1;
     }
@@ -538,43 +546,43 @@ extern "C" int64_t SystemNative_PathConf(const char* path, PathConfName name)
     return pathconf(path, confValue);
 }
 
-extern "C" int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
+int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
 {
     // GetPriority uses errno 0 to show success to make sure we don't have a stale value
     errno = 0;
 #if PRIORITY_REQUIRES_INT_WHO
-    return getpriority(which, who);
+    return getpriority((priorityWhich)which, who);
 #else
-    return getpriority(which, static_cast<id_t>(who));
+    return getpriority((priorityWhich)which, (id_t)who);
 #endif
 }
 
-extern "C" int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice)
+int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice)
 {
 #if PRIORITY_REQUIRES_INT_WHO
-    return setpriority(which, who, nice);
+    return setpriority((priorityWhich)which, who, nice);
 #else
-    return setpriority(which, static_cast<id_t>(who), nice);
+    return setpriority((priorityWhich)which, (id_t)who, nice);
 #endif
 }
 
-extern "C" char* SystemNative_GetCwd(char* buffer, int32_t bufferSize)
+char* SystemNative_GetCwd(char* buffer, int32_t bufferSize)
 {
     assert(bufferSize >= 0);
 
     if (bufferSize < 0)
     {
         errno = EINVAL;
-        return nullptr;
+        return NULL;
     }
 
-    return getcwd(buffer, UnsignedCast(bufferSize));
+    return getcwd(buffer, Int32ToSizeT(bufferSize));
 }
 
 #if HAVE_SCHED_SETAFFINITY
-extern "C" int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
+int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
 {
-    assert(mask != nullptr);
+    assert(mask != NULL);
 
     int maxCpu = sizeof(intptr_t) * 8;
     assert(maxCpu <= CPU_SETSIZE);
@@ -585,7 +593,7 @@ extern "C" int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
     intptr_t bits = *mask; 
     for (int cpu = 0; cpu < maxCpu; cpu++)
     {
-        if ((bits & static_cast<intptr_t>(1u << cpu)) != 0)
+        if ((bits & (((intptr_t)1u) << cpu)) != 0)
         {
             CPU_SET(cpu, &set);
         }
@@ -596,9 +604,9 @@ extern "C" int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
 #endif
 
 #if HAVE_SCHED_GETAFFINITY
-extern "C" int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
+int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 {
-    assert(mask != nullptr);
+    assert(mask != NULL);
 
     cpu_set_t set;
     int32_t result = sched_getaffinity(pid, sizeof(cpu_set_t), &set);

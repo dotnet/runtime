@@ -13,12 +13,12 @@ BEGIN_EXTERN_C
 /**
  * Struct to describe the amount of free space and total space on a given mount point
  */
-struct MountPointInformation
+typedef struct
 {
     uint64_t AvailableFreeSpace;
     uint64_t TotalFreeSpace;
     uint64_t TotalSize;
-};
+} MountPointInformation;
 
 /**
  * Function pointer to call back into C# when we find a mount point via GetAllMountPoints.

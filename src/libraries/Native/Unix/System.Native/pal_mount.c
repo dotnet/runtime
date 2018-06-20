@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
+#include <limits.h>
 
 // Check if we should use getmntinfo or /proc/mounts
 #if HAVE_MNTINFO
@@ -28,9 +29,9 @@ static int32_t GetMountInfo(MountPointFound onFound)
 #if HAVE_MNTINFO
     // getmntinfo returns pointers to OS-internal structs, so we don't need to worry about free'ing the object
 #if HAVE_STATFS
-    struct statfs* mounts = nullptr;
+    struct statfs* mounts = NULL;
 #else
-    struct statvfs* mounts = nullptr;
+    struct statvfs* mounts = NULL;
 #endif
     int count = getmntinfo(&mounts, 0);
     for (int32_t i = 0; i < count; i++)
@@ -45,13 +46,13 @@ static int32_t GetMountInfo(MountPointFound onFound)
 
     int result = -1;
     FILE* fp = setmntent("/proc/mounts", MNTOPT_RO);
-    if (fp != nullptr)
+    if (fp != NULL)
     {
         // The _r version of getmntent needs all buffers to be passed in; however, we don't know how big of a string
         // buffer we will need, so pick something that seems like it will be big enough.
-        char buffer[STRING_BUFFER_SIZE] = {};
-        mntent entry;
-        while (getmntent_r(fp, &entry, buffer, STRING_BUFFER_SIZE) != nullptr)
+        char buffer[STRING_BUFFER_SIZE] = {0};
+        struct mntent entry;
+        while (getmntent_r(fp, &entry, buffer, STRING_BUFFER_SIZE) != NULL)
         {
             onFound(entry.mnt_dir);
         }
@@ -67,21 +68,25 @@ static int32_t GetMountInfo(MountPointFound onFound)
 
 #endif
 
-extern "C" int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
+int32_t SystemNative_GetAllMountPoints(MountPointFound onFound)
 {
     return GetMountInfo(onFound);
 }
 
-extern "C" int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi)
+int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi)
 {
-    assert(name != nullptr);
-    assert(mpi != nullptr);
+    assert(name != NULL);
+    assert(mpi != NULL);
 
 #if HAVE_STATFS
-    struct statfs stats = {};
+    struct statfs stats;
+    memset(&stats, 0, sizeof(struct statfs));
+
     int result = statfs(name, &stats);
 #else
-    struct statvfs stats = {};
+    struct statvfs stats;
+    memset(&stats, 0, sizeof(struct statvfs));
+
     int result = statvfs(name, &stats);
 #endif
     if (result == 0)
@@ -89,10 +94,10 @@ extern "C" int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, Moun
         // Note that these have signed integer types on some platforms but mustn't be negative.
         // Also, upcast here (some platforms have smaller types) to 64-bit before multiplying to
         // avoid overflow.
-        uint64_t bsize = UnsignedCast(stats.f_bsize);
-        uint64_t bavail = UnsignedCast(stats.f_bavail);
-        uint64_t bfree = UnsignedCast(stats.f_bfree);
-        uint64_t blocks = UnsignedCast(stats.f_blocks);
+        uint64_t bsize = (uint64_t)(stats.f_bsize);
+        uint64_t bavail = (uint64_t)(stats.f_bavail);
+        uint64_t bfree = (uint64_t)(stats.f_bfree);
+        uint64_t blocks = (uint64_t)(stats.f_blocks);
 
         mpi->AvailableFreeSpace = bsize * bavail;
         mpi->TotalFreeSpace = bsize * bfree;
@@ -100,16 +105,16 @@ extern "C" int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, Moun
     }
     else
     {
-        *mpi = {};
+        memset(mpi, 0, sizeof(MountPointInformation));
     }
 
     return result;
 }
 
-extern "C" int32_t
+int32_t
 SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
 {
-    assert((formatNameBuffer != nullptr) && (formatType != nullptr));
+    assert((formatNameBuffer != NULL) && (formatType != NULL));
     assert(bufferLength > 0);
 
 #if HAVE_STATFS
@@ -134,13 +139,13 @@ SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer
         }
         else
         {
-            SafeStringCopy(formatNameBuffer, bufferLength, stats.f_fstypename);
+            SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), stats.f_fstypename);
             *formatType = -1;
         }
 #else
-        assert(formatType != nullptr);
-        *formatType = SignedCast(stats.f_type);
-        SafeStringCopy(formatNameBuffer, bufferLength, "");
+        assert(formatType != NULL);
+        *formatType = (int64_t)(stats.f_type);
+        SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), "");
 #endif
     }
     else
