@@ -627,7 +627,7 @@ void mono_invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gb
 			MonoAssembly *sa = mono_assembly_open_predicate ("System.Security.dll", MONO_ASMCTX_DEFAULT, NULL, NULL, NULL);
 			if (!sa)
 				g_assert_not_reached ();
-			system_security_assembly = mono_assembly_get_image (sa);
+			system_security_assembly = mono_assembly_get_image_internal (sa);
 		}
 	}
 

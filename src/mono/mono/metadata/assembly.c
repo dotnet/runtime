@@ -2012,7 +2012,7 @@ mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *statu
 	mono_assemblies_lock ();
 	for (i = 0; !image && bundles [i]; ++i) {
 		if (strcmp (bundles [i]->name, is_satellite ? filename : name) == 0) {
-			image = mono_image_open_from_data_with_name ((char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, name);
+			image = mono_image_open_from_data_internal ((char*)bundles [i]->data, bundles [i]->size, FALSE, status, refonly, FALSE, name);
 			break;
 		}
 	}
@@ -2055,7 +2055,11 @@ mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *statu
 MonoAssembly *
 mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboolean refonly)
 {
-	return mono_assembly_open_a_lot (filename, status, refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT);
+	MonoAssembly *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_assembly_open_a_lot (filename, status, refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 MonoAssembly *
@@ -2528,7 +2532,11 @@ mono_problematic_image_reprobe (MonoImage *image, MonoImageOpenStatus *status)
 MonoAssembly *
 mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 {
-	return mono_assembly_open_predicate (filename, MONO_ASMCTX_DEFAULT, NULL, NULL, status);
+	MonoAssembly *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_assembly_open_predicate (filename, MONO_ASMCTX_DEFAULT, NULL, NULL, status);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 /**
@@ -2554,7 +2562,11 @@ MonoAssembly *
 mono_assembly_load_from_full (MonoImage *image, const char*fname, 
 			      MonoImageOpenStatus *status, gboolean refonly)
 {
-	return mono_assembly_load_from_predicate (image, fname, refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT, NULL, NULL, status);
+	MonoAssembly *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_assembly_load_from_predicate (image, fname, refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT, NULL, NULL, status);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 MonoAssembly *
@@ -2730,7 +2742,11 @@ MonoAssembly *
 mono_assembly_load_from (MonoImage *image, const char *fname,
 			 MonoImageOpenStatus *status)
 {
-	return mono_assembly_load_from_full (image, fname, status, FALSE);
+	MonoAssembly *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_assembly_load_from_predicate (image, fname, MONO_ASMCTX_DEFAULT, NULL, NULL, status);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 /**
@@ -3309,12 +3325,24 @@ probe_for_partial_name (const char *basepath, const char *fullname, MonoAssembly
 MonoAssembly*
 mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status)
 {
+	MonoAssembly *result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_assembly_load_with_partial_name_internal (name, status);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+MonoAssembly*
+mono_assembly_load_with_partial_name_internal (const char *name, MonoImageOpenStatus *status)
+{
 	ERROR_DECL (error);
 	MonoAssembly *res;
 	MonoAssemblyName *aname, base_name;
 	MonoAssemblyName mapped_aname;
 	gchar *fullname, *gacpath;
 	gchar **paths;
+
+	MONO_REQ_GC_UNSAFE_MODE;
 
 	memset (&base_name, 0, sizeof (MonoAssemblyName));
 	aname = &base_name;
@@ -3329,7 +3357,7 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	if ((aname->major | aname->minor | aname->build | aname->revision) == 0)
 		aname = mono_assembly_remap_version (aname, &mapped_aname);
 	
-	res = mono_assembly_loaded (aname);
+	res = mono_assembly_loaded_full (aname, FALSE);
 	if (res) {
 		mono_assembly_name_free (aname);
 		return res;
@@ -4140,7 +4168,11 @@ mono_assembly_load_full_internal (MonoAssemblyName *aname, MonoAssembly *request
 MonoAssembly*
 mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status, gboolean refonly)
 {
-	return mono_assembly_load_full_internal (aname, NULL, basedir, refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT, status);
+	MonoAssembly *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_assembly_load_full_internal (aname, NULL, basedir, refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT, status);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 /**
@@ -4195,7 +4227,11 @@ mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 MonoAssembly*
 mono_assembly_loaded (MonoAssemblyName *aname)
 {
-	return mono_assembly_loaded_full (aname, FALSE);
+	MonoAssembly *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_assembly_loaded_full (aname, FALSE);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 void
@@ -4422,6 +4458,17 @@ mono_assembly_get_main (void)
 MonoImage*
 mono_assembly_get_image (MonoAssembly *assembly)
 {
+	MonoImage *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_assembly_get_image_internal (assembly);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
+}
+
+MonoImage*
+mono_assembly_get_image_internal (MonoAssembly *assembly)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
 	return assembly->image;
 }
 
@@ -4436,6 +4483,17 @@ mono_assembly_get_image (MonoAssembly *assembly)
 MonoAssemblyName *
 mono_assembly_get_name (MonoAssembly *assembly)
 {
+	MonoAssemblyName *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_assembly_get_name_internal (assembly);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
+}
+
+MonoAssemblyName *
+mono_assembly_get_name_internal (MonoAssembly *assembly)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
 	return &assembly->aname;
 }
 

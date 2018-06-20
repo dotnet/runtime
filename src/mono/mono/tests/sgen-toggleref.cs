@@ -37,7 +37,7 @@ class Driver {
 	static WeakReference<Toggleref> root, child;
 
 	[DllImport ("__Internal", EntryPoint="mono_gc_toggleref_add")]
-	static extern int mono_gc_toggleref_add (IntPtr ptr, bool strong_ref);
+	static extern void mono_gc_toggleref_add (IntPtr ptr, bool strong_ref);
 
 	static void Register (object obj)
 	{

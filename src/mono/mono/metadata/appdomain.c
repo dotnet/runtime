@@ -90,6 +90,9 @@ static gboolean process_guid_set = FALSE;
 
 static gboolean no_exec = FALSE;
 
+static const char *
+mono_check_corlib_version_internal (void);
+
 static MonoAssembly *
 mono_domain_assembly_preload (MonoAssemblyName *aname,
 			      gchar **assemblies_path,
@@ -363,6 +366,16 @@ mono_get_corlib_version (void)
  */
 const char*
 mono_check_corlib_version (void)
+{
+	const char* res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_check_corlib_version_internal ();
+	MONO_EXIT_GC_UNSAFE;
+	return res;
+}
+
+static const char *
+mono_check_corlib_version_internal (void)
 {
 	int version = mono_get_corlib_version ();
 	if (version != MONO_CORLIB_VERSION)
@@ -2317,7 +2330,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 	mono_gchandle_free (gchandle); /* unpin */
 	MONO_HANDLE_ASSIGN (raw_assembly, NULL_HANDLE); /* don't reference the data anymore */
 	
-	MonoImage *image = mono_image_open_from_data_full (assembly_data, raw_assembly_len, FALSE, NULL, refonly);
+	MonoImage *image = mono_image_open_from_data_internal (assembly_data, raw_assembly_len, FALSE, NULL, refonly, FALSE, NULL);
 
 	if (!image) {
 		mono_error_set_bad_image_by_name (error, "In memory assembly", "0x%p", raw_data);
@@ -2353,7 +2366,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 		return refass; 
 	}
 
-	/* Clear the reference added by mono_image_open_from_data_full above */
+	/* Clear the reference added by mono_image_open_from_data_internal above */
 	mono_image_close (image);
 
 	refass = mono_assembly_get_object_handle (domain, ass, error);

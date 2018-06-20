@@ -3300,14 +3300,17 @@ handle_enum:
 void
 mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
+	MONO_ENTER_GC_UNSAFE;
 
 	void *dest;
 
-	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC));
+	if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+		goto leave;
 
 	dest = (char*)obj + field->offset;
 	mono_copy_value (field->type, dest, value, FALSE);
+leave:
+	MONO_EXIT_GC_UNSAFE;
 }
 
 /**
@@ -3321,13 +3324,15 @@ mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value)
 void
 mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
+	MONO_ENTER_GC_UNSAFE;
 
 	void *dest;
 
-	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+	if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC) == 0)
+		goto leave;
 	/* you cant set a constant! */
-	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL));
+	if ((field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
+		goto leave;
 
 	if (field->offset == -1) {
 		/* Special static */
@@ -3341,6 +3346,8 @@ mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 		dest = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
 	}
 	mono_copy_value (field->type, dest, value, FALSE);
+leave:
+	MONO_EXIT_GC_UNSAFE;
 }
 
 /**
@@ -3408,6 +3415,14 @@ mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
  */
 void
 mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value)
+{
+	MONO_ENTER_GC_UNSAFE;
+	mono_field_get_value_internal (obj, field, value);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+void
+mono_field_get_value_internal (MonoObject *obj, MonoClassField *field, void *value)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -3756,7 +3771,7 @@ mono_field_static_get_value_checked (MonoVTable *vt, MonoClassField *field, void
 void
 mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
+	MONO_ENTER_GC_UNSAFE;
 
 	ERROR_DECL (error);
 	do_runtime_invoke (prop->set, obj, params, exc, error);
@@ -3765,6 +3780,7 @@ mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 	} else {
 		mono_error_cleanup (error);
 	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
 /**
@@ -5388,13 +5404,12 @@ object_new_handle_common_tail (MonoObjectHandle o, MonoClass *klass, MonoError *
 MonoObject *
 mono_object_new (MonoDomain *domain, MonoClass *klass)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
+	MonoObject * result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-
-	MonoObject * result = mono_object_new_checked (domain, klass, error);
-
+	result = mono_object_new_checked (domain, klass, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
@@ -6600,9 +6615,12 @@ mono_string_new_wrapper (const char *text)
 MonoObject *
 mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 {
+	MonoObject *result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoObject *result = mono_value_box_checked (domain, klass, value, error);
+	result = mono_value_box_checked (domain, klass, value, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
@@ -7309,15 +7327,16 @@ mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error)
 char *
 mono_string_to_utf8 (MonoString *s)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
+	char *result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	char *result = mono_string_to_utf8_checked (s, error);
+	result = mono_string_to_utf8_checked (s, error);
 	
 	if (!is_ok (error)) {
 		mono_error_cleanup (error);
-		return NULL;
+		result = NULL;
 	}
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
@@ -7635,7 +7654,9 @@ mono_get_eh_callbacks (void)
 void
 mono_raise_exception (MonoException *ex) 
 {
+	MONO_ENTER_GC_UNSAFE;
 	mono_raise_exception_deprecated (ex);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 /*
@@ -8741,9 +8762,11 @@ mono_string_handle_length (MonoStringHandle s)
 uintptr_t
 mono_array_length (MonoArray *array)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	return array->max_length;
+	uintptr_t res;
+	MONO_ENTER_GC_UNSAFE;
+	res = array->max_length;
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 /**

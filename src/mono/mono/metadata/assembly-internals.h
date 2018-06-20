@@ -40,6 +40,8 @@ MonoAssembly* mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 						MonoAssemblyContextKind asmctx,
 						MonoImageOpenStatus *status);
 
+MonoAssembly* mono_assembly_load_with_partial_name_internal (const char *name, MonoImageOpenStatus *status);
+
 
 /* If predicate returns true assembly should be loaded, if false ignore it. */
 typedef gboolean (*MonoAssemblyCandidatePredicate)(MonoAssembly *, gpointer);
@@ -70,5 +72,11 @@ mono_assembly_binding_applies_to_image (MonoImage* image, MonoImageOpenStatus *s
 
 MonoAssembly*
 mono_assembly_load_from_assemblies_path (gchar **assemblies_path, MonoAssemblyName *aname, MonoAssemblyContextKind asmctx);
+
+MONO_PROFILER_API MonoAssemblyName*
+mono_assembly_get_name_internal (MonoAssembly *assembly);
+
+MONO_PROFILER_API MonoImage*
+mono_assembly_get_image_internal (MonoAssembly *assembly);
 
 #endif /* __MONO_METADATA_ASSEMBLY_INTERNALS_H__ */

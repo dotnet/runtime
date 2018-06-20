@@ -219,9 +219,12 @@ MonoReflectionAssembly*
 mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 {
 	HANDLE_FUNCTION_ENTER ();
+	MonoReflectionAssemblyHandle result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionAssemblyHandle result = mono_assembly_get_object_handle (domain, assembly, error);
+	result = mono_assembly_get_object_handle (domain, assembly, error);
 	mono_error_cleanup (error); /* FIXME new API that doesn't swallow the error */
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -572,9 +575,12 @@ MonoReflectionMethod*
 mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refclass)
 {
 	HANDLE_FUNCTION_ENTER ();
+	MonoReflectionMethodHandle ret;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionMethodHandle ret = mono_method_get_object_handle (domain, method, refclass, error);
+	ret = mono_method_get_object_handle (domain, method, refclass, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (ret);
 }
 
@@ -1837,7 +1843,7 @@ _mono_reflection_get_type_from_info (MonoTypeNameParse *info, MonoImage *image, 
 	error_init (error);
 
 	if (info->assembly.name) {
-		MonoAssembly *assembly = mono_assembly_loaded (&info->assembly);
+		MonoAssembly *assembly = mono_assembly_loaded_full (&info->assembly, FALSE);
 		if (!assembly && image && image->assembly && mono_assembly_names_equal (&info->assembly, &image->assembly->aname))
 			/* 
 			 * This could happen in the AOT compiler case when the search hook is not
@@ -2990,11 +2996,14 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 MonoType*
 mono_reflection_type_get_type (MonoReflectionType *reftype)
 {
+	MonoType *result;
+	MONO_ENTER_GC_UNSAFE;
 	g_assert (reftype);
 
 	ERROR_DECL (error);
-	MonoType *result = mono_reflection_type_get_handle (reftype, error);
+	result = mono_reflection_type_get_handle (reftype, error);
 	mono_error_assert_ok (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 

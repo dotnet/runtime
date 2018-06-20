@@ -62,6 +62,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionModule*   mono_module_get_object   (MonoDomain *domain, MonoImage *image);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionModule*   mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_index);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionType*     mono_type_get_object     (MonoDomain *domain, MonoType *type);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoReflectionMethod*   mono_method_get_object   (MonoDomain *domain, MonoMethod *method, MonoClass *refclass);
@@ -163,6 +164,7 @@ MONO_API MonoBoolean mono_declsec_get_method_action (MonoMethod *method, uint32_
 MONO_API MonoBoolean mono_declsec_get_class_action (MonoClass *klass, uint32_t action, MonoDeclSecurityEntry *entry);
 MONO_API MonoBoolean mono_declsec_get_assembly_action (MonoAssembly *assembly, uint32_t action, MonoDeclSecurityEntry *entry);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoType* mono_reflection_type_get_type (MonoReflectionType *reftype);
 
 MONO_API MonoAssembly* mono_reflection_assembly_get_assembly (MonoReflectionAssembly *refassembly);

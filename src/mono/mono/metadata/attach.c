@@ -287,7 +287,7 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 	 * Can't use mono_jit_exec (), as it sets things which might confuse the
 	 * real Main method.
 	 */
-	image = mono_assembly_get_image (agent_assembly);
+	image = mono_assembly_get_image_internal (agent_assembly);
 	entry = mono_image_get_entry_point (image);
 	if (!entry) {
 		g_print ("Assembly '%s' doesn't have an entry point.\n", mono_image_get_filename (image));

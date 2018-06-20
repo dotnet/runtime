@@ -1631,7 +1631,8 @@ disassemble_file (const char *file)
 		return 1;
 	} else {
 		/* FIXME: is this call necessary? */
-		mono_assembly_load_from_full (img, file, &status, FALSE);
+		/* FIXME: if it's necessary, can it be refonly instead? */
+		mono_assembly_load_from_predicate (img, file, MONO_ASMCTX_DEFAULT, NULL, NULL, &status);
 	}
 
 	setup_filter (img);

@@ -12,6 +12,7 @@
 
 #include <config.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/loader.h>
@@ -1759,9 +1760,9 @@ image_unloaded (MonoProfiler *prof, MonoImage *image)
 static void
 assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 {
-	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
+	char *name = mono_stringify_assembly_name (mono_assembly_get_name_internal (assembly));
 	int nlen = strlen (name) + 1;
-	MonoImage *image = mono_assembly_get_image (assembly);
+	MonoImage *image = mono_assembly_get_image_internal (assembly);
 
 	ENTER_LOG (&assembly_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
@@ -1786,9 +1787,9 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 static void
 assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
 {
-	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
+	char *name = mono_stringify_assembly_name (mono_assembly_get_name_internal (assembly));
 	int nlen = strlen (name) + 1;
-	MonoImage *image = mono_assembly_get_image (assembly);
+	MonoImage *image = mono_assembly_get_image_internal (assembly);
 
 	ENTER_LOG (&assembly_unloads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +

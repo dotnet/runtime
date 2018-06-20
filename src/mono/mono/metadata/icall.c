@@ -1544,7 +1544,7 @@ ves_icall_System_Type_internal_from_name (MonoStringHandle name,
 			if (info.assembly.name)
 				aname = mono_stringify_assembly_name (&info.assembly);
 			else if (caller_assembly)
-				aname = mono_stringify_assembly_name (mono_assembly_get_name (caller_assembly));
+				aname = mono_stringify_assembly_name (mono_assembly_get_name_internal (caller_assembly));
 			else
 				aname = g_strdup ("");
 			mono_error_set_type_load_name (error, tname, aname, "");
@@ -4749,7 +4749,7 @@ ves_icall_System_Reflection_Assembly_load_with_partial_name (MonoStringHandle mn
 	
 	name = mono_string_handle_to_utf8 (mname, error);
 	goto_if_nok (error, leave);
-	MonoAssembly *res = mono_assembly_load_with_partial_name (name, &status);
+	MonoAssembly *res = mono_assembly_load_with_partial_name_internal (name, &status);
 
 	g_free (name);
 

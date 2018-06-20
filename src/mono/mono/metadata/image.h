@@ -32,10 +32,13 @@ MONO_API MonoImage    *mono_image_open_full (const char *fname,
 				   MonoImageOpenStatus *status, mono_bool refonly);
 MONO_API MonoImage    *mono_pe_file_open     (const char *fname,
 				     MonoImageOpenStatus *status);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoImage    *mono_image_open_from_data (char *data, uint32_t data_len, mono_bool need_copy,
                                          MonoImageOpenStatus *status);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoImage    *mono_image_open_from_data_full (char *data, uint32_t data_len, mono_bool need_copy,
                                          MonoImageOpenStatus *status, mono_bool refonly);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoImage    *mono_image_open_from_data_with_name (char *data, uint32_t data_len, mono_bool need_copy,
                                                    MonoImageOpenStatus *status, mono_bool refonly, const char *name);
 MONO_API void          mono_image_fixup_vtable (MonoImage *image);

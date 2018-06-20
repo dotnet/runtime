@@ -4132,11 +4132,15 @@ mono_class_is_enum (MonoClass *klass)
 MonoType*
 mono_class_enum_basetype (MonoClass *klass)
 {
+	MonoType *res;
+	MONO_ENTER_GC_UNSAFE;
 	if (m_class_get_element_class (klass) == klass)
 		/* SRE or broken types */
-		return NULL;
+		res = NULL;
 	else
-		return m_class_get_byval_arg (m_class_get_element_class (klass));
+		res = m_class_get_byval_arg (m_class_get_element_class (klass));
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 /**
@@ -4599,11 +4603,14 @@ MonoType*
 mono_field_get_type (MonoClassField *field)
 {
 	ERROR_DECL (error);
-	MonoType *type = mono_field_get_type_checked (field, error);
+	MonoType *type;
+	MONO_ENTER_GC_UNSAFE;
+	type = mono_field_get_type_checked (field, error);
 	if (!mono_error_ok (error)) {
 		mono_trace_warning (MONO_TRACE_TYPE, "Could not load field's type due to %s", mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
+	MONO_EXIT_GC_UNSAFE;
 	return type;
 }
 

@@ -722,7 +722,7 @@ get_socket_assembly (void)
 			if (!sa) {
 				g_assert_not_reached ();
 			} else {
-				socket_assembly = mono_assembly_get_image (sa);
+				socket_assembly = mono_assembly_get_image_internal (sa);
 			}
 		}
 		mono_atomic_store_release (&domain->socket_assembly, socket_assembly);
@@ -2005,7 +2005,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (gsize sock, gi
 					*werror = WSAENOPROTOOPT;
 					return;
 				} else {
-					mono_posix_image = mono_assembly_get_image (sa);
+					mono_posix_image = mono_assembly_get_image_internal (sa);
 				}
 			}
 		}

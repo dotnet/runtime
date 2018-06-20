@@ -15,6 +15,7 @@
 #include "metadata.h"
 #include "callspec.h"
 #include "assembly.h"
+#include "assembly-internals.h"
 #include "class-internals.h"
 #include "debug-helpers.h"
 
@@ -74,7 +75,7 @@ gboolean mono_callspec_eval (MonoMethod *method, const MonoCallSpec *spec)
 		case MONO_TRACEOP_PROGRAM:
 			if (prog_assembly &&
 			    (m_class_get_image (method->klass) ==
-			     mono_assembly_get_image (prog_assembly)))
+			     mono_assembly_get_image_internal (prog_assembly)))
 				inc = 1;
 			break;
 		case MONO_TRACEOP_WRAPPER:

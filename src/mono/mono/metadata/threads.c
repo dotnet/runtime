@@ -1362,9 +1362,11 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, Mo
 void
 mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 {
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 	if (!mono_thread_create_checked (domain, func, arg, error))
 		mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 gboolean

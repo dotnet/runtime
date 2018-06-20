@@ -183,7 +183,7 @@ main (void)
 
 	mono_callspec_set_assembly(assembly);
 
-	prog_image = mono_assembly_get_image (assembly);
+	prog_image = mono_assembly_get_image_internal (assembly);
 
 	prog_klass = test_mono_class_from_name (prog_image, "Baz", "Foo");
 	if (!prog_klass) {

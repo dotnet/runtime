@@ -554,7 +554,7 @@ mini_regression_list (int verbose, int count, char *images [])
 			g_warning ("failed to load assembly: %s", images [i]);
 			continue;
 		}
-		total += mini_regression (mono_assembly_get_image (ass), verbose, &run);
+		total += mini_regression (mono_assembly_get_image_internal (ass), verbose, &run);
 		total_run += run;
 	}
 	if (total > 0){
@@ -720,7 +720,7 @@ mono_interp_regression_list (int verbose, int count, char *images [])
 			g_warning ("failed to load assembly: %s", images [i]);
 			continue;
 		}
-		total += interp_regression (mono_assembly_get_image (ass), verbose, &run);
+		total += interp_regression (mono_assembly_get_image_internal (ass), verbose, &run);
 		total_run += run;
 	}
 	if (total > 0) {
@@ -1076,7 +1076,7 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 {
 	MonoAssembly *ass = args->ass;
 	int verbose = args->verbose;
-	MonoImage *image = mono_assembly_get_image (ass);
+	MonoImage *image = mono_assembly_get_image_internal (ass);
 	MonoMethod *method;
 	MonoCompile *cfg;
 	int i, count = 0, fail_count = 0;
@@ -1175,7 +1175,7 @@ int
 mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
 	ERROR_DECL (error);
-	MonoImage *image = mono_assembly_get_image (assembly);
+	MonoImage *image = mono_assembly_get_image_internal (assembly);
 	MonoMethod *method;
 	guint32 entry = mono_image_get_entry_point (image);
 
@@ -1321,7 +1321,7 @@ load_agent (MonoDomain *domain, char *desc)
 	 * Can't use mono_jit_exec (), as it sets things which might confuse the
 	 * real Main method.
 	 */
-	image = mono_assembly_get_image (agent_assembly);
+	image = mono_assembly_get_image_internal (agent_assembly);
 	entry = mono_image_get_entry_point (image);
 	if (!entry) {
 		g_print ("Assembly '%s' doesn't have an entry point.\n", mono_image_get_filename (image));
@@ -2383,7 +2383,7 @@ mono_main (int argc, char* argv[])
 
 #if defined(HOST_WIN32) && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 		/* Detach console when executing IMAGE_SUBSYSTEM_WINDOWS_GUI on win32 */
-		if (!enable_debugging && !mono_compile_aot && ((MonoCLIImageInfo*)(mono_assembly_get_image (assembly)->image_info))->cli_header.nt.pe_subsys_required == IMAGE_SUBSYSTEM_WINDOWS_GUI)
+		if (!enable_debugging && !mono_compile_aot && ((MonoCLIImageInfo*)(mono_assembly_get_image_internal (assembly)->image_info))->cli_header.nt.pe_subsys_required == IMAGE_SUBSYSTEM_WINDOWS_GUI)
 			FreeConsole ();
 #endif
 
@@ -2418,7 +2418,7 @@ mono_main (int argc, char* argv[])
 		mini_cleanup (domain);
 		return 3;
 	}
-	method = mono_method_desc_search_in_image (desc, mono_assembly_get_image (assembly));
+	method = mono_method_desc_search_in_image (desc, mono_assembly_get_image_internal (assembly));
 	if (!method) {
 		g_print ("Cannot find method %s\n", mname);
 		mini_cleanup (domain);

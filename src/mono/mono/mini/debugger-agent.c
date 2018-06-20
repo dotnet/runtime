@@ -60,6 +60,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/threadpool.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/reflection-internals.h>
@@ -6692,7 +6693,7 @@ clear_event_requests_for_assembly (MonoAssembly *assembly)
 static gboolean
 type_comes_from_assembly (gpointer klass, gpointer also_klass, gpointer assembly)
 {
-	return mono_type_in_image (mono_class_get_type ((MonoClass*)klass), mono_assembly_get_image ((MonoAssembly*)assembly));
+	return mono_type_in_image (mono_class_get_type ((MonoClass*)klass), mono_assembly_get_image_internal ((MonoAssembly*)assembly));
 }
 
 /*

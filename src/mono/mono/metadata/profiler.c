@@ -25,14 +25,13 @@ typedef void (*MonoProfilerInitializer) (const char *);
 static gboolean
 load_profiler (MonoDl *module, const char *name, const char *desc)
 {
-	if (!module)
-		return FALSE;
+	g_assert (module);
 
 	char *err, *old_name = g_strdup_printf (OLD_INITIALIZER_NAME);
 	MonoProfilerInitializer func;
 
 	if (!(err = mono_dl_symbol (module, old_name, (gpointer) &func))) {
-		mono_profiler_printf_err ("Found old-style startup symbol '%s' for the '%s' profiler; it has not been migrated to the new API.", old_name, name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Found old-style startup symbol '%s' for the '%s' profiler; it has not been migrated to the new API.", old_name, name);
 		g_free (old_name);
 		return FALSE;
 	}
@@ -71,7 +70,7 @@ load_profiler_from_executable (const char *name, const char *desc)
 	MonoDl *module = mono_dl_open (NULL, MONO_DL_EAGER, &err);
 
 	if (!module) {
-		mono_profiler_printf_err ("Could not open main executable: %s", err);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Could not open main executable: %s", err);
 		g_free (err);
 		return FALSE;
 	}
@@ -82,17 +81,22 @@ load_profiler_from_executable (const char *name, const char *desc)
 static gboolean
 load_profiler_from_directory (const char *directory, const char *libname, const char *name, const char *desc)
 {
-	char* path;
+	char *path, *err;
 	void *iter = NULL;
 
 	while ((path = mono_dl_build_path (directory, libname, &iter))) {
-		// See the comment in load_embedded_profiler ().
-		MonoDl *module = mono_dl_open (path, MONO_DL_EAGER, NULL);
+		MonoDl *module = mono_dl_open (path, MONO_DL_EAGER, &err);
+
+		if (!module) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Could not open from directory \"%s\": %s", path, err);
+			g_free (err);
+			g_free (path);
+			continue;
+		}
 
 		g_free (path);
 
-		if (module)
-			return load_profiler (module, name, desc);
+		return load_profiler (module, name, desc);
 	}
 
 	return FALSE;
@@ -104,12 +108,13 @@ load_profiler_from_installation (const char *libname, const char *name, const ch
 	char *err;
 	MonoDl *module = mono_dl_open_runtime_lib (libname, MONO_DL_EAGER, &err);
 
-	g_free (err);
+	if (!module) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Could not open from installation: %s", err);
+		g_free (err);
+		return FALSE;
+	}
 
-	if (module)
-		return load_profiler (module, name, desc);
-
-	return FALSE;
+	return load_profiler (module, name, desc);
 }
 
 /**
@@ -137,35 +142,39 @@ load_profiler_from_installation (const char *libname, const char *name, const ch
 void
 mono_profiler_load (const char *desc)
 {
+	char *col, *mname, *libname;
+
+	mname = libname = NULL;
+
 	if (!desc || !strcmp ("default", desc))
 		desc = "log:report";
 
-	const char *col = strchr (desc, ':');
-	char *mname;
-
-	if (col != NULL) {
+	if ((col = strchr (desc, ':')) != NULL) {
 		mname = (char *) g_memdup (desc, col - desc + 1);
 		mname [col - desc] = 0;
-	} else
+	} else {
 		mname = g_strdup (desc);
-
-	if (!load_profiler_from_executable (mname, desc)) {
-		char *libname = g_strdup_printf ("mono-profiler-%s", mname);
-		gboolean res = load_profiler_from_installation (libname, mname, desc);
-
-		if (!res && mono_config_get_assemblies_dir ())
-			res = load_profiler_from_directory (mono_assembly_getrootdir (), libname, mname, desc);
-
-		if (!res)
-			res = load_profiler_from_directory (NULL, libname, mname, desc);
-
-		if (!res)
-			mono_profiler_printf_err ("The '%s' profiler wasn't found in the main executable nor could it be loaded from '%s'.", mname, libname);
-
-		g_free (libname);
 	}
 
+	if (load_profiler_from_executable (mname, desc))
+		goto done;
+
+	libname = g_strdup_printf ("mono-profiler-%s", mname);
+
+	if (load_profiler_from_installation (libname, mname, desc))
+		goto done;
+
+	if (mono_config_get_assemblies_dir () && load_profiler_from_directory (mono_assembly_getrootdir (), libname, mname, desc))
+		goto done;
+
+	if (load_profiler_from_directory (NULL, libname, mname, desc))
+		goto done;
+
+	mono_trace (G_LOG_LEVEL_CRITICAL, MONO_TRACE_PROFILER, "The '%s' profiler wasn't found in the main executable nor could it be loaded from '%s'.", mname, libname);
+
+done:
 	g_free (mname);
+	g_free (libname);
 }
 
 /**

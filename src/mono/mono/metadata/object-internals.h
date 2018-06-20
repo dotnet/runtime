@@ -1768,6 +1768,9 @@ MonoObject *
 mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error);
 
 void
+mono_field_get_value_internal (MonoObject *obj, MonoClassField *field, void *value);
+
+void
 mono_field_static_get_value_checked (MonoVTable *vt, MonoClassField *field, void *value, MonoError *error);
 
 void

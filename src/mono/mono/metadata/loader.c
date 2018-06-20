@@ -2577,7 +2577,7 @@ mono_method_signature (MonoMethod *m)
 {
 	ERROR_DECL (error);
 	MonoMethodSignature *sig;
-
+	MONO_ENTER_GC_UNSAFE;
 	sig = mono_method_signature_checked (m, error);
 	if (!sig) {
 		char *type_name = mono_type_get_full_name (m->klass);
@@ -2585,7 +2585,7 @@ mono_method_signature (MonoMethod *m)
 		g_free (type_name);
 		mono_error_cleanup (error);
 	}
-
+	MONO_EXIT_GC_UNSAFE;
 	return sig;
 }
 

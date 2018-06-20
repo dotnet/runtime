@@ -966,7 +966,11 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 char *
 mono_method_full_name (MonoMethod *method, gboolean signature)
 {
-	return mono_method_get_name_full (method, signature, FALSE, MONO_TYPE_NAME_FORMAT_IL);
+	char *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_method_get_name_full (method, signature, FALSE, MONO_TYPE_NAME_FORMAT_IL);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 char *
