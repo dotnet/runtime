@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
             dotnet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
             dotnet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
@@ -81,7 +81,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
             dotnet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And

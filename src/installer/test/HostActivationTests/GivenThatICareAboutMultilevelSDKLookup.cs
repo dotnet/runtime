@@ -128,7 +128,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
@@ -149,7 +149,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
@@ -290,7 +290,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
@@ -311,7 +311,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
@@ -457,7 +457,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
