@@ -8048,6 +8048,12 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         LclVarDsc* varDsc;
         for (varNum = 0, varDsc = lvaTable; varNum < lvaCount; varNum++, varDsc++)
         {
+#if FEATURE_FIXED_OUT_ARGS
+            if (varNum == lvaOutgoingArgSpaceVar)
+            {
+                continue;
+            }
+#endif // FEATURE_FIXED_OUT_ARGS
             if (!varDsc->lvIsParam)
             {
                 var_types lclType            = varDsc->TypeGet();
