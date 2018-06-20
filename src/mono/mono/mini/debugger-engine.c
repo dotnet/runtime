@@ -739,8 +739,11 @@ mono_de_ss_req_release (SingleStepReq *req)
 	if (req->refcount == 0)
 		free = TRUE;
 	dbg_unlock ();
-	if (free)
+	if (free) {
+		if (req == the_ss_req)
+			the_ss_req = NULL;
 		ss_destroy (req);
+	}
 }
 
 void
