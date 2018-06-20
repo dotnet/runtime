@@ -1220,7 +1220,7 @@ LLVM_DISABLED_TESTS = \
 LLVM_DISABLED_TESTS += \
 	weak-fields.exe
 
-LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS))
+LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS) $(AOT_BUILD_FLAGS))
 
 # The two finalizer tests only work under sgen
 # gc-altstack.exe fails under boehm because it has no support for altstack
