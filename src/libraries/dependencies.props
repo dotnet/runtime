@@ -44,7 +44,7 @@
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
 
-    <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
+    <AppXRunnerVersion>2.2.0-preview1-02915-01</AppXRunnerVersion>
     <XunitPerfAnalysisPackageVersion>1.0.0-beta-build0019</XunitPerfAnalysisPackageVersion>
     <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
     <XunitNetcoreExtensionsVersion>2.2.0-preview1-02919-01</XunitNetcoreExtensionsVersion>
