@@ -122,17 +122,20 @@ namespace R2RDump
                 {
                     _mdReader = _peReader.GetMetadataReader();
 
-                    int runtimeFunctionSize = CalculateRuntimeFunctionSize();
-                    R2RSection runtimeFunctionSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS];
-                    uint nRuntimeFunctions = (uint)(runtimeFunctionSection.Size / runtimeFunctionSize);
-                    int runtimeFunctionOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
-                    bool[] isEntryPoint = new bool[nRuntimeFunctions];
-
-                    // initialize R2RMethods
                     R2RMethods = new List<R2RMethod>();
-                    ParseMethodDefEntrypoints(isEntryPoint);
-                    ParseInstanceMethodEntrypoints(isEntryPoint);
-                    ParseRuntimeFunctions(isEntryPoint, runtimeFunctionOffset, runtimeFunctionSize);
+                    if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS))
+                    {
+                        int runtimeFunctionSize = CalculateRuntimeFunctionSize();
+                        R2RSection runtimeFunctionSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS];
+                        uint nRuntimeFunctions = (uint)(runtimeFunctionSection.Size / runtimeFunctionSize);
+                        int runtimeFunctionOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
+                        bool[] isEntryPoint = new bool[nRuntimeFunctions];
+
+                        // initialize R2RMethods
+                        ParseMethodDefEntrypoints(isEntryPoint);
+                        ParseInstanceMethodEntrypoints(isEntryPoint);
+                        ParseRuntimeFunctions(isEntryPoint, runtimeFunctionOffset, runtimeFunctionSize);
+                    }
 
                     AvailableTypes = new List<string>();
                     ParseAvailableTypes();
@@ -162,6 +165,10 @@ namespace R2RDump
         /// </summary>
         private void ParseMethodDefEntrypoints(bool[] isEntryPoint)
         {
+            if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS))
+            {
+                return;
+            }
             int methodDefEntryPointsRVA = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS].RelativeVirtualAddress;
             int methodDefEntryPointsOffset = GetOffset(methodDefEntryPointsRVA);
             NativeArray methodEntryPoints = new NativeArray(Image, (uint)methodDefEntryPointsOffset);
@@ -189,6 +196,10 @@ namespace R2RDump
         /// </summary>
         private void ParseInstanceMethodEntrypoints(bool[] isEntryPoint)
         {
+            if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS))
+            {
+                return;
+            }
             R2RSection instMethodEntryPointSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS];
             int instMethodEntryPointsOffset = GetOffset(instMethodEntryPointSection.RelativeVirtualAddress);
             NativeParser parser = new NativeParser(Image, (uint)instMethodEntryPointsOffset);
@@ -268,6 +279,10 @@ namespace R2RDump
 
         private void ParseAvailableTypes()
         {
+            if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES))
+            {
+                return;
+            }
             R2RSection availableTypesSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES];
             int availableTypesOffset = GetOffset(availableTypesSection.RelativeVirtualAddress);
             NativeParser parser = new NativeParser(Image, (uint)availableTypesOffset);
@@ -286,6 +301,10 @@ namespace R2RDump
 
         private string ParseCompilerIdentifier()
         {
+            if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER))
+            {
+                return "";
+            }
             R2RSection compilerIdentifierSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER];
             byte[] identifier = new byte[compilerIdentifierSection.Size];
             int identifierOffset = GetOffset(compilerIdentifierSection.RelativeVirtualAddress);
@@ -295,6 +314,10 @@ namespace R2RDump
 
         private void ParseImportSections()
         {
+            if (!R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS))
+            {
+                return;
+            }
             R2RSection importSectionsSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS];
             int offset = GetOffset(importSectionsSection.RelativeVirtualAddress);
             int endOffset = offset + importSectionsSection.Size;
@@ -366,6 +389,10 @@ namespace R2RDump
         public int GetOffset(int rva)
         {
             int index = _peReader.PEHeaders.GetContainingSectionIndex(rva);
+            if (index == -1)
+            {
+                throw new BadImageFormatException("Failed to convert invalid RVA to offset: " + rva);
+            }
             SectionHeader containingSection = _peReader.PEHeaders.SectionHeaders[index];
             return rva - containingSection.VirtualAddress + containingSection.PointerToRawData;
         }
