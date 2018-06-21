@@ -1,7 +1,4 @@
-project(System.Native)
-
-# We mark the function which needs exporting with DLLEXPORT
-add_compile_options(-fvisibility=hidden)
+project(System.Native C)
 
 set(NATIVE_SOURCES
     pal_console.c

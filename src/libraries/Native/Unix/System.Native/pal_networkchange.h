@@ -5,9 +5,6 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 #include <linux/netlink.h>
 
@@ -21,8 +18,6 @@ typedef enum
     AvailabilityChanged = 4,
 } NetworkChangeKind;
 
-typedef enum Error Error;
-
 typedef void (*NetworkChangeEvent)(int32_t sock, NetworkChangeKind notificationKind);
 
 DLLEXPORT void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange);
@@ -30,5 +25,3 @@ DLLEXPORT void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetwor
 DLLEXPORT Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket);
 
 DLLEXPORT Error SystemNative_CloseNetworkChangeListenerSocket(int32_t socket);
-
-END_EXTERN_C

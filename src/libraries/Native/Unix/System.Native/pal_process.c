@@ -423,7 +423,7 @@ int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
     }
     else
     {
-        *limits = (RLimit){0,0};
+        memset(limits, 0, sizeof(RLimit));
     }
 
     return result;

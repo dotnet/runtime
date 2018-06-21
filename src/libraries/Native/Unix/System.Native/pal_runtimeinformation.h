@@ -5,9 +5,6 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 
 DLLEXPORT const char* SystemNative_GetUnixName(void);
@@ -27,5 +24,3 @@ enum
     ARCH_ARM,
     ARCH_ARM64
 };
-
-END_EXTERN_C
