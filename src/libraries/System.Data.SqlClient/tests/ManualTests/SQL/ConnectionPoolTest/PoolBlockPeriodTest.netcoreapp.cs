@@ -13,19 +13,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static readonly string _sampleNonAzureEndpoint = "nonexistanceserver";
         private static readonly string _policyKeyword = "PoolBlockingPeriod";
 
-        [Fact]
-        public void PoolBlockingPeriodConnectionPropertyTest()
-        {
-
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
-            builder.PoolBlockingPeriod = PoolBlockingPeriod.Auto;
-            using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
-            {
-                connection.Open();
-            }
-
-        }
-
         [Theory]
         [InlineData("Azure with Default Policy must Disable blocking (.database.windows.net)", new object[] { "nonexistance.database.windows.net" })]
         [InlineData("Azure with Default Policy must Disable blocking (.database.chinacloudapi.cn)", new object[] { "nonexistance.database.chinacloudapi.cn" })]
