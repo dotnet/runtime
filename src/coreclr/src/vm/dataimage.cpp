@@ -1465,7 +1465,7 @@ void DataImage::FixupTypeHandlePointer(TypeHandle th, PVOID p, SSIZE_T offset, Z
         {
             if (CanEagerBindToTypeHandle(th) && CanHardBindToZapModule(th.GetLoaderModule()))
             {
-                FixupField(p, offset, th.AsTypeDesc(), 2);
+                FixupField(p, offset, th.AsTypeDesc(), 2, type);
             }
             else
             {
