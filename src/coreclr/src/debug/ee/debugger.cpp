@@ -10832,8 +10832,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             }
             else
             {
-                GetCanary()->ClearCache();
-
                 fContinue = ResumeThreads(pEvent->vmAppDomain.GetRawPtr());
 
                 //
@@ -10842,6 +10840,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                 //
                 ThreadSuspend::UnlockThreadStore(FALSE, ThreadSuspend::SUSPEND_FOR_DEBUGGER);
             }
+            GetCanary()->ClearCache();
             break;
         }
 
