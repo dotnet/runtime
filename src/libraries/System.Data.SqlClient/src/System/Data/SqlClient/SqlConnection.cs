@@ -231,7 +231,7 @@ namespace System.Data.SqlClient
                     {
                         CheckAndThrowOnInvalidCombinationOfConnectionStringAndSqlCredential(connectionOptions);
                     }
-                    else if (_accessToken != null)
+                    else
                     {
                         CheckAndThrowOnInvalidCombinationOfConnectionOptionAndAccessToken(connectionOptions);
                     }
@@ -260,11 +260,7 @@ namespace System.Data.SqlClient
                 // When a connection is connecting or is ever opened, make AccessToken available only if "Persist Security Info" is set to true
                 // otherwise, return null
                 SqlConnectionString connectionOptions = (SqlConnectionString)UserConnectionOptions;
-                if (InnerConnection.ShouldHidePassword && connectionOptions != null && !connectionOptions.PersistSecurityInfo)
-                {
-                    result = null;
-                }
-                return result;
+                return InnerConnection.ShouldHidePassword && connectionOptions != null && !connectionOptions.PersistSecurityInfo ? null : _accessToken;
             }
             set
             {
@@ -280,9 +276,9 @@ namespace System.Data.SqlClient
                     CheckAndThrowOnInvalidCombinationOfConnectionOptionAndAccessToken((SqlConnectionString)ConnectionOptions);
                 }
 
-                _accessToken = value;
                 // Need to call ConnectionString_Set to do proper pool group check
-                ConnectionString_Set(new SqlConnectionPoolKey(_connectionString, credential: _credential, accessToken: _accessToken));
+                ConnectionString_Set(new SqlConnectionPoolKey(_connectionString, credential: _credential, accessToken: value));
+                _accessToken = value;
             }
         }
 
