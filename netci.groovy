@@ -151,7 +151,8 @@ class Constants {
                // 'jitdiff', // jitdiff is currently disabled, until someone spends the effort to make it fully work
                'standalone_gc',
                'gc_reliability_framework',
-               'illink']
+               'illink',
+               'corefx_innerloop']
 
     def static allScenarios = basicScenarios + r2rStressScenarios.keySet() + jitStressModeScenarios.keySet()
 
@@ -1741,6 +1742,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         case 'illink':
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                             break
+                        case 'corefx_innerloop':
+                            if (configuration == 'Release' || configuration == 'Checked') {
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} CoreFX Tests", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")                                
+                            }
+                            break
 
                         default:
                             if (isJitStressScenario(scenario)) {
@@ -2212,19 +2218,28 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         runtestArguments = "${lowerConfiguration} ${arch} ${testOpts}"
 
                         if (doCoreFxTesting) {
-                            def workspaceRelativeFxRoot = "_/fx"
-                            def absoluteFxRoot = "%WORKSPACE%\\_\\fx"
-                            def fxBranch = getFxBranch(branch)
+                            if (scenario == 'corefx_innerloop') {
+                                buildCommands += "tests\\runtest.cmd ${runtestArguments} CoreFXTests"
+                                
+                                // Archive and process (only) the test results
+                                Utilities.addArchival(newJob, "%WORKSPACE%bin/Logs/**/testResults.xml")
+                                Utilities.addXUnitDotNETResults(newJob, "%WORKSPACE%/bin/Logs/**/testResults.xml")
+                            }
+                            else {
+                              def workspaceRelativeFxRoot = "_/fx"
+                              def absoluteFxRoot = "%WORKSPACE%\\_\\fx"
+                              def fxBranch = getFxBranch(branch)
 
-                            buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${envScriptPath}"
+                              buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${envScriptPath}"
 
-                            // Archive and process (only) the test results
-                            Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
-                            Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
+                              // Archive and process (only) the test results
+                              Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
+                              Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
 
-                            //Archive additional build stuff to diagnose why my attempt at fault injection isn't causing CI to fail
-                            Utilities.addArchival(newJob, "SetStressModes.bat", "", true, false)
-                            Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/testhost/**", "", true, false)
+                              //Archive additional build stuff to diagnose why my attempt at fault injection isn't causing CI to fail
+                              Utilities.addArchival(newJob, "SetStressModes.bat", "", true, false)
+                              Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/testhost/**", "", true, false)
+                            }
                         }
                         else if (isGcReliabilityFramework(scenario)) {
                             buildCommands += "tests\\runtest.cmd ${runtestArguments} GenerateLayoutOnly"
@@ -2571,6 +2586,12 @@ def static shouldGenerateJob(def scenario, def isPR, def architecture, def confi
         return false
     }
 
+    // Run basic corefx tests only on PR-triggered jobs
+    // Runs under Release and Checked 
+    if (scenario == 'corefx_innerloop' && !isPR) {
+        return false
+    }
+
     // Tizen is only supported for armem architecture
     if (os == 'Tizen' && architecture != 'armem') {
         return false
@@ -2784,6 +2805,14 @@ def static shouldGenerateJob(def scenario, def isPR, def architecture, def confi
                     return false
                 }
                 break
+            case 'corefx_innerloop':
+                if (os != 'Windows_NT'|| architecture != 'x64') {
+                    return false
+                }
+                if(configuration != 'Release' && configuration != 'Checked') {
+                    return false
+                }
+                break
             default:
                 println("Unknown scenario: ${scenario}")
                 assert false
@@ -2831,6 +2860,8 @@ Constants.allScenarios.each { scenario ->
 
                     // Create the new job
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR, folderName)) {}
+
+                    // Should we add corefx_innerloop to views?
                     addToViews(newJob, isPR, architecture, os)
 
                     setJobMachineAffinity(architecture, os, true, false, false, newJob) // isBuildJob = true, isTestJob = false, isFlowJob = false
@@ -3459,7 +3490,10 @@ def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def c
     if (scenario == 'innerloop' && !isPR) {
         return false
     }
-
+    
+    if (scenario == 'corefx_innerloop') {
+        return false
+    }
     // Filter based on OS and architecture.
 
     switch (architecture) {

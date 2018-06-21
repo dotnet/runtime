@@ -40,6 +40,7 @@ set __CollectDumps=
 set __DoCrossgen=
 set __CrossgenAltJit=
 set __PerfTests=
+set __CoreFXTests=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -78,6 +79,7 @@ if /i "%1" == "jitdisasm"             (set __JitDisasm=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"        (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "PerfTests"             (set __PerfTests=true&shift&goto Arg_Loop)
+if /i "%1" == "CoreFXTests"           (exit /b 0)
 if /i "%1" == "runcrossgentests"      (set RunCrossGen=true&shift&goto Arg_Loop)
 if /i "%1" == "link"                  (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "tieredcompilation"     (set COMPLUS_TieredCompilation=1&shift&goto Arg_Loop)
