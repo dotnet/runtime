@@ -696,12 +696,6 @@ if test x"$GCC" = xyes; then
 		# We require C99 with some GNU extensions, e.g. `linux` macro
 		CFLAGS="$CFLAGS -std=gnu99"
 
-		# FIXME incompatible-pointer-types requires gcc 5.x but should only warn with 4.x, on every invocation
-		# FIXME Windows builds have unrelated preexisting problems here.
-		if test x$host_win32 = xno; then
-		  CFLAGS="$CFLAGS -Werror=incompatible-pointer-types"
-		fi
-
 		# The runtime code does not respect ANSI C strict aliasing rules
 		CFLAGS="$CFLAGS -fno-strict-aliasing"
 
@@ -5510,6 +5504,25 @@ AC_CONFIG_COMMANDS([runtime/etc/mono/4.5/web.config],
 
 AC_CONFIG_COMMANDS([quiet-libtool], [sed -e 's/echo "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool; sed -e 's/$ECHO "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
 AC_CONFIG_COMMANDS([nolock-libtool], [sed -e 's/lock_old_archive_extraction=yes/lock_old_archive_extraction=no/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
+
+# Anything involving -Werror must be done late because autoconf depends on compiling with warnings to be success.
+# FIXME Windows builds have unrelated preexisting problems here.
+if test x"$GCC" = xyes -a x$host_win32 = xno; then
+
+	# incompatible-pointer-types requires gcc circa 5.x
+
+	ORIG_CFLAGS=$CFLAGS
+	CFLAGS="$CFLAGS -Wincompatible-pointer-types -Werror"
+	AC_MSG_CHECKING(for -Wincompatible-pointer-types option to gcc)
+	AC_TRY_COMPILE([],[
+	], [
+		AC_MSG_RESULT(yes)
+		CFLAGS="$ORIG_CFLAGS -Werror=incompatible-pointer-types"
+	], [
+		AC_MSG_RESULT(no)
+		CFLAGS=$ORIG_CFLAGS
+	])
+fi
 
 AC_OUTPUT([
 Makefile
