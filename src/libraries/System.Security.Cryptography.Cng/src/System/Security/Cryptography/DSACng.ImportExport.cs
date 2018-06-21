@@ -28,6 +28,37 @@ namespace System.Security.Cryptography
 
             Key = newKey;
         }
+
+        private void AcceptImport(CngPkcs8.Pkcs8Response response)
+        {
+            Key = response.Key;
+        }
+
+        public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
+        {
+            return Key.TryExportKeyBlob(
+                Interop.NCrypt.NCRYPT_PKCS8_PRIVATE_KEY_BLOB,
+                destination,
+                out bytesWritten);
+        }
+
+        private byte[] ExportEncryptedPkcs8(ReadOnlySpan<char> pkcs8Password, int kdfCount)
+        {
+            return Key.ExportPkcs8KeyBlob(pkcs8Password, kdfCount);
+        }
+
+        private bool TryExportEncryptedPkcs8(
+            ReadOnlySpan<char> pkcs8Password,
+            int kdfCount,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            return Key.TryExportPkcs8KeyBlob(
+                pkcs8Password,
+                kdfCount,
+                destination,
+                out bytesWritten);
+        }
     }
 }
 

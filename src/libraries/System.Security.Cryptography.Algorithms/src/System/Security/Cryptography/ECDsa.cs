@@ -4,11 +4,18 @@
 
 using System.Buffers;
 using System.IO;
+using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography
 {
     public abstract partial class ECDsa : AsymmetricAlgorithm
     {
+        private static readonly string[] s_validOids =
+        {
+            Oids.EcPublicKey,
+            // ECDH and ECMQV are not valid in this context.
+        };
+
         protected ECDsa() { }
 
         public static new ECDsa Create(string algorithm)
@@ -235,5 +242,263 @@ namespace System.Security.Cryptography
 
         public virtual bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
             VerifyHash(hash.ToArray(), signature.ToArray());
+
+        public override unsafe bool TryExportEncryptedPkcs8PrivateKey(
+            ReadOnlySpan<byte> passwordBytes,
+            PbeParameters pbeParameters,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            if (pbeParameters == null)
+                throw new ArgumentNullException(nameof(pbeParameters));
+
+            PasswordBasedEncryption.ValidatePbeParameters(
+                pbeParameters,
+                ReadOnlySpan<char>.Empty,
+                passwordBytes);
+
+            ECParameters ecParameters = ExportParameters(true);
+
+            fixed (byte* privPtr = ecParameters.D)
+            {
+                try
+                {
+                    using (AsnWriter pkcs8PrivateKey = ecParameters.WritePkcs8PrivateKey())
+                    using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
+                        passwordBytes,
+                        pkcs8PrivateKey,
+                        pbeParameters))
+                    {
+                        return writer.TryEncode(destination, out bytesWritten);
+                    }
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(ecParameters.D);
+                }
+            }
+        }
+
+        public override unsafe bool TryExportEncryptedPkcs8PrivateKey(
+            ReadOnlySpan<char> password,
+            PbeParameters pbeParameters,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            if (pbeParameters == null)
+                throw new ArgumentNullException(nameof(pbeParameters));
+
+            PasswordBasedEncryption.ValidatePbeParameters(
+                pbeParameters,
+                password,
+                ReadOnlySpan<byte>.Empty);
+
+            ECParameters ecParameters = ExportParameters(true);
+
+            fixed (byte* privPtr = ecParameters.D)
+            {
+                try
+                {
+                    using (AsnWriter pkcs8PrivateKey = ecParameters.WritePkcs8PrivateKey())
+                    using (AsnWriter writer = KeyFormatHelper.WriteEncryptedPkcs8(
+                        password,
+                        pkcs8PrivateKey,
+                        pbeParameters))
+                    {
+                        return writer.TryEncode(destination, out bytesWritten);
+                    }
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(ecParameters.D);
+                }
+            }
+        }
+
+        public override unsafe bool TryExportPkcs8PrivateKey(
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            ECParameters ecParameters = ExportParameters(true);
+
+            fixed (byte* privPtr = ecParameters.D)
+            {
+                try
+                {
+                    using (AsnWriter writer = ecParameters.WritePkcs8PrivateKey())
+                    {
+                        return writer.TryEncode(destination, out bytesWritten);
+                    }
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(ecParameters.D);
+                }
+            }
+        }
+
+        public override bool TryExportSubjectPublicKeyInfo(
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            ECParameters ecParameters = ExportParameters(false);
+
+            using (AsnWriter writer = ecParameters.WriteSubjectPublicKeyInfo())
+            {
+                return writer.TryEncode(destination, out bytesWritten);
+            }
+        }
+
+        public override unsafe void ImportEncryptedPkcs8PrivateKey(
+            ReadOnlySpan<byte> passwordBytes,
+            ReadOnlySpan<byte> source,
+            out int bytesRead)
+        {
+            KeyFormatHelper.ReadEncryptedPkcs8<ECParameters, ECPrivateKey>(
+                s_validOids,
+                source,
+                passwordBytes,
+                ECParameters.FromECPrivateKey,
+                out int localRead,
+                out ECParameters ret);
+
+            fixed (byte* privPin = ret.D)
+            {
+                try
+                {
+                    ImportParameters(ret);
+                    bytesRead = localRead;
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(ret.D);
+                }
+            }
+        }
+
+        public override unsafe void ImportEncryptedPkcs8PrivateKey(
+            ReadOnlySpan<char> password,
+            ReadOnlySpan<byte> source,
+            out int bytesRead)
+        {
+            KeyFormatHelper.ReadEncryptedPkcs8<ECParameters, ECPrivateKey>(
+                s_validOids,
+                source,
+                password,
+                ECParameters.FromECPrivateKey,
+                out int localRead,
+                out ECParameters ret);
+
+            fixed (byte* privPin = ret.D)
+            {
+                try
+                {
+                    ImportParameters(ret);
+                    bytesRead = localRead;
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(ret.D);
+                }
+            }
+        }
+
+        public override unsafe void ImportPkcs8PrivateKey(
+            ReadOnlySpan<byte> source,
+            out int bytesRead)
+        {
+            KeyFormatHelper.ReadPkcs8<ECParameters, ECPrivateKey>(
+                s_validOids,
+                source,
+                ECParameters.FromECPrivateKey,
+                out int localRead,
+                out ECParameters key);
+
+            fixed (byte* privPin = key.D)
+            {
+                try
+                {
+                    ImportParameters(key);
+                    bytesRead = localRead;
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(key.D);
+                }
+            }
+        }
+
+        public override void ImportSubjectPublicKeyInfo(
+            ReadOnlySpan<byte> source,
+            out int bytesRead)
+        {
+            KeyFormatHelper.ReadSubjectPublicKeyInfo<ECParameters, ReadOnlyMemory<byte>>(
+                s_validOids,
+                source,
+                ECParameters.FromECPublicKey,
+                out int localRead,
+                out ECParameters key);
+
+            ImportParameters(key);
+            bytesRead = localRead;
+        }
+
+        public virtual unsafe void ImportECPrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
+        {
+            ECParameters ecParameters = ECParameters.FromECPrivateKey(source, out int localRead);
+
+            fixed (byte* privPin = ecParameters.D)
+            {
+                try
+                {
+                    ImportParameters(ecParameters);
+                    bytesRead = localRead;
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(ecParameters.D);
+                }
+            }
+        }
+
+        public virtual unsafe byte[] ExportECPrivateKey()
+        {
+            ECParameters ecParameters = ExportParameters(true);
+
+            fixed (byte* privPin = ecParameters.D)
+            {
+                try
+                {
+                    using (AsnWriter writer = ecParameters.WriteECPrivateKey())
+                    {
+                        return writer.Encode();
+                    }
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(ecParameters.D);
+                }
+            }
+        }
+
+        public virtual unsafe bool TryExportECPrivateKey(Span<byte> destination, out int bytesWritten)
+        {
+            ECParameters ecParameters = ExportParameters(true);
+
+            fixed (byte* privPin = ecParameters.D)
+            {
+                try
+                {
+                    using (AsnWriter writer = ecParameters.WriteECPrivateKey())
+                    {
+                        return writer.TryEncode(destination, out bytesWritten);
+                    }
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(ecParameters.D);
+                }
+            }
+        }
     }
 }
