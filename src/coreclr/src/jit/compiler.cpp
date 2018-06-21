@@ -4347,7 +4347,10 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     // Always do the layout even if returning early. Callers might
     // depend on us to do the layout.
     unsigned frameSize = lvaFrameSize(curState);
-    JITDUMP("\ncompRsvdRegCheck\n  frame size     = %6d\n  compArgSize    = %6d\n", frameSize, compArgSize);
+    JITDUMP("\ncompRsvdRegCheck\n"
+            "  frame size  = %6d\n"
+            "  compArgSize = %6d\n",
+            frameSize, compArgSize);
 
     if (opts.MinOpts())
     {
@@ -4363,8 +4366,9 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     {
         calleeSavedRegMaxSz += CALLEE_SAVED_FLOAT_MAXSZ;
     }
+    calleeSavedRegMaxSz += REGSIZE_BYTES; // we always push LR.  See genPushCalleeSavedRegisters
 
-    noway_assert(frameSize > calleeSavedRegMaxSz);
+    noway_assert(frameSize >= calleeSavedRegMaxSz);
 
 #if defined(_TARGET_ARM64_)
 
@@ -4376,69 +4380,117 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
     // frame layout:
     //
-    //         low addresses
-    //                         inArgs               compArgSize
-    //  origSP --->
-    //  LR     --->
-    //  R11    --->
-    //                +        callee saved regs    CALLEE_SAVED_REG_MAXSZ   (32 bytes)
-    //                     optional saved fp regs   16 * sizeof(float)       (64 bytes)
-    //                -        lclSize
+    //         ... high addresses ...
+    //                         frame contents       size
+    //                         -------------------  ------------------------
+    //                         inArgs               compArgSize (includes prespill)
+    //  caller SP --->
+    //                         prespill
+    //                         LR                   REGSIZE_BYTES
+    //  R11    --->            R11                  REGSIZE_BYTES
+    //                         callee saved regs    CALLEE_SAVED_REG_MAXSZ   (32 bytes)
+    //                     optional saved fp regs   CALLEE_SAVED_FLOAT_MAXSZ (64 bytes)
+    //                         lclSize
     //                             incl. TEMPS      MAX_SPILL_TEMP_SIZE
-    //                +            incl. outArgs
+    //                             incl. outArgs
     //  SP     --->
-    //                -
-    //          high addresses
+    //          ... low addresses ...
+    //
+    // When codeGen->isFramePointerRequired is true, R11 will be established as a frame pointer.
+    // We can then use R11 to access incoming args with positive offsets, and LclVars with
+    // negative offsets.
+    //
+    // In functions with EH, in the non-funclet (or main) region, even though we will have a
+    // frame pointer, we can use SP with positive offsets to access any or all locals or arguments
+    // that we can reach with SP-relative encodings. The funclet region might require the reserved
+    // register, since it must use offsets from R11 to access the parent frame.
 
-    // With codeGen->isFramePointerRequired we use R11 to access incoming args with positive offsets
-    // and use R11 to access LclVars with negative offsets in the non funclet or
-    // main region we use SP with positive offsets. The limiting factor in the
-    // codeGen->isFramePointerRequired case is that we need the offset to be less than or equal to 0x7C
-    // for negative offsets, but positive offsets can be imm12 limited by vldr/vstr
-    // using +/-imm8.
-    //
-    // Subtract 4 bytes for alignment of a local var because number of temps could
-    // trigger a misaligned double or long.
-    //
-    unsigned maxR11ArgLimit = (compFloatingPointUsed ? 0x03FC : 0x0FFC);
-    unsigned maxR11LclLimit = 0x0078;
-    JITDUMP("  maxR11ArgLimit = %6d\n  maxR11LclLimit = %6d\n", maxR11ArgLimit, maxR11LclLimit);
+    unsigned maxR11PositiveEncodingOffset = compFloatingPointUsed ? 0x03FC : 0x0FFF;
+    JITDUMP("  maxR11PositiveEncodingOffset     = %6d\n", maxR11PositiveEncodingOffset);
+
+    // Floating point load/store instructions (VLDR/VSTR) can address up to -0x3FC from R11, but we
+    // don't know if there are either no integer locals, or if we don't need large negative offsets
+    // for the integer locals, so we must use the integer max negative offset, which is a
+    // smaller (absolute value) number.
+    unsigned maxR11NegativeEncodingOffset = 0x00FF; // This is a negative offset from R11.
+    JITDUMP("  maxR11NegativeEncodingOffset     = %6d\n", maxR11NegativeEncodingOffset);
+
+    // -1 because otherwise we are computing the address just beyond the last argument, which we don't need to do.
+    unsigned maxR11PositiveOffset = compArgSize + (2 * REGSIZE_BYTES) - 1;
+    JITDUMP("  maxR11PositiveOffset             = %6d\n", maxR11PositiveOffset);
+
+    // The value is positive, but represents a negative offset from R11.
+    // frameSize includes callee-saved space for R11 and LR, which are at non-negative offsets from R11
+    // (+0 and +4, respectively), so don't include those in the max possible negative offset.
+    assert(frameSize >= (2 * REGSIZE_BYTES));
+    unsigned maxR11NegativeOffset = frameSize - (2 * REGSIZE_BYTES);
+    JITDUMP("  maxR11NegativeOffset             = %6d\n", maxR11NegativeOffset);
 
     if (codeGen->isFramePointerRequired())
     {
-        unsigned maxR11LclOffs = frameSize;
-        unsigned maxR11ArgOffs = compArgSize + (2 * REGSIZE_BYTES);
-        JITDUMP("  maxR11LclOffs  = %6d\n  maxR11ArgOffs  = %6d\n", maxR11LclOffs, maxR11ArgOffs)
-        if (maxR11LclOffs > maxR11LclLimit)
+        if (maxR11NegativeOffset > maxR11NegativeEncodingOffset)
         {
-            JITDUMP(" Returning true (frame reqd and maxR11LclOffs)\n\n");
+            JITDUMP(" Returning true (frame required and maxR11NegativeOffset)\n\n");
             return true;
         }
-        if (maxR11ArgOffs > maxR11ArgLimit)
+        if (maxR11PositiveOffset > maxR11PositiveEncodingOffset)
         {
-            JITDUMP(" Returning true (frame reqd and maxR11ArgOffs)\n\n");
+            JITDUMP(" Returning true (frame required and maxR11PositiveOffset)\n\n");
             return true;
         }
     }
 
-    // So this case is the SP based frame case, but note that we also will use SP based
-    // offsets for R11 based frames in the non-funclet main code area. However if we have
-    // passed the above max_R11_offset check these SP checks won't fire.
+    // Now consider the SP based frame case. Note that we will use SP based offsets to access the stack in R11 based
+    // frames in the non-funclet main code area.
 
-    // Check local coverage first. If vldr/vstr will be used the limit can be +/-imm8.
-    unsigned maxSPLclLimit = (compFloatingPointUsed ? 0x03F8 : 0x0FF8);
-    JITDUMP("  maxSPLclLimit  = %6d\n", maxSPLclLimit);
-    if (frameSize > (codeGen->isFramePointerUsed() ? (maxR11LclLimit + maxSPLclLimit) : maxSPLclLimit))
+    unsigned maxSPPositiveEncodingOffset = compFloatingPointUsed ? 0x03FC : 0x0FFF;
+    JITDUMP("  maxSPPositiveEncodingOffset      = %6d\n", maxSPPositiveEncodingOffset);
+
+    // -1 because otherwise we are computing the address just beyond the last argument, which we don't need to do.
+    assert(compArgSize + frameSize > 0);
+    unsigned maxSPPositiveOffset = compArgSize + frameSize - 1;
+
+    if (codeGen->isFramePointerUsed())
     {
-        JITDUMP(" Returning true (frame reqd; local coverage)\n\n");
-        return true;
+        // We have a frame pointer, so we can use it to access part of the stack, even if SP can't reach those parts.
+        // We will still generate SP-relative offsets if SP can reach.
+
+        // First, check that the stack between R11 and SP can be fully reached, either via negative offset from FP
+        // or positive offset from SP. Don't count stored R11 or LR, which are reached from positive offsets from FP.
+
+        unsigned maxSPLocalsCombinedOffset = frameSize - (2 * REGSIZE_BYTES) - 1;
+        JITDUMP("  maxSPLocalsCombinedOffset        = %6d\n", maxSPLocalsCombinedOffset);
+
+        if (maxSPLocalsCombinedOffset > maxSPPositiveEncodingOffset)
+        {
+            // Can R11 help?
+            unsigned maxRemainingLocalsCombinedOffset = maxSPLocalsCombinedOffset - maxSPPositiveEncodingOffset;
+            JITDUMP("  maxRemainingLocalsCombinedOffset = %6d\n", maxRemainingLocalsCombinedOffset);
+
+            if (maxRemainingLocalsCombinedOffset > maxR11NegativeEncodingOffset)
+            {
+                JITDUMP(" Returning true (frame pointer exists; R11 and SP can't reach entire stack between them)\n\n");
+                return true;
+            }
+
+            // Otherwise, yes, we can address the remaining parts of the locals frame with negative offsets from R11.
+        }
+
+        // Check whether either R11 or SP can access the arguments.
+        if ((maxR11PositiveOffset > maxR11PositiveEncodingOffset) &&
+            (maxSPPositiveOffset > maxSPPositiveEncodingOffset))
+        {
+            JITDUMP(" Returning true (frame pointer exists; R11 and SP can't reach all arguments)\n\n");
+            return true;
+        }
     }
-
-    // Check arguments coverage.
-    if ((!codeGen->isFramePointerUsed() || (compArgSize > maxR11ArgLimit)) && (compArgSize + frameSize) > maxSPLclLimit)
+    else
     {
-        JITDUMP(" Returning true (no frame; arg coverage)\n\n");
-        return true;
+        if (maxSPPositiveOffset > maxSPPositiveEncodingOffset)
+        {
+            JITDUMP(" Returning true (no frame pointer exists; SP can't reach all of frame)\n\n");
+            return true;
+        }
     }
 
     // We won't need to reserve REG_OPT_RSVD.
