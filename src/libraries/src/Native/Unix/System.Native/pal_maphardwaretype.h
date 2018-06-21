@@ -5,13 +5,10 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 
 // Managed interface types
-enum NetworkInterfaceType
+typedef enum
 {
     NetworkInterfaceType_Unknown = 1,
     NetworkInterfaceType_Ethernet = 6,
@@ -41,8 +38,6 @@ enum NetworkInterfaceType
     NetworkInterfaceType_Wman = 237,                     // IF_TYPE_IEEE80216_WMAN WIMAX
     NetworkInterfaceType_Wwanpp = 243,                   // IF_TYPE_WWANPP Mobile Broadband devices based on GSM technology
     NetworkInterfaceType_Wwanpp2 = 244,                  // IF_TYPE_WWANPP2 Mobile Broadband devices based on CDMA technology
-};
+} NetworkInterfaceType;
 
 uint16_t MapHardwareType(uint16_t nativeType);
-
-END_EXTERN_C

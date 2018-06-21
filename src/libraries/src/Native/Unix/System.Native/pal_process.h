@@ -5,9 +5,6 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 #include <stdio.h>
 #include <string.h>
@@ -72,10 +69,10 @@ typedef enum
     PAL_RLIMIT_NOFILE = 9,  // Number of open files
 } RLimitResources;
 
-enum Signals
+typedef enum
 {
     PAL_SIGKILL = 9, /* kill the specified process */
-};
+} Signals;
 
 /**
  * Constants for passing to the first parameter of syslog.
@@ -165,10 +162,10 @@ typedef struct
  * so make it the largest possible value here and then we will
  * copy to native as necessary
  */
-struct CpuSetBits
+typedef struct
 {
     uint64_t Bits[16]; // __CPU_SETSIZE / (8 * sizeof(int64_t))
-};
+} CpuSetBits;
 
 /**
  * Get the current limit for the specified resource of the current process.
@@ -274,5 +271,3 @@ DLLEXPORT int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
  */
 DLLEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
 #endif
-
-END_EXTERN_C

@@ -28,15 +28,15 @@ typedef enum
     PAL_CURLMOPT_MAX_HOST_CONNECTIONS = 7,
 } PAL_CURLMoption;
 
-enum PAL_CurlPipe
+typedef enum
 {
     PAL_CURLPIPE_MULTIPLEX = 2,
-};
+} PAL_CurlPipe;
 
-enum PAL_CURLMSG
+typedef enum
 {
     PAL_CURLMSG_DONE = 1,
-};
+} PAL_CURLMSG;
 
 /*
 Creates a new CURLM instance.

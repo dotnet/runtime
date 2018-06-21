@@ -1,4 +1,4 @@
-project(System.IO.Compression.Native)
+project(System.IO.Compression.Native C)
 
 find_package(ZLIB REQUIRED)
 

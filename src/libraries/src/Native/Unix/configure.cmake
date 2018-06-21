@@ -1,6 +1,3 @@
-include(CheckCXXCompilerFlag)
-include(CheckCXXSourceCompiles)
-include(CheckCXXSourceRuns)
 include(CheckCSourceCompiles)
 include(CheckCSourceRuns)
 include(CheckFunctionExists)
@@ -32,13 +29,6 @@ endif ()
 # which are not distinguished from the test failing. So no error for that one.
 set(CMAKE_REQUIRED_FLAGS "-Werror -Wno-error=unused-value")
 
-# This compiler warning will fail code as innocuous as:
-# static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-# Check if the compiler knows about this warning so we can disable it
-check_cxx_compiler_flag(
-    -Wzero-as-null-pointer-constant
-    HAVE_ZERO_AS_NULL_POINTER_CONSTANT_FLAG)
-
 # in_pktinfo: Find whether this struct exists
 check_include_files(
     "sys/socket.h;linux/in.h"
@@ -54,7 +44,7 @@ check_c_source_compiles(
     "
     #include <sys/socket.h>
     #include <${SOCKET_INCLUDES}>
-    int main()
+    int main(void)
     {
         struct in_pktinfo pktinfo;
         return 0;
@@ -66,7 +56,7 @@ check_c_source_compiles(
     "
     #include <sys/socket.h>
     #include <${SOCKET_INCLUDES}>
-    int main()
+    int main(void)
     {
         struct ip_mreqn mreqn;
         return 0;
@@ -79,7 +69,7 @@ check_c_source_compiles(
 check_c_source_compiles(
     "
     #include <fcntl.h>
-    int main()
+    int main(void)
     {
         struct flock64 l;
         return 0;
@@ -246,7 +236,7 @@ set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 check_c_source_compiles(
     "
     #include <string.h>
-    int main()
+    int main(void)
     {
         char buffer[1];
         char c = *strerror_r(0, buffer, 0);
@@ -298,7 +288,7 @@ check_struct_has_member(
 check_c_source_compiles(
     "
     #include <sys/sendfile.h>
-    int main() { int i = sendfile(0, 0, 0, 0); return 0; }
+    int main(void) { int i = sendfile(0, 0, 0, 0); return 0; }
     "
     HAVE_SENDFILE_4)
 
@@ -308,7 +298,7 @@ check_c_source_compiles(
     #include <sys/types.h>
     #include <sys/socket.h>
     #include <sys/uio.h>
-    int main() { int i = sendfile(0, 0, 0, NULL, NULL, 0); return 0; }
+    int main(void) { int i = sendfile(0, 0, 0, NULL, NULL, 0); return 0; }
     "
     HAVE_SENDFILE_6)
 
@@ -338,7 +328,7 @@ check_c_source_compiles(
      #include <sys/types.h>
      #include <netdb.h>
 
-     int main()
+     int main(void)
      {
         const struct sockaddr *addr;
         socklen_t addrlen;
@@ -365,32 +355,34 @@ if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     
 endif ()
 
-check_cxx_source_runs(
+check_c_source_runs(
     "
     #include <stdlib.h>
     #include <time.h>
     #include <sys/time.h>
-    int main()
+    int main(void)
     {
         int ret;
         struct timespec ts;
         ret = clock_gettime(CLOCK_MONOTONIC, &ts);
         exit(ret);
+        return 0;
     }
     "
     HAVE_CLOCK_MONOTONIC)
 
-check_cxx_source_runs(
+check_c_source_runs(
     "
     #include <stdlib.h>
     #include <time.h>
     #include <sys/time.h>
-    int main()
+    int main(void)
     {
         int ret;
         struct timespec ts;
         ret = clock_gettime(CLOCK_REALTIME, &ts);
         exit(ret);
+        return 0;
     }
     "
     HAVE_CLOCK_REALTIME)
@@ -418,7 +410,7 @@ check_c_source_compiles(
     "
     #include <sys/socket.h>
 
-    int main()
+    int main(void)
     {
         int fd;
         struct sockaddr* addr;
@@ -436,7 +428,7 @@ check_c_source_compiles(
     #include <netinet/in.h>
     #include <netinet/tcp.h>
 
-    int main()
+    int main(void)
     {
         struct ipv6_mreq opt;
         unsigned int index = 0;
@@ -451,7 +443,7 @@ check_c_source_compiles(
     "
     #include <sys/inotify.h>
 
-    int main()
+    int main(void)
     {
         intptr_t fd;
         uint32_t wd;
@@ -468,7 +460,7 @@ check_c_source_runs(
     #include <fcntl.h>
     #include <unistd.h>
 
-    int main()
+    int main(void)
     {
         int fd = shm_open(\"/corefx_configure_shm_open\", O_CREAT | O_RDWR, 0777);
         if (fd == -1)
@@ -507,7 +499,7 @@ check_c_source_compiles(
     #include <unistd.h>
     #include <string.h>
 
-    int main()
+    int main(void)
     {
         return mkstemps(\"abc\", 3);
     }
@@ -520,7 +512,7 @@ check_c_source_compiles(
     #include <unistd.h>
     #include <string.h>
 
-    int main()
+    int main(void)
     {
         return mkstemp(\"abc\");
     }
@@ -538,7 +530,7 @@ check_c_source_compiles(
     #include <netinet/ip.h>
     #include <netinet/tcp.h>
     #include <netinet/tcp_var.h>
-    int main() { return 0; }
+    int main(void) { return 0; }
     "
     HAVE_TCP_VAR_H
 )
@@ -559,7 +551,7 @@ check_c_source_compiles(
     #include <sys/cdefs.h>
 #endif
     #include <netinet/tcp.h>
-    int main() { int x = TCP_ESTABLISHED; return x; }
+    int main(void) { int x = TCP_ESTABLISHED; return x; }
     "
     HAVE_TCP_H_TCPSTATE_ENUM
 )
@@ -572,14 +564,12 @@ check_symbol_exists(
     HAVE_TCP_FSM_H
 )
 
-check_cxx_source_compiles(
-    "
-    #include <sys/types.h>
-    #include <net/route.h>
-    int main() { rt_msghdr* hdr; return 0; }
-    "
-    HAVE_RT_MSGHDR
-)
+set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h net/route.h)
+check_type_size(
+    "struct rt_msghdr"
+     HAVE_RT_MSGHDR
+     BUILTIN_TYPES_ONLY)
+set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 
 check_include_files(
     "sys/types.h;sys/sysctl.h"
@@ -608,7 +598,7 @@ set (CMAKE_REQUIRED_FLAGS "-Werror -Weverything")
 check_c_source_compiles(
     "
     #include <unistd.h>
-    int main() { size_t namelen = 20; char name[20]; getdomainname(name, namelen); return 0; }
+    int main(void) { size_t namelen = 20; char name[20]; getdomainname(name, namelen); return 0; }
     "
     HAVE_GETDOMAINNAME_SIZET
 )
@@ -633,31 +623,31 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
     message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
 endif()
 
-check_cxx_source_compiles(
+check_c_source_compiles(
     "
     #include <curl/multi.h>
-    int main() { int i = CURLM_ADDED_ALREADY; return 0; }
+    int main(void) { int i = CURLM_ADDED_ALREADY; return 0; }
     "
     HAVE_CURLM_ADDED_ALREADY)
 
-check_cxx_source_compiles(
+check_c_source_compiles(
     "
     #include <curl/multi.h>
-    int main() { int i = CURL_HTTP_VERSION_2TLS; return 0; }
+    int main(void) { int i = CURL_HTTP_VERSION_2TLS; return 0; }
     "
     HAVE_CURL_HTTP_VERSION_2TLS)
 
-check_cxx_source_compiles(
+check_c_source_compiles(
     "
     #include <curl/multi.h>
-    int main() { int i = CURLPIPE_MULTIPLEX; return 0; }
+    int main(void) { int i = CURLPIPE_MULTIPLEX; return 0; }
     "
     HAVE_CURLPIPE_MULTIPLEX)
 
-check_cxx_source_compiles(
+check_c_source_compiles(
     "
     #include <curl/curl.h>
-    int main()
+    int main(void)
     {
         int i = CURL_SSLVERSION_TLSv1_0;
         i = CURL_SSLVERSION_TLSv1_1;
@@ -706,10 +696,10 @@ endif ()
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 
 if (HAVE_CRT_EXTERNS_H)
-    check_cxx_source_compiles(
+    check_c_source_compiles(
     "
     #include <crt_externs.h>
-    int main() { char** e = *(_NSGetEnviron()); return 0; }
+    int main(void) { char** e = *(_NSGetEnviron()); return 0; }
     "
     HAVE_NSGETENVIRON)
 endif()
@@ -719,7 +709,7 @@ set (CMAKE_REQUIRED_LIBRARIES)
 check_c_source_compiles(
     "
     #include <sys/inotify.h>
-    int main()
+    int main(void)
     {
         uint32_t mask = IN_EXCL_UNLINK;
         return 0;
@@ -730,7 +720,7 @@ check_c_source_compiles(
 check_c_source_compiles(
     "
     #include <netinet/tcp.h>
-    int main()
+    int main(void)
     {
         int x = TCP_KEEPALIVE;
         return x;
