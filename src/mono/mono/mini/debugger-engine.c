@@ -21,6 +21,10 @@
 #include "debugger-state-machine.h"
 #include <mono/metadata/debug-internals.h>
 
+static void mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args);
+static gboolean mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls, MonoContext *ctx, MonoMethod* method);
+
+
 static DebuggerEngineCallbacks rt_callbacks;
 
 /*
@@ -881,7 +885,7 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
  *
  * Return FALSE if single stepping needs to continue.
  */
-gboolean
+static gboolean
 mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls, MonoContext *ctx, MonoMethod* method)
 {
 	MonoDebugMethodInfo *minfo;
@@ -1247,7 +1251,7 @@ is_last_non_empty (SeqPoint* sp, MonoSeqPointInfo *info)
  * belong to the same thread as CTX.
  * If FRAMES is not-null, use that instead of tls->frames for placing breakpoints etc.
  */
-void
+static void
 mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 {
 	int i, j, frame_index;
