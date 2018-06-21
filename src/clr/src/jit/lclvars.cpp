@@ -3517,7 +3517,7 @@ void Compiler::lvaSortByRefCount()
 
 #ifdef DEBUG
     // Re-Initialize to -1 for safety in debug build.
-    memset(lvaTrackedToVarNum, -1, lclMAX_TRACKED);
+    memset(lvaTrackedToVarNum, -1, lclMAX_TRACKED * sizeof(unsigned));
 #endif
 
     /* Assign indices to all the variables we've decided to track */
