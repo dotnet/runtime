@@ -2375,8 +2375,8 @@ DebuggerLazyInit::DebuggerLazyInit() :
     m_CtrlCMutex(NULL),
     m_exAttachEvent(NULL),
     m_exUnmanagedAttachEvent(NULL),
-    m_DebuggerHandlingCtrlC(NULL),
-    m_garbageCollectionBlockerEvent(NULL)
+    m_garbageCollectionBlockerEvent(NULL),
+    m_DebuggerHandlingCtrlC(NULL)
 {
 }
 
