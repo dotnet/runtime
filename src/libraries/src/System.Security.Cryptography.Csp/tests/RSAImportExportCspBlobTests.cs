@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Exponent = TestData.RSA1024Params.Exponent,
             };
 
-            ImportExport.AssertKeyEquals(ref expected, ref exported);
+            ImportExport.AssertKeyEquals(expected, exported);
         }
 
         [Fact]
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             RSAParameters expected = TestData.RSA1024Params;
 
-            ImportExport.AssertKeyEquals(ref expected, ref exported);
+            ImportExport.AssertKeyEquals(expected, exported);
         }
     }
 }
