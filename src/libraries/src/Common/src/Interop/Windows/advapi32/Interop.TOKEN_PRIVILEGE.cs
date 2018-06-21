@@ -10,10 +10,10 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        internal unsafe partial struct TOKEN_PRIVILEGE
+        internal struct TOKEN_PRIVILEGE
         {
             public uint PrivilegeCount;
-            public InlineArray_LUID_AND_ATTRIBUTES_1 Privileges;
+            public LUID_AND_ATTRIBUTES Privileges /*[ANYSIZE_ARRAY]*/;
         }
     }
 }
