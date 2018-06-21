@@ -23,6 +23,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private string _testArtifactDirectory;
         private string _currentRid;
         private string _framework;
+        private string _assemblyName;
 
         private RepoDirectoriesProvider _repoDirectoriesProvider;
 
@@ -53,7 +54,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string dotnetInstallPath = null,
             string currentRid = null,
             string builtDotnetOutputPath = null,
-            string framework = null)
+            string framework = null,
+            string assemblyName = null)
         {
             ValidateRequiredDirectories(repoDirectoriesProvider);
 
@@ -78,13 +80,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _currentRid = currentRid ?? repoDirectoriesProvider.TargetRID;
 
             _builtDotnet = new DotNetCli(repoDirectoriesProvider.BuiltDotnet);
+
+            _assemblyName = assemblyName;
+
             InitializeTestProject(
                 _testProjectName,
                 _testProjectSourceDirectory,
                 _testArtifactDirectory,
                 _exeExtension,
                 _sharedLibraryExtension,
-                _sharedLibraryPrefix);
+                _sharedLibraryPrefix,
+                _assemblyName);
         }
 
         public TestProjectFixture(TestProjectFixture fixtureToCopy)
@@ -101,13 +107,15 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _builtDotnet = fixtureToCopy._builtDotnet;
             _sourceTestProject = fixtureToCopy._sourceTestProject;
             _framework = fixtureToCopy._framework;
+            _assemblyName = fixtureToCopy._assemblyName;
 
             _testProject = CopyTestProject(
                 fixtureToCopy.TestProject,
                 _testArtifactDirectory,
                 _exeExtension,
                 _sharedLibraryExtension,
-                _sharedLibraryPrefix);
+                _sharedLibraryPrefix,
+                _assemblyName);
         }
 
         private void InitializeTestProject(
@@ -116,21 +124,24 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string testArtifactDirectory,
             string exeExtension,
             string sharedLibraryExtension,
-            string sharedLibraryPrefix)
+            string sharedLibraryPrefix,
+            string assemblyName)
         {
             var sourceTestProjectPath = Path.Combine(testProjectSourceDirectory, testProjectName);
             _sourceTestProject = new TestProject(
                 sourceTestProjectPath,
                 exeExtension,
                 sharedLibraryExtension,
-                sharedLibraryPrefix);
+                sharedLibraryPrefix,
+                assemblyName: assemblyName);
 
             _testProject = CopyTestProject(
                 _sourceTestProject,
                 testArtifactDirectory,
                 exeExtension,
                 sharedLibraryExtension,
-                sharedLibraryPrefix);
+                sharedLibraryPrefix,
+                assemblyName);
         }
 
         private TestProject CopyTestProject(
@@ -138,7 +149,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string testArtifactDirectory,
             string exeExtension,
             string sharedLibraryExtension,
-            string sharedLibraryPrefix)
+            string sharedLibraryPrefix,
+            string assemblyName)
         {
             string copiedTestProjectDirectory = CalculateTestProjectDirectory(
                 sourceTestProject.ProjectName,
@@ -151,7 +163,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 copiedTestProjectDirectory,
                 exeExtension,
                 sharedLibraryExtension,
-                sharedLibraryPrefix);
+                sharedLibraryPrefix,
+                assemblyName: assemblyName);
         }
 
         private void EnsureDirectoryBuildProps(string testArtifactDirectory)

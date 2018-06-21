@@ -19,8 +19,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 {
     public class GivenThatICareAboutStandaloneAppActivation
     {
-        private static TestProjectFixture PreviouslyBuiltAndRestoredStandaloneTestProjectFixture { get; set; }
-        private static TestProjectFixture PreviouslyPublishedAndRestoredStandaloneTestProjectFixture { get; set; }
+        public static TestProjectFixture PreviouslyBuiltAndRestoredStandaloneTestProjectFixture { get; private set; }
+        public static TestProjectFixture PreviouslyPublishedAndRestoredStandaloneTestProjectFixture { get; private set; }
         private static RepoDirectoriesProvider RepoDirectories { get; set; }
 
         static GivenThatICareAboutStandaloneAppActivation()
