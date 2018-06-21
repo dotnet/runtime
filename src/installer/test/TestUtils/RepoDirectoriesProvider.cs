@@ -41,7 +41,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string builtDotnet = null,
             string nugetPackages = null,
             string corehostPackages = null,
-            string dotnetSdk = null)
+            string dotnetSdk = null,
+            string microsoftNETCoreAppVersion = null)
         {
             _repoRoot = repoRoot ?? GetRepoRootDirectory();
 
@@ -50,7 +51,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _targetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
             _buildRID = Environment.GetEnvironmentVariable("BUILDRID");
             _buildArchitecture = Environment.GetEnvironmentVariable("BUILD_ARCHITECTURE");
-            _mnaVersion = Environment.GetEnvironmentVariable("MNA_VERSION");
+            _mnaVersion = microsoftNETCoreAppVersion ?? Environment.GetEnvironmentVariable("MNA_VERSION");
 
             string configuration = Environment.GetEnvironmentVariable("BUILD_CONFIGURATION");
             string osPlatformConfig = $"{_buildRID}.{configuration}";

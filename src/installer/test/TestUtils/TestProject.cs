@@ -24,12 +24,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private string _appExe;
         private string _hostPolicyDll;
         private string _hostFxrDll;
+        private string _assemblyName;
 
         public string ProjectDirectory => _projectDirectory;
         public string ProjectName => _projectName;
 
         public string OutputDirectory { get { return _outputDirectory; } set { _outputDirectory = value; } }
         public string ExeExtension { get { return _exeExtension; } set { _exeExtension = value; } }
+        public string AssemblyName { get { return _assemblyName; } set { _assemblyName = value; } }
         public string ProjectFile { get { return _projectFile; } set { _projectFile = value; } }
         public string ProjectAssetsJson { get { return _projectAssetsJson; } set { _projectAssetsJson = value; } }
         public string RuntimeConfigJson { get { return _runtimeConfigJson; } set { _runtimeConfigJson = value; } }
@@ -45,13 +47,15 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string exeExtension,
             string sharedLibraryExtension,
             string sharedLibraryPrefix,
-            string outputDirectory = null)
+            string outputDirectory = null,
+            string assemblyName = null)
         {
             _projectDirectory = projectDirectory;
             _exeExtension = exeExtension;
             _sharedLibraryExtension = sharedLibraryExtension;
             _sharedLibraryPrefix = sharedLibraryPrefix;
             _projectName = Path.GetFileName(_projectDirectory);
+            _assemblyName = assemblyName ?? _projectName;
             _projectFile = Path.Combine(_projectDirectory, $"{_projectName}.csproj");
             _projectAssetsJson = Path.Combine(_projectDirectory, "obj", "project.assets.json");
 
@@ -69,11 +73,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public void LoadOutputFiles()
         {
-            _appDll = Path.Combine(_outputDirectory, $"{_projectName}.dll");
-            _appExe = Path.Combine(_outputDirectory, $"{_projectName}{_exeExtension}");
-            _depsJson = Path.Combine(_outputDirectory, $"{_projectName}.deps.json");
-            _runtimeConfigJson = Path.Combine(_outputDirectory, $"{_projectName}.runtimeconfig.json");
-            _runtimeDevConfigJson = Path.Combine(_outputDirectory, $"{_projectName}.runtimeconfig.dev.json");
+            _appDll = Path.Combine(_outputDirectory, $"{_assemblyName}.dll");
+            _appExe = Path.Combine(_outputDirectory, $"{_assemblyName}{_exeExtension}");
+            _depsJson = Path.Combine(_outputDirectory, $"{_assemblyName}.deps.json");
+            _runtimeConfigJson = Path.Combine(_outputDirectory, $"{_assemblyName}.runtimeconfig.json");
+            _runtimeDevConfigJson = Path.Combine(_outputDirectory, $"{_assemblyName}.runtimeconfig.dev.json");
             _hostPolicyDll = Path.Combine(_outputDirectory, $"{_sharedLibraryPrefix}hostpolicy{_sharedLibraryExtension}");
             _hostFxrDll = Path.Combine(_outputDirectory, $"{_sharedLibraryPrefix}hostfxr{_sharedLibraryExtension}");
         }
