@@ -10,7 +10,7 @@ namespace System.Collections.Generic
     // We use NonRandomizedStringEqualityComparer as default comparer as it doesnt use the randomized string hashing which 
     // keeps the performance not affected till we hit collision threshold and then we switch to the comparer which is using 
     // randomized string hashing.
-    [Serializable] // Required for compatibility with .NET Core 2.1 as we exposed the NonRandomizedStringEqualityComparer inside the serialization blob
+    [Serializable] // Required for compatibility with .NET Core 2.0 as we exposed the NonRandomizedStringEqualityComparer inside the serialization blob
     // Needs to be public to support binary serialization compatibility
     public sealed class NonRandomizedStringEqualityComparer : EqualityComparer<string>, ISerializable
     {
