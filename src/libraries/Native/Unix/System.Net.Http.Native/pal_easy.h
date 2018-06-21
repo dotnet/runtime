@@ -90,15 +90,15 @@ enum
     CurlInfoLongBase = 0x200000,
 };
 
-enum PAL_CURL_HTTP_VERSION
+typedef enum
 {
     PAL_CURL_HTTP_VERSION_NONE = 0,
     PAL_CURL_HTTP_VERSION_1_0 = 1,
     PAL_CURL_HTTP_VERSION_1_1 = 2,
     PAL_CURL_HTTP_VERSION_2TLS = 4
-};
+} PAL_CURL_HTTP_VERSION;
 
-enum PAL_CURL_SSLVERSION
+typedef enum
 {
     PAL_CURL_SSLVERSION_TLSv1 = 1,
     PAL_CURL_SSLVERSION_SSLv2 = 2,
@@ -106,7 +106,7 @@ enum PAL_CURL_SSLVERSION
     PAL_CURL_SSLVERSION_TLSv1_0 = 4,
     PAL_CURL_SSLVERSION_TLSv1_1 = 5,
     PAL_CURL_SSLVERSION_TLSv1_2 = 6,
-};
+} PAL_CURL_SSLVERSION;
 
 typedef enum
 {
@@ -115,32 +115,32 @@ typedef enum
     PAL_CURLINFO_HTTPAUTH_AVAIL = CurlInfoLongBase + 23,
 } PAL_CURLINFO;
 
-enum PAL_CURLAUTH
+typedef enum
 {
     PAL_CURLAUTH_None = 0,
     PAL_CURLAUTH_Basic = 1 << 0,
     PAL_CURLAUTH_Digest = 1 << 1,
     PAL_CURLAUTH_Negotiate = 1 << 2,
     PAL_CURLAUTH_NTLM = 1 << 3,
-};
+} PAL_CURLAUTH;
 
-enum PAL_CURLPROXYTYPE
+typedef enum
 {
     PAL_CURLPROXY_HTTP = 0,
-};
+} PAL_CURLPROXYTYPE;
 
-enum PAL_CURLPROTO
+typedef enum
 {
     PAL_CURLPROTO_HTTP = (1 << 0),
     PAL_CURLPROTO_HTTPS = (1 << 1),
-};
+} PAL_CURLPROTO;
 
-enum PAL_CurlSeekResult
+typedef enum
 {
     PAL_CURL_SEEKFUNC_OK = 0,
     PAL_CURL_SEEKFUNC_FAIL = 1,
     PAL_CURL_SEEKFUNC_CANTSEEK = 2,
-};
+} PAL_CurlSeekResult;
 
 typedef enum
 {

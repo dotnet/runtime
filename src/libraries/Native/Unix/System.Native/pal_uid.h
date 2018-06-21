@@ -5,9 +5,6 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 #include <sys/types.h>
 
@@ -67,5 +64,3 @@ DLLEXPORT uint32_t SystemNative_GetEGid(void);
 * Returns 0 for success. On error, -1 is returned and errno is set.
 */
 DLLEXPORT int32_t SystemNative_SetEUid(uid_t euid);
-
-END_EXTERN_C

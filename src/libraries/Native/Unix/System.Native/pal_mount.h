@@ -5,9 +5,6 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 
 /**
@@ -50,5 +47,3 @@ DLLEXPORT int32_t SystemNative_GetFormatInfoForMountPoint(
  * as much as possible.
  */
 DLLEXPORT int32_t SystemNative_GetAllMountPoints(MountPointFound onFound);
-
-END_EXTERN_C
