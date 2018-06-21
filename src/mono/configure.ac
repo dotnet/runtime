@@ -3741,7 +3741,7 @@ if test "x$enable_llvm" = "xyes"; then
 	if test "x$with_llvm" != "x"; then
 		LLVM_CONFIG=$with_llvm/bin/llvm-config
 		if test ! -x $LLVM_CONFIG; then
-			internal_llvm=yes
+			AC_MSG_ERROR([LLVM executable $LLVM_CONFIG not found.])
 		fi
 	else
 		AC_PATH_PROG(LLVM_CONFIG, llvm-config, no)
@@ -3778,8 +3778,16 @@ if test "x$enable_llvm" = "xyes"; then
 	AC_DEFINE(ENABLE_LLVM, 1, [Enable the LLVM back end])
 fi # ENABLE_LLVM
 
+# AC_DEFINE necessary for correct restore behavior on Linux
 AM_CONDITIONAL(INTERNAL_LLVM, [test "x$internal_llvm" != "xno"])
+if test "x$internal_llvm" != "xno"; then
+   AC_DEFINE(INTERNAL_LLVM, 1, [LLVM used is being build during mono build])
+fi
+
 AM_CONDITIONAL(INTERNAL_LLVM_ASSERTS, [test "x$enable_llvm_asserts" != "xno"])
+if test "x$internal_llvm_asserts" != "xno"; then
+   AC_DEFINE(INTERNAL_LLVM_ASSERTS, 1, [Build LLVM with assertions])
+fi
 
 AM_CONDITIONAL(ENABLE_LLVM, [test x$enable_llvm = xyes])
 
