@@ -2425,32 +2425,34 @@ inline
         {
             *pBaseReg = REG_FPBASE;
         }
-        // Change the FP-based addressing to the SP-based addressing when possible because
+        // Change the Frame Pointer (R11)-based addressing to the SP-based addressing when possible because
         // it generates smaller code on ARM. See frame picture above for the math.
         else
         {
             // If it is the final frame layout phase, we don't have a choice, we should stick
             // to either FP based or SP based that we decided in the earlier phase. Because
-            // we have already selected the instruction. Min-opts will have R10 enabled, so just
-            // use that.
+            // we have already selected the instruction. MinOpts will always reserve R10, so
+            // for MinOpts always use SP-based offsets, using R10 as necessary, for simplicity.
 
-            int spOffset       = fConservative ? compLclFrameSize : offset + codeGen->genSPtoFPdelta();
-            int actualOffset   = (spOffset + addrModeOffset);
-            int ldrEncodeLimit = (varTypeIsFloating(type) ? 0x3FC : 0xFFC);
-            // Use ldr sp imm encoding.
-            if (opts.MinOpts() || (actualOffset <= ldrEncodeLimit))
+            int spOffset           = fConservative ? compLclFrameSize : offset + codeGen->genSPtoFPdelta();
+            int actualOffset       = spOffset + addrModeOffset;
+            int encodingLimitUpper = varTypeIsFloating(type) ? 0x3FC : 0xFFF;
+            int encodingLimitLower = varTypeIsFloating(type) ? -0x3FC : -0xFF;
+
+            // Use SP-based encoding. During encoding, we'll pick the best encoding for the actual offset we have.
+            if (opts.MinOpts() || (actualOffset <= encodingLimitUpper))
             {
                 offset    = spOffset;
                 *pBaseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : REG_SPBASE;
             }
-            // Use ldr +/-imm8 encoding.
-            else if (offset >= -0x7C && offset <= ldrEncodeLimit)
+            // Use Frame Pointer (R11)-based encoding.
+            else if ((encodingLimitLower <= offset) && (offset <= encodingLimitUpper))
             {
                 *pBaseReg = REG_FPBASE;
             }
-            // Otherwise, use SP. This is either (1) a small positive offset using a single movw, (2)
-            // a large offset using movw/movt. In either case, we must have already reserved
-            // the "reserved register".
+            // Otherwise, use SP-based encoding. This is either (1) a small positive offset using a single movw,
+            // (2) a large offset using movw/movt. In either case, we must have already reserved
+            // the "reserved register", which will get used during encoding.
             else
             {
                 offset    = spOffset;
