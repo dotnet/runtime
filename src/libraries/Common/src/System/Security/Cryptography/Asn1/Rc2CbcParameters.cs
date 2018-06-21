@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.Asn1;
 
-namespace System.Security.Cryptography.Pkcs.Asn1
+namespace System.Security.Cryptography.Asn1
 {
     // https://tools.ietf.org/html/rfc3370#section-5.2 (CMS Algorithms, RC2-CBC) says
     //
