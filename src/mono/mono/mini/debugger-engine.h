@@ -263,7 +263,6 @@ void mono_de_process_single_step (void *tls, gboolean from_signal);
 void mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args);
 gboolean mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls, MonoContext *ctx, MonoMethod* method);
 DbgEngineErrorCode mono_de_ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilter filter, EventRequest *req);
-void mono_de_ss_req_release (SingleStepReq *req);
 void mono_de_cancel_ss (void);
 
 #endif

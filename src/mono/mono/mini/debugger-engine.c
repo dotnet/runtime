@@ -728,7 +728,7 @@ ss_req_acquire (void)
 	return req;
 }
 
-void
+static void
 mono_de_ss_req_release (SingleStepReq *req)
 {
 	gboolean free = FALSE;

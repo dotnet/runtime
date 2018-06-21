@@ -5792,7 +5792,7 @@ clear_event_request (int req_id, int etype)
 			if (req->event_kind == EVENT_KIND_BREAKPOINT)
 				mono_de_clear_breakpoint ((MonoBreakpoint *)req->info);
 			if (req->event_kind == EVENT_KIND_STEP) {
-				mono_de_ss_req_release ((SingleStepReq *)req->info);
+				mono_de_cancel_ss ();
 			}
 			if (req->event_kind == EVENT_KIND_METHOD_ENTRY)
 				mono_de_clear_breakpoint ((MonoBreakpoint *)req->info);
