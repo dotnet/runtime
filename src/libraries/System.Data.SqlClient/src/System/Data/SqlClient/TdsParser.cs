@@ -6047,7 +6047,7 @@ namespace System.Data.SqlClient
                         _physicalStateObj.WriteByteArray(fedAuthFeatureData.accessToken, fedAuthFeatureData.accessToken.Length, 0);
                         break;
                     default:
-                        Debug.Assert(false, "Unrecognized FedAuthLibrary type for feature extension request");
+                        Debug.Fail("Unrecognized FedAuthLibrary type for feature extension request");
                         break;
                 }
             }

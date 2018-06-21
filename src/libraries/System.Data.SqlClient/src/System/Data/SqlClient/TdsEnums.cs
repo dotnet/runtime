@@ -86,7 +86,7 @@ namespace System.Data.SqlClient
         public const byte MT_BINARY = 5;    // Unformatted binary response data (UNUSED)
         public const byte MT_ATTN = 6;    // Attention (break) signal
         public const byte MT_BULK = 7;    // Bulk load data
-        public const byte MT_FEDAUTH = 8;    // Authentication token for federated authentication
+        public const byte MT_OPEN = 8;    // Set up subchannel   (UNUSED)
         public const byte MT_CLOSE = 9;    // Close subchannel   (UNUSED)
         public const byte MT_ERROR = 10;   // Protocol error detected
         public const byte MT_ACK = 11;   // Protocol acknowledgement   (UNUSED)
