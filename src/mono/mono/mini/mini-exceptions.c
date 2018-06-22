@@ -3061,6 +3061,10 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 	g_free (names);
 
 	/* Try to get more meaningful information using gdb */
+	char *debugger_log = mono_debugger_state_str ();
+	if (debugger_log) {
+		fprintf (stderr, "\n\tDebugger session state:\n%s\n", debugger_log);
+	}
 
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && (defined(SYS_fork) || HAVE_FORK)
 	if (!mini_get_debug_options ()->no_gdb_backtrace) {
@@ -3169,11 +3173,6 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 	mono_runtime_printf_err ("\nNo native Android stacktrace (see debuggerd output).\n");
 #endif
 #endif
-
-	char *debugger_log = mono_debugger_state_str ();
-	if (debugger_log) {
-		fprintf (stderr, "\n\tDebugger session state:\n%s\n", debugger_log);
-	}
 
 	/*
 	 * A SIGSEGV indicates something went very wrong so we can no longer depend
