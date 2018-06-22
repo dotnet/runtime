@@ -310,6 +310,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory, MemberData(nameof(BrainpoolCurves))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "brainpool GetECDsaPublicKey fails on current netfx")]
         public static void TestKey_ECDsabrainpool_PublicKey(byte[] curveData, byte[] notUsed)
         {
             byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
@@ -390,6 +391,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory, MemberData(nameof(BrainpoolCurves))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "brainpool GetECDsaPublicKey fails on current netfx")]
         public static void TestECDsaPublicKey_BrainpoolP160r1_ValidatesSignature(byte[] curveData, byte[] existingSignature)
         {
             byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
@@ -474,7 +476,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
-        
+
+#if !NO_DSA_AVAILABLE
         [Fact]
         public static void TestDSAPublicKey()
         {
@@ -524,6 +527,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Null(pubKey);
             }
         }
+#endif
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
@@ -548,6 +552,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "brainpool GetECDsaPublicKey fails on current netfx")]
         public static void TestKey_BrainpoolP160r1()
         {
             if (PlatformDetection.WindowsVersion >= 10)
