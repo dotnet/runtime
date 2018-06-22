@@ -180,6 +180,16 @@ namespace System.Drawing
                 GdipDeletePrivateFontCollection_ptr = FunctionWrapper.Load<GdipDeletePrivateFontCollection_delegate>(s_gdipModule, "GdipDeletePrivateFontCollection", LibraryName);
                 GdipPrivateAddFontFile_ptr = FunctionWrapper.Load<GdipPrivateAddFontFile_delegate>(s_gdipModule, "GdipPrivateAddFontFile", LibraryName);
                 GdipPrivateAddMemoryFont_ptr = FunctionWrapper.Load<GdipPrivateAddMemoryFont_delegate>(s_gdipModule, "GdipPrivateAddMemoryFont", LibraryName);
+                GdipCreateFont_ptr = FunctionWrapper.Load<GdipCreateFont_delegate>(s_gdipModule, "GdipCreateFont", LibraryName);
+                GdipCloneFont_ptr = FunctionWrapper.Load<GdipCloneFont_delegate>(s_gdipModule, "GdipCloneFont", LibraryName);
+                GdipDeleteFont_ptr = FunctionWrapper.Load<GdipDeleteFont_delegate>(s_gdipModule, "GdipDeleteFont", LibraryName);
+                GdipGetFamily_ptr = FunctionWrapper.Load<GdipGetFamily_delegate>(s_gdipModule, "GdipGetFamily", LibraryName);
+                GdipGetFontStyle_ptr = FunctionWrapper.Load<GdipGetFontStyle_delegate>(s_gdipModule, "GdipGetFontStyle", LibraryName);
+                GdipGetFontSize_ptr = FunctionWrapper.Load<GdipGetFontSize_delegate>(s_gdipModule, "GdipGetFontSize", LibraryName);
+                GdipGetFontHeight_ptr = FunctionWrapper.Load<GdipGetFontHeight_delegate>(s_gdipModule, "GdipGetFontHeight", LibraryName);
+                GdipGetFontHeightGivenDPI_ptr = FunctionWrapper.Load<GdipGetFontHeightGivenDPI_delegate>(s_gdipModule, "GdipGetFontHeightGivenDPI", LibraryName);
+                GdipGetFontUnit_ptr = FunctionWrapper.Load<GdipGetFontUnit_delegate>(s_gdipModule, "GdipGetFontUnit", LibraryName);
+                GdipGetLogFontW_ptr = FunctionWrapper.Load<GdipGetLogFontW_delegate>(s_gdipModule, "GdipGetLogFontW", LibraryName);
                 GdipCreatePen1_ptr = FunctionWrapper.Load<GdipCreatePen1_delegate>(s_gdipModule, "GdipCreatePen1", LibraryName);
                 GdipCreatePen2_ptr = FunctionWrapper.Load<GdipCreatePen2_delegate>(s_gdipModule, "GdipCreatePen2", LibraryName);
                 GdipClonePen_ptr = FunctionWrapper.Load<GdipClonePen_delegate>(s_gdipModule, "GdipClonePen", LibraryName);
@@ -1020,6 +1030,48 @@ namespace System.Drawing
             private delegate int GdipPrivateAddMemoryFont_delegate(HandleRef fontCollection, HandleRef memory, int length);
             private static FunctionWrapper<GdipPrivateAddMemoryFont_delegate> GdipPrivateAddMemoryFont_ptr;
             internal static int GdipPrivateAddMemoryFont(HandleRef fontCollection, HandleRef memory, int length) => GdipPrivateAddMemoryFont_ptr.Delegate(fontCollection, memory, length);
+
+            private delegate int GdipCreateFont_delegate(HandleRef fontFamily, float emSize, FontStyle style, GraphicsUnit unit, out IntPtr font);
+            private static FunctionWrapper<GdipCreateFont_delegate> GdipCreateFont_ptr;
+            internal static int GdipCreateFont(HandleRef fontFamily, float emSize, FontStyle style, GraphicsUnit unit, out IntPtr font) => GdipCreateFont_ptr.Delegate(fontFamily, emSize, style, unit, out font);
+
+            private delegate int GdipCloneFont_delegate(HandleRef font, out IntPtr cloneFont);
+            private static FunctionWrapper<GdipCloneFont_delegate> GdipCloneFont_ptr;
+            internal static int GdipCloneFont(HandleRef font, out IntPtr cloneFont) => GdipCloneFont_ptr.Delegate(font, out cloneFont);
+
+            private delegate int GdipDeleteFont_delegate(HandleRef font);
+            private static FunctionWrapper<GdipDeleteFont_delegate> GdipDeleteFont_ptr;
+            internal static int IntGdipDeleteFont(HandleRef font) => GdipDeleteFont_ptr.Delegate(font);
+
+            private delegate int GdipGetFamily_delegate(HandleRef font, out IntPtr family);
+            private static FunctionWrapper<GdipGetFamily_delegate> GdipGetFamily_ptr;
+            internal static int GdipGetFamily(HandleRef font, out IntPtr family) => GdipGetFamily_ptr.Delegate(font, out family);
+
+            private delegate int GdipGetFontStyle_delegate(HandleRef font, out FontStyle style);
+            private static FunctionWrapper<GdipGetFontStyle_delegate> GdipGetFontStyle_ptr;
+            internal static int GdipGetFontStyle(HandleRef font, out FontStyle style) => GdipGetFontStyle_ptr.Delegate(font, out style);
+
+            private delegate int GdipGetFontSize_delegate(HandleRef font, out float size);
+            private static FunctionWrapper<GdipGetFontSize_delegate> GdipGetFontSize_ptr;
+            internal static int GdipGetFontSize(HandleRef font, out float size) => GdipGetFontSize_ptr.Delegate(font, out size);
+
+            private delegate int GdipGetFontHeight_delegate(HandleRef font, HandleRef graphics, out float size);
+            private static FunctionWrapper<GdipGetFontHeight_delegate> GdipGetFontHeight_ptr;
+            internal static int GdipGetFontHeight(HandleRef font, HandleRef graphics, out float size) => GdipGetFontHeight_ptr.Delegate(font, graphics, out size);
+
+            private delegate int GdipGetFontHeightGivenDPI_delegate(HandleRef font, float dpi, out float size);
+            private static FunctionWrapper<GdipGetFontHeightGivenDPI_delegate> GdipGetFontHeightGivenDPI_ptr;
+            internal static int GdipGetFontHeightGivenDPI(HandleRef font, float dpi, out float size) => GdipGetFontHeightGivenDPI_ptr.Delegate(font, dpi, out size);
+
+            private delegate int GdipGetFontUnit_delegate(HandleRef font, out GraphicsUnit unit);
+            private static FunctionWrapper<GdipGetFontUnit_delegate> GdipGetFontUnit_ptr;
+            internal static int GdipGetFontUnit(HandleRef font, out GraphicsUnit unit) => GdipGetFontUnit_ptr.Delegate(font, out unit);
+
+#pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
+            private delegate int GdipGetLogFontW_delegate(HandleRef font, HandleRef graphics, [In] [Out] [MarshalAs(UnmanagedType.AsAny)]object lf);
+#pragma warning restore CS0618
+            private static FunctionWrapper<GdipGetLogFontW_delegate> GdipGetLogFontW_ptr;
+            internal static int GdipGetLogFontW(HandleRef font, HandleRef graphics, [In] [Out] object lf) => GdipGetLogFontW_ptr.Delegate(font, graphics, lf);
 
             private delegate int GdipCreatePen1_delegate(int argb, float width, int unit, out IntPtr pen);
             private static FunctionWrapper<GdipCreatePen1_delegate> GdipCreatePen1_ptr;
