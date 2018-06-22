@@ -15,22 +15,12 @@ namespace System.Threading
         // Win32 only takes maximum count of Int32.MaxValue
         public Semaphore(int initialCount, int maximumCount) : this(initialCount, maximumCount, null) { }
 
-        public Semaphore(int initialCount, int maximumCount, string name)
+        public Semaphore(int initialCount, int maximumCount, string name) :
+            this(initialCount, maximumCount, name, out _)
         {
-            VerifyCounts(initialCount, maximumCount);
-
-            bool createdNew;
-            CreateSemaphoreCore(initialCount, maximumCount, name, out createdNew);
         }
 
         public Semaphore(int initialCount, int maximumCount, string name, out bool createdNew)
-        {
-            VerifyCounts(initialCount, maximumCount);
-
-            CreateSemaphoreCore(initialCount, maximumCount, name, out createdNew);
-        }
-
-        private static void VerifyCounts(int initialCount, int maximumCount)
         {
             if (initialCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(initialCount), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -40,6 +30,8 @@ namespace System.Threading
 
             if (initialCount > maximumCount)
                 throw new ArgumentException(SR.Argument_SemaphoreInitialMaximum);
+
+            CreateSemaphoreCore(initialCount, maximumCount, name, out createdNew);
         }
 
         public static Semaphore OpenExisting(string name)
