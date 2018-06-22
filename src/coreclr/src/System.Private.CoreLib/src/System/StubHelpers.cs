@@ -609,7 +609,6 @@ namespace System.StubHelpers
     }  // class DateMarshaler
 
 #if FEATURE_COMINTEROP
-    // [FriendAccessAllowed]
     internal static class InterfaceMarshaler
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -621,7 +620,6 @@ namespace System.StubHelpers
         [DllImport(JitHelpers.QCall)]
         internal static extern void ClearNative(IntPtr pUnk);
 
-        // [FriendAccessAllowed]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object ConvertToManagedWithoutUnboxing(IntPtr pNative);
     }  // class InterfaceMarshaler
@@ -645,41 +643,6 @@ namespace System.StubHelpers
         }
     }  // class InterfaceMarshaler
 
-    // [FriendAccessAllowed]
-    internal static class EventArgsMarshaler
-    {
-        // [FriendAccessAllowed]
-        internal static IntPtr CreateNativeNCCEventArgsInstance(int action, object newItems, object oldItems, int newIndex, int oldIndex)
-        {
-            IntPtr newItemsIP = IntPtr.Zero;
-            IntPtr oldItemsIP = IntPtr.Zero;
-
-            RuntimeHelpers.PrepareConstrainedRegions();
-            try
-            {
-                if (newItems != null)
-                    newItemsIP = Marshal.GetComInterfaceForObject(newItems, typeof(IBindableVector));
-                if (oldItems != null)
-                    oldItemsIP = Marshal.GetComInterfaceForObject(oldItems, typeof(IBindableVector));
-
-                return CreateNativeNCCEventArgsInstanceHelper(action, newItemsIP, oldItemsIP, newIndex, oldIndex);
-            }
-            finally
-            {
-                if (oldItemsIP != IntPtr.Zero)
-                    Marshal.Release(oldItemsIP);
-                if (newItemsIP != IntPtr.Zero)
-                    Marshal.Release(newItemsIP);
-            }
-        }
-
-        // [FriendAccessAllowed]
-        [DllImport(JitHelpers.QCall)]
-        static internal extern IntPtr CreateNativePCEventArgsInstance([MarshalAs(UnmanagedType.HString)]string name);
-
-        [DllImport(JitHelpers.QCall)]
-        static internal extern IntPtr CreateNativeNCCEventArgsInstanceHelper(int action, IntPtr newItem, IntPtr oldItem, int newIndex, int oldIndex);
-    }
 #endif // FEATURE_COMINTEROP
 
     internal static class MngdNativeArrayMarshaler

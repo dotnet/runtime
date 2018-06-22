@@ -225,58 +225,6 @@ public:
         return m_hndSystemPCEventArgsType;
     }
 
-    ABI::Windows::UI::Xaml::Interop::INotifyCollectionChangedEventArgsFactory *GetNCCEventArgsFactory()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;    // For potential COOP->PREEMP->COOP switch
-            MODE_ANY;
-            PRECONDITION(!GetAppDomain()->IsCompilationDomain()); 
-        }
-        CONTRACTL_END;   
-
-        if (m_pNCCEventArgsFactory.Load() == NULL)
-        {
-            GCX_PREEMP();
-            SafeComHolderPreemp<ABI::Windows::UI::Xaml::Interop::INotifyCollectionChangedEventArgsFactory> pNCCEventArgsFactory;
-
-            IfFailThrow(clr::winrt::GetActivationFactory(g_WinRTNotifyCollectionChangedEventArgsNameW, (ABI::Windows::UI::Xaml::Interop::INotifyCollectionChangedEventArgsFactory **)&pNCCEventArgsFactory));
-            _ASSERTE_MSG(pNCCEventArgsFactory, "Got NULL NCCEventArgs factory!");
-
-            if (InterlockedCompareExchangeT(&m_pNCCEventArgsFactory, (ABI::Windows::UI::Xaml::Interop::INotifyCollectionChangedEventArgsFactory *)pNCCEventArgsFactory, NULL) == NULL)
-                pNCCEventArgsFactory.SuppressRelease();            
-        }
-
-        return m_pNCCEventArgsFactory;
-    }
-
-    ABI::Windows::UI::Xaml::Data::IPropertyChangedEventArgsFactory *GetPCEventArgsFactory()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;    // For potential COOP->PREEMP->COOP switch
-            MODE_ANY;
-            PRECONDITION(!GetAppDomain()->IsCompilationDomain()); 
-        }
-        CONTRACTL_END;   
-
-        if (m_pPCEventArgsFactory.Load() == NULL)
-        {
-            GCX_PREEMP();
-            SafeComHolderPreemp<ABI::Windows::UI::Xaml::Data::IPropertyChangedEventArgsFactory> pPCEventArgsFactory;
-
-            IfFailThrow(clr::winrt::GetActivationFactory(g_WinRTPropertyChangedEventArgsNameW, (ABI::Windows::UI::Xaml::Data::IPropertyChangedEventArgsFactory **)&pPCEventArgsFactory));
-            _ASSERTE_MSG(pPCEventArgsFactory, "Got NULL PCEventArgs factory!");
-
-            if (InterlockedCompareExchangeT(&m_pPCEventArgsFactory, (ABI::Windows::UI::Xaml::Data::IPropertyChangedEventArgsFactory *)pPCEventArgsFactory, NULL) == NULL)
-                pPCEventArgsFactory.SuppressRelease();            
-        }
-
-        return m_pPCEventArgsFactory;
-    }
-
     MethodDesc *GetSystemNCCEventArgsToWinRTNCCEventArgsMD()
     {
         LIMITED_METHOD_CONTRACT;
@@ -310,9 +258,6 @@ private:
     MethodDesc *m_pWinRTNCCEventArgsToSystemNCCEventArgsMD;
     MethodDesc *m_pSystemPCEventArgsToWinRTPCEventArgsMD;
     MethodDesc *m_pWinRTPCEventArgsToSystemPCEventArgsMD;
-
-    VolatilePtr<ABI::Windows::UI::Xaml::Interop::INotifyCollectionChangedEventArgsFactory> m_pNCCEventArgsFactory;
-    VolatilePtr<ABI::Windows::UI::Xaml::Data::IPropertyChangedEventArgsFactory> m_pPCEventArgsFactory;
 };
 
 class UriMarshalingInfo

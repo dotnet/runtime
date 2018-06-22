@@ -42,12 +42,10 @@
 #define g_NotifyCollectionChangedEventHandlerName "System.Collections.Specialized.NotifyCollectionChangedEventHandler"
 #define g_NotifyCollectionChangedEventArgsName "System.Collections.Specialized.NotifyCollectionChangedEventArgs"
 #define g_NotifyCollectionChangedEventArgsMarshalerName "System.Runtime.InteropServices.WindowsRuntime.NotifyCollectionChangedEventArgsMarshaler"
-#define g_WinRTNotifyCollectionChangedEventArgsNameW W("Windows.UI.Xaml.Interop.NotifyCollectionChangedEventArgs")
 #define g_INotifyPropertyChangedName "System.ComponentModel.INotifyPropertyChanged"
 #define g_PropertyChangedEventHandlerName "System.ComponentModel.PropertyChangedEventHandler"
 #define g_PropertyChangedEventArgsName "System.ComponentModel.PropertyChangedEventArgs"
 #define g_PropertyChangedEventArgsMarshalerName "System.Runtime.InteropServices.WindowsRuntime.PropertyChangedEventArgsMarshaler"
-#define g_WinRTPropertyChangedEventArgsNameW W("Windows.UI.Xaml.Data.PropertyChangedEventArgs")
 #define g_WinRTIIteratorClassName   "Windows.Foundation.Collections.IIterator`1"
 #define g_WinRTIIteratorClassNameW W("Windows.Foundation.Collections.IIterator`1")
 #define g_ICommandName "System.Windows.Input.ICommand"

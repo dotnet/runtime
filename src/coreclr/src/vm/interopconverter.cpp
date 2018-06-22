@@ -574,7 +574,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
             }
             else
             {
-                *pObjOut = marshaler.FindOrCreateObjectRef(pUnk, pItfMT);            
+                *pObjOut = marshaler.FindOrCreateObjectRef(pUnk, pItfMT);
             }
         }
     }
