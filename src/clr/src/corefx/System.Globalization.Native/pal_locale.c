@@ -9,8 +9,7 @@
 #include <stdlib.h>
 #include <locale.h>
 
-#include "icushim.h"
-#include "locale.hpp"
+#include "pal_locale.h"
 
 int32_t UErrorCodeToBool(UErrorCode status)
 {
@@ -117,7 +116,7 @@ bool IsEnvVarSet(const char* name)
 {
     const char* value = getenv(name);
 
-    return (value != nullptr) && (strcmp("", value) != 0);
+    return (value != NULL) && (strcmp("", value) != 0);
 }
 
 // The behavior of uloc_getDefault() on POSIX systems is to query
@@ -135,9 +134,9 @@ bool IsEnvVarSet(const char* name)
 // normalization it would do.
 const char* DetectDefaultLocaleName()
 {
-    char* loc = setlocale(LC_MESSAGES, nullptr);
+    char* loc = setlocale(LC_MESSAGES, NULL);
 
-    if (loc != nullptr && (strcmp("C", loc) == 0 || strcmp("POSIX", loc) == 0))
+    if (loc != NULL && (strcmp("C", loc) == 0 || strcmp("POSIX", loc) == 0))
     {
         if (!IsEnvVarSet("LC_ALL") && !IsEnvVarSet("LC_MESSAGES") && !IsEnvVarSet("LANG"))
         {
@@ -155,7 +154,7 @@ const char* DetectDefaultLocaleName()
 // locale names list.
 // if the value is not null, it fills the value with locale names separated by the length 
 // of each name. 
-extern "C" int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
+int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
 {
     int32_t totalLength = 0;
     int32_t index = 0;
@@ -174,7 +173,7 @@ extern "C" int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLen
         
         totalLength += localeNameLength + 1; // add 1 for the name length
         
-        if (value != nullptr)
+        if (value != NULL)
         {
             if (totalLength > valueLength)
                 return -3;
@@ -198,7 +197,7 @@ extern "C" int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLen
     return totalLength;
 }
 
-extern "C" int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
+int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
 
@@ -218,7 +217,7 @@ extern "C" int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UC
     return UErrorCodeToBool(status);
 }
 
-extern "C" int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLength)
+int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLength)
 {
     char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
     UErrorCode status = U_ZERO_ERROR;

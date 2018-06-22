@@ -5,25 +5,26 @@
 
 #include <dlfcn.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
-#include "icushim.h"
+#include "pal_icushim.h"
 
 // Define pointers to all the used ICU functions
-#define PER_FUNCTION_BLOCK(fn, lib) decltype(fn)* fn##_ptr;
+#define PER_FUNCTION_BLOCK(fn, lib) __typeof(fn)* fn##_ptr;
 FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
-static void* libicuuc = nullptr;
-static void* libicui18n = nullptr;
+static void* libicuuc = NULL;
+static void* libicui18n = NULL;
 
 #define VERSION_PREFIX_NONE ""
 #define VERSION_PREFIX_SUSE "suse"
 
 // .[suse]x.x.x, considering the max number of decimal digits for each component
-static const int MaxICUVersionStringLength = sizeof(VERSION_PREFIX_SUSE) + 33;
+#define MaxICUVersionStringLength (sizeof(VERSION_PREFIX_SUSE) + 33)
 
 #ifdef __APPLE__
 
@@ -35,13 +36,13 @@ bool FindICULibs(const char* versionPrefix, char* symbolName, char* symbolVersio
 
     // Usually OSX_ICU_LIBRARY_PATH is "/usr/lib/libicucore.dylib"
     libicuuc = dlopen(OSX_ICU_LIBRARY_PATH, RTLD_LAZY);
-    
-    if (libicuuc == nullptr)
+
+    if (libicuuc == NULL)
     {
         return false;
     }
 
-    // in OSX all ICU APIs exist in the same library libicucore.A.dylib 
+    // in OSX all ICU APIs exist in the same library libicucore.A.dylib
     libicui18n = libicuuc;
 
     return true;
@@ -78,7 +79,7 @@ void GetVersionedLibFileName(const char* baseFileName, int majorVer, int minorVe
         if (subVer != -1)
         {
             sprintf(result + nameLen, ".%d", subVer);
-        }    
+        }
     }
 }
 
@@ -86,22 +87,22 @@ bool FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbolName,
 {
     // Find out the format of the version string added to each symbol
     // First try just the unversioned symbol
-    if (dlsym(libicuuc, "u_strlen") == nullptr)
+    if (dlsym(libicuuc, "u_strlen") == NULL)
     {
         // Now try just the _majorVer added
         sprintf(symbolVersion, "_%d", majorVer);
         sprintf(symbolName, "u_strlen%s", symbolVersion);
-        if ((dlsym(libicuuc, symbolName) == nullptr) && (minorVer != -1))
+        if ((dlsym(libicuuc, symbolName) == NULL) && (minorVer != -1))
         {
             // Now try the _majorVer_minorVer added
             sprintf(symbolVersion, "_%d_%d", majorVer, minorVer);
             sprintf(symbolName, "u_strlen%s", symbolVersion);
-            if ((dlsym(libicuuc, symbolName) == nullptr) && (subVer != -1))
+            if ((dlsym(libicuuc, symbolName) == NULL) && (subVer != -1))
             {
                 // Finally, try the _majorVer_minorVer_subVer added
                 sprintf(symbolVersion, "_%d_%d_%d", majorVer, minorVer, subVer);
                 sprintf(symbolName, "u_strlen%s", symbolVersion);
-                if (dlsym(libicuuc, symbolName) == nullptr)
+                if (dlsym(libicuuc, symbolName) == NULL)
                 {
                     return false;
                 }
@@ -125,20 +126,20 @@ bool OpenICULibraries(int majorVer, int minorVer, int subVer, const char* versio
     GetVersionedLibFileName("libicui18n.so", majorVer, minorVer, subVer, versionPrefix, libicui18nName);
 
     libicuuc = dlopen(libicuucName, RTLD_LAZY);
-    if (libicuuc != nullptr)
+    if (libicuuc != NULL)
     {
         if (FindSymbolVersion(majorVer, minorVer, subVer, symbolName, symbolVersion))
         {
             libicui18n = dlopen(libicui18nName, RTLD_LAZY);
         }
-        if (libicui18n == nullptr)
+        if (libicui18n == NULL)
         {
             dlclose(libicuuc);
-            libicuuc = nullptr;
+            libicuuc = NULL;
         }
     }
 
-    return libicuuc != nullptr;
+    return libicuuc != NULL;
 }
 
 // Select libraries using the version override specified by the CLR_ICU_VERSION_OVERRIDE
@@ -148,7 +149,7 @@ bool OpenICULibraries(int majorVer, int minorVer, int subVer, const char* versio
 bool FindLibUsingOverride(const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
     char* versionOverride = getenv("CLR_ICU_VERSION_OVERRIDE");
-    if (versionOverride != nullptr)
+    if (versionOverride != NULL)
     {
         int first = -1;
         int second = -1;
@@ -242,10 +243,10 @@ bool FindICULibs(const char* versionPrefix, char* symbolName, char* symbolVersio
 #endif // __APPLE__
 
 // GlobalizationNative_LoadICU
-// This method get called from the managed side during the globalization initialization. 
+// This method get called from the managed side during the globalization initialization.
 // This method shouldn't get called at all if we are running in globalization invariant mode
 // return 0 if failed to load ICU and 1 otherwise
-extern "C" int32_t GlobalizationNative_LoadICU()
+int32_t GlobalizationNative_LoadICU()
 {
     char symbolName[128];
     char symbolVersion[MaxICUVersionStringLength + 1] = "";
@@ -264,15 +265,15 @@ extern "C" int32_t GlobalizationNative_LoadICU()
 #define PER_FUNCTION_BLOCK(fn, lib) \
     static_assert((sizeof(#fn) + MaxICUVersionStringLength + 1) <= sizeof(symbolName), "The symbolName is too small for symbol " #fn); \
     sprintf(symbolName, #fn "%s", symbolVersion); \
-    fn##_ptr = (decltype(fn)*)dlsym(lib, symbolName); \
+    fn##_ptr = (__typeof(fn)*)dlsym(lib, symbolName); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", symbolName, dlerror()); abort(); }
 
     FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
 #ifdef __APPLE__
-    // libicui18n initialized with libicuuc so we null it to avoid double closing same handle   
-    libicui18n = nullptr;
+    // libicui18n initialized with libicuuc so we null it to avoid double closing same handle
+    libicui18n = NULL;
 #endif // __APPLE__
 
     return 1;
@@ -280,25 +281,25 @@ extern "C" int32_t GlobalizationNative_LoadICU()
 
 // GlobalizationNative_GetICUVersion
 // return the current loaded ICU version
-extern "C" int32_t GlobalizationNative_GetICUVersion()
+int32_t GlobalizationNative_GetICUVersion()
 {
     int32_t version;
     u_getVersion((uint8_t *) &version);
-    return version; 
+    return version;
 }
 
 __attribute__((destructor))
 void ShutdownICUShim()
 {
-    if (libicuuc != nullptr)
+    if (libicuuc != NULL)
     {
         dlclose(libicuuc);
-        libicuuc = nullptr;
+        libicuuc = NULL;
     }
 
-    if (libicui18n != nullptr)
+    if (libicui18n != NULL)
     {
         dlclose(libicui18n);
-        libicui18n = nullptr;
+        libicui18n = NULL;
     }
 }
