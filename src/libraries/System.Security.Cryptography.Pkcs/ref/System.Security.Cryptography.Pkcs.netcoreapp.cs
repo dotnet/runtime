@@ -9,6 +9,15 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Security.Cryptography.Pkcs
 {
+    public sealed partial class CmsSigner
+    {
+        public CmsSigner(SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.AsymmetricAlgorithm privateKey) => throw null;
+        public System.Security.Cryptography.AsymmetricAlgorithm PrivateKey { get => throw null; set => throw null; }
+    }
+    public sealed partial class EnvelopedCms
+    {
+        public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo, System.Security.Cryptography.AsymmetricAlgorithm privateKey) { }
+    }
     public sealed partial class Pkcs8PrivateKeyInfo
     {
         public Oid AlgorithmId { get; }
@@ -77,9 +86,20 @@ namespace System.Security.Cryptography.Pkcs
         public bool TryEncode(Span<byte> destination, out int bytesWritten) => throw null;
         public static bool TryDecode(ReadOnlyMemory<byte> encodedBytes, out Rfc3161TimestampTokenInfo timestampTokenInfo, out int bytesConsumed) { throw null; }
     }
+    public sealed partial class SignedCms
+    {
+        public void AddCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) => throw null;
+        public void RemoveCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) => throw null;
+    }
     public sealed partial class SignerInfo
     {
         public Oid SignatureAlgorithm => throw null;
         public byte[] GetSignature() => throw null;
+        public void AddUnsignedAttribute(System.Security.Cryptography.AsnEncodedData asnEncodedData) => throw null;
+        public void RemoveUnsignedAttribute(System.Security.Cryptography.AsnEncodedData asnEncodedData) => throw null;
+    }
+    public sealed partial class SubjectIdentifier
+    {
+        public bool MatchesCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { throw null; }
     }
 }
