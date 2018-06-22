@@ -1,41 +1,54 @@
-## General Test Infrastructure Notes ##
+# General Test Infrastructure
 
-### Kinds of Build Properties ###
+## Test "Kind"
+
 * Build Only
-> `<CLRTestKind>BuildOnly</CLRTestKind>`
-
- * Builds an executable. 
- * Will not execute it. 
-
+  * Builds an executable.
+  * Will not execute.
+  * e.g. `<CLRTestKind>BuildOnly</CLRTestKind>`
 * Run Only
-> `<CLRTestKind>RunOnly</CLRTestKind>`
-
- * Can use Ouput of Build and Run Project with different command line arguments. 
-* Build and Run
-> `<CLRTestKind>BuildAndRun</CLRTestKind>`
-
- * Builds an executable.
- * Will execute said executable. 
+  * Can use output of `BuildOnly` or `BuildAndRun` projects with different command line arguments.
+  * e.g. `<CLRTestKind>RunOnly</CLRTestKind>`
+* Build And Run
+  * Builds an executable.
+  * Will execute said executable.
+  * e.g. `<CLRTestKind>BuildAndRun</CLRTestKind>`
 * Shared Libraries
-> `<CLRTestKind>SharedLibrary</CLRTestKind>`
+  * For building libraries common to zero or more tests.
+  * e.g. `<CLRTestKind>SharedLibrary</CLRTestKind>`
 
- * For building libraries common to zero or more tests. 
+By default (i.e. if not specified explicitly), test "Kind" is `BuildAndRun`.
 
+## Priority
 
-By default (i.e. if not specified explicitly) a project file is BuildAndRun.
+Test cases are categorized by priority level. The most important subset should be and is the smallest subset. This subset is called priority 0.
 
-### Priority ###
-Testcases are categorized by their priority levels. The most important subset should be and is the smallest subset. This subset is called priority 0.
- * By default, a testcase is priority 0. You must elect to de-prioritize a test.
-  * To de-prioritize a test, add a property _CLRTestPriority_ to the test's project file.
-> `<CLRTestPriority>2</CLRTestPriority>`
- * Lower priority values are always run in conjunction when running higher priority value tests. I.e. if a developer elects to do a priority 2 test run, then all priority 0, 1 and 2 tests are run.
+* By default, a test case is priority 0. Tests must be explicitly de-prioritized.
+* Set the priority of a test by setting the property `<CLRTestPriority>` in the test's project file.
+  * e.g. `<CLRTestPriority>2</CLRTestPriority>`
+* Lower priority values are always run in conjunction when running higher priority value tests.
+  * i.e. if a developer elects to do a priority 2 test run, then all priority 0, 1 and 2 tests are run.
 
-### Adding Tests ###
-#### Converting an existing C# project ####
-  * Remove AssemblyName
-  * Swap in dir.props
-  * Swap in dir.targets
-  * Assign a CLRTestKind
+## Adding Test Guidelines
+
+* All test source files should include the following banner:
+```
+    // Licensed to the .NET Foundation under one or more agreements.
+    // The .NET Foundation licenses this file to you under the MIT license.
+    // See the LICENSE file in the project root for more information.
+```
+* Disable building of a test by conditionally setting the `<DisableProjectBuild>` property.
+	* e.g. `<DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>`
+* Add NuGet/MyGet references by updating the following [project file](https://github.com/dotnet/coreclr/blob/master/tests/src/Common/test_dependencies/test_dependencies.csproj).
+* Build against the `mscorlib` facade by adding `<ReferenceLocalMscorlib>true</ReferenceLocalMscorlib>` to the test project.
+
+### Creating a new C# test project
+
+**TODO**
+
+### Converting an existing C# project
+  * Remove the `<AssemblyName>` property
+  * Import `dir.props`
+  * Import `dir.targets`
+  * Assign a `<CLRTestKind>`
   * (optional) Assign a priority value
-
