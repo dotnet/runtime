@@ -1744,7 +1744,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             break
                         case 'corefx_innerloop':
                             if (configuration == 'Release' || configuration == 'Checked') {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} CoreFX Tests", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")                                
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} CoreFX Tests")                                
                             }
                             break
 
@@ -2219,6 +2219,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                         if (doCoreFxTesting) {
                             if (scenario == 'corefx_innerloop') {
+                                // Create CORE_ROOT and testhost
+                                buildCommands += "tests\\build-test.cmd ${lowerConfiguration} ${arch} skipmanaged"                                
                                 buildCommands += "tests\\runtest.cmd ${runtestArguments} CoreFXTests"
                                 
                                 // Archive and process (only) the test results
