@@ -3451,7 +3451,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         // Its better to fail later with a better error message than
         //   to fail here when the RBM_OPT_RSVD is not available
         //
-        if (undisp <= 0x03fb)
+        if (undisp <= 0x03fc)
         {
             fmt = IF_T2_VLDST;
         }
@@ -3466,15 +3466,15 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     }
     else if (emitInsIsLoadOrStore(ins))
     {
-        if (isLowRegister(reg1) && (reg2 == REG_SP) && (ins == INS_ldr) && ((disp & 0x03fc) == disp && disp <= 0x03f8))
+        if (isLowRegister(reg1) && (reg2 == REG_SP) && (ins == INS_ldr) && ((disp & 0x03fc) == disp))
         {
             fmt = IF_T1_J2;
         }
-        else if (disp >= 0 && disp <= 0x0ffb)
+        else if (disp >= 0 && disp <= 0x0fff)
         {
             fmt = IF_T2_K1;
         }
-        else if (undisp <= 0x0fb)
+        else if (undisp <= 0x0ff)
         {
             fmt = IF_T2_H0;
         }
@@ -3488,11 +3488,11 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     }
     else if (ins == INS_add)
     {
-        if (isLowRegister(reg1) && (reg2 == REG_SP) && ((disp & 0x03fc) == disp && disp <= 0x03f8))
+        if (isLowRegister(reg1) && (reg2 == REG_SP) && ((disp & 0x03fc) == disp))
         {
             fmt = IF_T1_J2;
         }
-        else if (undisp <= 0x0ffb)
+        else if (undisp <= 0x0fff)
         {
             if (disp < 0)
             {
@@ -3610,7 +3610,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         // Its better to fail later with a better error message than
         //   to fail here when the RBM_OPT_RSVD is not available
         //
-        if (undisp <= 0x03fb)
+        if (undisp <= 0x03fc)
         {
             fmt = IF_T2_VLDST;
         }
@@ -3623,15 +3623,15 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             return;
         }
     }
-    else if (isLowRegister(reg1) && (reg2 == REG_SP) && (ins == INS_str) && ((disp & 0x03fc) == disp && disp <= 0x03f8))
+    else if (isLowRegister(reg1) && (reg2 == REG_SP) && (ins == INS_str) && ((disp & 0x03fc) == disp))
     {
         fmt = IF_T1_J2;
     }
-    else if (disp >= 0 && disp <= 0x0ffb)
+    else if (disp >= 0 && disp <= 0x0fff)
     {
         fmt = IF_T2_K1;
     }
-    else if (undisp <= 0x0fb)
+    else if (undisp <= 0x0ff)
     {
         fmt = IF_T2_H0;
     }
