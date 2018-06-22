@@ -4664,14 +4664,11 @@ array_constructed:
 			mono_threads_begin_abort_protected_block ();
 			ip ++;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_END_ABORT_PROT)
-			if (mono_threads_end_abort_protected_block ())
-				frame->ex = mono_thread_interruption_checkpoint ();
-			ip ++;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ENDFINALLY)
 			ip ++;
 			int clause_index = *ip;
+			gboolean pending_abort = mono_threads_end_abort_protected_block ();
+
 			if (clause_index == exit_at_finally)
 				goto exit_frame;
 			while (sp > frame->stack) {
@@ -4680,10 +4677,11 @@ array_constructed:
 			if (finally_ips) {
 				ip = finally_ips->data;
 				finally_ips = g_slist_remove (finally_ips, ip);
+				/* Throw abort after the last finally block to avoid confusing EH */
+				if (pending_abort && !finally_ips)
+					EXCEPTION_CHECKPOINT;
 				goto main_loop;
 			}
-			if (frame->ex)
-				THROW_EX (frame->ex, ip);
 			ves_abort();
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LEAVE) /* Fall through */

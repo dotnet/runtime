@@ -1995,7 +1995,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			int index = td->clause_indexes [in_offset];
 			if (index != -1) {
 				MonoExceptionClause *clause = &header->clauses [index];
-				if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY &&
+				if ((clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY ||
+					clause->flags == MONO_EXCEPTION_CLAUSE_FAULT) &&
 						in_offset == clause->handler_offset)
 					ADD_CODE (td, MINT_START_ABORT_PROT);
 			}
@@ -3983,9 +3984,6 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			break;
 		case CEE_ENDFINALLY: {
 			g_assert (td->clause_indexes [in_offset] != -1);
-			MonoExceptionClause *clause = &header->clauses [td->clause_indexes [in_offset]];
-			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
-				ADD_CODE (td, MINT_END_ABORT_PROT);
 			td->sp = td->stack;
 			SIMPLE_OP (td, MINT_ENDFINALLY);
 			ADD_CODE (td, td->clause_indexes [in_offset]);
