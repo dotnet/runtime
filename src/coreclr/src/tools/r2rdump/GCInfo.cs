@@ -127,8 +127,9 @@ namespace R2RDump
         public GcSlotTable SlotTable { get; set; }
         public int Size { get; set; }
         public int Offset { get; set; }
+
         [XmlIgnore]
-        public Dictionary<int, GcTransition> Transitions { get; }
+        public Dictionary<int, GcTransition> Transitions { get; set; }
 
         public GcInfo() { }
 
