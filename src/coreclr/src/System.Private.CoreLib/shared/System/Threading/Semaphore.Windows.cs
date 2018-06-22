@@ -24,7 +24,7 @@ namespace System.Threading
             Debug.Assert(maximumCount >= 1);
             Debug.Assert(initialCount <= maximumCount);
 
-#if PLATFORM_UNIX
+#if !PLATFORM_WINDOWS
             if (name != null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #endif
@@ -51,7 +51,7 @@ namespace System.Threading
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
 
-            //Pass false to OpenSemaphore to prevent inheritedHandles
+            // Pass false to OpenSemaphore to prevent inheritedHandles
             SafeWaitHandle myHandle = Interop.Kernel32.OpenSemaphore(AccessRights, false, name);
 
             if (myHandle.IsInvalid)
@@ -59,13 +59,13 @@ namespace System.Threading
                 result = null;
                 int errorCode = Marshal.GetLastWin32Error();
 
-                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode ==  Interop.Errors.ERROR_INVALID_NAME)
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.Errors.ERROR_INVALID_NAME)
                     return OpenExistingResult.NameNotFound;
                 if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND)
                     return OpenExistingResult.PathNotFound;
                 if (name != null && name.Length != 0 && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     return OpenExistingResult.NameInvalid;
-                //this is for passed through NativeMethods Errors
+                // this is for passed through NativeMethods Errors
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
 
@@ -78,9 +78,6 @@ namespace System.Threading
 
         private int ReleaseCore(int releaseCount)
         {
-            // If ReleaseSempahore returns false when the specified value would cause
-            // the semaphore's count to exceed the maximum count set when Semaphore was created
-            // Non-Zero return 
             int previousCount;
             if (!Interop.Kernel32.ReleaseSemaphore(SafeWaitHandle, releaseCount, out previousCount))
                 throw new SemaphoreFullException();
