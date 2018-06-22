@@ -1054,11 +1054,6 @@ FCFuncStart(gUriMarshalerFuncs)
     FCFuncElement("CreateNativeUriInstanceHelper", StubHelpers::UriMarshaler__CreateNativeUriInstance)
 FCFuncEnd()
 
-FCFuncStart(gEventArgsMarshalerFuncs)
-    QCFuncElement("CreateNativeNCCEventArgsInstanceHelper", StubHelpers::EventArgsMarshaler__CreateNativeNCCEventArgsInstance)
-    QCFuncElement("CreateNativePCEventArgsInstance", StubHelpers::EventArgsMarshaler__CreateNativePCEventArgsInstance)
-FCFuncEnd()
-
 FCFuncStart(gMngdSafeArrayMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdSafeArrayMarshaler::CreateMarshaler)
     FCFuncElement("ConvertSpaceToNative", MngdSafeArrayMarshaler::ConvertSpaceToNative)
@@ -1287,9 +1282,6 @@ FCClassElement("EncodingTable", "System.Text", gEncodingTableFuncs)
 #endif // !defined(FEATURE_COREFX_GLOBALIZATION)
 FCClassElement("Enum", "System", gEnumFuncs)
 FCClassElement("Environment", "System", gEnvironmentFuncs)
-#ifdef FEATURE_COMINTEROP
-FCClassElement("EventArgsMarshaler", "System.StubHelpers", gEventArgsMarshalerFuncs)
-#endif // FEATURE_COMINTEROP
 #if defined(FEATURE_PERFTRACING)
 FCClassElement("EventPipeInternal", "System.Diagnostics.Tracing", gEventPipeInternalFuncs)
 #endif // FEATURE_PERFTRACING
