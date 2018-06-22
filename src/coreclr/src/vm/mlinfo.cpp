@@ -894,7 +894,6 @@ void *EventArgsMarshalingInfo::operator new(size_t size, LoaderHeap *pHeap)
     RETURN mem;
 }
 
-
 void EventArgsMarshalingInfo::operator delete(void *pMem)
 {
     LIMITED_METHOD_CONTRACT;
@@ -911,10 +910,6 @@ EventArgsMarshalingInfo::EventArgsMarshalingInfo()
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    // Create on-demand as we don't want to create the factories in NGEN time
-    m_pNCCEventArgsFactory = NULL;
-    m_pPCEventArgsFactory = NULL;
 
     // Load the System.Collections.Specialized.NotifyCollectionChangedEventArgs class.
     SString qualifiedNCCEventArgsTypeName(SString::Utf8, NCCEVENTARGS_ASM_QUAL_TYPE_NAME);
@@ -953,25 +948,7 @@ EventArgsMarshalingInfo::EventArgsMarshalingInfo()
 
 EventArgsMarshalingInfo::~EventArgsMarshalingInfo()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_pNCCEventArgsFactory)
-    {
-        SafeRelease(m_pNCCEventArgsFactory);
-        m_pNCCEventArgsFactory = NULL;
-    }
-    
-    if (m_pPCEventArgsFactory)
-    {
-        SafeRelease(m_pPCEventArgsFactory);
-        m_pPCEventArgsFactory = NULL;
-    }
+   LIMITED_METHOD_CONTRACT;
 }
 
 void *UriMarshalingInfo::operator new(size_t size, LoaderHeap *pHeap)

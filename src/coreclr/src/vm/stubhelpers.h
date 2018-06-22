@@ -74,12 +74,6 @@ public:
     static FCDECL1(StringObject*,   UriMarshaler__GetRawUriFromNative, ABI::Windows::Foundation::IUriRuntimeClass* pIUriRC);
     static FCDECL2(IUnknown*,       UriMarshaler__CreateNativeUriInstance, __in_ecount(strLen) CLR_CHAR* pRawUriObj, UINT strLen);
 
-    static ABI::Windows::UI::Xaml::Interop::INotifyCollectionChangedEventArgs* QCALLTYPE 
-        EventArgsMarshaler__CreateNativeNCCEventArgsInstance
-        (int action, ABI::Windows::UI::Xaml::Interop::IBindableVector *newItem, ABI::Windows::UI::Xaml::Interop::IBindableVector *oldItem, int newIndex, int oldIndex);
-
-    static ABI::Windows::UI::Xaml::Data::IPropertyChangedEventArgs* QCALLTYPE EventArgsMarshaler__CreateNativePCEventArgsInstance(HSTRING name);
-
     static FCDECL1(MethodDesc *,    GetDelegateInvokeMethod, DelegateObject *pThisUNSAFE);
     static FCDECL2(IInspectable *,  GetWinRTFactoryReturnValue, Object *pThisUNSAFE, PCODE pCtorEntry);
     static FCDECL2(IInspectable *,  GetOuterInspectable, Object *pThisUNSAFE, MethodDesc *pCtorMD);

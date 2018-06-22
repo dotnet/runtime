@@ -807,63 +807,6 @@ FCIMPL2(IUnknown*, StubHelpers::UriMarshaler__CreateNativeUriInstance, WCHAR* pR
 }
 FCIMPLEND
 
-ABI::Windows::UI::Xaml::Interop::INotifyCollectionChangedEventArgs* QCALLTYPE 
-StubHelpers::EventArgsMarshaler__CreateNativeNCCEventArgsInstance
-(int action, ABI::Windows::UI::Xaml::Interop::IBindableVector *newItem, ABI::Windows::UI::Xaml::Interop::IBindableVector *oldItem, int newIndex, int oldIndex)
-{
-    QCALL_CONTRACT;
-
-   ABI::Windows::UI::Xaml::Interop::INotifyCollectionChangedEventArgs *pArgsRC = NULL;
-
-    BEGIN_QCALL;
-
-    EventArgsMarshalingInfo *marshalingInfo = GetAppDomain()->GetMarshalingData()->GetEventArgsMarshalingInfo();
-    ABI::Windows::UI::Xaml::Interop::INotifyCollectionChangedEventArgsFactory *pFactory = marshalingInfo->GetNCCEventArgsFactory();
-
-    SafeComHolderPreemp<IInspectable> pInner;
-    HRESULT hr;
-    hr = pFactory->CreateInstanceWithAllParameters(
-        (ABI::Windows::UI::Xaml::Interop::NotifyCollectionChangedAction)action,
-        (ABI::Windows::UI::Xaml::Interop::IBindableVector *)newItem,
-        (ABI::Windows::UI::Xaml::Interop::IBindableVector *)oldItem,
-        newIndex,
-        oldIndex,
-        NULL,
-        &pInner,
-        &pArgsRC);
-    IfFailThrow(hr);
-
-    END_QCALL;
-
-    return pArgsRC;
-}
-
-ABI::Windows::UI::Xaml::Data::IPropertyChangedEventArgs* QCALLTYPE 
-	StubHelpers::EventArgsMarshaler__CreateNativePCEventArgsInstance(HSTRING name)
-{
-    QCALL_CONTRACT;
-
-    ABI::Windows::UI::Xaml::Data::IPropertyChangedEventArgs *pArgsRC = NULL;
-
-    BEGIN_QCALL;
-
-    EventArgsMarshalingInfo *marshalingInfo = GetAppDomain()->GetMarshalingData()->GetEventArgsMarshalingInfo();
-    ABI::Windows::UI::Xaml::Data::IPropertyChangedEventArgsFactory *pFactory = marshalingInfo->GetPCEventArgsFactory();
-
-    SafeComHolderPreemp<IInspectable> pInner;
-    HRESULT hr;
-    hr = pFactory->CreateInstance(
-        name,
-        NULL,
-        &pInner,
-        &pArgsRC);
-    IfFailThrow(hr);
-
-    END_QCALL;
-
-    return pArgsRC;
-}
-
 // A helper to convert an IP to object using special flags.
 FCIMPL1(Object *, StubHelpers::InterfaceMarshaler__ConvertToManagedWithoutUnboxing, IUnknown *pNative)
 {
