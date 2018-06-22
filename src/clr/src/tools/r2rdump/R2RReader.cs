@@ -312,10 +312,10 @@ namespace R2RDump
                 return "";
             }
             R2RSection compilerIdentifierSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER];
-            byte[] identifier = new byte[compilerIdentifierSection.Size];
+            byte[] identifier = new byte[compilerIdentifierSection.Size - 1];
             int identifierOffset = GetOffset(compilerIdentifierSection.RelativeVirtualAddress);
-            Array.Copy(Image, identifierOffset, identifier, 0, compilerIdentifierSection.Size);
-            return Encoding.UTF8.GetString(identifier).Replace("\0", string.Empty);
+            Array.Copy(Image, identifierOffset, identifier, 0, compilerIdentifierSection.Size - 1);
+            return Encoding.UTF8.GetString(identifier);
         }
 
         private void ParseImportSections()
