@@ -4,9 +4,9 @@
 
 using System.Text;
 
-namespace R2RDump
+namespace R2RDump.Amd64
 {
-    public enum Amd64UnwindOpCodes
+    public enum UnwindOpCodes
     {
         UWOP_PUSH_NONVOL = 0,
         UWOP_ALLOC_LARGE,
@@ -22,10 +22,10 @@ namespace R2RDump
         UWOP_SET_FPREG_LARGE,
     }
 
-    struct Amd64UnwindCode
+    struct UnwindCode
     {
         public byte CodeOffset { get; }
-        public Amd64UnwindOpCodes UnwindOp { get; } //4 bits
+        public UnwindOpCodes UnwindOp { get; } //4 bits
         public byte OpInfo { get; } //4 bits
 
         public byte OffsetLow { get; }
@@ -33,12 +33,12 @@ namespace R2RDump
 
         public uint FrameOffset { get; }
 
-        public Amd64UnwindCode(byte[] image, ref int offset)
+        public UnwindCode(byte[] image, ref int offset)
         {
             int off = offset;
             CodeOffset = NativeReader.ReadByte(image, ref off);
             byte op = NativeReader.ReadByte(image, ref off);
-            UnwindOp = (Amd64UnwindOpCodes)(op & 15);
+            UnwindOp = (UnwindOpCodes)(op & 15);
             OpInfo = (byte)(op >> 4);
 
             OffsetLow = CodeOffset;
@@ -48,7 +48,7 @@ namespace R2RDump
         }
     }
 
-    struct Amd64UnwindInfo : UnwindInfo
+    struct UnwindInfo : BaseUnwindInfo
     {
         private const int _sizeofUnwindCode = 2;
         private const int _offsetofUnwindCode = 4;
@@ -59,11 +59,11 @@ namespace R2RDump
         public byte CountOfUnwindCodes { get; }
         public Amd64Registers FrameRegister { get; } //4 bits
         public byte FrameOffset { get; } //4 bits
-        public Amd64UnwindCode[] UnwindCode { get; }
+        public UnwindCode[] UnwindCode { get; }
         public uint PersonalityRoutineRVA { get; }
         public int Size { get; }
 
-        public Amd64UnwindInfo(byte[] image, int offset)
+        public UnwindInfo(byte[] image, int offset)
         {
             byte versionAndFlags = NativeReader.ReadByte(image, ref offset);
             Version = (byte)(versionAndFlags & 7);
@@ -74,10 +74,10 @@ namespace R2RDump
             FrameRegister = (Amd64Registers)(frameRegisterAndOffset & 15);
             FrameOffset = (byte)(frameRegisterAndOffset >> 4);
 
-            UnwindCode = new Amd64UnwindCode[CountOfUnwindCodes];
+            UnwindCode = new UnwindCode[CountOfUnwindCodes];
             for (int i = 0; i < CountOfUnwindCodes; i++)
             {
-                UnwindCode[i] = new Amd64UnwindCode(image, ref offset);
+                UnwindCode[i] = new UnwindCode(image, ref offset);
             }
 
             PersonalityRoutineRVA = NativeReader.ReadUInt32(image, ref offset);
@@ -120,10 +120,10 @@ namespace R2RDump
 
             switch (UnwindCode[i].UnwindOp)
             {
-                case Amd64UnwindOpCodes.UWOP_PUSH_NONVOL:
+                case UnwindOpCodes.UWOP_PUSH_NONVOL:
                     sb.AppendLine($"{tab2}OpInfo: {(Amd64Registers)UnwindCode[i].OpInfo}({UnwindCode[i].OpInfo})");
                     break;
-                case Amd64UnwindOpCodes.UWOP_ALLOC_LARGE:
+                case UnwindOpCodes.UWOP_ALLOC_LARGE:
                     sb.Append($"{tab2}OpInfo: {UnwindCode[i].OpInfo} - ");
                     if (UnwindCode[i].OpInfo == 0)
                     {
@@ -146,14 +146,14 @@ namespace R2RDump
                         sb.AppendLine("Unknown");
                     }
                     break;
-                case Amd64UnwindOpCodes.UWOP_ALLOC_SMALL:
+                case UnwindOpCodes.UWOP_ALLOC_SMALL:
                     int opInfo = UnwindCode[i].OpInfo * 8 + 8;
                     sb.AppendLine($"{tab2}OpInfo: {UnwindCode[i].OpInfo} * 8 + 8 = {opInfo} = 0x{opInfo:X2}");
                     break;
-                case Amd64UnwindOpCodes.UWOP_SET_FPREG:
+                case UnwindOpCodes.UWOP_SET_FPREG:
                     sb.AppendLine($"{tab2}OpInfo: Unused({UnwindCode[i].OpInfo})");
                     break;
-                case Amd64UnwindOpCodes.UWOP_SET_FPREG_LARGE:
+                case UnwindOpCodes.UWOP_SET_FPREG_LARGE:
                     {
                         sb.AppendLine($"{tab2}OpInfo: Unused({UnwindCode[i].OpInfo})");
                         i++;
@@ -167,7 +167,7 @@ namespace R2RDump
                         }
                     }
                     break;
-                case Amd64UnwindOpCodes.UWOP_SAVE_NONVOL:
+                case UnwindOpCodes.UWOP_SAVE_NONVOL:
                     {
                         sb.AppendLine($"{tab2}OpInfo: {(Amd64Registers)UnwindCode[i].OpInfo}({UnwindCode[i].OpInfo})");
                         i++;
@@ -175,7 +175,7 @@ namespace R2RDump
                         sb.AppendLine($"{tab2}Scaled Offset: {UnwindCode[i].FrameOffset} * 8 = {offset} = 0x{offset:X5}");
                     }
                     break;
-                case Amd64UnwindOpCodes.UWOP_SAVE_NONVOL_FAR:
+                case UnwindOpCodes.UWOP_SAVE_NONVOL_FAR:
                     {
                         sb.AppendLine($"{tab2}OpInfo: {(Amd64Registers)UnwindCode[i].OpInfo}({UnwindCode[i].OpInfo})");
                         i++;
@@ -185,7 +185,7 @@ namespace R2RDump
                         sb.AppendLine($"{tab2}Unscaled Large Offset: 0x{offset:X8}");
                     }
                     break;
-                case Amd64UnwindOpCodes.UWOP_SAVE_XMM128:
+                case UnwindOpCodes.UWOP_SAVE_XMM128:
                     {
                         sb.AppendLine($"{tab2}OpInfo: XMM{UnwindCode[i].OpInfo}({UnwindCode[i].OpInfo})");
                         i++;
@@ -194,7 +194,7 @@ namespace R2RDump
                     }
                     break;
 
-                case Amd64UnwindOpCodes.UWOP_SAVE_XMM128_FAR:
+                case UnwindOpCodes.UWOP_SAVE_XMM128_FAR:
                     {
                         sb.AppendLine($"{tab2}OpInfo: XMM{UnwindCode[i].OpInfo}({UnwindCode[i].OpInfo})");
                         i++;
@@ -204,9 +204,9 @@ namespace R2RDump
                         sb.AppendLine($"{tab2}Unscaled Large Offset: 0x{offset:X8}");
                     }
                     break;
-                case Amd64UnwindOpCodes.UWOP_EPILOG:
-                case Amd64UnwindOpCodes.UWOP_SPARE_CODE:
-                case Amd64UnwindOpCodes.UWOP_PUSH_MACHFRAME:
+                case UnwindOpCodes.UWOP_EPILOG:
+                case UnwindOpCodes.UWOP_SPARE_CODE:
+                case UnwindOpCodes.UWOP_PUSH_MACHFRAME:
                 default:
                     sb.AppendLine($"{tab2}OpInfo: {UnwindCode[i].OpInfo}");
                     sb.AppendLine();
