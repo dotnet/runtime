@@ -3,13 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
-#include <vector>
+#include <strings.h>
 
-#include "icushim.h"
-#include "locale.hpp"
-#include "holders.h"
-#include "errors.h"
+#include "pal_calendarData.h"
 
 #define GREGORIAN_NAME "gregorian"
 #define JAPANESE_NAME "japanese"
@@ -26,65 +24,6 @@
 const UChar UDAT_MONTH_DAY_UCHAR[] = {'M', 'M', 'M', 'M', 'd', '\0'};
 const UChar UDAT_YEAR_NUM_MONTH_DAY_UCHAR[] = {'y', 'M', 'd', '\0'};
 const UChar UDAT_YEAR_MONTH_UCHAR[] = {'y', 'M', 'M', 'M', 'M', '\0'};
-
-/*
-* These values should be kept in sync with System.Globalization.CalendarId
-*/
-enum CalendarId : int16_t
-{
-    UNINITIALIZED_VALUE = 0,
-    GREGORIAN = 1,               // Gregorian (localized) calendar
-    GREGORIAN_US = 2,            // Gregorian (U.S.) calendar
-    JAPAN = 3,                   // Japanese Emperor Era calendar
-                                 /* SSS_WARNINGS_OFF */
-    TAIWAN = 4,                  // Taiwan Era calendar /* SSS_WARNINGS_ON */
-    KOREA = 5,                   // Korean Tangun Era calendar
-    HIJRI = 6,                   // Hijri (Arabic Lunar) calendar
-    THAI = 7,                    // Thai calendar
-    HEBREW = 8,                  // Hebrew (Lunar) calendar
-    GREGORIAN_ME_FRENCH = 9,     // Gregorian Middle East French calendar
-    GREGORIAN_ARABIC = 10,       // Gregorian Arabic calendar
-    GREGORIAN_XLIT_ENGLISH = 11, // Gregorian Transliterated English calendar
-    GREGORIAN_XLIT_FRENCH = 12,
-    // Note that all calendars after this point are MANAGED ONLY for now.
-    JULIAN = 13,
-    JAPANESELUNISOLAR = 14,
-    CHINESELUNISOLAR = 15,
-    SAKA = 16,              // reserved to match Office but not implemented in our code
-    LUNAR_ETO_CHN = 17,     // reserved to match Office but not implemented in our code
-    LUNAR_ETO_KOR = 18,     // reserved to match Office but not implemented in our code
-    LUNAR_ETO_ROKUYOU = 19, // reserved to match Office but not implemented in our code
-    KOREANLUNISOLAR = 20,
-    TAIWANLUNISOLAR = 21,
-    PERSIAN = 22,
-    UMALQURA = 23,
-    LAST_CALENDAR = 23 // Last calendar ID
-};
-
-/*
-* These values should be kept in sync with System.Globalization.CalendarDataType
-*/
-enum CalendarDataType : int32_t
-{
-    Uninitialized = 0,
-    NativeName = 1,
-    MonthDay = 2,
-    ShortDates = 3,
-    LongDates = 4,
-    YearMonths = 5,
-    DayNames = 6,
-    AbbrevDayNames = 7,
-    MonthNames = 8,
-    AbbrevMonthNames = 9,
-    SuperShortDayNames = 10,
-    MonthGenitiveNames = 11,
-    AbbrevMonthGenitiveNames = 12,
-    EraNames = 13,
-    AbbrevEraNames = 14,
-};
-
-// the function pointer definition for the callback used in EnumCalendarInfo
-typedef void (*EnumCalendarInfoCallback)(const UChar*, const void*);
 
 /*
 Function:
@@ -171,7 +110,7 @@ GetCalendars
 
 Returns the list of CalendarIds that are available for the specified locale.
 */
-extern "C" int32_t GlobalizationNative_GetCalendars(
+int32_t GlobalizationNative_GetCalendars(
     const UChar* localeName, CalendarId* calendars, int32_t calendarsCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
@@ -182,14 +121,19 @@ extern "C" int32_t GlobalizationNative_GetCalendars(
         return 0;
 
     UEnumeration* pEnum = ucal_getKeywordValuesForLocale("calendar", locale, TRUE, &err);
-    UEnumerationHolder enumHolder(pEnum, err);
 
     if (U_FAILURE(err))
+    {
+        uenum_close(pEnum);
         return 0;
+    }
 
     int stringEnumeratorCount = uenum_count(pEnum, &err);
     if (U_FAILURE(err))
+    {
+        uenum_close(pEnum);
         return 0;
+    }
 
     int calendarsReturned = 0;
     for (int i = 0; i < stringEnumeratorCount && calendarsReturned < calendarsCapacity; i++)
@@ -207,6 +151,7 @@ extern "C" int32_t GlobalizationNative_GetCalendars(
         }
     }
 
+    uenum_close(pEnum);
     return calendarsReturned;
 }
 
@@ -220,13 +165,16 @@ ResultCode GetMonthDayPattern(const char* locale, UChar* sMonthDay, int32_t stri
 {
     UErrorCode err = U_ZERO_ERROR;
     UDateTimePatternGenerator* pGenerator = udatpg_open(locale, &err);
-    UDateTimePatternGeneratorHolder generatorHolder(pGenerator, err);
 
     if (U_FAILURE(err))
+    {
+        udatpg_close(pGenerator);
         return GetResultCode(err);
+    }
 
     udatpg_getBestPattern(pGenerator, UDAT_MONTH_DAY_UCHAR, -1, sMonthDay, stringCapacity, &err);
 
+    udatpg_close(pGenerator);
     return GetResultCode(err);
 }
 
@@ -240,10 +188,10 @@ ResultCode GetNativeCalendarName(const char* locale, CalendarId calendarId, UCha
 {
     UErrorCode err = U_ZERO_ERROR;
     ULocaleDisplayNames* pDisplayNames = uldn_open(locale, ULDN_STANDARD_NAMES, &err);
-    ULocaleDisplayNamesHolder displayNamesHolder(pDisplayNames, err);
 
     uldn_keyValueDisplayName(pDisplayNames, "calendar", GetCalendarName(calendarId), nativeName, stringCapacity, &err);
 
+    uldn_close(pDisplayNames);
     return GetResultCode(err);
 }
 
@@ -254,7 +202,7 @@ GetCalendarInfo
 Gets a single string of calendar information by filling the result parameter
 with the requested value.
 */
-extern "C" ResultCode GlobalizationNative_GetCalendarInfo(
+ResultCode GlobalizationNative_GetCalendarInfo(
     const UChar* localeName, CalendarId calendarId, CalendarDataType dataType, UChar* result, int32_t resultCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
@@ -289,24 +237,33 @@ bool InvokeCallbackForDatePattern(const char* locale,
                                   const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
-    UDateFormat* pFormat = udat_open(UDAT_NONE, style, locale, nullptr, 0, nullptr, 0, &err);
-    UDateFormatHolder formatHolder(pFormat, err);
+    UDateFormat* pFormat = udat_open(UDAT_NONE, style, locale, NULL, 0, NULL, 0, &err);
 
     if (U_FAILURE(err))
+    {
+        unum_close(pFormat);
         return false;
+    }
 
     UErrorCode ignore = U_ZERO_ERROR;
-    int32_t patternLen = udat_toPattern(pFormat, false, nullptr, 0, &ignore);
+    int32_t patternLen = udat_toPattern(pFormat, false, NULL, 0, &ignore) + 1;
 
-    std::vector<UChar> pattern(patternLen + 1, '\0');
+    UChar* pattern = calloc(patternLen, sizeof(UChar));
+    if (pattern == NULL)
+    {
+        return false;
+    }
 
-    udat_toPattern(pFormat, false, pattern.data(), patternLen + 1, &err);
+    udat_toPattern(pFormat, false, pattern, patternLen, &err);
+
+    udat_close(pFormat);
 
     if (U_SUCCESS(err))
     {
-        callback(pattern.data(), context);
+        callback(pattern, context);
     }
 
+    free(pattern);
     return U_SUCCESS(err);
 }
 
@@ -324,23 +281,31 @@ bool InvokeCallbackForDateTimePattern(const char* locale,
 {
     UErrorCode err = U_ZERO_ERROR;
     UDateTimePatternGenerator* pGenerator = udatpg_open(locale, &err);
-    UDateTimePatternGeneratorHolder generatorHolder(pGenerator, err);
 
     if (U_FAILURE(err))
-        return false;
-
-    UErrorCode ignore = U_ZERO_ERROR;
-    int32_t patternLen = udatpg_getBestPattern(pGenerator, patternSkeleton, -1, nullptr, 0, &ignore);
-
-    std::vector<UChar> bestPattern(patternLen + 1, '\0');
-
-    udatpg_getBestPattern(pGenerator, patternSkeleton, -1, bestPattern.data(), patternLen + 1, &err);
-
-    if (U_SUCCESS(err))
     {
-        callback(bestPattern.data(), context);
+        udatpg_close(pGenerator);
+        return false;
     }
 
+    UErrorCode ignore = U_ZERO_ERROR;
+    int32_t patternLen = udatpg_getBestPattern(pGenerator, patternSkeleton, -1, NULL, 0, &ignore) + 1;
+
+    UChar* bestPattern = calloc(patternLen, sizeof(UChar));
+    if (bestPattern == NULL)
+    {
+        return false;
+    }
+
+    udatpg_getBestPattern(pGenerator, patternSkeleton, -1, bestPattern, patternLen, &err);
+
+    udatpg_close(pGenerator);
+    if (U_SUCCESS(err))
+    {
+        callback(bestPattern, context);
+    }
+
+    free(bestPattern);
     return U_SUCCESS(err);
 }
 
@@ -359,24 +324,31 @@ bool EnumSymbols(const char* locale,
                  const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
-    UDateFormat* pFormat = udat_open(UDAT_DEFAULT, UDAT_DEFAULT, locale, nullptr, 0, nullptr, 0, &err);
-    UDateFormatHolder formatHolder(pFormat, err);
+    UDateFormat* pFormat = udat_open(UDAT_DEFAULT, UDAT_DEFAULT, locale, NULL, 0, NULL, 0, &err);
 
     if (U_FAILURE(err))
+    {
+        udat_close(pFormat);
         return false;
+    }
 
     char localeWithCalendarName[ULOC_FULLNAME_CAPACITY];
     strncpy(localeWithCalendarName, locale, ULOC_FULLNAME_CAPACITY);
     uloc_setKeywordValue("calendar", GetCalendarName(calendarId), localeWithCalendarName, ULOC_FULLNAME_CAPACITY, &err);
 
     if (U_FAILURE(err))
+    {
+        udat_close(pFormat);
         return false;
+    }
 
-    UCalendar* pCalendar = ucal_open(nullptr, 0, localeWithCalendarName, UCAL_DEFAULT, &err);
-    UCalendarHolder calendarHolder(pCalendar, err);
+    UCalendar* pCalendar = ucal_open(NULL, 0, localeWithCalendarName, UCAL_DEFAULT, &err);
 
     if (U_FAILURE(err))
+    {
+        udat_close(pFormat);
         return false;
+    }
 
     udat_setCalendar(pFormat, pCalendar);
 
@@ -385,20 +357,32 @@ bool EnumSymbols(const char* locale,
     for (int32_t i = startIndex; i < symbolCount; i++)
     {
         UErrorCode ignore = U_ZERO_ERROR;
-        int symbolLen = udat_getSymbols(pFormat, type, i, nullptr, 0, &ignore);
+        int symbolLen = udat_getSymbols(pFormat, type, i, NULL, 0, &ignore) + 1;
 
-        std::vector<UChar> symbolBuf(symbolLen + 1, '\0');
+        UChar* symbolBuf = calloc(symbolLen, sizeof(UChar));
+        if (symbolBuf == NULL)
+        {
+            udat_close(pFormat);
+            free(symbolBuf);
+            return false;
+        }
 
-        udat_getSymbols(pFormat, type, i, symbolBuf.data(), symbolBuf.size(), &err);
+        udat_getSymbols(pFormat, type, i, symbolBuf, symbolLen, &err);
 
         assert(U_SUCCESS(err));
 
         if (U_FAILURE(err))
+        {
+            udat_close(pFormat);
+            free(symbolBuf);
             return false;
+        }
 
-        callback(symbolBuf.data(), context);
+        callback(symbolBuf, context);
+        free(symbolBuf);
     }
 
+    udat_close(pFormat);
     return true;
 }
 
@@ -419,6 +403,19 @@ bool EnumUResourceBundle(const UResourceBundle* bundle, EnumCalendarInfoCallback
     }
 
     return true;
+}
+
+void CloseResBundle(const UResourceBundle* rootResBundle,
+                    const UResourceBundle* calResBundle,
+                    const UResourceBundle* targetCalResBundle,
+                    const UResourceBundle* erasColResBundle,
+                    const UResourceBundle* erasResBundle)
+{
+    ures_close(rootResBundle);
+    ures_close(calResBundle);
+    ures_close(targetCalResBundle);
+    ures_close(erasColResBundle);
+    ures_close(erasResBundle);
 }
 
 /*
@@ -447,32 +444,25 @@ bool EnumAbbrevEraNames(const char* locale,
     while (true)
     {
         UErrorCode status = U_ZERO_ERROR;
+        char* name = GetCalendarName(calendarId);
 
-        UResourceBundle* rootResBundle = ures_open(nullptr, localeNamePtr, &status);
-        UResourceBundleHolder rootResBundleHolder(rootResBundle, status);
-
-        UResourceBundle* calResBundle = ures_getByKey(rootResBundle, "calendar", nullptr, &status);
-        UResourceBundleHolder calResBundleHolder(calResBundle, status);
-
-        UResourceBundle* targetCalResBundle =
-            ures_getByKey(calResBundle, GetCalendarName(calendarId), nullptr, &status);
-        UResourceBundleHolder targetCalResBundleHolder(targetCalResBundle, status);
-
-        UResourceBundle* erasColResBundle = ures_getByKey(targetCalResBundle, "eras", nullptr, &status);
-        UResourceBundleHolder erasColResBundleHolder(erasColResBundle, status);
-
-        UResourceBundle* erasResBundle = ures_getByKey(erasColResBundle, "narrow", nullptr, &status);
-        UResourceBundleHolder erasResBundleHolder(erasResBundle, status);
+        UResourceBundle* rootResBundle = ures_open(NULL, localeNamePtr, &status);
+        UResourceBundle* calResBundle = ures_getByKey(rootResBundle, "calendar", NULL, &status);
+        UResourceBundle* targetCalResBundle = ures_getByKey(calResBundle, name, NULL, &status);
+        UResourceBundle* erasColResBundle = ures_getByKey(targetCalResBundle, "eras", NULL, &status);
+        UResourceBundle* erasResBundle = ures_getByKey(erasColResBundle, "narrow", NULL, &status);
 
         if (U_SUCCESS(status))
         {
             EnumUResourceBundle(erasResBundle, callback, context);
+            CloseResBundle(rootResBundle, calResBundle, targetCalResBundle, erasColResBundle, erasResBundle);
             return true;
         }
 
         // Couldn't find the data we need for this locale, we should fallback.
         if (localeNameBuf[0] == 0x0)
         {
+            CloseResBundle(rootResBundle, calResBundle, targetCalResBundle, erasColResBundle, erasResBundle);
             // We are already at the root locale so there is nothing to fall back to, just use the regular eras.
             break;
         }
@@ -481,6 +471,7 @@ bool EnumAbbrevEraNames(const char* locale,
 
         if (U_FAILURE(status))
         {
+            CloseResBundle(rootResBundle, calResBundle, targetCalResBundle, erasColResBundle, erasResBundle);
             // Something bad happened getting the parent name, bail out.
             break;
         }
@@ -492,6 +483,8 @@ bool EnumAbbrevEraNames(const char* locale,
         char* temp = localeNamePtr;
         localeNamePtr = parentNamePtr;
         parentNamePtr = temp;
+
+        CloseResBundle(rootResBundle, calResBundle, targetCalResBundle, erasColResBundle, erasResBundle);
     }
 
     // Walking the resource bundles didn't work, just use the regular eras.
@@ -508,8 +501,8 @@ Allows for a collection of calendar string data to be retrieved by invoking
 the callback for each value in the collection.
 The context parameter is passed through to the callback along with each string.
 */
-extern "C" int32_t GlobalizationNative_EnumCalendarInfo(
-                        EnumCalendarInfoCallback callback, 
+int32_t GlobalizationNative_EnumCalendarInfo(
+                        EnumCalendarInfoCallback callback,
                         const UChar* localeName,
                         CalendarId calendarId,
                         CalendarDataType dataType,
@@ -572,18 +565,21 @@ GetLatestJapaneseEra
 
 Gets the latest era in the Japanese calendar.
 */
-extern "C" int32_t GlobalizationNative_GetLatestJapaneseEra()
+int32_t GlobalizationNative_GetLatestJapaneseEra()
 {
     UErrorCode err = U_ZERO_ERROR;
-    UCalendar* pCal = ucal_open(nullptr, 0, JAPANESE_LOCALE_AND_CALENDAR, UCAL_TRADITIONAL, &err);
-    UCalendarHolder calHolder(pCal, err);
+    UCalendar* pCal = ucal_open(NULL, 0, JAPANESE_LOCALE_AND_CALENDAR, UCAL_TRADITIONAL, &err);
 
     if (U_FAILURE(err))
+    {
+        ucal_close(pCal);
         return 0;
+    }
 
     ucal_set(pCal, UCAL_EXTENDED_YEAR, 9999);
     int32_t ret = ucal_get(pCal, UCAL_ERA, &err);
 
+    ucal_close(pCal);
     return U_SUCCESS(err) ? ret : 0;
 }
 
@@ -593,7 +589,7 @@ GetJapaneseEraInfo
 
 Gets the starting Gregorian date of the specified Japanese Era.
 */
-extern "C" int32_t GlobalizationNative_GetJapaneseEraStartDate(
+int32_t GlobalizationNative_GetJapaneseEraStartDate(
     int32_t era, int32_t* startYear, int32_t* startMonth, int32_t* startDay)
 {
     *startYear = -1;
@@ -601,11 +597,13 @@ extern "C" int32_t GlobalizationNative_GetJapaneseEraStartDate(
     *startDay = -1;
 
     UErrorCode err = U_ZERO_ERROR;
-    UCalendar* pCal = ucal_open(nullptr, 0, JAPANESE_LOCALE_AND_CALENDAR, UCAL_TRADITIONAL, &err);
-    UCalendarHolder calHolder(pCal, err);
+    UCalendar* pCal = ucal_open(NULL, 0, JAPANESE_LOCALE_AND_CALENDAR, UCAL_TRADITIONAL, &err);
 
     if (U_FAILURE(err))
+    {
+        ucal_close(pCal);
         return false;
+    }
 
     ucal_set(pCal, UCAL_ERA, era);
     ucal_set(pCal, UCAL_YEAR, 1);
@@ -613,7 +611,10 @@ extern "C" int32_t GlobalizationNative_GetJapaneseEraStartDate(
     // UCAL_EXTENDED_YEAR is the gregorian year for the JapaneseCalendar
     *startYear = ucal_get(pCal, UCAL_EXTENDED_YEAR, &err);
     if (U_FAILURE(err))
+    {
+        ucal_close(pCal);
         return false;
+    }
 
     // set the date to Jan 1
     ucal_set(pCal, UCAL_MONTH, 0);
@@ -624,7 +625,10 @@ extern "C" int32_t GlobalizationNative_GetJapaneseEraStartDate(
     {
         currentEra = ucal_get(pCal, UCAL_ERA, &err);
         if (U_FAILURE(err))
+        {
+            ucal_close(pCal);
             return false;
+        }
 
         if (currentEra == era)
         {
@@ -633,25 +637,38 @@ extern "C" int32_t GlobalizationNative_GetJapaneseEraStartDate(
                 // subtract 1 day at a time until we get out of the specified Era
                 ucal_add(pCal, UCAL_DATE, -1, &err);
                 if (U_FAILURE(err))
+                {
+                    ucal_close(pCal);
                     return false;
+                }
 
                 currentEra = ucal_get(pCal, UCAL_ERA, &err);
                 if (U_FAILURE(err))
+                {
+                    ucal_close(pCal);
                     return false;
+                }
 
                 if (currentEra != era)
                 {
                     // add back 1 day to get back into the specified Era
                     ucal_add(pCal, UCAL_DATE, 1, &err);
                     if (U_FAILURE(err))
+                    {
+                        ucal_close(pCal);
                         return false;
+                    }
 
                     *startMonth =
                         ucal_get(pCal, UCAL_MONTH, &err) + 1; // ICU Calendar months are 0-based, but .NET is 1-based
                     if (U_FAILURE(err))
+                    {
+                        ucal_close(pCal);
                         return false;
+                    }
 
                     *startDay = ucal_get(pCal, UCAL_DATE, &err);
+                    ucal_close(pCal);
                     if (U_FAILURE(err))
                         return false;
 
@@ -663,8 +680,12 @@ extern "C" int32_t GlobalizationNative_GetJapaneseEraStartDate(
         // add 1 month at a time until we get into the specified Era
         ucal_add(pCal, UCAL_MONTH, 1, &err);
         if (U_FAILURE(err))
+        {
+            ucal_close(pCal);
             return false;
+        }
     }
 
+    ucal_close(pCal);
     return false;
 }
