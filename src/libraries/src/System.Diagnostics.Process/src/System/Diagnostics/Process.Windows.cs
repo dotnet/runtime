@@ -703,15 +703,17 @@ namespace System.Diagnostics
             // this is only a "pseudo handle" to the current process - no need to close it later
             SafeProcessHandle processHandle = Interop.Kernel32.GetCurrentProcess();
 
-            // get the process token so we can adjust the privilege on it.  We DO need to
-            // close the token when we're done with it.
-            if (!Interop.Advapi32.OpenProcessToken(processHandle, Interop.Kernel32.HandleOptions.TOKEN_ADJUST_PRIVILEGES, out SafeTokenHandle hToken))
-            {
-                throw new Win32Exception();
-            }
+            SafeTokenHandle hToken = null;
 
             try
             {
+                // get the process token so we can adjust the privilege on it.  We DO need to
+                // close the token when we're done with it.
+                if (!Interop.Advapi32.OpenProcessToken(processHandle, Interop.Kernel32.HandleOptions.TOKEN_ADJUST_PRIVILEGES, out hToken))
+                {
+                    throw new Win32Exception();
+                }
+
                 if (!Interop.Advapi32.LookupPrivilegeValue(null, privilegeName, out Interop.Advapi32.LUID luid))
                 {
                     throw new Win32Exception();
