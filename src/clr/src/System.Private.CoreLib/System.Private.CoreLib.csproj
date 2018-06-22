@@ -392,7 +392,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Semaphore.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Timer.cs" />
