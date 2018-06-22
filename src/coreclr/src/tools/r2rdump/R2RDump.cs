@@ -12,13 +12,39 @@ using System.Xml.Serialization;
 
 namespace R2RDump
 {
+    abstract class Dumper
+    {
+        internal R2RReader _r2r;
+        internal bool _raw;
+        internal bool _header;
+        internal bool _disasm;
+        internal IntPtr _disassembler;
+        internal bool _unwind;
+        internal bool _gc;
+        internal bool _sectionContents;
+        internal TextWriter _writer;
+
+        abstract internal void Begin();
+        abstract internal void End();
+        abstract internal void WriteDivider(string title);
+        abstract internal void WriteSubDivider();
+        abstract internal void SkipLine();
+        abstract internal void DumpHeader(bool dumpSections);
+        abstract internal void DumpSection(R2RSection section, XmlNode parentNode = null);
+        abstract internal void DumpAllMethods();
+        abstract internal void DumpMethod(R2RMethod method, XmlNode parentNode = null);
+        abstract internal void DumpRuntimeFunction(RuntimeFunction rtf, XmlNode parentNode = null);
+        abstract internal void DumpBytes(int rva, uint size, XmlNode parentNode = null, bool convertToOffset = true);
+        abstract internal void DumpSectionContents(R2RSection section, XmlNode parentNode = null);
+        abstract internal XmlNode DumpQueryCount(string q, string title, int count);
+    }
+
     class R2RDump
     {
         private bool _help;
         private IReadOnlyList<string> _inputFilenames = Array.Empty<string>();
         private string _outputFilename = null;
         private bool _xml;
-        private XmlDocument _xmlDocument;
         private bool _raw;
         private bool _header;
         private bool _disasm;
@@ -33,6 +59,7 @@ namespace R2RDump
         private bool _sectionContents;
         private TextWriter _writer;
         private Dictionary<R2RSection.SectionType, bool> _selectedSections = new Dictionary<R2RSection.SectionType, bool>();
+        private Dumper _dumper;
 
         private R2RDump()
         {
@@ -107,411 +134,6 @@ namespace R2RDump
             Console.WriteLine($"Warning: {warning}");
         }
 
-        private void WriteDivider(string title)
-        {
-            if (_xml)
-                return;
-            int len = 61 - title.Length - 2;
-            _writer.WriteLine(new String('=', len/2) + " " + title + " " + new String('=', (int)Math.Ceiling(len/2.0)));
-            SkipLine();
-        }
-
-        private void WriteSubDivider()
-        {
-            if(_xml)
-                return;
-            _writer.WriteLine("_______________________________________________");
-            SkipLine();
-        }
-
-        private void SkipLine()
-        {
-            if (_xml)
-                return;
-            _writer.WriteLine();
-        }
-
-        /// <summary>
-        /// Dumps the R2RHeader and all the sections in the header
-        /// </summary>
-        private void DumpHeader(R2RReader r2r, bool dumpSections, XmlNode parentNode)
-        {
-            XmlNode headerNode = null;
-            if (_xml)
-            {
-                headerNode = _xmlDocument.CreateNode("element", "Header", "");
-                parentNode.AppendChild(headerNode);
-                Serialize(r2r.R2RHeader, headerNode);
-            }
-            else
-            {
-                _writer.WriteLine(r2r.R2RHeader.ToString());
-            }
-            if (_raw)
-            {
-                DumpBytes(r2r, r2r.R2RHeader.RelativeVirtualAddress, (uint)r2r.R2RHeader.Size, headerNode);
-            }
-            SkipLine();
-            if (dumpSections)
-            {
-                XmlNode sectionsNode = null;
-                if (_xml)
-                {
-                    sectionsNode = _xmlDocument.CreateNode("element", "Sections", "");
-                    parentNode.AppendChild(sectionsNode);
-                    AddXMLNode("Count", r2r.R2RHeader.Sections.Count.ToString(), sectionsNode);
-                }
-                else
-                {
-                    WriteDivider("R2R Sections");
-                    _writer.WriteLine($"{r2r.R2RHeader.Sections.Count} sections");
-                    SkipLine();
-                }
-                foreach (R2RSection section in r2r.R2RHeader.Sections.Values)
-                {
-                    DumpSection(r2r, section, sectionsNode);
-                }
-            }
-            SkipLine();
-        }
-
-        /// <summary>
-        /// Dumps one R2RSection
-        /// </summary>
-        private void DumpSection(R2RReader r2r, R2RSection section, XmlNode parentNode)
-        {
-            XmlNode sectionNode = null;
-            if (_xml)
-            {
-                sectionNode = _xmlDocument.CreateNode("element", "Section", "");
-                parentNode.AppendChild(sectionNode);
-                Serialize(section, sectionNode);
-            }
-            else
-            {
-                WriteSubDivider();
-                _writer.WriteLine(section.ToString());
-            }
-
-            if (_raw)
-            {
-                DumpBytes(r2r, section.RelativeVirtualAddress, (uint)section.Size, sectionNode);
-                SkipLine();
-            }
-            if (_sectionContents)
-            {
-                DumpSectionContents(r2r, section, sectionNode);
-                SkipLine();
-            }
-        }
-
-        /// <summary>
-        /// Dumps one R2RMethod. 
-        /// </summary>
-        private void DumpMethod(R2RReader r2r, R2RMethod method, XmlNode parentNode)
-        {
-            XmlNode methodNode = null;
-            if (_xml)
-            {
-                methodNode = _xmlDocument.CreateNode("element", "Method", "");
-                parentNode.AppendChild(methodNode);
-                Serialize(method, methodNode);
-            }
-            else
-            {
-                WriteSubDivider();
-                _writer.WriteLine(method.ToString());
-            }
-            if (_gc)
-            {
-                if (_xml)
-                {
-                    XmlNode gcNode = _xmlDocument.CreateNode("element", "GcInfo", "");
-                    methodNode.AppendChild(gcNode);
-                    Serialize(method.GcInfo, gcNode);
-
-                    foreach (KeyValuePair<int, GcInfo.GcTransition> transition in method.GcInfo.Transitions)
-                    {
-                        Serialize(transition, gcNode);
-                    }
-                }
-                else
-                {
-                    _writer.WriteLine("GcInfo:");
-                    _writer.Write(method.GcInfo);
-                }
-
-                if (_raw)
-                {
-                    DumpBytes(r2r, method.GcInfo.Offset, (uint)method.GcInfo.Size, methodNode, false);
-                }
-            }
-            SkipLine();
-
-            XmlNode rtfsNode = null;
-            if (_xml)
-            {
-                rtfsNode = _xmlDocument.CreateNode("element", "RuntimeFunctions", "");
-                methodNode.AppendChild(rtfsNode);
-            }
-            foreach (RuntimeFunction runtimeFunction in method.RuntimeFunctions)
-            {
-                DumpRuntimeFunction(r2r, runtimeFunction, rtfsNode);
-            }
-        }
-
-        /// <summary>
-        /// Dumps one runtime function. 
-        /// </summary>
-        private void DumpRuntimeFunction(R2RReader r2r, RuntimeFunction rtf, XmlNode parentNode)
-        {
-            XmlNode rtfNode = null;
-            if (_xml)
-            {
-                rtfNode = _xmlDocument.CreateNode("element", "RuntimeFunction", "");
-                parentNode.AppendChild(rtfNode);
-                AddXMLNode("MethodRid", rtf.Method.Rid.ToString(), rtfNode);
-                Serialize(rtf, rtfNode);
-            }
-
-            if (_disasm)
-            {
-                string disassembly = CoreDisTools.GetCodeBlock(_disassembler, rtf, r2r.GetOffset(rtf.StartAddress), r2r.Image);
-                if (_xml)
-                {
-                    AddXMLNode("Disassembly", disassembly, rtfNode);
-                }
-                else
-                {
-                    _writer.WriteLine($"Id: {rtf.Id}");
-                    _writer.Write(disassembly);
-                }
-            }
-            else if (!_xml)
-            {
-                _writer.Write($"{rtf}");
-            }
-
-            if (_raw)
-            {
-                if (!_xml)
-                    _writer.WriteLine("Raw Bytes:");
-                DumpBytes(r2r, rtf.StartAddress, (uint)rtf.Size, rtfNode);
-            }
-            if (_unwind)
-            {
-                XmlNode unwindNode = null;
-                if (_xml)
-                {
-                    unwindNode = _xmlDocument.CreateNode("element", "UnwindInfo", "");
-                    rtfNode.AppendChild(unwindNode);
-                    Serialize(rtf.UnwindInfo, unwindNode);
-                }
-                else
-                {
-                    _writer.WriteLine("UnwindInfo:");
-                    _writer.Write(rtf.UnwindInfo);
-                }
-                if (_raw)
-                {
-                    DumpBytes(r2r, rtf.UnwindRVA, (uint)((Amd64.UnwindInfo)rtf.UnwindInfo).Size, unwindNode);
-                }
-            }
-            SkipLine();
-        }
-
-        /// <summary>
-        /// Prints a formatted string containing a block of bytes from the relative virtual address and size
-        /// </summary>
-        public void DumpBytes(R2RReader r2r, int rva, uint size, XmlNode parentNode, bool convertToOffset = true)
-        {
-            int start = rva;
-            if (convertToOffset)
-                start = r2r.GetOffset(rva);
-            if (start > r2r.Image.Length || start + size > r2r.Image.Length)
-            {
-                throw new IndexOutOfRangeException();
-            }
-
-            if (_xml && parentNode != null)
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.Append($"{r2r.Image[start]:X2}");
-                for (uint i = 1; i < size; i++)
-                {
-                    sb.Append($" {r2r.Image[start + i]:X2}");
-                }
-                AddXMLNode("Raw", sb.ToString(), parentNode);
-                return;
-            }
-
-            _writer.Write("    ");
-            if (rva % 16 != 0)
-            {
-                int floor = rva / 16 * 16;
-                _writer.Write($"{floor:X8}:");
-                _writer.Write(new String(' ', (rva - floor) * 3));
-            }
-            for (uint i = 0; i < size; i++)
-            {
-                if ((rva + i) % 16 == 0)
-                {
-                    _writer.Write($"{rva + i:X8}:");
-                }
-                _writer.Write($" {r2r.Image[start + i]:X2}");
-                if ((rva + i) % 16 == 15 && i != size - 1)
-                {
-                    SkipLine();
-                    _writer.Write("    ");
-                }
-            }
-            SkipLine();
-        }
-
-        private void DumpSectionContents(R2RReader r2r, R2RSection section, XmlNode contentsNode)
-        {
-            switch (section.Type)
-            {
-                case R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES:
-                    if(!_xml)
-                    {
-                        uint availableTypesSectionOffset = (uint)r2r.GetOffset(section.RelativeVirtualAddress);
-                        NativeParser availableTypesParser = new NativeParser(r2r.Image, availableTypesSectionOffset);
-                        NativeHashtable availableTypes = new NativeHashtable(r2r.Image, availableTypesParser, (uint)(availableTypesSectionOffset + section.Size));
-                        _writer.WriteLine(availableTypes.ToString());
-                    }
-
-                    if (_xml)
-                    {
-                        Serialize(r2r.AvailableTypes, contentsNode);
-                    }
-                    else
-                    {
-                        foreach (string name in r2r.AvailableTypes)
-                        {
-                            _writer.WriteLine(name);
-                        }
-                    }
-                    break;
-                case R2RSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS:
-                    if (!_xml)
-                    {
-                        NativeArray methodEntryPoints = new NativeArray(r2r.Image, (uint)r2r.GetOffset(section.RelativeVirtualAddress));
-                        _writer.Write(methodEntryPoints.ToString());
-                    }
-                    break;
-                case R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS:
-                    if (!_xml)
-                    {
-                        uint instanceSectionOffset = (uint)r2r.GetOffset(section.RelativeVirtualAddress);
-                        NativeParser instanceParser = new NativeParser(r2r.Image, instanceSectionOffset);
-                        NativeHashtable instMethodEntryPoints = new NativeHashtable(r2r.Image, instanceParser, (uint)(instanceSectionOffset + section.Size));
-                        _writer.Write(instMethodEntryPoints.ToString());
-                    }
-                    break;
-                case R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS:
-                    int rtfOffset = r2r.GetOffset(section.RelativeVirtualAddress);
-                    int rtfEndOffset = rtfOffset + section.Size;
-                    int rtfIndex = 0;
-                    while (rtfOffset < rtfEndOffset)
-                    {
-                        uint rva = NativeReader.ReadUInt32(r2r.Image, ref rtfOffset);
-                        if (_xml)
-                        {
-                            AddXMLNode($"{rtfIndex}", $"0x{rva:X8}", contentsNode);
-                        }
-                        else
-                        {
-                            _writer.WriteLine($"{rtfIndex}: 0x{rva:X8}");
-                        }
-                        rtfIndex++;
-                    }
-                    break;
-                case R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER:
-                    if(_xml)
-                    {
-                        AddXMLNode("CompileIdentifier", r2r.CompileIdentifier, contentsNode);
-                    }
-                    else
-                    {
-                        _writer.WriteLine(r2r.CompileIdentifier);
-                    }
-                    break;
-                case R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS:
-                    foreach (R2RImportSection importSection in r2r.ImportSections)
-                    {
-                        if (_xml)
-                        {
-                            Serialize(importSection, contentsNode);
-                        }
-                        else
-                        {
-                            _writer.Write(importSection.ToString());
-                        }
-                        if (_raw && importSection.Entries.Count != 0)
-                        {
-                            if (importSection.SectionRVA != 0)
-                            {
-                                XmlNode bytesNode = null;
-                                if (_xml)
-                                {
-                                    bytesNode = _xmlDocument.CreateNode("element", "SectionBytes", "");
-                                    contentsNode.AppendChild(bytesNode);
-                                }
-                                else
-                                {
-                                    _writer.WriteLine("Section Bytes:");
-                                }
-                                DumpBytes(r2r, importSection.SectionRVA, (uint)importSection.SectionSize, bytesNode);
-                            }
-                            if (importSection.SignatureRVA != 0)
-                            {
-                                XmlNode bytesNode = null;
-                                if (_xml)
-                                {
-                                    bytesNode = _xmlDocument.CreateNode("element", "SignatureBytes", "");
-                                    contentsNode.AppendChild(bytesNode);
-                                }
-                                else
-                                {
-                                    _writer.WriteLine("Signature Bytes:");
-                                }
-                                DumpBytes(r2r, importSection.SignatureRVA, (uint)importSection.Entries.Count * sizeof(int), bytesNode);
-                            }
-                            if (importSection.AuxiliaryDataRVA != 0)
-                            {
-                                XmlNode bytesNode = null;
-                                if (_xml)
-                                {
-                                    bytesNode = _xmlDocument.CreateNode("element", "AuxiliaryDataBytes", "");
-                                    contentsNode.AppendChild(bytesNode);
-                                }
-                                else
-                                {
-                                    _writer.WriteLine("AuxiliaryData Bytes:");
-                                }
-                                DumpBytes(r2r, importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size, bytesNode);
-                            }
-                        }
-                        foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
-                        {
-                            if (_xml)
-                            {
-                                Serialize(entry, contentsNode);
-                            }
-                            else
-                            {
-                                _writer.WriteLine();
-                                _writer.WriteLine(entry.ToString());
-                            }
-                        }
-                        if (!_xml)
-                            _writer.WriteLine();
-                    }
-                    break;
-            }
-        }
-
         // <summary>
         /// For each query in the list of queries, search for all methods matching the query by name, signature or id
         /// </summary>
@@ -519,31 +141,19 @@ namespace R2RDump
         /// <param name="title">The title to print, "R2R Methods by Query" or "R2R Methods by Keyword"</param>
         /// <param name="queries">The keywords/ids to search for</param>
         /// <param name="exact">Specifies whether to look for methods with names/signatures/ids matching the method exactly or partially</param>
-        private void QueryMethod(R2RReader r2r, string title, IReadOnlyList<string> queries, bool exact, XmlNode parentNode)
+        private void QueryMethod(R2RReader r2r, string title, IReadOnlyList<string> queries, bool exact)
         {
             if (queries.Count > 0)
             {
-                WriteDivider(title);
+                _dumper.WriteDivider(title);
             }
             foreach (string q in queries)
             {
                 IList<R2RMethod> res = FindMethod(r2r, q, exact);
-                XmlNode queryNode = null;
-                if (_xml)
-                {
-                    queryNode = _xmlDocument.CreateNode("element", "Methods", "");
-                    parentNode.AppendChild(queryNode);
-                    AddXMLNode("Query", q, queryNode);
-                    AddXMLNode("Count", res.Count.ToString(), queryNode);
-                }
-                else
-                {
-                    _writer.WriteLine(res.Count + " result(s) for \"" + q + "\"");
-                    SkipLine();
-                }
+                XmlNode queryNode = _dumper.DumpQueryCount(q, "Methods", res.Count);
                 foreach (R2RMethod method in res)
                 {
-                    DumpMethod(r2r, method, queryNode);
+                    _dumper.DumpMethod(method, queryNode);
                 }
             }
         }
@@ -553,31 +163,19 @@ namespace R2RDump
         /// </summary>
         /// <param name="r2r">Contains all the extracted info about the ReadyToRun image</param>
         /// <param name="queries">The names/values to search for</param>
-        private void QuerySection(R2RReader r2r, IReadOnlyList<string> queries, XmlNode parentNode)
+        private void QuerySection(R2RReader r2r, IReadOnlyList<string> queries)
         {
             if (queries.Count > 0)
             {
-                WriteDivider("R2R Section");
+                _dumper.WriteDivider("R2R Section");
             }
             foreach (string q in queries)
             {
                 IList<R2RSection> res = FindSection(r2r, q);
-                XmlNode queryNode = null;
-                if (_xml)
-                {
-                    queryNode = _xmlDocument.CreateNode("element", "Sections", "");
-                    parentNode.AppendChild(queryNode);
-                    AddXMLNode("Query", q, queryNode);
-                    AddXMLNode("Count", res.Count.ToString(), queryNode);
-                }
-                else
-                {
-                    _writer.WriteLine(res.Count + " result(s) for \"" + q + "\"");
-                    SkipLine();
-                }
+                XmlNode queryNode = _dumper.DumpQueryCount(q, "Sections", res.Count);
                 foreach (R2RSection section in res)
                 {
-                    DumpSection(r2r, section, queryNode);
+                    _dumper.DumpSection(section, queryNode);
                 }
             }
         }
@@ -588,11 +186,11 @@ namespace R2RDump
         /// </summary>
         /// <param name="r2r">Contains all the extracted info about the ReadyToRun image</param>
         /// <param name="queries">The ids to search for</param>
-        private void QueryRuntimeFunction(R2RReader r2r, IReadOnlyList<int> queries, XmlNode parentNode)
+        private void QueryRuntimeFunction(R2RReader r2r, IReadOnlyList<int> queries)
         {
             if (queries.Count > 0)
             {
-                WriteDivider("Runtime Functions");
+                _dumper.WriteDivider("Runtime Functions");
             }
             foreach (int q in queries)
             {
@@ -603,19 +201,8 @@ namespace R2RDump
                     WriteWarning("Unable to find by id " + q);
                     continue;
                 }
-                XmlNode queryNode = null;
-                if (_xml)
-                {
-                    queryNode = _xmlDocument.CreateNode("element", "RuntimeFunctions", "");
-                    parentNode.AppendChild(queryNode);
-                    AddXMLNode("Query", q.ToString(), queryNode);
-                    AddXMLNode("Count", "1", queryNode);
-                }
-                else
-                {
-                    _writer.WriteLine(rtf.Method.SignatureString);
-                }
-                DumpRuntimeFunction(r2r, rtf, queryNode);
+                XmlNode queryNode = _dumper.DumpQueryCount(q.ToString(), "Runtime Function", 1);
+                _dumper.DumpRuntimeFunction(rtf, queryNode);
             }
         }
 
@@ -625,82 +212,33 @@ namespace R2RDump
         /// <param name="r2r">The structure containing the info of the ReadyToRun image</param>
         public void Dump(R2RReader r2r)
         {
-            XmlNode rootNode = null;
-            if (_xml)
-            {
-                rootNode = _xmlDocument.CreateNode("element", "R2RDump", "");
-                _xmlDocument.AppendChild(rootNode);
-                Serialize(r2r, rootNode);
-            }
-            else
-            {
-                _writer.WriteLine($"Filename: {r2r.Filename}");
-                _writer.WriteLine($"Machine: {r2r.Machine}");
-                _writer.WriteLine($"ImageBase: 0x{r2r.ImageBase:X8}");
-                SkipLine();
-            }
+
+            _dumper.Begin();
 
             if (_queries.Count == 0 && _keywords.Count == 0 && _runtimeFunctions.Count == 0 && _sections.Count == 0) //dump all sections and methods
             {
-                WriteDivider("R2R Header");
-                DumpHeader(r2r, true, rootNode);
+                _dumper.WriteDivider("R2R Header");
+                _dumper.DumpHeader(true);
                 
                 if (!_header)
                 {
-                    XmlNode methodsNode = null;
-                    if (_xml)
-                    {
-                        methodsNode = _xmlDocument.CreateNode("element", "Methods", "");
-                        rootNode.AppendChild(methodsNode);
-                        AddXMLNode("Count", r2r.R2RMethods.Count.ToString(), methodsNode);
-                    }
-                    else
-                    {
-                        WriteDivider("R2R Methods");
-                        _writer.WriteLine($"{r2r.R2RMethods.Count} methods");
-                        SkipLine();
-                    }
-                    foreach (R2RMethod method in r2r.R2RMethods)
-                    {
-                        DumpMethod(r2r, method, methodsNode);
-                    }
+                    _dumper.DumpAllMethods();
                 }
             }
             else //dump queried sections/methods/runtimeFunctions
             {
                 if (_header)
                 {
-                    DumpHeader(r2r, false, rootNode);
+                    _dumper.DumpHeader(false);
                 }
 
-                QuerySection(r2r, _sections, rootNode);
-                QueryRuntimeFunction(r2r, _runtimeFunctions, rootNode);
-                QueryMethod(r2r, "R2R Methods by Query", _queries, true, rootNode);
-                QueryMethod(r2r, "R2R Methods by Keyword", _keywords, false, rootNode);
+                QuerySection(r2r, _sections);
+                QueryRuntimeFunction(r2r, _runtimeFunctions);
+                QueryMethod(r2r, "R2R Methods by Query", _queries, true);
+                QueryMethod(r2r, "R2R Methods by Keyword", _keywords, false);
             }
-            if (!_xml)
-            {
-                _writer.WriteLine("=============================================================");
-                SkipLine();
-            }
-        }
 
-        private void Serialize(object obj, XmlNode node)
-        {
-            using (XmlWriter xmlWriter = node.CreateNavigator().AppendChild())
-            {
-                xmlWriter.WriteWhitespace("");
-                XmlSerializer Serializer = new XmlSerializer(obj.GetType());
-                Serializer.Serialize(xmlWriter, obj);
-            }
-        }
-
-        private XmlNode AddXMLNode(String name, String contents, XmlNode parentNode)
-        {
-            XmlNode node = _xmlDocument.CreateNode("element", name, "");
-            parentNode.AppendChild(node);
-            node.InnerText = contents;
-            return node;
+            _dumper.End();
         }
 
         /// <summary>
@@ -837,14 +375,19 @@ namespace R2RDump
                 foreach (string filename in _inputFilenames)
                 {
                     R2RReader r2r = new R2RReader(filename);
-                    if (_xml)
-                    {
-                        _xmlDocument = new XmlDocument();
-                    }
 
                     if (_disasm)
                     {
                         _disassembler = CoreDisTools.GetDisasm(r2r.Machine);
+                    }
+
+                    if (_xml)
+                    {
+                        _dumper = new XmlDumper(r2r, _writer, _raw, _header, _disasm, _disassembler, _unwind, _gc, _sectionContents);
+                    }
+                    else
+                    {
+                        _dumper = new TextDumper(r2r, _writer, _raw, _header, _disasm, _disassembler, _unwind, _gc, _sectionContents);
                     }
 
                     Dump(r2r);
@@ -852,11 +395,6 @@ namespace R2RDump
                     if (_disasm)
                     {
                         CoreDisTools.FinishDisasm(_disassembler);
-                    }
-
-                    if (_xml)
-                    {
-                        _xmlDocument.Save(_writer);
                     }
                 }
             }
