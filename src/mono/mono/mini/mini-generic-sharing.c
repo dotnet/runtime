@@ -723,6 +723,28 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 
 		return res;
 	}
+	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO: {
+		ERROR_DECL (error);
+		MonoDelegateClassMethodPair *dele_info = (MonoDelegateClassMethodPair*)data;
+		MonoDomain *domain = mono_domain_get ();
+
+		MonoType *t = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (dele_info->klass), context, error);
+		mono_error_assert_msg_ok (error, "Could not inflate generic type"); /* FIXME proper error handling */
+
+		MonoClass *klass = mono_class_from_mono_type (t);
+		mono_metadata_free_type (t);
+
+		MonoMethod *method = mono_class_inflate_generic_method_checked (dele_info->method, context, error);
+		mono_error_assert_msg_ok (error, "Could not inflate generic method"); /* FIXME proper error handling */
+
+		// FIXME: Temporary
+		MonoDelegateClassMethodPair *res = (MonoDelegateClassMethodPair *)mono_domain_alloc0 (domain, sizeof (MonoDelegateClassMethodPair));
+		res->is_virtual = dele_info->is_virtual;
+		res->method = method;
+		res->klass = klass;
+		return res;
+
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -2239,6 +2261,18 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 		return res;
 	}
+	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO: {
+		MonoDelegateClassMethodPair *dele_info = (MonoDelegateClassMethodPair*)data;
+		gpointer trampoline;
+
+		if (dele_info->is_virtual)
+			trampoline = mono_create_delegate_virtual_trampoline (domain, dele_info->klass, dele_info->method);
+		else
+			trampoline = mono_create_delegate_trampoline_info (domain, dele_info->klass, dele_info->method);
+
+		g_assert (trampoline);
+		return trampoline;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -2313,6 +2347,7 @@ mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX: return "NULLABLE_CLASS_UNBOX";
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE: return "VIRT_METHOD_CODE";
 	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: return "VIRT_METHOD_BOX_TYPE";
+	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO: return "DELEGATE_TRAMP_INFO";
 	default:
 		return "<UNKNOWN RGCTX INFO TYPE>";
 	}
@@ -2417,6 +2452,12 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 		MonoJumpInfoVirtMethod *info2 = (MonoJumpInfoVirtMethod *)data2;
 
 		return info1->klass == info2->klass && info1->method == info2->method;
+	}
+	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO: {
+		MonoDelegateClassMethodPair *dele1 = (MonoDelegateClassMethodPair *)data1;
+		MonoDelegateClassMethodPair *dele2 = (MonoDelegateClassMethodPair *)data2;
+
+		return dele1->is_virtual == dele2->is_virtual && dele1->method == dele2->method && dele1->klass == dele2->klass;
 	}
 	default:
 		g_assert_not_reached ();
@@ -3876,6 +3917,15 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 
 		info = (MonoJumpInfoVirtMethod *)g_malloc0 (sizeof (MonoJumpInfoVirtMethod));
 		memcpy (info, oinfo, sizeof (MonoJumpInfoVirtMethod));
+		slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, info, entry->info_type, mono_method_get_context (entry->method));
+		break;
+	}
+	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
+		MonoDelegateClassMethodPair *info;
+		MonoDelegateClassMethodPair *oinfo = entry->data->data.del_tramp;
+
+		info = (MonoDelegateClassMethodPair *)g_malloc0 (sizeof (MonoDelegateClassMethodPair));
+		memcpy (info, oinfo, sizeof (MonoDelegateClassMethodPair));
 		slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, info, entry->info_type, mono_method_get_context (entry->method));
 		break;
 	}

@@ -994,7 +994,9 @@ typedef enum {
 	 */
 	MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE,
 	/* Resolve to 2 (TRUE) or 1 (FALSE) */
-	MONO_RGCTX_INFO_CLASS_IS_REF_OR_CONTAINS_REFS
+	MONO_RGCTX_INFO_CLASS_IS_REF_OR_CONTAINS_REFS,
+	/* The MonoDelegateTrampInfo instance */
+	MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO,
 } MonoRgctxInfoType;
 
 typedef struct _MonoRuntimeGenericContextInfoTemplate {
