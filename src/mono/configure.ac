@@ -3739,16 +3739,16 @@ fi
 internal_llvm="no"
 if test "x$enable_llvm" = "xyes"; then
 	if test "x$with_llvm" != "x"; then
-		LLVM_CONFIG=$with_llvm/bin/llvm-config
-		if test ! -x $LLVM_CONFIG; then
-			AC_MSG_ERROR([LLVM executable $LLVM_CONFIG not found.])
+		EXTERNAL_LLVM_CONFIG=$with_llvm/bin/llvm-config
+		if test ! -x $EXTERNAL_LLVM_CONFIG; then
+			AC_MSG_ERROR([LLVM executable $EXTERNAL_LLVM_CONFIG not found.])
 		fi
 	else
-		AC_PATH_PROG(LLVM_CONFIG, llvm-config, no)
-		if test "x$LLVM_CONFIG" = "xno"; then
+		AC_PATH_PROG(EXTERNAL_LLVM_CONFIG, llvm-config, no)
+		if test "x$EXTERNAL_LLVM_CONFIG" = "xno"; then
 			internal_llvm=yes
 		else
-			with_llvm=`$LLVM_CONFIG --prefix`
+			with_llvm=`$EXTERNAL_LLVM_CONFIG --prefix`
 		fi
 	fi
           
@@ -3771,6 +3771,7 @@ if test "x$enable_llvm" = "xyes"; then
 		fi
 
 		AC_SUBST(LLVM_CODEGEN_LIBS)
+		AC_SUBST(EXTERNAL_LLVM_CONFIG)
 	else # is win32
 		AC_MSG_ERROR([LLVM for Windows only supported using Visual Studio build mono runtime, see http://www.mono-project.com/docs/advanced/mono-llvm/ for more details.])
 	fi # win32
