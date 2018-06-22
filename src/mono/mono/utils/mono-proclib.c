@@ -39,6 +39,9 @@
 #if defined(__HAIKU__)
 #include <os/kernel/OS.h>
 #endif
+#if defined(_AIX)
+#include <procinfo.h>
+#endif
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
 #include <sys/proc.h>
 #if defined(__APPLE__)
@@ -176,6 +179,44 @@ mono_process_list (int *size)
 	*size = i;
 
 	return buf;
+#elif defined(_AIX)
+	void **buf = NULL;
+	struct procentry64 *procs = NULL;
+	int count = 0;
+	int i = 0;
+	pid_t pid = 1; // start at 1, 0 is a null process (???)
+
+	// count number of procs + compensate for new ones forked in while we do it.
+	// (it's not an atomic operation) 1000000 is the limit IBM ps seems to use
+	// when I inspected it under truss. the second call we do to getprocs64 will
+	// then only allocate what we need, instead of allocating some obscenely large
+	// array on the heap.
+	count = getprocs64(NULL, sizeof (struct procentry64), NULL, 0, &pid, 1000000);
+	if (count < 1)
+		goto cleanup;
+	count += 10;
+	pid = 1; // reset the pid cookie
+
+	// 5026 bytes is the ideal size for the C struct. you may not like it, but
+	// this is what peak allocation looks like
+	procs = g_calloc (count, sizeof (struct procentry64));
+	// the man page recommends you do this in a loop, but you can also just do it
+	// in one shot; again, like what ps does. let the returned count (in case it's
+	// less) be what we then allocate the array of pids from (in case of ANOTHER
+	// system-wide race condition with processes)
+	count = getprocs64 (procs, sizeof (struct procentry64), NULL, 0, &pid, count);
+	if (count < 1 || procs == NULL)
+		goto cleanup;
+	buf = g_calloc (count, sizeof (void*));
+	for (i = 0; i < count; i++) {
+		buf[i] = GINT_TO_POINTER (procs[i].pi_pid);
+	}
+	*size = i;
+
+cleanup:
+	if (procs)
+		g_free (procs);
+	return buf;
 #else
 	const char *name;
 	void **buf = NULL;
@@ -308,6 +349,14 @@ mono_process_get_name (gpointer pid, char *buf, int len)
 	if (sysctl_kinfo_proc (pid, &processi))
 		memcpy (buf, processi.kinfo_name_member, len - 1);
 
+	return buf;
+#elif defined(_AIX)
+	struct procentry64 proc;
+	pid_t newpid = GPOINTER_TO_INT (pid);
+
+	if (getprocs64 (&proc, sizeof (struct procentry64), NULL, 0, &newpid, 1) == 1) {
+		g_strlcpy (buf, proc.pi_comm, len - 1);
+	}
 	return buf;
 #else
 	char fname [128];

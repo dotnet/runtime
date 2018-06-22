@@ -547,7 +547,7 @@ process_is_alive (pid_t pid)
 {
 #if defined(HOST_WATCHOS)
 	return TRUE; // TODO: Rewrite using sysctl
-#elif defined(HOST_DARWIN) || defined(__OpenBSD__) || defined(__FreeBSD__)
+#elif defined(HOST_DARWIN) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(_AIX)
 	if (pid == 0)
 		return FALSE;
 	if (kill (pid, 0) == 0)

@@ -728,7 +728,12 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 #endif
 	if (res != 0) {
 		if (res == EPERM) {
+#if !defined(_AIX)
+			/* AIX doesn't like doing this and will spam this every time;
+			 * weirdly, i doesn't complain
+			 */
 			g_warning ("%s: pthread_setschedparam failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif
 			return;
 		}
 		g_error ("%s: pthread_setschedparam failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
