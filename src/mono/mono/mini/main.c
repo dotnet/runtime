@@ -321,7 +321,9 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 		} else if (strncmp (kind, "options:", strlen ("options:")) == 0){
 			mono_parse_options_from (load_from_region (fd, offset, item_size), ref_argc, ref_argv);
 		} else if (strncmp (kind, "config_dir:", strlen ("config_dir:")) == 0){
-			mono_set_dirs (getenv ("MONO_PATH"), load_from_region (fd, offset, item_size));
+			char *mono_path_value = g_getenv ("MONO_PATH");
+			mono_set_dirs (mono_path_value, load_from_region (fd, offset, item_size));
+			g_free (mono_path_value);
 		} else if (strncmp (kind, "machineconfig:", strlen ("machineconfig:")) == 0) {
 			mono_register_machine_config (load_from_region (fd, offset, item_size));
 		} else if (strncmp (kind, "env:", strlen ("env:")) == 0){

@@ -1755,7 +1755,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 	static char* verbose_method_name;
 
 	if (!verbose_method_inited) {
-		verbose_method_name = getenv ("MONO_VERBOSE_METHOD");
+		verbose_method_name = g_getenv ("MONO_VERBOSE_METHOD");
 		verbose_method_inited = TRUE;
 	}
 
