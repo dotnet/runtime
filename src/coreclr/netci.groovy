@@ -2220,7 +2220,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         if (doCoreFxTesting) {
                             if (scenario == 'corefx_innerloop') {
                                 // Create CORE_ROOT and testhost
-                                buildCommands += "tests\\build-test.cmd ${lowerConfiguration} ${arch} skipmanaged"                                
+                                buildCommands += "build-test.cmd ${lowerConfiguration} ${arch} skipmanaged"                                
                                 buildCommands += "tests\\runtest.cmd ${runtestArguments} CoreFXTests"
                                 
                                 // Archive and process (only) the test results
