@@ -87,8 +87,8 @@ mono_native_state_add_frame (JsonWriter *writer, MonoFrameSummary *frame)
 
 	if (frame->is_managed) {
 		mono_json_writer_indent (writer);
-		mono_json_writer_object_key(writer, "assembly");
-		mono_json_writer_printf (writer, "\"%s\",\n", frame->str_descr);
+		mono_json_writer_object_key(writer, "guid");
+		mono_json_writer_printf (writer, "\"%s\",\n", frame->managed_data.guid);
 
 		mono_json_writer_indent (writer);
 		mono_json_writer_object_key(writer, "token");
@@ -453,7 +453,6 @@ mono_native_state_add_epilogue (JsonWriter *writer)
 	mono_json_writer_indent_pop (writer);
 	mono_json_writer_indent (writer);
 	mono_json_writer_object_end (writer);
-	mono_json_writer_printf (writer, "\n");
 }
 
 void

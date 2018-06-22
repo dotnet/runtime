@@ -1355,14 +1355,20 @@ summarize_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	if (method && method->wrapper_type != MONO_WRAPPER_NONE) {
 		dest->is_managed = FALSE;
 		dest->unmanaged_data.has_name = TRUE;
+
 		copy_summary_string_safe (dest->str_descr, mono_method_full_name (method, TRUE));
 	}
 
 	MonoDebugSourceLocation *location = NULL;
 
 	if (dest->is_managed) {
+		MonoImage *image = mono_class_get_image (method->klass);
+		// Used for hashing, more stable across rebuilds than using GUID
+		copy_summary_string_safe (dest->str_descr, image->assembly_name);
+
+		dest->managed_data.guid = image->guid;
+
 		dest->managed_data.native_offset = frame->native_offset;
-		copy_summary_string_safe (dest->str_descr, mono_class_get_image(method->klass)->assembly_name);
 		dest->managed_data.token = method->token;
 		location = mono_debug_lookup_source_location (method, frame->native_offset, mono_domain_get ());
 	} else {

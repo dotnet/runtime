@@ -351,6 +351,7 @@ typedef struct {
 		int token;
 		int il_offset;
 		int native_offset;
+		const char *guid;
 	} managed_data;
 	struct {
 		intptr_t ip;
