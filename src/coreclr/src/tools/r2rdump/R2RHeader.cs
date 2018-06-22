@@ -70,9 +70,9 @@ namespace R2RDump
             RelativeVirtualAddress = rva;
             int startOffset = curOffset;
 
-            byte[] signature = new byte[sizeof(uint)];
-            Array.Copy(image, curOffset, signature, 0, sizeof(uint));
-            SignatureString = Encoding.UTF8.GetString(signature).Replace("\0", string.Empty); ;
+            byte[] signature = new byte[sizeof(uint) - 1]; // -1 removes the null character at the end of the cstring
+            Array.Copy(image, curOffset, signature, 0, sizeof(uint) - 1);
+            SignatureString = Encoding.UTF8.GetString(signature);
             Signature = NativeReader.ReadUInt32(image, ref curOffset);
             if (Signature != READYTORUN_SIGNATURE)
             {
