@@ -230,7 +230,10 @@ namespace R2RDump
                     methodNode.AppendChild(gcNode);
                     Serialize(method.GcInfo, gcNode);
 
-                    Serialize(new List<GcInfo.GcTransition>(method.GcInfo.Transitions.Values), gcNode);
+                    foreach (KeyValuePair<int, GcInfo.GcTransition> transition in method.GcInfo.Transitions)
+                    {
+                        Serialize(transition, gcNode);
+                    }
                 }
                 else
                 {
@@ -407,21 +410,29 @@ namespace R2RDump
                     }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS:
-                    if (!_xml)
+                    int rtfOffset = r2r.GetOffset(section.RelativeVirtualAddress);
+                    int rtfEndOffset = rtfOffset + section.Size;
+                    int rtfIndex = 0;
+                    while (rtfOffset < rtfEndOffset)
                     {
-                        int rtfOffset = r2r.GetOffset(section.RelativeVirtualAddress);
-                        int rtfEndOffset = rtfOffset + section.Size;
-                        int rtfIndex = 0;
-                        while (rtfOffset < rtfEndOffset)
+                        uint rva = NativeReader.ReadUInt32(r2r.Image, ref rtfOffset);
+                        if (_xml)
                         {
-                            uint rva = NativeReader.ReadUInt32(r2r.Image, ref rtfOffset);
-                            _writer.WriteLine($"{rtfIndex}: 0x{rva:X8}");
-                            rtfIndex++;
+                            AddXMLNode($"{rtfIndex}", $"0x{rva:X8}", contentsNode);
                         }
+                        else
+                        {
+                            _writer.WriteLine($"{rtfIndex}: 0x{rva:X8}");
+                        }
+                        rtfIndex++;
                     }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER:
-                    if (!_xml)
+                    if(_xml)
+                    {
+                        AddXMLNode("CompileIdentifier", r2r.CompileIdentifier, contentsNode);
+                    }
+                    else
                     {
                         _writer.WriteLine(r2r.CompileIdentifier);
                     }
@@ -482,15 +493,20 @@ namespace R2RDump
                                 DumpBytes(r2r, importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size, bytesNode);
                             }
                         }
-                        if (!_xml)
+                        foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
                         {
-                            foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
+                            if (_xml)
+                            {
+                                Serialize(entry, contentsNode);
+                            }
+                            else
                             {
                                 _writer.WriteLine();
                                 _writer.WriteLine(entry.ToString());
                             }
-                            _writer.WriteLine();
                         }
+                        if (!_xml)
+                            _writer.WriteLine();
                     }
                     break;
             }
