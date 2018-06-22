@@ -753,8 +753,10 @@ mono_de_ss_req_release (SingleStepReq *req)
 void
 mono_de_cancel_ss (void)
 {
-	if (the_ss_req)
+	if (the_ss_req) {
 		mono_de_ss_req_release (the_ss_req);
+		the_ss_req = NULL;
+	}
 }
 
 
