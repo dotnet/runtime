@@ -559,18 +559,17 @@ namespace System.IO
         /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
         public virtual Task WriteAsync(StringBuilder value, CancellationToken cancellationToken = default)
         {
-            // Do the argument checking before 'going async' so you get it early
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            // Then do the rest which may be deferred (done in the returned Task)
-            return WriteAsyncCore(value, cancellationToken);
+            return
+                cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+                value == null ? Task.CompletedTask :
+                WriteAsyncCore(value, cancellationToken);
 
             async Task WriteAsyncCore(StringBuilder sb, CancellationToken ct)
             {
                 foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
+                {
                     await WriteAsync(chunk, ct).ConfigureAwait(false);
+                }
             }
         }
 
@@ -596,6 +595,7 @@ namespace System.IO
         }
 
         public virtual Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
             MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 WriteAsync(array.Array, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
@@ -631,10 +631,21 @@ namespace System.IO
         /// StringBuilder.GetChunks() method to avoid creating the intermediate string
         /// </summary>
         /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
-        public async virtual Task WriteLineAsync(StringBuilder value, CancellationToken cancellationToken = default)
+        public virtual Task WriteLineAsync(StringBuilder value, CancellationToken cancellationToken = default)
         {
-            await WriteAsync(value, cancellationToken).ConfigureAwait(false);
-            await WriteAsync(CoreNewLine, cancellationToken).ConfigureAwait(false);
+            return
+                cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+                value == null ? WriteAsync(CoreNewLine, cancellationToken) :
+                WriteLineAsyncCore(value, cancellationToken);
+
+            async Task WriteLineAsyncCore(StringBuilder sb, CancellationToken ct)
+            {
+                foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
+                {
+                    await WriteAsync(chunk, ct).ConfigureAwait(false);
+                }
+                await WriteAsync(CoreNewLine, ct).ConfigureAwait(false);
+            }
         }
 
         public Task WriteLineAsync(char[] buffer)
@@ -659,6 +670,7 @@ namespace System.IO
         }
 
         public virtual Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
             MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 WriteLineAsync(array.Array, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
