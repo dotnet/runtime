@@ -6,25 +6,12 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "icushim.h"
-#include "locale.hpp"
-#include "holders.h"
-#include "errors.h"
-
-/*
-These values should be kept in sync with the managed Interop.GlobalizationInterop.TimeZoneDisplayNameType enum.
-*/
-enum TimeZoneDisplayNameType : int32_t
-{
-    Generic = 0,
-    Standard = 1,
-    DaylightSavings = 2,
-};
+#include "pal_timeZoneInfo.h"
 
 /*
 Gets the localized display name for the specified time zone.
 */
-extern "C" ResultCode GlobalizationNative_GetTimeZoneDisplayName(
+ResultCode GlobalizationNative_GetTimeZoneDisplayName(
     const UChar* localeName, const UChar* timeZoneId, TimeZoneDisplayNameType type, UChar* result, int32_t resultLength)
 {
     UErrorCode err = U_ZERO_ERROR;
@@ -33,7 +20,6 @@ extern "C" ResultCode GlobalizationNative_GetTimeZoneDisplayName(
 
     int32_t timeZoneIdLength = -1; // timeZoneId is NULL-terminated
     UCalendar* calendar = ucal_open(timeZoneId, timeZoneIdLength, locale, UCAL_DEFAULT, &err);
-    UCalendarHolder calendarHolder(calendar, err);
 
     // TODO (https://github.com/dotnet/corefx/issues/5741): need to support Generic names, but ICU "C" api
     // has no public option for this. For now, just use the ICU standard name for both Standard and Generic
@@ -41,5 +27,6 @@ extern "C" ResultCode GlobalizationNative_GetTimeZoneDisplayName(
     ucal_getTimeZoneDisplayName(
         calendar, type == DaylightSavings ? UCAL_DST : UCAL_STANDARD, locale, result, resultLength, &err);
 
+    ucal_close(calendar);
     return GetResultCode(err);
 }

@@ -5,13 +5,13 @@
 
 #include <assert.h>
 #include <pthread.h>
+#include <stdlib.h>
+#include <stdbool.h>
 #include <stdint.h>
-#include <vector>
-#include <map>
+#include <search.h>
+#include <string.h>
 
-#include "icushim.h"
-#include "locale.hpp"
-#include "errors.h"
+#include "pal_collation.h"
 
 const int32_t CompareOptionsIgnoreCase = 0x1;
 const int32_t CompareOptionsIgnoreNonSpace = 0x2;
@@ -24,34 +24,18 @@ const int32_t CompareOptionsIgnoreWidth = 0x10;
 // Windows and Unix platforms. The nonalphanumeric symbols will come after alphanumeric
 // characters on Windows, but before on Unix.
 // Since locale - specific string sort order can change from one version of Windows to the next,
-// there is no reason to guarantee string sort order between Windows and ICU. Thus trying to 
+// there is no reason to guarantee string sort order between Windows and ICU. Thus trying to
 // change ICU's default behavior here isn't really justified unless someone has a strong reason
 // for !StringSort to behave differently.
 
-typedef std::map<int32_t, UCollator*> TCollatorMap;
-typedef std::pair<int32_t, UCollator*> TCollatorMapPair;
+typedef struct { UChar* items; size_t size; } UCharList;
 
-/*
- * For increased performance, we cache the UCollator objects for a locale and
- * share them across threads. This is safe (and supported in ICU) if we ensure
- * multiple threads are only ever dealing with const UCollators.
- */
-typedef struct _sort_handle
+int TreeComparer(const void* left, const void* right)
 {
-    UCollator* regular;
-    TCollatorMap collatorsPerOption;
-    pthread_mutex_t collatorsLockObject;
-
-    _sort_handle() : regular(nullptr)
-    {
-        int result = pthread_mutex_init(&collatorsLockObject, NULL);
-        if (result != 0)
-        {
-            assert(false && "Unexpected pthread_mutex_init return value.");
-        }
-    }
-
-} SortHandle;
+    const TCollatorMap* leftMap = left;
+    const TCollatorMap* rightMap = right;
+    return leftMap->key - rightMap->key;
+}
 
 // Hiragana character range
 const UChar hiraganaStart = 0x3041;
@@ -133,13 +117,31 @@ bool IsHalfFullHigherSymbol(UChar character)
         || (0xff61 <= character && character <= 0xff65);
 }
 
+static bool AddItem(UCharList* list, size_t* currentCapacity, const UChar item)
+{
+    size_t size = list->size++;
+    if(size >= *currentCapacity)
+    {
+        *currentCapacity *= 2;
+        UChar* ptr = (UChar*)realloc(list->items, *currentCapacity * sizeof(UChar*));
+        if(ptr == NULL)
+        {
+            return false;
+        }
+        list->items = ptr;
+    }
+
+    list->items[size] = item;
+    return true;
+}
+
 /*
 Gets a string of custom collation rules, if necessary.
 
 Since the CompareOptions flags don't map 1:1 with ICU default functionality, we need to fall back to using
 custom rules in order to support IgnoreKanaType and IgnoreWidth CompareOptions correctly.
 */
-std::vector<UChar> GetCustomRules(int32_t options, UColAttributeValue strength, bool isIgnoreSymbols)
+UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, bool isIgnoreSymbols)
 {
     bool isIgnoreKanaType = (options & CompareOptionsIgnoreKanaType) == CompareOptionsIgnoreKanaType;
     bool isIgnoreWidth = (options & CompareOptionsIgnoreWidth) == CompareOptionsIgnoreWidth;
@@ -152,60 +154,78 @@ std::vector<UChar> GetCustomRules(int32_t options, UColAttributeValue strength, 
     bool needsIgnoreWidthCustomRule = isIgnoreWidth && strength >= UCOL_TERTIARY;
     bool needsNotIgnoreWidthCustomRule = !isIgnoreWidth && strength < UCOL_TERTIARY;
 
-    std::vector<UChar> customRules;
-    if (needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule || needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule)
+    if (!(needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule || needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule))
+        return NULL;
+
+    // If we need to create customRules, the KanaType custom rule will be 88 kana characters * 4 = 352 chars long
+    // and the Width custom rule will be at least 215 halfwidth characters * 4 = 860 chars long.
+    // Use 512 as the starting size, so the customRules won't have to grow if we are just
+    // doing the KanaType custom rule.
+    size_t capacity = 512;
+    UCharList* customRules = (UCharList*)malloc(sizeof(UCharList));
+    if (customRules == NULL)
     {
-        // If we need to create customRules, the KanaType custom rule will be 88 kana characters * 4 = 352 chars long
-        // and the Width custom rule will be at least 215 halfwidth characters * 4 = 860 chars long.
-        // Use 512 as the starting size, so the customRules won't have to grow if we are just
-        // doing the KanaType custom rule.
-        customRules.reserve(512);
+        return NULL;
+    }
 
-        if (needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule)
+    customRules->items = calloc(capacity, sizeof(UChar));
+    if (customRules->items == NULL)
+    {
+        free(customRules);
+        return NULL;
+    }
+
+    customRules->size = 0;
+
+    if (needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule)
+    {
+        UChar compareChar = needsIgnoreKanaTypeCustomRule ? '=' : '<';
+
+        for (UChar hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
         {
-            UChar compareChar = needsIgnoreKanaTypeCustomRule ? '=' : '<';
-
-            for (UChar hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
+            // Hiragana is the range 3041 to 3096 & 309D & 309E
+            if (hiraganaChar <= 0x3096 || hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
             {
-                // Hiragana is the range 3041 to 3096 & 309D & 309E
-                if (hiraganaChar <= 0x3096 || hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
+                if(!(AddItem(customRules, &capacity, '&')              &&
+                     AddItem(customRules, &capacity, hiraganaChar)     &&
+                     AddItem(customRules, &capacity, compareChar)      &&
+                     AddItem(customRules, &capacity, hiraganaChar + hiraganaToKatakanaOffset)))
                 {
-                    customRules.push_back('&');
-                    customRules.push_back(hiraganaChar);
-                    customRules.push_back(compareChar);
-                    customRules.push_back(hiraganaChar + hiraganaToKatakanaOffset);
+                    free(customRules->items);
+                    free(customRules);
+                    return NULL;
                 }
             }
         }
+    }
 
-        if (needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule)
+    if (needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule)
+    {
+        UChar compareChar = needsIgnoreWidthCustomRule ? '=' : '<';
+
+        UChar lowerChar;
+        UChar higherChar;
+        bool needsEscape;
+        for (int i = 0; i < g_HalfFullCharsLength; i++)
         {
-            UChar compareChar = needsIgnoreWidthCustomRule ? '=' : '<';
+            lowerChar = g_HalfFullLowerChars[i];
+            higherChar = g_HalfFullHigherChars[i];
+            // the lower chars need to be checked for escaping since they contain ASCII punctuation
+            needsEscape = NeedsEscape(lowerChar);
 
-            UChar lowerChar;
-            UChar higherChar;
-            bool needsEscape;
-            for (int i = 0; i < g_HalfFullCharsLength; i++)
+            // when isIgnoreSymbols is true and we are not ignoring width, check to see if
+            // this character is a symbol, and if so skip it
+            if (!(isIgnoreSymbols && needsNotIgnoreWidthCustomRule && (needsEscape || IsHalfFullHigherSymbol(higherChar))))
             {
-                lowerChar = g_HalfFullLowerChars[i];
-                higherChar = g_HalfFullHigherChars[i];
-                // the lower chars need to be checked for escaping since they contain ASCII punctuation
-                needsEscape = NeedsEscape(lowerChar);
-
-                // when isIgnoreSymbols is true and we are not ignoring width, check to see if
-                // this character is a symbol, and if so skip it
-                if (!(isIgnoreSymbols && needsNotIgnoreWidthCustomRule && (needsEscape || IsHalfFullHigherSymbol(higherChar))))
+                if(!(AddItem(customRules, &capacity, '&')                    &&
+                   (!needsEscape || AddItem(customRules, &capacity, '\\'))   &&
+                   AddItem(customRules, &capacity, lowerChar)                &&
+                   AddItem(customRules, &capacity, compareChar)              &&
+                   AddItem(customRules, &capacity, higherChar)))
                 {
-                    customRules.push_back('&');
-
-                    if (needsEscape)
-                    {
-                        customRules.push_back('\\');
-                    }
-                    customRules.push_back(lowerChar);
-
-                    customRules.push_back(compareChar);
-                    customRules.push_back(higherChar);
+                    free(customRules->items);
+                    free(customRules);
+                    return NULL;
                 }
             }
         }
@@ -239,29 +259,31 @@ UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options,
     }
 
     UCollator* pClonedCollator;
-    std::vector<UChar> customRules = GetCustomRules(options, strength, isIgnoreSymbols);
-    if (customRules.empty())
+    UCharList* customRules = GetCustomRules(options, strength, isIgnoreSymbols);
+    if (customRules == NULL)
     {
-        pClonedCollator = ucol_safeClone(pCollator, nullptr, nullptr, pErr);
+        pClonedCollator = ucol_safeClone(pCollator, NULL, NULL, pErr);
     }
     else
     {
-        int32_t customRuleLength = customRules.size();
+        int32_t customRuleLength = customRules->size;
 
         int32_t localeRulesLength;
         const UChar* localeRules = ucol_getRules(pCollator, &localeRulesLength);
+        int32_t completeRulesLength = localeRulesLength + customRuleLength + 1;
 
-        std::vector<UChar> completeRules(localeRulesLength + customRuleLength + 1, '\0');
+        UChar* completeRules = calloc(completeRulesLength, sizeof(UChar));
+
         for (int i = 0; i < localeRulesLength; i++)
         {
             completeRules[i] = localeRules[i];
         }
         for (int i = 0; i < customRuleLength; i++)
         {
-            completeRules[localeRulesLength + i] = customRules[i];
+            completeRules[localeRulesLength + i] = customRules->items[i];
         }
 
-        pClonedCollator = ucol_openRules(completeRules.data(), completeRules.size(), UCOL_DEFAULT, strength, NULL, pErr);
+        pClonedCollator = ucol_openRules(completeRules, completeRulesLength, UCOL_DEFAULT, strength, NULL, pErr);
     }
 
     if (isIgnoreSymbols)
@@ -327,14 +349,21 @@ bool CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lpStr, i
 
 }
 
-extern "C" ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandle** ppSortHandle)
+ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandle** ppSortHandle)
 {
-    assert(ppSortHandle != nullptr);
-    
-    *ppSortHandle = new (std::nothrow) SortHandle();
-    if ((*ppSortHandle) == nullptr)
+    assert(ppSortHandle != NULL);
+
+    *ppSortHandle = (SortHandle*)malloc(sizeof(SortHandle));
+    if ((*ppSortHandle) == NULL)
     {
         return GetResultCode(U_MEMORY_ALLOCATION_ERROR);
+    }
+
+    (*ppSortHandle)->pRoot = NULL;
+    int result = pthread_mutex_init(&(*ppSortHandle)->collatorsLockObject, NULL);
+    if (result != 0)
+    {
+        assert(false && "Unexpected pthread_mutex_init return value.");
     }
 
     UErrorCode err = U_ZERO_ERROR;
@@ -343,30 +372,32 @@ extern "C" ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName
 
     if (U_FAILURE(err))
     {
-        if ((*ppSortHandle)->regular != nullptr)
+        if ((*ppSortHandle)->regular != NULL)
             ucol_close((*ppSortHandle)->regular);
 
-        delete (*ppSortHandle);
-        (*ppSortHandle) = nullptr;
+        free(*ppSortHandle);
+        (*ppSortHandle) = NULL;
     }
 
     return GetResultCode(err);
 }
 
-extern "C" void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
+void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
 {
     ucol_close(pSortHandle->regular);
-    pSortHandle->regular = nullptr;
+    pSortHandle->regular = NULL;
 
-    TCollatorMap::iterator it;
-    for (it = pSortHandle->collatorsPerOption.begin(); it != pSortHandle->collatorsPerOption.end(); it++)
+    while (pSortHandle->pRoot != NULL)
     {
-        ucol_close(it->second);
+        TCollatorMap* data = *(TCollatorMap **)pSortHandle->pRoot;
+        tdelete(data, &pSortHandle->pRoot, TreeComparer);
+        ucol_close(data->UCollator);
+        free(data);
     }
 
     pthread_mutex_destroy(&pSortHandle->collatorsLockObject);
 
-    delete pSortHandle;
+    free(pSortHandle);
 }
 
 const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t options, UErrorCode* pErr)
@@ -384,15 +415,18 @@ const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t opti
             assert(false && "Unexpected pthread_mutex_lock return value.");
         }
 
-        TCollatorMap::iterator entry = pSortHandle->collatorsPerOption.find(options);
-        if (entry == pSortHandle->collatorsPerOption.end())
+        TCollatorMap* map = (TCollatorMap*)malloc(sizeof(TCollatorMap));
+        map->key = options;
+        void* entry = tfind(map, &pSortHandle->pRoot, TreeComparer);
+        if (entry == NULL)
         {
             pCollator = CloneCollatorWithOptions(pSortHandle->regular, options, pErr);
-            pSortHandle->collatorsPerOption[options] = pCollator;
+            map->UCollator = pCollator;
+            tsearch(map, &pSortHandle->pRoot, TreeComparer);
         }
         else
         {
-            pCollator = entry->second;
+            pCollator = (*(TCollatorMap**)entry)->UCollator;
         }
 
         pthread_mutex_unlock(&pSortHandle->collatorsLockObject);
@@ -401,7 +435,7 @@ const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t opti
     return pCollator;
 }
 
-extern "C" int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
+int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
 {
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, 0, &err);
@@ -425,7 +459,7 @@ extern "C" int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
 Function:
 CompareString
 */
-extern "C" int32_t GlobalizationNative_CompareString(
+int32_t GlobalizationNative_CompareString(
     SortHandle* pSortHandle, const UChar* lpStr1, int32_t cwStr1Length, const UChar* lpStr2, int32_t cwStr2Length, int32_t options)
 {
     static_assert(UCOL_EQUAL == 0, "managed side requires 0 for equal strings");
@@ -448,7 +482,7 @@ extern "C" int32_t GlobalizationNative_CompareString(
 Function:
 IndexOf
 */
-extern "C" int32_t GlobalizationNative_IndexOf(
+int32_t GlobalizationNative_IndexOf(
                         SortHandle* pSortHandle, 
                         const UChar* lpTarget, 
                         int32_t cwTargetLength, 
@@ -465,7 +499,7 @@ extern "C" int32_t GlobalizationNative_IndexOf(
 
     if (U_SUCCESS(err))
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, nullptr, &err);
+        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
 
         if (U_SUCCESS(err))
         {
@@ -488,7 +522,7 @@ extern "C" int32_t GlobalizationNative_IndexOf(
 Function:
 LastIndexOf
 */
-extern "C" int32_t GlobalizationNative_LastIndexOf(
+int32_t GlobalizationNative_LastIndexOf(
                         SortHandle* pSortHandle, 
                         const UChar* lpTarget, 
                         int32_t cwTargetLength, 
@@ -504,7 +538,7 @@ extern "C" int32_t GlobalizationNative_LastIndexOf(
 
     if (U_SUCCESS(err))
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, nullptr, &err);
+        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
 
         if (U_SUCCESS(err))
         {
@@ -544,7 +578,7 @@ static bool AreEqualOrdinalIgnoreCase(UChar32 one, UChar32 two)
 Function:
 IndexOfOrdinalIgnoreCase
 */
-extern "C" int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
+int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
     const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t findLast)
 {
     int32_t result = -1;
@@ -589,7 +623,7 @@ extern "C" int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
 /*
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
-extern "C" int32_t GlobalizationNative_StartsWith(
+int32_t GlobalizationNative_StartsWith(
                         SortHandle* pSortHandle, 
                         const UChar* lpTarget, 
                         int32_t cwTargetLength, 
@@ -603,7 +637,7 @@ extern "C" int32_t GlobalizationNative_StartsWith(
 
     if (U_SUCCESS(err))
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, nullptr, &err);
+        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
         int32_t idx = USEARCH_DONE;
 
         if (U_SUCCESS(err))
@@ -631,7 +665,7 @@ extern "C" int32_t GlobalizationNative_StartsWith(
 /*
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
-extern "C" int32_t GlobalizationNative_EndsWith(
+int32_t GlobalizationNative_EndsWith(
                         SortHandle* pSortHandle, 
                         const UChar* lpTarget, 
                         int32_t cwTargetLength, 
@@ -645,7 +679,7 @@ extern "C" int32_t GlobalizationNative_EndsWith(
 
     if (U_SUCCESS(err))
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, nullptr, &err);
+        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
         int32_t idx = USEARCH_DONE;
 
         if (U_SUCCESS(err))
@@ -674,7 +708,7 @@ extern "C" int32_t GlobalizationNative_EndsWith(
     return result;
 }
 
-extern "C" int32_t GlobalizationNative_GetSortKey(
+int32_t GlobalizationNative_GetSortKey(
                         SortHandle* pSortHandle, 
                         const UChar* lpStr, 
                         int32_t cwStrLength, 
@@ -694,12 +728,12 @@ extern "C" int32_t GlobalizationNative_GetSortKey(
     return result;
 }
 
-extern "C" int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(
+int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(
     const UChar* lpStr1, int32_t cwStr1Length, const UChar* lpStr2, int32_t cwStr2Length)
 {
-    assert(lpStr1 != nullptr);
+    assert(lpStr1 != NULL);
     assert(cwStr1Length >= 0);
-    assert(lpStr2 != nullptr);
+    assert(lpStr2 != NULL);
     assert(cwStr2Length >= 0);
 
     int32_t str1Idx = 0;

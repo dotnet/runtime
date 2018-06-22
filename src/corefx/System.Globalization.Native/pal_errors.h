@@ -4,28 +4,30 @@
 
 #pragma once
 
+#include "pal_compiler.h"
+
 /*
 * These values should be kept in sync with
 * Interop.GlobalizationInterop.ResultCode
 */
-enum ResultCode : int32_t
+typedef enum
 {
     Success = 0,
     UnknownError = 1,
     InsufficentBuffer = 2,
     OutOfMemory = 3
-};
+} ResultCode;
 
 /*
 Converts a UErrorCode to a ResultCode.
 */
-static ResultCode GetResultCode(UErrorCode err)
+DLLEXPORT static ResultCode GetResultCode(UErrorCode err)
 {
     if (err == U_BUFFER_OVERFLOW_ERROR || err == U_STRING_NOT_TERMINATED_WARNING)
     {
         return InsufficentBuffer;
     }
-    
+
     if (err == U_MEMORY_ALLOCATION_ERROR)
     {
         return OutOfMemory;
