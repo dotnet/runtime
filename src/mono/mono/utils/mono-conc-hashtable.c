@@ -27,11 +27,34 @@ typedef struct {
 	key_value_pair *kvs;
 } conc_table;
 
+/*
+Design notes:
+
+This is a single-writer, lock-free reader hash table. It's implemented using classical linear open addressing.
+
+Reads are made concurrent by employing hazzard pointers to avoid dangling pointer and by carefully coordinating
+table access between writer and readers - writer stores value before key and readers checks keys before values.
+
+External locking/synchronization is required by all write operations. Additionally, this DS don't try to provide
+any coordination/guarantee of key/values liveness outside of this DS. This means that a search will see dangling
+memory if a concurrent thread removes&free after the search succeeded.
+
+Deletion is done using tombstones, which increase the number of non-null elements and can lead to slow or infinite
+searches as null keys are the termination condition used by lookup. We handle it by rehashing in case the number of
+null values drops below what the load factor allows.
+
+Possible improvements:
+
+Experiment with KVM relocation during lookup as would reduce search length. The trick is coordinate which thread
+won a tomstone and which thread won the relation of a given key.
+
+*/
 struct _MonoConcurrentHashTable {
 	volatile conc_table *table; /* goes to HP0 */
 	GHashFunc hash_func;
 	GEqualFunc equal_func;
-	int element_count;
+	int element_count; //KVP + tombstones
+	int tombstone_count; //just tombstones
 	int overflow_count;
 	GDestroyNotify key_destroy_func;
 	GDestroyNotify value_destroy_func;
@@ -92,10 +115,10 @@ insert_one_local (conc_table *table, GHashFunc hash_func, gpointer key, gpointer
 
 /* LOCKING: Must be called holding hash_table->mutex */
 static void
-expand_table (MonoConcurrentHashTable *hash_table)
+rehash_table (MonoConcurrentHashTable *hash_table, int multiplier)
 {
 	conc_table *old_table = (conc_table*)hash_table->table;
-	conc_table *new_table = conc_table_new (old_table->table_size * 2);
+	conc_table *new_table = conc_table_new (old_table->table_size * multiplier);
 	key_value_pair *kvs = old_table->kvs;
 	int i;
 
@@ -108,6 +131,19 @@ expand_table (MonoConcurrentHashTable *hash_table)
 	hash_table->overflow_count = (int)(new_table->table_size * LOAD_FACTOR);
 	conc_table_lf_free (old_table);
 }
+
+static void
+check_table_size (MonoConcurrentHashTable *hash_table)
+{
+	if (hash_table->element_count >= hash_table->overflow_count) {
+		//if we have more tombstones than KVP we rehash to the same size
+		if (hash_table->tombstone_count > hash_table->element_count / 2)
+			rehash_table (hash_table, 1);
+		else
+			rehash_table (hash_table, 2);
+	}
+}
+
 
 
 MonoConcurrentHashTable*
@@ -245,13 +281,14 @@ mono_conc_hashtable_remove (MonoConcurrentHashTable *hash_table, gpointer key)
 				kvs [i].value = NULL;
 				mono_memory_barrier ();
 				kvs [i].key = TOMBSTONE;
-				--hash_table->element_count;
+				++hash_table->tombstone_count;
 
 				if (hash_table->key_destroy_func != NULL)
 					(*hash_table->key_destroy_func) (key);
 				if (hash_table->value_destroy_func != NULL)
 					(*hash_table->value_destroy_func) (value);
 
+				check_table_size (hash_table);
 				return value;
 			}
 			i = (i + 1) & table_mask;
@@ -269,11 +306,14 @@ mono_conc_hashtable_remove (MonoConcurrentHashTable *hash_table, gpointer key)
 				kvs [i].value = NULL;
 				mono_memory_barrier ();
 				kvs [i].key = TOMBSTONE;
+				++hash_table->tombstone_count;
 
 				if (hash_table->key_destroy_func != NULL)
 					(*hash_table->key_destroy_func) (old_key);
 				if (hash_table->value_destroy_func != NULL)
 					(*hash_table->value_destroy_func) (value);
+
+				check_table_size (hash_table);
 				return value;
 			}
 
@@ -298,8 +338,7 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 
 	hash = mix_hash (hash_table->hash_func (key));
 
-	if (hash_table->element_count >= hash_table->overflow_count)
-		expand_table (hash_table);
+	check_table_size (hash_table);
 
 	table = (conc_table*)hash_table->table;
 	kvs = table->kvs;
@@ -313,7 +352,11 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 				/* The write to values must happen after the write to keys */
 				mono_memory_barrier ();
 				kvs [i].key = key;
-				++hash_table->element_count;
+				if (kvs [i].key == TOMBSTONE)
+					--hash_table->tombstone_count;
+				else
+					++hash_table->element_count;	
+					
 				return NULL;
 			}
 			if (key == kvs [i].key) {
@@ -330,7 +373,10 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 				/* The write to values must happen after the write to keys */
 				mono_memory_barrier ();
 				kvs [i].key = key;
-				++hash_table->element_count;
+				if (kvs [i].key == TOMBSTONE)
+					--hash_table->tombstone_count;
+				else
+					++hash_table->element_count;
 				return NULL;
 			}
 			if (equal (key, kvs [i].key)) {
@@ -379,8 +425,9 @@ mono_conc_hashtable_foreach_steal (MonoConcurrentHashTable *hash_table, GHRFunc 
 				kvs [i].value = NULL;
 				mono_memory_barrier ();
 				kvs [i].key = TOMBSTONE;
-				--hash_table->element_count;
+				++hash_table->tombstone_count;
 			}
 		}
 	}
+	check_table_size (hash_table);
 }

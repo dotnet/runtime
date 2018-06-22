@@ -32,7 +32,8 @@ struct _MonoConcGHashTable {
 	volatile conc_table *table; /* goes to HP0 */
 	GHashFunc hash_func;
 	GEqualFunc equal_func;
-	int element_count;
+	int element_count; //KVP + tombstones
+	int tombstone_count; //just tombstones
 	int overflow_count;
 	GDestroyNotify key_destroy_func;
 	GDestroyNotify value_destroy_func;
@@ -150,10 +151,10 @@ insert_one_local (conc_table *table, GHashFunc hash_func, gpointer key, gpointer
 }
 
 static void
-expand_table (MonoConcGHashTable *hash_table)
+rehash_table (MonoConcGHashTable *hash_table, int multiplier)
 {
 	conc_table *old_table = (conc_table*)hash_table->table;
-	conc_table *new_table = conc_table_new (hash_table, old_table->table_size * EXPAND_RATIO);
+	conc_table *new_table = conc_table_new (hash_table, old_table->table_size * multiplier);
 	int i;
 
 	for (i = 0; i < old_table->table_size; ++i) {
@@ -167,6 +168,18 @@ expand_table (MonoConcGHashTable *hash_table)
 	conc_table_lf_free (old_table);	
 }
 
+
+static void
+check_table_size (MonoConcGHashTable *hash_table)
+{
+	if (hash_table->element_count >= hash_table->overflow_count) {
+		//if we have more tombstones than KVP we rehash to the same size
+		if (hash_table->tombstone_count > hash_table->element_count / 2)
+			rehash_table (hash_table, 1);
+		else
+			rehash_table (hash_table, EXPAND_RATIO);
+	}
+}
 
 MonoConcGHashTable *
 mono_conc_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, void *key, const char *msg)
@@ -323,8 +336,7 @@ mono_conc_g_hash_table_insert (MonoConcGHashTable *hash_table, gpointer key, gpo
 
 	hash = mix_hash (hash_table->hash_func (key));
 
-	if (hash_table->element_count >= hash_table->overflow_count)
-		expand_table (hash_table);
+	check_table_size (hash_table);
 
 	table = (conc_table*)hash_table->table;
 	table_mask = table->table_size - 1;
@@ -333,13 +345,18 @@ mono_conc_g_hash_table_insert (MonoConcGHashTable *hash_table, gpointer key, gpo
 	if (!hash_table->equal_func) {
 		for (;;) {
 			gpointer cur_key = table->keys [i];
-			if (!cur_key || key_is_tombstone (hash_table, cur_key)) {
+			gboolean is_tombstone = FALSE;
+			if (!cur_key || (is_tombstone = key_is_tombstone (hash_table, cur_key))) {
 				set_value (table, i, value);
 
 				/* The write to values must happen after the write to keys */
 				mono_memory_barrier ();
 				set_key (table, i, key);
-				++hash_table->element_count;
+				if (is_tombstone)
+					--hash_table->tombstone_count;
+				else
+					++hash_table->element_count;	
+
 				return NULL;
 			}
 			if (key == cur_key) {
@@ -352,12 +369,17 @@ mono_conc_g_hash_table_insert (MonoConcGHashTable *hash_table, gpointer key, gpo
 		GEqualFunc equal = hash_table->equal_func;
 		for (;;) {
 			gpointer cur_key = table->keys [i];
-			if (!cur_key || key_is_tombstone (hash_table, cur_key)) {
+			gboolean is_tombstone = FALSE;
+			if (!cur_key || (is_tombstone = key_is_tombstone (hash_table, cur_key))) {
 				set_value (table, i, value);
 				/* The write to values must happen after the write to keys */
 				mono_memory_barrier ();
 				set_key (table, i, key);
-				++hash_table->element_count;
+				if (is_tombstone)
+					--hash_table->tombstone_count;
+				else
+					++hash_table->element_count;	
+
 				return NULL;
 			}
 			if (equal (key, cur_key)) {
@@ -395,14 +417,14 @@ mono_conc_g_hash_table_remove (MonoConcGHashTable *hash_table, gconstpointer key
 				table->values [i] = NULL;
 				mono_memory_barrier ();
 				set_key_to_tombstone (table, i);
-
-				--hash_table->element_count;
+				++hash_table->tombstone_count;
 
 				if (hash_table->key_destroy_func != NULL)
 					(*hash_table->key_destroy_func) (cur_key);
 				if (hash_table->value_destroy_func != NULL)
 					(*hash_table->value_destroy_func) (value);
 
+				check_table_size (hash_table);
 				return value;
 			}
 			i = (i + 1) & table_mask;
@@ -425,6 +447,8 @@ mono_conc_g_hash_table_remove (MonoConcGHashTable *hash_table, gconstpointer key
 					(*hash_table->key_destroy_func) (cur_key);
 				if (hash_table->value_destroy_func != NULL)
 					(*hash_table->value_destroy_func) (value);
+
+				check_table_size (hash_table);
 				return value;
 			}
 

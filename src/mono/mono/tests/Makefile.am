@@ -667,7 +667,8 @@ TESTS_CS_SRC=		\
 	tailcall-generic-cast-cs.cs \
 	tailcall-interface.cs \
 	bug-60843.cs	\
-	nested_type_visibility.cs
+	nested_type_visibility.cs	\
+	dynamic-method-churn.cs
 
 # some tests fail to compile on mcs
 if CSC_IS_ROSLYN
@@ -1121,7 +1122,8 @@ PROFILE_DISABLED_TESTS += \
 	constant-division.exe	\
 	dynamic-method-resurrection.exe	\
 	assembly_append_ordering.exe \
-	assemblyresolve_event5.exe
+	assemblyresolve_event5.exe	\
+	dynamic-method-churn.exe
 
 # Test which needs System.Web support
 PROFILE_DISABLED_TESTS += \
