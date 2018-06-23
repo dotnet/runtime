@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.InteropServices.WindowsRuntime;
 using Internal.Threading.Tasks;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -176,7 +177,7 @@ namespace System.Threading.Tasks
                         }
                         else
                         {
-                            error = RestrictedErrorInfoHelper.AttachRestrictedErrorInfo(asyncInfo.ErrorCode);
+                            error = ExceptionSupport.AttachRestrictedErrorInfo(asyncInfo.ErrorCode);
                         }
                     }
                     else if (asyncStatus == AsyncStatus.Completed && getResultsFunction != null)

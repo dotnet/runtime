@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.InteropServices.WindowsRuntime;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -14,8 +16,6 @@ using System.Security;
 using System.Threading;
 using Windows.Foundation;
 using Windows.UI.Core;
-
-using System.Diagnostics.Tracing;
 
 namespace System.Threading
 {
@@ -223,7 +223,7 @@ namespace System.Threading
                     //
                     if (!(ex is ThreadAbortException) && !(ex is AppDomainUnloadedException))
                     {
-                        if (!WindowsRuntimeMarshal.ReportUnhandledError(ex))
+                        if (!ExceptionSupport.ReportUnhandledError(ex))
                         {
                             var edi = ExceptionDispatchInfo.Capture(ex);
                             ThreadPool.QueueUserWorkItem(o => ((ExceptionDispatchInfo)o).Throw(), edi);
