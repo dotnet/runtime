@@ -940,6 +940,9 @@ HRESULT ILCodeVersion::SetActiveNativeCodeVersion(NativeCodeVersion activeNative
 ILCodeVersionNode* ILCodeVersion::AsNode()
 {
     LIMITED_METHOD_CONTRACT;
+    //This is dangerous - NativeCodeVersion coerces non-explicit versions to NULL but ILCodeVersion assumes the caller
+    //will never invoke AsNode() on a non-explicit node. Asserting for now as a minimal fix, but we should revisit this.
+    _ASSERTE(m_storageKind == StorageKind::Explicit);
     return m_pVersionNode;
 }
 #endif //DACCESS_COMPILE
@@ -947,6 +950,9 @@ ILCodeVersionNode* ILCodeVersion::AsNode()
 PTR_ILCodeVersionNode ILCodeVersion::AsNode() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
+    //This is dangerous - NativeCodeVersion coerces non-explicit versions to NULL but ILCodeVersion assumes the caller
+    //will never invoke AsNode() on a non-explicit node. Asserting for now as a minimal fix, but we should revisit this.
+    _ASSERTE(m_storageKind == StorageKind::Explicit);
     return m_pVersionNode;
 }
 
