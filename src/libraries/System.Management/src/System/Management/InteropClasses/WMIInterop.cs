@@ -153,7 +153,7 @@ namespace System.Management
             // if we detect a missing __PATH
             if(hr == (int)ManagementStatus.InvalidObject)
             {
-                if(String.Compare(wszName, "__path", StringComparison.OrdinalIgnoreCase) == 0)
+                if(String.Equals(wszName, "__path", StringComparison.OrdinalIgnoreCase))
                 {
                     hr = 0;
                     pType = (Int32)tag_CIMTYPE_ENUMERATION.CIM_STRING;

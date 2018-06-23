@@ -484,7 +484,7 @@ namespace System.Net
                     int host_dot = host.IndexOf('.');
 
                     // First quick check is for pushing a cookie into the local domain
-                    if (isLocalDomain && (string.Compare(localDomain, domain, StringComparison.OrdinalIgnoreCase) == 0))
+                    if (isLocalDomain && string.Equals(localDomain, domain, StringComparison.OrdinalIgnoreCase))
                     {
                         valid = true;
                     }
@@ -532,7 +532,7 @@ namespace System.Net
                 {
                     // for implicitly set domain AND at the set_default==false time
                     // we simply got to match uri.Host against m_domain
-                    if (string.Compare(host, m_domain, StringComparison.OrdinalIgnoreCase) != 0)
+                    if (!string.Equals(host, m_domain, StringComparison.OrdinalIgnoreCase))
                     {
                         valid = false;
                     }
@@ -802,10 +802,10 @@ namespace System.Net
 
             Cookie other = (Cookie)comparand;
 
-            return (string.Compare(Name, other.Name, StringComparison.OrdinalIgnoreCase) == 0)
-                    && (string.Compare(Value, other.Value, StringComparison.Ordinal) == 0)
-                    && (string.Compare(Path, other.Path, StringComparison.Ordinal) == 0)
-                    && (string.Compare(Domain, other.Domain, StringComparison.OrdinalIgnoreCase) == 0)
+            return (string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase))
+                    && (string.Equals(Value, other.Value, StringComparison.Ordinal))
+                    && (string.Equals(Path, other.Path, StringComparison.Ordinal))
+                    && (string.Equals(Domain, other.Domain, StringComparison.OrdinalIgnoreCase))
                     && (Version == other.Version)
                     ;
         }
@@ -1455,7 +1455,7 @@ namespace System.Net
 
             internal bool IsEqualTo(string value)
             {
-                return string.Compare(m_name, value, StringComparison.OrdinalIgnoreCase) == 0;
+                return string.Equals(m_name, value, StringComparison.OrdinalIgnoreCase);
             }
         }
 

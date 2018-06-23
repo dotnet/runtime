@@ -671,7 +671,7 @@ namespace System.DirectoryServices.AccountManagement
         }
         protected static string UserAccountControlConverter(FilterBase filter, string suggestedAdProperty)
         {
-            Debug.Assert(String.Compare(suggestedAdProperty, "userAccountControl", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(String.Equals(suggestedAdProperty, "userAccountControl", StringComparison.OrdinalIgnoreCase));
 
             StringBuilder sb = new StringBuilder();
 
@@ -781,7 +781,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static string ExpirationDateConverter(FilterBase filter, string suggestedAdProperty)
         {
-            Debug.Assert(String.Compare(suggestedAdProperty, "accountExpires", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(String.Equals(suggestedAdProperty, "accountExpires", StringComparison.OrdinalIgnoreCase));
             Debug.Assert(filter is ExpirationDateFilter);
 
             Nullable<DateTime> date = (Nullable<DateTime>)filter.Value;
@@ -804,7 +804,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static string GuidConverter(FilterBase filter, string suggestedAdProperty)
         {
-            Debug.Assert(String.Compare(suggestedAdProperty, "objectGuid", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(String.Equals(suggestedAdProperty, "objectGuid", StringComparison.OrdinalIgnoreCase));
             Debug.Assert(filter is GuidFilter);
 
             Nullable<Guid> guid = (Nullable<Guid>)filter.Value;
@@ -884,7 +884,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static string GroupTypeConverter(FilterBase filter, string suggestedAdProperty)
         {
-            Debug.Assert(String.Compare(suggestedAdProperty, "groupType", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(String.Equals(suggestedAdProperty, "groupType", StringComparison.OrdinalIgnoreCase));
             Debug.Assert(filter is GroupIsSecurityGroupFilter || filter is GroupScopeFilter);
 
             // 1.2.840.113556.1.4.803 is like a bit-wise AND operator

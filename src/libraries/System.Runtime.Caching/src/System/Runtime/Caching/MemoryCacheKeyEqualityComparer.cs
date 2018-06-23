@@ -18,7 +18,7 @@ namespace System.Runtime.Caching
             a = (MemoryCacheKey)x;
             b = (MemoryCacheKey)y;
 
-            return (String.Compare(a.Key, b.Key, StringComparison.Ordinal) == 0);
+            return String.Equals(a.Key, b.Key, StringComparison.Ordinal);
         }
 
         int IEqualityComparer.GetHashCode(Object obj)

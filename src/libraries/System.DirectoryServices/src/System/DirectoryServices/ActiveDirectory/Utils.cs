@@ -703,7 +703,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     foreach (string supportedCapability in rootDSE.Properties[PropertyManager.SupportedCapabilities])
                     {
-                        if (String.Compare(supportedCapability, SupportedCapability.ADOid, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (String.Equals(supportedCapability, SupportedCapability.ADOid, StringComparison.OrdinalIgnoreCase))
                         {
                             result = true;
                             break;
@@ -714,7 +714,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     foreach (string supportedCapability in rootDSE.Properties[PropertyManager.SupportedCapabilities])
                     {
-                        if (String.Compare(supportedCapability, SupportedCapability.ADAMOid, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (String.Equals(supportedCapability, SupportedCapability.ADAMOid, StringComparison.OrdinalIgnoreCase))
                         {
                             result = true;
                             break;
@@ -725,8 +725,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     foreach (string supportedCapability in rootDSE.Properties[PropertyManager.SupportedCapabilities])
                     {
-                        if (String.Compare(supportedCapability, SupportedCapability.ADAMOid, StringComparison.OrdinalIgnoreCase) == 0 ||
-                            String.Compare(supportedCapability, SupportedCapability.ADOid, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (String.Equals(supportedCapability, SupportedCapability.ADAMOid, StringComparison.OrdinalIgnoreCase) ||
+                            String.Equals(supportedCapability, SupportedCapability.ADOid, StringComparison.OrdinalIgnoreCase))
                         {
                             result = true;
                             break;
@@ -798,9 +798,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
             string transportName = component[0].Value;
 
-            if (String.Compare(transportName, "IP", StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Equals(transportName, "IP", StringComparison.OrdinalIgnoreCase))
                 return ActiveDirectoryTransportType.Rpc;
-            else if (String.Compare(transportName, "SMTP", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (String.Equals(transportName, "SMTP", StringComparison.OrdinalIgnoreCase))
                 return ActiveDirectoryTransportType.Smtp;
             else
             {
