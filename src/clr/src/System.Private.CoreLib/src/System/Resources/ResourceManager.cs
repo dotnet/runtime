@@ -680,11 +680,11 @@ namespace System.Resources
 
             // case insensitive
             AssemblyName an1 = new AssemblyName(asmTypeName1.Substring(comma));
-            if (string.Compare(an1.Name, asmName2.Name, StringComparison.OrdinalIgnoreCase) != 0)
+            if (!string.Equals(an1.Name, asmName2.Name, StringComparison.OrdinalIgnoreCase))
                 return false;
 
             // to match IsMscorlib() in VM
-            if (string.Compare(an1.Name, System.CoreLib.Name, StringComparison.OrdinalIgnoreCase) == 0)
+            if (string.Equals(an1.Name, System.CoreLib.Name, StringComparison.OrdinalIgnoreCase))
                 return true;
 
 
