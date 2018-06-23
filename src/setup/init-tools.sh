@@ -110,7 +110,8 @@ if [ ! -e $__DOTNET_PATH ]; then
                 __PKG_RID=linux
                 ;;
       esac
-    __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-$__PKG_RID-$__PKG_ARCH
+    __PKG_RID=$__PKG_RID-$__PKG_ARCH
+    __DOTNET_PKG=dotnet-sdk-${__DOTNET_TOOLS_VERSION}-$__PKG_RID
     fi
     mkdir -p "$__DOTNET_PATH"
 
@@ -166,7 +167,7 @@ echo "Making all .sh files executable under Tools."
 ls $__scriptpath/Tools/*.sh | xargs chmod +x
 ls $__scriptpath/Tools/scripts/docker/*.sh | xargs chmod +x
 
-Tools/crossgen.sh $__scriptpath/Tools
+Tools/crossgen.sh $__scriptpath/Tools $__PKG_RID
 
 mkdir -p "$(dirname "$__BUILD_TOOLS_SEMAPHORE")" && touch $__BUILD_TOOLS_SEMAPHORE
 
