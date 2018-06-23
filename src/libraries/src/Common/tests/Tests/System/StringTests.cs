@@ -19,6 +19,7 @@ namespace System.Tests
     public partial class StringTests : RemoteExecutorTestBase
     {
         private const string SoftHyphen = "\u00AD";
+        private static readonly char[] s_whiteSpaceCharacters = { '\u0009', '\u000a', '\u000b', '\u000c', '\u000d', '\u0020', '\u0085', '\u00a0', '\u1680' };
 
         [Theory]
         [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0' }, "abcdefgh")]
@@ -1315,7 +1316,293 @@ namespace System.Tests
             SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Contains(_span, StringComparison.OrdinalIgnoreCase + 1));
             SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Contains(_span, (StringComparison)6));
         }
-                                            
+
+        [Fact]
+        public static void ZeroLengthSequenceCompareTo_Char()
+        {
+            var a = new char[3];
+
+            string s1 = new string(a, 1, 0);
+            string s2 = new string(a, 2, 0);
+            int result = s1.CompareTo(s1);
+            Assert.Equal(0, result);
+
+            ReadOnlySpan<char> first = s1.AsSpan();
+            ReadOnlySpan<char> second = s2.AsSpan();
+            result = first.SequenceCompareTo<char>(second);
+            Assert.Equal(0, result);
+        }
+
+        [Fact]
+        public static void SameSpanSequenceCompareTo_Char()
+        {
+            string s1 = "456";
+            int result = s1.CompareTo(s1);
+            Assert.Equal(0, result);
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            result = span.SequenceCompareTo<char>(span);
+            Assert.Equal(0, result);
+        }
+
+        [Fact]
+        public static void SequenceCompareToArrayImplicit_Char()
+        {
+            string s1 = "456";
+            int result = s1.CompareTo(s1);
+            Assert.Equal(0, result);
+
+            ReadOnlySpan<char> first = s1.AsSpan(0, 3);            
+            result = first.SequenceCompareTo<char>(s1.AsSpan());
+            Assert.Equal(0, result);
+        }
+
+        [Fact]
+        public static void SequenceCompareToArraySegmentImplicit_Char()
+        {
+            char[] src = { '1', '2', '3' };
+            char[] dst = { '5', '1', '2', '3', '9' };
+            var segment = new ArraySegment<char>(dst, 1, 3);
+
+            string s1 = new string(src, 0, 3);
+            int result = s1.CompareTo(segment.ToString());
+
+            ReadOnlySpan<char> first = s1.AsSpan();
+            result = first.SequenceCompareTo<char>(segment);
+            Assert.Equal(0, result);
+        }
+
+        [Fact]
+        public static void LengthMismatchSequenceCompareTo_Char()
+        {
+            string value = "456";
+
+            string s1 = value.Substring(0, 2);
+            string s2 = value.Substring(0, 3);
+            int result = s1.CompareTo(s2);
+            Assert.True(result < 0);
+
+            result = s2.CompareTo(s1);
+            Assert.True(result > 0);
+
+            // one sequence is empty
+            s1 = value.Substring(1, 0);
+
+            result = s1.CompareTo(s2);
+            Assert.True(result < 0);
+
+            result = s2.CompareTo(s1);
+            Assert.True(result > 0);
+
+            ReadOnlySpan<char> first = s1.AsSpan();
+            ReadOnlySpan<char> second = s2.AsSpan();
+            result = first.SequenceCompareTo<char>(second);
+            Assert.True(result < 0);
+
+            result = second.SequenceCompareTo<char>(first);
+            Assert.True(result > 0);
+
+            // one sequence is empty
+            first = value.AsSpan(1, 0);
+
+            result = first.SequenceCompareTo<char>(second);
+            Assert.True(result < 0);
+
+            result = second.SequenceCompareTo<char>(first);
+            Assert.True(result > 0);
+        }
+
+        [Fact]        
+        public static void SequenceCompareToWithSingleMismatch_Char()
+        {
+            for (int length = 1; length < 32; length++)
+            {
+                for (int mismatchIndex = 0; mismatchIndex < length; mismatchIndex++)
+                {
+                    var first = new char[length];
+                    var second = new char[length];
+                    for (int i = 0; i < length; i++)
+                    {
+                        first[i] = second[i] = (char)(i + 1);
+                    }
+
+                    second[mismatchIndex] = (char)(second[mismatchIndex] + 1);
+
+                    string s1 = new string(first);
+                    string s2 = new string(second);
+                    int result = string.Compare(s1, s2, StringComparison.Ordinal);                    
+                    Assert.True(result < 0);
+
+                    result = string.Compare(s2, s1, StringComparison.Ordinal);
+                    Assert.True(result > 0);
+
+                    ReadOnlySpan<char> firstSpan = s1.AsSpan();
+                    ReadOnlySpan<char> secondSpan = s2.AsSpan();
+                    result = firstSpan.SequenceCompareTo<char>(secondSpan);
+                    Assert.True(result < 0);
+
+                    result = secondSpan.SequenceCompareTo<char>(firstSpan);
+                    Assert.True(result > 0);
+                }
+            }
+        }
+
+        [Fact]        
+        public static void SequenceCompareToNoMatch_Char()
+        {
+            for (int length = 1; length < 32; length++)
+            {
+                var first = new char[length];
+                var second = new char[length];
+
+                for (int i = 0; i < length; i++)
+                {
+                    first[i] = (char)(i + 1);
+                    second[i] = (char)(char.MaxValue - i);
+                }
+
+                string s1 = new string(first);
+                string s2 = new string(second);
+                int result = string.Compare(s1, s2, StringComparison.Ordinal);
+                Assert.True(result < 0);
+
+                result = string.Compare(s2, s1, StringComparison.Ordinal);
+                Assert.True(result > 0);
+
+                ReadOnlySpan<char> firstSpan = s1.AsSpan();
+                ReadOnlySpan<char> secondSpan = s2.AsSpan();
+                result = firstSpan.SequenceCompareTo<char>(secondSpan);
+                Assert.True(result < 0);
+
+                result = secondSpan.SequenceCompareTo<char>(firstSpan);
+                Assert.True(result > 0);
+            }
+        }
+
+        [Fact]
+        public static void MakeSureNoSequenceCompareToChecksGoOutOfRange_Char()
+        {
+            for (int length = 0; length < 100; length++)
+            {
+                var first = new char[length + 2];
+                first[0] = '8';
+                first[length + 1] = '8';
+
+                var second = new char[length + 2];
+                second[0] = '9';
+                second[length + 1] = '9';
+
+                string s1 = new string(first, 1, length);
+                string s2 = new string(second, 1, length);
+                int result = string.Compare(s1, s2);
+                Assert.Equal(0, result);
+
+                ReadOnlySpan<char> span1 = s1.AsSpan();
+                ReadOnlySpan<char> span2 = s2.AsSpan();
+                result = span1.SequenceCompareTo<char>(span2);
+                Assert.Equal(0, result);
+            }
+        }
+
+        [Fact]
+        public static void ZeroLengthSequenceEqual_Char()
+        {
+            char[] a = new char[3];
+
+            string s1 = new string(a, 1, 0);
+            string s2 = new string(a, 2, 0);
+            bool b = s1.SequenceEqual(s2);
+            Assert.True(b);
+
+            ReadOnlySpan<char> first = s1.AsSpan();
+            ReadOnlySpan<char> second = s2.AsSpan();
+            b = first.SequenceEqual(second);
+            Assert.True(b);
+        }
+
+        [Fact]
+        public static void SameSpanSequenceEqual_Char()
+        {
+            char[] a = { '4', '5', '6' };
+
+            string s1 = new string(a);
+            bool b = s1.SequenceEqual(s1);
+            Assert.True(b);
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            b = span.SequenceEqual(span);
+            Assert.True(b);
+        }
+
+        [Fact]
+        public static void LengthMismatchSequenceEqual_Char()
+        {
+            char[] a = { '4', '5', '6' };
+
+            string s1 = new string(a, 0, 3);
+            string s2 = new string(a, 0, 2);
+            bool b = s1.SequenceEqual(s2);
+            Assert.False(b);
+
+            ReadOnlySpan<char> first = s1.AsSpan();
+            ReadOnlySpan<char> second = s2.AsSpan();
+            b = first.SequenceEqual(second);
+            Assert.False(b);
+        }
+
+        [Fact]
+        public static void SequenceEqualNoMatch_Char()
+        {
+            for (int length = 1; length < 32; length++)
+            {
+                for (int mismatchIndex = 0; mismatchIndex < length; mismatchIndex++)
+                {
+                    char[] first = new char[length];
+                    char[] second = new char[length];
+                    for (int i = 0; i < length; i++)
+                    {
+                        first[i] = second[i] = (char)(i + 1);
+                    }
+
+                    second[mismatchIndex] = (char)(second[mismatchIndex] + 1);
+
+                    string s1 = new string(first);
+                    string s2 = new string(second);
+                    bool b = s1.SequenceEqual(s2);
+                    Assert.False(b);
+
+                    ReadOnlySpan<char> firstSpan = s1.AsSpan();
+                    ReadOnlySpan<char> secondSpan = s2.AsSpan();
+                    b = firstSpan.SequenceEqual(secondSpan);
+                    Assert.False(b);
+                }
+            }
+        }
+
+        [Fact]
+        public static void MakeSureNoSequenceEqualChecksGoOutOfRange_Char()
+        {
+            for (int length = 0; length < 100; length++)
+            {
+                char[] first = new char[length + 2];
+                first[0] = '9';
+                first[length + 1] = '9';
+                char[] second = new char[length + 2];
+                second[0] = 'a';
+                second[length + 1] = 'a';
+
+                string s1 = new string(first, 1, length);
+                string s2 = new string(second, 1, length);
+                bool b = s1.SequenceEqual(s2);
+                Assert.True(b);
+
+                ReadOnlySpan<char> span1 = s1.AsSpan();
+                ReadOnlySpan<char> span2 = s2.AsSpan();
+                b = span1.SequenceEqual(span2);
+                Assert.True(b);
+            }
+        }
+
         [Theory]
         // CurrentCulture
         [InlineData("", "Foo", StringComparison.CurrentCulture, false)]
@@ -2948,11 +3235,11 @@ namespace System.Tests
         [Fact]
         public static void ZeroLengthIndexOf_Char()
         {
-            string empty = string.Empty;
-            int idx = empty.IndexOf((char)0);
+            string emptyString = string.Empty;
+            int idx = emptyString.IndexOf((char)0);
             Assert.Equal(-1, idx);
 
-            ReadOnlySpan<char> sp = new ReadOnlySpan<char>(Array.Empty<char>());
+            ReadOnlySpan<char> sp = emptyString.AsSpan();
             idx = sp.IndexOf((char)0);
             Assert.Equal(-1, idx);
         }
@@ -3284,6 +3571,144 @@ namespace System.Tests
         public static void IsNullOrWhitespace(string value, bool expected)
         {
             Assert.Equal(expected, string.IsNullOrWhiteSpace(value));
+            Assert.Equal(string.IsNullOrWhiteSpace(value), value.AsSpan().IsWhiteSpace());
+        }
+
+        [Fact]
+        public static void ZeroLengthIsWhiteSpace()
+        {
+            string s1 = string.Empty;
+            bool result = string.IsNullOrWhiteSpace(s1);
+            Assert.True(result);
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            result = span.IsWhiteSpace();
+            Assert.Equal(string.IsNullOrWhiteSpace(string.Empty), result);
+        }
+
+        [Fact]
+        public static void IsWhiteSpaceTrueLatin1()
+        {
+            Random rand = new Random(42);
+            for (int length = 0; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = s_whiteSpaceCharacters[rand.Next(0, s_whiteSpaceCharacters.Length - 1)];
+                }
+
+                string s1 = new string(a);
+                bool result = string.IsNullOrWhiteSpace(s1);
+                Assert.True(result);
+
+                for (int i = 0; i < s_whiteSpaceCharacters.Length - 1; i++)
+                {
+                    s1 = new string(Enumerable.Repeat(s_whiteSpaceCharacters[i], a.Length).ToArray());
+                    Assert.True(string.IsNullOrWhiteSpace(s1));
+                }
+
+                var span = new Span<char>(a);
+                result = ((ReadOnlySpan<char>)span).IsWhiteSpace();
+                Assert.Equal(string.IsNullOrWhiteSpace(new string(a)), result);
+
+                for (int i = 0; i < s_whiteSpaceCharacters.Length - 1; i++)
+                {
+                    span.Fill(s_whiteSpaceCharacters[i]);
+                    Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), ((ReadOnlySpan<char>)span).IsWhiteSpace());
+                }
+            }
+        }
+
+        [Fact]
+        public static void IsWhiteSpaceTrue()
+        {
+            Random rand = new Random(42);
+            for (int length = 0; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = s_whiteSpaceCharacters[rand.Next(0, s_whiteSpaceCharacters.Length)];
+                }
+
+                string s1 = new string(a);
+                bool result = string.IsNullOrWhiteSpace(s1);
+                Assert.True(result);
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                result = span.IsWhiteSpace();
+                Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), result);
+            }
+        }
+
+        [Fact]
+        public static void IsWhiteSpaceFalse()
+        {
+            Random rand = new Random(42);
+            for (int length = 1; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = s_whiteSpaceCharacters[rand.Next(0, s_whiteSpaceCharacters.Length)];
+                }
+                var span = new Span<char>(a);
+
+                // first character is not a white-space character
+                a[0] = 'a';
+                string s1 = new string(a);
+                bool result = string.IsNullOrWhiteSpace(s1);
+                Assert.False(result);
+                result = ((ReadOnlySpan<char>)span).IsWhiteSpace();
+                Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), result);
+                a[0] = ' ';
+
+                // last character is not a white-space character
+                a[length - 1] = 'a';
+                s1 = new string(a);
+                result = string.IsNullOrWhiteSpace(s1);
+                Assert.False(result);
+                result = ((ReadOnlySpan<char>)span).IsWhiteSpace();
+                Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), result);
+                a[length - 1] = ' ';
+
+                // character in the middle is not a white-space character
+                a[length / 2] = 'a';
+                s1 = new string(a);
+                result = string.IsNullOrWhiteSpace(s1);
+                Assert.False(result);
+                result = ((ReadOnlySpan<char>)span).IsWhiteSpace();
+                Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), result);
+                a[length / 2] = ' ';
+
+                // no character is a white-space character
+                span.Fill('a');
+                s1 = new string(span.ToArray());
+                result = string.IsNullOrWhiteSpace(s1);
+                Assert.False(result);
+                result = ((ReadOnlySpan<char>)span).IsWhiteSpace();
+                Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), result);
+            }
+        }
+
+        [Fact]
+        public static void MakeSureNoIsWhiteSpaceChecksGoOutOfRange()
+        {
+            for (int length = 3; length < 64; length++)
+            {
+                char[] first = new char[length];
+                first[0] = ' ';
+                first[length - 1] = ' ';
+
+                string s1 = new string(first, 1, length - 2);
+                bool result = string.IsNullOrWhiteSpace(s1);
+                Assert.False(result);
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                result = span.IsWhiteSpace();
+                Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), result);
+            }
         }
 
         [Theory]
@@ -4213,6 +4638,254 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => s.StartsWith("H", StringComparison.OrdinalIgnoreCase + 1));
         }
 
+        [Fact]	
+        public static void ZeroLengthStartsWith_Char()	
+        {	
+            var a = new char[3];	
+	
+            string s1 = new string(a);	
+            string s2 = new string(a, 2, 0);	
+            bool b = s1.StartsWith(s2);	
+            Assert.True(b);	
+	
+            ReadOnlySpan<char> span = s1.AsSpan();
+            ReadOnlySpan<char> slice = s2.AsSpan();	
+            b = span.StartsWith<char>(slice);	
+            Assert.True(b);	
+        }	
+	
+        [Fact]	
+        public static void SameSpanStartsWith_Char()	
+        {	
+            string s1 = "456";	
+            bool b = s1.StartsWith(s1);	
+            Assert.True(b);
+
+            ReadOnlySpan<char> span = s1.AsSpan();	
+            b = span.StartsWith<char>(span);	
+            Assert.True(b);	
+        }	
+	
+        [Fact]	
+        public static void LengthMismatchStartsWith_Char()	
+        {	
+            char[] a = { '4', '5', '6' };	
+	
+            string s1 = new string(a, 0, 2);	
+            string s2 = new string(a, 0, 3);	
+            bool b = s1.StartsWith(s2);	
+            Assert.False(b);
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            ReadOnlySpan<char> slice = s2.AsSpan();	
+            b = span.StartsWith<char>(slice);	
+            Assert.False(b);	
+        }	
+	
+        [Fact]	
+        public static void StartsWithMatch_Char()	
+        {	
+            char[] a = { '4', '5', '6' };	
+	
+            string s1 = new string(a, 0, 3);	
+            string s2 = new string(a, 0, 2);	
+            bool b = s1.StartsWith(s2);	
+            Assert.True(b);	
+	
+            var span = new ReadOnlySpan<char>(a, 0, 3);	
+            var slice = new ReadOnlySpan<char>(a, 0, 2);	
+            b = span.StartsWith<char>(slice);	
+            Assert.True(b);	
+        }	
+	
+        [Fact]	
+        public static void StartsWithMatchDifferentSpans_Char()	
+        {	
+            char[] a = { '4', '5', '6' };	
+            char[] b = { '4', '5', '6' };	
+	
+            string s1 = "456";	
+            string s2 = "456";	
+            bool c = s1.StartsWith(s2);	
+            Assert.True(c);
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            ReadOnlySpan<char> slice = s2.AsSpan();	
+            c = span.StartsWith<char>(slice);	
+            Assert.True(c);	
+        }	
+	
+        [Fact]	
+        public static void StartsWithNoMatch_Char()	
+        {	
+            for (int length = 1; length < 32; length++)	
+            {	
+                for (int mismatchIndex = 0; mismatchIndex < length; mismatchIndex++)	
+                {	
+                    var first = new char[length];	
+                    var second = new char[length];	
+                    for (int i = 0; i < length; i++)	
+                    {	
+                        first[i] = second[i] = (char)(i + 1);	
+                    }	
+	
+                    second[mismatchIndex] = (char)(second[mismatchIndex] + 1);	
+	
+                    string s1 = new string(first);	
+                    string s2 = new string(second);	
+                    bool b = s1.StartsWith(s2, StringComparison.Ordinal);	
+                    Assert.False(b);	
+	
+                    var firstSpan = s1.AsSpan();	
+                    var secondSpan = s2.AsSpan();	
+                    b = firstSpan.StartsWith<char>(secondSpan);	
+                    Assert.False(b);	
+                }	
+            }	
+        }	
+	
+        [Fact]	
+        public static void MakeSureNoStartsWithChecksGoOutOfRange_Char()	
+        {	
+            for (int length = 0; length < 100; length++)	
+            {	
+                var first = new char[length + 2];	
+                first[0] = '9';	
+                first[length + 1] = '9';	
+                var second = new char[length + 2];	
+                second[0] = 'a';	
+                second[length + 1] = 'a';	
+	
+                string s1 = new string(first, 1, length);	
+                string s2 = new string(second, 1, length);	
+                bool b = s1.StartsWith(s2);	
+                Assert.True(b);
+
+                ReadOnlySpan<char> span1 = s1.AsSpan();
+                ReadOnlySpan<char> span2 = s2.AsSpan();	
+                b = span1.StartsWith<char>(span2);	
+                Assert.True(b);	
+            }	
+        }	
+	
+        [Fact]	
+        public static void ZeroLengthStartsWith_StringComparison()	
+        {	
+            var a = new char[3];	
+	
+            string s1 = new string(a);	
+            string s2 = new string(a, 2, 0);	
+            Assert.True(s1.StartsWith(s2, StringComparison.Ordinal));	
+	
+            Assert.True(s1.StartsWith(s2, StringComparison.CurrentCulture));	
+            Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));	
+            Assert.True(s1.StartsWith(s2, StringComparison.InvariantCulture));	
+            Assert.True(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));	
+            Assert.True(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));	
+	
+            s1 = string.Empty;	
+            Assert.True(s1.StartsWith(s2, StringComparison.Ordinal));	
+	
+            Assert.True(s1.StartsWith(s2, StringComparison.CurrentCulture));	
+            Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));	
+            Assert.True(s1.StartsWith(s2, StringComparison.InvariantCulture));	
+            Assert.True(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));	
+            Assert.True(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            ReadOnlySpan<char> slice = s2.AsSpan();	
+            Assert.True(span.StartsWith(slice, StringComparison.Ordinal));	
+	
+            Assert.True(span.StartsWith(slice, StringComparison.CurrentCulture));	
+            Assert.True(span.StartsWith(slice, StringComparison.CurrentCultureIgnoreCase));	
+            Assert.True(span.StartsWith(slice, StringComparison.InvariantCulture));	
+            Assert.True(span.StartsWith(slice, StringComparison.InvariantCultureIgnoreCase));	
+            Assert.True(span.StartsWith(slice, StringComparison.OrdinalIgnoreCase));	
+	
+            span = ReadOnlySpan<char>.Empty;	
+            Assert.True(span.StartsWith(slice, StringComparison.Ordinal));	
+	
+            Assert.True(span.StartsWith(slice, StringComparison.CurrentCulture));	
+            Assert.True(span.StartsWith(slice, StringComparison.CurrentCultureIgnoreCase));	
+            Assert.True(span.StartsWith(slice, StringComparison.InvariantCulture));	
+            Assert.True(span.StartsWith(slice, StringComparison.InvariantCultureIgnoreCase));	
+            Assert.True(span.StartsWith(slice, StringComparison.OrdinalIgnoreCase));	
+        }	
+	
+        [Fact]	
+        public static void SameSpanStartsWith_StringComparison()	
+        {	
+            string s1 = "456";	
+            Assert.True(s1.StartsWith(s1, StringComparison.Ordinal));	
+	
+            Assert.True(s1.StartsWith(s1, StringComparison.CurrentCulture));	
+            Assert.True(s1.StartsWith(s1, StringComparison.CurrentCultureIgnoreCase));	
+            Assert.True(s1.StartsWith(s1, StringComparison.InvariantCulture));	
+            Assert.True(s1.StartsWith(s1, StringComparison.InvariantCultureIgnoreCase));	
+            Assert.True(s1.StartsWith(s1, StringComparison.OrdinalIgnoreCase));
+
+            ReadOnlySpan<char> span = s1.AsSpan();	
+            Assert.True(span.StartsWith(span, StringComparison.Ordinal));	
+	
+            Assert.True(span.StartsWith(span, StringComparison.CurrentCulture));	
+            Assert.True(span.StartsWith(span, StringComparison.CurrentCultureIgnoreCase));	
+            Assert.True(span.StartsWith(span, StringComparison.InvariantCulture));	
+            Assert.True(span.StartsWith(span, StringComparison.InvariantCultureIgnoreCase));	
+            Assert.True(span.StartsWith(span, StringComparison.OrdinalIgnoreCase));	
+        }	
+	
+        [Fact]	
+        public static void LengthMismatchStartsWith_StringComparison()	
+        {	
+            string value = "456";	
+	
+            string s1 = value.Substring(0, 2);	
+            string s2 = value.Substring(0, 3);	
+            Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));	
+	
+            Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));	
+            Assert.False(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));	
+            Assert.False(s1.StartsWith(s2, StringComparison.InvariantCulture));	
+            Assert.False(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));	
+            Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            ReadOnlySpan<char> slice = s2.AsSpan();	
+            Assert.False(span.StartsWith(slice, StringComparison.Ordinal));	
+	
+            Assert.False(span.StartsWith(slice, StringComparison.CurrentCulture));	
+            Assert.False(span.StartsWith(slice, StringComparison.CurrentCultureIgnoreCase));	
+            Assert.False(span.StartsWith(slice, StringComparison.InvariantCulture));	
+            Assert.False(span.StartsWith(slice, StringComparison.InvariantCultureIgnoreCase));	
+            Assert.False(span.StartsWith(slice, StringComparison.OrdinalIgnoreCase));	
+        }	
+	
+        [Fact]	
+        public static void StartsWithMatch_StringComparison()	
+        {	
+            string value = "456";	
+	
+            string s1 = value.Substring(0, 3);	
+            string s2 = value.Substring(0, 2);	
+            Assert.True(s1.StartsWith(s2, StringComparison.Ordinal));	
+	
+            Assert.True(s1.StartsWith(s2, StringComparison.CurrentCulture));	
+            Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));	
+            Assert.True(s1.StartsWith(s2, StringComparison.InvariantCulture));	
+            Assert.True(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));	
+            Assert.True(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            ReadOnlySpan<char> slice = s2.AsSpan();	
+            Assert.True(span.StartsWith(slice, StringComparison.Ordinal));	
+	
+            Assert.True(span.StartsWith(slice, StringComparison.CurrentCulture));	
+            Assert.True(span.StartsWith(slice, StringComparison.CurrentCultureIgnoreCase));	
+            Assert.True(span.StartsWith(slice, StringComparison.InvariantCulture));	
+            Assert.True(span.StartsWith(slice, StringComparison.InvariantCultureIgnoreCase));	
+            Assert.True(span.StartsWith(slice, StringComparison.OrdinalIgnoreCase));	
+        }
+
         [Theory]
         [InlineData("Hello", 0, 5, "Hello")]
         [InlineData("Hello", 0, 3, "Hel")]
@@ -4357,6 +5030,515 @@ namespace System.Tests
 
             Span<char> destination = new char[s.Length];
             Assert.Equal(s.Length, s.AsSpan().ToLowerInvariant(destination));
+            Assert.Equal(expected, destination.ToString());
+        }
+
+        [Fact]
+        public static void ZeroLengthToLower()
+        {
+            char[] expectedSource = { 'a', 'B', 'c' };
+            char[] a = { 'a', 'B', 'c' };
+            var expectedDestination = new char[1] { 'a' };            
+            Span<char> destination = new char[1] { 'a' };
+
+            string emptyString = new string(a, 2, 0);
+            Assert.Equal("", emptyString.ToLowerInvariant());
+
+            ReadOnlySpan<char> source = emptyString.AsSpan();                       
+            Assert.Equal(source.Length, source.ToLower(destination, CultureInfo.CurrentCulture));
+            Assert.Equal(source.Length, source.ToLowerInvariant(destination));
+            Assert.Equal(expectedDestination, destination.ToArray());
+            Assert.Equal(expectedSource, a);
+
+            emptyString = string.Empty;            
+            Assert.Equal("", emptyString.ToLowerInvariant()); 
+         
+            source = emptyString.AsSpan();
+            Assert.Equal(source.Length, source.ToLower(destination, CultureInfo.CurrentCulture));
+            Assert.Equal(source.Length, source.ToLowerInvariant(destination));
+            Assert.Equal(expectedDestination, destination.ToArray());
+            Assert.Equal(expectedSource, a);
+        }
+
+        [Fact]
+        public static void SameSpanToLower()
+        {
+            var expected = new char[3] { 'a', 'b', 'c' };
+            var a = new char[3] { 'a', 'B', 'c' };
+            string s1 = new string(a);
+            Assert.Equal(expected, s1.ToLower(CultureInfo.CurrentCulture).ToArray());
+            Assert.Equal(expected, s1.ToLowerInvariant().ToArray());
+            {
+                ReadOnlySpan<char> source = a;
+                Span<char> destination = a;
+                Assert.Equal(source.Length, source.ToLower(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(expected, destination.ToArray());
+                Assert.Equal(expected, source.ToArray());
+            }
+            {                
+                ReadOnlySpan<char> source = a;
+                Span<char> destination = a;
+                Assert.Equal(source.Length, source.ToLowerInvariant(destination));
+                Assert.Equal(expected, destination.ToArray());
+                Assert.Equal(expected, source.ToArray());
+            }
+        }
+
+        [Fact]
+        public static void ToLowerOverlapping()
+        {
+            var expectedSource = new char[3] { 'B', 'c', 'b' };
+            var expectedDestination = new char[3] { 'b', 'c', 'b' };
+
+            {                
+                char[] a = { 'a', 'B', 'c', 'B', 'c', 'B' };
+
+                string s1 = new string(a, 1, 3);                
+                Assert.Equal(expectedDestination, s1.ToLower(CultureInfo.CurrentCulture).ToArray());
+
+                var source = new ReadOnlySpan<char>(a, 1, 3);
+                var destination = new Span<char>(a, 3, 3);
+                Assert.Equal(source.Length, source.ToLower(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+            }
+            {
+                char[] a = { 'a', 'B', 'c', 'B', 'c', 'B' };
+
+                string s1 = new string(a, 1, 3);                
+                Assert.Equal(expectedDestination, s1.ToLowerInvariant().ToArray());
+
+                var source = new ReadOnlySpan<char>(a, 1, 3);
+                var destination = new Span<char>(a, 3, 3);
+                Assert.Equal(source.Length, source.ToLowerInvariant(destination));
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+            }
+        }
+
+        [Fact]
+        public static void LengthMismatchToLower()
+        {
+            {
+                var expectedSource = new char[3] { 'a', 'B', 'c' };
+                                
+                string s1 = "aBc";                
+                var expectedDestinationString = "abc";
+                Assert.Equal(expectedDestinationString, s1.ToLowerInvariant());
+
+                ReadOnlySpan<char> source = s1.AsSpan();
+
+                var expectedDestination = new char[1] { 'a' };
+                Span<char> destination = new char[1] { 'a' };
+
+                Assert.Equal(-1, source.ToLower(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(-1, source.ToLowerInvariant(destination));
+
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+            }
+
+            {
+                var expectedSource = new char[3] { 'a', 'B', 'c' };
+
+                string s1 = "aBc";
+                var expectedDestinationString = "abc";
+                Assert.Equal(expectedDestinationString, s1.ToLowerInvariant());
+
+                ReadOnlySpan<char> source = s1.AsSpan();
+
+                var expectedDestination = new char[4] { 'a', 'b', 'c', 'D' };
+                Span<char> destination = new char[4] { 'x', 'Y', 'z', 'D' };
+
+                Assert.Equal(source.Length, source.ToLower(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(source.Length, source.ToLowerInvariant(destination));
+
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+            }
+        }
+
+        [Fact]
+        public static void ToLower()
+        {
+            var expectedSource = new char[3] { 'a', 'B', 'c' };
+            var expectedDestination = new char[3] { 'a', 'b', 'c' };
+
+            {
+                string s1 = "aBc";
+                Assert.Equal(expectedDestination, s1.ToLower(CultureInfo.CurrentCulture).ToCharArray());
+
+                ReadOnlySpan<char> source = s1.AsSpan();
+                Span<char> destination = new char[3] { 'x', 'Y', 'z' };
+
+                Assert.Equal(source.Length, source.ToLower(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+            }
+
+            {
+                string s1 = "aBc";
+                Assert.Equal(expectedDestination, s1.ToLowerInvariant().ToCharArray());
+
+                ReadOnlySpan<char> source = s1.AsSpan();
+                Span<char> destination = new char[3] { 'x', 'Y', 'z' };
+
+                Assert.Equal(source.Length, source.ToLowerInvariant(destination));
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+            }
+        }
+
+        [Fact]
+        public static void MakeSureNoToLowerChecksGoOutOfRange()
+        {
+            for (int length = 0; length < 100; length++)
+            {
+                var first = new char[length + 2];
+                var second = new char[length + 2];
+
+                for (int i = 0; i < first.Length; i++)
+                {
+                    first[i] = 'A';
+                    second[i] = 'B';
+                }
+
+                first[0] = 'Z';
+                first[length + 1] = 'Z';
+
+                second[0] = 'Y';
+                second[length + 1] = 'Y';
+
+                var expectedSource = new char[length];
+                var expectedDestination = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    expectedSource[i] = 'A';
+                    expectedDestination[i] = 'a';
+                }
+
+                string s1 = new string(first, 1, length);
+                Assert.Equal(expectedDestination, s1.ToLowerInvariant().ToCharArray());
+
+                Assert.Equal('Z', first[0]);
+                Assert.Equal('Z', first[length + 1]);
+                Assert.Equal('Y', second[0]);
+                Assert.Equal('Y', second[length + 1]);
+
+                ReadOnlySpan<char> source = s1.AsSpan();
+                var destination = new Span<char>(second, 1, length);
+                Assert.Equal(source.Length, source.ToLower(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(source.Length, source.ToLowerInvariant(destination));
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+
+                Assert.Equal('Z', first[0]);
+                Assert.Equal('Z', first[length + 1]);
+                Assert.Equal('Y', second[0]);
+                Assert.Equal('Y', second[length + 1]);
+            }
+        }
+
+        [Fact]
+        public static void ToLowerNullCulture()
+        {
+            string s1 = "aBc";
+
+            try
+            {               
+                s1.ToLower(null);
+                Assert.False(true, "Expected exception: " + typeof(ArgumentNullException).GetType());
+            }
+            catch (ArgumentNullException)
+            {
+            }
+            catch (Exception wrongException)
+            {
+                Assert.False(true, "Wrong exception thrown: Expected " + typeof(ArgumentNullException).GetType() + ": Actual: " + wrongException.GetType());
+            }
+
+            ReadOnlySpan<char> source = s1.AsSpan();
+            Span<char> destination = new char[3] { 'a', 'B', 'c' };
+
+            try
+            {               
+                source.ToLower(destination, null);
+                Assert.False(true, "Expected exception: " + typeof(ArgumentNullException).GetType());
+            }
+            catch (ArgumentNullException)
+            {
+            }
+            catch (Exception wrongException)
+            {
+                Assert.False(true, "Wrong exception thrown: Expected " + typeof(ArgumentNullException).GetType() + ": Actual: " + wrongException.GetType());
+            }
+        }
+
+        [Fact]
+        public static void ZeroLengthToUpper()
+        {
+            char[] expectedSource = { 'a', 'B', 'c' };
+            char[] a = { 'a', 'B', 'c' };
+            var expectedDestination = new char[1] { 'a' };            
+            Span<char> destination = new char[1] { 'a' };
+
+            string emptyString = new string(a, 2, 0);            
+            Assert.Equal("", emptyString.ToUpperInvariant());            
+
+            ReadOnlySpan<char> source = emptyString.AsSpan();                       
+            Assert.Equal(source.Length, source.ToUpper(destination, CultureInfo.CurrentCulture));
+            Assert.Equal(source.Length, source.ToUpperInvariant(destination));
+            Assert.Equal(expectedDestination, destination.ToArray());
+            Assert.Equal(expectedSource, a);
+
+            emptyString = string.Empty;            
+            Assert.Equal("", emptyString.ToUpperInvariant()); 
+         
+            source = emptyString.AsSpan();
+            Assert.Equal(source.Length, source.ToUpper(destination, CultureInfo.CurrentCulture));
+            Assert.Equal(source.Length, source.ToUpperInvariant(destination));
+            Assert.Equal(expectedDestination, destination.ToArray());
+            Assert.Equal(expectedSource, a);
+        }
+
+        [Fact]
+        public static void SameSpanToUpper()
+        {
+            var expected = new char[3] { 'A', 'B', 'C' };
+            var a = new char[3] { 'a', 'B', 'c' };
+            string s1 = new string(a);
+            Assert.Equal(expected, s1.ToUpper(CultureInfo.CurrentCulture).ToArray());
+            Assert.Equal(expected, s1.ToUpperInvariant().ToArray());
+            {
+                ReadOnlySpan<char> source = a;
+                Span<char> destination = a;
+                Assert.Equal(source.Length, source.ToUpper(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(expected, destination.ToArray());
+                Assert.Equal(expected, source.ToArray());
+            }
+            {
+                ReadOnlySpan<char> source = a;
+                Span<char> destination = a;
+                Assert.Equal(source.Length, source.ToUpperInvariant(destination));
+                Assert.Equal(expected, destination.ToArray());
+                Assert.Equal(expected, source.ToArray());
+            }
+        }
+
+        [Fact]
+        public static void ToUpperOverlapping()
+        {
+            var expectedSource = new char[3] { 'b', 'C', 'B' };
+            var expectedDestination = new char[3] { 'B', 'C', 'B' };
+
+            {                
+                char[] a = { 'a', 'b', 'C', 'b', 'C', 'b' };
+
+                string s1 = new string(a, 1, 3);                
+                Assert.Equal(expectedDestination, s1.ToUpper(CultureInfo.CurrentCulture).ToArray());
+
+                var source = new ReadOnlySpan<char>(a, 1, 3);
+                var destination = new Span<char>(a, 3, 3);
+                Assert.Equal(source.Length, source.ToUpper(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+            }
+            {
+                char[] a = { 'a', 'b', 'C', 'b', 'C', 'b' };
+
+                string s1 = new string(a, 1, 3);                
+                Assert.Equal(expectedDestination, s1.ToUpperInvariant().ToArray());
+
+                var source = new ReadOnlySpan<char>(a, 1, 3);
+                var destination = new Span<char>(a, 3, 3);
+                Assert.Equal(source.Length, source.ToUpperInvariant(destination));
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+            }
+        }
+
+        [Fact]
+        public static void LengthMismatchToUpper()
+        {
+            {
+                var expectedSource = new char[3] { 'a', 'B', 'c' };
+                                
+                string s1 = "aBc";                
+                var expectedDestinationString = "ABC";
+                Assert.Equal(expectedDestinationString, s1.ToUpperInvariant());
+
+                ReadOnlySpan<char> source = s1.AsSpan();
+
+                var expectedDestination = new char[1] { 'a' };
+                Span<char> destination = new char[1] { 'a' };
+
+                Assert.Equal(-1, source.ToUpper(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(-1, source.ToUpperInvariant(destination));
+
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+            }
+
+            {
+                var expectedSource = new char[3] { 'a', 'B', 'c' };
+
+                string s1 = "aBc";
+                var expectedDestinationString = "ABC";
+                Assert.Equal(expectedDestinationString, s1.ToUpperInvariant());
+
+                ReadOnlySpan<char> source = s1.AsSpan();
+
+                var expectedDestination = new char[4] { 'A', 'B', 'C', 'd' };
+                Span<char> destination = new char[4] { 'x', 'Y', 'z', 'd' };
+
+                Assert.Equal(source.Length, source.ToUpper(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(source.Length, source.ToUpperInvariant(destination));
+
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+            }
+        }
+
+        [Fact]
+        public static void ToUpper()
+        {
+            var expectedSource = new char[3] { 'a', 'B', 'c' };
+            var expectedDestination = new char[3] { 'A', 'B', 'C' };
+
+            {
+                string s1 = "aBc";
+                Assert.Equal(expectedDestination, s1.ToUpper(CultureInfo.CurrentCulture).ToCharArray());
+
+                ReadOnlySpan<char> source = s1.AsSpan();
+                Span<char> destination = new char[3] { 'x', 'Y', 'z' };
+
+                Assert.Equal(source.Length, source.ToUpper(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+            }
+
+            {
+                string s1 = "aBc";
+                Assert.Equal(expectedDestination, s1.ToUpperInvariant().ToCharArray());
+
+                ReadOnlySpan<char> source = s1.AsSpan();
+                Span<char> destination = new char[3] { 'x', 'Y', 'z' };
+
+                Assert.Equal(source.Length, source.ToUpperInvariant(destination));
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+            }
+        }
+
+        [Fact]
+        public static void MakeSureNoToUpperChecksGoOutOfRange()
+        {
+            for (int length = 0; length < 100; length++)
+            {
+                var first = new char[length + 2];
+                var second = new char[length + 2];
+
+                for (int i = 0; i < first.Length; i++)
+                {
+                    first[i] = 'a';
+                    second[i] = 'b';
+                }
+
+                first[0] = 'Z';
+                first[length + 1] = 'Z';
+
+                second[0] = 'Y';
+                second[length + 1] = 'Y';
+
+                var expectedSource = new char[length];
+                var expectedDestination = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    expectedSource[i] = 'a';
+                    expectedDestination[i] = 'A';
+                }
+
+                string s1 = new string(first, 1, length);
+                Assert.Equal(expectedDestination, s1.ToUpperInvariant().ToCharArray());
+
+                Assert.Equal('Z', first[0]);
+                Assert.Equal('Z', first[length + 1]);
+                Assert.Equal('Y', second[0]);
+                Assert.Equal('Y', second[length + 1]);
+
+                ReadOnlySpan<char> source = s1.AsSpan();
+                var destination = new Span<char>(second, 1, length);
+                Assert.Equal(source.Length, source.ToUpper(destination, CultureInfo.CurrentCulture));
+                Assert.Equal(source.Length, source.ToUpperInvariant(destination));
+                Assert.Equal(expectedDestination, destination.ToArray());
+                Assert.Equal(expectedSource, source.ToArray());
+
+                Assert.Equal('Z', first[0]);
+                Assert.Equal('Z', first[length + 1]);
+                Assert.Equal('Y', second[0]);
+                Assert.Equal('Y', second[length + 1]);
+            }
+        }
+
+        [Fact]
+        public static void ToUpperNullCulture()
+        {
+            string s1 = "aBc";
+
+            try
+            {               
+                s1.ToUpper(null);
+                Assert.False(true, "Expected exception: " + typeof(ArgumentNullException).GetType());
+            }
+            catch (ArgumentNullException)
+            {
+            }
+            catch (Exception wrongException)
+            {
+                Assert.False(true, "Wrong exception thrown: Expected " + typeof(ArgumentNullException).GetType() + ": Actual: " + wrongException.GetType());
+            }
+
+            ReadOnlySpan<char> source = s1.AsSpan();
+            Span<char> destination = new char[3] { 'a', 'B', 'c' };
+
+            try
+            {               
+                source.ToUpper(destination, null);
+                Assert.False(true, "Expected exception: " + typeof(ArgumentNullException).GetType());
+            }
+            catch (ArgumentNullException)
+            {
+            }
+            catch (Exception wrongException)
+            {
+                Assert.False(true, "Wrong exception thrown: Expected " + typeof(ArgumentNullException).GetType() + ": Actual: " + wrongException.GetType());
+            }
+        }
+
+        private static IEnumerable<object[]> ToUpper_Culture_TestData()
+        {
+            yield return new object[] { "h\u0069 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };
+            yield return new object[] { "h\u0130 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };
+            yield return new object[] { "h\u0131 world", "H\u0049 WORLD", new CultureInfo("tr-TR") };
+
+            yield return new object[] { "h\u0069 world", "H\u0049 WORLD", new CultureInfo("en-US") };
+            yield return new object[] { "h\u0130 world", "H\u0130 WORLD", new CultureInfo("en-US") };
+            yield return new object[] { "h\u0131 world", "H\u0049 WORLD", new CultureInfo("en-US") };
+
+            yield return new object[] { "h\u0069 world", "H\u0049 WORLD", CultureInfo.InvariantCulture };
+            yield return new object[] { "h\u0130 world", "H\u0130 WORLD", CultureInfo.InvariantCulture };
+            yield return new object[] { "h\u0131 world", "H\u0131 WORLD", CultureInfo.InvariantCulture };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToUpper_Culture_TestData))]
+        public static void Test_ToUpper_Culture(string actual, string expected, CultureInfo culture)
+        {
+            Assert.Equal(expected, actual.ToUpper(culture));
+
+            ReadOnlySpan<char> source = actual.AsSpan();
+            Span<char> destination = new char[source.Length];
+            Assert.Equal(source.Length, source.ToUpper(destination, culture));
             Assert.Equal(expected, destination.ToString());
         }
 
@@ -4614,6 +5796,829 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void ZeroLengthTrimCharacter()
+        {
+            string s1 = string.Empty;
+            Assert.True(s1.SequenceEqual(s1.Trim('a')));
+            Assert.True(s1.SequenceEqual(s1.TrimStart('a')));
+            Assert.True(s1.SequenceEqual(s1.TrimEnd('a')));
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            Assert.True(span.SequenceEqual(span.Trim('a')));
+            Assert.True(span.SequenceEqual(span.TrimStart('a')));
+            Assert.True(span.SequenceEqual(span.TrimEnd('a')));
+        }
+
+        [Fact]
+        public static void NoTrimCharacter()
+        {
+            for (int length = 0; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'b';
+                }
+
+                string s1 = new string(a);
+                Assert.True(s1.SequenceEqual(s1.Trim('a')));
+                Assert.True(s1.SequenceEqual(s1.TrimStart('a')));
+                Assert.True(s1.SequenceEqual(s1.TrimEnd('a')));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.SequenceEqual(span.Trim('a')));
+                Assert.True(span.SequenceEqual(span.TrimStart('a')));
+                Assert.True(span.SequenceEqual(span.TrimEnd('a')));
+            }
+        }
+
+        [Fact]
+        public static void OnlyTrimCharacter()
+        {
+            for (int length = 0; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'a';
+                }
+
+                string s1 = new string(a);
+                Assert.True(string.Empty.SequenceEqual(s1.Trim('a')));
+                Assert.True(string.Empty.SequenceEqual(s1.TrimStart('a')));
+                Assert.True(string.Empty.SequenceEqual(s1.TrimEnd('a')));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(span.Trim('a')));
+                Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(span.TrimStart('a')));
+                Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(span.TrimEnd('a')));
+            }
+        }
+
+        [Fact]
+        public static void TrimCharacterAtStart()
+        {
+            for (int length = 2; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'b';
+                }
+                a[0] = 'a';
+
+                string s1 = new string(a);
+                Assert.True(s1.Substring(1).SequenceEqual(s1.Trim('a')));
+                Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart('a')));
+                Assert.True(s1.SequenceEqual(s1.TrimEnd('a')));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.Slice(1).SequenceEqual(span.Trim('a')));
+                Assert.True(span.Slice(1).SequenceEqual(span.TrimStart('a')));
+                Assert.True(span.SequenceEqual(span.TrimEnd('a')));
+            }
+        }
+
+        [Fact]
+        public static void TrimCharacterAtEnd()
+        {
+            for (int length = 2; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'b';
+                }
+                a[length - 1] = 'a';
+
+                string s1 = new string(a);
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.Trim('a')));
+                Assert.True(s1.SequenceEqual(s1.TrimStart('a')));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd('a')));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.Slice(0, length - 1).SequenceEqual(span.Trim('a')));
+                Assert.True(span.SequenceEqual(span.TrimStart('a')));
+                Assert.True(span.Slice(0, length - 1).SequenceEqual(span.TrimEnd('a')));
+            }
+        }
+
+        [Fact]
+        public static void TrimCharacterAtStartAndEnd()
+        {
+            for (int length = 3; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'b';
+                }
+                a[0] = 'a';
+                a[length - 1] = 'a';
+
+                string s1 = new string(a);
+                Assert.True(s1.Substring(1, length - 2).SequenceEqual(s1.Trim('a')));
+                Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart('a')));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd('a')));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.Slice(1, length - 2).SequenceEqual(span.Trim('a')));
+                Assert.True(span.Slice(1).SequenceEqual(span.TrimStart('a')));
+                Assert.True(span.Slice(0, length - 1).SequenceEqual(span.TrimEnd('a')));
+            }
+        }
+
+        [Fact]
+        public static void TrimCharacterInMiddle()
+        {
+            for (int length = 3; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'b';
+                }
+                a[1] = 'a';
+
+                string s1 = new string(a);
+                Assert.True(s1.SequenceEqual(s1.Trim('a')));
+                Assert.True(s1.SequenceEqual(s1.TrimStart('a')));
+                Assert.True(s1.SequenceEqual(s1.TrimEnd('a')));
+
+                ReadOnlySpan<char> span = new ReadOnlySpan<char>(a);
+                Assert.True(span.SequenceEqual(span.Trim('a')));
+                Assert.True(span.SequenceEqual(span.TrimStart('a')));
+                Assert.True(span.SequenceEqual(span.TrimEnd('a')));
+            }
+        }
+
+        [Fact]
+        public static void TrimCharacterMultipleTimes()
+        {
+            for (int length = 3; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'b';
+                }
+                a[0] = 'a';
+                a[length - 1] = 'a';
+
+                string s1 = new string(a);
+                string trimResultString = s1.Trim('a');
+                string trimStartResultString = s1.TrimStart('a');
+                string trimEndResultString = s1.TrimEnd('a');
+                Assert.True(s1.Substring(1, length - 2).SequenceEqual(trimResultString));
+                Assert.True(s1.Substring(1).SequenceEqual(trimStartResultString));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(trimEndResultString));
+
+                // 2nd attempt should do nothing
+                Assert.True(trimResultString.SequenceEqual(trimResultString.Trim('a')));
+                Assert.True(trimStartResultString.SequenceEqual(trimStartResultString.TrimStart('a')));
+                Assert.True(trimEndResultString.SequenceEqual(trimEndResultString.TrimEnd('a')));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                ReadOnlySpan<char> trimResult = span.Trim('a');
+                ReadOnlySpan<char> trimStartResult = span.TrimStart('a');
+                ReadOnlySpan<char> trimEndResult = span.TrimEnd('a');
+                Assert.True(span.Slice(1, length - 2).SequenceEqual(trimResult));
+                Assert.True(span.Slice(1).SequenceEqual(trimStartResult));
+                Assert.True(span.Slice(0, length - 1).SequenceEqual(trimEndResult));
+
+                // 2nd attempt should do nothing
+                Assert.True(trimResult.SequenceEqual(trimResult.Trim('a')));
+                Assert.True(trimStartResult.SequenceEqual(trimStartResult.TrimStart('a')));
+                Assert.True(trimEndResult.SequenceEqual(trimEndResult.TrimEnd('a')));
+            }
+        }
+
+        [Fact]
+        public static void MakeSureNoTrimCharacterChecksGoOutOfRange()
+        {
+            for (int length = 3; length < 64; length++)
+            {
+                char[] first = new char[length];
+                first[0] = 'a';
+                first[length - 1] = 'a';
+
+                string s1 = new string(first, 1, length - 2);
+                Assert.True(s1.SequenceEqual(s1.Trim('a')));
+                Assert.True(s1.SequenceEqual(s1.TrimStart('a')));
+                Assert.True(s1.SequenceEqual(s1.TrimEnd('a')));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.SequenceEqual(span.Trim('a')));
+                Assert.True(span.SequenceEqual(span.TrimStart('a')));
+                Assert.True(span.SequenceEqual(span.TrimEnd('a')));
+            }
+        }
+
+        [Fact]
+        public static void ZeroLengthTrimCharacters()
+        {
+            string s1 = string.Empty;
+            char[] trimCharsString = Array.Empty<char>();
+            Assert.True(s1.SequenceEqual(s1.Trim(trimCharsString)));
+            Assert.True(s1.SequenceEqual(s1.TrimStart(trimCharsString)));
+            Assert.True(s1.SequenceEqual(s1.TrimEnd(trimCharsString)));
+
+            char[] chars = { 'a', 'b', 'c', 'd', 'e' };
+            trimCharsString = chars;
+            Assert.True(s1.SequenceEqual(s1.Trim(trimCharsString)));
+            Assert.True(s1.SequenceEqual(s1.TrimStart(trimCharsString)));
+            Assert.True(s1.SequenceEqual(s1.TrimEnd(trimCharsString)));
+
+            string emptyString = string.Empty;
+            char[] trimCharsArrayFromString = "abcde".ToCharArray();
+            Assert.True(emptyString.SequenceEqual(emptyString.Trim(trimCharsArrayFromString)));
+            Assert.True(emptyString.SequenceEqual(emptyString.TrimStart(trimCharsArrayFromString)));
+            Assert.True(emptyString.SequenceEqual(emptyString.TrimEnd(trimCharsArrayFromString)));
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            Assert.True(span.SequenceEqual(span.Trim(trimChars)));
+            Assert.True(span.SequenceEqual(span.TrimStart(trimChars)));
+            Assert.True(span.SequenceEqual(span.TrimEnd(trimChars)));
+
+            trimChars = trimCharsString.AsSpan();
+            Assert.True(span.SequenceEqual(span.Trim(trimChars)));
+            Assert.True(span.SequenceEqual(span.TrimStart(trimChars)));
+            Assert.True(span.SequenceEqual(span.TrimEnd(trimChars)));
+
+            ReadOnlySpan<char> stringSpan = s1.AsSpan();
+            ReadOnlySpan<char> trimCharsFromString = trimCharsArrayFromString.AsSpan();
+            Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimCharsFromString)));
+            Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimCharsFromString)));
+            Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimCharsFromString)));
+        }
+
+        [Fact]
+        public static void NoTrimCharacters()
+        {
+            char[] trimCharsString = Array.Empty<char>();
+            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            for (int length = 0; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'f';
+                }
+                string s1 = new string(a);
+                Assert.True(s1.SequenceEqual(s1.Trim(trimCharsString)));
+                Assert.True(s1.SequenceEqual(s1.TrimStart(trimCharsString)));
+                Assert.True(s1.SequenceEqual(s1.TrimEnd(trimCharsString)));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.SequenceEqual(span.Trim(trimChars)));
+                Assert.True(span.SequenceEqual(span.TrimStart(trimChars)));
+                Assert.True(span.SequenceEqual(span.TrimEnd(trimChars)));
+            }
+
+            char[] chars = { 'a', 'b', 'c', 'd', 'e' };
+            for (int length = 0; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'f';
+                }
+                string s2 = new string(a);
+                Assert.True(s2.SequenceEqual(s2.Trim(chars)));
+                Assert.True(s2.SequenceEqual(s2.TrimStart(chars)));
+                Assert.True(s2.SequenceEqual(s2.TrimEnd(chars)));
+
+                ReadOnlySpan<char> span = s2.AsSpan();
+                Assert.True(span.SequenceEqual(span.Trim(chars)));
+                Assert.True(span.SequenceEqual(span.TrimStart(chars)));
+                Assert.True(span.SequenceEqual(span.TrimEnd(chars)));
+            }
+
+            string s3 = "ffghifhig";
+            char[] trimCharsFromString = "abcde".ToCharArray();
+            Assert.True(s3.SequenceEqual(s3.Trim(trimCharsFromString)));
+            Assert.True(s3.SequenceEqual(s3.TrimStart(trimCharsFromString)));
+            Assert.True(s3.SequenceEqual(s3.TrimEnd(trimCharsFromString)));
+
+            ReadOnlySpan<char> stringSpan = s3.AsSpan();
+            ReadOnlySpan<char> trimCharsFromStringSpan = trimCharsFromString.AsSpan();
+            Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimCharsFromStringSpan)));
+            Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimCharsFromStringSpan)));
+            Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimCharsFromStringSpan)));
+        }
+
+        [Fact]
+        public static void OnlyTrimCharacters()
+        {
+            char[] chars = { 'a', 'b', 'c', 'd', 'e' };
+            for (int length = 0; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = chars[i % chars.Length];
+                }
+
+                string s1 = new string(a);
+                Assert.True(string.Empty.SequenceEqual(s1.Trim(chars)), "G: " + length);
+                Assert.True(string.Empty.SequenceEqual(s1.TrimStart(chars)), "H: " + length);
+                Assert.True(string.Empty.SequenceEqual(s1.TrimEnd(chars)), "I: " + length);
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(span.Trim(chars)), "G: " + length);
+                Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(span.TrimStart(chars)), "H: " + length);
+                Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(span.TrimEnd(chars)), "I: " + length);
+            }
+
+            string s2 = "babedebcabba";
+            char[] trimCharsString = "abcde".ToCharArray();
+            Assert.True(string.Empty.SequenceEqual(s2.Trim(trimCharsString)), "J");
+            Assert.True(string.Empty.SequenceEqual(s2.TrimStart(trimCharsString)), "K");
+            Assert.True(string.Empty.SequenceEqual(s2.TrimEnd(trimCharsString)), "L");
+
+            ReadOnlySpan<char> stringSpan = s2.AsSpan();
+            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(stringSpan.Trim(trimChars)), "J");
+            Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(stringSpan.TrimStart(trimChars)), "K");
+            Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(stringSpan.TrimEnd(trimChars)), "L");
+        }
+
+        [Fact]
+        public static void TrimCharactersAtStart()
+        {
+            char[] chars = { 'a', 'b', 'c', 'd', 'e' };
+            for (int length = 2; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'f';
+                }
+                a[0] = 'c';
+                string s1 = new string(a);
+                Assert.True(s1.Substring(1).SequenceEqual(s1.Trim(chars)), "A: " + length);
+                Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart(chars)), "B: " + length);
+                Assert.True(s1.SequenceEqual(s1.TrimEnd(chars)), "C: " + length);
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.Slice(1).SequenceEqual(span.Trim(chars)), "A: " + length);
+                Assert.True(span.Slice(1).SequenceEqual(span.TrimStart(chars)), "B: " + length);
+                Assert.True(span.SequenceEqual(span.TrimEnd(chars)), "C: " + length);
+            }
+
+            string s2 = "babffffff";
+            char[] trimCharsString = "abcde".ToCharArray();
+            Assert.True(s2.Substring(3).SequenceEqual(s2.Trim(trimCharsString)), "D");
+            Assert.True(s2.Substring(3).SequenceEqual(s2.TrimStart(trimCharsString)), "E");
+            Assert.True(s2.SequenceEqual(s2.TrimEnd(trimCharsString)), "F");
+
+            ReadOnlySpan<char> stringSpan = s2.AsSpan();
+            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            Assert.True(stringSpan.Slice(3).SequenceEqual(stringSpan.Trim(trimChars)), "D");
+            Assert.True(stringSpan.Slice(3).SequenceEqual(stringSpan.TrimStart(trimChars)), "E");
+            Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimChars)), "F");
+        }
+
+        [Fact]
+        public static void TrimCharactersAtEnd()
+        {
+            char[] chars = { 'a', 'b', 'c', 'd', 'e' };
+            for (int length = 2; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'f';
+                }
+                a[length - 1] = 'c';
+
+                string s1 = new string(a);
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.Trim(chars)));
+                Assert.True(s1.SequenceEqual(s1.TrimStart(chars)));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd(chars)));
+
+                ReadOnlySpan<char> span = new ReadOnlySpan<char>(a);
+                Assert.True(span.Slice(0, length - 1).SequenceEqual(span.Trim(chars)));
+                Assert.True(span.SequenceEqual(span.TrimStart(chars)));
+                Assert.True(span.Slice(0, length - 1).SequenceEqual(span.TrimEnd(chars)));
+            }
+
+            string s2 = "fffffcced";
+            char[] trimCharsString = "abcde".ToCharArray();
+            Assert.True(s2.Substring(0, 5).SequenceEqual(s2.Trim(trimCharsString)));
+            Assert.True(s2.SequenceEqual(s2.TrimStart(trimCharsString)));
+            Assert.True(s2.Substring(0, 5).SequenceEqual(s2.TrimEnd(trimCharsString)));
+
+            ReadOnlySpan<char> stringSpan = s2.AsSpan();
+            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            Assert.True(stringSpan.Slice(0, 5).SequenceEqual(stringSpan.Trim(trimChars)));
+            Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimChars)));
+            Assert.True(stringSpan.Slice(0, 5).SequenceEqual(stringSpan.TrimEnd(trimChars)));
+        }
+
+        [Fact]
+        public static void TrimCharactersAtStartAndEnd()
+        {
+            char[] chars = { 'a', 'b', 'c', 'd', 'e' };
+            for (int length = 3; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'f';
+                }
+                a[0] = 'c';
+                a[length - 1] = 'c';
+                string s1 = new string(a);
+                Assert.True(s1.Substring(1, length - 2).SequenceEqual(s1.Trim(chars)));
+                Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart(chars)));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd(chars)));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.Slice(1, length - 2).SequenceEqual(span.Trim(chars)));
+                Assert.True(span.Slice(1).SequenceEqual(span.TrimStart(chars)));
+                Assert.True(span.Slice(0, length - 1).SequenceEqual(span.TrimEnd(chars)));
+            }
+
+            string s2 = "ccedafffffbdaa";
+            char[] trimCharsString = "abcde".ToCharArray();
+            Assert.True(s2.Substring(5, 5).SequenceEqual(s2.Trim(trimCharsString)));
+            Assert.True(s2.Substring(5).SequenceEqual(s2.TrimStart(trimCharsString)));
+            Assert.True(s2.Substring(0, 10).SequenceEqual(s2.TrimEnd(trimCharsString)));
+
+            ReadOnlySpan<char> stringSpan = s2.AsSpan();
+            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            Assert.True(stringSpan.Slice(5, 5).SequenceEqual(stringSpan.Trim(trimChars)));
+            Assert.True(stringSpan.Slice(5).SequenceEqual(stringSpan.TrimStart(trimChars)));
+            Assert.True(stringSpan.Slice(0, 10).SequenceEqual(stringSpan.TrimEnd(trimChars)));
+        }
+
+        [Fact]
+        public static void TrimCharactersInMiddle()
+        {
+            char[] chars = { 'a', 'b', 'c', 'd', 'e' };
+            for (int length = chars.Length + 2; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'f';
+                }
+                Array.Copy(chars, 0, a, 1, chars.Length);
+
+                string s1 = new string(a);
+                Assert.True(s1.SequenceEqual(s1.Trim(chars)));
+                Assert.True(s1.SequenceEqual(s1.TrimStart(chars)));
+                Assert.True(s1.SequenceEqual(s1.TrimEnd(chars)));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.SequenceEqual(span.Trim(chars)));
+                Assert.True(span.SequenceEqual(span.TrimStart(chars)));
+                Assert.True(span.SequenceEqual(span.TrimEnd(chars)));
+            }
+
+            string s2 = "fabbacddeeddef";
+            char[] trimCharsString = "abcde".ToCharArray();
+            Assert.True(s2.SequenceEqual(s2.Trim(trimCharsString)));
+            Assert.True(s2.SequenceEqual(s2.TrimStart(trimCharsString)));
+            Assert.True(s2.SequenceEqual(s2.TrimEnd(trimCharsString)));
+
+            ReadOnlySpan<char> stringSpan = s2.AsSpan();
+            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimChars)));
+            Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimChars)));
+            Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimChars)));
+        }
+
+        [Fact]
+        public static void TrimCharactersMultipleTimes()
+        {
+            char[] chars = { 'a', 'b', 'c', 'd', 'e' };
+            for (int length = 3; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'f';
+                }
+                a[0] = 'c';
+                a[length - 1] = 'c';
+
+                string s1 = new string(a);                
+                string trimResultString = s1.Trim(chars);
+                string trimStartResultString = s1.TrimStart(chars);
+                string trimEndResultString = s1.TrimEnd(chars);
+                Assert.True(s1.Substring(1, length - 2).SequenceEqual(trimResultString));
+                Assert.True(s1.Substring(1).SequenceEqual(trimStartResultString));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(trimEndResultString));
+
+                // 2nd attempt should do nothing
+                Assert.True(trimResultString.SequenceEqual(trimResultString.Trim(chars)));
+                Assert.True(trimStartResultString.SequenceEqual(trimStartResultString.TrimStart(chars)));
+                Assert.True(trimEndResultString.SequenceEqual(trimEndResultString.TrimEnd(chars)));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                ReadOnlySpan<char> trimResult = span.Trim(chars);
+                ReadOnlySpan<char> trimStartResult = span.TrimStart(chars);
+                ReadOnlySpan<char> trimEndResult = span.TrimEnd(chars);
+                Assert.True(span.Slice(1, length - 2).SequenceEqual(trimResult));
+                Assert.True(span.Slice(1).SequenceEqual(trimStartResult));
+                Assert.True(span.Slice(0, length - 1).SequenceEqual(trimEndResult));
+
+                // 2nd attempt should do nothing
+                Assert.True(trimResult.SequenceEqual(trimResult.Trim(chars)));
+                Assert.True(trimStartResult.SequenceEqual(trimStartResult.TrimStart(chars)));
+                Assert.True(trimEndResult.SequenceEqual(trimEndResult.TrimEnd(chars)));
+            }
+
+            string s2 = "ccedafffffbdaa";
+            char[] trimCharsString = "abcde".ToCharArray();
+            string trimStringResultString = s2.Trim(trimCharsString);
+            string trimStartStringResultString = s2.TrimStart(trimCharsString);
+            string trimEndStringResultString = s2.TrimEnd(trimCharsString);
+            Assert.True(s2.Substring(5, 5).SequenceEqual(trimStringResultString));
+            Assert.True(s2.Substring(5).SequenceEqual(trimStartStringResultString));
+            Assert.True(s2.Substring(0, 10).SequenceEqual(trimEndStringResultString));
+
+            // 2nd attempt should do nothing
+            Assert.True(trimStringResultString.SequenceEqual(trimStringResultString.Trim(trimCharsString)));
+            Assert.True(trimStartStringResultString.SequenceEqual(trimStartStringResultString.TrimStart(trimCharsString)));
+            Assert.True(trimEndStringResultString.SequenceEqual(trimEndStringResultString.TrimEnd(trimCharsString)));
+
+            ReadOnlySpan<char> stringSpan = s2.AsSpan();
+            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+
+            ReadOnlySpan<char> trimStringResult = stringSpan.Trim(trimChars);
+            ReadOnlySpan<char> trimStartStringResult = stringSpan.TrimStart(trimChars);
+            ReadOnlySpan<char> trimEndStringResult = stringSpan.TrimEnd(trimChars);
+            Assert.True(stringSpan.Slice(5, 5).SequenceEqual(trimStringResult));
+            Assert.True(stringSpan.Slice(5).SequenceEqual(trimStartStringResult));
+            Assert.True(stringSpan.Slice(0, 10).SequenceEqual(trimEndStringResult));
+
+            // 2nd attempt should do nothing
+            Assert.True(trimStringResult.SequenceEqual(trimStringResult.Trim(trimChars)));
+            Assert.True(trimStartStringResult.SequenceEqual(trimStartStringResult.TrimStart(trimChars)));
+            Assert.True(trimEndStringResult.SequenceEqual(trimEndStringResult.TrimEnd(trimChars)));
+        }
+
+        [Fact]
+        public static void MakeSureNoTrimCharactersChecksGoOutOfRange()
+        {
+            char[] chars = { 'a', 'b', 'c', 'd', 'e' };
+            for (int length = 3; length < 64; length++)
+            {
+                char[] first = new char[length];
+                first[0] = 'f';
+                first[length - 1] = 'f';
+                string s1 = new string(first, 1, length - 2);
+                Assert.Equal(s1.ToArray().Length, s1.Trim(chars).ToArray().Length);
+                Assert.True(s1.SequenceEqual(s1.Trim(chars)), "A : " + s1.Length);
+                Assert.True(s1.SequenceEqual(s1.TrimStart(chars)), "B :" + s1.Length);
+                Assert.True(s1.SequenceEqual(s1.TrimEnd(chars)));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.Equal(span.ToArray().Length, span.Trim(chars).ToArray().Length);
+                Assert.True(span.SequenceEqual(span.Trim(chars)), "A : " + span.Length);
+                Assert.True(span.SequenceEqual(span.TrimStart(chars)), "B :" + span.Length);
+                Assert.True(span.SequenceEqual(span.TrimEnd(chars)));
+            }
+
+            string testString = "afghijklmnopqrstfe";
+
+            string s2 = testString.Substring(1, testString.Length - 2);
+            char[] trimCharsString = "abcde".ToCharArray();
+            Assert.True(s2.SequenceEqual(s2.Trim(trimCharsString)));
+            Assert.True(s2.SequenceEqual(s2.TrimStart(trimCharsString)));
+            Assert.True(s2.SequenceEqual(s2.TrimEnd(trimCharsString)));
+
+            ReadOnlySpan<char> stringSpan = s2.AsSpan();
+            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimChars)));
+            Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimChars)));
+            Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimChars)));
+        }
+
+        [Fact]
+        public static void ZeroLengthTrim()
+        {
+            string s1 = string.Empty;
+            Assert.True(s1.SequenceEqual(s1.Trim()));
+            Assert.True(s1.SequenceEqual(s1.TrimStart()));
+            Assert.True(s1.SequenceEqual(s1.TrimEnd()));
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            Assert.True(span.SequenceEqual(span.Trim()));
+            Assert.True(span.SequenceEqual(span.TrimStart()));
+            Assert.True(span.SequenceEqual(span.TrimEnd()));
+        }
+
+        [Fact]
+        public static void NoWhiteSpaceTrim()
+        {
+            for (int length = 0; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'a';
+                }
+
+                string s1 = new string(a);
+                Assert.True(s1.SequenceEqual(s1.Trim()));
+                Assert.True(s1.SequenceEqual(s1.TrimStart()));
+                Assert.True(s1.SequenceEqual(s1.TrimEnd()));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.SequenceEqual(span.Trim()));
+                Assert.True(span.SequenceEqual(span.TrimStart()));
+                Assert.True(span.SequenceEqual(span.TrimEnd()));
+            }
+        }
+
+        [Fact]
+        public static void OnlyWhiteSpaceTrim()
+        {
+            for (int length = 0; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = ' ';
+                }
+
+                string s1 = new string(a);
+                Assert.True(string.Empty.SequenceEqual(s1.Trim()));
+                Assert.True(string.Empty.SequenceEqual(s1.TrimStart()));
+                Assert.True(string.Empty.SequenceEqual(s1.TrimEnd()));
+
+                ReadOnlySpan<char> span = new ReadOnlySpan<char>(a);
+                Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(span.Trim()));
+                Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(span.TrimStart()));
+                Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(span.TrimEnd()));
+            }
+        }
+
+        [Fact]
+        public static void WhiteSpaceAtStartTrim()
+        {
+            for (int length = 2; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'a';
+                }
+                a[0] = ' ';
+
+                string s1 = new string(a);
+                Assert.True(s1.Substring(1).SequenceEqual(s1.Trim()));
+                Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart()));
+                Assert.True(s1.SequenceEqual(s1.TrimEnd()));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.Slice(1).SequenceEqual(span.Trim()));
+                Assert.True(span.Slice(1).SequenceEqual(span.TrimStart()));
+                Assert.True(span.SequenceEqual(span.TrimEnd()));
+            }
+        }
+
+        [Fact]
+        public static void WhiteSpaceAtEndTrim()
+        {
+            for (int length = 2; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'a';
+                }
+                a[length - 1] = ' ';
+
+                string s1 = new string(a);
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.Trim()));
+                Assert.True(s1.SequenceEqual(s1.TrimStart()));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd()));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.Slice(0, length - 1).SequenceEqual(span.Trim()));
+                Assert.True(span.SequenceEqual(span.TrimStart()));
+                Assert.True(span.Slice(0, length - 1).SequenceEqual(span.TrimEnd()));
+            }
+        }
+
+        [Fact]
+        public static void WhiteSpaceAtStartAndEndTrim()
+        {
+            for (int length = 3; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'a';
+                }
+                a[0] = ' ';
+                a[length - 1] = ' ';
+
+                string s1 = new string(a);
+                Assert.True(s1.Substring(1, length - 2).SequenceEqual(s1.Trim()));
+                Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart()));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd()));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.Slice(1, length - 2).SequenceEqual(span.Trim()));
+                Assert.True(span.Slice(1).SequenceEqual(span.TrimStart()));
+                Assert.True(span.Slice(0, length - 1).SequenceEqual(span.TrimEnd()));
+            }
+        }
+
+        [Fact]
+        public static void WhiteSpaceInMiddleTrim()
+        {
+            for (int length = 3; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'a';
+                }
+                a[1] = ' ';
+
+                string s1 = new string(a);
+                Assert.True(s1.SequenceEqual(s1.Trim()));
+                Assert.True(s1.SequenceEqual(s1.TrimStart()));
+                Assert.True(s1.SequenceEqual(s1.TrimEnd()));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.SequenceEqual(span.Trim()));
+                Assert.True(span.SequenceEqual(span.TrimStart()));
+                Assert.True(span.SequenceEqual(span.TrimEnd()));
+            }
+        }
+
+        [Fact]
+        public static void TrimWhiteSpaceMultipleTimes()
+        {
+            for (int length = 3; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = 'a';
+                }
+                a[0] = ' ';
+                a[length - 1] = ' ';
+
+                string s1 = new string(a);
+                string trimResultString = s1.Trim();
+                string trimStartResultString = s1.TrimStart();
+                string trimEndResultString = s1.TrimEnd();
+                Assert.True(s1.Substring(1, length - 2).SequenceEqual(trimResultString));
+                Assert.True(s1.Substring(1).SequenceEqual(trimStartResultString));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(trimEndResultString));
+
+                // 2nd attempt should do nothing
+                Assert.True(trimResultString.SequenceEqual(trimResultString.Trim()));
+                Assert.True(trimStartResultString.SequenceEqual(trimStartResultString.TrimStart()));
+                Assert.True(trimEndResultString.SequenceEqual(trimEndResultString.TrimEnd()));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                ReadOnlySpan<char> trimResult = span.Trim();
+                ReadOnlySpan<char> trimStartResult = span.TrimStart();
+                ReadOnlySpan<char> trimEndResult = span.TrimEnd();
+                Assert.True(span.Slice(1, length - 2).SequenceEqual(trimResult));
+                Assert.True(span.Slice(1).SequenceEqual(trimStartResult));
+                Assert.True(span.Slice(0, length - 1).SequenceEqual(trimEndResult));
+
+                // 2nd attempt should do nothing
+                Assert.True(trimResult.SequenceEqual(trimResult.Trim()));
+                Assert.True(trimStartResult.SequenceEqual(trimStartResult.TrimStart()));
+                Assert.True(trimEndResult.SequenceEqual(trimEndResult.TrimEnd()));
+            }
+        }
+
+        [Fact]
+        public static void MakeSureNoTrimChecksGoOutOfRange()
+        {
+            for (int length = 3; length < 64; length++)
+            {
+                char[] first = new char[length];
+                first[0] = ' ';
+                first[length - 1] = ' ';
+
+                string s1 = new string(first, 1, length - 2);
+                Assert.True(s1.SequenceEqual(s1.Trim()));
+                Assert.True(s1.SequenceEqual(s1.TrimStart()));
+                Assert.True(s1.SequenceEqual(s1.TrimEnd()));
+
+                ReadOnlySpan<char> span = s1.AsSpan();
+                Assert.True(span.SequenceEqual(span.Trim()));
+                Assert.True(span.SequenceEqual(span.TrimStart()));
+                Assert.True(span.SequenceEqual(span.TrimEnd()));
+            }
+        }
+
+        [Fact]
         public static void EqualityOperators()
         {
             var s1 = new string(new char[] { 'a' });
@@ -4803,27 +6808,329 @@ namespace System.Tests
         public static unsafe void Ctor_SByte()
         {
             string s = "This is a string constructor test";
-            byte [] encodedBytes = Encoding.Default.GetBytes(s);
-            fixed (byte *pBytes = encodedBytes)
+            byte[] encodedBytes = Encoding.Default.GetBytes(s);
+            fixed (byte* pBytes = encodedBytes)
             {
-                Assert.Equal(s, new String((sbyte*) pBytes));
-                Assert.Equal(s, new String((sbyte*) pBytes, 0, encodedBytes.Length));
-                Assert.Equal(s, new String((sbyte*) pBytes, 0, encodedBytes.Length, Encoding.Default));
+                Assert.Equal(s, new String((sbyte*)pBytes));
+                Assert.Equal(s, new String((sbyte*)pBytes, 0, encodedBytes.Length));
+                Assert.Equal(s, new String((sbyte*)pBytes, 0, encodedBytes.Length, Encoding.Default));
             }
 
             s = "This is some string \u0393\u0627\u3400\u0440\u1100";
             encodedBytes = Encoding.UTF8.GetBytes(s);
-            fixed (byte *pBytes = encodedBytes)
+            fixed (byte* pBytes = encodedBytes)
             {
-                Assert.Equal(s, new String((sbyte*) pBytes, 0, encodedBytes.Length, Encoding.UTF8));
+                Assert.Equal(s, new String((sbyte*)pBytes, 0, encodedBytes.Length, Encoding.UTF8));
             }
 
-            fixed (byte *pBytes = new byte[1] { 0 })
+            fixed (byte* pBytes = new byte[1] { 0 })
             {
-                Assert.Equal(string.Empty, new String((sbyte*) pBytes));
-                Assert.Equal(string.Empty, new String((sbyte*) pBytes, 0, 0));
-                Assert.Equal(string.Empty, new String((sbyte*) pBytes, 0, 0, Encoding.UTF8));
+                Assert.Equal(string.Empty, new String((sbyte*)pBytes));
+                Assert.Equal(string.Empty, new String((sbyte*)pBytes, 0, 0));
+                Assert.Equal(string.Empty, new String((sbyte*)pBytes, 0, 0, Encoding.UTF8));
             }
+        }
+
+        [Fact]
+        public static void StartsWithMatchDifferentSpans_StringComparison()
+        {
+            char[] a = { '4', '5', '6', '7' };
+            char[] b = { '4', '5', '6' };
+
+            string s1 = new string(a, 0, 3);
+            string s2 = new string(b, 0, 3);
+            Assert.True(s1.StartsWith(s2, StringComparison.Ordinal));
+
+            Assert.True(s1.StartsWith(s2, StringComparison.CurrentCulture));
+            Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
+            Assert.True(s1.StartsWith(s2, StringComparison.InvariantCulture));
+            Assert.True(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+            Assert.True(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            ReadOnlySpan<char> slice = s2.AsSpan();
+            Assert.True(span.StartsWith(slice, StringComparison.Ordinal));
+
+            Assert.True(span.StartsWith(slice, StringComparison.CurrentCulture));
+            Assert.True(span.StartsWith(slice, StringComparison.CurrentCultureIgnoreCase));
+            Assert.True(span.StartsWith(slice, StringComparison.InvariantCulture));
+            Assert.True(span.StartsWith(slice, StringComparison.InvariantCultureIgnoreCase));
+            Assert.True(span.StartsWith(slice, StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public static void StartsWithNoMatch_StringComparison()
+        {
+            for (int length = 1; length < 150; length++)
+            {
+                for (int mismatchIndex = 0; mismatchIndex < length; mismatchIndex++)
+                {
+                    var first = new char[length];
+                    var second = new char[length];
+                    for (int i = 0; i < length; i++)
+                    {
+                        first[i] = second[i] = (char)(i + 1);
+                    }
+
+                    second[mismatchIndex] = (char)(second[mismatchIndex] + 1);
+
+                    string s1 = new string(first);
+                    string s2 = new string(second);
+                    Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
+
+                    Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+
+                    // Different behavior depending on OS
+                    Assert.Equal(
+                        s1.ToString().StartsWith(s2.ToString(), StringComparison.CurrentCulture),
+                        s1.StartsWith(s2, StringComparison.CurrentCulture));
+                    Assert.Equal(
+                        s1.ToString().StartsWith(s2.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                        s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
+                    Assert.Equal(
+                        s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCulture),
+                        s1.StartsWith(s2, StringComparison.InvariantCulture));
+                    Assert.Equal(
+                        s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                        s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+
+                    ReadOnlySpan<char> firstSpan = s1.AsSpan();
+                    ReadOnlySpan<char> secondSpan = s2.AsSpan();
+                    Assert.False(firstSpan.StartsWith(secondSpan, StringComparison.Ordinal));
+
+                    Assert.False(firstSpan.StartsWith(secondSpan, StringComparison.OrdinalIgnoreCase));
+
+                    // Different behavior depending on OS
+                    Assert.Equal(
+                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
+                        firstSpan.StartsWith(secondSpan, StringComparison.CurrentCulture));
+                    Assert.Equal(
+                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                        firstSpan.StartsWith(secondSpan, StringComparison.CurrentCultureIgnoreCase));
+                    Assert.Equal(
+                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
+                        firstSpan.StartsWith(secondSpan, StringComparison.InvariantCulture));
+                    Assert.Equal(
+                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                        firstSpan.StartsWith(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                }
+            }
+        }
+
+        [Fact]
+        public static void MakeSureNoStartsWithChecksGoOutOfRange_StringComparison()
+        {
+            for (int length = 0; length < 100; length++)
+            {
+                var first = new char[length + 2];
+                first[0] = (char)99;
+                first[length + 1] = (char)99;
+                var second = new char[length + 2];
+                second[0] = (char)100;
+                second[length + 1] = (char)100;
+
+                string s1 = new string(first, 1, length);
+                string s2 = new string(second, 1, length);
+                Assert.True(s1.StartsWith(s2, StringComparison.Ordinal));
+
+                Assert.True(s1.StartsWith(s2, StringComparison.CurrentCulture));
+                Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
+                Assert.True(s1.StartsWith(s2, StringComparison.InvariantCulture));
+                Assert.True(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+                Assert.True(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+
+                ReadOnlySpan<char> span1 = s1.AsSpan();
+                ReadOnlySpan<char> span2 = s2.AsSpan();
+                Assert.True(span1.StartsWith(span2, StringComparison.Ordinal));
+
+                Assert.True(span1.StartsWith(span2, StringComparison.CurrentCulture));
+                Assert.True(span1.StartsWith(span2, StringComparison.CurrentCultureIgnoreCase));
+                Assert.True(span1.StartsWith(span2, StringComparison.InvariantCulture));
+                Assert.True(span1.StartsWith(span2, StringComparison.InvariantCultureIgnoreCase));
+                Assert.True(span1.StartsWith(span2, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
+        [Fact]
+        public static void StartsWithUnknownComparisonType_StringComparison()
+        {
+            string s1 = "456";
+            Assert.Throws<ArgumentException>(() => s1.StartsWith(s1, StringComparison.CurrentCulture - 1));
+            Assert.Throws<ArgumentException>(() => s1.StartsWith(s1, StringComparison.OrdinalIgnoreCase + 1));
+            Assert.Throws<ArgumentException>(() => s1.StartsWith(s1, (StringComparison)6));
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.StartsWith(_span, StringComparison.CurrentCulture - 1));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.StartsWith(_span, StringComparison.OrdinalIgnoreCase + 1));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.StartsWith(_span, (StringComparison)6));
+        }
+
+        [Fact]
+        public static void StartsWithMatchNonOrdinal_StringComparison()
+        {
+            string s1 = "abcd";
+            string s2 = "aBc";
+            Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
+            Assert.True(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            ReadOnlySpan<char> value = s2.AsSpan();
+            Assert.False(span.StartsWith(value, StringComparison.Ordinal));
+            Assert.True(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
+
+            CultureInfo backupCulture = CultureInfo.CurrentCulture;
+
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("el-GR");
+
+            s1 = "\u03b1\u03b2\u03b3\u03b4";  // αβγδ
+            s2 = "\u03b1\u03b2\u03b3"; // αβγ
+
+            Assert.True(s1.StartsWith(s2, StringComparison.CurrentCulture));
+            Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
+
+            span = s1.AsSpan();
+            value = s2.AsSpan();
+
+            Assert.True(span.StartsWith(value, StringComparison.CurrentCulture));
+            Assert.True(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
+
+            s2 = "\u03b1\u0392\u03b3"; // αΒγ
+            Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));
+            Assert.True(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
+
+            value = s2.AsSpan();
+            Assert.False(span.StartsWith(value, StringComparison.CurrentCulture));
+            Assert.True(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
+
+            Thread.CurrentThread.CurrentCulture = backupCulture;
+
+            s1 = "\u0069\u00df\u0049\u03b4"; // ißIδ
+            s2 = "\u0069\u0073\u0073\u0049"; // issI
+
+            Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
+            // Different behavior depending on OS - True on Windows, False on Unix
+            Assert.Equal(
+                s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCulture),
+                s1.StartsWith(s2, StringComparison.InvariantCulture));
+            Assert.Equal(
+                s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+
+            span = s1.AsSpan();
+            value = s2.AsSpan();
+
+            Assert.False(span.StartsWith(value, StringComparison.Ordinal));
+            // Different behavior depending on OS - True on Windows, False on Unix
+            Assert.Equal(
+                span.ToString().StartsWith(value.ToString(), StringComparison.InvariantCulture),
+                span.StartsWith(value, StringComparison.InvariantCulture));
+            Assert.Equal(
+                span.ToString().StartsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
+
+            s2 = "\u0049\u0073\u0073\u0049"; // IssI
+            Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+            Assert.False(s1.StartsWith(s2, StringComparison.InvariantCulture));
+            // Different behavior depending on OS - True on Windows, False on Unix
+            Assert.Equal(
+                s1.ToString().StartsWith(s2.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+
+            value = s2.AsSpan();
+            Assert.False(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
+            Assert.False(span.StartsWith(value, StringComparison.InvariantCulture));
+            // Different behavior depending on OS - True on Windows, False on Unix
+            Assert.Equal(
+                span.ToString().StartsWith(value.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        [Fact]
+        public static void StartsWithNoMatchNonOrdinal_StringComparison()
+        {
+            string s1 = "abcd";
+            string s2 = "aDc";
+            Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
+            Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+
+            ReadOnlySpan<char> span = s1.AsSpan();
+            ReadOnlySpan<char> value = s2.AsSpan();
+            Assert.False(span.StartsWith(value, StringComparison.Ordinal));
+            Assert.False(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
+
+            CultureInfo backupCulture = CultureInfo.CurrentCulture;
+
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("el-GR");
+
+            s1 = "\u03b1\u03b2\u03b3\u03b4"; // αβγδ
+            s2 = "\u03b1\u03b4\u03b3"; // αδγ
+
+            Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));
+            Assert.False(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
+
+            span = s1.AsSpan();
+            value = s2.AsSpan();
+
+            Assert.False(span.StartsWith(value, StringComparison.CurrentCulture));
+            Assert.False(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
+
+            s2 = "\u03b1\u0394\u03b3"; // αΔγ
+            Assert.False(s1.StartsWith(s2, StringComparison.CurrentCulture));
+            Assert.False(s1.StartsWith(s2, StringComparison.CurrentCultureIgnoreCase));
+
+            value = s2.AsSpan();
+            Assert.False(span.StartsWith(value, StringComparison.CurrentCulture));
+            Assert.False(span.StartsWith(value, StringComparison.CurrentCultureIgnoreCase));
+
+            Thread.CurrentThread.CurrentCulture = backupCulture;
+
+            s1 = "\u0069\u00df\u0049\u03b4"; // ißIδ
+            s2 = "\u0069\u03b4\u03b4\u0049";  // iδδI
+
+            Assert.False(s1.StartsWith(s2, StringComparison.Ordinal));
+            Assert.False(s1.StartsWith(s2, StringComparison.InvariantCulture));
+            Assert.False(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+
+            span = s1.AsSpan();
+            value = s2.AsSpan();
+
+            Assert.False(span.StartsWith(value, StringComparison.Ordinal));
+            Assert.False(span.StartsWith(value, StringComparison.InvariantCulture));
+            Assert.False(span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
+
+            s2 = "\u0049\u03b4\u03b4\u0049"; // IδδI
+            Assert.False(s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase));
+            Assert.False(s1.StartsWith(s2, StringComparison.InvariantCulture));
+            Assert.False(s1.StartsWith(s2, StringComparison.InvariantCultureIgnoreCase));
+
+            value = s2.AsSpan();
+            Assert.False(span.StartsWith(value, StringComparison.OrdinalIgnoreCase));
+            Assert.False(span.StartsWith(value, StringComparison.InvariantCulture));
+            Assert.False(span.StartsWith(value, StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        // NOTE: This is by design. Unix ignores the null characters (i.e. null characters have no weights for the string comparison).
+        // For desired behavior, use ordinal comparison instead of linguistic comparison.
+        // This is a known difference between Windows and Unix (https://github.com/dotnet/coreclr/issues/2051).
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(StringComparison.CurrentCulture)]
+        [InlineData(StringComparison.CurrentCultureIgnoreCase)]
+        [InlineData(StringComparison.InvariantCulture)]
+        [InlineData(StringComparison.InvariantCultureIgnoreCase)]
+        public static void StartsWith_NullInStrings_NonOrdinal(StringComparison comparison)
+        {
+            Assert.False("\0test".StartsWith("test", comparison));
+            Assert.False("te\0st".StartsWith("test", comparison));
+            Assert.True("te\0st".StartsWith("te\0s", comparison));
+            Assert.True("test\0".StartsWith("test", comparison));
+            Assert.False("test".StartsWith("te\0", comparison));
+
+            Assert.False("\0test".AsSpan().StartsWith("test".AsSpan(), comparison));
+            Assert.False("te\0st".AsSpan().StartsWith("test".AsSpan(), comparison));
+            Assert.True("te\0st".AsSpan().StartsWith("te\0s".AsSpan(), comparison));
+            Assert.True("test\0".AsSpan().StartsWith("test".AsSpan(), comparison));
+            Assert.False("test".AsSpan().StartsWith("te\0".AsSpan(), comparison));
         }
 
         [Fact]

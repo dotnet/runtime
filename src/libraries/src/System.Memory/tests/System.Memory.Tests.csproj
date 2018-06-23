@@ -121,7 +121,6 @@
     <Compile Include="ReadOnlySpan\IndexOfAny.T.cs" />
     <Compile Include="ReadOnlySpan\IndexOfSequence.byte.cs" />
     <Compile Include="ReadOnlySpan\IndexOfSequence.T.cs" />
-    <Compile Include="ReadOnlySpan\IsWhiteSpace.cs" />
     <Compile Include="ReadOnlySpan\LastIndexOfAny.byte.cs" />
     <Compile Include="ReadOnlySpan\LastIndexOfAny.T.cs" />
     <Compile Include="ReadOnlySpan\LastIndexOf.byte.cs" />
@@ -132,27 +131,18 @@
     <Compile Include="ReadOnlySpan\Overlaps.cs" />
     <Compile Include="ReadOnlySpan\SequenceCompareTo.bool.cs" />
     <Compile Include="ReadOnlySpan\SequenceCompareTo.byte.cs" />
-    <Compile Include="ReadOnlySpan\SequenceCompareTo.char.cs" />
     <Compile Include="ReadOnlySpan\SequenceCompareTo.int.cs" />
     <Compile Include="ReadOnlySpan\SequenceCompareTo.long.cs" />
     <Compile Include="ReadOnlySpan\SequenceCompareTo.T.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.byte.cs" />
-    <Compile Include="ReadOnlySpan\SequenceEqual.char.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.long.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.T.cs" />
     <Compile Include="ReadOnlySpan\Slice.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.byte.cs" />
-    <Compile Include="ReadOnlySpan\StartsWith.char.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.long.cs" />
-    <Compile Include="ReadOnlySpan\StartsWith.StringComparison.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.T.cs" />
     <Compile Include="ReadOnlySpan\ToArray.cs" />
-    <Compile Include="ReadOnlySpan\ToLower.cs" />
     <Compile Include="ReadOnlySpan\ToString.cs" />
-    <Compile Include="ReadOnlySpan\ToUpper.cs" />
-    <Compile Include="ReadOnlySpan\TrimAnyCharacter.cs" />
-    <Compile Include="ReadOnlySpan\TrimManyCharacters.cs" />
-    <Compile Include="ReadOnlySpan\TrimWhiteSpace.cs" />
     <Compile Include="$(CommonTestPath)\Tests\System\SpanTestHelpers.cs">
       <Link>ReadOnlySpan\SpanTestHelpers.cs</Link>
     </Compile>
