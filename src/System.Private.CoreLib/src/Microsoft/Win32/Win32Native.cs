@@ -152,25 +152,9 @@ namespace Microsoft.Win32
         // Win32 ACL-related constants:
         internal const int READ_CONTROL = 0x00020000;
         internal const int SYNCHRONIZE = 0x00100000;
-        internal const int MAXIMUM_ALLOWED = 0x02000000;
 
         internal const int STANDARD_RIGHTS_READ = READ_CONTROL;
         internal const int STANDARD_RIGHTS_WRITE = READ_CONTROL;
-
-        // STANDARD_RIGHTS_REQUIRED  (0x000F0000L)
-        // SEMAPHORE_ALL_ACCESS          (STANDARD_RIGHTS_REQUIRED|SYNCHRONIZE|0x3) 
-
-        // SEMAPHORE and Event both use 0x0002
-        // MUTEX uses 0x001 (MUTANT_QUERY_STATE)
-
-        // Note that you may need to specify the SYNCHRONIZE bit as well
-        // to be able to open a synchronization primitive.
-        internal const int EVENT_MODIFY_STATE = 0x00000002;
-        internal const int MUTEX_MODIFY_STATE = 0x00000001;
-
-        // CreateEventEx: flags
-        internal const uint CREATE_EVENT_MANUAL_RESET = 0x1;
-        internal const uint CREATE_EVENT_INITIAL_SET = 0x2;
 
         internal const int LMEM_FIXED = 0x0000;
         internal const int LMEM_ZEROINIT = 0x0040;
@@ -292,19 +276,6 @@ namespace Microsoft.Win32
         internal static extern uint SysStringByteLen(IntPtr bstr);
 
 #endif
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool SetEvent(SafeWaitHandle handle);
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool ResetEvent(SafeWaitHandle handle);
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern SafeWaitHandle CreateEventEx(SECURITY_ATTRIBUTES lpSecurityAttributes, string name, uint flags, uint desiredAccess);
-
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern SafeWaitHandle OpenEvent(uint desiredAccess, bool inheritHandle, string name);
-
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         internal static extern bool CloseHandle(IntPtr handle);
 

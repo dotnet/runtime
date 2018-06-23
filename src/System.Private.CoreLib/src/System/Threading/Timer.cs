@@ -589,7 +589,7 @@ namespace System.Threading
 
         internal void SignalNoCallbacksRunning()
         {
-            Win32Native.SetEvent(m_notifyWhenNoCallbacksRunning.SafeWaitHandle);
+            Interop.Kernel32.SetEvent(m_notifyWhenNoCallbacksRunning.SafeWaitHandle);
         }
 
         internal void CallCallback()

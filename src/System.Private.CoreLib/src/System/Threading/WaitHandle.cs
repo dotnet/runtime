@@ -132,21 +132,6 @@ namespace System.Threading
             }
         }
 
-        // Assembly-private version that doesn't do a security check.  Reduces the
-        // number of link-time security checks when reading & writing to a file,
-        // and helps avoid a link time check while initializing security (If you
-        // call a Serialization method that requires security before security
-        // has started up, the link time check will start up security, run 
-        // serialization code for some security attribute stuff, call into 
-        // FileStream, which will then call Sethandle, which requires a link time
-        // security check.).  While security has fixed that problem, we still
-        // don't need to do a linktime check here.
-        internal void SetHandleInternal(SafeWaitHandle handle)
-        {
-            _waitHandle = handle;
-            waitHandle = handle.DangerousGetHandle();
-        }
-
         public virtual bool WaitOne(int millisecondsTimeout, bool exitContext)
         {
             if (millisecondsTimeout < -1)
