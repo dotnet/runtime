@@ -2224,8 +2224,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                                 buildCommands += "tests\\runtest.cmd ${runtestArguments} CoreFXTests"
                                 
                                 // Archive and process (only) the test results
-                                Utilities.addArchival(newJob, "%WORKSPACE%bin/Logs/**/testResults.xml")
-                                Utilities.addXUnitDotNETResults(newJob, "%WORKSPACE%/bin/Logs/**/testResults.xml")
+                                Utilities.addArchival(newJob, "bin/Logs/**/testResults.xml")
+                                Utilities.addXUnitDotNETResults(newJob, "bin/Logs/**/testResults.xml")
                             }
                             else {
                               def workspaceRelativeFxRoot = "_/fx"
