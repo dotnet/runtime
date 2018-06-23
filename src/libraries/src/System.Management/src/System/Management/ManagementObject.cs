@@ -2824,7 +2824,7 @@ namespace System.Management
                                 break;
 
                             // Handle the result parameter separately
-                            if (String.Compare(propertyName, RETURNVALUE, StringComparison.OrdinalIgnoreCase) == 0)
+                            if (String.Equals(propertyName, RETURNVALUE, StringComparison.OrdinalIgnoreCase))
                             {
                                 result = outParams[RETURNVALUE];
                             }

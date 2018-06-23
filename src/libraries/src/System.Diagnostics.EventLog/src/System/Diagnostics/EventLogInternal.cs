@@ -1312,7 +1312,7 @@ namespace System.Diagnostics
                     {
                         string rightLogName = EventLog.LogNameFromSourceName(sourceName, currentMachineName);
                         string currentLogName = GetLogName(currentMachineName);
-                        if (rightLogName != null && currentLogName != null && String.Compare(rightLogName, currentLogName, StringComparison.OrdinalIgnoreCase) != 0)
+                        if (rightLogName != null && currentLogName != null && !String.Equals(rightLogName, currentLogName, StringComparison.OrdinalIgnoreCase))
                             throw new ArgumentException(SR.Format(SR.LogSourceMismatch, Source.ToString(), currentLogName, rightLogName));
                     }
                 }
@@ -1329,7 +1329,7 @@ namespace System.Diagnostics
             {
                 string rightLogName = EventLog._InternalLogNameFromSourceName(sourceName, currentMachineName);
                 string currentLogName = GetLogName(currentMachineName);
-                if (rightLogName != null && currentLogName != null && String.Compare(rightLogName, currentLogName, StringComparison.OrdinalIgnoreCase) != 0)
+                if (rightLogName != null && currentLogName != null && !String.Equals(rightLogName, currentLogName, StringComparison.OrdinalIgnoreCase))
                     throw new ArgumentException(SR.Format(SR.LogSourceMismatch, Source.ToString(), currentLogName, rightLogName));
             }
             boolFlags[Flag_sourceVerified] = true;

@@ -108,8 +108,8 @@ namespace System.DirectoryServices.ActiveDirectory
             // check if it's not RootDSE
             Object dn = distinguishedName;
 
-            if ((String.Compare(distinguishedName, "rootdse", StringComparison.OrdinalIgnoreCase) != 0)
-            && (String.Compare(distinguishedName, "schema", StringComparison.OrdinalIgnoreCase) != 0))
+            if ((!String.Equals(distinguishedName, "rootdse", StringComparison.OrdinalIgnoreCase))
+            && (!String.Equals(distinguishedName, "schema", StringComparison.OrdinalIgnoreCase)))
             {
                 dn = new DistinguishedName(distinguishedName);
             }
@@ -136,7 +136,7 @@ namespace System.DirectoryServices.ActiveDirectory
             //           special casing here.
             //
 
-            if (String.Compare(distinguishedName, "rootdse", StringComparison.OrdinalIgnoreCase) != 0)
+            if (!String.Equals(distinguishedName, "rootdse", StringComparison.OrdinalIgnoreCase))
             {
                 dn = new DistinguishedName(distinguishedName);
             }

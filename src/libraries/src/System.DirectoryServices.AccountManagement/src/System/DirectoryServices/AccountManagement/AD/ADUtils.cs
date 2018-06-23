@@ -363,7 +363,7 @@ namespace System.DirectoryServices.AccountManagement
             string p1DnsForestName = ((ADStoreCtx)p1.GetStoreCtxToUse()).DnsForestName;
             string p2DnsForestName = ((ADStoreCtx)p2.GetStoreCtxToUse()).DnsForestName;
 
-            return (String.Compare(p1DnsForestName, p2DnsForestName, StringComparison.OrdinalIgnoreCase) == 0);
+            return (String.Equals(p1DnsForestName, p2DnsForestName, StringComparison.OrdinalIgnoreCase));
         }
 
         /// 
@@ -453,7 +453,7 @@ namespace System.DirectoryServices.AccountManagement
             // If this is the same domain then we have a trust.
             // Domain.Name always returns full dns name.
             // function is always supplied with a full DNS domain name.
-            if (String.Compare(currentDom.Name, targetDomain, StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Equals(currentDom.Name, targetDomain, StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

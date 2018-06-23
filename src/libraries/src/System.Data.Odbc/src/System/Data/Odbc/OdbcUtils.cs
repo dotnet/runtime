@@ -521,7 +521,7 @@ namespace System.Data.Odbc
                 { // fxcop
                     break;
                 }
-                if (String.Compare(tokenString, nextToken, StringComparison.OrdinalIgnoreCase) == 0)
+                if (String.Equals(tokenString, nextToken, StringComparison.OrdinalIgnoreCase))
                 {
                     return _idx;
                 }

@@ -905,23 +905,23 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         string langName = input.Value;
                         if (
-                            String.Compare(langName, "jscript", StringComparison.OrdinalIgnoreCase) == 0 ||
-                            String.Compare(langName, "javascript", StringComparison.OrdinalIgnoreCase) == 0
+                            String.Equals(langName, "jscript", StringComparison.OrdinalIgnoreCase) ||
+                            String.Equals(langName, "javascript", StringComparison.OrdinalIgnoreCase)
                         )
                         {
                             lang = ScriptingLanguage.JScript;
                         }
                         else if (
-                          String.Compare(langName, "c#", StringComparison.OrdinalIgnoreCase) == 0 ||
-                          String.Compare(langName, "csharp", StringComparison.OrdinalIgnoreCase) == 0
+                          String.Equals(langName, "c#", StringComparison.OrdinalIgnoreCase) ||
+                          String.Equals(langName, "csharp", StringComparison.OrdinalIgnoreCase)
                       )
                         {
                             lang = ScriptingLanguage.CSharp;
                         }
 #if !FEATURE_PAL // visualbasic
                         else if (
-                            String.Compare(langName, "vb", StringComparison.OrdinalIgnoreCase) == 0 ||
-                            String.Compare(langName, "visualbasic", StringComparison.OrdinalIgnoreCase) == 0
+                            String.Equals(langName, "vb", StringComparison.OrdinalIgnoreCase) ||
+                            String.Equals(langName, "visualbasic", StringComparison.OrdinalIgnoreCase)
                         )
                         {
                             lang = ScriptingLanguage.VisualBasic;

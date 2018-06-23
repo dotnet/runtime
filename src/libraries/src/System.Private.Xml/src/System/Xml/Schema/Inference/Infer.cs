@@ -360,7 +360,7 @@ namespace System.Xml.Schema
                         xs.TargetNamespace = childURI;
                     //schemas.Add(childURI, xs);
                     _schemaSet.Add(xs);
-                    if (prefix.Length != 0 && String.Compare(prefix, "xml", StringComparison.OrdinalIgnoreCase) != 0)
+                    if (prefix.Length != 0 && !String.Equals(prefix, "xml", StringComparison.OrdinalIgnoreCase))
                         _namespaceManager.AddNamespace(prefix, childURI);
                 }
                 else

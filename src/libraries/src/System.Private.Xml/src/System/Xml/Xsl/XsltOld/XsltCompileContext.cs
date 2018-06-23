@@ -115,7 +115,7 @@ namespace System.Xml.Xsl.XsltOld
             // restrict search to methods with the same name and requiested protection attribute
             for (int i = 0; i < length; i++)
             {
-                if (string.Compare(name, methods[i].Name, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal) == 0)
+                if (string.Equals(name, methods[i].Name, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
                 {
                     if (!publicOnly || methods[i].GetBaseDefinition().IsPublic)
                     {

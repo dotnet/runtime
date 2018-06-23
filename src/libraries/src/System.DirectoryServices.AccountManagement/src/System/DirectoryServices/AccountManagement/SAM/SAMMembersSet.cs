@@ -434,7 +434,7 @@ namespace System.DirectoryServices.AccountManagement
                                           err));
             }
 
-            if (String.Compare(_storeCtx.MachineFlatName, domainName, StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Equals(_storeCtx.MachineFlatName, domainName, StringComparison.OrdinalIgnoreCase))
                 isLocal = true;
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info,

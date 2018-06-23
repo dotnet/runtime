@@ -512,7 +512,7 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             // Valid SID, but not for our context (machine).  No match.
-            if (String.Compare(domainName, this.MachineFlatName, StringComparison.OrdinalIgnoreCase) != 0)
+            if (!String.Equals(domainName, this.MachineFlatName, StringComparison.OrdinalIgnoreCase))
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "FindNativeBySIDIdentRef: {0} != {1}, no match", domainName, this.MachineFlatName);
                 return null;
@@ -892,7 +892,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private static void UserFlagsFromWinNTConverter(DirectoryEntry de, string suggestedWinNTProperty, Principal p, string propertyName)
         {
-            Debug.Assert(String.Compare(suggestedWinNTProperty, "UserFlags", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(String.Equals(suggestedWinNTProperty, "UserFlags", StringComparison.OrdinalIgnoreCase));
 
             SDSUtils.AccountControlFromDirectoryEntry(new dSPropertyCollection(de.Properties), suggestedWinNTProperty, p, propertyName, true);
         }
@@ -1009,7 +1009,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private static void UserFlagsToWinNTConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedWinNTProperty, bool isLSAM)
         {
-            Debug.Assert(String.Compare(suggestedWinNTProperty, "UserFlags", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(String.Equals(suggestedWinNTProperty, "UserFlags", StringComparison.OrdinalIgnoreCase));
 
             SDSUtils.AccountControlToDirectoryEntry(p, propertyName, de, suggestedWinNTProperty, true, p.unpersisted);
         }

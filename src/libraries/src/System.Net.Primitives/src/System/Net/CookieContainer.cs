@@ -660,7 +660,7 @@ namespace System.Net
             {
                 for (int i = 0; i < s_headerInfo.Length; ++i)
                 {
-                    if ((String.Compare(headerName, s_headerInfo[i].Name, StringComparison.OrdinalIgnoreCase) == 0))
+                    if ((String.Equals(headerName, s_headerInfo[i].Name, StringComparison.OrdinalIgnoreCase)))
                     {
                         variant = s_headerInfo[i].Variant;
                     }

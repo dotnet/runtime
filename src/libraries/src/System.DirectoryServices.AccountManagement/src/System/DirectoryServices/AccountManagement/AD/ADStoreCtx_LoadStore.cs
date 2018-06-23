@@ -275,7 +275,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     string dnsDomainName = SDSUtils.ConstructDnsDomainNameFromDn(distinguishedName);
                     if (targetIsFromGC ||
-                        (!String.IsNullOrEmpty(this.domainDnsName) && String.Compare(this.DnsDomainName, dnsDomainName, StringComparison.OrdinalIgnoreCase) != 0))
+                        (!String.IsNullOrEmpty(this.domainDnsName) && !String.Equals(this.DnsDomainName, dnsDomainName, StringComparison.OrdinalIgnoreCase)))
                     {
                         constructedContext = SDSCache.Domain.GetContext(dnsDomainName, this.Credentials, this.OwningContext.Options);
                     }
@@ -895,7 +895,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static void CommaStringFromLdapConverter(dSPropertyCollection properties, string suggestedAdProperty, Principal p, string propertyName)
         {
-            Debug.Assert(String.Compare(suggestedAdProperty, "userWorkstations", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(String.Equals(suggestedAdProperty, "userWorkstations", StringComparison.OrdinalIgnoreCase));
 
             // The userWorkstations attribute is odd.  Rather than being a multivalued string attribute, it's a single-valued
             // string of comma-separated values.
@@ -940,7 +940,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static void UACFromLdapConverter(dSPropertyCollection properties, string suggestedAdProperty, Principal p, string propertyName)
         {
-            Debug.Assert(String.Compare(suggestedAdProperty, "userAccountControl", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(String.Equals(suggestedAdProperty, "userAccountControl", StringComparison.OrdinalIgnoreCase));
 
             SDSUtils.AccountControlFromDirectoryEntry(properties, suggestedAdProperty, p, propertyName, false);
         }
@@ -966,7 +966,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             // W2k DCs support just "lastLogon".  W2k3 DCs also support "lastLogonTimestamp".  The latter is replicated, and
             // preferred over the former.
-            if (String.Compare(suggestedAdProperty, "lastLogon", StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Equals(suggestedAdProperty, "lastLogon", StringComparison.OrdinalIgnoreCase))
             {
                 // Is "lastLogonTimestamp" available instead?
 
@@ -1022,7 +1022,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static void GroupTypeFromLdapConverter(dSPropertyCollection properties, string suggestedAdProperty, Principal p, string propertyName)
         {
-            Debug.Assert(String.Compare(suggestedAdProperty, "groupType", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(String.Equals(suggestedAdProperty, "groupType", StringComparison.OrdinalIgnoreCase));
 
             dSPropertyValueCollection values = properties[suggestedAdProperty];
 
@@ -1286,7 +1286,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static void UACToLdapConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedAdProperty)
         {
-            Debug.Assert(String.Compare(suggestedAdProperty, "userAccountControl", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(String.Equals(suggestedAdProperty, "userAccountControl", StringComparison.OrdinalIgnoreCase));
 
             SDSUtils.AccountControlToDirectoryEntry(p, propertyName, de, suggestedAdProperty, false, p.unpersisted);
         }

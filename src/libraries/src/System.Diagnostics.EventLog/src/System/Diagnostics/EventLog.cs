@@ -310,9 +310,9 @@ namespace System.Diagnostics
                     if (logKey == null && logName.Length >= 8)
                     {
                         string logNameFirst8 = logName.Substring(0, 8);
-                        if (string.Compare(logNameFirst8, "AppEvent", StringComparison.OrdinalIgnoreCase) == 0 ||
-                             string.Compare(logNameFirst8, "SecEvent", StringComparison.OrdinalIgnoreCase) == 0 ||
-                             string.Compare(logNameFirst8, "SysEvent", StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Equals(logNameFirst8, "AppEvent", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(logNameFirst8, "SecEvent", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(logNameFirst8, "SysEvent", StringComparison.OrdinalIgnoreCase))
                             throw new ArgumentException(SR.Format(SR.InvalidCustomerLogName, logName));
 
                         string sameLogName = FindSame8FirstCharsLog(eventKey, logName);
@@ -547,7 +547,7 @@ namespace System.Diagnostics
             {
                 string currentLogName = logNames[i];
                 if (currentLogName.Length >= 8 &&
-                    string.Compare(currentLogName.Substring(0, 8), logNameFirst8, StringComparison.OrdinalIgnoreCase) == 0)
+                    string.Equals(currentLogName.Substring(0, 8), logNameFirst8, StringComparison.OrdinalIgnoreCase))
                     return currentLogName;
             }
 

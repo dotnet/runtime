@@ -615,7 +615,7 @@ namespace System.Management
             bSingletonClass = false;            
             foreach (QualifierData q in classobj.Qualifiers)
             {
-                if (String.Compare(q.Name,"singleton",StringComparison.OrdinalIgnoreCase) == 0)
+                if (String.Equals(q.Name,"singleton",StringComparison.OrdinalIgnoreCase))
                 {
                     //This is a singleton class
                     bSingletonClass = true;
@@ -1612,17 +1612,17 @@ namespace System.Management
             string description = String.Empty;
             foreach (QualifierData q in prop.Qualifiers)
             {
-                if (String.Compare(q.Name,"description",StringComparison.OrdinalIgnoreCase) == 0)
+                if (String.Equals(q.Name,"description",StringComparison.OrdinalIgnoreCase))
                 {
                     description = q.Value.ToString();
                 }
                 else
-                    if (String.Compare(q.Name,"Not_Null",StringComparison.OrdinalIgnoreCase) == 0)
+                    if (String.Equals(q.Name,"Not_Null",StringComparison.OrdinalIgnoreCase))
                 {
                     nullable = false;
                 }
                 else
-                    if (String.Compare(q.Name,"key",StringComparison.OrdinalIgnoreCase) == 0)
+                    if (String.Equals(q.Name,"key",StringComparison.OrdinalIgnoreCase))
                 {
                     //This is a key. So push it in to the key array
                     arrKeyType.Add(cmp.Type);
@@ -1630,13 +1630,13 @@ namespace System.Management
                     nullable = false;
                     break;
                 }
-                else if (string.Compare(q.Name,"static",StringComparison.OrdinalIgnoreCase) == 0)
+                else if (string.Equals(q.Name,"static",StringComparison.OrdinalIgnoreCase))
                 {
                     //This property is static. So add static to the Type of the object
                     bStatic = true;
                     cmp.Attributes |= MemberAttributes.Static;
                 }
-                else if (string.Compare(q.Name,"read",StringComparison.OrdinalIgnoreCase) == 0)
+                else if (string.Equals(q.Name,"read",StringComparison.OrdinalIgnoreCase))
                 {
                     if ((bool)q.Value == false)
                     {
@@ -1647,7 +1647,7 @@ namespace System.Management
                         bRead = true;
                     }
                 }
-                else if (string.Compare(q.Name,"write",StringComparison.OrdinalIgnoreCase) == 0)
+                else if (string.Equals(q.Name,"write",StringComparison.OrdinalIgnoreCase))
                 {
                     hasWrite = true;
                     if ((bool)q.Value == true)
@@ -1661,7 +1661,7 @@ namespace System.Management
                 }
                     // check for ValueMap/Values and BitMap/BitValues pair and create
                     // Enum Accordingly
-                else if (string.Compare(q.Name,"ValueMap",StringComparison.OrdinalIgnoreCase) == 0 && bMapsFailed == false)
+                else if (string.Equals(q.Name,"ValueMap",StringComparison.OrdinalIgnoreCase) && bMapsFailed == false)
                 {
                     try
                     {
@@ -1697,7 +1697,7 @@ namespace System.Management
                         ValueMap.Clear();
                     }
                 }
-                else if (string.Compare(q.Name,"Values",StringComparison.OrdinalIgnoreCase) == 0 && bMapsFailed == false)
+                else if (string.Equals(q.Name,"Values",StringComparison.OrdinalIgnoreCase) && bMapsFailed == false)
                 {
                     try
                     {
@@ -1730,7 +1730,7 @@ namespace System.Management
                     }
 
                 }
-                else if (string.Compare(q.Name,"BitMap",StringComparison.OrdinalIgnoreCase) == 0 && bMapsFailed == false)
+                else if (string.Equals(q.Name,"BitMap",StringComparison.OrdinalIgnoreCase) && bMapsFailed == false)
                 {
                     try
                     {
@@ -1759,7 +1759,7 @@ namespace System.Management
                         BitMap.Clear();
                     }
                 }
-                else if (string.Compare(q.Name,"BitValues",StringComparison.OrdinalIgnoreCase) == 0 && bMapsFailed == false)
+                else if (string.Equals(q.Name,"BitValues",StringComparison.OrdinalIgnoreCase) && bMapsFailed == false)
                 {
                     try
                     {
@@ -2840,7 +2840,7 @@ namespace System.Management
                 //Check if the method is static
                 foreach (QualifierData q in meth.Qualifiers)
                 {
-                    if (string.Compare(q.Name,"static",StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Equals(q.Name,"static",StringComparison.OrdinalIgnoreCase))
                     {
                         //It is a static function
                         cmm.Attributes |= MemberAttributes.Static;
@@ -2848,7 +2848,7 @@ namespace System.Management
                         break;
                     }
                     else
-                        if (string.Compare(q.Name,"privileges",StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Equals(q.Name,"privileges",StringComparison.OrdinalIgnoreCase))
                     {
                         //It is a function which needs privileges to be set
                         bPrivileges = true;
@@ -2958,7 +2958,7 @@ namespace System.Management
                             //Find out whether it is a in/out Parameter
                             for(int i=0; i < outParamsName.Count;i++)
                             {
-                                if (string.Compare(prop.Name,outParamsName[i].ToString(),StringComparison.OrdinalIgnoreCase) == 0)
+                                if (string.Equals(prop.Name,outParamsName[i].ToString(),StringComparison.OrdinalIgnoreCase))
                                 {
                                     //It is an in/out Parameter
                                     cpde.Direction = FieldDirection.Ref;
@@ -3046,7 +3046,7 @@ namespace System.Management
                             bInOut = false;
                             for(int i=0; i < inoutParams.Count;i++)
                             {
-                                if (string.Compare(prop.Name,inoutParams[i].ToString(),StringComparison.OrdinalIgnoreCase) == 0)
+                                if (string.Equals(prop.Name,inoutParams[i].ToString(),StringComparison.OrdinalIgnoreCase))
                                 {
                                     bInOut = true;
                                 }
@@ -3054,7 +3054,7 @@ namespace System.Management
                             if (bInOut == true)
                                 continue;
 
-                            if (string.Compare(prop.Name,"ReturnValue",StringComparison.OrdinalIgnoreCase) == 0)
+                            if (string.Equals(prop.Name,"ReturnValue",StringComparison.OrdinalIgnoreCase))
                             {
                                 cmm.ReturnType = ConvertCIMType(prop.Type,prop.IsArray);
                                 bRetVal = true;
@@ -4546,7 +4546,7 @@ namespace System.Management
             int nIndex = -1;
             for (int i=0; i < sortedList.Count; i++)
             {
-                if (String.Compare(sortedList.GetByIndex(i).ToString(),strToFind,StringComparison.OrdinalIgnoreCase) == 0)
+                if (String.Equals(sortedList.GetByIndex(i).ToString(),strToFind,StringComparison.OrdinalIgnoreCase))
                 {
                     //The string is found. This is the index
                     nIndex = i;
@@ -4833,7 +4833,7 @@ namespace System.Management
         {
             for (int i=0; i < arrToSearch.Count; i++)
             {
-                if (String.Compare(arrToSearch[i].ToString(),strToFind,StringComparison.OrdinalIgnoreCase) == 0)
+                if (String.Equals(arrToSearch[i].ToString(),strToFind,StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
@@ -5157,7 +5157,7 @@ namespace System.Management
         /// </summary>
         static bool IsDesignerSerializationVisibilityToBeSet(String propName)
         {
-            if (String.Compare(propName,"Path",StringComparison.OrdinalIgnoreCase) != 0)
+            if (!String.Equals(propName,"Path",StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
@@ -5608,7 +5608,7 @@ namespace System.Management
 
                 // if the type is string then check for null is to be done
                 // otherwise, the DateTime Conversion function will do for DateTime types
-                if(String.Compare(strType,PublicNamesUsed["PathClass"].ToString(),StringComparison.OrdinalIgnoreCase) == 0)
+                if(String.Equals(strType,PublicNamesUsed["PathClass"].ToString(),StringComparison.OrdinalIgnoreCase))
                 {
                     CodeMethodReferenceExpression cmre = new CodeMethodReferenceExpression();
                     cmre.MethodName = "ToString";
@@ -6136,7 +6136,7 @@ namespace System.Management
 
             try
             {
-                if(String.Compare(prop.Qualifiers["SubType"].Value.ToString() ,"interval",StringComparison.OrdinalIgnoreCase) == 0)
+                if(String.Equals(prop.Qualifiers["SubType"].Value.ToString() ,"interval",StringComparison.OrdinalIgnoreCase))
                 {
                     isTimeInterval = true;
                     if(prop.IsArray)
