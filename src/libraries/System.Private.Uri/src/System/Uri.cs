@@ -1739,7 +1739,7 @@ namespace System
                         }
                     }
                 }
-                else if (string.Compare(_string, obj._string, StringComparison.OrdinalIgnoreCase) == 0)
+                else if (string.Equals(_string, obj._string, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }

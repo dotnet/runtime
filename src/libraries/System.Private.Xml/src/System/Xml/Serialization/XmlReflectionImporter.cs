@@ -1371,7 +1371,7 @@ namespace System.Xml.Serialization
         internal static XmlReflectionMember FindSpecifiedMember(string memberName, XmlReflectionMember[] reflectionMembers)
         {
             for (int i = 0; i < reflectionMembers.Length; i++)
-                if (string.Compare(reflectionMembers[i].MemberName, memberName + "Specified", StringComparison.Ordinal) == 0)
+                if (string.Equals(reflectionMembers[i].MemberName, memberName + "Specified", StringComparison.Ordinal))
                     return reflectionMembers[i];
             return null;
         }

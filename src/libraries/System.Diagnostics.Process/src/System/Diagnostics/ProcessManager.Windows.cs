@@ -429,7 +429,7 @@ namespace System.Diagnostics
                         if (type.ObjectNameTitleIndex == processIndex)
                         {
                             ProcessInfo processInfo = GetProcessInfo(type, (IntPtr)((long)instancePtr + instance.ByteLength), counters);
-                            if (processInfo.ProcessId == 0 && string.Compare(instanceName, "Idle", StringComparison.OrdinalIgnoreCase) != 0)
+                            if (processInfo.ProcessId == 0 && !string.Equals(instanceName, "Idle", StringComparison.OrdinalIgnoreCase))
                             {
                                 // Sometimes we'll get a process structure that is not completely filled in.
                                 // We can catch some of these by looking for non-"idle" processes that have id 0

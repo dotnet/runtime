@@ -1032,7 +1032,7 @@ namespace System.DirectoryServices
                         }
 
                         // if this is "ntSecurityDescriptor" we should refresh the objectSecurity property
-                        if (String.Compare(propertyNames[i], s_securityDescriptorProperty, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (String.Equals(propertyNames[i], s_securityDescriptorProperty, StringComparison.OrdinalIgnoreCase))
                         {
                             _objectSecurityInitialized = false;
                             _objectSecurityModified = false;

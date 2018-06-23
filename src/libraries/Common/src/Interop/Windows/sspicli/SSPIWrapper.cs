@@ -65,7 +65,7 @@ namespace System.Net
             {
                 for (int i = 0; i < supportedSecurityPackages.Length; i++)
                 {
-                    if (string.Compare(supportedSecurityPackages[i].Name, packageName, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Equals(supportedSecurityPackages[i].Name, packageName, StringComparison.OrdinalIgnoreCase))
                     {
                         return supportedSecurityPackages[i];
                     }

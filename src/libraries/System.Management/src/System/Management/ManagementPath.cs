@@ -139,7 +139,7 @@ namespace System.Management
                 if (nsPath.IndexOfAny(pathSeparators) == -1)
                 {
                     // No separators.  The only valid path is "root".
-                    if (String.Compare("root", nsPath, StringComparison.OrdinalIgnoreCase) != 0)
+                    if (!String.Equals("root", nsPath, StringComparison.OrdinalIgnoreCase))
                         return false;
                 }
             }
@@ -271,7 +271,7 @@ namespace System.Management
                 //For now we have to special-case the "root" namespace - 
                 //  this is because in the case of "root", the path parser cannot tell whether 
                 //  this is a namespace name or a class name
-                if (String.Compare(path, "root", StringComparison.OrdinalIgnoreCase) == 0)
+                if (String.Equals(path, "root", StringComparison.OrdinalIgnoreCase))
                     flags = flags | (uint) tag_WBEM_PATH_CREATE_FLAG.WBEMPATH_TREAT_SINGLE_IDENT_AS_NS;
 
                 int status = wbemPath.SetText_(flags, path);
@@ -688,7 +688,7 @@ namespace System.Management
             nsNew = GetNamespacePath(wmiPathTmp,
                 (int)tag_WBEM_GET_TEXT_FLAGS.WBEMPATH_GET_NAMESPACE_ONLY);
 
-            if (String.Compare(nsOrg, nsNew, StringComparison.OrdinalIgnoreCase) != 0)
+            if (!String.Equals(nsOrg, nsNew, StringComparison.OrdinalIgnoreCase))
             {
                 wmiPath.RemoveAllNamespaces_();                                 // Out with the old... Ignore status code.
 
@@ -753,7 +753,7 @@ namespace System.Management
                             string serverOrg = new String('0', (int)uLen-1);
                             status = wmiPath.GetServer_(ref uLen, serverOrg);
 
-                            if (status >= 0 && String.Compare(serverOrg, serverNew, StringComparison.OrdinalIgnoreCase) != 0)
+                            if (status >= 0 && !String.Equals(serverOrg, serverNew, StringComparison.OrdinalIgnoreCase))
                                 status = wmiPath.SetServer_(serverNew);
                         }
                         else if (status == (int)tag_WBEMSTATUS.WBEM_E_NOT_AVAILABLE)

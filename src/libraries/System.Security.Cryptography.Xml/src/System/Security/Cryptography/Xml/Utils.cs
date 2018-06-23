@@ -788,7 +788,7 @@ namespace System.Security.Cryptography.Xml
             if (elements.Count != 1)
                 return false;
             X509Certificate2 certificate = elements[0].Certificate;
-            if (String.Compare(certificate.SubjectName.Name, certificate.IssuerName.Name, StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Equals(certificate.SubjectName.Name, certificate.IssuerName.Name, StringComparison.OrdinalIgnoreCase))
                 return true;
             return false;
         }
