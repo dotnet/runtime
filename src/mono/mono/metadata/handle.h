@@ -46,10 +46,10 @@
 // NOTE: Running this code depends on the ABI to pass a struct
 // with a pointer the same as a pointer. This is tied in with
 // marshaling. If this is not the case, turn off type-safety, perhaps per-OS per-CPU.
-#if !defined (HOST_WASM) && (!defined (TARGET_X86) || defined (HOST_WIN32) || defined (HOST_DARWIN))
+#if defined (HOST_DARWIN) || defined (HOST_WIN32) || defined (HOST_ARM64) || defined (HOST_ARM) || defined (HOST_AMD64)
 #define MONO_TYPE_SAFE_HANDLES 1
 #else
-#define MONO_TYPE_SAFE_HANDLES 0
+#define MONO_TYPE_SAFE_HANDLES 0 // PowerPC, S390X, SPARC, MIPS, Linux/x86, BSD/x86, etc.
 #endif
 
 G_BEGIN_DECLS
