@@ -219,7 +219,7 @@ namespace System.Reflection.Emit
             {
                 foreach (string name in m_TypeBuilderDict.Keys)
                 {
-                    if (string.Compare(name, strTypeName, (StringComparison.OrdinalIgnoreCase)) == 0)
+                    if (string.Equals(name, strTypeName, StringComparison.OrdinalIgnoreCase))
                         return m_TypeBuilderDict[name];
                 }
             }

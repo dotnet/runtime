@@ -181,7 +181,7 @@ namespace System.Diagnostics
                     string ns = t.Namespace;
                     if (ns == null)
                         break;
-                    if (string.Compare(ns, PackageName, StringComparison.Ordinal) != 0)
+                    if (!string.Equals(ns, PackageName, StringComparison.Ordinal))
                         break;
                 }
                 iRetVal++;

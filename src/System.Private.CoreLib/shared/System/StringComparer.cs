@@ -293,7 +293,7 @@ namespace System
                 {
                     return false;
                 }
-                return (string.Compare(x, y, StringComparison.OrdinalIgnoreCase) == 0);
+                return string.Equals(x, y, StringComparison.OrdinalIgnoreCase);
             }
             return x.Equals(y);
         }
