@@ -717,9 +717,9 @@ namespace System.Drawing
             private static FunctionWrapper<GdipSetPathGradientCenterPoint_delegate> GdipSetPathGradientCenterPoint_ptr;
             internal static int GdipSetPathGradientCenterPoint(HandleRef brush, ref PointF point) => GdipSetPathGradientCenterPoint_ptr.Delegate(brush, ref point);
 
-            private delegate int GdipGetPathGradientRect_delegate(HandleRef brush, ref GPRECTF gprectf);
+            private delegate int GdipGetPathGradientRect_delegate(HandleRef brush, out RectangleF gprectf);
             private static FunctionWrapper<GdipGetPathGradientRect_delegate> GdipGetPathGradientRect_ptr;
-            internal static int GdipGetPathGradientRect(HandleRef brush, ref GPRECTF gprectf) => GdipGetPathGradientRect_ptr.Delegate(brush, ref gprectf);
+            internal static int GdipGetPathGradientRect(HandleRef brush, out RectangleF gprectf) => GdipGetPathGradientRect_ptr.Delegate(brush, out gprectf);
 
             private delegate int GdipGetPathGradientPointCount_delegate(HandleRef brush, out int count);
             private static FunctionWrapper<GdipGetPathGradientPointCount_delegate> GdipGetPathGradientPointCount_ptr;
@@ -1457,13 +1457,13 @@ namespace System.Drawing
             private static FunctionWrapper<GdipCreateRegion_delegate> GdipCreateRegion_ptr;
             internal static int GdipCreateRegion(out IntPtr region) => GdipCreateRegion_ptr.Delegate(out region);
 
-            private delegate int GdipCreateRegionRect_delegate(ref GPRECTF gprectf, out IntPtr region);
+            private delegate int GdipCreateRegionRect_delegate(ref RectangleF gprectf, out IntPtr region);
             private static FunctionWrapper<GdipCreateRegionRect_delegate> GdipCreateRegionRect_ptr;
-            internal static int GdipCreateRegionRect(ref GPRECTF gprectf, out IntPtr region) => GdipCreateRegionRect_ptr.Delegate(ref gprectf, out region);
+            internal static int GdipCreateRegionRect(ref RectangleF gprectf, out IntPtr region) => GdipCreateRegionRect_ptr.Delegate(ref gprectf, out region);
 
-            private delegate int GdipCreateRegionRectI_delegate(ref GPRECT gprect, out IntPtr region);
+            private delegate int GdipCreateRegionRectI_delegate(ref Rectangle gprect, out IntPtr region);
             private static FunctionWrapper<GdipCreateRegionRectI_delegate> GdipCreateRegionRectI_ptr;
-            internal static int GdipCreateRegionRectI(ref GPRECT gprect, out IntPtr region) => GdipCreateRegionRectI_ptr.Delegate(ref gprect, out region);
+            internal static int GdipCreateRegionRectI(ref Rectangle gprect, out IntPtr region) => GdipCreateRegionRectI_ptr.Delegate(ref gprect, out region);
 
             private delegate int GdipCreateRegionPath_delegate(HandleRef path, out IntPtr region);
             private static FunctionWrapper<GdipCreateRegionPath_delegate> GdipCreateRegionPath_ptr;
@@ -1497,13 +1497,13 @@ namespace System.Drawing
             private static FunctionWrapper<GdipSetEmpty_delegate> GdipSetEmpty_ptr;
             internal static int GdipSetEmpty(HandleRef region) => GdipSetEmpty_ptr.Delegate(region);
 
-            private delegate int GdipCombineRegionRect_delegate(HandleRef region, ref GPRECTF gprectf, CombineMode mode);
+            private delegate int GdipCombineRegionRect_delegate(HandleRef region, ref RectangleF gprectf, CombineMode mode);
             private static FunctionWrapper<GdipCombineRegionRect_delegate> GdipCombineRegionRect_ptr;
-            internal static int GdipCombineRegionRect(HandleRef region, ref GPRECTF gprectf, CombineMode mode) => GdipCombineRegionRect_ptr.Delegate(region, ref gprectf, mode);
+            internal static int GdipCombineRegionRect(HandleRef region, ref RectangleF gprectf, CombineMode mode) => GdipCombineRegionRect_ptr.Delegate(region, ref gprectf, mode);
 
-            private delegate int GdipCombineRegionRectI_delegate(HandleRef region, ref GPRECT gprect, CombineMode mode);
+            private delegate int GdipCombineRegionRectI_delegate(HandleRef region, ref Rectangle gprect, CombineMode mode);
             private static FunctionWrapper<GdipCombineRegionRectI_delegate> GdipCombineRegionRectI_ptr;
-            internal static int GdipCombineRegionRectI(HandleRef region, ref GPRECT gprect, CombineMode mode) => GdipCombineRegionRectI_ptr.Delegate(region, ref gprect, mode);
+            internal static int GdipCombineRegionRectI(HandleRef region, ref Rectangle gprect, CombineMode mode) => GdipCombineRegionRectI_ptr.Delegate(region, ref gprect, mode);
 
             private delegate int GdipCombineRegionPath_delegate(HandleRef region, HandleRef path, CombineMode mode);
             private static FunctionWrapper<GdipCombineRegionPath_delegate> GdipCombineRegionPath_ptr;
@@ -1525,9 +1525,9 @@ namespace System.Drawing
             private static FunctionWrapper<GdipTransformRegion_delegate> GdipTransformRegion_ptr;
             internal static int GdipTransformRegion(HandleRef region, HandleRef matrix) => GdipTransformRegion_ptr.Delegate(region, matrix);
 
-            private delegate int GdipGetRegionBounds_delegate(HandleRef region, HandleRef graphics, ref GPRECTF gprectf);
+            private delegate int GdipGetRegionBounds_delegate(HandleRef region, HandleRef graphics, out RectangleF gprectf);
             private static FunctionWrapper<GdipGetRegionBounds_delegate> GdipGetRegionBounds_ptr;
-            internal static int GdipGetRegionBounds(HandleRef region, HandleRef graphics, ref GPRECTF gprectf) => GdipGetRegionBounds_ptr.Delegate(region, graphics, ref gprectf);
+            internal static int GdipGetRegionBounds(HandleRef region, HandleRef graphics, out RectangleF gprectf) => GdipGetRegionBounds_ptr.Delegate(region, graphics, out gprectf);
 
             private delegate int GdipGetRegionHRgn_delegate(HandleRef region, HandleRef graphics, out IntPtr hrgn);
             private static FunctionWrapper<GdipGetRegionHRgn_delegate> GdipGetRegionHRgn_ptr;
@@ -1573,9 +1573,9 @@ namespace System.Drawing
             private static FunctionWrapper<GdipGetRegionScansCount_delegate> GdipGetRegionScansCount_ptr;
             internal static int GdipGetRegionScansCount(HandleRef region, out int count, HandleRef matrix) => GdipGetRegionScansCount_ptr.Delegate(region, out count, matrix);
 
-            private delegate int GdipGetRegionScans_delegate(HandleRef region, IntPtr rects, out int count, HandleRef matrix);
+            private delegate int GdipGetRegionScans_delegate(HandleRef region, RectangleF* rects, out int count, HandleRef matrix);
             private static FunctionWrapper<GdipGetRegionScans_delegate> GdipGetRegionScans_ptr;
-            internal static int GdipGetRegionScans(HandleRef region, IntPtr rects, out int count, HandleRef matrix) => GdipGetRegionScans_ptr.Delegate(region, rects, out count, matrix);
+            internal static int GdipGetRegionScans(HandleRef region, RectangleF* rects, out int count, HandleRef matrix) => GdipGetRegionScans_ptr.Delegate(region, rects, out count, matrix);
 
             private delegate int GdipSetClipGraphics_delegate(HandleRef graphics, HandleRef srcgraphics, CombineMode mode);
             private static FunctionWrapper<GdipSetClipGraphics_delegate> GdipSetClipGraphics_ptr;
@@ -1837,9 +1837,9 @@ namespace System.Drawing
             private static FunctionWrapper<GdipCloneBitmapAreaI_delegate> GdipCloneBitmapAreaI_ptr;
             internal static int GdipCloneBitmapAreaI(int x, int y, int width, int height, int format, HandleRef srcbitmap, out IntPtr dstbitmap) => GdipCloneBitmapAreaI_ptr.Delegate(x, y, width, height, format, srcbitmap, out dstbitmap);
 
-            private delegate int GdipBitmapLockBits_delegate(HandleRef bitmap, ref GPRECT rect, ImageLockMode flags, PixelFormat format, [In] [Out] BitmapData lockedBitmapData);
+            private delegate int GdipBitmapLockBits_delegate(HandleRef bitmap, ref Rectangle rect, ImageLockMode flags, PixelFormat format, [In] [Out] BitmapData lockedBitmapData);
             private static FunctionWrapper<GdipBitmapLockBits_delegate> GdipBitmapLockBits_ptr;
-            internal static int GdipBitmapLockBits(HandleRef bitmap, ref GPRECT rect, ImageLockMode flags, PixelFormat format, [In] [Out] BitmapData lockedBitmapData) => GdipBitmapLockBits_ptr.Delegate(bitmap, ref rect, flags, format, lockedBitmapData);
+            internal static int GdipBitmapLockBits(HandleRef bitmap, ref Rectangle rect, ImageLockMode flags, PixelFormat format, [In] [Out] BitmapData lockedBitmapData) => GdipBitmapLockBits_ptr.Delegate(bitmap, ref rect, flags, format, lockedBitmapData);
 
             private delegate int GdipBitmapUnlockBits_delegate(HandleRef bitmap, BitmapData lockedBitmapData);
             private static FunctionWrapper<GdipBitmapUnlockBits_delegate> GdipBitmapUnlockBits_ptr;

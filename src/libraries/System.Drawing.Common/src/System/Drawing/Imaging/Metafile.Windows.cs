@@ -83,9 +83,9 @@ namespace System.Drawing.Imaging
         {
             Gdip.CheckStatus(Gdip.GdipRecordMetafile(
                 new HandleRef(null, referenceHdc),
-                unchecked((int)emfType),
+                emfType,
                 NativeMethods.NullHandleRef,
-                unchecked((int)MetafileFrameUnit.GdiCompatible),
+                MetafileFrameUnit.GdiCompatible,
                 description,
                 out IntPtr metafile));
 
@@ -122,12 +122,11 @@ namespace System.Drawing.Imaging
         /// </summary>
         public Metafile(IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, EmfType type, string description)
         {
-            GPRECTF rectf = new GPRECTF(frameRect);
             Gdip.CheckStatus(Gdip.GdipRecordMetafile(
                 new HandleRef(null, referenceHdc),
-                unchecked((int)type),
-                ref rectf,
-                unchecked((int)frameUnit),
+                type,
+                ref frameRect,
+                frameUnit,
                 description,
                 out IntPtr metafile));
 
@@ -170,20 +169,19 @@ namespace System.Drawing.Imaging
             {
                 Gdip.CheckStatus(Gdip.GdipRecordMetafile(
                     new HandleRef(null, referenceHdc),
-                    unchecked((int)type),
+                    type,
                     NativeMethods.NullHandleRef,
-                    unchecked((int)MetafileFrameUnit.GdiCompatible),
+                    MetafileFrameUnit.GdiCompatible,
                     desc,
                     out metafile));
             }
             else
             {
-                GPRECT gprect = new GPRECT(frameRect);
                 Gdip.CheckStatus(Gdip.GdipRecordMetafileI(
                     new HandleRef(null, referenceHdc),
-                    unchecked((int)type),
-                    ref gprect,
-                    unchecked((int)frameUnit),
+                    type,
+                    ref frameRect,
+                    frameUnit,
                     desc,
                     out metafile));
             }
@@ -216,9 +214,9 @@ namespace System.Drawing.Imaging
             Gdip.CheckStatus(Gdip.GdipRecordMetafileFileName(
                 fileName,
                 new HandleRef(null, referenceHdc),
-                unchecked((int)type),
+                type,
                 NativeMethods.NullHandleRef,
-                unchecked((int)MetafileFrameUnit.GdiCompatible),
+                MetafileFrameUnit.GdiCompatible,
                 description,
                 out IntPtr metafile));
 
@@ -264,13 +262,12 @@ namespace System.Drawing.Imaging
             if (fileName.Length > MaxPath)
                 throw new PathTooLongException();
 
-            GPRECTF rectf = new GPRECTF(frameRect);
             Gdip.CheckStatus(Gdip.GdipRecordMetafileFileName(
                 fileName,
                 new HandleRef(null, referenceHdc),
-                unchecked((int)type),
-                ref rectf,
-                unchecked((int)frameUnit),
+                type,
+                ref frameRect,
+                frameUnit,
                 description,
                 out IntPtr metafile));
 
@@ -320,21 +317,20 @@ namespace System.Drawing.Imaging
                 Gdip.CheckStatus(Gdip.GdipRecordMetafileFileName(
                     fileName,
                     new HandleRef(null, referenceHdc),
-                    unchecked((int)type),
+                    type,
                     NativeMethods.NullHandleRef,
-                    unchecked((int)frameUnit),
+                    frameUnit,
                     description,
                     out metafile));
             }
             else
             {
-                GPRECT gprect = new GPRECT(frameRect);
                 Gdip.CheckStatus(Gdip.GdipRecordMetafileFileNameI(
                     fileName,
                     new HandleRef(null, referenceHdc),
-                    unchecked((int)type),
-                    ref gprect,
-                    unchecked((int)frameUnit),
+                    type,
+                    ref frameRect,
+                    frameUnit,
                     description,
                     out metafile));
             }
@@ -364,9 +360,9 @@ namespace System.Drawing.Imaging
             Gdip.CheckStatus(Gdip.GdipRecordMetafileStream(
                 new GPStream(stream),
                 new HandleRef(null, referenceHdc),
-                unchecked((int)type),
+                type,
                 NativeMethods.NullHandleRef,
-                unchecked((int)MetafileFrameUnit.GdiCompatible),
+                MetafileFrameUnit.GdiCompatible,
                 description,
                 out IntPtr metafile));
 
@@ -399,13 +395,12 @@ namespace System.Drawing.Imaging
         /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, EmfType type, string description)
         {
-            GPRECTF rectf = new GPRECTF(frameRect);
             Gdip.CheckStatus(Gdip.GdipRecordMetafileStream(
                 new GPStream(stream),
                 new HandleRef(null, referenceHdc),
-                unchecked((int)type),
-                ref rectf,
-                unchecked((int)frameUnit),
+                type,
+                ref frameRect,
+                frameUnit,
                 description,
                 out IntPtr metafile));
 
@@ -445,21 +440,20 @@ namespace System.Drawing.Imaging
                 Gdip.CheckStatus(Gdip.GdipRecordMetafileStream(
                     new GPStream(stream),
                     new HandleRef(null, referenceHdc),
-                    unchecked((int)type),
+                    type,
                     NativeMethods.NullHandleRef,
-                    unchecked((int)frameUnit),
+                    frameUnit,
                     description,
                     out metafile));
             }
             else
             {
-                GPRECT gprect = new GPRECT(frameRect);
                 Gdip.CheckStatus(Gdip.GdipRecordMetafileStreamI(
                     new GPStream(stream),
                     new HandleRef(null, referenceHdc),
-                    unchecked((int)type),
-                    ref gprect,
-                    unchecked((int)frameUnit),
+                    type,
+                    ref frameRect,
+                    frameUnit,
                     description,
                     out metafile));
             }

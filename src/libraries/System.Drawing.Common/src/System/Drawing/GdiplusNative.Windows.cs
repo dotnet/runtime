@@ -532,9 +532,9 @@ namespace System.Drawing
             private static FunctionWrapper<GdipGetImageGraphicsContext_delegate> GdipGetImageGraphicsContext_ptr;
             internal static int GdipGetImageGraphicsContext(HandleRef image, out IntPtr graphics) => GdipGetImageGraphicsContext_ptr.Delegate(image, out graphics);
 
-            private delegate int GdipGetImageBounds_delegate(HandleRef image, ref GPRECTF gprectf, out GraphicsUnit unit);
+            private delegate int GdipGetImageBounds_delegate(HandleRef image, out RectangleF gprectf, out GraphicsUnit unit);
             private static FunctionWrapper<GdipGetImageBounds_delegate> GdipGetImageBounds_ptr;
-            internal static int GdipGetImageBounds(HandleRef image, ref GPRECTF gprectf, out GraphicsUnit unit) => GdipGetImageBounds_ptr.Delegate(image, ref gprectf, out unit);
+            internal static int GdipGetImageBounds(HandleRef image, out RectangleF gprectf, out GraphicsUnit unit) => GdipGetImageBounds_ptr.Delegate(image, out gprectf, out unit);
 
             private delegate int GdipGetImageType_delegate(HandleRef image, out int type);
             private static FunctionWrapper<GdipGetImageType_delegate> GdipGetImageType_ptr;
@@ -972,41 +972,41 @@ namespace System.Drawing
             private static FunctionWrapper<GdipCreateMetafileFromStream_delegate> GdipCreateMetafileFromStream_ptr;
             internal static int GdipCreateMetafileFromStream(UnsafeNativeMethods.IStream stream, out IntPtr metafile) => GdipCreateMetafileFromStream_ptr.Delegate(stream, out metafile);
 
-            private delegate int GdipRecordMetafile_delegate(HandleRef referenceHdc, int emfType, ref GPRECTF frameRect, int frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
+            private delegate int GdipRecordMetafile_delegate(HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafile_delegate> GdipRecordMetafile_ptr;
-            internal static int GdipRecordMetafile(HandleRef referenceHdc, int emfType, ref GPRECTF frameRect, int frameUnit, string description, out IntPtr metafile) => GdipRecordMetafile_ptr.Delegate(referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
+            internal static int GdipRecordMetafile(HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafile_ptr.Delegate(referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
 
-            private delegate int GdipRecordMetafile2_delegate(HandleRef referenceHdc, int emfType, HandleRef pframeRect, int frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
+            private delegate int GdipRecordMetafile2_delegate(HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafile2_delegate> GdipRecordMetafile2_ptr;
-            internal static int GdipRecordMetafile(HandleRef referenceHdc, int emfType, HandleRef pframeRect, int frameUnit, string description, out IntPtr metafile) => GdipRecordMetafile2_ptr.Delegate(referenceHdc, emfType, pframeRect, frameUnit, description, out metafile);
+            internal static int GdipRecordMetafile(HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafile2_ptr.Delegate(referenceHdc, emfType, pframeRect, frameUnit, description, out metafile);
 
-            private delegate int GdipRecordMetafileI_delegate(HandleRef referenceHdc, int emfType, ref GPRECT frameRect, int frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
+            private delegate int GdipRecordMetafileI_delegate(HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafileI_delegate> GdipRecordMetafileI_ptr;
-            internal static int GdipRecordMetafileI(HandleRef referenceHdc, int emfType, ref GPRECT frameRect, int frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileI_ptr.Delegate(referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
+            internal static int GdipRecordMetafileI(HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileI_ptr.Delegate(referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
 
-            private delegate int GdipRecordMetafileFileName_delegate([MarshalAs(UnmanagedType.LPWStr)]string fileName, HandleRef referenceHdc, int emfType, ref GPRECTF frameRect, int frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
+            private delegate int GdipRecordMetafileFileName_delegate([MarshalAs(UnmanagedType.LPWStr)]string fileName, HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafileFileName_delegate> GdipRecordMetafileFileName_ptr;
-            internal static int GdipRecordMetafileFileName(string fileName, HandleRef referenceHdc, int emfType, ref GPRECTF frameRect, int frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileFileName_ptr.Delegate(fileName, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
+            internal static int GdipRecordMetafileFileName(string fileName, HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileFileName_ptr.Delegate(fileName, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
 
-            private delegate int GdipRecordMetafileFileName2_delegate([MarshalAs(UnmanagedType.LPWStr)]string fileName, HandleRef referenceHdc, int emfType, HandleRef pframeRect, int frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
+            private delegate int GdipRecordMetafileFileName2_delegate([MarshalAs(UnmanagedType.LPWStr)]string fileName, HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafileFileName2_delegate> GdipRecordMetafileFileName2_ptr;
-            internal static int GdipRecordMetafileFileName(string fileName, HandleRef referenceHdc, int emfType, HandleRef pframeRect, int frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileFileName2_ptr.Delegate(fileName, referenceHdc, emfType, pframeRect, frameUnit, description, out metafile);
+            internal static int GdipRecordMetafileFileName(string fileName, HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileFileName2_ptr.Delegate(fileName, referenceHdc, emfType, pframeRect, frameUnit, description, out metafile);
 
-            private delegate int GdipRecordMetafileFileNameI_delegate([MarshalAs(UnmanagedType.LPWStr)]string fileName, HandleRef referenceHdc, int emfType, ref GPRECT frameRect, int frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
+            private delegate int GdipRecordMetafileFileNameI_delegate([MarshalAs(UnmanagedType.LPWStr)]string fileName, HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafileFileNameI_delegate> GdipRecordMetafileFileNameI_ptr;
-            internal static int GdipRecordMetafileFileNameI(string fileName, HandleRef referenceHdc, int emfType, ref GPRECT frameRect, int frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileFileNameI_ptr.Delegate(fileName, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
+            internal static int GdipRecordMetafileFileNameI(string fileName, HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileFileNameI_ptr.Delegate(fileName, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
 
-            private delegate int GdipRecordMetafileStream_delegate(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, int emfType, ref GPRECTF frameRect, int frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
+            private delegate int GdipRecordMetafileStream_delegate(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafileStream_delegate> GdipRecordMetafileStream_ptr;
-            internal static int GdipRecordMetafileStream(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, int emfType, ref GPRECTF frameRect, int frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile) => GdipRecordMetafileStream_ptr.Delegate(stream, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
+            internal static int GdipRecordMetafileStream(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, EmfType emfType, ref RectangleF frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile) => GdipRecordMetafileStream_ptr.Delegate(stream, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
 
-            private delegate int GdipRecordMetafileStream2_delegate(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, int emfType, HandleRef pframeRect, int frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
+            private delegate int GdipRecordMetafileStream2_delegate(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafileStream2_delegate> GdipRecordMetafileStream2_ptr;
-            internal static int GdipRecordMetafileStream(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, int emfType, HandleRef pframeRect, int frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileStream2_ptr.Delegate(stream, referenceHdc, emfType, pframeRect, frameUnit, description, out metafile);
+            internal static int GdipRecordMetafileStream(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, EmfType emfType, HandleRef pframeRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileStream2_ptr.Delegate(stream, referenceHdc, emfType, pframeRect, frameUnit, description, out metafile);
 
-            private delegate int GdipRecordMetafileStreamI_delegate(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, int emfType, ref GPRECT frameRect, int frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
+            private delegate int GdipRecordMetafileStreamI_delegate(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, [MarshalAs(UnmanagedType.LPWStr)]string description, out IntPtr metafile);
             private static FunctionWrapper<GdipRecordMetafileStreamI_delegate> GdipRecordMetafileStreamI_ptr;
-            internal static int GdipRecordMetafileStreamI(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, int emfType, ref GPRECT frameRect, int frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileStreamI_ptr.Delegate(stream, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
+            internal static int GdipRecordMetafileStreamI(UnsafeNativeMethods.IStream stream, HandleRef referenceHdc, EmfType emfType, ref Rectangle frameRect, MetafileFrameUnit frameUnit, string description, out IntPtr metafile) => GdipRecordMetafileStreamI_ptr.Delegate(stream, referenceHdc, emfType, ref frameRect, frameUnit, description, out metafile);
 
             private delegate int GdipComment_delegate(HandleRef graphics, int sizeData, byte[] data);
             private static FunctionWrapper<GdipComment_delegate> GdipComment_ptr;

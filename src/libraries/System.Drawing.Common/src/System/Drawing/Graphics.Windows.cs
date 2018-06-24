@@ -2530,8 +2530,6 @@ namespace System.Drawing
 
             fixed (PointF* p = destPoints)
             {
-                GPRECTF grf = new GPRECTF(srcRect);
-
                 Gdip.CheckStatus(Gdip.GdipEnumerateMetafileSrcRectDestPoints(
                     new HandleRef(this, NativeGraphics),
                     new HandleRef(metafile, metafile?.nativeImage ?? IntPtr.Zero),
