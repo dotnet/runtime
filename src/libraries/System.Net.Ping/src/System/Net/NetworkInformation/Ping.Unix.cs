@@ -116,7 +116,7 @@ namespace System.Net.NetworkInformation
             int icmpHeaderOffset = ipHeaderLength;
 
             // Skip IP header.
-            IcmpHeader receivedHeader = MemoryMarshal.Cast<byte, IcmpHeader>(receiveBuffer.AsSpan(icmpHeaderOffset))[0];
+            IcmpHeader receivedHeader = MemoryMarshal.Read<IcmpHeader>(receiveBuffer.AsSpan(icmpHeaderOffset));
             type = receivedHeader.Type;
             code = receivedHeader.Code;
 
