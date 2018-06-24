@@ -82,9 +82,7 @@ namespace System.Threading
             return res;
         }
         
-        public bool Set() => Set(_waitHandle);
-
-        internal bool Set(SafeWaitHandle handle)
+        public bool Set()
         {
             bool res = Interop.Kernel32.SetEvent(_waitHandle);
             if (!res)
