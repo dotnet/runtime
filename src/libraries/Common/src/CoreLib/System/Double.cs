@@ -24,7 +24,7 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Double : IComparable, IConvertible, IFormattable, IComparable<Double>, IEquatable<Double>, ISpanFormattable
+    public struct Double : IComparable, IConvertible, IFormattable, IComparable<double>, IEquatable<double>, ISpanFormattable
     {
         private double m_value; // Do not rename (binary serialization)
 
@@ -123,13 +123,13 @@ namespace System
         //
         // Returns a value less than zero if this  object
         //
-        public int CompareTo(Object value)
+        public int CompareTo(object value)
         {
             if (value == null)
             {
                 return 1;
             }
-            if (value is Double)
+            if (value is double)
             {
                 double d = (double)value;
                 if (m_value < d) return -1;
@@ -145,7 +145,7 @@ namespace System
             throw new ArgumentException(SR.Arg_MustBeDouble);
         }
 
-        public int CompareTo(Double value)
+        public int CompareTo(double value)
         {
             if (m_value < value) return -1;
             if (m_value > value) return 1;
@@ -160,13 +160,13 @@ namespace System
 
         // True if obj is another Double with the same value as the current instance.  This is
         // a method of object equality, that only returns true if obj is also a double.
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
-            if (!(obj is Double))
+            if (!(obj is double))
             {
                 return false;
             }
-            double temp = ((Double)obj).m_value;
+            double temp = ((double)obj).m_value;
             // This code below is written this way for performance reasons i.e the != and == check is intentional.
             if (temp == m_value)
             {
@@ -176,42 +176,42 @@ namespace System
         }
 
         [NonVersionable]
-        public static bool operator ==(Double left, Double right)
+        public static bool operator ==(double left, double right)
         {
             return left == right;
         }
 
         [NonVersionable]
-        public static bool operator !=(Double left, Double right)
+        public static bool operator !=(double left, double right)
         {
             return left != right;
         }
 
         [NonVersionable]
-        public static bool operator <(Double left, Double right)
+        public static bool operator <(double left, double right)
         {
             return left < right;
         }
 
         [NonVersionable]
-        public static bool operator >(Double left, Double right)
+        public static bool operator >(double left, double right)
         {
             return left > right;
         }
 
         [NonVersionable]
-        public static bool operator <=(Double left, Double right)
+        public static bool operator <=(double left, double right)
         {
             return left <= right;
         }
 
         [NonVersionable]
-        public static bool operator >=(Double left, Double right)
+        public static bool operator >=(double left, double right)
         {
             return left >= right;
         }
 
-        public bool Equals(Double obj)
+        public bool Equals(double obj)
         {
             if (obj == m_value)
             {
@@ -238,22 +238,22 @@ namespace System
             return unchecked((int)bits) ^ ((int)(bits >> 32));
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             return Number.FormatDouble(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
-        public String ToString(String format)
+        public string ToString(string format)
         {
             return Number.FormatDouble(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
-        public String ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider provider)
         {
             return Number.FormatDouble(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        public String ToString(String format, IFormatProvider provider)
+        public string ToString(string format, IFormatProvider provider)
         {
             return Number.FormatDouble(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
@@ -263,26 +263,26 @@ namespace System
             return Number.TryFormatDouble(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
-        public static double Parse(String s)
+        public static double Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseDouble(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
         }
 
-        public static double Parse(String s, NumberStyles style)
+        public static double Parse(string s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseDouble(s, style, NumberFormatInfo.CurrentInfo);
         }
 
-        public static double Parse(String s, IFormatProvider provider)
+        public static double Parse(string s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseDouble(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static double Parse(String s, NumberStyles style, IFormatProvider provider)
+        public static double Parse(string s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -305,7 +305,7 @@ namespace System
 
 
 
-        public static bool TryParse(String s, out double result)
+        public static bool TryParse(string s, out double result)
         {
             if (s == null)
             {
@@ -321,7 +321,7 @@ namespace System
             return TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out double result)
+        public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out double result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
 
@@ -435,7 +435,7 @@ namespace System
             return m_value;
         }
 
-        Decimal IConvertible.ToDecimal(IFormatProvider provider)
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             return Convert.ToDecimal(m_value);
         }
@@ -445,7 +445,7 @@ namespace System
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Double", "DateTime"));
         }
 
-        Object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }

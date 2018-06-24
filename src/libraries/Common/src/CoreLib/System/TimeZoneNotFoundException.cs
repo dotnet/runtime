@@ -14,12 +14,12 @@ namespace System
         {
         }
 
-        public TimeZoneNotFoundException(String message)
+        public TimeZoneNotFoundException(string message)
             : base(message)
         {
         }
 
-        public TimeZoneNotFoundException(String message, Exception innerException)
+        public TimeZoneNotFoundException(string message, Exception innerException)
             : base(message, innerException)
         {
         }

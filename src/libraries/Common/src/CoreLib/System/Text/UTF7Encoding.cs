@@ -97,7 +97,7 @@ namespace System.Text
             this.decoderFallback = new DecoderUTF7Fallback();
         }
 
-        public override bool Equals(Object value)
+        public override bool Equals(object value)
         {
             UTF7Encoding that = value as UTF7Encoding;
             if (that != null)
@@ -873,7 +873,7 @@ namespace System.Text
                 }
             }
 
-            public override bool Equals(Object value)
+            public override bool Equals(object value)
             {
                 DecoderUTF7Fallback that = value as DecoderUTF7Fallback;
                 if (that != null)

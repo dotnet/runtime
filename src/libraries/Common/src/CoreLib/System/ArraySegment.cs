@@ -131,7 +131,7 @@ namespace System
             System.Array.Copy(_array, _offset, destination._array, destination._offset, _count);
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is ArraySegment<T>)
                 return Equals((ArraySegment<T>)obj);

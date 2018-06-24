@@ -156,7 +156,7 @@ namespace System
 
 
         /*=====================================Next=====================================
-        **Returns: An int [0..Int32.MaxValue)
+        **Returns: An int [0..int.MaxValue)
         **Arguments: None
         **Exceptions: None.
         ==============================================================================*/
@@ -169,7 +169,7 @@ namespace System
         {
             // The distribution of double value returned by Sample 
             // is not distributed well enough for a large range.
-            // If we use Sample for a range [Int32.MinValue..Int32.MaxValue)
+            // If we use Sample for a range [int.MinValue..int.MaxValue)
             // We will end up getting even numbers only.
 
             int result = InternalSample();

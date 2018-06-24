@@ -58,10 +58,10 @@ namespace System.Globalization
         private CultureData _cultureData;
 
         // The culture name used to create this DTFI.
-        private String _name = null;
+        private string _name = null;
 
         // The language name of the culture used to create this DTFI.
-        private String _langName = null;
+        private string _langName = null;
 
         // CompareInfo usually used by the parser.
         private CompareInfo _compareInfo = null;
@@ -73,28 +73,28 @@ namespace System.Globalization
         // Caches for various properties.
         //
 
-        private String amDesignator = null;
-        private String pmDesignator = null;
+        private string amDesignator = null;
+        private string pmDesignator = null;
 
-        private String dateSeparator = null;            // derived from short date (whidbey expects, arrowhead doesn't)
+        private string dateSeparator = null;            // derived from short date (whidbey expects, arrowhead doesn't)
 
-        private String generalShortTimePattern = null;     // short date + short time (whidbey expects, arrowhead doesn't)
+        private string generalShortTimePattern = null;     // short date + short time (whidbey expects, arrowhead doesn't)
 
-        private String generalLongTimePattern = null;     // short date + long time (whidbey expects, arrowhead doesn't)
+        private string generalLongTimePattern = null;     // short date + long time (whidbey expects, arrowhead doesn't)
 
-        private String timeSeparator = null;            // derived from long time (whidbey expects, arrowhead doesn't)
-        private String monthDayPattern = null;
+        private string timeSeparator = null;            // derived from long time (whidbey expects, arrowhead doesn't)
+        private string monthDayPattern = null;
         // added in .NET Framework Release {2.0SP1/3.0SP1/3.5RTM}
-        private String dateTimeOffsetPattern = null;
+        private string dateTimeOffsetPattern = null;
 
         //
         // The following are constant values.
         //
-        private const String rfc1123Pattern = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
+        private const string rfc1123Pattern = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
 
         // The sortable pattern is based on ISO 8601.
-        private const String sortableDateTimePattern = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
-        private const String universalSortableDateTimePattern = "yyyy'-'MM'-'dd HH':'mm':'ss'Z'";
+        private const string sortableDateTimePattern = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
+        private const string universalSortableDateTimePattern = "yyyy'-'MM'-'dd HH':'mm':'ss'Z'";
 
         //
         // The following are affected by calendar settings.
@@ -105,27 +105,27 @@ namespace System.Globalization
         private int calendarWeekRule = -1;
 
 
-        private String fullDateTimePattern = null;        // long date + long time (whidbey expects, arrowhead doesn't)
+        private string fullDateTimePattern = null;        // long date + long time (whidbey expects, arrowhead doesn't)
 
-        private String[] abbreviatedDayNames = null;
+        private string[] abbreviatedDayNames = null;
 
 
-        private String[] m_superShortDayNames = null;
+        private string[] m_superShortDayNames = null;
 
-        private String[] dayNames = null;
-        private String[] abbreviatedMonthNames = null;
-        private String[] monthNames = null;
+        private string[] dayNames = null;
+        private string[] abbreviatedMonthNames = null;
+        private string[] monthNames = null;
         // Cache the genitive month names that we retrieve from the data table.
 
-        private String[] genitiveMonthNames = null;
+        private string[] genitiveMonthNames = null;
 
         // Cache the abbreviated genitive month names that we retrieve from the data table.
 
-        private String[] m_genitiveAbbreviatedMonthNames = null;
+        private string[] m_genitiveAbbreviatedMonthNames = null;
 
         // Cache the month names of a leap year that we retrieve from the data table.
 
-        private String[] leapYearMonthNames = null;
+        private string[] leapYearMonthNames = null;
 
         // For our "patterns" arrays we have 2 variables, a string and a string[]
         //
@@ -134,23 +134,23 @@ namespace System.Globalization
         // When we initially construct our string[], we set the string to string[0]
 
         // The "default" Date/time patterns 
-        private String longDatePattern = null;
-        private String shortDatePattern = null;
-        private String yearMonthPattern = null;
-        private String longTimePattern = null;
-        private String shortTimePattern = null;
+        private string longDatePattern = null;
+        private string shortDatePattern = null;
+        private string yearMonthPattern = null;
+        private string longTimePattern = null;
+        private string shortTimePattern = null;
 
-        private String[] allYearMonthPatterns = null;
+        private string[] allYearMonthPatterns = null;
 
-        private String[] allShortDatePatterns = null;
-        private String[] allLongDatePatterns = null;
-        private String[] allShortTimePatterns = null;
-        private String[] allLongTimePatterns = null;
+        private string[] allShortDatePatterns = null;
+        private string[] allLongDatePatterns = null;
+        private string[] allShortTimePatterns = null;
+        private string[] allLongTimePatterns = null;
 
         // Cache the era names for this DateTimeFormatInfo instance.
-        private String[] m_eraNames = null;
-        private String[] m_abbrevEraNames = null;
-        private String[] m_abbrevEnglishEraNames = null;
+        private string[] m_eraNames = null;
+        private string[] m_abbrevEraNames = null;
+        private string[] m_abbrevEnglishEraNames = null;
 
         private CalendarId[] optionalCalendars = null;
 
@@ -164,7 +164,7 @@ namespace System.Globalization
 
         private DateTimeFormatFlags formatFlags = DateTimeFormatFlags.NotInitialized;
 
-        private String CultureName
+        private string CultureName
         {
             get
             {
@@ -189,7 +189,7 @@ namespace System.Globalization
         }
 
         // TODO: This ignores other cultures that might want to do something similar
-        private String LanguageName
+        private string LanguageName
         {
             get
             {
@@ -261,9 +261,9 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        private String[] internalGetAbbreviatedMonthNames() => this.abbreviatedMonthNames ?? internalGetAbbreviatedMonthNamesCore();
+        private string[] internalGetAbbreviatedMonthNames() => this.abbreviatedMonthNames ?? internalGetAbbreviatedMonthNamesCore();
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private String[] internalGetAbbreviatedMonthNamesCore()
+        private string[] internalGetAbbreviatedMonthNamesCore()
         {
             // Get the month names for our current calendar
             this.abbreviatedMonthNames = _cultureData.AbbreviatedMonthNames(Calendar.ID);
@@ -386,13 +386,13 @@ namespace System.Globalization
             provider.GetFormat(typeof(DateTimeFormatInfo)) is DateTimeFormatInfo info2 ? info2 :
             CurrentInfo; // Couldn't get anything, just use currentInfo as fallback
 
-        public Object GetFormat(Type formatType)
+        public object GetFormat(Type formatType)
         {
             return (formatType == typeof(DateTimeFormatInfo) ? this : null);
         }
 
 
-        public Object Clone()
+        public object Clone()
         {
             DateTimeFormatInfo n = (DateTimeFormatInfo)MemberwiseClone();
             // We can use the data member calendar in the setter, instead of the property Calendar,
@@ -403,7 +403,7 @@ namespace System.Globalization
         }
 
 
-        public String AMDesignator
+        public string AMDesignator
         {
             get
             {
@@ -546,7 +546,7 @@ namespace System.Globalization
         ============================================================================*/
 
 
-        public int GetEra(String eraName)
+        public int GetEra(string eraName)
         {
             if (eraName == null)
             {
@@ -602,7 +602,7 @@ namespace System.Globalization
         }
 
 
-        internal String[] EraNames
+        internal string[] EraNames
         {
             get
             {
@@ -624,7 +624,7 @@ namespace System.Globalization
         ============================================================================*/
 
         // Era names are 1 indexed
-        public String GetEraName(int era)
+        public string GetEraName(int era)
         {
             if (era == Calendar.CurrentEra)
             {
@@ -641,7 +641,7 @@ namespace System.Globalization
             throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
         }
 
-        internal String[] AbbreviatedEraNames
+        internal string[] AbbreviatedEraNames
         {
             get
             {
@@ -654,7 +654,7 @@ namespace System.Globalization
         }
 
         // Era names are 1 indexed
-        public String GetAbbreviatedEraName(int era)
+        public string GetAbbreviatedEraName(int era)
         {
             if (AbbreviatedEraNames.Length == 0)
             {
@@ -673,7 +673,7 @@ namespace System.Globalization
             throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
         }
 
-        internal String[] AbbreviatedEnglishEraNames
+        internal string[] AbbreviatedEnglishEraNames
         {
             get
             {
@@ -772,7 +772,7 @@ namespace System.Globalization
             }
         }
 
-        public String FullDateTimePattern
+        public string FullDateTimePattern
         {
             get
             {
@@ -802,7 +802,7 @@ namespace System.Globalization
         // The string[] contains the list of patterns, EXCEPT the default may not be included.
         // The string contains the default pattern.
         // When we initially construct our string[], we set the string to string[0]
-        public String LongDatePattern
+        public string LongDatePattern
         {
             get
             {
@@ -842,7 +842,7 @@ namespace System.Globalization
         // The string[] contains the list of patterns, EXCEPT the default may not be included.
         // The string contains the default pattern.
         // When we initially construct our string[], we set the string to string[0]
-        public String LongTimePattern
+        public string LongTimePattern
         {
             get
             {
@@ -881,7 +881,7 @@ namespace System.Globalization
 
 
         // Note: just to be confusing there's only 1 month day pattern, not a whole list
-        public String MonthDayPattern
+        public string MonthDayPattern
         {
             get
             {
@@ -909,7 +909,7 @@ namespace System.Globalization
         }
 
 
-        public String PMDesignator
+        public string PMDesignator
         {
             get
             {
@@ -937,7 +937,7 @@ namespace System.Globalization
         }
 
 
-        public String RFC1123Pattern
+        public string RFC1123Pattern
         {
             get
             {
@@ -950,7 +950,7 @@ namespace System.Globalization
         // The string[] contains the list of patterns, EXCEPT the default may not be included.
         // The string contains the default pattern.
         // When we initially construct our string[], we set the string to string[0]
-        public String ShortDatePattern
+        public string ShortDatePattern
         {
             get
             {
@@ -991,7 +991,7 @@ namespace System.Globalization
         // The string[] contains the list of patterns, EXCEPT the default may not be included.
         // The string contains the default pattern.
         // When we initially construct our string[], we set the string to string[0]
-        public String ShortTimePattern
+        public string ShortTimePattern
         {
             get
             {
@@ -1026,7 +1026,7 @@ namespace System.Globalization
         }
 
 
-        public String SortableDateTimePattern
+        public string SortableDateTimePattern
         {
             get
             {
@@ -1041,7 +1041,7 @@ namespace System.Globalization
         **      concatation every time somebody asks for the general format.
         ==============================================================================*/
 
-        internal String GeneralShortTimePattern
+        internal string GeneralShortTimePattern
         {
             get
             {
@@ -1060,7 +1060,7 @@ namespace System.Globalization
         **      concatation every time somebody asks for the general format.
         ==============================================================================*/
 
-        internal String GeneralLongTimePattern
+        internal string GeneralLongTimePattern
         {
             get
             {
@@ -1079,7 +1079,7 @@ namespace System.Globalization
         **      concatation every time somebody uses this form
         ==============================================================================*/
 
-        internal String DateTimeOffsetPattern
+        internal string DateTimeOffsetPattern
         {
             get
             {
@@ -1168,7 +1168,7 @@ namespace System.Globalization
             }
         }
 
-        public String UniversalSortableDateTimePattern
+        public string UniversalSortableDateTimePattern
         {
             get
             {
@@ -1181,7 +1181,7 @@ namespace System.Globalization
         // The string[] contains the list of patterns, EXCEPT the default may not be included.
         // The string contains the default pattern.
         // When we initially construct our string[], we set the string to string[0]
-        public String YearMonthPattern
+        public string YearMonthPattern
         {
             get
             {
@@ -1215,7 +1215,7 @@ namespace System.Globalization
         //
         // Check if a string array contains a null value, and throw ArgumentNullException with parameter name "value"
         //
-        private static void CheckNullValue(String[] values, int length)
+        private static void CheckNullValue(string[] values, int length)
         {
             Debug.Assert(values != null, "value != null");
             Debug.Assert(values.Length >= length);
@@ -1230,11 +1230,11 @@ namespace System.Globalization
         }
 
 
-        public String[] AbbreviatedDayNames
+        public string[] AbbreviatedDayNames
         {
             get
             {
-                return ((String[])internalGetAbbreviatedDayOfWeekNames().Clone());
+                return ((string[])internalGetAbbreviatedDayOfWeekNames().Clone());
             }
 
             set
@@ -1258,11 +1258,11 @@ namespace System.Globalization
         }
 
         // Returns the string array of the one-letter day of week names.
-        public String[] ShortestDayNames
+        public string[] ShortestDayNames
         {
             get
             {
-                return ((String[])internalGetSuperShortDayNames().Clone());
+                return ((string[])internalGetSuperShortDayNames().Clone());
             }
 
             set
@@ -1284,11 +1284,11 @@ namespace System.Globalization
         }
 
 
-        public String[] DayNames
+        public string[] DayNames
         {
             get
             {
-                return ((String[])internalGetDayOfWeekNames().Clone());
+                return ((string[])internalGetDayOfWeekNames().Clone());
             }
 
             set
@@ -1312,11 +1312,11 @@ namespace System.Globalization
         }
 
 
-        public String[] AbbreviatedMonthNames
+        public string[] AbbreviatedMonthNames
         {
             get
             {
-                return ((String[])internalGetAbbreviatedMonthNames().Clone());
+                return ((string[])internalGetAbbreviatedMonthNames().Clone());
             }
 
             set
@@ -1339,11 +1339,11 @@ namespace System.Globalization
         }
 
 
-        public String[] MonthNames
+        public string[] MonthNames
         {
             get
             {
-                return ((String[])internalGetMonthNames().Clone());
+                return ((string[])internalGetMonthNames().Clone());
             }
 
             set
@@ -1398,13 +1398,13 @@ namespace System.Globalization
         //  Exceptions:
         //      ArgumentOutOfRangeException When month name is invalid.
         //
-        internal String internalGetMonthName(int month, MonthNameStyles style, bool abbreviated)
+        internal string internalGetMonthName(int month, MonthNameStyles style, bool abbreviated)
         {
             //
             // Right now, style is mutual exclusive, but I make the style to be flag so that
             // maybe we can combine flag if there is such a need.
             //
-            String[] monthNamesArray = null;
+            string[] monthNamesArray = null;
             switch (style)
             {
                 case MonthNameStyles.Genitive:
@@ -1436,7 +1436,7 @@ namespace System.Globalization
         //  Arguments:
         //      abbreviated     When true, return abbreviated form.  Otherwise, return a full form.
         //
-        private String[] internalGetGenitiveMonthNames(bool abbreviated)
+        private string[] internalGetGenitiveMonthNames(bool abbreviated)
         {
             if (abbreviated)
             {
@@ -1465,7 +1465,7 @@ namespace System.Globalization
         //      If this culture does not have different month names in a leap year, the normal month name is returned.
         //  Arguments: None. (can use abbreviated later if needed)
         //
-        internal String[] internalGetLeapYearMonthNames(/*bool abbreviated*/)
+        internal string[] internalGetLeapYearMonthNames(/*bool abbreviated*/)
         {
             if (this.leapYearMonthNames == null)
             {
@@ -1478,7 +1478,7 @@ namespace System.Globalization
         }
 
 
-        public String GetAbbreviatedDayName(DayOfWeek dayofweek)
+        public string GetAbbreviatedDayName(DayOfWeek dayofweek)
         {
             if ((int)dayofweek < 0 || (int)dayofweek > 6)
             {
@@ -1510,13 +1510,13 @@ namespace System.Globalization
         }
 
         // Get all possible combination of inputs
-        private static String[] GetCombinedPatterns(String[] patterns1, String[] patterns2, String connectString)
+        private static string[] GetCombinedPatterns(string[] patterns1, string[] patterns2, string connectString)
         {
             Debug.Assert(patterns1 != null);
             Debug.Assert(patterns2 != null);
 
             // Get array size
-            String[] result = new String[patterns1.Length * patterns2.Length];
+            string[] result = new string[patterns1.Length * patterns2.Length];
 
             // Counter of actual results
             int k = 0;
@@ -1535,11 +1535,11 @@ namespace System.Globalization
 
         public string[] GetAllDateTimePatterns()
         {
-            List<String> results = new List<String>(DEFAULT_ALL_DATETIMES_SIZE);
+            List<string> results = new List<string>(DEFAULT_ALL_DATETIMES_SIZE);
 
             for (int i = 0; i < DateTimeFormat.allStandardFormats.Length; i++)
             {
-                String[] strings = GetAllDateTimePatterns(DateTimeFormat.allStandardFormats[i]);
+                string[] strings = GetAllDateTimePatterns(DateTimeFormat.allStandardFormats[i]);
                 for (int j = 0; j < strings.Length; j++)
                 {
                     results.Add(strings[j]);
@@ -1550,7 +1550,7 @@ namespace System.Globalization
 
         public string[] GetAllDateTimePatterns(char format)
         {
-            String[] result = null;
+            string[] result = null;
 
             switch (format)
             {
@@ -1575,18 +1575,18 @@ namespace System.Globalization
                     break;
                 case 'm':
                 case 'M':
-                    result = new String[] { MonthDayPattern };
+                    result = new string[] { MonthDayPattern };
                     break;
                 case 'o':
                 case 'O':
-                    result = new String[] { RoundtripFormat };
+                    result = new string[] { RoundtripFormat };
                     break;
                 case 'r':
                 case 'R':
-                    result = new String[] { rfc1123Pattern };
+                    result = new string[] { rfc1123Pattern };
                     break;
                 case 's':
-                    result = new String[] { sortableDateTimePattern };
+                    result = new string[] { sortableDateTimePattern };
                     break;
                 case 't':
                     result = this.AllShortTimePatterns;
@@ -1595,7 +1595,7 @@ namespace System.Globalization
                     result = this.AllLongTimePatterns;
                     break;
                 case 'u':
-                    result = new String[] { UniversalSortableDateTimePattern };
+                    result = new string[] { UniversalSortableDateTimePattern };
                     break;
                 case 'y':
                 case 'Y':
@@ -1608,7 +1608,7 @@ namespace System.Globalization
         }
 
 
-        public String GetDayName(DayOfWeek dayofweek)
+        public string GetDayName(DayOfWeek dayofweek)
         {
             if ((int)dayofweek < 0 || (int)dayofweek > 6)
             {
@@ -1621,7 +1621,7 @@ namespace System.Globalization
             return (internalGetDayOfWeekNames()[(int)dayofweek]);
         }
 
-        public String GetAbbreviatedMonthName(int month)
+        public string GetAbbreviatedMonthName(int month)
         {
             if (month < 1 || month > 13)
             {
@@ -1633,7 +1633,7 @@ namespace System.Globalization
             return (internalGetAbbreviatedMonthNames()[month - 1]);
         }
 
-        public String GetMonthName(int month)
+        public string GetMonthName(int month)
         {
             if (month < 1 || month > 13)
             {
@@ -1690,7 +1690,7 @@ namespace System.Globalization
             else
             {
                 // Not found, make room for it
-                newPatterns = new String[patterns.Length + 1];
+                newPatterns = new string[patterns.Length + 1];
 
                 // Copy existing array
                 Array.Copy(patterns, 0, newPatterns, 1, patterns.Length);
@@ -1704,12 +1704,12 @@ namespace System.Globalization
         }
 
         // Needed by DateTimeFormatInfo and DateTimeFormat
-        internal const String RoundtripFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.fffffffK";
-        internal const String RoundtripDateTimeUnfixed = "yyyy'-'MM'-'ddTHH':'mm':'ss zzz";
+        internal const string RoundtripFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.fffffffK";
+        internal const string RoundtripDateTimeUnfixed = "yyyy'-'MM'-'ddTHH':'mm':'ss zzz";
 
         // Default string isn't necessarily in our string array, so get the 
         // merged patterns of both
-        private String[] AllYearMonthPatterns
+        private string[] AllYearMonthPatterns
         {
             get
             {
@@ -1717,7 +1717,7 @@ namespace System.Globalization
             }
         }
 
-        private String[] AllShortDatePatterns
+        private string[] AllShortDatePatterns
         {
             get
             {
@@ -1725,7 +1725,7 @@ namespace System.Globalization
             }
         }
 
-        private String[] AllShortTimePatterns
+        private string[] AllShortTimePatterns
         {
             get
             {
@@ -1733,7 +1733,7 @@ namespace System.Globalization
             }
         }
 
-        private String[] AllLongDatePatterns
+        private string[] AllLongDatePatterns
         {
             get
             {
@@ -1741,7 +1741,7 @@ namespace System.Globalization
             }
         }
 
-        private String[] AllLongTimePatterns
+        private string[] AllLongTimePatterns
         {
             get
             {
@@ -1751,7 +1751,7 @@ namespace System.Globalization
 
         // NOTE: Clone this string array if you want to return it to user.  Otherwise, you are returning a writable cache copy.
         // This won't include default, call AllYearMonthPatterns
-        private String[] UnclonedYearMonthPatterns
+        private string[] UnclonedYearMonthPatterns
         {
             get
             {
@@ -1770,7 +1770,7 @@ namespace System.Globalization
 
         // NOTE: Clone this string array if you want to return it to user.  Otherwise, you are returning a writable cache copy.
         // This won't include default, call AllShortDatePatterns
-        private String[] UnclonedShortDatePatterns
+        private string[] UnclonedShortDatePatterns
         {
             get
             {
@@ -1788,7 +1788,7 @@ namespace System.Globalization
 
         // NOTE: Clone this string array if you want to return it to user.  Otherwise, you are returning a writable cache copy.
         // This won't include default, call AllLongDatePatterns
-        private String[] UnclonedLongDatePatterns
+        private string[] UnclonedLongDatePatterns
         {
             get
             {
@@ -1806,7 +1806,7 @@ namespace System.Globalization
 
         // NOTE: Clone this string array if you want to return it to user.  Otherwise, you are returning a writable cache copy.
         // This won't include default, call AllShortTimePatterns
-        private String[] UnclonedShortTimePatterns
+        private string[] UnclonedShortTimePatterns
         {
             get
             {
@@ -1823,7 +1823,7 @@ namespace System.Globalization
 
         // NOTE: Clone this string array if you want to return it to user.  Otherwise, you are returning a writable cache copy.
         // This won't include default, call AllLongTimePatterns
-        private String[] UnclonedLongTimePatterns
+        private string[] UnclonedLongTimePatterns
         {
             get
             {
@@ -1896,7 +1896,7 @@ namespace System.Globalization
         //
         // WARNING: If more validation is ever done in one place, it should be done in the other.
         //
-        public void SetAllDateTimePatterns(String[] patterns, char format)
+        public void SetAllDateTimePatterns(string[] patterns, char format)
         {
             if (IsReadOnly)
                 throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
@@ -1957,11 +1957,11 @@ namespace System.Globalization
             ClearTokenHashTable();
         }
 
-        public String[] AbbreviatedMonthGenitiveNames
+        public string[] AbbreviatedMonthGenitiveNames
         {
             get
             {
-                return ((String[])internalGetGenitiveMonthNames(true).Clone());
+                return ((string[])internalGetGenitiveMonthNames(true).Clone());
             }
 
             set
@@ -1983,11 +1983,11 @@ namespace System.Globalization
             }
         }
 
-        public String[] MonthGenitiveNames
+        public string[] MonthGenitiveNames
         {
             get
             {
-                return ((String[])internalGetGenitiveMonthNames(false).Clone());
+                return ((string[])internalGetGenitiveMonthNames(false).Clone());
             }
 
             set
@@ -2013,7 +2013,7 @@ namespace System.Globalization
         // Positive TimeSpan Pattern
         //
         private string _fullTimeSpanPositivePattern;
-        internal String FullTimeSpanPositivePattern
+        internal string FullTimeSpanPositivePattern
         {
             get
             {
@@ -2024,7 +2024,7 @@ namespace System.Globalization
                         cultureDataWithoutUserOverrides = CultureData.GetCultureData(_cultureData.CultureName, false);
                     else
                         cultureDataWithoutUserOverrides = _cultureData;
-                    String decimalSeparator = new NumberFormatInfo(cultureDataWithoutUserOverrides).NumberDecimalSeparator;
+                    string decimalSeparator = new NumberFormatInfo(cultureDataWithoutUserOverrides).NumberDecimalSeparator;
 
                     _fullTimeSpanPositivePattern = "d':'h':'mm':'ss'" + decimalSeparator + "'FFFFFFF";
                 }
@@ -2036,7 +2036,7 @@ namespace System.Globalization
         // Negative TimeSpan Pattern
         //
         private string _fullTimeSpanNegativePattern;
-        internal String FullTimeSpanNegativePattern
+        internal string FullTimeSpanNegativePattern
         {
             get
             {
@@ -2070,7 +2070,7 @@ namespace System.Globalization
                                                                | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeLocal
                                                                | DateTimeStyles.AssumeUniversal | DateTimeStyles.RoundtripKind);
 
-        internal static void ValidateStyles(DateTimeStyles style, String parameterName)
+        internal static void ValidateStyles(DateTimeStyles style, string parameterName)
         {
             if ((style & InvalidDateTimeStyles) != 0)
             {
@@ -2106,7 +2106,7 @@ namespace System.Globalization
             return formatFlags;
         }
 
-        internal Boolean HasForceTwoDigitYears
+        internal bool HasForceTwoDigitYears
         {
             get
             {
@@ -2129,7 +2129,7 @@ namespace System.Globalization
         }
 
         // Returns whether the YearMonthAdjustment function has any fix-up work to do for this culture/calendar.
-        internal Boolean HasYearMonthAdjustment
+        internal bool HasYearMonthAdjustment
         {
             get
             {
@@ -2142,7 +2142,7 @@ namespace System.Globalization
         // the Hebrew calendar, but this could be extended to other cultures.
         //
         // The return value is whether the year and month are actually valid for this calendar.
-        internal Boolean YearMonthAdjustment(ref int year, ref int month, Boolean parsedMonthName)
+        internal bool YearMonthAdjustment(ref int year, ref int month, bool parsedMonthName)
         {
             if ((FormatFlags & DateTimeFormatFlags.UseHebrewRule) != 0)
             {
@@ -2189,45 +2189,45 @@ namespace System.Globalization
 
         private const int TOKEN_HASH_SIZE = 199;
         private const int SECOND_PRIME = 197;
-        private const String dateSeparatorOrTimeZoneOffset = "-";
-        private const String invariantDateSeparator = "/";
-        private const String invariantTimeSeparator = ":";
+        private const string dateSeparatorOrTimeZoneOffset = "-";
+        private const string invariantDateSeparator = "/";
+        private const string invariantTimeSeparator = ":";
 
         //
         // Common Ignorable Symbols
         //
-        internal const String IgnorablePeriod = ".";
-        internal const String IgnorableComma = ",";
+        internal const string IgnorablePeriod = ".";
+        internal const string IgnorableComma = ",";
 
         //
         // Year/Month/Day suffixes
         //
-        internal const String CJKYearSuff = "\u5e74";
-        internal const String CJKMonthSuff = "\u6708";
-        internal const String CJKDaySuff = "\u65e5";
+        internal const string CJKYearSuff = "\u5e74";
+        internal const string CJKMonthSuff = "\u6708";
+        internal const string CJKDaySuff = "\u65e5";
 
-        internal const String KoreanYearSuff = "\ub144";
-        internal const String KoreanMonthSuff = "\uc6d4";
-        internal const String KoreanDaySuff = "\uc77c";
+        internal const string KoreanYearSuff = "\ub144";
+        internal const string KoreanMonthSuff = "\uc6d4";
+        internal const string KoreanDaySuff = "\uc77c";
 
-        internal const String KoreanHourSuff = "\uc2dc";
-        internal const String KoreanMinuteSuff = "\ubd84";
-        internal const String KoreanSecondSuff = "\ucd08";
+        internal const string KoreanHourSuff = "\uc2dc";
+        internal const string KoreanMinuteSuff = "\ubd84";
+        internal const string KoreanSecondSuff = "\ucd08";
 
-        internal const String CJKHourSuff = "\u6642";
-        internal const String ChineseHourSuff = "\u65f6";
+        internal const string CJKHourSuff = "\u6642";
+        internal const string ChineseHourSuff = "\u65f6";
 
-        internal const String CJKMinuteSuff = "\u5206";
-        internal const String CJKSecondSuff = "\u79d2";
+        internal const string CJKMinuteSuff = "\u5206";
+        internal const string CJKSecondSuff = "\u79d2";
 
-        internal const String LocalTimeMark = "T";
+        internal const string LocalTimeMark = "T";
 
-        internal const String GMTName = "GMT";
-        internal const String ZuluName = "Z";
+        internal const string GMTName = "GMT";
+        internal const string ZuluName = "Z";
 
-        internal const String KoreanLangName = "ko";
-        internal const String JapaneseLangName = "ja";
-        internal const String EnglishLangName = "en";
+        internal const string KoreanLangName = "ko";
+        internal const string JapaneseLangName = "ja";
+        internal const string EnglishLangName = "en";
 
         private static volatile DateTimeFormatInfo s_jajpDTFI;
         private static volatile DateTimeFormatInfo s_zhtwDTFI;
@@ -2341,7 +2341,7 @@ namespace System.Globalization
                     InsertHash(temp, dateSeparatorOrTimeZoneOffset, TokenType.SEP_DateOrOffset, 0);
                 }
 
-                String[] dateWords = null;
+                string[] dateWords = null;
                 DateTimeFormatInfoScanner scanner = null;
 
                 // We need to rescan the date words since we're always synthetic
@@ -2355,7 +2355,7 @@ namespace System.Globalization
                 // This is determined in DateTimeFormatInfoScanner.  Use this flag to determine if we should treat date separator as ignorable symbol.
                 bool useDateSepAsIgnorableSymbol = false;
 
-                String monthPostfix = null;
+                string monthPostfix = null;
                 if (dateWords != null)
                 {
                     // There are DateWords.  It could be a real date word (such as "de"), or a monthPostfix.
@@ -2372,7 +2372,7 @@ namespace System.Globalization
                                 AddMonthNames(temp, monthPostfix);
                                 break;
                             case DateTimeFormatInfoScanner.IgnorableSymbolChar:
-                                String symbol = dateWords[i].Substring(1);
+                                string symbol = dateWords[i].Substring(1);
                                 InsertHash(temp, symbol, TokenType.IgnorableSymbol, 0);
                                 if (this.DateSeparator.Trim(null).Equals(symbol))
                                 {
@@ -2412,7 +2412,7 @@ namespace System.Globalization
                 {
                     for (int i = 1; i <= 13; i++)
                     {
-                        String str;
+                        string str;
                         str = internalGetMonthName(i, MonthNameStyles.Genitive, false);
                         InsertHash(temp, str, TokenType.MonthToken, i);
                     }
@@ -2422,7 +2422,7 @@ namespace System.Globalization
                 {
                     for (int i = 1; i <= 13; i++)
                     {
-                        String str;
+                        string str;
                         str = internalGetMonthName(i, MonthNameStyles.LeapYear, false);
                         InsertHash(temp, str, TokenType.MonthToken, i);
                     }
@@ -2432,7 +2432,7 @@ namespace System.Globalization
                 {
                     //String str = GetDayOfWeekNames()[i];
                     // We have to call public methods here to work with inherited DTFI.
-                    String str = GetDayName((DayOfWeek)i);
+                    string str = GetDayName((DayOfWeek)i);
                     InsertHash(temp, str, TokenType.DayOfWeekToken, i);
 
                     str = GetAbbreviatedDayName((DayOfWeek)i);
@@ -2452,7 +2452,7 @@ namespace System.Globalization
                     // Japanese allows day of week forms like: "(Tue)"
                     for (int i = 0; i < 7; i++)
                     {
-                        String specialDayOfWeek = "(" + GetAbbreviatedDayName((DayOfWeek)i) + ")";
+                        string specialDayOfWeek = "(" + GetAbbreviatedDayName((DayOfWeek)i) + ")";
                         InsertHash(temp, specialDayOfWeek, TokenType.DayOfWeekToken, i);
                     }
                     if (this.Calendar.GetType() != typeof(JapaneseCalendar))
@@ -2488,7 +2488,7 @@ namespace System.Globalization
                 // Add invariant month names and day names.
                 for (int i = 1; i <= 12; i++)
                 {
-                    String str;
+                    string str;
                     // We have to call public methods here to work with inherited DTFI.
                     // Insert the month name first, so that they are at the front of abbreviated
                     // month names.
@@ -2501,7 +2501,7 @@ namespace System.Globalization
                 for (int i = 0; i < 7; i++)
                 {
                     // We have to call public methods here to work with inherited DTFI.
-                    String str = InvariantInfo.GetDayName((DayOfWeek)i);
+                    string str = InvariantInfo.GetDayName((DayOfWeek)i);
                     InsertHash(temp, str, TokenType.DayOfWeekToken, i);
 
                     str = InvariantInfo.GetAbbreviatedDayName((DayOfWeek)i);
@@ -2526,11 +2526,11 @@ namespace System.Globalization
             return (temp);
         }
 
-        private void AddMonthNames(TokenHashValue[] temp, String monthPostfix)
+        private void AddMonthNames(TokenHashValue[] temp, string monthPostfix)
         {
             for (int i = 1; i <= 13; i++)
             {
-                String str;
+                string str;
                 //str = internalGetMonthName(i, MonthNameStyles.Regular, false);
                 // We have to call public methods here to work with inherited DTFI.
                 // Insert the month name first, so that they are at the front of abbreviated
@@ -2568,7 +2568,7 @@ namespace System.Globalization
 
         private static bool TryParseHebrewNumber(
             ref __DTString str,
-            out Boolean badFormat,
+            out bool badFormat,
             out int number)
         {
             number = -1;
@@ -2631,7 +2631,7 @@ namespace System.Globalization
             Debug.Assert(str.Index < str.Value.Length, "DateTimeFormatInfo.Tokenize(): start < value.Length");
 
             char ch = str.m_current;
-            bool isLetter = Char.IsLetter(ch);
+            bool isLetter = char.IsLetter(ch);
             if (isLetter)
             {
                 ch = this.Culture.TextInfo.ToLower(ch);
@@ -2689,7 +2689,7 @@ namespace System.Globalization
                         {
                             // Check word boundary.  The next character should NOT be a letter.
                             char nextCh = str.Value[nextCharIndex];
-                            compareStrings = !(Char.IsLetter(nextCh));
+                            compareStrings = !(char.IsLetter(nextCh));
                         }
                     }
                     
@@ -2724,7 +2724,7 @@ namespace System.Globalization
             return (false);
         }
 
-        private void InsertAtCurrentHashNode(TokenHashValue[] hashTable, String str, char ch, TokenType tokenType, int tokenValue, int pos, int hashcode, int hashProbe)
+        private void InsertAtCurrentHashNode(TokenHashValue[] hashTable, string str, char ch, TokenType tokenType, int tokenValue, int pos, int hashcode, int hashProbe)
         {
             // Remember the current slot.
             TokenHashValue previousNode = hashTable[hashcode];
@@ -2757,7 +2757,7 @@ namespace System.Globalization
             Debug.Fail("The hashtable is full.  This should not happen.");
         }
 
-        private void InsertHash(TokenHashValue[] hashTable, String str, TokenType tokenType, int tokenValue)
+        private void InsertHash(TokenHashValue[] hashTable, string str, TokenType tokenType, int tokenValue)
         {
             // The month of the 13th month is allowed to be null, so make sure that we ignore null value here.
             if (str == null || str.Length == 0)
@@ -2768,7 +2768,7 @@ namespace System.Globalization
             int i = 0;
             // If there is whitespace characters in the beginning and end of the string, trim them since whitespaces are skipped by
             // DateTime.Parse().
-            if (Char.IsWhiteSpace(str[0]) || Char.IsWhiteSpace(str[str.Length - 1]))
+            if (char.IsWhiteSpace(str[0]) || char.IsWhiteSpace(str[str.Length - 1]))
             {
                 str = str.Trim(null);   // Trim white space characters.
                 // Could have space for separators
@@ -2860,11 +2860,11 @@ namespace System.Globalization
 
         internal class TokenHashValue
         {
-            internal String tokenString;
+            internal string tokenString;
             internal TokenType tokenType;
             internal int tokenValue;
 
-            internal TokenHashValue(String tokenString, TokenType tokenType, int tokenValue)
+            internal TokenHashValue(string tokenString, TokenType tokenType, int tokenValue)
             {
                 this.tokenString = tokenString;
                 this.tokenType = tokenType;

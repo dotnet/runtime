@@ -15,13 +15,13 @@ using System.Text;
 namespace System
 {
     // The String class represents a static string of characters.  Many of
-    // the String methods perform some type of transformation on the current
-    // instance and return the result as a new String.  As with arrays, character
+    // the string methods perform some type of transformation on the current
+    // instance and return the result as a new string.  As with arrays, character
     // positions (indices) are zero-based.
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<String>, IEquatable<String>, ICloneable
+    public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<string>, IEquatable<string>, ICloneable
     {
         // String constructors
         // These are special. The implementation methods for these have a different signature from the
@@ -453,7 +453,7 @@ namespace System
 
             for (int i = 0; i < value.Length; i++)
             {
-                if (!Char.IsWhiteSpace(value[i])) return false;
+                if (!char.IsWhiteSpace(value[i])) return false;
             }
 
             return true;
@@ -704,7 +704,7 @@ namespace System
             return Convert.ToDouble(this, provider);
         }
 
-        Decimal IConvertible.ToDecimal(IFormatProvider provider)
+        decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             return Convert.ToDecimal(this, provider);
         }
@@ -714,7 +714,7 @@ namespace System
             return Convert.ToDateTime(this, provider);
         }
 
-        Object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }

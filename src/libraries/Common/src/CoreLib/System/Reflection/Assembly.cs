@@ -141,7 +141,7 @@ namespace System.Reflection
           Returns true if the assembly was loaded from the global assembly cache.
         */
         public virtual bool GlobalAssemblyCache { get { throw NotImplemented.ByDesign; } }
-        public virtual Int64 HostContext { get { throw NotImplemented.ByDesign; } }
+        public virtual long HostContext { get { throw NotImplemented.ByDesign; } }
 
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();

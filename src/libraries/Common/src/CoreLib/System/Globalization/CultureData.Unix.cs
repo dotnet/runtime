@@ -149,7 +149,7 @@ namespace System.Globalization
                 // Failed, just use empty string
                 StringBuilderCache.Release(sb);
                 Debug.Fail("[CultureData.GetLocaleInfo(LocaleStringData)] Failed");
-                return String.Empty;
+                return string.Empty;
             }
             return StringBuilderCache.GetStringAndRelease(sb);
         }
@@ -216,7 +216,7 @@ namespace System.Globalization
                 // Failed, just use empty string
                 StringBuilderCache.Release(sb);
                 Debug.Fail("[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
-                return String.Empty;
+                return string.Empty;
             }
 
             return ConvertIcuTimeFormatString(StringBuilderCache.GetStringAndRelease(sb));

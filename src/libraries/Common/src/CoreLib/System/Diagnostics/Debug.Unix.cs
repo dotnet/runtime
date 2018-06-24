@@ -22,11 +22,11 @@ namespace System.Diagnostics
                 // Fail in order to avoid anyone catching an exception and masking
                 // an assert failure.
                 DebugAssertException ex;
-                if (message == String.Empty) 
+                if (message == string.Empty) 
                 {
                     ex = new DebugAssertException(stackTrace);
                 }
-                else if (detailMessage == String.Empty) 
+                else if (detailMessage == string.Empty) 
                 {
                     ex = new DebugAssertException(message, stackTrace);
                 }
