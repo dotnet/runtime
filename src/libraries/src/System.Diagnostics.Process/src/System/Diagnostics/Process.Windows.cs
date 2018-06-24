@@ -735,9 +735,6 @@ namespace System.Diagnostics
             }
             finally
             {
-#if FEATURE_TRACESWITCH
-                Debug.WriteLineIf(_processTracing.TraceVerbose, "Process - CloseHandle(processToken)");
-#endif
                 if (hToken != null)
                 {
                     hToken.Dispose();
@@ -753,15 +750,6 @@ namespace System.Diagnostics
         /// <internalonly/>
         private SafeProcessHandle GetProcessHandle(int access, bool throwIfExited)
         {
-#if FEATURE_TRACESWITCH
-            Debug.WriteLineIf(_processTracing.TraceVerbose, "GetProcessHandle(access = 0x" + access.ToString("X8", CultureInfo.InvariantCulture) + ", throwIfExited = " + throwIfExited + ")");
-#if DEBUG
-            if (_processTracing.TraceVerbose) {
-                StackFrame calledFrom = new StackTrace(true).GetFrame(0);
-                Debug.WriteLine("   called from " + calledFrom.GetFileName() + ", line " + calledFrom.GetFileLineNumber());
-            }
-#endif
-#endif
             if (_haveProcessHandle)
             {
                 if (throwIfExited)
