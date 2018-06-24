@@ -26,7 +26,7 @@ namespace System.Diagnostics.SymbolStore
         // Define a source document. Guid's will be provided for the
         // languages, vendors, and document types that we currently know
         // about.
-        ISymbolDocumentWriter DefineDocument(String url,
+        ISymbolDocumentWriter DefineDocument(string url,
                                           Guid language,
                                           Guid languageVendor,
                                           Guid documentType);
@@ -86,7 +86,7 @@ namespace System.Diagnostics.SymbolStore
         // variable of the same name that has multiple homes throughout a
         // scope. (Note: start/end offsets must not overlap in such a
         // case.)
-        void DefineLocalVariable(String name,
+        void DefineLocalVariable(string name,
                                         FieldAttributes attributes,
                                         byte[] signature,
                                         SymAddressKind addrKind,
@@ -99,13 +99,13 @@ namespace System.Diagnostics.SymbolStore
         // Defines a custom attribute based upon its name. Not to be
         // confused with Metadata custom attributes, these attributes are
         // held in the symbol store.
-        void SetSymAttribute(SymbolToken parent, String name, byte[] data);
+        void SetSymAttribute(SymbolToken parent, string name, byte[] data);
 
         // Specifies that the given, fully qualified namespace name is
         // being used within the currently open lexical scope. Closing the
         // current scope will also stop using the namespace, and the
         // namespace will be in use in all scopes that inherit from the
         // currently open scope.
-        void UsingNamespace(String fullName);
+        void UsingNamespace(string fullName);
     }
 }

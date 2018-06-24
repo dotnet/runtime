@@ -55,7 +55,7 @@ namespace System
 
         private string[] _Entries;
 #pragma warning disable 169
-        private String _AppBase; // for compat with v1.1
+        private string _AppBase; // for compat with v1.1
 #pragma warning restore 169
 
         // A collection of strings used to indicate which breaking changes shouldn't be applied
@@ -120,12 +120,12 @@ namespace System
             get
             {
                 if (_Entries == null)
-                    _Entries = new String[(int)LoaderInformation.LoaderMaximum];
+                    _Entries = new string[(int)LoaderInformation.LoaderMaximum];
                 return _Entries;
             }
         }
 
-        public String ApplicationBase
+        public string ApplicationBase
         {
             get
             {
@@ -144,12 +144,12 @@ namespace System
             return _CompatFlags;
         }
 
-        public void SetCompatibilitySwitches(IEnumerable<String> switches)
+        public void SetCompatibilitySwitches(IEnumerable<string> switches)
         {
             if (switches != null)
             {
                 _CompatFlags = new Dictionary<string, object>();
-                foreach (String str in switches)
+                foreach (string str in switches)
                 {
                     _CompatFlags.Add(str, null);
                 }
@@ -161,7 +161,7 @@ namespace System
         }
 
         // A target Framework moniker, in a format parsible by the FrameworkName class.
-        public String TargetFrameworkName
+        public string TargetFrameworkName
         {
             get
             {
@@ -169,7 +169,7 @@ namespace System
             }
         }
 
-        public String ApplicationName
+        public string ApplicationName
         {
             get
             {

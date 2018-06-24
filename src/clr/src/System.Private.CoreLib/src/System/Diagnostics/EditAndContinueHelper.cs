@@ -20,7 +20,7 @@ namespace System.Diagnostics
     {
 #pragma warning disable 169
 #pragma warning disable 414  // Field is not used from managed.
-        private Object _objectReference;
+        private object _objectReference;
 #pragma warning restore 414
 #pragma warning restore 169
     }

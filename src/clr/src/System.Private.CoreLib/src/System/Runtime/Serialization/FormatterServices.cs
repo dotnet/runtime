@@ -38,7 +38,7 @@ namespace System.Runtime.Serialization
         // will not create an unitialized string because it is non-sensical to create an empty
         // instance of an immutable type.
         //
-        public static Object GetUninitializedObject(Type type)
+        public static object GetUninitializedObject(Type type)
         {
             if ((object)type == null)
             {
@@ -54,7 +54,7 @@ namespace System.Runtime.Serialization
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Object nativeGetUninitializedObject(RuntimeType type);
+        private static extern object nativeGetUninitializedObject(RuntimeType type);
     }
 }
 

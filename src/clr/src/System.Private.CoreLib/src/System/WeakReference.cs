@@ -37,14 +37,14 @@ namespace System
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
         //
-        public WeakReference(Object target)
+        public WeakReference(object target)
             : this(target, false)
         {
         }
 
         //Creates a new WeakReference that keeps track of target.
         //
-        public WeakReference(Object target, bool trackResurrection)
+        public WeakReference(object target, bool trackResurrection)
         {
             Create(target, trackResurrection);
         }
@@ -56,7 +56,7 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            Object target = info.GetValue("TrackedObject", typeof(Object)); // Do not rename (binary serialization)
+            object target = info.GetValue("TrackedObject", typeof(object)); // Do not rename (binary serialization)
             bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
 
             Create(target, trackResurrection);
@@ -83,7 +83,7 @@ namespace System
         //Gets the Object stored in the handle if it's accessible.
         // Or sets it.
         //
-        public extern virtual Object Target
+        public extern virtual object Target
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
@@ -106,12 +106,12 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(info));
             }
-            info.AddValue("TrackedObject", Target, typeof(Object)); // Do not rename (binary serialization)
+            info.AddValue("TrackedObject", Target, typeof(object)); // Do not rename (binary serialization)
             info.AddValue("TrackResurrection", IsTrackResurrection()); // Do not rename (binary serialization)
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern void Create(Object target, bool trackResurrection);
+        private extern void Create(object target, bool trackResurrection);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern bool IsTrackResurrection();

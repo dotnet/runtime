@@ -44,11 +44,11 @@ namespace System.Reflection.Emit
 
         #region MemberBase
         public override MemberTypes MemberType { get { return m_method.MemberType; } }
-        public override String Name { get { return m_method.Name; } }
+        public override string Name { get { return m_method.Name; } }
         public override Type DeclaringType { get { return m_method.DeclaringType; } }
         public override Type ReflectedType { get { return m_method.ReflectedType; } }
-        public override Object[] GetCustomAttributes(bool inherit) { return m_method.GetCustomAttributes(inherit); }
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit) { return m_method.GetCustomAttributes(attributeType, inherit); }
+        public override object[] GetCustomAttributes(bool inherit) { return m_method.GetCustomAttributes(inherit); }
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return m_method.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return m_method.IsDefined(attributeType, inherit); }
         public override Module Module { get { return m_method.Module; } }
         #endregion
@@ -58,7 +58,7 @@ namespace System.Reflection.Emit
         public override MethodImplAttributes GetMethodImplementationFlags() { return m_method.GetMethodImplementationFlags(); }
         public override RuntimeMethodHandle MethodHandle { get { throw new NotSupportedException(SR.NotSupported_DynamicModule); } }
         public override MethodAttributes Attributes { get { return m_method.Attributes; } }
-        public override Object Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
             throw new NotSupportedException();
         }

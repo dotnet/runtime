@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices
             m_ErrorCode = errorCode;
         }
 
-        public ErrorWrapper(Object errorCode)
+        public ErrorWrapper(object errorCode)
         {
             if (!(errorCode is int))
                 throw new ArgumentException(SR.Arg_MustBeInt32, nameof(errorCode));

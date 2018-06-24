@@ -22,7 +22,7 @@ namespace System
         private IntPtr Type;
 
         [CLSCompliant(false)]
-        public static TypedReference MakeTypedReference(Object target, FieldInfo[] flds)
+        public static TypedReference MakeTypedReference(object target, FieldInfo[] flds)
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
@@ -70,7 +70,7 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         // reference to TypedReference is banned, so have to pass result as pointer
-        private static extern unsafe void InternalMakeTypedReference(void* result, Object target, IntPtr[] flds, RuntimeType lastFieldType);
+        private static extern unsafe void InternalMakeTypedReference(void* result, object target, IntPtr[] flds, RuntimeType lastFieldType);
 
         public override int GetHashCode()
         {
@@ -80,18 +80,18 @@ namespace System
                 return __reftype(this).GetHashCode();
         }
 
-        public override bool Equals(Object o)
+        public override bool Equals(object o)
         {
             throw new NotSupportedException(SR.NotSupported_NYI);
         }
 
-        public static unsafe Object ToObject(TypedReference value)
+        public static unsafe object ToObject(TypedReference value)
         {
             return InternalToObject(&value);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe Object InternalToObject(void* value);
+        internal static extern unsafe object InternalToObject(void* value);
 
         internal bool IsNull
         {
@@ -113,12 +113,12 @@ namespace System
 
         //  This may cause the type to be changed.
         [CLSCompliant(false)]
-        public static unsafe void SetTypedReference(TypedReference target, Object value)
+        public static unsafe void SetTypedReference(TypedReference target, object value)
         {
             InternalSetTypedReference(&target, value);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void InternalSetTypedReference(void* target, Object value);
+        internal static extern unsafe void InternalSetTypedReference(void* target, object value);
     }
 }

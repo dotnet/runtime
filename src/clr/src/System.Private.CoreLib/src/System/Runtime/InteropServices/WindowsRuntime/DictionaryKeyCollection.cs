@@ -106,7 +106,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return enumeration.MoveNext();
         }
 
-        Object IEnumerator.Current
+        object IEnumerator.Current
         {
             get { return ((IEnumerator<TKey>)this).Current; }
         }

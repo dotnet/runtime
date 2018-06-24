@@ -6,16 +6,16 @@ namespace System
 {
     public class UnhandledExceptionEventArgs : EventArgs
     {
-        private Object _exception;
+        private object _exception;
         private bool _isTerminating;
 
-        public UnhandledExceptionEventArgs(Object exception, bool isTerminating)
+        public UnhandledExceptionEventArgs(object exception, bool isTerminating)
         {
             _exception = exception;
             _isTerminating = isTerminating;
         }
 
-        public Object ExceptionObject
+        public object ExceptionObject
         {
             get { return _exception; }
         }

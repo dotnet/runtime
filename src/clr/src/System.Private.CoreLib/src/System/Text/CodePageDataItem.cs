@@ -21,9 +21,9 @@ namespace System.Text
     {
         internal int m_dataIndex;
         internal int m_uiFamilyCodePage;
-        internal String m_webName;
-        internal String m_headerName;
-        internal String m_bodyName;
+        internal string m_webName;
+        internal string m_headerName;
+        internal string m_bodyName;
         internal uint m_flags;
 
         internal unsafe CodePageDataItem(int dataIndex)
@@ -33,7 +33,7 @@ namespace System.Text
             m_flags = EncodingTable.codePageDataPtr[dataIndex].flags;
         }
 
-        internal static unsafe String CreateString(sbyte* pStrings, uint index)
+        internal static unsafe string CreateString(sbyte* pStrings, uint index)
         {
             if (pStrings[0] == '|') // |str1|str2|str3
             {
@@ -47,7 +47,7 @@ namespace System.Text
                     {
                         if (index == 0)
                         {
-                            return new String(pStrings, start, i - start);
+                            return new string(pStrings, start, i - start);
                         }
 
                         index--;
@@ -64,11 +64,11 @@ namespace System.Text
             }
             else
             {
-                return new String(pStrings);
+                return new string(pStrings);
             }
         }
 
-        public unsafe String WebName
+        public unsafe string WebName
         {
             get
             {
@@ -88,7 +88,7 @@ namespace System.Text
             }
         }
 
-        public unsafe String HeaderName
+        public unsafe string HeaderName
         {
             get
             {
@@ -100,7 +100,7 @@ namespace System.Text
             }
         }
 
-        public unsafe String BodyName
+        public unsafe string BodyName
         {
             get
             {

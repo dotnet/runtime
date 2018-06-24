@@ -70,7 +70,7 @@ namespace System.Threading
         public static extern double Exchange(ref double location1, double value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern Object Exchange(ref Object location1, Object value);
+        public static extern object Exchange(ref object location1, object value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern IntPtr Exchange(ref IntPtr location1, IntPtr value);
@@ -106,7 +106,7 @@ namespace System.Threading
         public static extern double CompareExchange(ref double location1, double value, double comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern Object CompareExchange(ref Object location1, Object value, Object comparand);
+        public static extern object CompareExchange(ref object location1, object value, object comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand);

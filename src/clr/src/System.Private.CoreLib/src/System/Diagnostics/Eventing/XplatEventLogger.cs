@@ -71,10 +71,10 @@ namespace System.Diagnostics.Tracing
         private static string Serialize(ReadOnlyCollection<string> payloadName, ReadOnlyCollection<object> payload, string eventMessage)
         {
             if (payloadName == null || payload == null )
-                return String.Empty;
+                return string.Empty;
 
             if (payloadName.Count == 0 || payload.Count == 0)
-                return String.Empty;
+                return string.Empty;
 
             int eventDataCount = payloadName.Count;
 
@@ -157,7 +157,7 @@ namespace System.Diagnostics.Tracing
         internal protected  override void OnEventSourceCreated(EventSource eventSource)
         {
             string eventSourceFilter = eventSourceNameFilter.Value;
-            if (String.IsNullOrEmpty(eventSourceFilter) || (eventSource.Name.IndexOf(eventSourceFilter, StringComparison.OrdinalIgnoreCase) >= 0))
+            if (string.IsNullOrEmpty(eventSourceFilter) || (eventSource.Name.IndexOf(eventSourceFilter, StringComparison.OrdinalIgnoreCase) >= 0))
             {   
                 EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All, null);
             }
@@ -166,7 +166,7 @@ namespace System.Diagnostics.Tracing
         internal protected  override void OnEventWritten(EventWrittenEventArgs eventData)
         {
             string eventFilter = eventSourceEventFilter.Value;
-            if (String.IsNullOrEmpty(eventFilter) || (eventData.EventName.IndexOf(eventFilter, StringComparison.OrdinalIgnoreCase) >= 0))
+            if (string.IsNullOrEmpty(eventFilter) || (eventData.EventName.IndexOf(eventFilter, StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 LogOnEventWritten(eventData);
             }

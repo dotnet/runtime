@@ -18,12 +18,12 @@ namespace System.Runtime.InteropServices
 {
     public sealed class VariantWrapper
     {
-        public VariantWrapper(Object obj)
+        public VariantWrapper(object obj)
         {
             m_WrappedObject = obj;
         }
 
-        public Object WrappedObject
+        public object WrappedObject
         {
             get
             {
@@ -31,6 +31,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private Object m_WrappedObject;
+        private object m_WrappedObject;
     }
 }

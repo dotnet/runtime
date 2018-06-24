@@ -22,7 +22,7 @@ namespace System.Reflection.Emit
     public class ParameterBuilder
     {
         // Set the default value of the parameter
-        public virtual void SetConstant(Object defaultValue)
+        public virtual void SetConstant(object defaultValue)
         {
             TypeBuilder.SetConstantValue(
                 m_methodBuilder.GetModuleBuilder(),
@@ -62,7 +62,7 @@ namespace System.Reflection.Emit
             MethodBuilder methodBuilder,
             int sequence,
             ParameterAttributes attributes,
-            String strParamName)            // can be NULL string
+            string strParamName)            // can be NULL string
         {
             m_iPosition = sequence;
             m_strParamName = strParamName;
@@ -82,7 +82,7 @@ namespace System.Reflection.Emit
             return m_pdToken;
         }
 
-        public virtual String Name
+        public virtual string Name
         {
             get { return m_strParamName; }
         }
@@ -110,7 +110,7 @@ namespace System.Reflection.Emit
             get { return ((m_attributes & ParameterAttributes.Optional) != 0); }
         }
 
-        private String m_strParamName;
+        private string m_strParamName;
         private int m_iPosition;
         private ParameterAttributes m_attributes;
         private MethodBuilder m_methodBuilder;

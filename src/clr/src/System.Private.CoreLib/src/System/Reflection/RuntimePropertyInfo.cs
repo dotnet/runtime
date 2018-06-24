@@ -120,7 +120,7 @@ namespace System.Reflection
         #endregion
 
         #region Object Overrides
-        public override String ToString()
+        public override string ToString()
         {
             return FormatNameAndSig(false);
         }
@@ -145,12 +145,12 @@ namespace System.Reflection
         #endregion
 
         #region ICustomAttributeProvider
-        public override Object[] GetCustomAttributes(bool inherit)
+        public override object[] GetCustomAttributes(bool inherit)
         {
             return CustomAttribute.GetCustomAttributes(this, typeof(object) as RuntimeType);
         }
 
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
@@ -184,7 +184,7 @@ namespace System.Reflection
 
         #region MemberInfo Overrides
         public override MemberTypes MemberType { get { return MemberTypes.Property; } }
-        public override String Name
+        public override string Name
         {
             get
             {
@@ -242,7 +242,7 @@ namespace System.Reflection
 
         internal object GetConstantValue(bool raw)
         {
-            Object defaultValue = MdConstant.GetValue(GetRuntimeModule().MetadataImport, m_token, PropertyType.GetTypeHandleInternal(), raw);
+            object defaultValue = MdConstant.GetValue(GetRuntimeModule().MetadataImport, m_token, PropertyType.GetTypeHandleInternal(), raw);
 
             if (defaultValue == DBNull.Value)
                 // Arg_EnumLitValueNotFound -> "Literal value was not found."
@@ -385,7 +385,7 @@ namespace System.Reflection
         #region Dynamic
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override Object GetValue(Object obj, Object[] index)
+        public override object GetValue(object obj, object[] index)
         {
             return GetValue(obj, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
                 null, index, null);
@@ -393,7 +393,7 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override Object GetValue(Object obj, BindingFlags invokeAttr, Binder binder, Object[] index, CultureInfo culture)
+        public override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
             MethodInfo m = GetGetMethod(true);
             if (m == null)
@@ -403,7 +403,7 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override void SetValue(Object obj, Object value, Object[] index)
+        public override void SetValue(object obj, object value, object[] index)
         {
             SetValue(obj,
                     value,
@@ -415,18 +415,18 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override void SetValue(Object obj, Object value, BindingFlags invokeAttr, Binder binder, Object[] index, CultureInfo culture)
+        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
             MethodInfo m = GetSetMethod(true);
 
             if (m == null)
                 throw new ArgumentException(System.SR.Arg_SetMethNotFnd);
 
-            Object[] args = null;
+            object[] args = null;
 
             if (index != null)
             {
-                args = new Object[index.Length + 1];
+                args = new object[index.Length + 1];
 
                 for (int i = 0; i < index.Length; i++)
                     args[i] = index[i];
@@ -435,7 +435,7 @@ namespace System.Reflection
             }
             else
             {
-                args = new Object[1];
+                args = new object[1];
                 args[0] = value;
             }
 

@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices
         //    throw new Exception();
         //}
 
-        public ArrayWithOffset(Object array, int offset)
+        public ArrayWithOffset(object array, int offset)
         {
             m_array = array;
             m_offset = offset;
@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices
             m_count = CalculateCount();
         }
 
-        public Object GetArray()
+        public object GetArray()
         {
             return m_array;
         }
@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices
             return m_count + m_offset;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is ArrayWithOffset)
                 return Equals((ArrayWithOffset)obj);
@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern int CalculateCount();
 
-        private Object m_array;
+        private object m_array;
         private int m_offset;
         private int m_count;
     }

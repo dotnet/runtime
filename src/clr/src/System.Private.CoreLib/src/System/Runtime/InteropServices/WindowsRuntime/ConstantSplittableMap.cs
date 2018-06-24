@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             private static readonly IComparer<TKey> keyComparator = Comparer<TKey>.Default;
 
-            public Int32 Compare(KeyValuePair<TKey, TValue> x, KeyValuePair<TKey, TValue> y)
+            public int Compare(KeyValuePair<TKey, TValue> x, KeyValuePair<TKey, TValue> y)
             {
                 return keyComparator.Compare(x.Key, y.Key);
             }
@@ -52,7 +52,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
 
-        private ConstantSplittableMap(KeyValuePair<TKey, TValue>[] items, Int32 firstItemIndex, Int32 lastItemIndex)
+        private ConstantSplittableMap(KeyValuePair<TKey, TValue>[] items, int firstItemIndex, int lastItemIndex)
         {
             this.items = items;
             this.firstItemIndex = firstItemIndex;
@@ -60,11 +60,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
 
-        private KeyValuePair<TKey, TValue>[] CreateKeyValueArray(Int32 count, IEnumerator<KeyValuePair<TKey, TValue>> data)
+        private KeyValuePair<TKey, TValue>[] CreateKeyValueArray(int count, IEnumerator<KeyValuePair<TKey, TValue>> data)
         {
             KeyValuePair<TKey, TValue>[] kvArray = new KeyValuePair<TKey, TValue>[count];
 
-            Int32 i = 0;
+            int i = 0;
             while (data.MoveNext())
                 kvArray[i++] = data.Current;
 
@@ -84,11 +84,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
 
         // [CLSCompliant(false)]
-        public UInt32 Size
+        public uint Size
         {
             get
             {
-                return (UInt32)(lastItemIndex - firstItemIndex + 1);
+                return (uint)(lastItemIndex - firstItemIndex + 1);
             }
         }
 
@@ -140,7 +140,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 return;
             }
 
-            int pivot = (Int32)(((Int64)firstItemIndex + (Int64)lastItemIndex) / (Int64)2);
+            int pivot = (int)(((long)firstItemIndex + (long)lastItemIndex) / (long)2);
 
             firstPartition = new ConstantSplittableMap<TKey, TValue>(items, firstItemIndex, pivot);
             secondPartition = new ConstantSplittableMap<TKey, TValue>(items, pivot + 1, lastItemIndex);
@@ -208,7 +208,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
             }
 
-            Object IEnumerator.Current
+            object IEnumerator.Current
             {
                 get
                 {

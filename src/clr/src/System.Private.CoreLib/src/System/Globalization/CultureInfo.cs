@@ -371,7 +371,7 @@ namespace System.Globalization
             {
                 char c = cultureName[i];
                 // TODO: Names can only be RFC4646 names (ie: a-zA-Z0-9) while this allows any unicode letter/digit
-                if (Char.IsLetterOrDigit(c) || c == '-' || c == '_')
+                if (char.IsLetterOrDigit(c) || c == '-' || c == '_')
                 {
                     continue;
                 }
@@ -736,15 +736,15 @@ namespace System.Globalization
         //
         //  Equals
         //
-        //  Implements Object.Equals().  Returns a boolean indicating whether
+        //  Implements object.Equals().  Returns a boolean indicating whether
         //  or not object refers to the same CultureInfo as the current instance.
         //
         ////////////////////////////////////////////////////////////////////////
 
 
-        public override bool Equals(Object value)
+        public override bool Equals(object value)
         {
-            if (Object.ReferenceEquals(this, value))
+            if (object.ReferenceEquals(this, value))
                 return true;
 
             CultureInfo that = value as CultureInfo;
@@ -765,7 +765,7 @@ namespace System.Globalization
         //
         //  GetHashCode
         //
-        //  Implements Object.GetHashCode().  Returns the hash code for the
+        //  Implements object.GetHashCode().  Returns the hash code for the
         //  CultureInfo.  The hash code is guaranteed to be the same for CultureInfo A
         //  and B where A.Equals(B) is true.
         //
@@ -781,7 +781,7 @@ namespace System.Globalization
         //
         //  ToString
         //
-        //  Implements Object.ToString().  Returns the name of the CultureInfo,
+        //  Implements object.ToString().  Returns the name of the CultureInfo,
         //  eg. "de-DE_phoneb", "en-US", or "fj-FJ".
         //
         ////////////////////////////////////////////////////////////////////////

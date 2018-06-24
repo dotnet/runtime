@@ -41,7 +41,7 @@ namespace System.Reflection.Emit
             return m_class;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is TypeToken)
                 return Equals((TypeToken)obj);

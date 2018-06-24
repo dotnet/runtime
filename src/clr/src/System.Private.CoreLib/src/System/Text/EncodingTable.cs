@@ -51,7 +51,7 @@ namespace System.Text
 
         // Find the data item by binary searching the table that we have in native.
         // nativeCompareOrdinalWC is an internal-only function.
-        private static unsafe int internalGetCodePageFromName(String name)
+        private static unsafe int internalGetCodePageFromName(string name)
         {
             int left = 0;
             int right = lastEncodingItem;
@@ -133,14 +133,14 @@ namespace System.Text
         **  internalGetCodePageFromName will throw ArgumentException if name is not a valid encoding name.
         ============================================================================*/
 
-        internal static int GetCodePageFromName(String name)
+        internal static int GetCodePageFromName(string name)
         {
             if (name == null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            Object codePageObj;
+            object codePageObj;
 
             //
             // The name is case-insensitive, but ToLower isn't free.  Check for
@@ -217,7 +217,7 @@ namespace System.Text
         //This will not work in case-insensitive mode for any character greater than 0x7F.  
         //We'll throw an ArgumentException.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe int nativeCompareOrdinalIgnoreCaseWC(String strA, sbyte* strBBytes);
+        private static extern unsafe int nativeCompareOrdinalIgnoreCaseWC(string strA, sbyte* strBBytes);
     }
 
     /*=================================InternalEncodingDataItem==========================
@@ -231,7 +231,7 @@ namespace System.Text
     internal unsafe struct InternalEncodingDataItem
     {
         internal sbyte* webName;
-        internal UInt16 codePage;
+        internal ushort codePage;
     }
 
     /*=================================InternalCodePageDataItem==========================
@@ -242,8 +242,8 @@ namespace System.Text
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
     internal unsafe struct InternalCodePageDataItem
     {
-        internal UInt16 codePage;
-        internal UInt16 uiFamilyCodePage;
+        internal ushort codePage;
+        internal ushort uiFamilyCodePage;
         internal uint flags;
         internal sbyte* Names;
     }

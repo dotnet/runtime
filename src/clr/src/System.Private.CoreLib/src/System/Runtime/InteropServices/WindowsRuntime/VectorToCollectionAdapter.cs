@@ -35,7 +35,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             IVector<T> _this = Unsafe.As<IVector<T>>(this);
             uint size = _this.Size;
-            if (((uint)Int32.MaxValue) < size)
+            if (((uint)int.MaxValue) < size)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
             }
@@ -107,7 +107,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (!exists)
                 return false;
 
-            if (((uint)Int32.MaxValue) < index)
+            if (((uint)int.MaxValue) < index)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
             }

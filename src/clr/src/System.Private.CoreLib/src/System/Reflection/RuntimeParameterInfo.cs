@@ -201,7 +201,7 @@ namespace System.Reflection
         }
 
         // ctor for no metadata MethodInfo in the DynamicMethod and RuntimeMethodInfo cases
-        internal RuntimeParameterInfo(MethodInfo owner, String name, Type parameterType, int position)
+        internal RuntimeParameterInfo(MethodInfo owner, string name, Type parameterType, int position)
         {
             MemberImpl = owner;
             NameImpl = name;
@@ -238,7 +238,7 @@ namespace System.Reflection
             }
         }
 
-        public override String Name
+        public override string Name
         {
             get
             {
@@ -274,10 +274,10 @@ namespace System.Reflection
             }
         }
 
-        public override Object DefaultValue { get { return GetDefaultValue(false); } }
-        public override Object RawDefaultValue { get { return GetDefaultValue(true); } }
+        public override object DefaultValue { get { return GetDefaultValue(false); } }
+        public override object RawDefaultValue { get { return GetDefaultValue(true); } }
 
-        private Object GetDefaultValue(bool raw)
+        private object GetDefaultValue(bool raw)
         {
             // OLD COMMENT (Is this even true?)
             // Cannot cache because default value could be non-agile user defined enumeration.
@@ -303,7 +303,7 @@ namespace System.Reflection
         }
 
         // returns DBNull.Value if the parameter doesn't have a default value
-        private Object GetDefaultValueInternal(bool raw)
+        private object GetDefaultValueInternal(bool raw)
         {
             Debug.Assert(!m_noMetadata);
 
@@ -371,7 +371,7 @@ namespace System.Reflection
                 }
                 else
                 {
-                    Object[] CustomAttrs = GetCustomAttributes(s_CustomConstantAttributeType, false);
+                    object[] CustomAttrs = GetCustomAttributes(s_CustomConstantAttributeType, false);
                     if (CustomAttrs.Length != 0)
                     {
                         defaultValue = ((CustomConstantAttribute)CustomAttrs[0]).Value;
@@ -394,7 +394,7 @@ namespace System.Reflection
             return defaultValue;
         }
 
-        private static Decimal GetRawDecimalConstant(CustomAttributeData attr)
+        private static decimal GetRawDecimalConstant(CustomAttributeData attr)
         {
             Debug.Assert(attr.Constructor.DeclaringType == typeof(DecimalConstantAttribute));
 
@@ -404,7 +404,7 @@ namespace System.Reflection
                 {
                     // This is not possible because Decimal cannot be represented directly in the metadata.
                     Debug.Fail("Decimal cannot be represented directly in the metadata.");
-                    return (Decimal)namedArgument.TypedValue.Value;
+                    return (decimal)namedArgument.TypedValue.Value;
                 }
             }
 
@@ -417,9 +417,9 @@ namespace System.Reflection
             if (parameters[2].ParameterType == typeof(uint))
             {
                 // DecimalConstantAttribute(byte scale, byte sign, uint hi, uint mid, uint low)
-                int low = (int)(UInt32)args[4].Value;
-                int mid = (int)(UInt32)args[3].Value;
-                int hi = (int)(UInt32)args[2].Value;
+                int low = (int)(uint)args[4].Value;
+                int mid = (int)(uint)args[3].Value;
+                int hi = (int)(uint)args[2].Value;
                 byte sign = (byte)args[1].Value;
                 byte scale = (byte)args[0].Value;
 
@@ -505,21 +505,21 @@ namespace System.Reflection
         #endregion
 
         #region ICustomAttributeProvider
-        public override Object[] GetCustomAttributes(bool inherit)
+        public override object[] GetCustomAttributes(bool inherit)
         {
             if (MdToken.IsNullToken(m_tkParamDef))
-                return Array.Empty<Object>();
+                return Array.Empty<object>();
 
             return CustomAttribute.GetCustomAttributes(this, typeof(object) as RuntimeType);
         }
 
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (MdToken.IsNullToken(m_tkParamDef))
-                return Array.Empty<Object>();
+                return Array.Empty<object>();
 
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 

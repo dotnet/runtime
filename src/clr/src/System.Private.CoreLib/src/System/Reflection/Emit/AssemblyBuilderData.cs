@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
     {
         internal AssemblyBuilderData(
             InternalAssemblyBuilder assembly,
-            String strAssemblyName,
+            string strAssemblyName,
             AssemblyBuilderAccess access)
         {
             m_assembly = assembly;
@@ -95,7 +95,7 @@ namespace System.Reflection.Emit
         }
 
         // Helper to ensure the type name is unique underneath assemblyBuilder
-        internal void CheckTypeNameConflict(String strTypeName, TypeBuilder enclosingType)
+        internal void CheckTypeNameConflict(string strTypeName, TypeBuilder enclosingType)
         {
             for (int i = 0; i < m_moduleBuilderList.Count; i++)
             {
@@ -116,7 +116,7 @@ namespace System.Reflection.Emit
 
         internal List<ModuleBuilder> m_moduleBuilderList;
         internal List<ResWriterData> m_resWriterList;
-        internal String m_strAssemblyName;
+        internal string m_strAssemblyName;
         internal AssemblyBuilderAccess m_access;
         private InternalAssemblyBuilder m_assembly;
 
@@ -140,7 +140,7 @@ namespace System.Reflection.Emit
         internal Assembly m_ISymWrapperAssembly;
 
         // For unmanaged resources
-        internal String m_strResourceFileName;
+        internal string m_strResourceFileName;
         internal byte[] m_resourceBytes;
         internal NativeVersionInfo m_nativeVersion;
         internal bool m_hasUnmanagedVersionInfo;
@@ -156,9 +156,9 @@ namespace System.Reflection.Emit
     **********************************************/
     internal class ResWriterData
     {
-        internal String m_strName;
-        internal String m_strFileName;
-        internal String m_strFullFileName;
+        internal string m_strName;
+        internal string m_strFileName;
+        internal string m_strFullFileName;
         internal Stream m_memoryStream;
         internal ResWriterData m_nextResWriter;
         internal ResourceAttributes m_attribute;
@@ -179,14 +179,14 @@ namespace System.Reflection.Emit
             m_lcid = -1;
         }
 
-        internal String m_strDescription;
-        internal String m_strCompany;
-        internal String m_strTitle;
-        internal String m_strCopyright;
-        internal String m_strTrademark;
-        internal String m_strProduct;
-        internal String m_strProductVersion;
-        internal String m_strFileVersion;
+        internal string m_strDescription;
+        internal string m_strCompany;
+        internal string m_strTitle;
+        internal string m_strCopyright;
+        internal string m_strTrademark;
+        internal string m_strProduct;
+        internal string m_strProductVersion;
+        internal string m_strFileVersion;
         internal int m_lcid;
     }
 }

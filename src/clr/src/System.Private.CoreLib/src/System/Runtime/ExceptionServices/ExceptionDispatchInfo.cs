@@ -35,7 +35,7 @@ namespace System.Runtime.ExceptionServices
         private object m_stackTrace;
         private object m_dynamicMethods;
         private UIntPtr m_IPForWatsonBuckets;
-        private Object m_WatsonBuckets;
+        private object m_WatsonBuckets;
 
         private ExceptionDispatchInfo(Exception exception)
         {

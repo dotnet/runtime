@@ -30,7 +30,7 @@ namespace System.Reflection.Emit
         //
         internal PropertyBuilder(
             ModuleBuilder mod,            // the module containing this PropertyBuilder
-            String name,           // property name
+            string name,           // property name
             SignatureHelper sig,            // property signature descriptor info
             PropertyAttributes attr,           // property attribute such as DefaultProperty, Bindable, DisplayBind, etc
             Type returnType,     // return type of the property.
@@ -57,7 +57,7 @@ namespace System.Reflection.Emit
         //************************************************
         // Set the default value of the Property
         //************************************************
-        public void SetConstant(Object defaultValue)
+        public void SetConstant(object defaultValue)
         {
             m_containingType.ThrowIfCreated();
 
@@ -146,22 +146,22 @@ namespace System.Reflection.Emit
         }
 
         // Not supported functions in dynamic module.
-        public override Object GetValue(Object obj, Object[] index)
+        public override object GetValue(object obj, object[] index)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
-        public override Object GetValue(Object obj, BindingFlags invokeAttr, Binder binder, Object[] index, CultureInfo culture)
+        public override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
-        public override void SetValue(Object obj, Object value, Object[] index)
+        public override void SetValue(object obj, object value, object[] index)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
-        public override void SetValue(Object obj, Object value, BindingFlags invokeAttr, Binder binder, Object[] index, CultureInfo culture)
+        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
@@ -216,12 +216,12 @@ namespace System.Reflection.Emit
             get { if (m_setMethod != null) return true; else return false; }
         }
 
-        public override Object[] GetCustomAttributes(bool inherit)
+        public override object[] GetCustomAttributes(bool inherit)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
@@ -231,7 +231,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
-        public override String Name
+        public override string Name
         {
             get { return m_name; }
         }
@@ -247,7 +247,7 @@ namespace System.Reflection.Emit
         }
 
         // These are package private so that TypeBuilder can access them.
-        private String m_name;                // The name of the property
+        private string m_name;                // The name of the property
         private PropertyToken m_prToken;            // The token of this property
         private int m_tkProperty;
         private ModuleBuilder m_moduleBuilder;

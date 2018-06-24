@@ -90,12 +90,12 @@ namespace System.Threading
         }
 
 
-        public virtual void Send(SendOrPostCallback d, Object state)
+        public virtual void Send(SendOrPostCallback d, object state)
         {
             d(state);
         }
 
-        public virtual void Post(SendOrPostCallback d, Object state)
+        public virtual void Post(SendOrPostCallback d, object state)
         {
             ThreadPool.QueueUserWorkItem(s => s.d(s.state), (d, state), preferLocal: false);
         }

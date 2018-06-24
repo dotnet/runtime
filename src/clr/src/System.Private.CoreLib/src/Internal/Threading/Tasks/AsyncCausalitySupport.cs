@@ -41,7 +41,7 @@ namespace Internal.Threading.Tasks
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void TraceOperationCreation(Task task, String operationName)
+        public static void TraceOperationCreation(Task task, string operationName)
         {
             AsyncCausalityTracer.TraceOperationCreation(CausalityTraceLevel.Required, task.Id, operationName, 0);
         }
