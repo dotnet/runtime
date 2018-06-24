@@ -420,6 +420,11 @@ namespace System.Drawing
 
             RectangleF[] rectangles = new RectangleF[count];
 
+            // Pinning an empty array gives null, libgdiplus doesn't like this.
+            // As invoking isn't necessary, just return the empty array.
+            if (count == 0)
+                return rectangles;
+
             fixed (RectangleF* r = rectangles)
             {
                 Gdip.CheckStatus(Gdip.GdipGetRegionScans
