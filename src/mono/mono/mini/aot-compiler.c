@@ -1083,7 +1083,11 @@ arch_init (MonoAotCompile *acfg)
 		g_string_append (acfg->llc_args, " -mattr=+vfp2,-neon,+d16");
 		g_string_append (acfg->as_args, " -mfpu=vfp3");
 #else
+#ifdef LLVM_API_VERSION > 100
+		g_string_append (acfg->llc_args, " -mattr=+soft-float");
+#else
 		g_string_append (acfg->llc_args, " -soft-float");
+#endif
 #endif
 	}
 	if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "thumb"))
