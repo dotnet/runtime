@@ -34,16 +34,16 @@ namespace System.Resources
         // Consider modifying IResourceGroveler interface (hence this method signature) when we figure out 
         // serialization compat story for moving ResourceManager members to either file-based or 
         // manifest-based classes. Want to continue tightening the design to get rid of unused params.
-        public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<String, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists, ref StackCrawlMark stackMark)
+        public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<string, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists, ref StackCrawlMark stackMark)
         {
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
 
-            String fileName = null;
+            string fileName = null;
             ResourceSet rs = null;
 
             // Don't use Assembly manifest, but grovel on disk for a file.
             // Create new ResourceSet, if a file exists on disk for it.
-            String tempFileName = _mediator.GetResourceFileName(culture);
+            string tempFileName = _mediator.GetResourceFileName(culture);
             fileName = FindResourceFile(culture, tempFileName);
             if (fileName == null)
             {
@@ -73,7 +73,7 @@ namespace System.Resources
         // diretory or the module dir wasn't provided, look in the current
         // directory.
 
-        private String FindResourceFile(CultureInfo culture, String fileName)
+        private string FindResourceFile(CultureInfo culture, string fileName)
         {
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
             Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
@@ -82,7 +82,7 @@ namespace System.Resources
             // qualified name, append path to that.
             if (_mediator.ModuleDir != null)
             {
-                String path = Path.Combine(_mediator.ModuleDir, fileName);
+                string path = Path.Combine(_mediator.ModuleDir, fileName);
                 if (File.Exists(path))
                 {
                     return path;
@@ -97,7 +97,7 @@ namespace System.Resources
         }
 
         // Constructs a new ResourceSet for a given file name.
-        private ResourceSet CreateResourceSet(String file)
+        private ResourceSet CreateResourceSet(string file)
         {
             Debug.Assert(file != null, "file shouldn't be null; check caller");
 
@@ -107,7 +107,7 @@ namespace System.Resources
             }
             else
             {
-                Object[] args = new Object[1];
+                object[] args = new object[1];
                 args[0] = file;
                 try
                 {

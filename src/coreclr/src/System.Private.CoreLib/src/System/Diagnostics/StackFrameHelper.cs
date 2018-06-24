@@ -30,7 +30,7 @@ namespace System.Diagnostics
 #pragma warning disable 414
         // dynamicMethods is an array of System.Resolver objects, used to keep
         // DynamicMethodDescs alive for the lifetime of StackFrameHelper.
-        private Object dynamicMethods; // Field is not used from managed.        
+        private object dynamicMethods; // Field is not used from managed.        
 
         private IntPtr[] rgMethodHandle;
         private string[] rgAssemblyPath;

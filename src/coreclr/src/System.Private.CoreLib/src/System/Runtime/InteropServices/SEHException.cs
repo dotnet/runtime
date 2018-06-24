@@ -28,13 +28,13 @@ namespace System.Runtime.InteropServices
             HResult = HResults.E_FAIL;
         }
 
-        public SEHException(String message)
+        public SEHException(string message)
             : base(message)
         {
             HResult = HResults.E_FAIL;
         }
 
-        public SEHException(String message, Exception inner)
+        public SEHException(string message, Exception inner)
             : base(message, inner)
         {
             HResult = HResults.E_FAIL;

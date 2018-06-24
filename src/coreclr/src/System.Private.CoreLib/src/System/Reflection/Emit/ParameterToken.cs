@@ -41,7 +41,7 @@ namespace System.Reflection.Emit
             return m_tkParameter;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is ParameterToken)
                 return Equals((ParameterToken)obj);

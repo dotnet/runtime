@@ -21,7 +21,7 @@ namespace System.Reflection.Emit
     {
         #region Private Data Members
         // Identity
-        internal String m_strName; // The name of the method
+        internal string m_strName; // The name of the method
         private MethodToken m_tkMethod; // The token of this method
         private ModuleBuilder m_module;
         internal TypeBuilder m_containingType;
@@ -62,7 +62,7 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        internal MethodBuilder(String name, MethodAttributes attributes, CallingConventions callingConvention,
+        internal MethodBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers,
             Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers,
             ModuleBuilder mod, TypeBuilder type, bool bIsGlobalMethod)
@@ -73,7 +73,7 @@ namespace System.Reflection.Emit
                 mod, type, bIsGlobalMethod);
         }
 
-        private void Init(String name, MethodAttributes attributes, CallingConventions callingConvention,
+        private void Init(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers,
             Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers,
             ModuleBuilder mod, TypeBuilder type, bool bIsGlobalMethod)
@@ -460,7 +460,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Object Overrides
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (!(obj is MethodBuilder))
             {
@@ -489,7 +489,7 @@ namespace System.Reflection.Emit
             return this.m_strName.GetHashCode();
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             StringBuilder sb = new StringBuilder(1000);
             sb.Append("Name: " + m_strName + " " + Environment.NewLine);
@@ -502,7 +502,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
-        public override String Name
+        public override string Name
         {
             get
             {
@@ -555,7 +555,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MethodBase Overrides
-        public override Object Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
@@ -635,12 +635,12 @@ namespace System.Reflection.Emit
         #endregion
 
         #region ICustomAttributeProvider Implementation
-        public override Object[] GetCustomAttributes(bool inherit)
+        public override object[] GetCustomAttributes(bool inherit)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
@@ -817,7 +817,7 @@ namespace System.Reflection.Emit
         }
 
 
-        public ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, String strParamName)
+        public ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, string strParamName)
         {
             if (position < 0)
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
@@ -835,7 +835,7 @@ namespace System.Reflection.Emit
         private List<SymCustomAttr> m_symCustomAttrs;
         private struct SymCustomAttr
         {
-            public String m_name;
+            public string m_name;
             public byte[] m_data;
         }
 
@@ -898,7 +898,7 @@ namespace System.Reflection.Emit
             return GetModuleBuilder();
         }
 
-        public String Signature
+        public string Signature
         {
             get
             {
@@ -979,13 +979,13 @@ namespace System.Reflection.Emit
         // and namespace information with a given active lexical scope.
 
         #region Internal Data Members
-        internal String[] m_strName;
+        internal string[] m_strName;
         internal byte[][] m_ubSignature;
         internal int[] m_iLocalSlot;
         internal int[] m_iStartOffset;
         internal int[] m_iEndOffset;
         internal int m_iLocalSymCount;         // how many entries in the arrays are occupied
-        internal String[] m_namespace;
+        internal string[] m_namespace;
         internal int m_iNameSpaceCount;
         internal const int InitialSize = 16;
         #endregion
@@ -1004,11 +1004,11 @@ namespace System.Reflection.Emit
         {
             if (m_iNameSpaceCount == 0)
             {
-                m_namespace = new String[InitialSize];
+                m_namespace = new string[InitialSize];
             }
             else if (m_iNameSpaceCount == m_namespace.Length)
             {
-                String[] strTemp = new String[checked(m_iNameSpaceCount * 2)];
+                string[] strTemp = new string[checked(m_iNameSpaceCount * 2)];
                 Array.Copy(m_namespace, 0, strTemp, 0, m_iNameSpaceCount);
                 m_namespace = strTemp;
             }
@@ -1019,7 +1019,7 @@ namespace System.Reflection.Emit
             if (m_iLocalSymCount == 0)
             {
                 // First time. Allocate the arrays.
-                m_strName = new String[InitialSize];
+                m_strName = new string[InitialSize];
                 m_ubSignature = new byte[InitialSize][];
                 m_iLocalSlot = new int[InitialSize];
                 m_iStartOffset = new int[InitialSize];
@@ -1042,7 +1042,7 @@ namespace System.Reflection.Emit
                 Array.Copy(m_iEndOffset, 0, temp, 0, m_iLocalSymCount);
                 m_iEndOffset = temp;
 
-                String[] strTemp = new String[newSize];
+                string[] strTemp = new string[newSize];
                 Array.Copy(m_strName, 0, strTemp, 0, m_iLocalSymCount);
                 m_strName = strTemp;
 
@@ -1055,7 +1055,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Members
-        internal void AddLocalSymInfo(String strName, byte[] signature, int slot, int startOffset, int endOffset)
+        internal void AddLocalSymInfo(string strName, byte[] signature, int slot, int startOffset, int endOffset)
         {
             // make sure that arrays are large enough to hold addition info
             EnsureCapacity();
@@ -1067,7 +1067,7 @@ namespace System.Reflection.Emit
             checked { m_iLocalSymCount++; }
         }
 
-        internal void AddUsingNamespace(String strNamespace)
+        internal void AddUsingNamespace(string strNamespace)
         {
             EnsureCapacityNamespace();
             m_namespace[m_iNameSpaceCount] = strNamespace;
@@ -1161,7 +1161,7 @@ namespace System.Reflection.Emit
             return m_exceptionClass ^ m_tryStartOffset ^ m_tryEndOffset ^ m_filterOffset ^ m_handlerStartOffset ^ m_handlerEndOffset ^ (int)m_kind;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             return obj is ExceptionHandler && Equals((ExceptionHandler)obj);
         }

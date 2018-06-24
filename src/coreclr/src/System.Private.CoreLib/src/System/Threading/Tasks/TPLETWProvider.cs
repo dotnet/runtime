@@ -293,7 +293,7 @@ namespace System.Threading.Tasks
                 unsafe
                 {
                     EventData* eventPayload = stackalloc EventData[4];
-                    Int32 isExceptionalInt = IsExceptional ? 1 : 0;
+                    int isExceptionalInt = IsExceptional ? 1 : 0;
                     eventPayload[0].Size = sizeof(int);
                     eventPayload[0].DataPointer = ((IntPtr)(&OriginatingTaskSchedulerID));
                     eventPayload[0].Reserved = 0;

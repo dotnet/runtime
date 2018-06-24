@@ -29,7 +29,7 @@ namespace System
         // We need to call the String constructor so that the compiler doesn't mark this as a literal.
         // Marking this as a literal would mean that it doesn't show up as a field which we can access 
         // from native.
-        public static readonly String Empty;
+        public static readonly string Empty;
 
         // Gets the character at a specified position.
         //
@@ -54,7 +54,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern String FastAllocateString(int length);
+        internal static extern string FastAllocateString(int length);
 
         // Is this a string that can be compared quickly (that is it has only characters > 0x80 
         // and not a - or '
@@ -73,7 +73,7 @@ namespace System
         internal extern bool TryGetTrailByte(out byte data);
 #endif
 
-        public static String Intern(String str)
+        public static string Intern(string str)
         {
             if (str == null)
             {
@@ -83,7 +83,7 @@ namespace System
             return Thread.GetDomain().GetOrInternString(str);
         }
 
-        public static String IsInterned(String str)
+        public static string IsInterned(string str)
         {
             if (str == null)
             {
@@ -94,7 +94,7 @@ namespace System
         }
 
         // Copies the source String (byte buffer) to the destination IntPtr memory allocated with len bytes.
-        internal static unsafe void InternalCopy(String src, IntPtr dest, int len)
+        internal static unsafe void InternalCopy(string src, IntPtr dest, int len)
         {
             if (len == 0)
                 return;

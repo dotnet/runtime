@@ -141,14 +141,14 @@ namespace System.Diagnostics.Contracts
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class ContractPublicPropertyNameAttribute : Attribute
     {
-        private String _publicName;
+        private string _publicName;
 
-        public ContractPublicPropertyNameAttribute(String name)
+        public ContractPublicPropertyNameAttribute(string name)
         {
             _publicName = name;
         }
 
-        public String Name
+        public string Name
         {
             get { return _publicName; }
         }
@@ -180,31 +180,31 @@ namespace System.Diagnostics.Contracts
     [Conditional("CONTRACTS_FULL")]
     public sealed class ContractOptionAttribute : Attribute
     {
-        private String _category;
-        private String _setting;
+        private string _category;
+        private string _setting;
         private bool _enabled;
-        private String _value;
+        private string _value;
 
-        public ContractOptionAttribute(String category, String setting, bool enabled)
+        public ContractOptionAttribute(string category, string setting, bool enabled)
         {
             _category = category;
             _setting = setting;
             _enabled = enabled;
         }
 
-        public ContractOptionAttribute(String category, String setting, String value)
+        public ContractOptionAttribute(string category, string setting, string value)
         {
             _category = category;
             _setting = setting;
             _value = value;
         }
 
-        public String Category
+        public string Category
         {
             get { return _category; }
         }
 
-        public String Setting
+        public string Setting
         {
             get { return _setting; }
         }
@@ -214,7 +214,7 @@ namespace System.Diagnostics.Contracts
             get { return _enabled; }
         }
 
-        public String Value
+        public string Value
         {
             get { return _value; }
         }
@@ -267,7 +267,7 @@ namespace System.Diagnostics.Contracts
         [Pure]
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
-        public static void Assume(bool condition, String userMessage)
+        public static void Assume(bool condition, string userMessage)
         {
             if (!condition)
             {
@@ -300,7 +300,7 @@ namespace System.Diagnostics.Contracts
         [Pure]
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
-        public static void Assert(bool condition, String userMessage)
+        public static void Assert(bool condition, string userMessage)
         {
             if (!condition)
                 ReportFailure(ContractFailureKind.Assert, userMessage, null, null);
@@ -338,7 +338,7 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-        public static void Requires(bool condition, String userMessage)
+        public static void Requires(bool condition, string userMessage)
         {
             AssertMustUseRewriter(ContractFailureKind.Precondition, "Requires");
         }
@@ -369,7 +369,7 @@ namespace System.Diagnostics.Contracts
         /// Use this form when you want to throw a particular exception.
         /// </remarks>
         [Pure]
-        public static void Requires<TException>(bool condition, String userMessage) where TException : Exception
+        public static void Requires<TException>(bool condition, string userMessage) where TException : Exception
         {
             AssertMustUseRewriter(ContractFailureKind.Precondition, "Requires<TException>");
         }
@@ -406,7 +406,7 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-        public static void Ensures(bool condition, String userMessage)
+        public static void Ensures(bool condition, string userMessage)
         {
             AssertMustUseRewriter(ContractFailureKind.Postcondition, "Ensures");
         }
@@ -441,7 +441,7 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-        public static void EnsuresOnThrow<TException>(bool condition, String userMessage) where TException : Exception
+        public static void EnsuresOnThrow<TException>(bool condition, string userMessage) where TException : Exception
         {
             AssertMustUseRewriter(ContractFailureKind.PostconditionOnException, "EnsuresOnThrow");
         }
@@ -517,7 +517,7 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-        public static void Invariant(bool condition, String userMessage)
+        public static void Invariant(bool condition, string userMessage)
         {
             AssertMustUseRewriter(ContractFailureKind.Invariant, "Invariant");
         }

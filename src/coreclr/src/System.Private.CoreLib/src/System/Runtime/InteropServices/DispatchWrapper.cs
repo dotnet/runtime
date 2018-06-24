@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices
 {
     public sealed class DispatchWrapper
     {
-        public DispatchWrapper(Object obj)
+        public DispatchWrapper(object obj)
         {
             if (obj != null)
             {
@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices
             m_WrappedObject = obj;
         }
 
-        public Object WrappedObject
+        public object WrappedObject
         {
             get
             {
@@ -40,6 +40,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private Object m_WrappedObject;
+        private object m_WrappedObject;
     }
 }

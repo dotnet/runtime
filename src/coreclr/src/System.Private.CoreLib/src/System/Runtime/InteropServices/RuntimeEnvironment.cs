@@ -27,9 +27,9 @@ namespace System.Runtime.InteropServices
     internal static class RuntimeEnvironment
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern String GetModuleFileName();
+        internal static extern string GetModuleFileName();
 
-        public static String GetSystemVersion()
+        public static string GetSystemVersion()
         {
             return Assembly.GetExecutingAssembly().ImageRuntimeVersion;
         }

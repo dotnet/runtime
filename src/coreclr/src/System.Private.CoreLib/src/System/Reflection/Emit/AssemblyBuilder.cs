@@ -76,12 +76,12 @@ namespace System.Reflection.Emit
 
         // Assembly methods that are overridden by AssemblyBuilder should be overridden by InternalAssemblyBuilder too
         #region Methods inherited from Assembly
-        public override String[] GetManifestResourceNames()
+        public override string[] GetManifestResourceNames()
         {
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
-        public override FileStream GetFile(String name)
+        public override FileStream GetFile(string name)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
@@ -91,22 +91,22 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
-        public override Stream GetManifestResourceStream(Type type, String name)
+        public override Stream GetManifestResourceStream(Type type, string name)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
-        public override Stream GetManifestResourceStream(String name)
+        public override Stream GetManifestResourceStream(string name)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
-        public override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
+        public override ManifestResourceInfo GetManifestResourceInfo(string resourceName)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
-        public override String Location
+        public override string Location
         {
             get
             {
@@ -114,7 +114,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override String CodeBase
+        public override string CodeBase
         {
             get
             {
@@ -127,7 +127,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
-        public override String ImageRuntimeVersion
+        public override string ImageRuntimeVersion
         {
             get
             {
@@ -337,7 +337,7 @@ namespace System.Reflection.Emit
         **********************************************/
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ModuleBuilder DefineDynamicModule(
-            String name)
+            string name)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return DefineDynamicModuleInternal(name, false, ref stackMark);
@@ -345,7 +345,7 @@ namespace System.Reflection.Emit
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ModuleBuilder DefineDynamicModule(
-            String name,
+            string name,
             bool emitSymbolInfo)         // specify if emit symbol info or not
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -353,7 +353,7 @@ namespace System.Reflection.Emit
         }
 
         private ModuleBuilder DefineDynamicModuleInternal(
-            String name,
+            string name,
             bool emitSymbolInfo,         // specify if emit symbol info or not
             ref StackCrawlMark stackMark)
         {
@@ -364,7 +364,7 @@ namespace System.Reflection.Emit
         }
 
         private ModuleBuilder DefineDynamicModuleInternalNoLock(
-            String name,
+            string name,
             bool emitSymbolInfo,         // specify if emit symbol info or not
             ref StackCrawlMark stackMark)
         {
@@ -393,7 +393,7 @@ namespace System.Reflection.Emit
             {
                 writer = SymWrapperCore.SymWriter.CreateSymWriter();
 
-                String fileName = "Unused"; // this symfile is never written to disk so filename does not matter.
+                string fileName = "Unused"; // this symfile is never written to disk so filename does not matter.
 
                 // Pass the "real" module to the VM
                 pInternalSymWriter = ModuleBuilder.nCreateISymWriterForDynamicModule(dynModule.InternalModule, fileName);
@@ -460,12 +460,12 @@ namespace System.Reflection.Emit
         #endregion
 
         #region ICustomAttributeProvider Members
-        public override Object[] GetCustomAttributes(bool inherit)
+        public override object[] GetCustomAttributes(bool inherit)
         {
             return InternalAssembly.GetCustomAttributes(inherit);
         }
 
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             return InternalAssembly.GetCustomAttributes(attributeType, inherit);
         }
@@ -483,12 +483,12 @@ namespace System.Reflection.Emit
 
         #region Assembly overrides
         // Returns the names of all the resources
-        public override String[] GetManifestResourceNames()
+        public override string[] GetManifestResourceNames()
         {
             return InternalAssembly.GetManifestResourceNames();
         }
 
-        public override FileStream GetFile(String name)
+        public override FileStream GetFile(string name)
         {
             return InternalAssembly.GetFile(name);
         }
@@ -498,22 +498,22 @@ namespace System.Reflection.Emit
             return InternalAssembly.GetFiles(getResourceModules);
         }
 
-        public override Stream GetManifestResourceStream(Type type, String name)
+        public override Stream GetManifestResourceStream(Type type, string name)
         {
             return InternalAssembly.GetManifestResourceStream(type, name);
         }
 
-        public override Stream GetManifestResourceStream(String name)
+        public override Stream GetManifestResourceStream(string name)
         {
             return InternalAssembly.GetManifestResourceStream(name);
         }
 
-        public override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
+        public override ManifestResourceInfo GetManifestResourceInfo(string resourceName)
         {
             return InternalAssembly.GetManifestResourceInfo(resourceName);
         }
 
-        public override String Location
+        public override string Location
         {
             get
             {
@@ -521,7 +521,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override String ImageRuntimeVersion
+        public override string ImageRuntimeVersion
         {
             get
             {
@@ -529,7 +529,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override String CodeBase
+        public override string CodeBase
         {
             get
             {
@@ -558,7 +558,7 @@ namespace System.Reflection.Emit
             return InternalAssembly.GetName(copiedName);
         }
 
-        public override String FullName
+        public override string FullName
         {
             get
             {
@@ -566,7 +566,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Type GetType(String name, bool throwOnError, bool ignoreCase)
+        public override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
             return InternalAssembly.GetType(name, throwOnError, ignoreCase);
         }
@@ -587,7 +587,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Module GetModule(String name)
+        public override Module GetModule(string name)
         {
             return InternalAssembly.GetModule(name);
         }
@@ -605,7 +605,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Int64 HostContext
+        public override long HostContext
         {
             get
             {
@@ -654,7 +654,7 @@ namespace System.Reflection.Emit
         *
         **********************************************/
         public ModuleBuilder GetDynamicModule(
-            String name)                   // the name of module for the look up
+            string name)                   // the name of module for the look up
         {
             lock (SyncRoot)
             {
@@ -663,7 +663,7 @@ namespace System.Reflection.Emit
         }
 
         private ModuleBuilder GetDynamicModuleNoLock(
-            String name)                   // the name of module for the look up
+            string name)                   // the name of module for the look up
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));

@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices.Expando
     {
         // Add a new Field to the reflection object.  The field has
         // name as its name.
-        FieldInfo AddField(String name);
+        FieldInfo AddField(string name);
 
         // Removes the specified member.
         void RemoveMember(MemberInfo m);

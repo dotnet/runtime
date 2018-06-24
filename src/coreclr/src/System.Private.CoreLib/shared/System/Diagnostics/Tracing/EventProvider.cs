@@ -781,10 +781,10 @@ namespace System.Diagnostics.Tracing
                 *uintptr = (uint)data;
                 dataDescriptor->Ptr = (ulong)uintptr;
             }
-            else if (data is UInt64)
+            else if (data is ulong)
             {
                 dataDescriptor->Size = (uint)sizeof(ulong);
-                UInt64* ulongptr = (ulong*)dataBuffer;
+                ulong* ulongptr = (ulong*)dataBuffer;
                 *ulongptr = (ulong)data;
                 dataDescriptor->Ptr = (ulong)ulongptr;
             }
@@ -1290,7 +1290,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, Int64 keywords, uint eventVersion, uint level, byte *pMetadata, uint metadataLength)
+        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level, byte *pMetadata, uint metadataLength)
         {
             throw new System.NotSupportedException();
         }
@@ -1331,7 +1331,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, Int64 keywords, uint eventVersion, uint level, byte *pMetadata, uint metadataLength)
+        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level, byte *pMetadata, uint metadataLength)
         {
             return IntPtr.Zero;
         }

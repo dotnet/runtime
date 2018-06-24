@@ -38,7 +38,7 @@ namespace System.Reflection.Emit
             return m_method;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is MethodToken)
                 return Equals((MethodToken)obj);

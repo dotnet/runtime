@@ -820,7 +820,7 @@ namespace System.Reflection.Emit
             AddElementType(CorElementType.Sentinel);
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (!(obj is SignatureHelper))
             {
@@ -888,7 +888,7 @@ namespace System.Reflection.Emit
             return m_signature;
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("Length: " + m_currSig + Environment.NewLine);

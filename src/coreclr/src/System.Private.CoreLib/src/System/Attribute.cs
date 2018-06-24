@@ -245,7 +245,7 @@ namespace System
             // class inherits from and return the respective ParameterInfo attributes
 
             List<Type> disAllowMultiple = new List<Type>();
-            Object[] objAttr;
+            object[] objAttr;
 
             if (type == null)
                 type = typeof(Attribute);
@@ -344,7 +344,7 @@ namespace System
 
             while (baseParam != null)
             {
-                Object[] objAttr = baseParam.GetCustomAttributes(type, false);
+                object[] objAttr = baseParam.GetCustomAttributes(type, false);
 
                 for (int i = 0; i < objAttr.Length; i++)
                 {
@@ -422,7 +422,7 @@ namespace System
         private static AttributeUsageAttribute InternalGetAttributeUsage(Type type)
         {
             // Check if the custom attributes is Inheritable
-            Object[] obj = type.GetCustomAttributes(typeof(AttributeUsageAttribute), false);
+            object[] obj = type.GetCustomAttributes(typeof(AttributeUsageAttribute), false);
 
             if (obj.Length == 1)
                 return (AttributeUsageAttribute)obj[0];
@@ -814,7 +814,7 @@ namespace System
         #endregion
 
         #region Object Overrides
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj == null)
                 return false;
@@ -825,8 +825,8 @@ namespace System
             if (thatType != thisType)
                 return false;
 
-            Object thisObj = this;
-            Object thisResult, thatResult;
+            object thisObj = this;
+            object thisResult, thatResult;
 
             while (thisType != typeof(Attribute))
             {
@@ -850,7 +850,7 @@ namespace System
         }
 
         // Compares values of custom-attribute fields.    
-        private static bool AreFieldValuesEqual(Object thisValue, Object thatValue)
+        private static bool AreFieldValuesEqual(object thisValue, object thatValue)
         {
             if (thisValue == null && thatValue == null)
                 return true;
@@ -903,12 +903,12 @@ namespace System
             while (type != typeof(Attribute))
             {
                 FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-                Object vThis = null;
+                object vThis = null;
 
                 for (int i = 0; i < fields.Length; i++)
                 {
                     // Visibility check and consistency check are not necessary.
-                    Object fieldValue = ((RtFieldInfo)fields[i]).UnsafeGetValue(this);
+                    object fieldValue = ((RtFieldInfo)fields[i]).UnsafeGetValue(this);
 
                     // The hashcode of an array ignores the contents of the array, so it can produce 
                     // different hashcodes for arrays with the same contents.
@@ -932,9 +932,9 @@ namespace System
         #endregion
 
         #region Public Virtual Members
-        public virtual Object TypeId { get { return GetType(); } }
+        public virtual object TypeId { get { return GetType(); } }
 
-        public virtual bool Match(Object obj) { return Equals(obj); }
+        public virtual bool Match(object obj) { return Equals(obj); }
         #endregion
 
         #region Public Members

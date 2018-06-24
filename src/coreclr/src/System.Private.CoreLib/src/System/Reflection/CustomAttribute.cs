@@ -1253,13 +1253,13 @@ namespace System.Reflection
             return IsCustomAttributeDefined(module, module.MetadataToken, caType);
         }
 
-        internal static Object[] GetCustomAttributes(RuntimeType type, RuntimeType caType, bool inherit)
+        internal static object[] GetCustomAttributes(RuntimeType type, RuntimeType caType, bool inherit)
         {
             Debug.Assert(type != null);
             Debug.Assert(caType != null);
 
             if (type.GetElementType() != null)
-                return (caType.IsValueType) ? Array.Empty<Object>() : CreateAttributeArrayHelper(caType, 0);
+                return (caType.IsValueType) ? Array.Empty<object>() : CreateAttributeArrayHelper(caType, 0);
 
             if (type.IsGenericType && !type.IsGenericTypeDefinition)
                 type = type.GetGenericTypeDefinition() as RuntimeType;
@@ -1299,7 +1299,7 @@ namespace System.Reflection
             return typedResult;
         }
 
-        internal static Object[] GetCustomAttributes(RuntimeMethodInfo method, RuntimeType caType, bool inherit)
+        internal static object[] GetCustomAttributes(RuntimeMethodInfo method, RuntimeType caType, bool inherit)
         {
             Debug.Assert(method != null);
             Debug.Assert(caType != null);
@@ -1342,7 +1342,7 @@ namespace System.Reflection
             return typedResult;
         }
 
-        internal static Object[] GetCustomAttributes(RuntimeConstructorInfo ctor, RuntimeType caType)
+        internal static object[] GetCustomAttributes(RuntimeConstructorInfo ctor, RuntimeType caType)
         {
             Debug.Assert(ctor != null);
             Debug.Assert(caType != null);
@@ -1353,7 +1353,7 @@ namespace System.Reflection
             return attributes;
         }
 
-        internal static Object[] GetCustomAttributes(RuntimePropertyInfo property, RuntimeType caType)
+        internal static object[] GetCustomAttributes(RuntimePropertyInfo property, RuntimeType caType)
         {
             Debug.Assert(property != null);
             Debug.Assert(caType != null);
@@ -1365,7 +1365,7 @@ namespace System.Reflection
             return attributes;
         }
 
-        internal static Object[] GetCustomAttributes(RuntimeEventInfo e, RuntimeType caType)
+        internal static object[] GetCustomAttributes(RuntimeEventInfo e, RuntimeType caType)
         {
             Debug.Assert(e != null);
             Debug.Assert(caType != null);
@@ -1376,7 +1376,7 @@ namespace System.Reflection
             return attributes;
         }
 
-        internal static Object[] GetCustomAttributes(RuntimeFieldInfo field, RuntimeType caType)
+        internal static object[] GetCustomAttributes(RuntimeFieldInfo field, RuntimeType caType)
         {
             Debug.Assert(field != null);
             Debug.Assert(caType != null);
@@ -1387,7 +1387,7 @@ namespace System.Reflection
             return attributes;
         }
 
-        internal static Object[] GetCustomAttributes(RuntimeParameterInfo parameter, RuntimeType caType)
+        internal static object[] GetCustomAttributes(RuntimeParameterInfo parameter, RuntimeType caType)
         {
             Debug.Assert(parameter != null);
             Debug.Assert(caType != null);
@@ -1398,7 +1398,7 @@ namespace System.Reflection
             return attributes;
         }
 
-        internal static Object[] GetCustomAttributes(RuntimeAssembly assembly, RuntimeType caType)
+        internal static object[] GetCustomAttributes(RuntimeAssembly assembly, RuntimeType caType)
         {
             Debug.Assert(assembly != null);
             Debug.Assert(caType != null);
@@ -1410,7 +1410,7 @@ namespace System.Reflection
             return attributes;
         }
 
-        internal static Object[] GetCustomAttributes(RuntimeModule module, RuntimeType caType)
+        internal static object[] GetCustomAttributes(RuntimeModule module, RuntimeType caType)
         {
             Debug.Assert(module != null);
             Debug.Assert(caType != null);
@@ -1826,8 +1826,8 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe Object _CreateCaObject(RuntimeModule pModule, RuntimeType type, IRuntimeMethodInfo pCtor, byte** ppBlob, byte* pEndBlob, int* pcNamedArgs);
-        private static unsafe Object CreateCaObject(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
+        private static extern unsafe object _CreateCaObject(RuntimeModule pModule, RuntimeType type, IRuntimeMethodInfo pCtor, byte** ppBlob, byte* pEndBlob, int* pcNamedArgs);
+        private static unsafe object CreateCaObject(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
         {
             byte* pBlob = (byte*)blob;
             byte* pBlobEnd = (byte*)blobEnd;

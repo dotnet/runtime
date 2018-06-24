@@ -28,36 +28,36 @@ namespace System.Reflection.Emit
     {
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, Object[] constructorArgs)
+        public CustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs)
         {
             InitCustomAttributeBuilder(con, constructorArgs,
-                                       new PropertyInfo[] { }, new Object[] { },
-                                       new FieldInfo[] { }, new Object[] { });
+                                       new PropertyInfo[] { }, new object[] { },
+                                       new FieldInfo[] { }, new object[] { });
         }
 
         // public constructor to form the custom attribute with constructor, constructor
         // parameters and named properties.
-        public CustomAttributeBuilder(ConstructorInfo con, Object[] constructorArgs,
-                                      PropertyInfo[] namedProperties, Object[] propertyValues)
+        public CustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs,
+                                      PropertyInfo[] namedProperties, object[] propertyValues)
         {
             InitCustomAttributeBuilder(con, constructorArgs, namedProperties,
-                                       propertyValues, new FieldInfo[] { }, new Object[] { });
+                                       propertyValues, new FieldInfo[] { }, new object[] { });
         }
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, Object[] constructorArgs,
-                                      FieldInfo[] namedFields, Object[] fieldValues)
+        public CustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs,
+                                      FieldInfo[] namedFields, object[] fieldValues)
         {
             InitCustomAttributeBuilder(con, constructorArgs, new PropertyInfo[] { },
-                                       new Object[] { }, namedFields, fieldValues);
+                                       new object[] { }, namedFields, fieldValues);
         }
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, Object[] constructorArgs,
-                                      PropertyInfo[] namedProperties, Object[] propertyValues,
-                                      FieldInfo[] namedFields, Object[] fieldValues)
+        public CustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs,
+                                      PropertyInfo[] namedProperties, object[] propertyValues,
+                                      FieldInfo[] namedFields, object[] fieldValues)
         {
             InitCustomAttributeBuilder(con, constructorArgs, namedProperties,
                                        propertyValues, namedFields, fieldValues);
@@ -70,7 +70,7 @@ namespace System.Reflection.Emit
             {
                 return t != typeof(IntPtr) && t != typeof(UIntPtr);
             }
-            if (t == typeof(String) || t == typeof(Type))
+            if (t == typeof(string) || t == typeof(Type))
             {
                 return true;
             }
@@ -97,12 +97,12 @@ namespace System.Reflection.Emit
                     return false;
                 return ValidateType(t.GetElementType());
             }
-            return t == typeof(Object);
+            return t == typeof(object);
         }
 
-        internal void InitCustomAttributeBuilder(ConstructorInfo con, Object[] constructorArgs,
-                                                 PropertyInfo[] namedProperties, Object[] propertyValues,
-                                                 FieldInfo[] namedFields, Object[] fieldValues)
+        internal void InitCustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs,
+                                                 PropertyInfo[] namedProperties, object[] propertyValues,
+                                                 FieldInfo[] namedFields, object[] fieldValues)
         {
             if (con == null)
                 throw new ArgumentNullException(nameof(con));
@@ -130,7 +130,7 @@ namespace System.Reflection.Emit
 
             // Cache information used elsewhere.
             m_con = con;
-            m_constructorArgs = new Object[constructorArgs.Length];
+            m_constructorArgs = new object[constructorArgs.Length];
             Array.Copy(constructorArgs, 0, m_constructorArgs, 0, constructorArgs.Length);
 
             Type[] paramTypes;
@@ -357,7 +357,7 @@ namespace System.Reflection.Emit
                 writer.Write((byte)CustomAttributeEncoding.Enum);
                 EmitString(writer, type.AssemblyQualifiedName);
             }
-            else if (type == typeof(String))
+            else if (type == typeof(string))
             {
                 writer.Write((byte)CustomAttributeEncoding.String);
             }
@@ -377,7 +377,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void EmitString(BinaryWriter writer, String str)
+        private void EmitString(BinaryWriter writer, string str)
         {
             // Strings are emitted with a length prefix in a compressed format (1, 2 or 4 bytes) as used internally by metadata.
             byte[] utf8Str = Encoding.UTF8.GetBytes(str);
@@ -401,7 +401,7 @@ namespace System.Reflection.Emit
             writer.Write(utf8Str);
         }
 
-        private void EmitValue(BinaryWriter writer, Type type, Object value)
+        private void EmitValue(BinaryWriter writer, Type type, object value)
         {
             if (type.IsEnum)
             {
@@ -436,12 +436,12 @@ namespace System.Reflection.Emit
                         break;
                 }
             }
-            else if (type == typeof(String))
+            else if (type == typeof(string))
             {
                 if (value == null)
                     writer.Write((byte)0xff);
                 else
-                    EmitString(writer, (String)value);
+                    EmitString(writer, (string)value);
             }
             else if (type == typeof(Type))
             {
@@ -449,7 +449,7 @@ namespace System.Reflection.Emit
                     writer.Write((byte)0xff);
                 else
                 {
-                    String typeName = TypeNameBuilder.ToString((Type)value, TypeNameBuilder.Format.AssemblyQualifiedName);
+                    string typeName = TypeNameBuilder.ToString((Type)value, TypeNameBuilder.Format.AssemblyQualifiedName);
                     if (typeName == null)
                         throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeForCA, value.GetType()));
                     EmitString(writer, typeName);
@@ -519,7 +519,7 @@ namespace System.Reflection.Emit
                 // TypeBuilder), so we need to canonicalize this case back to Type. If we have a null value we follow the convention
                 // used by C# and emit a null typed as a string (it doesn't really matter what type we pick as long as it's a
                 // reference type).
-                Type ot = value == null ? typeof(String) : value is Type ? typeof(Type) : value.GetType();
+                Type ot = value == null ? typeof(string) : value is Type ? typeof(Type) : value.GetType();
 
                 // value cannot be a "System.Object" object.
                 // If we allow this we will get into an infinite recursion
@@ -559,7 +559,7 @@ namespace System.Reflection.Emit
         }
 
         internal ConstructorInfo m_con;
-        internal Object[] m_constructorArgs;
+        internal object[] m_constructorArgs;
         internal byte[] m_blob;
     }
 }

@@ -69,7 +69,7 @@ namespace System.Reflection
             return resolvedAssembly;
         }
 
-        public static Assembly LoadFrom(String assemblyFile)
+        public static Assembly LoadFrom(string assemblyFile)
         {
             if (assemblyFile == null)
                 throw new ArgumentNullException(nameof(assemblyFile));
@@ -101,7 +101,7 @@ namespace System.Reflection
             return AssemblyLoadContext.Default.LoadFromAssemblyPath(fullPath);
         }
 
-        public static Assembly LoadFrom(String assemblyFile,
+        public static Assembly LoadFrom(string assemblyFile,
                                         byte[] hashValue,
                                         AssemblyHashAlgorithm hashAlgorithm)
         {
@@ -111,7 +111,7 @@ namespace System.Reflection
         // Locate an assembly by the long form of the assembly name. 
         // eg. "Toolbox.dll, version=1.1.10.1220, locale=en, publickey=1234567890123456789012345678901234567890"
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        public static Assembly Load(String assemblyString)
+        public static Assembly Load(string assemblyString)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeAssembly.InternalLoad(assemblyString, ref stackMark);
@@ -177,7 +177,7 @@ namespace System.Reflection
 
         private static Dictionary<string, Assembly> s_loadfile = new Dictionary<string, Assembly>();
 
-        public static Assembly LoadFile(String path)
+        public static Assembly LoadFile(string path)
         {
             AppDomain.CheckLoadFileSupported();
 

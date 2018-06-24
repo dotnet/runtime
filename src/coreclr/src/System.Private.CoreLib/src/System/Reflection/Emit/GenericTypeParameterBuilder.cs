@@ -100,7 +100,7 @@ namespace System.Reflection.Emit
 
         public override Guid GUID { get { throw new NotSupportedException(); } }
 
-        public override Object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, Object target, Object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { throw new NotSupportedException(); }
+        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { throw new NotSupportedException(); }
 
         public override Assembly Assembly { get { return m_type.Assembly; } }
 
@@ -202,9 +202,9 @@ namespace System.Reflection.Emit
         #endregion
 
         #region ICustomAttributeProvider Implementation
-        public override Object[] GetCustomAttributes(bool inherit) { throw new NotSupportedException(); }
+        public override object[] GetCustomAttributes(bool inherit) { throw new NotSupportedException(); }
 
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit) { throw new NotSupportedException(); }
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) { throw new NotSupportedException(); }
 
         public override bool IsDefined(Type attributeType, bool inherit) { throw new NotSupportedException(); }
         #endregion

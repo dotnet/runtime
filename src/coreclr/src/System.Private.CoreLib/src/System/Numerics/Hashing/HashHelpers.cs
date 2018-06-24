@@ -8,7 +8,7 @@ namespace System.Numerics.Hashing
 
     internal static class HashHelpers
     {
-        public static readonly int RandomSeed = new Random().Next(Int32.MinValue, Int32.MaxValue);
+        public static readonly int RandomSeed = new Random().Next(int.MinValue, int.MaxValue);
 
         public static int Combine(int h1, int h2)
         {

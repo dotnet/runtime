@@ -194,7 +194,7 @@ namespace System.Reflection
         #endregion
 
         #region Object Overrides
-        public override String ToString()
+        public override string ToString()
         {
             if (m_toString == null)
                 m_toString = ReturnType.FormatTypeName() + " " + FormatNameAndSig();
@@ -255,12 +255,12 @@ namespace System.Reflection
         #endregion
 
         #region ICustomAttributeProvider
-        public override Object[] GetCustomAttributes(bool inherit)
+        public override object[] GetCustomAttributes(bool inherit)
         {
             return CustomAttribute.GetCustomAttributes(this, typeof(object) as RuntimeType as RuntimeType, inherit);
         }
 
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
@@ -293,7 +293,7 @@ namespace System.Reflection
         #endregion
 
         #region MemberInfo Overrides
-        public override String Name
+        public override string Name
         {
             get
             {
@@ -410,7 +410,7 @@ namespace System.Reflection
         #endregion
 
         #region Invocation Logic(On MemberBase)
-        private void CheckConsistency(Object target)
+        private void CheckConsistency(object target)
         {
             // only test instance methods
             if ((m_methodAttributes & MethodAttributes.Static) != MethodAttributes.Static)
@@ -467,7 +467,7 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override Object Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
             object[] arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);
 
@@ -476,7 +476,7 @@ namespace System.Reflection
                 return RuntimeMethodHandle.InvokeMethod(obj, null, Signature, false, wrapExceptions);
             else
             {
-                Object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
+                object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
 
                 // copy out. This should be made only if ByRef are present.
                 for (int index = 0; index < arguments.Length; index++)
@@ -488,7 +488,7 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        private object[] InvokeArgumentsCheck(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+        private object[] InvokeArgumentsCheck(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
             Signature sig = Signature;
 
@@ -580,7 +580,7 @@ namespace System.Reflection
                 DelegateBindingFlags.OpenDelegateOnly | DelegateBindingFlags.RelaxedSignature);
         }
 
-        public override Delegate CreateDelegate(Type delegateType, Object target)
+        public override Delegate CreateDelegate(Type delegateType, object target)
         {
             // This API is new in Whidbey and allows the full range of delegate
             // flexability (open or closed delegates binding to static or
@@ -593,7 +593,7 @@ namespace System.Reflection
                 DelegateBindingFlags.RelaxedSignature);
         }
 
-        private Delegate CreateDelegateInternal(Type delegateType, Object firstArgument, DelegateBindingFlags bindingFlags)
+        private Delegate CreateDelegateInternal(Type delegateType, object firstArgument, DelegateBindingFlags bindingFlags)
         {
             // Validate the parameters.
             if (delegateType == null)

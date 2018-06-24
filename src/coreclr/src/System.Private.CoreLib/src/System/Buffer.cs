@@ -181,12 +181,12 @@ namespace System
 #if PLATFORM_WINDOWS
             // Determined optimal value for Windows.
             // https://github.com/dotnet/coreclr/issues/13843
-            const nuint CopyThreshold = UInt64.MaxValue;
+            const nuint CopyThreshold = ulong.MaxValue;
 #else // PLATFORM_WINDOWS
             // Managed code is currently faster than glibc unoptimized memmove
             // TODO-ARM64-UNIX-OPT revisit when glibc optimized memmove is in Linux distros
             // https://github.com/dotnet/coreclr/issues/13844
-            const nuint CopyThreshold = UInt64.MaxValue;
+            const nuint CopyThreshold = ulong.MaxValue;
 #endif // PLATFORM_WINDOWS
 #else
             const nuint CopyThreshold = 512;
@@ -392,12 +392,12 @@ namespace System
 #if PLATFORM_WINDOWS
             // Determined optimal value for Windows.
             // https://github.com/dotnet/coreclr/issues/13843
-            const nuint CopyThreshold = UInt64.MaxValue;
+            const nuint CopyThreshold = ulong.MaxValue;
 #else // PLATFORM_WINDOWS
             // Managed code is currently faster than glibc unoptimized memmove
             // TODO-ARM64-UNIX-OPT revisit when glibc optimized memmove is in Linux distros
             // https://github.com/dotnet/coreclr/issues/13844
-            const nuint CopyThreshold = UInt64.MaxValue;
+            const nuint CopyThreshold = ulong.MaxValue;
 #endif // PLATFORM_WINDOWS
 #else
             const nuint CopyThreshold = 512;

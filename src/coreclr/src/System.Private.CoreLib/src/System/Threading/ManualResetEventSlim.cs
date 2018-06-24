@@ -52,7 +52,7 @@ namespace System.Threading
 
         // -- State -- //
         //For a packed word a uint would seem better, but Interlocked.* doesn't support them as uint isn't CLS-compliant.
-        private volatile int m_combinedState; //ie a UInt32. Used for the state items listed below. 
+        private volatile int m_combinedState; //ie a uint. Used for the state items listed below. 
 
         //1-bit for  signalled state
         private const int SignalledState_BitMask = unchecked((int)0x80000000);//1000 0000 0000 0000 0000 0000 0000 0000
@@ -438,7 +438,7 @@ namespace System.Threading
         /// false.</returns>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.Int32.MaxValue"/>.</exception>
+        /// than <see cref="System.int.MaxValue"/>.</exception>
         /// <exception cref="T:System.InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
@@ -467,7 +467,7 @@ namespace System.Threading
         /// false.</returns>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.Int32.MaxValue"/>.</exception>
+        /// than <see cref="System.int.MaxValue"/>.</exception>
         /// <exception cref="T:System.Threading.OperationCanceledException"><paramref
         /// name="cancellationToken"/> was canceled.</exception>
         /// <exception cref="T:System.InvalidOperationException">
@@ -654,7 +654,7 @@ namespace System.Threading
         /// <param name="disposing">true to release both managed and unmanaged resources;
         /// false to release only unmanaged resources.</param>
         /// <remarks>
-        /// Unlike most of the members of <see cref="ManualResetEventSlim"/>, <see cref="Dispose(Boolean)"/> is not
+        /// Unlike most of the members of <see cref="ManualResetEventSlim"/>, <see cref="Dispose(bool)"/> is not
         /// thread-safe and may not be used concurrently with other members of this instance.
         /// </remarks>
         protected virtual void Dispose(bool disposing)

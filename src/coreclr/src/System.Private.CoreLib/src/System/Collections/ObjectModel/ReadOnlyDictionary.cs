@@ -23,7 +23,7 @@ namespace System.Collections.ObjectModel
     internal class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>
     {
         private readonly IDictionary<TKey, TValue> m_dictionary;
-        private Object m_syncRoot;
+        private object m_syncRoot;
         private KeyCollection m_keys;
         private ValueCollection m_values;
 
@@ -350,7 +350,7 @@ namespace System.Collections.ObjectModel
                     }
                     else
                     {
-                        System.Threading.Interlocked.CompareExchange<Object>(ref m_syncRoot, new Object(), null);
+                        System.Threading.Interlocked.CompareExchange<object>(ref m_syncRoot, new object(), null);
                     }
                 }
                 return m_syncRoot;
@@ -426,7 +426,7 @@ namespace System.Collections.ObjectModel
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
             private readonly ICollection<TKey> m_collection;
-            private Object m_syncRoot;
+            private object m_syncRoot;
 
             internal KeyCollection(ICollection<TKey> collection)
             {
@@ -520,7 +520,7 @@ namespace System.Collections.ObjectModel
                         }
                         else
                         {
-                            System.Threading.Interlocked.CompareExchange<Object>(ref m_syncRoot, new Object(), null);
+                            System.Threading.Interlocked.CompareExchange<object>(ref m_syncRoot, new object(), null);
                         }
                     }
                     return m_syncRoot;
@@ -535,7 +535,7 @@ namespace System.Collections.ObjectModel
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
             private readonly ICollection<TValue> m_collection;
-            private Object m_syncRoot;
+            private object m_syncRoot;
 
             internal ValueCollection(ICollection<TValue> collection)
             {
@@ -629,7 +629,7 @@ namespace System.Collections.ObjectModel
                         }
                         else
                         {
-                            System.Threading.Interlocked.CompareExchange<Object>(ref m_syncRoot, new Object(), null);
+                            System.Threading.Interlocked.CompareExchange<object>(ref m_syncRoot, new object(), null);
                         }
                     }
                     return m_syncRoot;

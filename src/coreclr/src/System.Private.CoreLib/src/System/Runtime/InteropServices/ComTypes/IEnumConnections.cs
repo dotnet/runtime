@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.ComTypes
     public struct CONNECTDATA
     {
         [MarshalAs(UnmanagedType.Interface)]
-        public Object pUnk;
+        public object pUnk;
         public int dwCookie;
     }
 

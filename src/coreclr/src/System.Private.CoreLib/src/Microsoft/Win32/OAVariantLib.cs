@@ -36,24 +36,24 @@ namespace Microsoft.Win32
         internal static readonly Type[] ClassTypes = {
             typeof(Empty),
             typeof(void),
-            typeof(Boolean),
-            typeof(Char),
-            typeof(SByte),
-            typeof(Byte),
-            typeof(Int16),
-            typeof(UInt16),
-            typeof(Int32),
-            typeof(UInt32),
-            typeof(Int64),
-            typeof(UInt64),
-            typeof(Single),
-            typeof(Double),
-            typeof(String),
+            typeof(bool),
+            typeof(char),
+            typeof(sbyte),
+            typeof(byte),
+            typeof(short),
+            typeof(ushort),
+            typeof(int),
+            typeof(uint),
+            typeof(long),
+            typeof(ulong),
+            typeof(float),
+            typeof(double),
+            typeof(string),
             typeof(void),
             typeof(DateTime),
             typeof(TimeSpan),
-            typeof(Object),
-            typeof(Decimal),
+            typeof(object),
+            typeof(decimal),
             null,  // Enums - what do we do here?
             typeof(Missing),
             typeof(DBNull),
@@ -100,7 +100,7 @@ namespace Microsoft.Win32
         private static int GetCVTypeFromClass(Type ctype)
         {
             Debug.Assert(ctype != null);
-            Debug.Assert(ClassTypes[CV_OBJECT] == typeof(Object), "OAVariantLib::ClassTypes[CV_OBJECT] == Object.class");
+            Debug.Assert(ClassTypes[CV_OBJECT] == typeof(object), "OAVariantLib::ClassTypes[CV_OBJECT] == Object.class");
 
             int cvtype = -1;
             for (int i = 0; i < ClassTypes.Length; i++)

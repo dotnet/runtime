@@ -135,7 +135,7 @@ namespace System.Threading.Tasks
             //COM Interface GUID  {50850B26-267E-451B-A890-AB6A370245EE}
             Guid guid = new Guid(0x50850B26, 0x267E, 0x451B, 0xA8, 0x90, 0XAB, 0x6A, 0x37, 0x02, 0x45, 0xEE);
 
-            Object factory = null;
+            object factory = null;
 
             try
             {
@@ -157,7 +157,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        private static void TracingStatusChangedHandler(Object sender, WFD.TracingStatusChangedEventArgs args)
+        private static void TracingStatusChangedHandler(object sender, WFD.TracingStatusChangedEventArgs args)
         {
             if (args.Enabled)
                 f_LoggingOn |= Loggers.CausalityTracer;

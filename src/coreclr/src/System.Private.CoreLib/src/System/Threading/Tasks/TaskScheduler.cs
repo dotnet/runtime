@@ -155,11 +155,11 @@ namespace System.Threading.Tasks
         /// Indicates the maximum concurrency level this 
         /// <see cref="TaskScheduler"/>  is able to support.
         /// </summary>
-        public virtual Int32 MaximumConcurrencyLevel
+        public virtual int MaximumConcurrencyLevel
         {
             get
             {
-                return Int32.MaxValue;
+                return int.MaxValue;
             }
         }
 
@@ -389,7 +389,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Gets the unique ID for this <see cref="TaskScheduler"/>.
         /// </summary>
-        public Int32 Id
+        public int Id
         {
             get
             {
@@ -598,7 +598,7 @@ namespace System.Threading.Tasks
             }
 
             // returns the scheduler�s Id
-            public Int32 Id
+            public int Id
             {
                 get { return m_taskScheduler.Id; }
             }
@@ -682,7 +682,7 @@ namespace System.Threading.Tasks
         /// By default it returns 1, because a <see cref="T:System.Threading.SynchronizationContext"/> based
         /// scheduler only supports execution on a single thread.
         /// </summary>
-        public override Int32 MaximumConcurrencyLevel
+        public override int MaximumConcurrencyLevel
         {
             get
             {

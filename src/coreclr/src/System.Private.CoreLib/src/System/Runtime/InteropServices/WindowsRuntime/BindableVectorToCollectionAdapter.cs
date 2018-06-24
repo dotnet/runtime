@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             IBindableVector _this = Unsafe.As<IBindableVector>(this);
             uint size = _this.Size;
-            if (((uint)Int32.MaxValue) < size)
+            if (((uint)int.MaxValue) < size)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
             }

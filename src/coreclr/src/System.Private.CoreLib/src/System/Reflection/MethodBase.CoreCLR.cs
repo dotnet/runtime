@@ -127,16 +127,16 @@ namespace System.Reflection
             return parameterTypes;
         }
 
-        internal Object[] CheckArguments(Object[] parameters, Binder binder,
+        internal object[] CheckArguments(object[] parameters, Binder binder,
             BindingFlags invokeAttr, CultureInfo culture, Signature sig)
         {
             // copy the arguments in a different array so we detach from any user changes 
-            Object[] copyOfParameters = new Object[parameters.Length];
+            object[] copyOfParameters = new object[parameters.Length];
 
             ParameterInfo[] p = null;
             for (int i = 0; i < parameters.Length; i++)
             {
-                Object arg = parameters[i];
+                object arg = parameters[i];
                 RuntimeType argRT = sig.Arguments[i];
 
                 if (arg == Type.Missing)

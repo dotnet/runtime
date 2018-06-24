@@ -171,10 +171,10 @@ namespace System.Runtime.CompilerServices
 
         // Set the given element in the array without any type or range checks
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void UnsafeSetArrayElement(Object[] target, int index, Object element);
+        internal static extern void UnsafeSetArrayElement(object[] target, int index, object element);
 
         // Used for unsafe pinning of arbitrary objects.
-        internal static PinningHelper GetPinningHelper(Object o)
+        internal static PinningHelper GetPinningHelper(object o)
         {
             return Unsafe.As<PinningHelper>(o);
         }

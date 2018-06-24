@@ -21,8 +21,8 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class BadImageFormatException : SystemException
     {
-        private String _fileName;  // The name of the corrupt PE file.
-        private String _fusionLog = null;  // fusion log (when applicable)
+        private string _fileName;  // The name of the corrupt PE file.
+        private string _fusionLog = null;  // fusion log (when applicable)
 
         public BadImageFormatException()
             : base(SR.Arg_BadImageFormatException)
@@ -30,25 +30,25 @@ namespace System
             HResult = HResults.COR_E_BADIMAGEFORMAT;
         }
 
-        public BadImageFormatException(String message)
+        public BadImageFormatException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_BADIMAGEFORMAT;
         }
 
-        public BadImageFormatException(String message, Exception inner)
+        public BadImageFormatException(string message, Exception inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_BADIMAGEFORMAT;
         }
 
-        public BadImageFormatException(String message, String fileName) : base(message)
+        public BadImageFormatException(string message, string fileName) : base(message)
         {
             HResult = HResults.COR_E_BADIMAGEFORMAT;
             _fileName = fileName;
         }
 
-        public BadImageFormatException(String message, String fileName, Exception inner)
+        public BadImageFormatException(string message, string fileName, Exception inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_BADIMAGEFORMAT;
@@ -69,7 +69,7 @@ namespace System
             info.AddValue("BadImageFormat_FusionLog", _fusionLog, typeof(string));
         }
 
-        public override String Message
+        public override string Message
         {
             get
             {
@@ -91,14 +91,14 @@ namespace System
             }
         }
 
-        public String FileName
+        public string FileName
         {
             get { return _fileName; }
         }
 
-        public override String ToString()
+        public override string ToString()
         {
-            String s = GetType().ToString() + ": " + Message;
+            string s = GetType().ToString() + ": " + Message;
 
             if (_fileName != null && _fileName.Length != 0)
                 s += Environment.NewLine + SR.Format(SR.IO_FileName_Name, _fileName);
@@ -121,7 +121,7 @@ namespace System
             return s;
         }
 
-        public String FusionLog
+        public string FusionLog
         {
             get { return _fusionLog; }
         }

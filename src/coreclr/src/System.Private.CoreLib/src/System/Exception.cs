@@ -51,7 +51,7 @@ namespace System
             Init();
         }
 
-        public Exception(String message)
+        public Exception(string message)
         {
             Init();
             _message = message;
@@ -62,7 +62,7 @@ namespace System
         // Note: the stack trace is not started until the exception 
         // is thrown
         // 
-        public Exception(String message, Exception innerException)
+        public Exception(string message, Exception innerException)
         {
             Init();
             _message = message;
@@ -92,7 +92,7 @@ namespace System
             // We use the no throw version since we could be deserializing a pre-V4
             // exception object that may not have this entry. In such a case, we would
             // get null.
-            _watsonBuckets = (Object)info.GetValueNoThrow("WatsonBuckets", typeof(byte[])); // Do not rename (binary serialization)
+            _watsonBuckets = (object)info.GetValueNoThrow("WatsonBuckets", typeof(byte[])); // Do not rename (binary serialization)
 
 
             if (_className == null || HResult == 0)
@@ -118,7 +118,7 @@ namespace System
         }
 
 
-        public virtual String Message
+        public virtual string Message
         {
             get
             {
@@ -257,7 +257,7 @@ namespace System
 
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static private extern IRuntimeMethodInfo GetMethodFromStackTrace(Object stackTrace);
+        static private extern IRuntimeMethodInfo GetMethodFromStackTrace(object stackTrace);
 
         private MethodBase GetExceptionMethodFromStackTrace()
         {
@@ -297,7 +297,7 @@ namespace System
 
         // Returns the stack trace as a string.  If no stack trace is
         // available, null is returned.
-        public virtual String StackTrace
+        public virtual string StackTrace
         {
             get
             {
@@ -330,7 +330,7 @@ namespace System
             // will add the path to the source file if the PDB is present and a demand
             // for FileIOPermission(PathDiscovery) succeeds, we need to make sure we 
             // don't store the stack trace string in the _stackTraceString member variable.
-            String tempStackTraceString = Environment.GetStackTrace(this, needFileInfo);
+            string tempStackTraceString = Environment.GetStackTrace(this, needFileInfo);
             return remoteStackTraceString + tempStackTraceString;
         }
 
@@ -338,7 +338,7 @@ namespace System
         // This should be in a URL/URN form, such as:
         // "file:///C:/Applications/Bazzal/help.html#ErrorNum42"
         // Changed to be a read-write String and not return an exception
-        public virtual String HelpLink
+        public virtual string HelpLink
         {
             get
             {
@@ -350,7 +350,7 @@ namespace System
             }
         }
 
-        public virtual String Source
+        public virtual string Source
         {
             get
             {
@@ -384,15 +384,15 @@ namespace System
             set { _source = value; }
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             return ToString(true, true);
         }
 
-        private String ToString(bool needFileLineInfo, bool needMessage)
+        private string ToString(bool needFileLineInfo, bool needMessage)
         {
-            String message = (needMessage ? Message : null);
-            String s;
+            string message = (needMessage ? Message : null);
+            string s;
 
             if (message == null || message.Length <= 0)
             {
@@ -431,7 +431,7 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            String tempStackTraceString = _stackTraceString;
+            string tempStackTraceString = _stackTraceString;
 
             if (_stackTrace != null)
             {
@@ -450,17 +450,17 @@ namespace System
                 _source = Source; // Set the Source information correctly before serialization
             }
 
-            info.AddValue("ClassName", GetClassName(), typeof(String)); // Do not rename (binary serialization)
-            info.AddValue("Message", _message, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("ClassName", GetClassName(), typeof(string)); // Do not rename (binary serialization)
+            info.AddValue("Message", _message, typeof(string)); // Do not rename (binary serialization)
             info.AddValue("Data", _data, typeof(IDictionary)); // Do not rename (binary serialization)
             info.AddValue("InnerException", _innerException, typeof(Exception)); // Do not rename (binary serialization)
-            info.AddValue("HelpURL", _helpURL, typeof(String)); // Do not rename (binary serialization)
-            info.AddValue("StackTraceString", tempStackTraceString, typeof(String)); // Do not rename (binary serialization)
-            info.AddValue("RemoteStackTraceString", _remoteStackTraceString, typeof(String)); // Do not rename (binary serialization)
-            info.AddValue("RemoteStackIndex", _remoteStackIndex, typeof(Int32)); // Do not rename (binary serialization)
-            info.AddValue("ExceptionMethod", null, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("HelpURL", _helpURL, typeof(string)); // Do not rename (binary serialization)
+            info.AddValue("StackTraceString", tempStackTraceString, typeof(string)); // Do not rename (binary serialization)
+            info.AddValue("RemoteStackTraceString", _remoteStackTraceString, typeof(string)); // Do not rename (binary serialization)
+            info.AddValue("RemoteStackIndex", _remoteStackIndex, typeof(int)); // Do not rename (binary serialization)
+            info.AddValue("ExceptionMethod", null, typeof(string)); // Do not rename (binary serialization)
             info.AddValue("HResult", HResult); // Do not rename (binary serialization)
-            info.AddValue("Source", _source, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("Source", _source, typeof(string)); // Do not rename (binary serialization)
 
             // Serialize the Watson bucket details as well
             info.AddValue("WatsonBuckets", _watsonBuckets, typeof(byte[])); // Do not rename (binary serialization)
@@ -645,24 +645,24 @@ namespace System
             }
         }
 
-        private String _className;  //Needed for serialization.  
+        private string _className;  //Needed for serialization.  
         private MethodBase _exceptionMethod;  //Needed for serialization.  
-        internal String _message;
+        internal string _message;
         private IDictionary _data;
         private Exception _innerException;
-        private String _helpURL;
-        private Object _stackTrace;
+        private string _helpURL;
+        private object _stackTrace;
         [OptionalField] // This isnt present in pre-V4 exception objects that would be serialized.
-        private Object _watsonBuckets;
-        private String _stackTraceString; //Needed for serialization.  
-        private String _remoteStackTraceString;
+        private object _watsonBuckets;
+        private string _stackTraceString; //Needed for serialization.  
+        private string _remoteStackTraceString;
         private int _remoteStackIndex;
 #pragma warning disable 414  // Field is not used from managed.        
         // _dynamicMethods is an array of System.Resolver objects, used to keep
         // DynamicMethodDescs alive for the lifetime of the exception. We do this because
         // the _stackTrace field holds MethodDescs, and a DynamicMethodDesc can be destroyed
         // unless a System.Resolver object roots it.
-        private Object _dynamicMethods;
+        private object _dynamicMethods;
 #pragma warning restore 414
 
         // @MANAGED: HResult is used from within the EE!  Rename with care - check VM directory
@@ -680,7 +680,7 @@ namespace System
             }
         }
 
-        private String _source;         // Mainly used by VB. 
+        private string _source;         // Mainly used by VB. 
         // WARNING: Don't delete/rename _xptrs and _xcode - used by functions
         // on Marshal class.  Native functions are in COMUtilNative.cpp & AppDomain
         private IntPtr _xptrs;             // Internal EE stuff 
@@ -696,7 +696,7 @@ namespace System
 
         // InternalToString is called by the runtime to get the exception text 
         // and create a corresponding CrossAppDomainMarshaledException
-        internal virtual String InternalToString()
+        internal virtual string InternalToString()
         {
             // Get the current stack trace string. 
             return ToString(true, true);
@@ -737,7 +737,7 @@ namespace System
         }
 
         // See comment on ExceptionMessageKind
-        internal static String GetMessageFromNativeResources(ExceptionMessageKind kind)
+        internal static string GetMessageFromNativeResources(ExceptionMessageKind kind)
         {
             string retMesg = null;
             GetMessageFromNativeResources(kind, JitHelpers.GetStringHandleOnStack(ref retMesg));
@@ -757,7 +757,7 @@ namespace System
 
     internal sealed class CrossAppDomainMarshaledException : SystemException
     {
-        public CrossAppDomainMarshaledException(String message, int errorCode)
+        public CrossAppDomainMarshaledException(string message, int errorCode)
             : base(message)
         {
             HResult = errorCode;
@@ -766,7 +766,7 @@ namespace System
         // Normally, only Telesto's UEF will see these exceptions.
         // This override prints out the original Exception's ToString()
         // output and hides the fact that it is wrapped inside another excepton.
-        internal override String InternalToString()
+        internal override string InternalToString()
         {
             return Message;
         }

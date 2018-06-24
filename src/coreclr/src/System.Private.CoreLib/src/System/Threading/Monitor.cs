@@ -36,7 +36,7 @@ namespace System.Threading
         ** Exceptions: ArgumentNullException if object is null.
         =========================================================================*/
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void Enter(Object obj);
+        public static extern void Enter(object obj);
 
 
         // Use a ref bool instead of out to ensure that unverifiable code must
@@ -44,7 +44,7 @@ namespace System.Threading
         // could be uninitialized if we threw an exception in our prolog.
         // The JIT should inline this method to allow check of lockTaken argument to be optimized out
         // in the typical case. Note that the method has to be transparent for inlining to be allowed by the VM.
-        public static void Enter(Object obj, ref bool lockTaken)
+        public static void Enter(object obj, ref bool lockTaken)
         {
             if (lockTaken)
                 ThrowLockTakenException();
@@ -59,7 +59,7 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void ReliableEnter(Object obj, ref bool lockTaken);
+        private static extern void ReliableEnter(object obj, ref bool lockTaken);
 
 
 
@@ -73,7 +73,7 @@ namespace System.Threading
         **             own the lock.
         =========================================================================*/
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void Exit(Object obj);
+        public static extern void Exit(object obj);
 
         /*=========================================================================
         ** Similar to Enter, but will never block. That is, if the current thread can
@@ -82,7 +82,7 @@ namespace System.Threading
         **
         ** Exceptions: ArgumentNullException if object is null.
         =========================================================================*/
-        public static bool TryEnter(Object obj)
+        public static bool TryEnter(object obj)
         {
             bool lockTaken = false;
             TryEnter(obj, 0, ref lockTaken);
@@ -91,7 +91,7 @@ namespace System.Threading
 
         // The JIT should inline this method to allow check of lockTaken argument to be optimized out
         // in the typical case. Note that the method has to be transparent for inlining to be allowed by the VM.
-        public static void TryEnter(Object obj, ref bool lockTaken)
+        public static void TryEnter(object obj, ref bool lockTaken)
         {
             if (lockTaken)
                 ThrowLockTakenException();
@@ -109,7 +109,7 @@ namespace System.Threading
         =========================================================================*/
         // The JIT should inline this method to allow check of lockTaken argument to be optimized out
         // in the typical case. Note that the method has to be transparent for inlining to be allowed by the VM.
-        public static bool TryEnter(Object obj, int millisecondsTimeout)
+        public static bool TryEnter(object obj, int millisecondsTimeout)
         {
             bool lockTaken = false;
             TryEnter(obj, millisecondsTimeout, ref lockTaken);
@@ -119,19 +119,19 @@ namespace System.Threading
         private static int MillisecondsTimeoutFromTimeSpan(TimeSpan timeout)
         {
             long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long)Int32.MaxValue)
+            if (tm < -1 || tm > (long)int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return (int)tm;
         }
 
-        public static bool TryEnter(Object obj, TimeSpan timeout)
+        public static bool TryEnter(object obj, TimeSpan timeout)
         {
             return TryEnter(obj, MillisecondsTimeoutFromTimeSpan(timeout));
         }
 
         // The JIT should inline this method to allow check of lockTaken argument to be optimized out
         // in the typical case. Note that the method has to be transparent for inlining to be allowed by the VM.
-        public static void TryEnter(Object obj, int millisecondsTimeout, ref bool lockTaken)
+        public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
         {
             if (lockTaken)
                 ThrowLockTakenException();
@@ -139,7 +139,7 @@ namespace System.Threading
             ReliableEnterTimeout(obj, millisecondsTimeout, ref lockTaken);
         }
 
-        public static void TryEnter(Object obj, TimeSpan timeout, ref bool lockTaken)
+        public static void TryEnter(object obj, TimeSpan timeout, ref bool lockTaken)
         {
             if (lockTaken)
                 ThrowLockTakenException();
@@ -148,7 +148,7 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void ReliableEnterTimeout(Object obj, int timeout, ref bool lockTaken);
+        private static extern void ReliableEnterTimeout(object obj, int timeout, ref bool lockTaken);
 
         public static bool IsEntered(object obj)
         {
@@ -159,7 +159,7 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool IsEnteredNative(Object obj);
+        private static extern bool IsEnteredNative(object obj);
 
         /*========================================================================
     ** Waits for notification from the object (via a Pulse/PulseAll). 
@@ -173,31 +173,31 @@ namespace System.Threading
         ** Exceptions: ArgumentNullException if object is null.
     ========================================================================*/
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool ObjWait(bool exitContext, int millisecondsTimeout, Object obj);
+        private static extern bool ObjWait(bool exitContext, int millisecondsTimeout, object obj);
 
-        public static bool Wait(Object obj, int millisecondsTimeout, bool exitContext)
+        public static bool Wait(object obj, int millisecondsTimeout, bool exitContext)
         {
             if (obj == null)
                 throw (new ArgumentNullException(nameof(obj)));
             return ObjWait(exitContext, millisecondsTimeout, obj);
         }
 
-        public static bool Wait(Object obj, TimeSpan timeout, bool exitContext)
+        public static bool Wait(object obj, TimeSpan timeout, bool exitContext)
         {
             return Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout), exitContext);
         }
 
-        public static bool Wait(Object obj, int millisecondsTimeout)
+        public static bool Wait(object obj, int millisecondsTimeout)
         {
             return Wait(obj, millisecondsTimeout, false);
         }
 
-        public static bool Wait(Object obj, TimeSpan timeout)
+        public static bool Wait(object obj, TimeSpan timeout)
         {
             return Wait(obj, MillisecondsTimeoutFromTimeSpan(timeout), false);
         }
 
-        public static bool Wait(Object obj)
+        public static bool Wait(object obj)
         {
             return Wait(obj, Timeout.Infinite, false);
         }
@@ -208,9 +208,9 @@ namespace System.Threading
         * a synchronized block of code.
         ========================================================================*/
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void ObjPulse(Object obj);
+        private static extern void ObjPulse(object obj);
 
-        public static void Pulse(Object obj)
+        public static void Pulse(object obj)
         {
             if (obj == null)
             {
@@ -223,9 +223,9 @@ namespace System.Threading
         ** Sends a notification to all waiting objects. 
         ========================================================================*/
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void ObjPulseAll(Object obj);
+        private static extern void ObjPulseAll(object obj);
 
-        public static void PulseAll(Object obj)
+        public static void PulseAll(object obj)
         {
             if (obj == null)
             {

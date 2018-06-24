@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             try
             {
-                return _this[(Int32)index];
+                return _this[(int)index];
             }
             catch (ArgumentOutOfRangeException ex)
             {
@@ -123,7 +123,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             try
             {
-                _this.RemoveAt((Int32)index);
+                _this.RemoveAt((int)index);
             }
             catch (ArgumentOutOfRangeException ex)
             {
@@ -166,9 +166,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private static void EnsureIndexInt32(uint index, int listCapacity)
         {
-            // We use '<=' and not '<' becasue Int32.MaxValue == index would imply
-            // that Size > Int32.MaxValue:
-            if (((uint)Int32.MaxValue) <= index || index >= (uint)listCapacity)
+            // We use '<=' and not '<' becasue int.MaxValue == index would imply
+            // that Size > int.MaxValue:
+            if (((uint)int.MaxValue) <= index || index >= (uint)listCapacity)
             {
                 Exception e = new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexLargerThanMaxValue);
                 e.HResult = HResults.E_BOUNDS;

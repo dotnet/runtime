@@ -18,19 +18,19 @@ namespace System.Runtime.InteropServices
 {
     public sealed class CurrencyWrapper
     {
-        public CurrencyWrapper(Decimal obj)
+        public CurrencyWrapper(decimal obj)
         {
             m_WrappedObject = obj;
         }
 
-        public CurrencyWrapper(Object obj)
+        public CurrencyWrapper(object obj)
         {
-            if (!(obj is Decimal))
+            if (!(obj is decimal))
                 throw new ArgumentException(SR.Arg_MustBeDecimal, nameof(obj));
-            m_WrappedObject = (Decimal)obj;
+            m_WrappedObject = (decimal)obj;
         }
 
-        public Decimal WrappedObject
+        public decimal WrappedObject
         {
             get
             {
@@ -38,6 +38,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private Decimal m_WrappedObject;
+        private decimal m_WrappedObject;
     }
 }

@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices.ComTypes
     {
         void GetConnectionInterface(out Guid pIID);
         void GetConnectionPointContainer(out IConnectionPointContainer ppCPC);
-        void Advise([MarshalAs(UnmanagedType.Interface)] Object pUnkSink, out int pdwCookie);
+        void Advise([MarshalAs(UnmanagedType.Interface)] object pUnkSink, out int pdwCookie);
         void Unadvise(int dwCookie);
         void EnumConnections(out IEnumConnections ppEnum);
     }

@@ -26,7 +26,7 @@ namespace System.Runtime.CompilerServices
     {
         // Exposed here as a more appropriate place than on FormatterServices itself,
         // which is a high level reflection heavy type.
-        public static Object GetUninitializedObject(Type type)
+        public static object GetUninitializedObject(Type type)
         {
             return FormatterServices.GetUninitializedObject(type);
         }
@@ -48,7 +48,7 @@ namespace System.Runtime.CompilerServices
         // Of course, reference types are not cloned.
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern Object GetObjectValue(Object obj);
+        public static extern object GetObjectValue(object obj);
 
         // RunClassConstructor causes the class constructor for the given type to be triggered
         // in the current domain.  After this call returns, the class constructor is guaranteed to
@@ -117,10 +117,10 @@ namespace System.Runtime.CompilerServices
         public static extern void PrepareDelegate(Delegate d);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern int GetHashCode(Object o);
+        public static extern int GetHashCode(object o);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public new static extern bool Equals(Object o1, Object o2);
+        public new static extern bool Equals(object o1, object o2);
 
         public static int OffsetToStringData
         {
@@ -175,14 +175,14 @@ namespace System.Runtime.CompilerServices
         {
         }
 
-        public delegate void TryCode(Object userData);
+        public delegate void TryCode(object userData);
 
-        public delegate void CleanupCode(Object userData, bool exceptionThrown);
+        public delegate void CleanupCode(object userData, bool exceptionThrown);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, Object userData);
+        public static extern void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object userData);
 
-        internal static void ExecuteBackoutCodeHelper(Object backoutCode, Object userData, bool exceptionThrown)
+        internal static void ExecuteBackoutCodeHelper(object backoutCode, object userData, bool exceptionThrown)
         {
             ((CleanupCode)backoutCode)(userData, exceptionThrown);
         }
