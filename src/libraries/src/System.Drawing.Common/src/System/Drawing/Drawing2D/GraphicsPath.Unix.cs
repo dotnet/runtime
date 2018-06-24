@@ -618,7 +618,7 @@ namespace System.Drawing.Drawing2D
             if (matrix == null)
                 throw new ArgumentNullException(nameof(matrix));
 
-            int status = SafeNativeMethods.Gdip.GdipTransformPath(_nativePath, matrix.nativeMatrix);
+            int status = SafeNativeMethods.Gdip.GdipTransformPath(_nativePath, matrix.NativeMatrix);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -693,7 +693,7 @@ namespace System.Drawing.Drawing2D
 
         public void Flatten(Matrix matrix, float flatness)
         {
-            IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.nativeMatrix;
+            IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.NativeMatrix;
             int status = SafeNativeMethods.Gdip.GdipFlattenPath(_nativePath, m, flatness);
 
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -712,7 +712,7 @@ namespace System.Drawing.Drawing2D
         public RectangleF GetBounds(Matrix matrix, Pen pen)
         {
             RectangleF retval;
-            IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.nativeMatrix;
+            IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.NativeMatrix;
             IntPtr p = (pen == null) ? IntPtr.Zero : pen.NativePen;
 
             int s = SafeNativeMethods.Gdip.GdipGetPathWorldBounds(_nativePath, out retval, m, p);
@@ -870,7 +870,7 @@ namespace System.Drawing.Drawing2D
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
 
-            IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.nativeMatrix;
+            IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.NativeMatrix;
 
             int s = SafeNativeMethods.Gdip.GdipWarpPath(_nativePath, m, destPoints, destPoints.Length,
                             srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height, warpMode, flatness);
@@ -894,7 +894,7 @@ namespace System.Drawing.Drawing2D
                 throw new ArgumentNullException(nameof(pen));
             if (PointCount == 0)
                 return;
-            IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.nativeMatrix;
+            IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.NativeMatrix;
 
             int s = SafeNativeMethods.Gdip.GdipWidenPath(_nativePath, pen.NativePen, m, flatness);
             SafeNativeMethods.Gdip.CheckStatus(s);

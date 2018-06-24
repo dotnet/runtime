@@ -63,15 +63,9 @@ namespace System.Drawing.Drawing2D
         public PathGradientBrush(GraphicsPath path)
         {
             if (path == null)
-            {
                 throw new ArgumentNullException(nameof(path));
-            }
 
-            int status = Gdip.GdipCreatePathGradientFromPath(new HandleRef(path, path._nativePath), out IntPtr nativeBrush);
-
-            if (status != Gdip.Ok)
-                throw Gdip.StatusException(status);
-
+            Gdip.CheckStatus(Gdip.GdipCreatePathGradientFromPath(new HandleRef(path, path._nativePath), out IntPtr nativeBrush));
             SetNativeBrushInternal(nativeBrush);
         }
 
@@ -83,11 +77,7 @@ namespace System.Drawing.Drawing2D
 
         public override object Clone()
         {
-            int status = Gdip.GdipCloneBrush(new HandleRef(this, NativeBrush), out IntPtr clonedBrush);
-
-            if (status != Gdip.Ok)
-                throw Gdip.StatusException(status);
-
+            Gdip.CheckStatus(Gdip.GdipCloneBrush(new HandleRef(this, NativeBrush), out IntPtr clonedBrush));
             return new PathGradientBrush(clonedBrush);
         }
 
@@ -95,20 +85,12 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                int status = Gdip.GdipGetPathGradientCenterColor(new HandleRef(this, NativeBrush), out int argb);
-
-                if (status != Gdip.Ok)
-                    throw Gdip.StatusException(status);
-
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientCenterColor(new HandleRef(this, NativeBrush), out int argb));
                 return Color.FromArgb(argb);
             }
-
             set
             {
-                int status = Gdip.GdipSetPathGradientCenterColor(new HandleRef(this, NativeBrush), value.ToArgb());
-
-                if (status != Gdip.Ok)
-                    throw Gdip.StatusException(status);
+                Gdip.CheckStatus(Gdip.GdipSetPathGradientCenterColor(new HandleRef(this, NativeBrush), value.ToArgb()));
             }
         }
 
@@ -116,21 +98,16 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                int status = Gdip.GdipGetPathGradientSurroundColorCount(new HandleRef(this, NativeBrush),
-                                                                           out int count);
-
-                if (status != Gdip.Ok)
-                    throw Gdip.StatusException(status);
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientSurroundColorCount(
+                    new HandleRef(this, NativeBrush),
+                    out int count));
 
                 int[] argbs = new int[count];
 
-                status = Gdip.GdipGetPathGradientSurroundColorsWithCount(new HandleRef(this, NativeBrush),
-                                                                            argbs,
-                                                                            ref count);
-
-
-                if (status != Gdip.Ok)
-                    throw Gdip.StatusException(status);
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientSurroundColorsWithCount(
+                    new HandleRef(this, NativeBrush),
+                    argbs,
+                    ref count));
 
                 Color[] colors = new Color[count];
                 for (int i = 0; i < count; i++)
@@ -145,11 +122,10 @@ namespace System.Drawing.Drawing2D
                 for (int i = 0; i < value.Length; i++)
                     argbs[i] = value[i].ToArgb();
 
-                int status = Gdip.GdipSetPathGradientSurroundColorsWithCount(new HandleRef(this, NativeBrush),
-                                                                            argbs,
-                                                                            ref count);
-
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetPathGradientSurroundColorsWithCount(
+                    new HandleRef(this, NativeBrush),
+                    argbs,
+                    ref count));
             }
         }
 
@@ -172,10 +148,7 @@ namespace System.Drawing.Drawing2D
             {
                 GPRECTF rect = new GPRECTF();
 
-                int status = Gdip.GdipGetPathGradientRect(new HandleRef(this, NativeBrush), ref rect);
-
-                if (status != Gdip.Ok)
-                    throw Gdip.StatusException(status);
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientRect(new HandleRef(this, NativeBrush), ref rect));
 
                 return rect.ToRectangleF();
             }
@@ -186,12 +159,7 @@ namespace System.Drawing.Drawing2D
             get
             {
                 // Figure out the size of blend factor array
-                int status = Gdip.GdipGetPathGradientBlendCount(new HandleRef(this, NativeBrush), out int retval);
-
-                if (status != Gdip.Ok)
-                {
-                    throw Gdip.StatusException(status);
-                }
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientBlendCount(new HandleRef(this, NativeBrush), out int retval));
 
                 // Allocate temporary native memory buffer
 
@@ -202,12 +170,7 @@ namespace System.Drawing.Drawing2D
 
                 // Retrieve horizontal blend factors
 
-                status = Gdip.GdipGetPathGradientBlend(new HandleRef(this, NativeBrush), factors, positions, count);
-
-                if (status != Gdip.Ok)
-                {
-                    throw Gdip.StatusException(status);
-                }
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientBlend(new HandleRef(this, NativeBrush), factors, positions, count));
 
                 // Return the result in a managed array
 
@@ -219,41 +182,26 @@ namespace System.Drawing.Drawing2D
             }
             set
             {
+                // This is the behavior on Desktop
                 if (value == null || value.Factors == null)
-                {
-                    // This is the behavior on Desktop
                     throw new NullReferenceException();
-                }
 
                 // The Desktop implementation throws ArgumentNullException("source") because it never validates the value of value.Positions, and then passes it
                 // on to Marshal.Copy(value.Positions, 0, positions, count);. The first argument of Marshal.Copy is source, hence this exception.
                 if (value.Positions == null)
-                {
                     throw new ArgumentNullException("source");
-                }
 
                 int count = value.Factors.Length;
 
                 // Explicit argument validation, because libgdiplus does not correctly validate all parameters.
                 if (count == 0 || value.Positions.Length == 0)
-                {
                     throw new ArgumentException(SR.BlendObjectMustHaveTwoElements);
-                }
-
                 if (count >= 2 && count != value.Positions.Length)
-                {
                     throw new ArgumentOutOfRangeException();
-                }
-
                 if (count >= 2 && value.Positions[0] != 0.0F)
-                {
                     throw new ArgumentException(SR.BlendObjectFirstElementInvalid);
-                }
-
                 if (count >= 2 && value.Positions[count - 1] != 1.0F)
-                {
                     throw new ArgumentException(SR.BlendObjectLastElementInvalid);
-                }
 
                 // Allocate temporary native memory buffer
                 // and copy input blend factors into it.
@@ -271,12 +219,7 @@ namespace System.Drawing.Drawing2D
 
                     // Set blend factors
 
-                    int status = Gdip.GdipSetPathGradientBlend(new HandleRef(this, NativeBrush), new HandleRef(null, factors), new HandleRef(null, positions), count);
-
-                    if (status != Gdip.Ok)
-                    {
-                        throw Gdip.StatusException(status);
-                    }
+                    Gdip.CheckStatus(Gdip.GdipSetPathGradientBlend(new HandleRef(this, NativeBrush), new HandleRef(null, factors), new HandleRef(null, positions), count));
                 }
                 finally
                 {
@@ -297,17 +240,11 @@ namespace System.Drawing.Drawing2D
         public void SetSigmaBellShape(float focus, float scale)
         {
             if (focus < 0 || focus > 1)
-            {
                 throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(focus));
-            }
-
             if (scale < 0 || scale > 1)
-            {
                 throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(scale));
-            }
 
-            int status = Gdip.GdipSetPathGradientSigmaBlend(new HandleRef(this, NativeBrush), focus, scale);
-            Gdip.CheckStatus(status);
+            Gdip.CheckStatus(Gdip.GdipSetPathGradientSigmaBlend(new HandleRef(this, NativeBrush), focus, scale));
         }
 
         public void SetBlendTriangularShape(float focus) => SetBlendTriangularShape(focus, (float)1.0);
@@ -315,17 +252,11 @@ namespace System.Drawing.Drawing2D
         public void SetBlendTriangularShape(float focus, float scale)
         {
             if (focus < 0 || focus > 1)
-            {
                 throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(focus));
-            }
-
             if (scale < 0 || scale > 1)
-            {
                 throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter), nameof(scale));
-            }
 
-            int status = Gdip.GdipSetPathGradientLinearBlend(new HandleRef(this, NativeBrush), focus, scale);
-            Gdip.CheckStatus(status);
+            Gdip.CheckStatus(Gdip.GdipSetPathGradientLinearBlend(new HandleRef(this, NativeBrush), focus, scale));
         }
 
         public ColorBlend InterpolationColors
@@ -333,15 +264,12 @@ namespace System.Drawing.Drawing2D
             get
             {
                 // Figure out the size of blend factor array
-                int status = Gdip.GdipGetPathGradientPresetBlendCount(new HandleRef(this, NativeBrush), out int count);
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientPresetBlendCount(new HandleRef(this, NativeBrush), out int count));
 
                 // If count is 0, then there is nothing to marshal.
                 // In this case, we'll return an empty ColorBlend...
                 if (count == 0)
-                {
                     return new ColorBlend();
-                }
 
                 int[] colors = new int[count];
                 float[] positions = new float[count];
@@ -349,24 +277,22 @@ namespace System.Drawing.Drawing2D
                 ColorBlend blend = new ColorBlend(count);
 
                 // status would fail if we ask points or types with a < 2 count
-                if (count > 1)
+                if (count < 2)
+                    return blend;
+
+                // Retrieve horizontal blend factors
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientPresetBlend(new HandleRef(this, NativeBrush), colors, positions, count));
+
+                // Return the result in a managed array
+
+                blend.Positions = positions;
+
+                // copy ARGB values into Color array of ColorBlend
+                blend.Colors = new Color[count];
+
+                for (int i = 0; i < count; i++)
                 {
-                    // Retrieve horizontal blend factors
-                    status = Gdip.GdipGetPathGradientPresetBlend(new HandleRef(this, NativeBrush), colors, positions, count);
-
-                    Gdip.CheckStatus(status);
-
-                    // Return the result in a managed array
-
-                    blend.Positions = positions;
-
-                    // copy ARGB values into Color array of ColorBlend
-                    blend.Colors = new Color[count];
-
-                    for (int i = 0; i < count; i++)
-                    {
-                        blend.Colors[i] = Color.FromArgb(colors[i]);
-                    }
+                    blend.Colors[i] = Color.FromArgb(colors[i]);
                 }
 
                 return blend;
@@ -378,19 +304,11 @@ namespace System.Drawing.Drawing2D
                 int count = value.Colors.Length;
 
                 if (value.Positions == null)
-                {
                     throw new ArgumentNullException("source");
-                }
-
                 if (value.Colors.Length > value.Positions.Length)
-                {
                     throw new ArgumentOutOfRangeException();
-                }
-
                 if (value.Colors.Length < value.Positions.Length)
-                {
                     throw new ArgumentException();
-                }
 
                 float[] positions = value.Positions;
                 int[] argbs = new int[count];
@@ -400,9 +318,7 @@ namespace System.Drawing.Drawing2D
                 }
 
                 // Set blend factors
-                int status = Gdip.GdipSetPathGradientPresetBlend(new HandleRef(this, NativeBrush), argbs, positions, count);
-
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetPathGradientPresetBlend(new HandleRef(this, NativeBrush), argbs, positions, count));
             }
         }
 
@@ -411,30 +327,21 @@ namespace System.Drawing.Drawing2D
             get
             {
                 Matrix matrix = new Matrix();
-
-                int status = Gdip.GdipGetPathGradientTransform(new HandleRef(this, NativeBrush), new HandleRef(matrix, matrix.nativeMatrix));
-                Gdip.CheckStatus(status);
-
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientTransform(new HandleRef(this, NativeBrush), new HandleRef(matrix, matrix.NativeMatrix)));
                 return matrix;
             }
             set
             {
                 if (value == null)
-                {
                     throw new ArgumentNullException(nameof(value));
-                }
 
-                int status = Gdip.GdipSetPathGradientTransform(new HandleRef(this, NativeBrush), new HandleRef(value, value.nativeMatrix));
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipSetPathGradientTransform(new HandleRef(this, NativeBrush), new HandleRef(value, value.NativeMatrix)));
             }
         }
 
         public void ResetTransform()
         {
-            int status = Gdip.GdipResetPathGradientTransform(new HandleRef(this, NativeBrush));
-
-            if (status != Gdip.Ok)
-                throw Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipResetPathGradientTransform(new HandleRef(this, NativeBrush)));
         }
 
         public void MultiplyTransform(Matrix matrix) => MultiplyTransform(matrix, MatrixOrder.Prepend);
@@ -442,54 +349,38 @@ namespace System.Drawing.Drawing2D
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
             if (matrix == null)
-            {
                 throw new ArgumentNullException(nameof(matrix));
-            }
 
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
             // with the libgdiplus backend. Simulate a nop for compatability with GDI+.
-            if (matrix.nativeMatrix == IntPtr.Zero)
-            {
+            if (matrix.NativeMatrix == IntPtr.Zero)
                 return;
-            }
 
-            int status = Gdip.GdipMultiplyPathGradientTransform(new HandleRef(this, NativeBrush),
-                                                new HandleRef(matrix, matrix.nativeMatrix),
-                                                order);
-            Gdip.CheckStatus(status);
+            Gdip.CheckStatus(Gdip.GdipMultiplyPathGradientTransform(
+                new HandleRef(this, NativeBrush),
+                new HandleRef(matrix, matrix.NativeMatrix),
+                order));
         }
 
         public void TranslateTransform(float dx, float dy) => TranslateTransform(dx, dy, MatrixOrder.Prepend);
 
         public void TranslateTransform(float dx, float dy, MatrixOrder order)
         {
-            int status = Gdip.GdipTranslatePathGradientTransform(new HandleRef(this, NativeBrush),
-                                                dx, dy, order);
-
-            if (status != Gdip.Ok)
-                throw Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipTranslatePathGradientTransform(new HandleRef(this, NativeBrush), dx, dy, order));
         }
 
         public void ScaleTransform(float sx, float sy) => ScaleTransform(sx, sy, MatrixOrder.Prepend);
 
         public void ScaleTransform(float sx, float sy, MatrixOrder order)
         {
-            int status = Gdip.GdipScalePathGradientTransform(new HandleRef(this, NativeBrush),
-                                                sx, sy, order);
-
-            if (status != Gdip.Ok)
-                throw Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipScalePathGradientTransform(new HandleRef(this, NativeBrush), sx, sy, order));
         }
 
         public void RotateTransform(float angle) => RotateTransform(angle, MatrixOrder.Prepend);
 
         public void RotateTransform(float angle, MatrixOrder order)
         {
-            int status = Gdip.GdipRotatePathGradientTransform(new HandleRef(this, NativeBrush),
-                                                angle, order);
-
-            if (status != Gdip.Ok)
-                throw Gdip.StatusException(status);
+            Gdip.CheckStatus(Gdip.GdipRotatePathGradientTransform(new HandleRef(this, NativeBrush), angle, order));
         }
 
         public PointF FocusScales
@@ -499,19 +390,12 @@ namespace System.Drawing.Drawing2D
                 float[] scaleX = new float[] { 0.0f };
                 float[] scaleY = new float[] { 0.0f };
 
-                int status = Gdip.GdipGetPathGradientFocusScales(new HandleRef(this, NativeBrush), scaleX, scaleY);
-
-                if (status != Gdip.Ok)
-                    throw Gdip.StatusException(status);
-
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientFocusScales(new HandleRef(this, NativeBrush), scaleX, scaleY));
                 return new PointF(scaleX[0], scaleY[0]);
             }
             set
             {
-                int status = Gdip.GdipSetPathGradientFocusScales(new HandleRef(this, NativeBrush), value.X, value.Y);
-
-                if (status != Gdip.Ok)
-                    throw Gdip.StatusException(status);
+                Gdip.CheckStatus(Gdip.GdipSetPathGradientFocusScales(new HandleRef(this, NativeBrush), value.X, value.Y));
             }
         }
 
@@ -519,24 +403,15 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                int status = Gdip.GdipGetPathGradientWrapMode(new HandleRef(this, NativeBrush), out int mode);
-
-                if (status != Gdip.Ok)
-                    throw Gdip.StatusException(status);
-
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientWrapMode(new HandleRef(this, NativeBrush), out int mode));
                 return (WrapMode)mode;
             }
             set
             {
                 if (value < WrapMode.Tile || value > WrapMode.Clamp)
-                {
-                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(WrapMode));
-                }
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(WrapMode));
 
-                int status = Gdip.GdipSetPathGradientWrapMode(new HandleRef(this, NativeBrush), unchecked((int)value));
-
-                if (status != Gdip.Ok)
-                    throw Gdip.StatusException(status);
+                Gdip.CheckStatus(Gdip.GdipSetPathGradientWrapMode(new HandleRef(this, NativeBrush), unchecked((int)value)));
             }
         }
     }
