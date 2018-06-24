@@ -18,13 +18,13 @@ namespace System.Runtime.InteropServices
 {
     public interface ICustomMarshaler
     {
-        Object MarshalNativeToManaged(IntPtr pNativeData);
+        object MarshalNativeToManaged(IntPtr pNativeData);
 
-        IntPtr MarshalManagedToNative(Object ManagedObj);
+        IntPtr MarshalManagedToNative(object ManagedObj);
 
         void CleanUpNativeData(IntPtr pNativeData);
 
-        void CleanUpManagedData(Object ManagedObj);
+        void CleanUpManagedData(object ManagedObj);
 
         int GetNativeDataSize();
     }

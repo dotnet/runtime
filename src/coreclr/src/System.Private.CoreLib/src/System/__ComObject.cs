@@ -63,9 +63,9 @@ namespace System
         // This method retrieves the data associated with the specified
         // key if any such data exists for the current __ComObject.
         //====================================================================
-        internal Object GetData(Object key)
+        internal object GetData(object key)
         {
-            Object data = null;
+            object data = null;
 
             // Synchronize access to the map.
             lock (this)
@@ -85,7 +85,7 @@ namespace System
         // This method sets the data for the specified key on the current 
         // __ComObject.
         //====================================================================
-        internal bool SetData(Object key, Object data)
+        internal bool SetData(object key, object data)
         {
             bool bAdded = false;
 
@@ -119,7 +119,7 @@ namespace System
                 // If the map hasn't been allocated, then there is nothing to do.
                 if (m_ObjectToDataMap != null)
                 {
-                    foreach (Object o in m_ObjectToDataMap.Values)
+                    foreach (object o in m_ObjectToDataMap.Values)
                     {
                         // Note: the value could be an object[]
                         // We are fine for now as object[] doesn't implement IDisposable nor derive from __ComObject
@@ -145,10 +145,10 @@ namespace System
         // This method is called from within the EE and is used to handle
         // calls on methods of event interfaces.
         //====================================================================
-        internal Object GetEventProvider(RuntimeType t)
+        internal object GetEventProvider(RuntimeType t)
         {
             // Check to see if we already have a cached event provider for this type.
-            Object EvProvider = GetData(t);
+            object EvProvider = GetData(t);
 
             // If we don't then we need to create one.
             if (EvProvider == null)
@@ -167,10 +167,10 @@ namespace System
             Marshal.InternalFinalReleaseComObject(this);
         }
 
-        private Object CreateEventProvider(RuntimeType t)
+        private object CreateEventProvider(RuntimeType t)
         {
             // Create the event provider for the specified type.
-            Object EvProvider = Activator.CreateInstance(t, Activator.ConstructorDefault | BindingFlags.NonPublic, null, new Object[] { this }, null);
+            object EvProvider = Activator.CreateInstance(t, Activator.ConstructorDefault | BindingFlags.NonPublic, null, new object[] { this }, null);
 
             // Attempt to cache the wrapper on the object.
             if (!SetData(t, EvProvider))

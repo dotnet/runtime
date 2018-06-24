@@ -27,7 +27,7 @@ namespace System.Reflection.Emit
         public static readonly FieldToken Empty = new FieldToken();
 
         internal int m_fieldTok;
-        internal Object m_class;
+        internal object m_class;
 
         // Creates an empty FieldToken.  A publicly visible constructor so that
         // it can be created on the stack.
@@ -59,7 +59,7 @@ namespace System.Reflection.Emit
 
         // Returns true if obj is an instance of FieldToken and is 
         // equal to this instance.
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is FieldToken)
                 return Equals((FieldToken)obj);

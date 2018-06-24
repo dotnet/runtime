@@ -400,12 +400,12 @@ namespace System.Reflection
         #endregion
 
         #region ICustomAttributeProvider Members
-        public override Object[] GetCustomAttributes(bool inherit)
+        public override object[] GetCustomAttributes(bool inherit)
         {
             return CustomAttribute.GetCustomAttributes(this, typeof(object) as RuntimeType);
         }
 
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
@@ -450,7 +450,7 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(className));
 
             RuntimeType retType = null;
-            Object keepAlive = null;
+            object keepAlive = null;
             GetType(GetNativeHandle(), className, throwOnError, ignoreCase, JitHelpers.GetObjectHandleOnStack(ref retType), JitHelpers.GetObjectHandleOnStack(ref keepAlive));
             GC.KeepAlive(keepAlive);
             return retType;

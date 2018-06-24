@@ -230,20 +230,20 @@ namespace System.Diagnostics.Tracing
         // ResourceManager Event Definitions 
 
         [Event(1, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerLookupStarted(String baseName, String mainAssemblyName, String cultureName)
+        public void ResourceManagerLookupStarted(string baseName, string mainAssemblyName, string cultureName)
         {
             WriteEvent(1, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(2, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerLookingForResourceSet(String baseName, String mainAssemblyName, String cultureName)
+        public void ResourceManagerLookingForResourceSet(string baseName, string mainAssemblyName, string cultureName)
         {
             if (IsEnabled())
                 WriteEvent(2, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(3, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerFoundResourceSetInCache(String baseName, String mainAssemblyName, String cultureName)
+        public void ResourceManagerFoundResourceSetInCache(string baseName, string mainAssemblyName, string cultureName)
         {
             if (IsEnabled())
                 WriteEvent(3, baseName, mainAssemblyName, cultureName);
@@ -253,7 +253,7 @@ namespace System.Diagnostics.Tracing
         // the cache. This can happen if you have an assembly load callback that called into this
         // instance of the ResourceManager.
         [Event(4, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerFoundResourceSetInCacheUnexpected(String baseName, String mainAssemblyName, String cultureName)
+        public void ResourceManagerFoundResourceSetInCacheUnexpected(string baseName, string mainAssemblyName, string cultureName)
         {
             if (IsEnabled())
                 WriteEvent(4, baseName, mainAssemblyName, cultureName);
@@ -261,7 +261,7 @@ namespace System.Diagnostics.Tracing
 
         // manifest resource stream lookup succeeded
         [Event(5, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerStreamFound(String baseName, String mainAssemblyName, String cultureName, String loadedAssemblyName, String resourceFileName)
+        public void ResourceManagerStreamFound(string baseName, string mainAssemblyName, string cultureName, string loadedAssemblyName, string resourceFileName)
         {
             if (IsEnabled())
                 WriteEvent(5, baseName, mainAssemblyName, cultureName, loadedAssemblyName, resourceFileName);
@@ -269,35 +269,35 @@ namespace System.Diagnostics.Tracing
 
         // manifest resource stream lookup failed
         [Event(6, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerStreamNotFound(String baseName, String mainAssemblyName, String cultureName, String loadedAssemblyName, String resourceFileName)
+        public void ResourceManagerStreamNotFound(string baseName, string mainAssemblyName, string cultureName, string loadedAssemblyName, string resourceFileName)
         {
             if (IsEnabled())
                 WriteEvent(6, baseName, mainAssemblyName, cultureName, loadedAssemblyName, resourceFileName);
         }
 
         [Event(7, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerGetSatelliteAssemblySucceeded(String baseName, String mainAssemblyName, String cultureName, String assemblyName)
+        public void ResourceManagerGetSatelliteAssemblySucceeded(string baseName, string mainAssemblyName, string cultureName, string assemblyName)
         {
             if (IsEnabled())
                 WriteEvent(7, baseName, mainAssemblyName, cultureName, assemblyName);
         }
 
         [Event(8, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerGetSatelliteAssemblyFailed(String baseName, String mainAssemblyName, String cultureName, String assemblyName)
+        public void ResourceManagerGetSatelliteAssemblyFailed(string baseName, string mainAssemblyName, string cultureName, string assemblyName)
         {
             if (IsEnabled())
                 WriteEvent(8, baseName, mainAssemblyName, cultureName, assemblyName);
         }
 
         [Event(9, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerCaseInsensitiveResourceStreamLookupSucceeded(String baseName, String mainAssemblyName, String assemblyName, String resourceFileName)
+        public void ResourceManagerCaseInsensitiveResourceStreamLookupSucceeded(string baseName, string mainAssemblyName, string assemblyName, string resourceFileName)
         {
             if (IsEnabled())
                 WriteEvent(9, baseName, mainAssemblyName, assemblyName, resourceFileName);
         }
 
         [Event(10, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerCaseInsensitiveResourceStreamLookupFailed(String baseName, String mainAssemblyName, String assemblyName, String resourceFileName)
+        public void ResourceManagerCaseInsensitiveResourceStreamLookupFailed(string baseName, string mainAssemblyName, string assemblyName, string resourceFileName)
         {
             if (IsEnabled())
                 WriteEvent(10, baseName, mainAssemblyName, assemblyName, resourceFileName);
@@ -305,7 +305,7 @@ namespace System.Diagnostics.Tracing
 
         // Could not access the manifest resource the assembly
         [Event(11, Level = EventLevel.Error, Keywords = Keywords.Loader)]
-        public void ResourceManagerManifestResourceAccessDenied(String baseName, String mainAssemblyName, String assemblyName, String canonicalName)
+        public void ResourceManagerManifestResourceAccessDenied(string baseName, string mainAssemblyName, string assemblyName, string canonicalName)
         {
             if (IsEnabled())
                 WriteEvent(11, baseName, mainAssemblyName, assemblyName, canonicalName);
@@ -313,77 +313,77 @@ namespace System.Diagnostics.Tracing
 
         // Neutral resources are sufficient for this culture. Skipping satellites
         [Event(12, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerNeutralResourcesSufficient(String baseName, String mainAssemblyName, String cultureName)
+        public void ResourceManagerNeutralResourcesSufficient(string baseName, string mainAssemblyName, string cultureName)
         {
             if (IsEnabled())
                 WriteEvent(12, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(13, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerNeutralResourceAttributeMissing(String mainAssemblyName)
+        public void ResourceManagerNeutralResourceAttributeMissing(string mainAssemblyName)
         {
             if (IsEnabled())
                 WriteEvent(13, mainAssemblyName);
         }
 
         [Event(14, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerCreatingResourceSet(String baseName, String mainAssemblyName, String cultureName, String fileName)
+        public void ResourceManagerCreatingResourceSet(string baseName, string mainAssemblyName, string cultureName, string fileName)
         {
             if (IsEnabled())
                 WriteEvent(14, baseName, mainAssemblyName, cultureName, fileName);
         }
 
         [Event(15, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerNotCreatingResourceSet(String baseName, String mainAssemblyName, String cultureName)
+        public void ResourceManagerNotCreatingResourceSet(string baseName, string mainAssemblyName, string cultureName)
         {
             if (IsEnabled())
                 WriteEvent(15, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(16, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerLookupFailed(String baseName, String mainAssemblyName, String cultureName)
+        public void ResourceManagerLookupFailed(string baseName, string mainAssemblyName, string cultureName)
         {
             if (IsEnabled())
                 WriteEvent(16, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(17, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerReleasingResources(String baseName, String mainAssemblyName)
+        public void ResourceManagerReleasingResources(string baseName, string mainAssemblyName)
         {
             if (IsEnabled())
                 WriteEvent(17, baseName, mainAssemblyName);
         }
 
         [Event(18, Level = EventLevel.Warning, Keywords = Keywords.Loader)]
-        public void ResourceManagerNeutralResourcesNotFound(String baseName, String mainAssemblyName, String resName)
+        public void ResourceManagerNeutralResourcesNotFound(string baseName, string mainAssemblyName, string resName)
         {
             if (IsEnabled())
                 WriteEvent(18, baseName, mainAssemblyName, resName);
         }
 
         [Event(19, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerNeutralResourcesFound(String baseName, String mainAssemblyName, String resName)
+        public void ResourceManagerNeutralResourcesFound(string baseName, string mainAssemblyName, string resName)
         {
             if (IsEnabled())
                 WriteEvent(19, baseName, mainAssemblyName, resName);
         }
 
         [Event(20, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerAddingCultureFromConfigFile(String baseName, String mainAssemblyName, String cultureName)
+        public void ResourceManagerAddingCultureFromConfigFile(string baseName, string mainAssemblyName, string cultureName)
         {
             if (IsEnabled())
                 WriteEvent(20, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(21, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerCultureNotFoundInConfigFile(String baseName, String mainAssemblyName, String cultureName)
+        public void ResourceManagerCultureNotFoundInConfigFile(string baseName, string mainAssemblyName, string cultureName)
         {
             if (IsEnabled())
                 WriteEvent(21, baseName, mainAssemblyName, cultureName);
         }
 
         [Event(22, Level = EventLevel.Informational, Keywords = Keywords.Loader)]
-        public void ResourceManagerCultureFoundInConfigFile(String baseName, String mainAssemblyName, String cultureName)
+        public void ResourceManagerCultureFoundInConfigFile(string baseName, string mainAssemblyName, string cultureName)
         {
             if (IsEnabled())
                 WriteEvent(22, baseName, mainAssemblyName, cultureName);
@@ -393,84 +393,84 @@ namespace System.Diagnostics.Tracing
         // ResourceManager Event Wrappers
 
         [NonEvent]
-        public void ResourceManagerLookupStarted(String baseName, Assembly mainAssembly, String cultureName)
+        public void ResourceManagerLookupStarted(string baseName, Assembly mainAssembly, string cultureName)
         {
             if (IsEnabled())
                 ResourceManagerLookupStarted(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerLookingForResourceSet(String baseName, Assembly mainAssembly, String cultureName)
+        public void ResourceManagerLookingForResourceSet(string baseName, Assembly mainAssembly, string cultureName)
         {
             if (IsEnabled())
                 ResourceManagerLookingForResourceSet(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerFoundResourceSetInCache(String baseName, Assembly mainAssembly, String cultureName)
+        public void ResourceManagerFoundResourceSetInCache(string baseName, Assembly mainAssembly, string cultureName)
         {
             if (IsEnabled())
                 ResourceManagerFoundResourceSetInCache(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerFoundResourceSetInCacheUnexpected(String baseName, Assembly mainAssembly, String cultureName)
+        public void ResourceManagerFoundResourceSetInCacheUnexpected(string baseName, Assembly mainAssembly, string cultureName)
         {
             if (IsEnabled())
                 ResourceManagerFoundResourceSetInCacheUnexpected(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerStreamFound(String baseName, Assembly mainAssembly, String cultureName, Assembly loadedAssembly, String resourceFileName)
+        public void ResourceManagerStreamFound(string baseName, Assembly mainAssembly, string cultureName, Assembly loadedAssembly, string resourceFileName)
         {
             if (IsEnabled())
                 ResourceManagerStreamFound(baseName, GetName(mainAssembly), cultureName, GetName(loadedAssembly), resourceFileName);
         }
 
         [NonEvent]
-        public void ResourceManagerStreamNotFound(String baseName, Assembly mainAssembly, String cultureName, Assembly loadedAssembly, String resourceFileName)
+        public void ResourceManagerStreamNotFound(string baseName, Assembly mainAssembly, string cultureName, Assembly loadedAssembly, string resourceFileName)
         {
             if (IsEnabled())
                 ResourceManagerStreamNotFound(baseName, GetName(mainAssembly), cultureName, GetName(loadedAssembly), resourceFileName);
         }
 
         [NonEvent]
-        public void ResourceManagerGetSatelliteAssemblySucceeded(String baseName, Assembly mainAssembly, String cultureName, String assemblyName)
+        public void ResourceManagerGetSatelliteAssemblySucceeded(string baseName, Assembly mainAssembly, string cultureName, string assemblyName)
         {
             if (IsEnabled())
                 ResourceManagerGetSatelliteAssemblySucceeded(baseName, GetName(mainAssembly), cultureName, assemblyName);
         }
 
         [NonEvent]
-        public void ResourceManagerGetSatelliteAssemblyFailed(String baseName, Assembly mainAssembly, String cultureName, String assemblyName)
+        public void ResourceManagerGetSatelliteAssemblyFailed(string baseName, Assembly mainAssembly, string cultureName, string assemblyName)
         {
             if (IsEnabled())
                 ResourceManagerGetSatelliteAssemblyFailed(baseName, GetName(mainAssembly), cultureName, assemblyName);
         }
 
         [NonEvent]
-        public void ResourceManagerCaseInsensitiveResourceStreamLookupSucceeded(String baseName, Assembly mainAssembly, String assemblyName, String resourceFileName)
+        public void ResourceManagerCaseInsensitiveResourceStreamLookupSucceeded(string baseName, Assembly mainAssembly, string assemblyName, string resourceFileName)
         {
             if (IsEnabled())
                 ResourceManagerCaseInsensitiveResourceStreamLookupSucceeded(baseName, GetName(mainAssembly), assemblyName, resourceFileName);
         }
 
         [NonEvent]
-        public void ResourceManagerCaseInsensitiveResourceStreamLookupFailed(String baseName, Assembly mainAssembly, String assemblyName, String resourceFileName)
+        public void ResourceManagerCaseInsensitiveResourceStreamLookupFailed(string baseName, Assembly mainAssembly, string assemblyName, string resourceFileName)
         {
             if (IsEnabled())
                 ResourceManagerCaseInsensitiveResourceStreamLookupFailed(baseName, GetName(mainAssembly), assemblyName, resourceFileName);
         }
 
         [NonEvent]
-        public void ResourceManagerManifestResourceAccessDenied(String baseName, Assembly mainAssembly, String assemblyName, String canonicalName)
+        public void ResourceManagerManifestResourceAccessDenied(string baseName, Assembly mainAssembly, string assemblyName, string canonicalName)
         {
             if (IsEnabled())
                 ResourceManagerManifestResourceAccessDenied(baseName, GetName(mainAssembly), assemblyName, canonicalName);
         }
 
         [NonEvent]
-        public void ResourceManagerNeutralResourcesSufficient(String baseName, Assembly mainAssembly, String cultureName)
+        public void ResourceManagerNeutralResourcesSufficient(string baseName, Assembly mainAssembly, string cultureName)
         {
             if (IsEnabled())
                 ResourceManagerNeutralResourcesSufficient(baseName, GetName(mainAssembly), cultureName);
@@ -484,63 +484,63 @@ namespace System.Diagnostics.Tracing
         }
 
         [NonEvent]
-        public void ResourceManagerCreatingResourceSet(String baseName, Assembly mainAssembly, String cultureName, String fileName)
+        public void ResourceManagerCreatingResourceSet(string baseName, Assembly mainAssembly, string cultureName, string fileName)
         {
             if (IsEnabled())
                 ResourceManagerCreatingResourceSet(baseName, GetName(mainAssembly), cultureName, fileName);
         }
 
         [NonEvent]
-        public void ResourceManagerNotCreatingResourceSet(String baseName, Assembly mainAssembly, String cultureName)
+        public void ResourceManagerNotCreatingResourceSet(string baseName, Assembly mainAssembly, string cultureName)
         {
             if (IsEnabled())
                 ResourceManagerNotCreatingResourceSet(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerLookupFailed(String baseName, Assembly mainAssembly, String cultureName)
+        public void ResourceManagerLookupFailed(string baseName, Assembly mainAssembly, string cultureName)
         {
             if (IsEnabled())
                 ResourceManagerLookupFailed(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerReleasingResources(String baseName, Assembly mainAssembly)
+        public void ResourceManagerReleasingResources(string baseName, Assembly mainAssembly)
         {
             if (IsEnabled())
                 ResourceManagerReleasingResources(baseName, GetName(mainAssembly));
         }
 
         [NonEvent]
-        public void ResourceManagerNeutralResourcesNotFound(String baseName, Assembly mainAssembly, String resName)
+        public void ResourceManagerNeutralResourcesNotFound(string baseName, Assembly mainAssembly, string resName)
         {
             if (IsEnabled())
                 ResourceManagerNeutralResourcesNotFound(baseName, GetName(mainAssembly), resName);
         }
 
         [NonEvent]
-        public void ResourceManagerNeutralResourcesFound(String baseName, Assembly mainAssembly, String resName)
+        public void ResourceManagerNeutralResourcesFound(string baseName, Assembly mainAssembly, string resName)
         {
             if (IsEnabled())
                 ResourceManagerNeutralResourcesFound(baseName, GetName(mainAssembly), resName);
         }
 
         [NonEvent]
-        public void ResourceManagerAddingCultureFromConfigFile(String baseName, Assembly mainAssembly, String cultureName)
+        public void ResourceManagerAddingCultureFromConfigFile(string baseName, Assembly mainAssembly, string cultureName)
         {
             if (IsEnabled())
                 ResourceManagerAddingCultureFromConfigFile(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerCultureNotFoundInConfigFile(String baseName, Assembly mainAssembly, String cultureName)
+        public void ResourceManagerCultureNotFoundInConfigFile(string baseName, Assembly mainAssembly, string cultureName)
         {
             if (IsEnabled())
                 ResourceManagerCultureNotFoundInConfigFile(baseName, GetName(mainAssembly), cultureName);
         }
 
         [NonEvent]
-        public void ResourceManagerCultureFoundInConfigFile(String baseName, Assembly mainAssembly, String cultureName)
+        public void ResourceManagerCultureFoundInConfigFile(string baseName, Assembly mainAssembly, string cultureName)
         {
             if (IsEnabled())
                 ResourceManagerCultureFoundInConfigFile(baseName, GetName(mainAssembly), cultureName);

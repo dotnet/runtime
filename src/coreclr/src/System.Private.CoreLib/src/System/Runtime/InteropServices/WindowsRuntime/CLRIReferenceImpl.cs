@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // to the managed object, and free the native method.  Also we want the return value boxed (aka normal value type boxing).
         //
         // This method is called by VM.
-        internal static Object UnboxHelper(Object wrapper)
+        internal static object UnboxHelper(object wrapper)
         {
             Debug.Assert(wrapper != null);
             IReference<T> reference = (IReference<T>)wrapper;
@@ -108,7 +108,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // IList & ICollection methods.
         // This enables two-way data binding and index access in Jupiter
         //
-        Object IList.this[int index]
+        object IList.this[int index]
         {
             get
             {
@@ -121,12 +121,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        int IList.Add(Object value)
+        int IList.Add(object value)
         {
             return _list.Add(value);
         }
 
-        bool IList.Contains(Object value)
+        bool IList.Contains(object value)
         {
             return _list.Contains(value);
         }
@@ -152,17 +152,17 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        int IList.IndexOf(Object value)
+        int IList.IndexOf(object value)
         {
             return _list.IndexOf(value);
         }
 
-        void IList.Insert(int index, Object value)
+        void IList.Insert(int index, object value)
         {
             _list.Insert(index, value);
         }
 
-        void IList.Remove(Object value)
+        void IList.Remove(object value)
         {
             _list.Remove(value);
         }
@@ -185,7 +185,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        Object ICollection.SyncRoot
+        object ICollection.SyncRoot
         {
             get
             {
@@ -211,7 +211,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // to the managed object, and free the native method.
         //
         // This method is called by VM.
-        internal static Object UnboxHelper(Object wrapper)
+        internal static object UnboxHelper(object wrapper)
         {
             Debug.Assert(wrapper != null);
             IReferenceArray<T> reference = (IReferenceArray<T>)wrapper;
@@ -228,7 +228,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal static readonly Type s_rectType = Type.GetType("Windows.Foundation.Rect, System.Runtime.WindowsRuntime");
         internal static readonly Type s_sizeType = Type.GetType("Windows.Foundation.Size, System.Runtime.WindowsRuntime");
 
-        internal static Object CreateIReference(Object obj)
+        internal static object CreateIReference(object obj)
         {
             Debug.Assert(obj != null, "Null should not be boxed.");
 
@@ -239,8 +239,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (type == typeof(int))
                 return new CLRIReferenceImpl<int>(PropertyType.Int32, (int)obj);
-            if (type == typeof(String))
-                return new CLRIReferenceImpl<String>(PropertyType.String, (String)obj);
+            if (type == typeof(string))
+                return new CLRIReferenceImpl<string>(PropertyType.String, (string)obj);
             if (type == typeof(byte))
                 return new CLRIReferenceImpl<byte>(PropertyType.UInt8, (byte)obj);
             if (type == typeof(short))
@@ -267,8 +267,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 return new CLRIReferenceImpl<DateTimeOffset>(PropertyType.DateTime, (DateTimeOffset)obj);
             if (type == typeof(TimeSpan))
                 return new CLRIReferenceImpl<TimeSpan>(PropertyType.TimeSpan, (TimeSpan)obj);
-            if (type == typeof(Object))
-                return new CLRIReferenceImpl<Object>(PropertyType.Inspectable, (Object)obj);
+            if (type == typeof(object))
+                return new CLRIReferenceImpl<object>(PropertyType.Inspectable, (object)obj);
             if (type == typeof(RuntimeType))
             {   // If the type is System.RuntimeType, we want to use System.Type marshaler (it's parent of the type)
                 return new CLRIReferenceImpl<Type>(PropertyType.Other, (Type)obj);
@@ -296,14 +296,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (propType.HasValue)
             {
                 Type specificType = typeof(CLRIReferenceImpl<>).MakeGenericType(type);
-                return Activator.CreateInstance(specificType, new Object[] { propType.Value, obj });
+                return Activator.CreateInstance(specificType, new object[] { propType.Value, obj });
             }
 
             Debug.Fail("We should not see non-WinRT type here");
             return null;
         }
 
-        internal static Object CreateIReferenceArray(Array obj)
+        internal static object CreateIReferenceArray(Array obj)
         {
             Debug.Assert(obj != null);
             Debug.Assert(obj.GetType().IsArray);
@@ -314,8 +314,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (type == typeof(int))
                 return new CLRIReferenceArrayImpl<int>(PropertyType.Int32Array, (int[])obj);
-            if (type == typeof(String))
-                return new CLRIReferenceArrayImpl<String>(PropertyType.StringArray, (String[])obj);
+            if (type == typeof(string))
+                return new CLRIReferenceArrayImpl<string>(PropertyType.StringArray, (string[])obj);
             if (type == typeof(byte))
                 return new CLRIReferenceArrayImpl<byte>(PropertyType.UInt8Array, (byte[])obj);
             if (type == typeof(short))
@@ -367,7 +367,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 if (type.IsGenericType &&
                     type.GetGenericTypeDefinition() == typeof(System.Collections.Generic.KeyValuePair<,>))
                 {
-                    Object[] objArray = new Object[obj.Length];
+                    object[] objArray = new object[obj.Length];
                     for (int i = 0; i < objArray.Length; i++)
                     {
                         objArray[i] = obj.GetValue(i);
@@ -389,12 +389,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 // All WinRT value type will be Property.Other
                 Type specificType = typeof(CLRIReferenceArrayImpl<>).MakeGenericType(type);
-                return Activator.CreateInstance(specificType, new Object[] { propType.Value, obj });
+                return Activator.CreateInstance(specificType, new object[] { propType.Value, obj });
             }
             else
             {
                 // All WinRT reference type (including arbitrary managed type) will be PropertyType.ObjectArray
-                return new CLRIReferenceArrayImpl<Object>(PropertyType.InspectableArray, (Object[])obj);
+                return new CLRIReferenceArrayImpl<object>(PropertyType.InspectableArray, (object[])obj);
             }
         }
     }

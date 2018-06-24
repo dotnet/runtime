@@ -322,8 +322,8 @@ namespace System.Reflection.Emit
             get { throw new NotSupportedException(SR.NotSupported_NonReflectedType); }
         }
 
-        public override Object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, Object target,
-            Object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
+        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target,
+            object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
@@ -555,12 +555,12 @@ namespace System.Reflection.Emit
             get { return this; }
         }
 
-        public override Object[] GetCustomAttributes(bool inherit)
+        public override object[] GetCustomAttributes(bool inherit)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }

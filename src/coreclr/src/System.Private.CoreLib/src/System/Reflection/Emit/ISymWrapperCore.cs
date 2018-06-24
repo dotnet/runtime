@@ -165,7 +165,7 @@ namespace System.Reflection.Emit
             //------------------------------------------------------------------------------
             // DefineDocument() wrapper
             //------------------------------------------------------------------------------
-            ISymbolDocumentWriter ISymbolWriter.DefineDocument(String url,
+            ISymbolDocumentWriter ISymbolWriter.DefineDocument(string url,
                                                                Guid language,
                                                                Guid languageVendor,
                                                                Guid documentType)
@@ -295,7 +295,7 @@ namespace System.Reflection.Emit
             //------------------------------------------------------------------------------
             // DefineLocalVariable() wrapper
             //------------------------------------------------------------------------------
-            void ISymbolWriter.DefineLocalVariable(String name,
+            void ISymbolWriter.DefineLocalVariable(string name,
                                                    FieldAttributes attributes,
                                                    byte[] signature,
                                                    SymAddressKind addrKind,
@@ -325,7 +325,7 @@ namespace System.Reflection.Emit
             //------------------------------------------------------------------------------
             // SetSymAttribute() wrapper
             //------------------------------------------------------------------------------
-            void ISymbolWriter.SetSymAttribute(SymbolToken parent, String name, byte[] data)
+            void ISymbolWriter.SetSymAttribute(SymbolToken parent, string name, byte[] data)
             {
                 int hr = m_vtable.SetSymAttribute(m_pWriter, parent.GetToken(), name, data.Length, data);
                 if (hr < 0)
@@ -337,7 +337,7 @@ namespace System.Reflection.Emit
             //------------------------------------------------------------------------------
             // UsingNamespace() wrapper
             //------------------------------------------------------------------------------
-            void ISymbolWriter.UsingNamespace(String name)
+            void ISymbolWriter.UsingNamespace(string name)
             {
                 int hr = m_vtable.UsingNamespace(m_pWriter, name);
                 if (hr < 0)
@@ -366,13 +366,13 @@ namespace System.Reflection.Emit
             //------------------------------------------------------------------------------
             private delegate int DInitialize(ISymUnmanagedWriter* pthis,
                                              IntPtr emitter,  //IUnknown*
-                                             [MarshalAs(UnmanagedType.LPWStr)] String filename, //WCHAR*
+                                             [MarshalAs(UnmanagedType.LPWStr)] string filename, //WCHAR*
                                              IntPtr pIStream, //IStream*
                                              [MarshalAs(UnmanagedType.Bool)] bool fFullBuild
                                              );
 
             private delegate int DDefineDocument(ISymUnmanagedWriter* pthis,
-                                                 [MarshalAs(UnmanagedType.LPWStr)] String url,
+                                                 [MarshalAs(UnmanagedType.LPWStr)] string url,
                                                  [In] ref Guid language,
                                                  [In] ref Guid languageVender,
                                                  [In] ref Guid documentType,
@@ -398,7 +398,7 @@ namespace System.Reflection.Emit
             private delegate int DSetScopeRange(ISymUnmanagedWriter* pthis, int scopeID, int startOffset, int endOffset);
 
             private delegate int DDefineLocalVariable(ISymUnmanagedWriter* pthis,
-                                                      [MarshalAs(UnmanagedType.LPWStr)] String name,
+                                                      [MarshalAs(UnmanagedType.LPWStr)] string name,
                                                       int attributes,
                                                       int cSig,
                                                       [In] byte[] signature,
@@ -414,15 +414,15 @@ namespace System.Reflection.Emit
 
             private delegate int DSetSymAttribute(ISymUnmanagedWriter* pthis,
                                                   int parent,
-                                                  [MarshalAs(UnmanagedType.LPWStr)] String name,
+                                                  [MarshalAs(UnmanagedType.LPWStr)] string name,
                                                   int cData,
                                                   [In] byte[] data
                                                  );
 
 
-            private delegate int DOpenNamespace(ISymUnmanagedWriter* pthis, [MarshalAs(UnmanagedType.LPWStr)] String name);
+            private delegate int DOpenNamespace(ISymUnmanagedWriter* pthis, [MarshalAs(UnmanagedType.LPWStr)] string name);
             private delegate int DCloseNamespace(ISymUnmanagedWriter* pthis);
-            private delegate int DUsingNamespace(ISymUnmanagedWriter* pthis, [MarshalAs(UnmanagedType.LPWStr)] String name);
+            private delegate int DUsingNamespace(ISymUnmanagedWriter* pthis, [MarshalAs(UnmanagedType.LPWStr)] string name);
 
 
 

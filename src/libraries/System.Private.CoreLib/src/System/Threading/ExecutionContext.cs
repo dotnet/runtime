@@ -19,7 +19,7 @@ using Thread = Internal.Runtime.Augments.RuntimeThread;
 
 namespace System.Threading
 {
-    public delegate void ContextCallback(Object state);
+    public delegate void ContextCallback(object state);
 
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
@@ -112,7 +112,7 @@ namespace System.Threading
 
         internal bool IsDefault => m_isDefault;
 
-        public static void Run(ExecutionContext executionContext, ContextCallback callback, Object state)
+        public static void Run(ExecutionContext executionContext, ContextCallback callback, object state)
         {
             // Note: ExecutionContext.Run is an extremely hot function and used by every await, ThreadPool execution, etc.
             if (executionContext == null)
@@ -123,7 +123,7 @@ namespace System.Threading
             RunInternal(executionContext, callback, state);
         }
 
-        internal static void RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+        internal static void RunInternal(ExecutionContext executionContext, ContextCallback callback, object state)
         {
             // Note: ExecutionContext.RunInternal is an extremely hot function and used by every await, ThreadPool execution, etc.
             // Note: Manual enregistering may be addressed by "Exception Handling Write Through Optimization"

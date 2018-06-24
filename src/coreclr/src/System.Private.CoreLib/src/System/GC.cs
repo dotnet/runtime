@@ -105,10 +105,10 @@ namespace System
         internal static extern bool IsServerGC();
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void _AddMemoryPressure(UInt64 bytesAllocated);
+        private static extern void _AddMemoryPressure(ulong bytesAllocated);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void _RemoveMemoryPressure(UInt64 bytesAllocated);
+        private static extern void _RemoveMemoryPressure(ulong bytesAllocated);
 
         public static void AddMemoryPressure(long bytesAllocated)
         {
@@ -118,7 +118,7 @@ namespace System
                         SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-            if ((4 == IntPtr.Size) && (bytesAllocated > Int32.MaxValue))
+            if ((4 == IntPtr.Size) && (bytesAllocated > int.MaxValue))
             {
                 throw new ArgumentOutOfRangeException("pressure",
                     SR.ArgumentOutOfRange_MustBeNonNegInt32);
@@ -135,7 +135,7 @@ namespace System
                     SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-            if ((4 == IntPtr.Size) && (bytesAllocated > Int32.MaxValue))
+            if ((4 == IntPtr.Size) && (bytesAllocated > int.MaxValue))
             {
                 throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
                     SR.ArgumentOutOfRange_MustBeNonNegInt32);
@@ -148,7 +148,7 @@ namespace System
         // Returns the generation that obj is currently in.
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern int GetGeneration(Object obj);
+        public static extern int GetGeneration(object obj);
 
 
         // Forces a collection of all generations from 0 through Generation.
@@ -256,7 +256,7 @@ namespace System
         // If we insert a call to GC.KeepAlive(this) at the end of Problem(), then
         // Foo doesn't get finalized and the stream stays open.
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // disable optimizations
-        public static void KeepAlive(Object obj)
+        public static void KeepAlive(object obj)
         {
         }
 
@@ -288,9 +288,9 @@ namespace System
         // Indicates that the system should not call the Finalize() method on
         // an object that would normally require this call.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void _SuppressFinalize(Object o);
+        private static extern void _SuppressFinalize(object o);
 
-        public static void SuppressFinalize(Object obj)
+        public static void SuppressFinalize(object obj)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
@@ -302,9 +302,9 @@ namespace System
         // where calling ReRegisterForFinalize is useful is inside a finalizer that 
         // needs to resurrect itself or an object that it references.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void _ReRegisterForFinalize(Object o);
+        private static extern void _ReRegisterForFinalize(object o);
 
-        public static void ReRegisterForFinalize(Object obj)
+        public static void ReRegisterForFinalize(object obj)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));

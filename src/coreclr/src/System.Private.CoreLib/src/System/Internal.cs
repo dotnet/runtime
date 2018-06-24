@@ -59,91 +59,91 @@ namespace System
 
             new ArraySegment<byte>(new byte[1], 0, 0);
 
-            new Dictionary<Char, Object>();
-            new Dictionary<Guid, Byte>();
-            new Dictionary<Guid, Object>();
+            new Dictionary<char, object>();
+            new Dictionary<Guid, byte>();
+            new Dictionary<Guid, object>();
             new Dictionary<Guid, Guid>(); // Added for Visual Studio 2010
-            new Dictionary<Int16, IntPtr>();
-            new Dictionary<Int32, Byte>();
-            new Dictionary<Int32, Int32>();
-            new Dictionary<Int32, Object>();
-            new Dictionary<IntPtr, Boolean>();
-            new Dictionary<IntPtr, Int16>();
-            new Dictionary<Object, Boolean>();
-            new Dictionary<Object, Char>();
-            new Dictionary<Object, Guid>();
-            new Dictionary<Object, Int32>();
-            new Dictionary<Object, Int64>(); // Added for Visual Studio 2010
+            new Dictionary<short, IntPtr>();
+            new Dictionary<int, byte>();
+            new Dictionary<int, int>();
+            new Dictionary<int, object>();
+            new Dictionary<IntPtr, bool>();
+            new Dictionary<IntPtr, short>();
+            new Dictionary<object, bool>();
+            new Dictionary<object, char>();
+            new Dictionary<object, Guid>();
+            new Dictionary<object, int>();
+            new Dictionary<object, long>(); // Added for Visual Studio 2010
             new Dictionary<uint, WeakReference>();  // NCL team needs this
-            new Dictionary<Object, UInt32>();
-            new Dictionary<UInt32, Object>();
-            new Dictionary<Int64, Object>();
+            new Dictionary<object, uint>();
+            new Dictionary<uint, object>();
+            new Dictionary<long, object>();
 
             // to genereate mdil for Dictionary instantiation when key is user defined value type
-            new Dictionary<Guid, Int32>();
+            new Dictionary<Guid, int>();
 
             // Microsoft.Windows.Design
-            new Dictionary<System.Reflection.MemberTypes, Object>();
+            new Dictionary<System.Reflection.MemberTypes, object>();
             new EnumEqualityComparer<System.Reflection.MemberTypes>();
 
             // Microsoft.Expression.DesignModel
-            new Dictionary<Object, KeyValuePair<Object, Object>>();
-            new Dictionary<KeyValuePair<Object, Object>, Object>();
+            new Dictionary<object, KeyValuePair<object, object>>();
+            new Dictionary<KeyValuePair<object, object>, object>();
 
-            NullableHelper<Boolean>();
-            NullableHelper<Byte>();
-            NullableHelper<Char>();
+            NullableHelper<bool>();
+            NullableHelper<byte>();
+            NullableHelper<char>();
             NullableHelper<DateTime>();
-            NullableHelper<Decimal>();
-            NullableHelper<Double>();
+            NullableHelper<decimal>();
+            NullableHelper<double>();
             NullableHelper<Guid>();
-            NullableHelper<Int16>();
-            NullableHelper<Int32>();
-            NullableHelper<Int64>();
-            NullableHelper<Single>();
+            NullableHelper<short>();
+            NullableHelper<int>();
+            NullableHelper<long>();
+            NullableHelper<float>();
             NullableHelper<TimeSpan>();
             NullableHelper<DateTimeOffset>();  // For SQL
 
-            new List<Boolean>();
-            new List<Byte>();
-            new List<Char>();
+            new List<bool>();
+            new List<byte>();
+            new List<char>();
             new List<DateTime>();
-            new List<Decimal>();
-            new List<Double>();
+            new List<decimal>();
+            new List<double>();
             new List<Guid>();
-            new List<Int16>();
-            new List<Int32>();
-            new List<Int64>();
+            new List<short>();
+            new List<int>();
+            new List<long>();
             new List<TimeSpan>();
-            new List<SByte>();
-            new List<Single>();
-            new List<UInt16>();
-            new List<UInt32>();
-            new List<UInt64>();
+            new List<sbyte>();
+            new List<float>();
+            new List<ushort>();
+            new List<uint>();
+            new List<ulong>();
             new List<IntPtr>();
-            new List<KeyValuePair<Object, Object>>();
+            new List<KeyValuePair<object, object>>();
             new List<GCHandle>();  // NCL team needs this
             new List<DateTimeOffset>();
 
-            new KeyValuePair<Char, UInt16>('\0', UInt16.MinValue);
-            new KeyValuePair<UInt16, Double>(UInt16.MinValue, Double.MinValue);
-            new KeyValuePair<Object, Int32>(string.Empty, Int32.MinValue);
-            new KeyValuePair<Int32, Int32>(Int32.MinValue, Int32.MinValue);
-            SZArrayHelper<Boolean>(null);
-            SZArrayHelper<Byte>(null);
+            new KeyValuePair<char, ushort>('\0', ushort.MinValue);
+            new KeyValuePair<ushort, double>(ushort.MinValue, double.MinValue);
+            new KeyValuePair<object, int>(string.Empty, int.MinValue);
+            new KeyValuePair<int, int>(int.MinValue, int.MinValue);
+            SZArrayHelper<bool>(null);
+            SZArrayHelper<byte>(null);
             SZArrayHelper<DateTime>(null);
-            SZArrayHelper<Decimal>(null);
-            SZArrayHelper<Double>(null);
+            SZArrayHelper<decimal>(null);
+            SZArrayHelper<double>(null);
             SZArrayHelper<Guid>(null);
-            SZArrayHelper<Int16>(null);
-            SZArrayHelper<Int32>(null);
-            SZArrayHelper<Int64>(null);
+            SZArrayHelper<short>(null);
+            SZArrayHelper<int>(null);
+            SZArrayHelper<long>(null);
             SZArrayHelper<TimeSpan>(null);
-            SZArrayHelper<SByte>(null);
-            SZArrayHelper<Single>(null);
-            SZArrayHelper<UInt16>(null);
-            SZArrayHelper<UInt32>(null);
-            SZArrayHelper<UInt64>(null);
+            SZArrayHelper<sbyte>(null);
+            SZArrayHelper<float>(null);
+            SZArrayHelper<ushort>(null);
+            SZArrayHelper<uint>(null);
+            SZArrayHelper<ulong>(null);
             SZArrayHelper<DateTimeOffset>(null);
 
             SZArrayHelper<CustomAttributeTypedArgument>(null);
@@ -181,7 +181,7 @@ namespace System
         }
         // System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon]
         // System.Runtime.CompilerServices.TaskAwaiter'[System.__Canon]
-        private static async Task<String> AsyncHelper2<T>()
+        private static async Task<string> AsyncHelper2<T>()
         {
             return await Task.FromResult<string>("");
         }

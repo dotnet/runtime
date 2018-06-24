@@ -35,7 +35,7 @@ namespace System
     // see how it compares to the current implementation. 
     // This delegate will disappear at some point in favor of calli 
 
-    internal delegate void CtorDelegate(Object instance);
+    internal delegate void CtorDelegate(object instance);
 
     // Keep this in sync with FormatFlags defined in typestring.h
     internal enum TypeNameFormatFlags
@@ -119,7 +119,7 @@ namespace System
                 return _items;
             }
 
-            public void CopyTo(Object[] array, int index)
+            public void CopyTo(object[] array, int index)
             {
                 if (_count == 0)
                     return;
@@ -363,7 +363,7 @@ namespace System
                         Encoding.UTF8.GetBytes(pName, cNameLen, pUtf8Name, cUtf8Name);
 
                     Filter filter = new Filter(pUtf8Name, cUtf8Name, listType);
-                    Object list = null;
+                    object list = null;
 
                     switch (cacheType)
                     {
@@ -1459,9 +1459,9 @@ namespace System
             private MemberInfoCache<RuntimePropertyInfo> m_propertyInfoCache;
             private MemberInfoCache<RuntimeEventInfo> m_eventInfoCache;
             private static CerHashtable<RuntimeMethodInfo, RuntimeMethodInfo> s_methodInstantiations;
-            private static Object s_methodInstantiationsLock;
+            private static object s_methodInstantiationsLock;
             private string m_defaultMemberName;
-            private Object m_genericCache; // Generic cache for rare scenario specific data. It is used to cache Enum names and values.
+            private object m_genericCache; // Generic cache for rare scenario specific data. It is used to cache Enum names and values.
             #endregion
 
             #region Constructor
@@ -1509,7 +1509,7 @@ namespace System
 
             #region Internal Members
 
-            internal Object GenericCache
+            internal object GenericCache
             {
                 get { return m_genericCache; }
                 set { m_genericCache = value; }
@@ -1619,7 +1619,7 @@ namespace System
                         IList<CustomAttributeData> attrs = CustomAttributeData.GetCustomAttributes(t);
                         for (int i = 0; i < attrs.Count; i++)
                         {
-                            if (Object.ReferenceEquals(attrs[i].Constructor.DeclaringType, DefaultMemberAttrType))
+                            if (object.ReferenceEquals(attrs[i].Constructor.DeclaringType, DefaultMemberAttrType))
                             {
                                 attr = attrs[i];
                                 break;
@@ -1660,7 +1660,7 @@ namespace System
                     return crmi;
 
                 if (s_methodInstantiationsLock == null)
-                    Interlocked.CompareExchange(ref s_methodInstantiationsLock, new Object(), null);
+                    Interlocked.CompareExchange(ref s_methodInstantiationsLock, new object(), null);
 
                 bool lockTaken = false;
                 RuntimeHelpers.PrepareConstrainedRegions();
@@ -1911,7 +1911,7 @@ namespace System
             return retval;
         }
 
-        internal Object GenericCache
+        internal object GenericCache
         {
             get { return Cache.GenericCache; }
             set { Cache.GenericCache = value; }
@@ -2190,7 +2190,7 @@ namespace System
             }
             #endregion
 
-            bool isInherited = !Object.ReferenceEquals(memberInfo.DeclaringType, memberInfo.ReflectedType);
+            bool isInherited = !object.ReferenceEquals(memberInfo.DeclaringType, memberInfo.ReflectedType);
 
             #region Filter by DeclaredOnly
             if ((bindingFlags & BindingFlags.DeclaredOnly) != 0 && isInherited)
@@ -2941,7 +2941,7 @@ namespace System
                 {
                     if (match != null)
                     {
-                        if (Object.ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
+                        if (object.ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
                             throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
 
                         if ((match.DeclaringType.IsInterface == true) && (fieldInfo.DeclaringType.IsInterface == true))
@@ -3228,7 +3228,7 @@ namespace System
         #endregion
 
         #region Hierarchy
-        public override bool IsInstanceOfType(Object o)
+        public override bool IsInstanceOfType(object o)
         {
             return RuntimeTypeHandle.IsInstanceOfType(this, o);
         }
@@ -3271,7 +3271,7 @@ namespace System
             if ((object)c == null)
                 return false;
 
-            if (Object.ReferenceEquals(c, this))
+            if (object.ReferenceEquals(c, this))
                 return true;
 
             RuntimeType fromType = c.UnderlyingSystemType as RuntimeType;
@@ -3580,7 +3580,7 @@ namespace System
 
             for (int i = 0; i < values.Length; i++)
             {
-                Object val = Enum.ToObject(this, values[i]);
+                object val = Enum.ToObject(this, values[i]);
                 ret.SetValue(val, i);
             }
 
@@ -3838,9 +3838,9 @@ namespace System
         private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Object AllocateValueType(RuntimeType type, object value, bool fForceTypeChange);
+        private static extern object AllocateValueType(RuntimeType type, object value, bool fForceTypeChange);
 
-        internal unsafe Object CheckValue(Object value, Binder binder, CultureInfo culture, BindingFlags invokeAttr)
+        internal unsafe object CheckValue(object value, Binder binder, CultureInfo culture, BindingFlags invokeAttr)
         {
             // this method is used by invocation in reflection to check whether a value can be assigned to type.
             if (IsInstanceOfType(value))
@@ -3851,7 +3851,7 @@ namespace System
 
                 Type type = value.GetType();
 
-                if (!Object.ReferenceEquals(type, this) && RuntimeTypeHandle.IsValueType(this))
+                if (!object.ReferenceEquals(type, this) && RuntimeTypeHandle.IsValueType(this))
                 {
                     // must be an equivalent type, re-box to the target type
                     return AllocateValueType(this, value, true);
@@ -3909,7 +3909,7 @@ namespace System
         }
 
         // Factored out of CheckValue to reduce code complexity.
-        private Object TryChangeType(Object value, Binder binder, CultureInfo culture, bool needsSpecialCast)
+        private object TryChangeType(object value, Binder binder, CultureInfo culture, bool needsSpecialCast)
         {
             if (binder != null && binder != Type.DefaultBinder)
             {
@@ -3970,9 +3970,9 @@ namespace System
 #endif
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override Object InvokeMember(
-            string name, BindingFlags bindingFlags, Binder binder, Object target,
-            Object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParams)
+        public override object InvokeMember(
+            string name, BindingFlags bindingFlags, Binder binder, object target,
+            object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParams)
         {
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
@@ -4149,7 +4149,7 @@ namespace System
                 if (selFld != null)
                 {
                     #region Invocation on a field
-                    if (selFld.FieldType.IsArray || Object.ReferenceEquals(selFld.FieldType, typeof(System.Array)))
+                    if (selFld.FieldType.IsArray || object.ReferenceEquals(selFld.FieldType, typeof(System.Array)))
                     {
                         #region Invocation of an array Field
                         int idxCnt;
@@ -4391,9 +4391,9 @@ namespace System
                     finalists = new MethodInfo[] { finalist };
 
                 if (providedArgs == null)
-                    providedArgs = Array.Empty<Object>();
+                    providedArgs = Array.Empty<object>();
 
-                Object state = null;
+                object state = null;
 
 
                 MethodBase invokeMethod = null;
@@ -4407,7 +4407,7 @@ namespace System
                 //if (useCache && argCnt == invokeMethod.GetParameters().Length)
                 //    AddMethodToCache(name, bindingFlags, argCnt, providedArgs, invokeMethod);
 
-                Object result = ((MethodInfo)invokeMethod).Invoke(target, bindingFlags, binder, providedArgs, culture);
+                object result = ((MethodInfo)invokeMethod).Invoke(target, bindingFlags, binder, providedArgs, culture);
 
                 if (state != null)
                     binder.ReorderArgumentArray(ref providedArgs, state);
@@ -4441,19 +4441,19 @@ namespace System
         #endregion
 
         #region ICloneable
-        public Object Clone()
+        public object Clone()
         {
             return this;
         }
         #endregion
 
         #region ICustomAttributeProvider
-        public override Object[] GetCustomAttributes(bool inherit)
+        public override object[] GetCustomAttributes(bool inherit)
         {
             return CustomAttribute.GetCustomAttributes(this, RuntimeType.ObjectType, inherit);
         }
 
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if ((object)attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
@@ -4585,22 +4585,22 @@ namespace System
 
             Type elementType = this.GetRootElementType();
 
-            if (Object.ReferenceEquals(elementType, typeof(ArgIterator)))
+            if (object.ReferenceEquals(elementType, typeof(ArgIterator)))
                 throw new NotSupportedException(SR.Acc_CreateArgIterator);
 
-            if (Object.ReferenceEquals(elementType, typeof(void)))
+            if (object.ReferenceEquals(elementType, typeof(void)))
                 throw new NotSupportedException(SR.Acc_CreateVoid);
         }
 
-        internal Object CreateInstanceImpl(
-            BindingFlags bindingAttr, Binder binder, Object[] args, CultureInfo culture, Object[] activationAttributes)
+        internal object CreateInstanceImpl(
+            BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
         {
             CreateInstanceCheckThis();
 
-            Object server = null;
+            object server = null;
 
             if (args == null)
-                args = Array.Empty<Object>();
+                args = Array.Empty<object>();
 
             int argCnt = args.Length;
 
@@ -4649,7 +4649,7 @@ namespace System
                 }
 
                 MethodBase invokeMethod;
-                Object state = null;
+                object state = null;
 
                 try
                 {
@@ -4718,7 +4718,7 @@ namespace System
 
             private void InitializeDelegateCreator()
             {
-                ConstructorInfo ctorInfo = typeof(CtorDelegate).GetConstructor(new Type[] { typeof(Object), typeof(IntPtr) });
+                ConstructorInfo ctorInfo = typeof(CtorDelegate).GetConstructor(new Type[] { typeof(object), typeof(IntPtr) });
                 delegateCtorInfo = ctorInfo; // this assignment should be last
             }
 
@@ -4732,7 +4732,7 @@ namespace System
                         InitializeDelegateCreator();
 
                     // No synchronization needed here. In the worst case we create extra garbage
-                    CtorDelegate ctor = (CtorDelegate)delegateCtorInfo.Invoke(new Object[] { null, RuntimeMethodHandle.GetFunctionPointer(ace.m_hCtorMethodHandle) });
+                    CtorDelegate ctor = (CtorDelegate)delegateCtorInfo.Invoke(new object[] { null, RuntimeMethodHandle.GetFunctionPointer(ace.m_hCtorMethodHandle) });
                     ace.m_ctor = ctor;
                 }
                 ace.m_bFullyInitialized = true;
@@ -4767,7 +4767,7 @@ namespace System
         private static volatile ActivatorCache s_ActivatorCache;
 
         // the slow path of CreateInstanceDefaultCtor
-        internal Object CreateInstanceSlow(bool publicOnly, bool wrapExceptions, bool skipCheckThis, bool fillCache)
+        internal object CreateInstanceSlow(bool publicOnly, bool wrapExceptions, bool skipCheckThis, bool fillCache)
         {
             RuntimeMethodHandleInternal runtime_ctor = default;
             bool bCanBeCached = false;
@@ -4775,7 +4775,7 @@ namespace System
             if (!skipCheckThis)
                 CreateInstanceCheckThis();
 
-            Object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, wrapExceptions, ref bCanBeCached, ref runtime_ctor);
+            object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, wrapExceptions, ref bCanBeCached, ref runtime_ctor);
 
             if (bCanBeCached && fillCache)
             {
@@ -4799,7 +4799,7 @@ namespace System
         // fillCache is set in the SL2/3 compat mode or when called from Marshal.PtrToStructure.
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        internal Object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
+        internal object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
             if (GetType() == typeof(ReflectionOnlyType))
                 throw new InvalidOperationException(SR.InvalidOperation_NotAllowedInReflectionOnly);
@@ -4820,7 +4820,7 @@ namespace System
                     }
 
                     // Allocate empty object
-                    Object instance = RuntimeTypeHandle.Allocate(this);
+                    object instance = RuntimeTypeHandle.Allocate(this);
 
                     // if m_ctor is null, this type doesn't have a default ctor
                     Debug.Assert(ace.m_ctor != null || this.IsValueType);
@@ -4856,16 +4856,16 @@ namespace System
 
         #region Legacy internal static
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Object _CreateEnum(RuntimeType enumType, long value);
-        internal static Object CreateEnum(RuntimeType enumType, long value)
+        private static extern object _CreateEnum(RuntimeType enumType, long value);
+        internal static object CreateEnum(RuntimeType enumType, long value)
         {
             return _CreateEnum(enumType, value);
         }
 
 #if FEATURE_COMINTEROP       
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern Object InvokeDispMethod(
-            string name, BindingFlags invokeAttr, Object target, Object[] args,
+        private extern object InvokeDispMethod(
+            string name, BindingFlags invokeAttr, object target, object[] args,
             bool[] byrefModifiers, int culture, string[] namedParameters);
 #endif // FEATURE_COMINTEROP        
 

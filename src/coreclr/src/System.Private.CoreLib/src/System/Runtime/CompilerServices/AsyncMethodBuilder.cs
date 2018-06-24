@@ -799,36 +799,36 @@ namespace System.Runtime.CompilerServices
                 // is recognized and optimized by both 32-bit and 64-bit JITs.
 
                 // For Boolean, we cache all possible values.
-                if (typeof(TResult) == typeof(Boolean)) // only the relevant branches are kept for each value-type generic instantiation
+                if (typeof(TResult) == typeof(bool)) // only the relevant branches are kept for each value-type generic instantiation
                 {
-                    Boolean value = (Boolean)(object)result;
-                    Task<Boolean> task = value ? AsyncTaskCache.TrueTask : AsyncTaskCache.FalseTask;
+                    bool value = (bool)(object)result;
+                    Task<bool> task = value ? AsyncTaskCache.TrueTask : AsyncTaskCache.FalseTask;
                     return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
                 }
                 // For Int32, we cache a range of common values, e.g. [-1,4).
-                else if (typeof(TResult) == typeof(Int32))
+                else if (typeof(TResult) == typeof(int))
                 {
                     // Compare to constants to avoid static field access if outside of cached range.
                     // We compare to the upper bound first, as we're more likely to cache miss on the upper side than on the 
                     // lower side, due to positive values being more common than negative as return values.
-                    Int32 value = (Int32)(object)result;
+                    int value = (int)(object)result;
                     if (value < AsyncTaskCache.EXCLUSIVE_INT32_MAX &&
                         value >= AsyncTaskCache.INCLUSIVE_INT32_MIN)
                     {
-                        Task<Int32> task = AsyncTaskCache.Int32Tasks[value - AsyncTaskCache.INCLUSIVE_INT32_MIN];
+                        Task<int> task = AsyncTaskCache.Int32Tasks[value - AsyncTaskCache.INCLUSIVE_INT32_MIN];
                         return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids a type check we know will succeed
                     }
                 }
                 // For other known value types, we only special-case 0 / default(TResult).
                 else if (
-                    (typeof(TResult) == typeof(UInt32) && default == (UInt32)(object)result) ||
-                    (typeof(TResult) == typeof(Byte) && default(Byte) == (Byte)(object)result) ||
-                    (typeof(TResult) == typeof(SByte) && default(SByte) == (SByte)(object)result) ||
-                    (typeof(TResult) == typeof(Char) && default(Char) == (Char)(object)result) ||
-                    (typeof(TResult) == typeof(Int64) && default == (Int64)(object)result) ||
-                    (typeof(TResult) == typeof(UInt64) && default == (UInt64)(object)result) ||
-                    (typeof(TResult) == typeof(Int16) && default(Int16) == (Int16)(object)result) ||
-                    (typeof(TResult) == typeof(UInt16) && default(UInt16) == (UInt16)(object)result) ||
+                    (typeof(TResult) == typeof(uint) && default == (uint)(object)result) ||
+                    (typeof(TResult) == typeof(byte) && default(byte) == (byte)(object)result) ||
+                    (typeof(TResult) == typeof(sbyte) && default(sbyte) == (sbyte)(object)result) ||
+                    (typeof(TResult) == typeof(char) && default(char) == (char)(object)result) ||
+                    (typeof(TResult) == typeof(long) && default == (long)(object)result) ||
+                    (typeof(TResult) == typeof(ulong) && default == (ulong)(object)result) ||
+                    (typeof(TResult) == typeof(short) && default(short) == (short)(object)result) ||
+                    (typeof(TResult) == typeof(ushort) && default(ushort) == (ushort)(object)result) ||
                     (typeof(TResult) == typeof(IntPtr) && default == (IntPtr)(object)result) ||
                     (typeof(TResult) == typeof(UIntPtr) && default == (UIntPtr)(object)result))
                 {
@@ -851,21 +851,21 @@ namespace System.Runtime.CompilerServices
         // All static members are initialized inline to ensure type is beforefieldinit
 
         /// <summary>A cached Task{Boolean}.Result == true.</summary>
-        internal readonly static Task<Boolean> TrueTask = CreateCacheableTask(true);
+        internal readonly static Task<bool> TrueTask = CreateCacheableTask(true);
         /// <summary>A cached Task{Boolean}.Result == false.</summary>
-        internal readonly static Task<Boolean> FalseTask = CreateCacheableTask(false);
+        internal readonly static Task<bool> FalseTask = CreateCacheableTask(false);
 
         /// <summary>The cache of Task{Int32}.</summary>
-        internal readonly static Task<Int32>[] Int32Tasks = CreateInt32Tasks();
+        internal readonly static Task<int>[] Int32Tasks = CreateInt32Tasks();
         /// <summary>The minimum value, inclusive, for which we want a cached task.</summary>
-        internal const Int32 INCLUSIVE_INT32_MIN = -1;
+        internal const int INCLUSIVE_INT32_MIN = -1;
         /// <summary>The maximum value, exclusive, for which we want a cached task.</summary>
-        internal const Int32 EXCLUSIVE_INT32_MAX = 9;
+        internal const int EXCLUSIVE_INT32_MAX = 9;
         /// <summary>Creates an array of cached tasks for the values in the range [INCLUSIVE_MIN,EXCLUSIVE_MAX).</summary>
-        private static Task<Int32>[] CreateInt32Tasks()
+        private static Task<int>[] CreateInt32Tasks()
         {
             Debug.Assert(EXCLUSIVE_INT32_MAX >= INCLUSIVE_INT32_MIN, "Expected max to be at least min");
-            var tasks = new Task<Int32>[EXCLUSIVE_INT32_MAX - INCLUSIVE_INT32_MIN];
+            var tasks = new Task<int>[EXCLUSIVE_INT32_MAX - INCLUSIVE_INT32_MIN];
             for (int i = 0; i < tasks.Length; i++)
             {
                 tasks[i] = CreateCacheableTask(i + INCLUSIVE_INT32_MIN);

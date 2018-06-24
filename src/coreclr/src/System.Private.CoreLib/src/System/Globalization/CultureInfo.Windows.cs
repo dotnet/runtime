@@ -93,7 +93,7 @@ namespace System.Globalization
                         index++;
                     }
 
-                    CultureInfo temp = GetCultureByName(new String(languages, 0, index), true);
+                    CultureInfo temp = GetCultureByName(new string(languages, 0, index), true);
                     temp._isReadOnly = true;
                     return temp;
                 }

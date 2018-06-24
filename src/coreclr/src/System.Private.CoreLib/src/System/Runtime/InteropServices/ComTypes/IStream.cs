@@ -19,9 +19,9 @@ namespace System.Runtime.InteropServices.ComTypes
 
     public struct STATSTG
     {
-        public String pwcsName;
+        public string pwcsName;
         public int type;
-        public Int64 cbSize;
+        public long cbSize;
         public FILETIME mtime;
         public FILETIME ctime;
         public FILETIME atime;
@@ -38,17 +38,17 @@ namespace System.Runtime.InteropServices.ComTypes
     public interface IStream
     {
         // ISequentialStream portion
-        void Read([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] Byte[] pv, int cb, IntPtr pcbRead);
-        void Write([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] Byte[] pv, int cb, IntPtr pcbWritten);
+        void Read([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] byte[] pv, int cb, IntPtr pcbRead);
+        void Write([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] pv, int cb, IntPtr pcbWritten);
 
         // IStream portion
-        void Seek(Int64 dlibMove, int dwOrigin, IntPtr plibNewPosition);
-        void SetSize(Int64 libNewSize);
-        void CopyTo(IStream pstm, Int64 cb, IntPtr pcbRead, IntPtr pcbWritten);
+        void Seek(long dlibMove, int dwOrigin, IntPtr plibNewPosition);
+        void SetSize(long libNewSize);
+        void CopyTo(IStream pstm, long cb, IntPtr pcbRead, IntPtr pcbWritten);
         void Commit(int grfCommitFlags);
         void Revert();
-        void LockRegion(Int64 libOffset, Int64 cb, int dwLockType);
-        void UnlockRegion(Int64 libOffset, Int64 cb, int dwLockType);
+        void LockRegion(long libOffset, long cb, int dwLockType);
+        void UnlockRegion(long libOffset, long cb, int dwLockType);
         void Stat(out STATSTG pstatstg, int grfStatFlag);
         void Clone(out IStream ppstm);
     }

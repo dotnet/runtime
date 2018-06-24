@@ -207,7 +207,7 @@ namespace System.IO
         #region Task based Async APIs
         public virtual Task<string> ReadLineAsync()
         {
-            return Task<String>.Factory.StartNew(state =>
+            return Task<string>.Factory.StartNew(state =>
             {
                 return ((TextReader)state).ReadLine();
             },

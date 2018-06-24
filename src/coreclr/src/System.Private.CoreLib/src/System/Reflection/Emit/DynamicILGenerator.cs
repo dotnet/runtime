@@ -794,7 +794,7 @@ namespace System.Reflection.Emit
             methodHandle = new IntPtr();
             fieldHandle = new IntPtr();
 
-            Object handle = m_scope[token];
+            object handle = m_scope[token];
 
             if (handle == null)
                 throw new InvalidProgramException();
@@ -914,13 +914,13 @@ namespace System.Reflection.Emit
     internal class DynamicScope
     {
         #region Private Data Members
-        internal List<Object> m_tokens;
+        internal List<object> m_tokens;
         #endregion
 
         #region Constructor
         internal unsafe DynamicScope()
         {
-            m_tokens = new List<Object>();
+            m_tokens = new List<object>();
             m_tokens.Add(null);
         }
         #endregion

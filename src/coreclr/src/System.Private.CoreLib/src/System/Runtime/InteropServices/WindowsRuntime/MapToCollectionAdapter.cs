@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 uint size = _this_map.Size;
 
-                if (((uint)Int32.MaxValue) < size)
+                if (((uint)int.MaxValue) < size)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingDictionaryTooLarge);
                 }
@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 IVector<KeyValuePair<K, V>> _this_vector = Unsafe.As<IVector<KeyValuePair<K, V>>>(this);
                 uint size = _this_vector.Size;
 
-                if (((uint)Int32.MaxValue) < size)
+                if (((uint)int.MaxValue) < size)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
                 }
@@ -171,7 +171,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 if (!exists)
                     return false;
 
-                if (((uint)Int32.MaxValue) < index)
+                if (((uint)int.MaxValue) < index)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
                 }

@@ -219,12 +219,12 @@ namespace Microsoft.Win32
             internal uint Type;
         }
 
-        internal const String ADVAPI32 = "advapi32.dll";
-        internal const String SHELL32 = "shell32.dll";
-        internal const String SHIM = "mscoree.dll";
-        internal const String CRYPT32 = "crypt32.dll";
-        internal const String SECUR32 = "secur32.dll";
-        internal const String MSCORWKS = "coreclr.dll";
+        internal const string ADVAPI32 = "advapi32.dll";
+        internal const string SHELL32 = "shell32.dll";
+        internal const string SHIM = "mscoree.dll";
+        internal const string CRYPT32 = "crypt32.dll";
+        internal const string SECUR32 = "secur32.dll";
+        internal const string MSCORWKS = "coreclr.dll";
 
         [DllImport(Interop.Libraries.Kernel32, EntryPoint = "LocalAlloc")]
         internal static extern IntPtr LocalAlloc_NoSafeHandle(int uFlags, UIntPtr sizetdwBytes);
@@ -260,7 +260,7 @@ namespace Microsoft.Win32
         internal static extern int lstrlenW(IntPtr ptr);
 
         [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode)]
-        internal static extern IntPtr SysAllocStringLen(String src, int len);  // BSTR
+        internal static extern IntPtr SysAllocStringLen(string src, int len);  // BSTR
 
         [DllImport(Interop.Libraries.OleAut32)]
         internal static extern uint SysStringLen(IntPtr bstr);
@@ -337,7 +337,7 @@ namespace Microsoft.Win32
 #if FEATURE_WIN32_REGISTRY
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegDeleteValue(SafeRegistryHandle hKey, String lpValueName);
+        internal static extern int RegDeleteValue(SafeRegistryHandle hKey, string lpValueName);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
         internal static extern unsafe int RegEnumKeyEx(SafeRegistryHandle hKey, int dwIndex,
@@ -352,48 +352,48 @@ namespace Microsoft.Win32
                     int[] lpcbData);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegOpenKeyEx(SafeRegistryHandle hKey, String lpSubKey,
+        internal static extern int RegOpenKeyEx(SafeRegistryHandle hKey, string lpSubKey,
                     int ulOptions, int samDesired, out SafeRegistryHandle hkResult);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, String lpValueName,
+        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName,
                     int[] lpReserved, ref int lpType, [Out] byte[] lpData,
                     ref int lpcbData);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, String lpValueName,
+        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName,
                     int[] lpReserved, ref int lpType, ref int lpData,
                     ref int lpcbData);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, String lpValueName,
+        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName,
                     int[] lpReserved, ref int lpType, ref long lpData,
                     ref int lpcbData);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, String lpValueName,
+        internal static extern int RegQueryValueEx(SafeRegistryHandle hKey, string lpValueName,
                      int[] lpReserved, ref int lpType, [Out] char[] lpData,
                      ref int lpcbData);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegSetValueEx(SafeRegistryHandle hKey, String lpValueName,
+        internal static extern int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName,
                     int Reserved, RegistryValueKind dwType, byte[] lpData, int cbData);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegSetValueEx(SafeRegistryHandle hKey, String lpValueName,
+        internal static extern int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName,
                     int Reserved, RegistryValueKind dwType, ref int lpData, int cbData);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegSetValueEx(SafeRegistryHandle hKey, String lpValueName,
+        internal static extern int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName,
                     int Reserved, RegistryValueKind dwType, ref long lpData, int cbData);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern int RegSetValueEx(SafeRegistryHandle hKey, String lpValueName,
-                    int Reserved, RegistryValueKind dwType, String lpData, int cbData);
+        internal static extern int RegSetValueEx(SafeRegistryHandle hKey, string lpValueName,
+                    int Reserved, RegistryValueKind dwType, string lpData, int cbData);
 #endif // FEATURE_WIN32_REGISTRY
 
         [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Auto, SetLastError = true, BestFitMapping = false)]
-        internal static extern int ExpandEnvironmentStrings(String lpSrc, [Out]StringBuilder lpDst, int nSize);
+        internal static extern int ExpandEnvironmentStrings(string lpSrc, [Out]StringBuilder lpDst, int nSize);
 
         [DllImport(Interop.Libraries.Kernel32)]
         internal static extern IntPtr LocalReAlloc(IntPtr handle, IntPtr sizetcbBytes, int uFlags);

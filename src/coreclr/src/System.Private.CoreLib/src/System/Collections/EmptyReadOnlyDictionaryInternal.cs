@@ -60,7 +60,7 @@ namespace System.Collections
             }
         }
 
-        public Object SyncRoot
+        public object SyncRoot
         {
             get
             {
@@ -78,7 +78,7 @@ namespace System.Collections
 
         // IDictionary members
 
-        public Object this[Object key]
+        public object this[object key]
         {
             get
             {
@@ -109,7 +109,7 @@ namespace System.Collections
         {
             get
             {
-                return Array.Empty<Object>();
+                return Array.Empty<object>();
             }
         }
 
@@ -117,16 +117,16 @@ namespace System.Collections
         {
             get
             {
-                return Array.Empty<Object>();
+                return Array.Empty<object>();
             }
         }
 
-        public bool Contains(Object key)
+        public bool Contains(object key)
         {
             return false;
         }
 
-        public void Add(Object key, Object value)
+        public void Add(object key, object value)
         {
             if (key == null)
             {
@@ -168,7 +168,7 @@ namespace System.Collections
             return new NodeEnumerator();
         }
 
-        public void Remove(Object key)
+        public void Remove(object key)
         {
             throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
         }
@@ -186,7 +186,7 @@ namespace System.Collections
                 return false;
             }
 
-            public Object Current
+            public object Current
             {
                 get
                 {
@@ -200,7 +200,7 @@ namespace System.Collections
 
             // IDictionaryEnumerator members
 
-            public Object Key
+            public object Key
             {
                 get
                 {
@@ -208,7 +208,7 @@ namespace System.Collections
                 }
             }
 
-            public Object Value
+            public object Value
             {
                 get
                 {

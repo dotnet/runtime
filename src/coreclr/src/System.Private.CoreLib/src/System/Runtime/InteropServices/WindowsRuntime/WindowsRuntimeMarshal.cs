@@ -363,7 +363,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 public bool Equals(EventCacheKey other)
                 {
-                    return (Object.Equals(target, other.target) && Object.Equals(method, other.method));
+                    return (object.Equals(target, other.target) && object.Equals(method, other.method));
                 }
 
                 public int GetHashCode(EventCacheKey key)
@@ -535,7 +535,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 foreach (KeyValuePair<object, EventRegistrationTokenListWithCount> item in registrationTable)
                 {
-                    if (Object.Equals(item.Key, handler))
+                    if (object.Equals(item.Key, handler))
                     {
                         tokens = item.Value;
                         return item.Key;
@@ -1050,7 +1050,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 uint length;
                 char* rawBuffer = UnsafeNativeMethods.WindowsGetStringRawBuffer(hstring, &length);
-                return new String(rawBuffer, 0, checked((int)length));
+                return new string(rawBuffer, 0, checked((int)length));
             }
         }
 
@@ -1238,7 +1238,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // HSTRING marshaling methods:
 
-        public static IntPtr StringToHString(String s)
+        public static IntPtr StringToHString(string s)
         {
             if (!Environment.IsWinRTSupported)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);

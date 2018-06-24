@@ -29,7 +29,7 @@ namespace System.Reflection.Emit
         //
         internal EventBuilder(
             ModuleBuilder mod,                    // the module containing this EventBuilder        
-            String name,                    // Event name
+            string name,                    // Event name
             EventAttributes attr,                    // event attribute such as Public, Private, and Protected defined above
                                                      //int            eventType,                // event type
             TypeBuilder type,                    // containing type
@@ -114,7 +114,7 @@ namespace System.Reflection.Emit
         }
 
         // These are package private so that TypeBuilder can access them.
-        private String m_name;         // The name of the event
+        private string m_name;         // The name of the event
         private EventToken m_evToken;      // The token of this event
         private ModuleBuilder m_module;
         private EventAttributes m_attributes;

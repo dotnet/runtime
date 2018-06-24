@@ -147,7 +147,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="delay">The time span to wait before canceling this <see cref="CancellationTokenSource"/></param>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// The exception that is thrown when <paramref name="delay"/> is less than -1 or greater than Int32.MaxValue.
+        /// The exception that is thrown when <paramref name="delay"/> is less than -1 or greater than int.MaxValue.
         /// </exception>
         /// <remarks>
         /// <para>
@@ -268,7 +268,7 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         /// The exception thrown when <paramref name="delay"/> is less than -1 or 
-        /// greater than Int32.MaxValue.
+        /// greater than int.MaxValue.
         /// </exception>
         /// <remarks>
         /// <para>

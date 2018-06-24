@@ -66,21 +66,21 @@ namespace System.Runtime.InteropServices.ComTypes
 
         // Actual fields of the TypeAttr struct.
         public Guid guid;
-        public Int32 lcid;
-        public Int32 dwReserved;
-        public Int32 memidConstructor;
-        public Int32 memidDestructor;
+        public int lcid;
+        public int dwReserved;
+        public int memidConstructor;
+        public int memidDestructor;
         public IntPtr lpstrSchema;
-        public Int32 cbSizeInstance;
+        public int cbSizeInstance;
         public TYPEKIND typekind;
-        public Int16 cFuncs;
-        public Int16 cVars;
-        public Int16 cImplTypes;
-        public Int16 cbSizeVft;
-        public Int16 cbAlignment;
+        public short cFuncs;
+        public short cVars;
+        public short cImplTypes;
+        public short cbSizeVft;
+        public short cbAlignment;
         public TYPEFLAGS wTypeFlags;
-        public Int16 wMajorVerNum;
-        public Int16 wMinorVerNum;
+        public short wMajorVerNum;
+        public short wMinorVerNum;
         public TYPEDESC tdescAlias;
         public IDLDESC idldescType;
     }
@@ -95,12 +95,12 @@ namespace System.Runtime.InteropServices.ComTypes
         public FUNCKIND funckind;           //FUNCKIND funckind;
         public INVOKEKIND invkind;          //INVOKEKIND invkind;
         public CALLCONV callconv;           //CALLCONV callconv;
-        public Int16 cParams;               //short cParams;
-        public Int16 cParamsOpt;            //short cParamsOpt;
-        public Int16 oVft;                  //short oVft;
-        public Int16 cScodes;               //short cScodes;
+        public short cParams;               //short cParams;
+        public short cParamsOpt;            //short cParamsOpt;
+        public short oVft;                  //short oVft;
+        public short cScodes;               //short cScodes;
         public ELEMDESC elemdescFunc;       //ELEMDESC elemdescFunc;
-        public Int16 wFuncFlags;            //WORD wFuncFlags;
+        public short wFuncFlags;            //WORD wFuncFlags;
     }
 
     [Flags()]
@@ -147,7 +147,7 @@ namespace System.Runtime.InteropServices.ComTypes
     public struct TYPEDESC
     {
         public IntPtr lpValue;
-        public Int16 vt;
+        public short vt;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -181,7 +181,7 @@ namespace System.Runtime.InteropServices.ComTypes
     public struct VARDESC
     {
         public int memid;
-        public String lpstrSchema;
+        public string lpstrSchema;
 
         [System.Runtime.InteropServices.StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
 
@@ -214,15 +214,15 @@ namespace System.Runtime.InteropServices.ComTypes
 
     public struct EXCEPINFO
     {
-        public Int16 wCode;
-        public Int16 wReserved;
-        [MarshalAs(UnmanagedType.BStr)] public String bstrSource;
-        [MarshalAs(UnmanagedType.BStr)] public String bstrDescription;
-        [MarshalAs(UnmanagedType.BStr)] public String bstrHelpFile;
+        public short wCode;
+        public short wReserved;
+        [MarshalAs(UnmanagedType.BStr)] public string bstrSource;
+        [MarshalAs(UnmanagedType.BStr)] public string bstrDescription;
+        [MarshalAs(UnmanagedType.BStr)] public string bstrHelpFile;
         public int dwHelpContext;
         public IntPtr pvReserved;
         public IntPtr pfnDeferredFillIn;
-        public Int32 scode;
+        public int scode;
     }
 
     public enum FUNCKIND : int
@@ -302,17 +302,17 @@ namespace System.Runtime.InteropServices.ComTypes
         void GetTypeComp(out ITypeComp ppTComp);
         void GetFuncDesc(int index, out IntPtr ppFuncDesc);
         void GetVarDesc(int index, out IntPtr ppVarDesc);
-        void GetNames(int memid, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2), Out] String[] rgBstrNames, int cMaxNames, out int pcNames);
+        void GetNames(int memid, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2), Out] string[] rgBstrNames, int cMaxNames, out int pcNames);
         void GetRefTypeOfImplType(int index, out int href);
         void GetImplTypeFlags(int index, out IMPLTYPEFLAGS pImplTypeFlags);
-        void GetIDsOfNames([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1), In] String[] rgszNames, int cNames, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] int[] pMemId);
-        void Invoke([MarshalAs(UnmanagedType.IUnknown)] Object pvInstance, int memid, Int16 wFlags, ref DISPPARAMS pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, out int puArgErr);
-        void GetDocumentation(int index, out String strName, out String strDocString, out int dwHelpContext, out String strHelpFile);
+        void GetIDsOfNames([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1), In] string[] rgszNames, int cNames, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] int[] pMemId);
+        void Invoke([MarshalAs(UnmanagedType.IUnknown)] object pvInstance, int memid, short wFlags, ref DISPPARAMS pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, out int puArgErr);
+        void GetDocumentation(int index, out string strName, out string strDocString, out int dwHelpContext, out string strHelpFile);
         void GetDllEntry(int memid, INVOKEKIND invKind, IntPtr pBstrDllName, IntPtr pBstrName, IntPtr pwOrdinal);
         void GetRefTypeInfo(int hRef, out ITypeInfo ppTI);
         void AddressOfMember(int memid, INVOKEKIND invKind, out IntPtr ppv);
-        void CreateInstance([MarshalAs(UnmanagedType.IUnknown)] Object pUnkOuter, [In] ref Guid riid, [MarshalAs(UnmanagedType.IUnknown), Out] out Object ppvObj);
-        void GetMops(int memid, out String pBstrMops);
+        void CreateInstance([MarshalAs(UnmanagedType.IUnknown)] object pUnkOuter, [In] ref Guid riid, [MarshalAs(UnmanagedType.IUnknown), Out] out object ppvObj);
+        void GetMops(int memid, out string pBstrMops);
         void GetContainingTypeLib(out ITypeLib ppTLB, out int pIndex);
         [PreserveSig]
         void ReleaseTypeAttr(IntPtr pTypeAttr);

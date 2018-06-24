@@ -39,7 +39,7 @@ namespace System.Reflection.Emit
             return m_event;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is EventToken)
                 return Equals((EventToken)obj);

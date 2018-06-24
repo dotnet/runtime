@@ -57,7 +57,7 @@ namespace System
         // if you change this method's signature then you must change the code that calls it
         // in excep.cpp and probably you will have to visit mscorlib.h to add the new signature
         // as well as metasig.h to create the new signature type
-        internal static String GetResourceStringLocal(String key)
+        internal static string GetResourceStringLocal(string key)
         {
             return SR.GetResourceString(key);
         }
@@ -97,7 +97,7 @@ namespace System
         // to assign blame for crashes.  Don't mess with this, such as by making it call 
         // another managed helper method, unless you consult with some CLR Watson experts.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void FailFast(String message);
+        public static extern void FailFast(string message);
 
         // This overload of FailFast will allow you to specify the exception object
         // whose bucket details *could* be used when undergoing the failfast process.
@@ -113,14 +113,14 @@ namespace System
         //    IP for bucketing. If the exception object is not preallocated, it will use the bucket
         //    details contained in the object (if any).
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void FailFast(String message, Exception exception);
+        public static extern void FailFast(string message, Exception exception);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void FailFast(String message, Exception exception, String errorMessage);
+        public static extern void FailFast(string message, Exception exception, string errorMessage);
 
 #if FEATURE_WIN32_REGISTRY
         // This is only used by RegistryKey on Windows.
-        public static String ExpandEnvironmentVariables(String name)
+        public static string ExpandEnvironmentVariables(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -156,7 +156,7 @@ namespace System
 #endif // FEATURE_WIN32_REGISTRY
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern Int32 GetProcessorCount();
+        private static extern int GetProcessorCount();
 
         public static int ProcessorCount
         {
@@ -173,7 +173,7 @@ namespace System
         **Arguments: None
         **Exceptions: None.
         ==============================================================================*/
-        public static String[] GetCommandLineArgs()
+        public static string[] GetCommandLineArgs()
         {
             /*
              * There are multiple entry points to a hosted app.
@@ -195,7 +195,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern String[] GetCommandLineArgsNative();
+        private static extern string[] GetCommandLineArgsNative();
 
         private static string[] s_CommandLineArgs = null;
         private static void SetCommandLineArgs(string[] cmdLineArgs)
@@ -251,7 +251,7 @@ namespace System
         **Arguments: None.
         **Exceptions: None.
         ==============================================================================*/
-        public static String NewLine
+        public static string NewLine
         {
             get
             {
@@ -321,7 +321,7 @@ namespace System
         **Arguments:
         **Exceptions:
         ==============================================================================*/
-        public static String StackTrace
+        public static string StackTrace
         {
             [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
             get
@@ -330,7 +330,7 @@ namespace System
             }
         }
 
-        internal static String GetStackTrace(Exception e, bool needFileInfo)
+        internal static string GetStackTrace(Exception e, bool needFileInfo)
         {
             // Note: Setting needFileInfo to true will start up COM and set our
             // apartment state.  Try to not call this when passing "true" 

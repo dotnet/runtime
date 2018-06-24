@@ -523,12 +523,12 @@ namespace Microsoft.Win32
          *
          * @return the data associated with the value.
          */
-        public Object GetValue(string name, Object defaultValue)
+        public object GetValue(string name, object defaultValue)
         {
             return InternalGetValue(name, defaultValue, false, true);
         }
 
-        public Object GetValue(string name, Object defaultValue, RegistryValueOptions options)
+        public object GetValue(string name, object defaultValue, RegistryValueOptions options)
         {
             if (options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames)
             {
@@ -538,7 +538,7 @@ namespace Microsoft.Win32
             return InternalGetValue(name, defaultValue, doNotExpand, true);
         }
 
-        internal Object InternalGetValue(string name, Object defaultValue, bool doNotExpand, bool checkSecurity)
+        internal object InternalGetValue(string name, object defaultValue, bool doNotExpand, bool checkSecurity)
         {
             if (checkSecurity)
             {
@@ -546,7 +546,7 @@ namespace Microsoft.Win32
                 EnsureNotDisposed();
             }
 
-            Object data = defaultValue;
+            object data = defaultValue;
             int type = 0;
             int datasize = 0;
 
@@ -563,15 +563,15 @@ namespace Microsoft.Win32
                     byte[] blob = new byte[size];
                     while (Interop.Errors.ERROR_MORE_DATA == (r = Win32Native.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
                     {
-                        if (size == Int32.MaxValue)
+                        if (size == int.MaxValue)
                         {
-                            // ERROR_MORE_DATA was returned however we cannot increase the buffer size beyond Int32.MaxValue
+                            // ERROR_MORE_DATA was returned however we cannot increase the buffer size beyond int.MaxValue
                             Win32Error(r, name);
                         }
-                        else if (size > (Int32.MaxValue / 2))
+                        else if (size > (int.MaxValue / 2))
                         {
                             // at this point in the loop "size * 2" would cause an overflow
-                            size = Int32.MaxValue;
+                            size = int.MaxValue;
                         }
                         else
                         {
@@ -798,12 +798,12 @@ namespace Microsoft.Win32
          * @param name Name of value to store data in.
          * @param value Data to store.
          */
-        public void SetValue(string name, Object value)
+        public void SetValue(string name, object value)
         {
             SetValue(name, value, RegistryValueKind.Unknown);
         }
 
-        public unsafe void SetValue(string name, Object value, RegistryValueKind valueKind)
+        public unsafe void SetValue(string name, object value, RegistryValueKind valueKind)
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
@@ -956,12 +956,12 @@ namespace Microsoft.Win32
                 Win32Error(ret, null);
         }
 
-        private RegistryValueKind CalculateValueKind(Object value)
+        private RegistryValueKind CalculateValueKind(object value)
         {
             // This logic matches what used to be in SetValue(string name, object value) in the v1.0 and v1.1 days.
             // Even though we could add detection for an int64 in here, we want to maintain compatibility with the
             // old behavior.
-            if (value is Int32)
+            if (value is int)
                 return RegistryValueKind.DWord;
             else if (value is Array)
             {

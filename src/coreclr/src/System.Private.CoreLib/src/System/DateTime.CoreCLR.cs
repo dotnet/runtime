@@ -16,7 +16,7 @@ namespace System
                 long ticks = 0;
                 ticks = GetSystemTimeAsFileTime();
 
-                return new DateTime(((UInt64)(ticks + FileTimeOffset)) | KindUtc);
+                return new DateTime(((ulong)(ticks + FileTimeOffset)) | KindUtc);
             }
         }
 

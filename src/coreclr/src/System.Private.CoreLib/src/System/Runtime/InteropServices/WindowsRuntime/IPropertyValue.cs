@@ -23,29 +23,29 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             get;
         }
 
-        Byte GetUInt8();
+        byte GetUInt8();
 
-        Int16 GetInt16();
+        short GetInt16();
 
-        UInt16 GetUInt16();
+        ushort GetUInt16();
 
-        Int32 GetInt32();
+        int GetInt32();
 
-        UInt32 GetUInt32();
+        uint GetUInt32();
 
-        Int64 GetInt64();
+        long GetInt64();
 
-        UInt64 GetUInt64();
+        ulong GetUInt64();
 
-        Single GetSingle();
+        float GetSingle();
 
-        Double GetDouble();
+        double GetDouble();
 
         char GetChar16();
 
-        Boolean GetBoolean();
+        bool GetBoolean();
 
-        String GetString();
+        string GetString();
 
         Guid GetGuid();
 
@@ -59,29 +59,29 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         Rect GetRect();
 
-        Byte[] GetUInt8Array();
+        byte[] GetUInt8Array();
 
-        Int16[] GetInt16Array();
+        short[] GetInt16Array();
 
-        UInt16[] GetUInt16Array();
+        ushort[] GetUInt16Array();
 
-        Int32[] GetInt32Array();
+        int[] GetInt32Array();
 
-        UInt32[] GetUInt32Array();
+        uint[] GetUInt32Array();
 
-        Int64[] GetInt64Array();
+        long[] GetInt64Array();
 
-        UInt64[] GetUInt64Array();
+        ulong[] GetUInt64Array();
 
-        Single[] GetSingleArray();
+        float[] GetSingleArray();
 
-        Double[] GetDoubleArray();
+        double[] GetDoubleArray();
 
         char[] GetChar16Array();
 
-        Boolean[] GetBooleanArray();
+        bool[] GetBooleanArray();
 
-        String[] GetStringArray();
+        string[] GetStringArray();
 
         object[] GetInspectableArray();
 

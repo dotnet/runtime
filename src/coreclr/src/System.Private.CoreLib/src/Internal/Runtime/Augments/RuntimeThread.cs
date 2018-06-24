@@ -242,8 +242,8 @@ namespace Internal.Runtime.Augments
 
             Debug.Assert(ProcessorIdRefreshRate <= ProcessorIdCacheCountDownMask);
 
-            // Mask with Int32.MaxValue to ensure the execution Id is not negative
-            t_currentProcessorIdCache = ((currentProcessorId << ProcessorIdCacheShift) & Int32.MaxValue) | ProcessorIdRefreshRate;
+            // Mask with int.MaxValue to ensure the execution Id is not negative
+            t_currentProcessorIdCache = ((currentProcessorId << ProcessorIdCacheShift) & int.MaxValue) | ProcessorIdRefreshRate;
 
             return currentProcessorId;
         }

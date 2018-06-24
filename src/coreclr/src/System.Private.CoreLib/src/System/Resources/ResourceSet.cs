@@ -49,7 +49,7 @@ namespace System.Resources
         // implementation.  Use this constructor to open & read from a file 
         // on disk.
         // 
-        public ResourceSet(String fileName)
+        public ResourceSet(string fileName)
         {
             Reader = new ResourceReader(fileName);
             CommonInit();
@@ -147,12 +147,12 @@ namespace System.Resources
 
         // Look up a string value for a resource given its name.
         // 
-        public virtual String GetString(String name)
+        public virtual string GetString(string name)
         {
-            Object obj = GetObjectInternal(name);
+            object obj = GetObjectInternal(name);
             try
             {
-                return (String)obj;
+                return (string)obj;
             }
             catch (InvalidCastException)
             {
@@ -160,16 +160,16 @@ namespace System.Resources
             }
         }
 
-        public virtual String GetString(String name, bool ignoreCase)
+        public virtual string GetString(string name, bool ignoreCase)
         {
-            Object obj;
-            String s;
+            object obj;
+            string s;
 
             // Case-sensitive lookup
             obj = GetObjectInternal(name);
             try
             {
-                s = (String)obj;
+                s = (string)obj;
             }
             catch (InvalidCastException)
             {
@@ -186,7 +186,7 @@ namespace System.Resources
             obj = GetCaseInsensitiveObjectInternal(name);
             try
             {
-                return (String)obj;
+                return (string)obj;
             }
             catch (InvalidCastException)
             {
@@ -196,14 +196,14 @@ namespace System.Resources
 
         // Look up an object value for a resource given its name.
         // 
-        public virtual Object GetObject(String name)
+        public virtual object GetObject(string name)
         {
             return GetObjectInternal(name);
         }
 
-        public virtual Object GetObject(String name, bool ignoreCase)
+        public virtual object GetObject(string name, bool ignoreCase)
         {
-            Object obj = GetObjectInternal(name);
+            object obj = GetObjectInternal(name);
 
             if (obj != null || !ignoreCase)
                 return obj;
@@ -216,14 +216,14 @@ namespace System.Resources
             IDictionaryEnumerator en = Reader.GetEnumerator();
             while (en.MoveNext())
             {
-                Object value = en.Value;
+                object value = en.Value;
                 Table.Add(en.Key, value);
             }
             // While technically possible to close the Reader here, don't close it
             // to help with some WinRes lifetime issues.
         }
 
-        private Object GetObjectInternal(String name)
+        private object GetObjectInternal(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -236,7 +236,7 @@ namespace System.Resources
             return copyOfTable[name];
         }
 
-        private Object GetCaseInsensitiveObjectInternal(String name)
+        private object GetCaseInsensitiveObjectInternal(string name)
         {
             Hashtable copyOfTable = Table;  // Avoid a race with Dispose
 

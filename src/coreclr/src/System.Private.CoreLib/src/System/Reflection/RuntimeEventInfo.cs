@@ -70,7 +70,7 @@ namespace System.Reflection
         #endregion
 
         #region Object Overrides
-        public override String ToString()
+        public override string ToString()
         {
             if (m_addMethod == null || m_addMethod.GetParametersNoCopy().Length == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_NoPublicAddMethod);
@@ -80,12 +80,12 @@ namespace System.Reflection
         #endregion
 
         #region ICustomAttributeProvider
-        public override Object[] GetCustomAttributes(bool inherit)
+        public override object[] GetCustomAttributes(bool inherit)
         {
             return CustomAttribute.GetCustomAttributes(this, typeof(object) as RuntimeType);
         }
 
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
@@ -119,7 +119,7 @@ namespace System.Reflection
 
         #region MemberInfo Overrides
         public override MemberTypes MemberType { get { return MemberTypes.Event; } }
-        public override String Name
+        public override string Name
         {
             get
             {

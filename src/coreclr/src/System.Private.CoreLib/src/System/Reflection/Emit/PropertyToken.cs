@@ -41,7 +41,7 @@ namespace System.Reflection.Emit
         }
 
         // Satisfy value class requirements
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is PropertyToken)
                 return Equals((PropertyToken)obj);
