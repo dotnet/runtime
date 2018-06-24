@@ -53,12 +53,12 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Members
-        public void SetLocalSymInfo(String name)
+        public void SetLocalSymInfo(string name)
         {
             SetLocalSymInfo(name, 0, 0);
         }
 
-        public void SetLocalSymInfo(String name, int startOffset, int endOffset)
+        public void SetLocalSymInfo(string name, int startOffset, int endOffset)
         {
             ModuleBuilder dynMod;
             SignatureHelper sigHelp;

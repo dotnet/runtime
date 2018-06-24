@@ -81,7 +81,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        public override unsafe int GetByteCount(String chars)
+        public override unsafe int GetByteCount(string chars)
         {
             // Validate input
             if (chars==null)
@@ -122,7 +122,7 @@ namespace System.Text
         // So if you fix this, fix the others.  Currently those include:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
-        public override unsafe int GetBytes(String chars, int charIndex, int charCount,
+        public override unsafe int GetBytes(string chars, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex)
         {
             if (chars == null || bytes == null)
@@ -382,7 +382,7 @@ namespace System.Text
             if (encoder != null)
             {
                 charLeftOver = encoder._charLeftOver;
-                Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
+                Debug.Assert(charLeftOver == 0 || char.IsHighSurrogate(charLeftOver),
                     "[ASCIIEncoding.GetByteCount]leftover character should be high surrogate");
 
                 fallback = encoder.Fallback as EncoderReplacementFallback;
@@ -434,7 +434,7 @@ namespace System.Text
             // We may have a left over character from last time, try and process it.
             if (charLeftOver > 0)
             {
-                Debug.Assert(Char.IsHighSurrogate(charLeftOver), "[ASCIIEncoding.GetByteCount]leftover character should be high surrogate");
+                Debug.Assert(char.IsHighSurrogate(charLeftOver), "[ASCIIEncoding.GetByteCount]leftover character should be high surrogate");
                 Debug.Assert(encoder != null, "[ASCIIEncoding.GetByteCount]Expected encoder");
 
                 // Since left over char was a surrogate, it'll have to be fallen back.
@@ -536,7 +536,7 @@ namespace System.Text
                     fallbackBuffer.InternalInitialize(charStart, charEnd, encoder, true);
                 }
 
-                Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
+                Debug.Assert(charLeftOver == 0 || char.IsHighSurrogate(charLeftOver),
                     "[ASCIIEncoding.GetBytes]leftover character should be high surrogate");
 
                 // Verify that we have no fallbackbuffer, for ASCII its always empty, so just assert

@@ -12,7 +12,7 @@ namespace System.Threading
     public sealed partial class Semaphore : WaitHandle
     {
         // creates a nameless semaphore object
-        // Win32 only takes maximum count of Int32.MaxValue
+        // Win32 only takes maximum count of int.MaxValue
         public Semaphore(int initialCount, int maximumCount) : this(initialCount, maximumCount, null) { }
 
         public Semaphore(int initialCount, int maximumCount, string name) :

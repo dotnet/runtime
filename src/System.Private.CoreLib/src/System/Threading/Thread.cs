@@ -29,12 +29,12 @@ namespace System.Threading
     using System.Runtime.Versioning;
     using System.Diagnostics;
 
-    internal delegate Object InternalCrossContextDelegate(Object[] args);
+    internal delegate object InternalCrossContextDelegate(object[] args);
 
     internal class ThreadHelper
     {
         private Delegate _start;
-        private Object _startArg = null;
+        private object _startArg = null;
         private ExecutionContext _executionContext = null;
         internal ThreadHelper(Delegate start)
         {
@@ -48,7 +48,7 @@ namespace System.Threading
 
         internal static ContextCallback _ccb = new ContextCallback(ThreadStart_Context);
 
-        private static void ThreadStart_Context(Object state)
+        private static void ThreadStart_Context(object state)
         {
             ThreadHelper t = (ThreadHelper)state;
             if (t._start is ThreadStart)
@@ -68,7 +68,7 @@ namespace System.Threading
             ExecutionContext context = _executionContext;
             if (context != null)
             {
-                ExecutionContext.RunInternal(context, _ccb, (Object)this);
+                ExecutionContext.RunInternal(context, _ccb, (object)this);
             }
             else
             {
@@ -82,7 +82,7 @@ namespace System.Threading
             ExecutionContext context = _executionContext;
             if (context != null)
             {
-                ExecutionContext.RunInternal(context, _ccb, (Object)this);
+                ExecutionContext.RunInternal(context, _ccb, (object)this);
             }
             else
             {
@@ -111,10 +111,10 @@ namespace System.Threading
         private ExecutionContext m_ExecutionContext;    // this call context follows the logical thread
         private SynchronizationContext m_SynchronizationContext;    // On CoreCLR, this is maintained separately from ExecutionContext
 
-        private String m_Name;
+        private string m_Name;
         private Delegate m_Delegate;             // Delegate
 
-        private Object m_ThreadStartArg;
+        private object m_ThreadStartArg;
 
         /*=========================================================================
         ** The base implementation of Thread is all native.  The following fields
@@ -307,7 +307,7 @@ namespace System.Threading
         public static void Sleep(TimeSpan timeout)
         {
             long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long)Int32.MaxValue)
+            if (tm < -1 || tm > (long)int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             Sleep((int)tm);
         }
@@ -503,7 +503,7 @@ namespace System.Threading
 
         // Retrieves the name of the thread.
         //
-        public new String Name
+        public new string Name
         {
             get
             {
@@ -523,7 +523,7 @@ namespace System.Threading
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void InformThreadNameChange(ThreadHandle t, String name, int len);
+        private static extern void InformThreadNameChange(ThreadHandle t, string name, int len);
 
     } // End of class Thread
 

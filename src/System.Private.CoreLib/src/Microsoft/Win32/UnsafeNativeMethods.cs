@@ -193,7 +193,7 @@ namespace Microsoft.Win32
         internal static extern int RoGetActivationFactory(
             [MarshalAs(UnmanagedType.HString)] string activatableClassId,
             [In] ref Guid iid,
-            [Out, MarshalAs(UnmanagedType.IInspectable)] out Object factory);
+            [Out, MarshalAs(UnmanagedType.IInspectable)] out object factory);
 #endif
     }
 }

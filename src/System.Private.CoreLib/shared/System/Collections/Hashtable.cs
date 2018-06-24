@@ -110,16 +110,16 @@ namespace System.Collections
            -- 
         */
 
-        private const Int32 InitialSize = 3;
+        private const int InitialSize = 3;
 
-        private const String LoadFactorName = "LoadFactor"; // Do not rename (binary serialization)
-        private const String VersionName = "Version"; // Do not rename (binary serialization)
-        private const String ComparerName = "Comparer"; // Do not rename (binary serialization)
-        private const String HashCodeProviderName = "HashCodeProvider"; // Do not rename (binary serialization)
-        private const String HashSizeName = "HashSize";  // Must save buckets.Length. Do not rename (binary serialization)
-        private const String KeysName = "Keys"; // Do not rename (binary serialization)
-        private const String ValuesName = "Values"; // Do not rename (binary serialization)
-        private const String KeyComparerName = "KeyComparer"; // Do not rename (binary serialization)
+        private const string LoadFactorName = "LoadFactor"; // Do not rename (binary serialization)
+        private const string VersionName = "Version"; // Do not rename (binary serialization)
+        private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
+        private const string HashCodeProviderName = "HashCodeProvider"; // Do not rename (binary serialization)
+        private const string HashSizeName = "HashSize";  // Must save buckets.Length. Do not rename (binary serialization)
+        private const string KeysName = "Keys"; // Do not rename (binary serialization)
+        private const string ValuesName = "Values"; // Do not rename (binary serialization)
+        private const string KeyComparerName = "KeyComparer"; // Do not rename (binary serialization)
 
         // Deleted entries have their key set to buckets
 
@@ -127,8 +127,8 @@ namespace System.Collections
         // This cannot be serialized
         private struct bucket
         {
-            public Object key;
-            public Object val;
+            public object key;
+            public object val;
             public int hash_coll;   // Store hash code; sign bit means there was a collision.
         }
 
@@ -150,7 +150,7 @@ namespace System.Collections
         private ICollection _values;
 
         private IEqualityComparer _keycomparer;
-        private Object _syncRoot;
+        private object _syncRoot;
 
         [Obsolete("Please use EqualityComparer property.")]
         protected IHashCodeProvider hcp
@@ -278,7 +278,7 @@ namespace System.Collections
             _loadFactor = 0.72f * loadFactor;
 
             double rawsize = capacity / _loadFactor;
-            if (rawsize > Int32.MaxValue)
+            if (rawsize > int.MaxValue)
                 throw new ArgumentException(SR.Arg_HTCapacityOverflow, nameof(capacity));
 
             // Avoid awfully small sizes
@@ -404,7 +404,7 @@ namespace System.Collections
         // The out parameter seed is h1(key), while the out parameter 
         // incr is h2(key, hashSize).  Callers of this function should 
         // add incr each time through a loop.
-        private uint InitHash(Object key, int hashsize, out uint seed, out uint incr)
+        private uint InitHash(object key, int hashsize, out uint seed, out uint incr)
         {
             // Hashcode must be positive.  Also, we must not use the sign bit, since
             // that is used for the collision bit.
@@ -423,7 +423,7 @@ namespace System.Collections
         // ArgumentException is thrown if the key is null or if the key is already
         // present in the hashtable.
         // 
-        public virtual void Add(Object key, Object value)
+        public virtual void Add(object key, object value)
         {
             Insert(key, value, true);
         }
@@ -453,7 +453,7 @@ namespace System.Collections
         // Clone returns a virtually identical copy of this hash table.  This does
         // a shallow copy - the Objects in the table aren't cloned, only the references
         // to those Objects.
-        public virtual Object Clone()
+        public virtual object Clone()
         {
             bucket[] lbuckets = _buckets;
             Hashtable ht = new Hashtable(_count, _keycomparer);
@@ -465,7 +465,7 @@ namespace System.Collections
             while (bucket > 0)
             {
                 bucket--;
-                Object keyv = lbuckets[bucket].key;
+                object keyv = lbuckets[bucket].key;
                 if ((keyv != null) && (keyv != lbuckets))
                 {
                     ht[keyv] = lbuckets[bucket].val;
@@ -476,7 +476,7 @@ namespace System.Collections
         }
 
         // Checks if this hashtable contains the given key.
-        public virtual bool Contains(Object key)
+        public virtual bool Contains(object key)
         {
             return ContainsKey(key);
         }
@@ -484,7 +484,7 @@ namespace System.Collections
         // Checks if this hashtable contains an entry with the given key.  This is
         // an O(1) operation.
         // 
-        public virtual bool ContainsKey(Object key)
+        public virtual bool ContainsKey(object key)
         {
             if (key == null)
             {
@@ -523,7 +523,7 @@ namespace System.Collections
         // search and is thus be substantially slower than the ContainsKey
         // method.
         // 
-        public virtual bool ContainsValue(Object value)
+        public virtual bool ContainsValue(object value)
         {
             if (value == null)
             {
@@ -537,7 +537,7 @@ namespace System.Collections
             {
                 for (int i = _buckets.Length; --i >= 0;)
                 {
-                    Object val = _buckets[i].val;
+                    object val = _buckets[i].val;
                     if (val != null && val.Equals(value))
                         return true;
                 }
@@ -556,7 +556,7 @@ namespace System.Collections
             bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
-                Object keyv = lbuckets[i].key;
+                object keyv = lbuckets[i].key;
                 if ((keyv != null) && (keyv != _buckets))
                 {
                     array.SetValue(keyv, arrayIndex++);
@@ -575,7 +575,7 @@ namespace System.Collections
             bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
-                Object keyv = lbuckets[i].key;
+                object keyv = lbuckets[i].key;
                 if ((keyv != null) && (keyv != _buckets))
                 {
                     DictionaryEntry entry = new DictionaryEntry(keyv, lbuckets[i].val);
@@ -611,7 +611,7 @@ namespace System.Collections
             bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
-                Object keyv = lbuckets[i].key;
+                object keyv = lbuckets[i].key;
                 if ((keyv != null) && (keyv != _buckets))
                 {
                     array[index++] = new KeyValuePairs(keyv, lbuckets[i].val);
@@ -633,7 +633,7 @@ namespace System.Collections
             bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
-                Object keyv = lbuckets[i].key;
+                object keyv = lbuckets[i].key;
                 if ((keyv != null) && (keyv != _buckets))
                 {
                     array.SetValue(lbuckets[i].val, arrayIndex++);
@@ -644,7 +644,7 @@ namespace System.Collections
         // Returns the value associated with the given key. If an entry with the
         // given key is not found, the returned value is null.
         // 
-        public virtual Object this[Object key]
+        public virtual object this[object key]
         {
             get
             {
@@ -736,7 +736,7 @@ namespace System.Collections
 
         private void UpdateVersion()
         {
-            // Version might become negative when version is Int32.MaxValue, but the oddity will be still be correct. 
+            // Version might become negative when version is int.MaxValue, but the oddity will be still be correct. 
             // So we don't need to special case this. 
             _version++;
         }
@@ -799,7 +799,7 @@ namespace System.Collections
         // Internal method to get the hash code for an Object.  This will call
         // GetHashCode() on each object if you haven't provided an IHashCodeProvider
         // instance.  Otherwise, it calls hcp.GetHashCode(obj).
-        protected virtual int GetHash(Object key)
+        protected virtual int GetHash(object key)
         {
             if (_keycomparer != null)
                 return _keycomparer.GetHashCode(key);
@@ -827,15 +827,15 @@ namespace System.Collections
         // instance in the constructor, this method will call comparer.Compare(item, key).
         // Otherwise, it will call item.Equals(key).
         // 
-        protected virtual bool KeyEquals(Object item, Object key)
+        protected virtual bool KeyEquals(object item, object key)
         {
             Debug.Assert(key != null, "key can't be null here!");
-            if (Object.ReferenceEquals(_buckets, item))
+            if (object.ReferenceEquals(_buckets, item))
             {
                 return false;
             }
 
-            if (Object.ReferenceEquals(item, key))
+            if (object.ReferenceEquals(item, key))
                 return true;
 
             if (_keycomparer != null)
@@ -885,7 +885,7 @@ namespace System.Collections
         // Inserts an entry into this hashtable. This method is called from the Set
         // and Add methods. If the add parameter is true and the given key already
         // exists in the hashtable, an exception is thrown.
-        private void Insert(Object key, Object nvalue, bool add)
+        private void Insert(object key, object nvalue, bool add)
         {
             if (key == null)
             {
@@ -998,7 +998,7 @@ namespace System.Collections
             throw new InvalidOperationException(SR.InvalidOperation_HashInsertFailed);
         }
 
-        private void putEntry(bucket[] newBuckets, Object key, Object nvalue, int hashcode)
+        private void putEntry(bucket[] newBuckets, object key, object nvalue, int hashcode)
         {
             Debug.Assert(hashcode >= 0, "hashcode >= 0");  // make sure collision bit (sign bit) wasn't set.
 
@@ -1028,7 +1028,7 @@ namespace System.Collections
         // key exists in the hashtable, it is removed. An ArgumentException is
         // thrown if the key is null.
         // 
-        public virtual void Remove(Object key)
+        public virtual void Remove(object key)
         {
             if (key == null)
             {
@@ -1073,13 +1073,13 @@ namespace System.Collections
         }
 
         // Returns the object to synchronize on for this hash table.
-        public virtual Object SyncRoot
+        public virtual object SyncRoot
         {
             get
             {
                 if (_syncRoot == null)
                 {
-                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
+                    System.Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
                 }
                 return _syncRoot;
             }
@@ -1145,12 +1145,12 @@ namespace System.Collections
 #pragma warning restore 618
 
                 info.AddValue(HashSizeName, _buckets.Length); //This is the length of the bucket array.
-                Object[] serKeys = new Object[_count];
-                Object[] serValues = new Object[_count];
+                object[] serKeys = new object[_count];
+                object[] serValues = new object[_count];
                 CopyKeys(serKeys, 0);
                 CopyValues(serValues, 0);
-                info.AddValue(KeysName, serKeys, typeof(Object[]));
-                info.AddValue(ValuesName, serValues, typeof(Object[]));
+                info.AddValue(KeysName, serKeys, typeof(object[]));
+                info.AddValue(ValuesName, serValues, typeof(object[]));
 
                 // Explicitly check to see if anyone changed the Hashtable while we 
                 // were serializing it.  That's a race in their code.
@@ -1164,7 +1164,7 @@ namespace System.Collections
         //
         // DeserializationEvent Listener 
         //
-        public virtual void OnDeserialization(Object sender)
+        public virtual void OnDeserialization(object sender)
         {
             if (_buckets != null)
             {
@@ -1187,8 +1187,8 @@ namespace System.Collections
             IHashCodeProvider hcp = null;
 #pragma warning restore 618
 
-            Object[] serKeys = null;
-            Object[] serValues = null;
+            object[] serKeys = null;
+            object[] serValues = null;
 
             SerializationInfoEnumerator enumerator = siInfo.GetEnumerator();
 
@@ -1214,10 +1214,10 @@ namespace System.Collections
 #pragma warning restore 618
                         break;
                     case KeysName:
-                        serKeys = (Object[])siInfo.GetValue(KeysName, typeof(Object[]));
+                        serKeys = (object[])siInfo.GetValue(KeysName, typeof(object[]));
                         break;
                     case ValuesName:
-                        serValues = (Object[])siInfo.GetValue(ValuesName, typeof(Object[]));
+                        serValues = (object[])siInfo.GetValue(ValuesName, typeof(object[]));
                         break;
                 }
             }
@@ -1292,7 +1292,7 @@ namespace System.Collections
                 get { return _hashtable.IsSynchronized; }
             }
 
-            public virtual Object SyncRoot
+            public virtual object SyncRoot
             {
                 get { return _hashtable.SyncRoot; }
             }
@@ -1337,7 +1337,7 @@ namespace System.Collections
                 get { return _hashtable.IsSynchronized; }
             }
 
-            public virtual Object SyncRoot
+            public virtual object SyncRoot
             {
                 get { return _hashtable.SyncRoot; }
             }
@@ -1388,7 +1388,7 @@ namespace System.Collections
                 get { return true; }
             }
 
-            public override Object this[Object key]
+            public override object this[object key]
             {
                 get
                 {
@@ -1403,12 +1403,12 @@ namespace System.Collections
                 }
             }
 
-            public override Object SyncRoot
+            public override object SyncRoot
             {
                 get { return _table.SyncRoot; }
             }
 
-            public override void Add(Object key, Object value)
+            public override void Add(object key, object value)
             {
                 lock (_table.SyncRoot)
                 {
@@ -1424,12 +1424,12 @@ namespace System.Collections
                 }
             }
 
-            public override bool Contains(Object key)
+            public override bool Contains(object key)
             {
                 return _table.Contains(key);
             }
 
-            public override bool ContainsKey(Object key)
+            public override bool ContainsKey(object key)
             {
                 if (key == null)
                 {
@@ -1438,7 +1438,7 @@ namespace System.Collections
                 return _table.ContainsKey(key);
             }
 
-            public override bool ContainsValue(Object key)
+            public override bool ContainsValue(object key)
             {
                 lock (_table.SyncRoot)
                 {
@@ -1454,7 +1454,7 @@ namespace System.Collections
                 }
             }
 
-            public override Object Clone()
+            public override object Clone()
             {
                 lock (_table.SyncRoot)
                 {
@@ -1494,7 +1494,7 @@ namespace System.Collections
                 }
             }
 
-            public override void Remove(Object key)
+            public override void Remove(object key)
             {
                 lock (_table.SyncRoot)
                 {
@@ -1502,7 +1502,7 @@ namespace System.Collections
                 }
             }
 
-            public override void OnDeserialization(Object sender)
+            public override void OnDeserialization(object sender)
             {
                 // Does nothing.  We have to implement this because our parent HT implements it,
                 // but it doesn't do anything meaningful.  The real work will be done when we
@@ -1526,8 +1526,8 @@ namespace System.Collections
             private int _version;
             private bool _current;
             private int _getObjectRetType;   // What should GetObject return?
-            private Object _currentKey;
-            private Object _currentValue;
+            private object _currentKey;
+            private object _currentValue;
 
             internal const int Keys = 1;
             internal const int Values = 2;
@@ -1544,7 +1544,7 @@ namespace System.Collections
 
             public object Clone() => MemberwiseClone();
 
-            public virtual Object Key
+            public virtual object Key
             {
                 get
                 {
@@ -1561,7 +1561,7 @@ namespace System.Collections
                 while (_bucket > 0)
                 {
                     _bucket--;
-                    Object keyv = _hashtable._buckets[_bucket].key;
+                    object keyv = _hashtable._buckets[_bucket].key;
                     if ((keyv != null) && (keyv != _hashtable._buckets))
                     {
                         _currentKey = keyv;
@@ -1585,7 +1585,7 @@ namespace System.Collections
             }
 
 
-            public virtual Object Current
+            public virtual object Current
             {
                 get
                 {
@@ -1601,7 +1601,7 @@ namespace System.Collections
                 }
             }
 
-            public virtual Object Value
+            public virtual object Value
             {
                 get
                 {

@@ -24,17 +24,17 @@ namespace System.Runtime.InteropServices.ComTypes
         new void GetTypeComp(out ITypeComp ppTComp);
         new void GetFuncDesc(int index, out IntPtr ppFuncDesc);
         new void GetVarDesc(int index, out IntPtr ppVarDesc);
-        new void GetNames(int memid, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2), Out] String[] rgBstrNames, int cMaxNames, out int pcNames);
+        new void GetNames(int memid, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2), Out] string[] rgBstrNames, int cMaxNames, out int pcNames);
         new void GetRefTypeOfImplType(int index, out int href);
         new void GetImplTypeFlags(int index, out IMPLTYPEFLAGS pImplTypeFlags);
-        new void GetIDsOfNames([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1), In] String[] rgszNames, int cNames, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] int[] pMemId);
-        new void Invoke([MarshalAs(UnmanagedType.IUnknown)] Object pvInstance, int memid, Int16 wFlags, ref DISPPARAMS pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, out int puArgErr);
-        new void GetDocumentation(int index, out String strName, out String strDocString, out int dwHelpContext, out String strHelpFile);
+        new void GetIDsOfNames([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 1), In] string[] rgszNames, int cNames, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] int[] pMemId);
+        new void Invoke([MarshalAs(UnmanagedType.IUnknown)] object pvInstance, int memid, short wFlags, ref DISPPARAMS pDispParams, IntPtr pVarResult, IntPtr pExcepInfo, out int puArgErr);
+        new void GetDocumentation(int index, out string strName, out string strDocString, out int dwHelpContext, out string strHelpFile);
         new void GetDllEntry(int memid, INVOKEKIND invKind, IntPtr pBstrDllName, IntPtr pBstrName, IntPtr pwOrdinal);
         new void GetRefTypeInfo(int hRef, out ITypeInfo ppTI);
         new void AddressOfMember(int memid, INVOKEKIND invKind, out IntPtr ppv);
-        new void CreateInstance([MarshalAs(UnmanagedType.IUnknown)] Object pUnkOuter, [In] ref Guid riid, [MarshalAs(UnmanagedType.IUnknown), Out] out Object ppvObj);
-        new void GetMops(int memid, out String pBstrMops);
+        new void CreateInstance([MarshalAs(UnmanagedType.IUnknown)] object pUnkOuter, [In] ref Guid riid, [MarshalAs(UnmanagedType.IUnknown), Out] out object ppvObj);
+        new void GetMops(int memid, out string pBstrMops);
         new void GetContainingTypeLib(out ITypeLib ppTLB, out int pIndex);
         [PreserveSig]
         new void ReleaseTypeAttr(IntPtr pTypeAttr);
@@ -46,13 +46,13 @@ namespace System.Runtime.InteropServices.ComTypes
         void GetTypeFlags(out int pTypeFlags);
         void GetFuncIndexOfMemId(int memid, INVOKEKIND invKind, out int pFuncIndex);
         void GetVarIndexOfMemId(int memid, out int pVarIndex);
-        void GetCustData(ref Guid guid, out Object pVarVal);
-        void GetFuncCustData(int index, ref Guid guid, out Object pVarVal);
-        void GetParamCustData(int indexFunc, int indexParam, ref Guid guid, out Object pVarVal);
-        void GetVarCustData(int index, ref Guid guid, out Object pVarVal);
-        void GetImplTypeCustData(int index, ref Guid guid, out Object pVarVal);
+        void GetCustData(ref Guid guid, out object pVarVal);
+        void GetFuncCustData(int index, ref Guid guid, out object pVarVal);
+        void GetParamCustData(int indexFunc, int indexParam, ref Guid guid, out object pVarVal);
+        void GetVarCustData(int index, ref Guid guid, out object pVarVal);
+        void GetImplTypeCustData(int index, ref Guid guid, out object pVarVal);
         [LCIDConversionAttribute(1)]
-        void GetDocumentation2(int memid, out String pbstrHelpString, out int pdwHelpStringContext, out String pbstrHelpStringDll);
+        void GetDocumentation2(int memid, out string pbstrHelpString, out int pdwHelpStringContext, out string pbstrHelpStringDll);
         void GetAllCustData(IntPtr pCustData);
         void GetAllFuncCustData(int index, IntPtr pCustData);
         void GetAllParamCustData(int indexFunc, int indexParam, IntPtr pCustData);

@@ -201,7 +201,7 @@ namespace System.Runtime.CompilerServices
 #region Private fields
 
         private static volatile EventHandler<ContractFailedEventArgs> contractFailedEvent;
-        private static readonly Object lockObject = new Object();
+        private static readonly object lockObject = new object();
 
         internal const int COR_E_CODECONTRACTFAILED = unchecked((int)0x80131542);
 

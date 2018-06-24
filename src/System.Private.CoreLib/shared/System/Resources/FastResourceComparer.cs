@@ -26,7 +26,7 @@ namespace System.Resources
         internal static readonly FastResourceComparer Default = new FastResourceComparer();
 
         // Implements IHashCodeProvider too, due to Hashtable requirements.
-        public int GetHashCode(Object key)
+        public int GetHashCode(object key)
         {
             string s = (string)key;
             return FastResourceComparer.HashFunction(s);
@@ -52,7 +52,7 @@ namespace System.Resources
         }
 
         // Compares Strings quickly in a case-sensitive way
-        public int Compare(Object a, Object b)
+        public int Compare(object a, object b)
         {
             if (a == b) return 0;
             string sa = (string)a;
@@ -70,7 +70,7 @@ namespace System.Resources
             return string.Equals(a, b);
         }
 
-        public new bool Equals(Object a, Object b)
+        public new bool Equals(object a, object b)
         {
             if (a == b) return true;
             string sa = (string)a;

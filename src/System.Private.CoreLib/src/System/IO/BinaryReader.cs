@@ -281,7 +281,7 @@ namespace System.IO
             FillBuffer(16);
             try
             {
-                return Decimal.ToDecimal(_buffer);
+                return decimal.ToDecimal(_buffer);
             }
             catch (ArgumentException e)
             {

@@ -31,19 +31,19 @@ namespace System.Runtime.InteropServices
             HResult = HResults.E_FAIL;
         }
 
-        public COMException(String message)
+        public COMException(string message)
             : base(message)
         {
             HResult = HResults.E_FAIL;
         }
 
-        public COMException(String message, Exception inner)
+        public COMException(string message, Exception inner)
             : base(message, inner)
         {
             HResult = HResults.E_FAIL;
         }
 
-        public COMException(String message, int errorCode)
+        public COMException(string message, int errorCode)
             : base(message)
         {
             HResult = errorCode;
@@ -53,11 +53,11 @@ namespace System.Runtime.InteropServices
         {
         }
 
-        public override String ToString()
+        public override string ToString()
         {
-            String message = Message;
-            String s;
-            String _className = GetType().ToString();
+            string message = Message;
+            string s;
+            string _className = GetType().ToString();
             s = _className + " (0x" + HResult.ToString("X8", CultureInfo.InvariantCulture) + ")";
 
             if (!(message == null || message.Length <= 0))

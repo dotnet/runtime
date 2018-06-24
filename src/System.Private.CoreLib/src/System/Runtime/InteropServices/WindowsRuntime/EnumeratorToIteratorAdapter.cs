@@ -156,7 +156,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 string[] stringItems = items as string[];
 
-                // Fill the rest of the array with String.Empty to avoid marshaling failure
+                // Fill the rest of the array with string.Empty to avoid marshaling failure
                 for (int i = index; i < items.Length; ++i)
                     stringItems[i] = string.Empty;
             }

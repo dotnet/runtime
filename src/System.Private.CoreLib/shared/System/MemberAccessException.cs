@@ -31,13 +31,13 @@ namespace System
         // message, its HRESULT set to COR_E_ACCESS, 
         // and its ExceptionInfo reference set to null. 
         // 
-        public MemberAccessException(String message)
+        public MemberAccessException(string message)
             : base(message)
         {
             HResult = HResults.COR_E_MEMBERACCESS;
         }
 
-        public MemberAccessException(String message, Exception inner)
+        public MemberAccessException(string message, Exception inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_MEMBERACCESS;

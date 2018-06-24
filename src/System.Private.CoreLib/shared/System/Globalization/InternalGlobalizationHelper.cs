@@ -25,8 +25,8 @@ namespace System.Globalization
         internal const long TicksPerMillisecond = 10000;
         internal const long TicksPerTenthSecond = TicksPerMillisecond * 100;
         internal const long TicksPerSecond = TicksPerMillisecond * 1000;   // 10,000,000
-        internal const long MaxSeconds = Int64.MaxValue / TicksPerSecond;
-        internal const long MinSeconds = Int64.MinValue / TicksPerSecond;
+        internal const long MaxSeconds = long.MaxValue / TicksPerSecond;
+        internal const long MinSeconds = long.MinValue / TicksPerSecond;
         private const int DaysPerYear = 365;
         private const int DaysPer4Years = DaysPerYear * 4 + 1;       // 1461
         private const int DaysPer100Years = DaysPer4Years * 25 - 1;  // 36524
@@ -37,12 +37,12 @@ namespace System.Globalization
         private const long TicksPerDay = TicksPerHour * 24;
         internal const long MaxTicks = DaysTo10000 * TicksPerDay - 1;
         internal const long MinTicks = 0;
-        internal const long MaxMilliSeconds = Int64.MaxValue / TicksPerMillisecond;
-        internal const long MinMilliSeconds = Int64.MinValue / TicksPerMillisecond;
+        internal const long MaxMilliSeconds = long.MaxValue / TicksPerMillisecond;
+        internal const long MinMilliSeconds = long.MinValue / TicksPerMillisecond;
 
         internal const int StringBuilderDefaultCapacity = 16;
 
-        internal const Int64 MaxOffset = TimeSpan.TicksPerHour * 14;
-        internal const Int64 MinOffset = -MaxOffset;
+        internal const long MaxOffset = TimeSpan.TicksPerHour * 14;
+        internal const long MinOffset = -MaxOffset;
     }
 }

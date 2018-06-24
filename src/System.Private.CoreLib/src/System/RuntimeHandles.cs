@@ -45,7 +45,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool IsInstanceOfType(RuntimeType type, Object o);
+        internal static extern bool IsInstanceOfType(RuntimeType type, object o);
 
         internal static unsafe Type GetTypeHelper(Type typeStart, Type[] genericArgs, IntPtr pModifiers, int cModifiers)
         {
@@ -219,16 +219,16 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Object CreateInstance(RuntimeType type, bool publicOnly, bool wrapExceptions, ref bool canBeCached, ref RuntimeMethodHandleInternal ctor);
+        internal static extern object CreateInstance(RuntimeType type, bool publicOnly, bool wrapExceptions, ref bool canBeCached, ref RuntimeMethodHandleInternal ctor);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Object CreateCaInstance(RuntimeType type, IRuntimeMethodInfo ctor);
+        internal static extern object CreateCaInstance(RuntimeType type, IRuntimeMethodInfo ctor);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Object Allocate(RuntimeType type);
+        internal static extern object Allocate(RuntimeType type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter);
+        internal static extern object CreateInstanceForAnotherGenericParameter(RuntimeType type, RuntimeType genericParameter);
 
         internal RuntimeType GetRuntimeType()
         {
@@ -448,7 +448,7 @@ namespace System
 
             RuntimeType type = null;
 
-            Object keepAlive = null;
+            object keepAlive = null;
             GetTypeByName(name, throwOnError, ignoreCase, reflectionOnly,
                 JitHelpers.GetStackCrawlMarkHandle(ref stackMark),
                 pPrivHostBinder,
@@ -1121,7 +1121,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern String GetName(RtFieldInfo field);
+        internal static extern string GetName(RtFieldInfo field);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void* _GetUtf8Name(RuntimeFieldHandleInternal field);
@@ -1148,16 +1148,16 @@ namespace System
         internal static extern int GetToken(RtFieldInfo field);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Object GetValue(RtFieldInfo field, Object instance, RuntimeType fieldType, RuntimeType declaringType, ref bool domainInitialized);
+        internal static extern object GetValue(RtFieldInfo field, object instance, RuntimeType fieldType, RuntimeType declaringType, ref bool domainInitialized);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Object GetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, RuntimeType contextType);
+        internal static extern object GetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, RuntimeType contextType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetValue(RtFieldInfo field, Object obj, Object value, RuntimeType fieldType, FieldAttributes fieldAttr, RuntimeType declaringType, ref bool domainInitialized);
+        internal static extern void SetValue(RtFieldInfo field, object obj, object value, RuntimeType fieldType, FieldAttributes fieldAttr, RuntimeType declaringType, ref bool domainInitialized);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, Object value, RuntimeType contextType);
+        internal static extern void SetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, object value, RuntimeType contextType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern RuntimeFieldHandleInternal GetStaticFieldForGenericType(RuntimeFieldHandleInternal field, RuntimeType declaringType);
@@ -1528,7 +1528,7 @@ namespace System
         internal abstract unsafe void GetEHInfo(int EHNumber, void* exception);
         internal abstract unsafe byte[] GetRawEHInfo();
         // token resolution
-        internal abstract String GetStringLiteral(int token);
+        internal abstract string GetStringLiteral(int token);
         internal abstract void ResolveToken(int token, out IntPtr typeHandle, out IntPtr methodHandle, out IntPtr fieldHandle);
         internal abstract byte[] ResolveSignature(int token, int fromMethod);
         // 

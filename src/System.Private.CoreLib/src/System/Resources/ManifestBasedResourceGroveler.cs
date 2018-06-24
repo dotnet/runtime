@@ -178,7 +178,7 @@ namespace System.Resources
                 // Note we could go into infinite loops if mscorlib's 
                 // NeutralResourcesLanguageAttribute is mangled.  If this assert
                 // fires, please fix the build process for the BCL directory.
-                if (a == typeof(Object).Assembly)
+                if (a == typeof(object).Assembly)
                 {
                     Debug.Fail(System.CoreLib.Name + "'s NeutralResourcesLanguageAttribute is a malformed culture name! name: \"" + cultureName + "\"  Exception: " + e);
                     return CultureInfo.InvariantCulture;
@@ -204,7 +204,7 @@ namespace System.Resources
                 // not disposing because we want to leave stream open
                 BinaryReader br = new BinaryReader(store);
 
-                // Look for our magic number as a little endian Int32.
+                // Look for our magic number as a little endian int.
                 int bytes = br.ReadInt32();
                 if (bytes == ResourceManager.MagicNumber)
                 {
@@ -251,11 +251,11 @@ namespace System.Resources
                     {
                         // we do not want to use partial binding here.
                         Type readerType = Type.GetType(readerTypeName, true);
-                        Object[] args = new Object[1];
+                        object[] args = new object[1];
                         args[0] = store;
                         IResourceReader reader = (IResourceReader)Activator.CreateInstance(readerType, args);
 
-                        Object[] resourceSetArgs = new Object[1];
+                        object[] resourceSetArgs = new object[1];
                         resourceSetArgs[0] = reader;
 
                         Type resSetType;
@@ -287,7 +287,7 @@ namespace System.Resources
             }
             else
             {
-                Object[] args = new Object[2];
+                object[] args = new object[2];
                 args[0] = store;
                 args[1] = assembly;
                 try
@@ -301,7 +301,7 @@ namespace System.Resources
                     }
                     catch (MissingMethodException) { }
 
-                    args = new Object[1];
+                    args = new object[1];
                     args[0] = store;
                     rs = (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args);
 
@@ -501,7 +501,7 @@ namespace System.Resources
         private void HandleResourceStreamMissing(string fileName)
         {
             // Keep people from bothering me about resources problems
-            if (_mediator.MainAssembly == typeof(Object).Assembly && _mediator.BaseName.Equals(System.CoreLib.Name))
+            if (_mediator.MainAssembly == typeof(object).Assembly && _mediator.BaseName.Equals(System.CoreLib.Name))
             {
                 // This would break CultureInfo & all our exceptions.
                 Debug.Fail("Couldn't get " + System.CoreLib.Name + ResourceManager.ResFileExtension + " from " + System.CoreLib.Name + "'s assembly" + Environment.NewLine + Environment.NewLine + "Are you building the runtime on your machine?  Chances are the BCL directory didn't build correctly.  Type 'build -c' in the BCL directory.  If you get build errors, look at buildd.log.  If you then can't figure out what's wrong (and you aren't changing the assembly-related metadata code), ask a BCL dev.\n\nIf you did NOT build the runtime, you shouldn't be seeing this and you've found a bug.");

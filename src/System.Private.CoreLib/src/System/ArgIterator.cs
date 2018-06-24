@@ -128,7 +128,7 @@ namespace System
         }
     
         // Inherited from object
-        public override bool Equals(Object o)
+        public override bool Equals(object o)
         {
             throw new NotSupportedException(SR.NotSupported_NYI);
         }

@@ -31,7 +31,7 @@ namespace System.Reflection.Emit
 
         // Define literal for enum
 
-        public FieldBuilder DefineLiteral(string literalName, Object literalValue)
+        public FieldBuilder DefineLiteral(string literalName, object literalValue)
         {
             // Define the underlying field for the enum. It will be a non-static, private field with special name bit set. 
             FieldBuilder fieldBuilder = m_typeBuilder.DefineField(
@@ -84,12 +84,12 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Object InvokeMember(
+        public override object InvokeMember(
             string name,
             BindingFlags invokeAttr,
             Binder binder,
-            Object target,
-            Object[] args,
+            object target,
+            object[] args,
             ParameterModifier[] modifiers,
             CultureInfo culture,
             string[] namedParameters)
@@ -303,13 +303,13 @@ namespace System.Reflection.Emit
         }
 
         //ICustomAttributeProvider
-        public override Object[] GetCustomAttributes(bool inherit)
+        public override object[] GetCustomAttributes(bool inherit)
         {
             return m_typeBuilder.GetCustomAttributes(inherit);
         }
 
         // Return a custom attribute identified by Type
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             return m_typeBuilder.GetCustomAttributes(attributeType, inherit);
         }

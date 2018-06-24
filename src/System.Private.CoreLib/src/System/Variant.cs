@@ -27,7 +27,7 @@ namespace System
     {
         //Do Not change the order of these fields.
         //They are mapped to the native VariantData * data structure.
-        private Object m_objref;
+        private object m_objref;
         private int m_data1;
         private int m_data2;
         private int m_flags;
@@ -88,25 +88,25 @@ namespace System
         internal static readonly Type[] ClassTypes = {
             typeof(System.Empty),
             typeof(void),
-            typeof(Boolean),
-            typeof(Char),
-            typeof(SByte),
-            typeof(Byte),
-            typeof(Int16),
-            typeof(UInt16),
-            typeof(Int32),
-            typeof(UInt32),
-            typeof(Int64),
-            typeof(UInt64),
-            typeof(Single),
-            typeof(Double),
-            typeof(String),
+            typeof(bool),
+            typeof(char),
+            typeof(sbyte),
+            typeof(byte),
+            typeof(short),
+            typeof(ushort),
+            typeof(int),
+            typeof(uint),
+            typeof(long),
+            typeof(ulong),
+            typeof(float),
+            typeof(double),
+            typeof(string),
             typeof(void),           // ptr for the moment
             typeof(DateTime),
             typeof(TimeSpan),
-            typeof(Object),
-            typeof(Decimal),
-            typeof(Object),     // Treat enum as Object
+            typeof(object),
+            typeof(decimal),
+            typeof(object),     // Treat enum as Object
             typeof(System.Reflection.Missing),
             typeof(System.DBNull),
         };
@@ -127,7 +127,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void SetFieldsR8(double val);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern void SetFieldsObject(Object val);
+        internal extern void SetFieldsObject(object val);
 
         // Use this function instead of an ECALL - saves about 150 clock cycles
         // by avoiding the ecall transition and because the JIT inlines this.
@@ -141,7 +141,7 @@ namespace System
         // Constructors
         //
 
-        internal Variant(int flags, Object or, int data1, int data2)
+        internal Variant(int flags, object or, int data1, int data2)
         {
             m_flags = flags;
             m_objref = or;
@@ -153,7 +153,7 @@ namespace System
         {
             m_objref = null;
             m_flags = CV_BOOLEAN;
-            m_data1 = (val) ? Boolean.True : Boolean.False;
+            m_data1 = (val) ? bool.True : bool.False;
             m_data2 = 0;
         }
 
@@ -257,15 +257,15 @@ namespace System
             m_data2 = (int)(ticks >> 32);
         }
 
-        public Variant(Decimal val)
+        public Variant(decimal val)
         {
-            m_objref = (Object)val;
+            m_objref = (object)val;
             m_flags = CV_DECIMAL;
             m_data1 = 0;
             m_data2 = 0;
         }
 
-        public Variant(Object obj)
+        public Variant(object obj)
         {
             m_data1 = 0;
             m_data2 = 0;
@@ -282,7 +282,7 @@ namespace System
                 return;
             }
 
-            if (obj is String)
+            if (obj is string)
             {
                 m_flags = CV_STRING;
                 m_objref = obj;
@@ -330,19 +330,19 @@ namespace System
             else if (obj is ErrorWrapper)
             {
                 vt = VarEnum.VT_ERROR;
-                obj = (Object)(((ErrorWrapper)obj).ErrorCode);
+                obj = (object)(((ErrorWrapper)obj).ErrorCode);
                 Debug.Assert(obj != null, "obj != null");
             }
             else if (obj is CurrencyWrapper)
             {
                 vt = VarEnum.VT_CY;
-                obj = (Object)(((CurrencyWrapper)obj).WrappedObject);
+                obj = (object)(((CurrencyWrapper)obj).WrappedObject);
                 Debug.Assert(obj != null, "obj != null");
             }
             else if (obj is BStrWrapper)
             {
                 vt = VarEnum.VT_BSTR;
-                obj = (Object)(((BStrWrapper)obj).WrappedObject);
+                obj = (object)(((BStrWrapper)obj).WrappedObject);
             }
 
             if (obj != null)
@@ -365,36 +365,36 @@ namespace System
             }
         }
 
-        public Object ToObject()
+        public object ToObject()
         {
             switch (CVType)
             {
                 case CV_EMPTY:
                     return null;
                 case CV_BOOLEAN:
-                    return (Object)(m_data1 != 0);
+                    return (object)(m_data1 != 0);
                 case CV_I1:
-                    return (Object)((sbyte)m_data1);
+                    return (object)((sbyte)m_data1);
                 case CV_U1:
-                    return (Object)((byte)m_data1);
+                    return (object)((byte)m_data1);
                 case CV_CHAR:
-                    return (Object)((char)m_data1);
+                    return (object)((char)m_data1);
                 case CV_I2:
-                    return (Object)((short)m_data1);
+                    return (object)((short)m_data1);
                 case CV_U2:
-                    return (Object)((ushort)m_data1);
+                    return (object)((ushort)m_data1);
                 case CV_I4:
-                    return (Object)(m_data1);
+                    return (object)(m_data1);
                 case CV_U4:
-                    return (Object)((uint)m_data1);
+                    return (object)((uint)m_data1);
                 case CV_I8:
-                    return (Object)(GetI8FromVar());
+                    return (object)(GetI8FromVar());
                 case CV_U8:
-                    return (Object)((ulong)GetI8FromVar());
+                    return (object)((ulong)GetI8FromVar());
                 case CV_R4:
-                    return (Object)(GetR4FromVar());
+                    return (object)(GetR4FromVar());
                 case CV_R8:
-                    return (Object)(GetR8FromVar());
+                    return (object)(GetR8FromVar());
                 case CV_DATETIME:
                     return new DateTime(GetI8FromVar());
                 case CV_TIMESPAN:
@@ -415,12 +415,12 @@ namespace System
 
         // This routine will return an boxed enum.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern Object BoxEnum();
+        private extern object BoxEnum();
 
 
         // Helper code for marshaling managed objects to VARIANT's (we use
         // managed variants as an intermediate type.
-        internal static void MarshalHelperConvertObjectToVariant(Object o, ref Variant v)
+        internal static void MarshalHelperConvertObjectToVariant(object o, ref Variant v)
         {
             IConvertible ic = o as IConvertible;
 
@@ -445,7 +445,7 @@ namespace System
                         break;
 
                     case TypeCode.Object:
-                        v = new Variant((Object)o);
+                        v = new Variant((object)o);
                         break;
 
                     case TypeCode.DBNull:
@@ -520,7 +520,7 @@ namespace System
 
         // Helper code for marshaling VARIANTS to managed objects (we use
         // managed variants as an intermediate type.
-        internal static Object MarshalHelperConvertVariantToObject(ref Variant v)
+        internal static object MarshalHelperConvertVariantToObject(ref Variant v)
         {
             return v.ToObject();
         }
@@ -528,7 +528,7 @@ namespace System
         // Helper code: on the back propagation path where a VT_BYREF VARIANT*
         // is marshaled to a "ref Object", we use this helper to force the
         // updated object back to the original type.
-        internal static void MarshalHelperCastVariant(Object pValue, int vt, ref Variant v)
+        internal static void MarshalHelperCastVariant(object pValue, int vt, ref Variant v)
         {
             IConvertible iv = pValue as IConvertible;
             if (iv == null)
@@ -609,7 +609,7 @@ namespace System
                         break;
 
                     case 9: /*VT_DISPATCH*/
-                        v = new Variant(new DispatchWrapper((Object)iv));
+                        v = new Variant(new DispatchWrapper((object)iv));
                         break;
 
                     case 10: /*VT_ERROR*/
@@ -621,11 +621,11 @@ namespace System
                         break;
 
                     case 12: /*VT_VARIANT*/
-                        v = new Variant((Object)iv);
+                        v = new Variant((object)iv);
                         break;
 
                     case 13: /*VT_UNKNOWN*/
-                        v = new Variant(new UnknownWrapper((Object)iv));
+                        v = new Variant(new UnknownWrapper((object)iv));
                         break;
 
                     case 14: /*VT_DECIMAL*/

@@ -19,17 +19,17 @@ namespace System.Runtime.InteropServices
 {
     public sealed class BStrWrapper
     {
-        public BStrWrapper(String value)
+        public BStrWrapper(string value)
         {
             m_WrappedObject = value;
         }
 
-        public BStrWrapper(Object value)
+        public BStrWrapper(object value)
         {
-            m_WrappedObject = (String)value;
+            m_WrappedObject = (string)value;
         }
 
-        public String WrappedObject
+        public string WrappedObject
         {
             get
             {
@@ -37,6 +37,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private String m_WrappedObject;
+        private string m_WrappedObject;
     }
 }

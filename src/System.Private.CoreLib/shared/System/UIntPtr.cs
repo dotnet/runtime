@@ -68,7 +68,7 @@ namespace System
             info.AddValue("value", ToUInt64());
         }
 
-        public unsafe override bool Equals(Object obj)
+        public unsafe override bool Equals(object obj)
         {
             if (obj is UIntPtr)
             {

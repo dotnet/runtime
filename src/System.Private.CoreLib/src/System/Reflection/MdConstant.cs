@@ -10,7 +10,7 @@ namespace System.Reflection
 {
     internal static class MdConstant
     {
-        public static unsafe Object GetValue(MetadataImport scope, int token, RuntimeTypeHandle fieldTypeHandle, bool raw)
+        public static unsafe object GetValue(MetadataImport scope, int token, RuntimeTypeHandle fieldTypeHandle, bool raw)
         {
             CorElementType corElementType = 0;
             long buffer = 0;

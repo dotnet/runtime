@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices
 #endif
 
         // Allocate a handle storing the object and the type.
-        internal GCHandle(Object value, GCHandleType type)
+        internal GCHandle(object value, GCHandleType type)
         {
             // Make sure the type parameter is within the valid range for the enum.
             if ((uint)type > (uint)MaxHandleType)
@@ -84,12 +84,12 @@ namespace System.Runtime.InteropServices
         // type - The type of GC handle to create.
         // 
         // returns a new GC handle that protects the object.
-        public static GCHandle Alloc(Object value)
+        public static GCHandle Alloc(object value)
         {
             return new GCHandle(value, GCHandleType.Normal);
         }
 
-        public static GCHandle Alloc(Object value, GCHandleType type)
+        public static GCHandle Alloc(object value, GCHandleType type)
         {
             return new GCHandle(value, type);
         }
@@ -112,7 +112,7 @@ namespace System.Runtime.InteropServices
         }
 
         // Target property - allows getting / updating of the handle's referent.
-        public Object Target
+        public object Target
         {
             get
             {
@@ -201,7 +201,7 @@ namespace System.Runtime.InteropServices
             return m_handle.GetHashCode();
         }
 
-        public override bool Equals(Object o)
+        public override bool Equals(object o)
         {
             GCHandle hnd;
 
@@ -243,15 +243,15 @@ namespace System.Runtime.InteropServices
 
         // Internal native calls that this implementation uses.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr InternalAlloc(Object value, GCHandleType type);
+        internal static extern IntPtr InternalAlloc(object value, GCHandleType type);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void InternalFree(IntPtr handle);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Object InternalGet(IntPtr handle);
+        internal static extern object InternalGet(IntPtr handle);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void InternalSet(IntPtr handle, Object value, bool isPinned);
+        internal static extern void InternalSet(IntPtr handle, object value, bool isPinned);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Object InternalCompareExchange(IntPtr handle, Object value, Object oldValue, bool isPinned);
+        internal static extern object InternalCompareExchange(IntPtr handle, object value, object oldValue, bool isPinned);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IntPtr InternalAddrOfPinnedObject(IntPtr handle);
 

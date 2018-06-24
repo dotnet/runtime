@@ -17,11 +17,11 @@ namespace System.Runtime.InteropServices
         public TypeIdentifierAttribute() { }
         public TypeIdentifierAttribute(string scope, string identifier) { Scope_ = scope; Identifier_ = identifier; }
 
-        public String Scope { get { return Scope_; } }
-        public String Identifier { get { return Identifier_; } }
+        public string Scope { get { return Scope_; } }
+        public string Identifier { get { return Identifier_; } }
 
-        internal String Scope_;
-        internal String Identifier_;
+        internal string Scope_;
+        internal string Identifier_;
     }
 
     // To be used on methods that sink reverse P/Invoke calls.
@@ -118,19 +118,19 @@ namespace System.Runtime.InteropServices
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public sealed class ProgIdAttribute : Attribute
     {
-        internal String _val;
-        public ProgIdAttribute(String progId)
+        internal string _val;
+        public ProgIdAttribute(string progId)
         {
             _val = progId;
         }
-        public String Value { get { return _val; } }
+        public string Value { get { return _val; } }
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = true)]
     public sealed class ComSourceInterfacesAttribute : Attribute
     {
-        internal String _val;
-        public ComSourceInterfacesAttribute(String sourceInterfaces)
+        internal string _val;
+        public ComSourceInterfacesAttribute(string sourceInterfaces)
         {
             _val = sourceInterfaces;
         }
@@ -150,7 +150,7 @@ namespace System.Runtime.InteropServices
         {
             _val = sourceInterface1.FullName + "\0" + sourceInterface2.FullName + "\0" + sourceInterface3.FullName + "\0" + sourceInterface4.FullName;
         }
-        public String Value { get { return _val; } }
+        public string Value { get { return _val; } }
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = false)]

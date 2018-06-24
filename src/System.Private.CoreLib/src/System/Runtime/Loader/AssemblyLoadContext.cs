@@ -295,7 +295,7 @@ namespace System.Runtime.Loader
         // Custom AssemblyLoadContext implementations can override this
         // method to perform the load of unmanaged native dll
         // This function needs to return the HMODULE of the dll it loads
-        protected virtual IntPtr LoadUnmanagedDll(String unmanagedDllName)
+        protected virtual IntPtr LoadUnmanagedDll(string unmanagedDllName)
         {
             //defer to default coreclr policy of loading unmanaged dll
             return IntPtr.Zero;
@@ -303,7 +303,7 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
-        private static IntPtr ResolveUnmanagedDll(String unmanagedDllName, IntPtr gchManagedAssemblyLoadContext)
+        private static IntPtr ResolveUnmanagedDll(string unmanagedDllName, IntPtr gchManagedAssemblyLoadContext)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target);
             return context.LoadUnmanagedDll(unmanagedDllName);
@@ -412,7 +412,7 @@ namespace System.Runtime.Loader
         private static volatile AssemblyLoadContext s_DefaultAssemblyLoadContext;
 
         // Synchronization primitive for controlling initialization of Default load context
-        private static readonly object s_initLock = new Object();
+        private static readonly object s_initLock = new object();
 
         // Occurs when an Assembly is loaded
         public static event AssemblyLoadEventHandler AssemblyLoad

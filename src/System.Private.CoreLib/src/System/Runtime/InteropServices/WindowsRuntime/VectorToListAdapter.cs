@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (!exists)
                 return -1;
 
-            if (((uint)Int32.MaxValue) < index)
+            if (((uint)int.MaxValue) < index)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
             }
@@ -109,7 +109,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        private static void SetAt<T>(IVector<T> _this, UInt32 index, T value)
+        private static void SetAt<T>(IVector<T> _this, uint index, T value)
         {
             try
             {

@@ -219,12 +219,12 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.Int32.MaxValue"/> milliseconds.
+        /// than <see cref="System.int.MaxValue"/> milliseconds.
         /// </exception>
         public void TryEnter(TimeSpan timeout, ref bool lockTaken)
         {
             // Validate the timeout
-            Int64 totalMilliseconds = (Int64)timeout.TotalMilliseconds;
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
@@ -454,7 +454,7 @@ namespace System.Threading
         /// </summary>
         /// <remarks>
         /// The default overload of <see cref="Exit()"/> provides the same behavior as if calling <see
-        /// cref="Exit(Boolean)"/> using true as the argument, but Exit() could be slightly faster than Exit(true).
+        /// cref="Exit(bool)"/> using true as the argument, but Exit() could be slightly faster than Exit(true).
         /// </remarks>
         /// <exception cref="SynchronizationLockException">
         /// Thread ownership tracking is enabled, and the current thread is not the owner of this lock.
@@ -476,7 +476,7 @@ namespace System.Threading
         /// publish the exit operation to other threads.
         /// </param>
         /// <remarks>
-        /// Calling <see cref="Exit(Boolean)"/> with the <paramref name="useMemoryBarrier"/> argument set to
+        /// Calling <see cref="Exit(bool)"/> with the <paramref name="useMemoryBarrier"/> argument set to
         /// true will improve the fairness of the lock at the expense of some performance. The default <see
         /// cref="Enter"/>
         /// overload behaves as if specifying true for <paramref name="useMemoryBarrier"/>.

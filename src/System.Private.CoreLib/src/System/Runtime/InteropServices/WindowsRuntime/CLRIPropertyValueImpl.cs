@@ -14,12 +14,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     internal class CLRIPropertyValueImpl : IPropertyValue
     {
         private PropertyType _type;
-        private Object _data;
+        private object _data;
 
         // Numeric scalar types which participate in coersion
         private static volatile Tuple<Type, PropertyType>[] s_numericScalarTypes;
 
-        internal CLRIPropertyValueImpl(PropertyType type, Object data)
+        internal CLRIPropertyValueImpl(PropertyType type, object data)
         {
             _type = type;
             _data = data;
@@ -32,15 +32,15 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 if (s_numericScalarTypes == null)
                 {
                     Tuple<Type, PropertyType>[] numericScalarTypes = new Tuple<Type, PropertyType>[] {
-                        new Tuple<Type, PropertyType>(typeof(Byte), PropertyType.UInt8),
-                        new Tuple<Type, PropertyType>(typeof(Int16), PropertyType.Int16),
-                        new Tuple<Type, PropertyType>(typeof(UInt16), PropertyType.UInt16),
-                        new Tuple<Type, PropertyType>(typeof(Int32), PropertyType.Int32),
-                        new Tuple<Type, PropertyType>(typeof(UInt32), PropertyType.UInt32),
-                        new Tuple<Type, PropertyType>(typeof(Int64), PropertyType.Int64),
-                        new Tuple<Type, PropertyType>(typeof(UInt64), PropertyType.UInt64),
-                        new Tuple<Type, PropertyType>(typeof(Single), PropertyType.Single),
-                        new Tuple<Type, PropertyType>(typeof(Double), PropertyType.Double)
+                        new Tuple<Type, PropertyType>(typeof(byte), PropertyType.UInt8),
+                        new Tuple<Type, PropertyType>(typeof(short), PropertyType.Int16),
+                        new Tuple<Type, PropertyType>(typeof(ushort), PropertyType.UInt16),
+                        new Tuple<Type, PropertyType>(typeof(int), PropertyType.Int32),
+                        new Tuple<Type, PropertyType>(typeof(uint), PropertyType.UInt32),
+                        new Tuple<Type, PropertyType>(typeof(long), PropertyType.Int64),
+                        new Tuple<Type, PropertyType>(typeof(ulong), PropertyType.UInt64),
+                        new Tuple<Type, PropertyType>(typeof(float), PropertyType.Single),
+                        new Tuple<Type, PropertyType>(typeof(double), PropertyType.Double)
                     };
 
                     s_numericScalarTypes = numericScalarTypes;
@@ -75,49 +75,49 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        public Byte GetUInt8()
+        public byte GetUInt8()
         {
-            return CoerceScalarValue<Byte>(PropertyType.UInt8);
+            return CoerceScalarValue<byte>(PropertyType.UInt8);
         }
 
-        public Int16 GetInt16()
+        public short GetInt16()
         {
-            return CoerceScalarValue<Int16>(PropertyType.Int16);
+            return CoerceScalarValue<short>(PropertyType.Int16);
         }
 
-        public UInt16 GetUInt16()
+        public ushort GetUInt16()
         {
-            return CoerceScalarValue<UInt16>(PropertyType.UInt16);
+            return CoerceScalarValue<ushort>(PropertyType.UInt16);
         }
 
-        public Int32 GetInt32()
+        public int GetInt32()
         {
-            return CoerceScalarValue<Int32>(PropertyType.Int32);
+            return CoerceScalarValue<int>(PropertyType.Int32);
         }
 
-        public UInt32 GetUInt32()
+        public uint GetUInt32()
         {
-            return CoerceScalarValue<UInt32>(PropertyType.UInt32);
+            return CoerceScalarValue<uint>(PropertyType.UInt32);
         }
 
-        public Int64 GetInt64()
+        public long GetInt64()
         {
-            return CoerceScalarValue<Int64>(PropertyType.Int64);
+            return CoerceScalarValue<long>(PropertyType.Int64);
         }
 
-        public UInt64 GetUInt64()
+        public ulong GetUInt64()
         {
-            return CoerceScalarValue<UInt64>(PropertyType.UInt64);
+            return CoerceScalarValue<ulong>(PropertyType.UInt64);
         }
 
-        public Single GetSingle()
+        public float GetSingle()
         {
-            return CoerceScalarValue<Single>(PropertyType.Single);
+            return CoerceScalarValue<float>(PropertyType.Single);
         }
 
-        public Double GetDouble()
+        public double GetDouble()
         {
-            return CoerceScalarValue<Double>(PropertyType.Double);
+            return CoerceScalarValue<double>(PropertyType.Double);
         }
 
         public char GetChar16()
@@ -127,16 +127,16 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return (char)_data;
         }
 
-        public Boolean GetBoolean()
+        public bool GetBoolean()
         {
             if (this.Type != PropertyType.Boolean)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Boolean"), HResults.TYPE_E_TYPEMISMATCH);
             return (bool)_data;
         }
 
-        public String GetString()
+        public string GetString()
         {
-            return CoerceScalarValue<String>(PropertyType.String);
+            return CoerceScalarValue<string>(PropertyType.String);
         }
 
 
@@ -184,49 +184,49 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return Unbox<Rect>(IReferenceFactory.s_rectType);
         }
 
-        public Byte[] GetUInt8Array()
+        public byte[] GetUInt8Array()
         {
-            return CoerceArrayValue<Byte>(PropertyType.UInt8Array);
+            return CoerceArrayValue<byte>(PropertyType.UInt8Array);
         }
 
-        public Int16[] GetInt16Array()
+        public short[] GetInt16Array()
         {
-            return CoerceArrayValue<Int16>(PropertyType.Int16Array);
+            return CoerceArrayValue<short>(PropertyType.Int16Array);
         }
 
-        public UInt16[] GetUInt16Array()
+        public ushort[] GetUInt16Array()
         {
-            return CoerceArrayValue<UInt16>(PropertyType.UInt16Array);
+            return CoerceArrayValue<ushort>(PropertyType.UInt16Array);
         }
 
-        public Int32[] GetInt32Array()
+        public int[] GetInt32Array()
         {
-            return CoerceArrayValue<Int32>(PropertyType.Int32Array);
+            return CoerceArrayValue<int>(PropertyType.Int32Array);
         }
 
-        public UInt32[] GetUInt32Array()
+        public uint[] GetUInt32Array()
         {
-            return CoerceArrayValue<UInt32>(PropertyType.UInt32Array);
+            return CoerceArrayValue<uint>(PropertyType.UInt32Array);
         }
 
-        public Int64[] GetInt64Array()
+        public long[] GetInt64Array()
         {
-            return CoerceArrayValue<Int64>(PropertyType.Int64Array);
+            return CoerceArrayValue<long>(PropertyType.Int64Array);
         }
 
-        public UInt64[] GetUInt64Array()
+        public ulong[] GetUInt64Array()
         {
-            return CoerceArrayValue<UInt64>(PropertyType.UInt64Array);
+            return CoerceArrayValue<ulong>(PropertyType.UInt64Array);
         }
 
-        public Single[] GetSingleArray()
+        public float[] GetSingleArray()
         {
-            return CoerceArrayValue<Single>(PropertyType.SingleArray);
+            return CoerceArrayValue<float>(PropertyType.SingleArray);
         }
 
-        public Double[] GetDoubleArray()
+        public double[] GetDoubleArray()
         {
-            return CoerceArrayValue<Double>(PropertyType.DoubleArray);
+            return CoerceArrayValue<double>(PropertyType.DoubleArray);
         }
 
         public char[] GetChar16Array()
@@ -236,23 +236,23 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return (char[])_data;
         }
 
-        public Boolean[] GetBooleanArray()
+        public bool[] GetBooleanArray()
         {
             if (this.Type != PropertyType.BooleanArray)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Boolean[]"), HResults.TYPE_E_TYPEMISMATCH);
             return (bool[])_data;
         }
 
-        public String[] GetStringArray()
+        public string[] GetStringArray()
         {
-            return CoerceArrayValue<String>(PropertyType.StringArray);
+            return CoerceArrayValue<string>(PropertyType.StringArray);
         }
 
-        public Object[] GetInspectableArray()
+        public object[] GetInspectableArray()
         {
             if (this.Type != PropertyType.InspectableArray)
                 throw new InvalidCastException(SR.Format(SR.InvalidCast_WinRTIPropertyValueElement, this.Type, "Inspectable[]"), HResults.TYPE_E_TYPEMISMATCH);
-            return (Object[])_data;
+            return (object[])_data;
         }
 
         public Guid[] GetGuidArray()
@@ -367,7 +367,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 {
                     return (T)(object)Guid.Parse((string)value);
                 }
-                else if (type == PropertyType.Guid && typeof(T) == typeof(String))
+                else if (type == PropertyType.Guid && typeof(T) == typeof(string))
                 {
                     return (T)(object)((Guid)value).ToString("D", System.Globalization.CultureInfo.InvariantCulture);
                 }
@@ -401,39 +401,39 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             IPropertyValue ipv = value as IPropertyValue;
             if (type == PropertyType.Inspectable && ipv != null)
             {
-                if (typeof(T) == typeof(Byte))
+                if (typeof(T) == typeof(byte))
                 {
                     return (T)(object)ipv.GetUInt8();
                 }
-                else if (typeof(T) == typeof(Int16))
+                else if (typeof(T) == typeof(short))
                 {
                     return (T)(object)ipv.GetInt16();
                 }
-                else if (typeof(T) == typeof(UInt16))
+                else if (typeof(T) == typeof(ushort))
                 {
                     return (T)(object)ipv.GetUInt16();
                 }
-                else if (typeof(T) == typeof(Int32))
+                else if (typeof(T) == typeof(int))
                 {
                     return (T)(object)ipv.GetUInt32();
                 }
-                else if (typeof(T) == typeof(UInt32))
+                else if (typeof(T) == typeof(uint))
                 {
                     return (T)(object)ipv.GetUInt32();
                 }
-                else if (typeof(T) == typeof(Int64))
+                else if (typeof(T) == typeof(long))
                 {
                     return (T)(object)ipv.GetInt64();
                 }
-                else if (typeof(T) == typeof(UInt64))
+                else if (typeof(T) == typeof(ulong))
                 {
                     return (T)(object)ipv.GetUInt64();
                 }
-                else if (typeof(T) == typeof(Single))
+                else if (typeof(T) == typeof(float))
                 {
                     return (T)(object)ipv.GetSingle();
                 }
-                else if (typeof(T) == typeof(Double))
+                else if (typeof(T) == typeof(double))
                 {
                     return (T)(object)ipv.GetDouble();
                 }

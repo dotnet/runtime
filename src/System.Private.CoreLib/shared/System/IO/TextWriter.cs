@@ -193,7 +193,7 @@ namespace System.IO
 
         // Writes the text representation of an integer to the text stream. The
         // text representation of the given value is produced by calling the
-        // Int32.ToString() method.
+        // int.ToString() method.
         //
         public virtual void Write(int value)
         {
@@ -202,7 +202,7 @@ namespace System.IO
 
         // Writes the text representation of an integer to the text stream. The
         // text representation of the given value is produced by calling the
-        // UInt32.ToString() method.
+        // uint.ToString() method.
         //
         [CLSCompliant(false)]
         public virtual void Write(uint value)
@@ -212,7 +212,7 @@ namespace System.IO
 
         // Writes the text representation of a long to the text stream. The
         // text representation of the given value is produced by calling the
-        // Int64.ToString() method.
+        // long.ToString() method.
         //
         public virtual void Write(long value)
         {
@@ -221,7 +221,7 @@ namespace System.IO
 
         // Writes the text representation of an unsigned long to the text
         // stream. The text representation of the given value is produced
-        // by calling the UInt64.ToString() method.
+        // by calling the ulong.ToString() method.
         //
         [CLSCompliant(false)]
         public virtual void Write(ulong value)
@@ -299,7 +299,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string.  Uses the same semantics as
-        // String.Format.
+        // string.Format.
         //
         public virtual void Write(string format, object arg0)
         {
@@ -307,7 +307,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string.  Uses the same semantics as
-        // String.Format.
+        // string.Format.
         //
         public virtual void Write(string format, object arg0, object arg1)
         {
@@ -315,7 +315,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string.  Uses the same semantics as
-        // String.Format.
+        // string.Format.
         //
         public virtual void Write(string format, object arg0, object arg1, object arg2)
         {
@@ -323,7 +323,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string.  Uses the same semantics as
-        // String.Format.
+        // string.Format.
         //
         public virtual void Write(string format, params object[] arg)
         {
@@ -498,7 +498,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string and a new line.  Uses the same
-        // semantics as String.Format.
+        // semantics as string.Format.
         //
         public virtual void WriteLine(string format, object arg0)
         {
@@ -506,7 +506,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string and a new line.  Uses the same
-        // semantics as String.Format.
+        // semantics as string.Format.
         //
         public virtual void WriteLine(string format, object arg0, object arg1)
         {
@@ -514,7 +514,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string and a new line.  Uses the same
-        // semantics as String.Format.
+        // semantics as string.Format.
         //
         public virtual void WriteLine(string format, object arg0, object arg1, object arg2)
         {
@@ -522,7 +522,7 @@ namespace System.IO
         }
 
         // Writes out a formatted string and a new line.  Uses the same
-        // semantics as String.Format.
+        // semantics as string.Format.
         //
         public virtual void WriteLine(string format, params object[] arg)
         {
@@ -809,7 +809,7 @@ namespace System.IO
             public override void Write(double value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(Decimal value) => _out.Write(value);
+            public override void Write(decimal value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void Write(string value) => _out.Write(value);

@@ -43,7 +43,7 @@ namespace System.Reflection
         #endregion
 
         #region MemberInfo Overrides
-        public override String Name
+        public override string Name
         {
             get
             {
@@ -68,32 +68,32 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override Object GetValueDirect(TypedReference obj)
+        public override object GetValueDirect(TypedReference obj)
         {
             return GetValue(null);
         }
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override void SetValueDirect(TypedReference obj, Object value)
+        public override void SetValueDirect(TypedReference obj, object value)
         {
             throw new FieldAccessException(SR.Acc_ReadOnly);
         }
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public unsafe override Object GetValue(Object obj)
+        public unsafe override object GetValue(object obj)
         {
             return GetValue(false);
         }
 
-        public unsafe override Object GetRawConstantValue() { return GetValue(true); }
+        public unsafe override object GetRawConstantValue() { return GetValue(true); }
 
-        private unsafe Object GetValue(bool raw)
+        private unsafe object GetValue(bool raw)
         {
             // Cannot cache these because they could be user defined non-agile enumerations
 
-            Object value = MdConstant.GetValue(GetRuntimeModule().MetadataImport, m_tkField, FieldType.GetTypeHandleInternal(), raw);
+            object value = MdConstant.GetValue(GetRuntimeModule().MetadataImport, m_tkField, FieldType.GetTypeHandleInternal(), raw);
 
             if (value == DBNull.Value)
                 throw new NotSupportedException(SR.Arg_EnumLitValueNotFound);
@@ -103,7 +103,7 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override void SetValue(Object obj, Object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
+        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
         {
             throw new FieldAccessException(SR.Acc_ReadOnly);
         }
