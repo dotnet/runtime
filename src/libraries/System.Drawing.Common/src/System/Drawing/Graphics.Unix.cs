@@ -1572,7 +1572,7 @@ namespace System.Drawing
             if (region == null)
                 throw new ArgumentNullException(nameof(region));
 
-            int status = (int)SafeNativeMethods.Gdip.GdipFillRegion(new HandleRef(this, NativeGraphics), new HandleRef(brush, brush.NativeBrush), new HandleRef(region, region._nativeRegion));
+            int status = (int)SafeNativeMethods.Gdip.GdipFillRegion(new HandleRef(this, NativeGraphics), new HandleRef(brush, brush.NativeBrush), new HandleRef(region, region.NativeRegion));
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1703,7 +1703,7 @@ namespace System.Drawing
             for (int i = 0; i < regcount; i++)
             {
                 regions[i] = new Region();
-                native_regions[i] = regions[i]._nativeRegion;
+                native_regions[i] = regions[i].NativeRegion;
             }
 
             int status = SafeNativeMethods.Gdip.GdipMeasureCharacterRanges(NativeGraphics, text, text.Length,

@@ -665,12 +665,12 @@ namespace System.Drawing.Drawing2D
         {
             if (matrix == null)
                 throw new ArgumentNullException(nameof(matrix));
-            if (matrix.nativeMatrix == IntPtr.Zero)
+            if (matrix.NativeMatrix == IntPtr.Zero)
                 return;
 
             Gdip.CheckStatus(Gdip.GdipTransformPath(
                 new HandleRef(this, _nativePath),
-                new HandleRef(matrix, matrix.nativeMatrix)));
+                new HandleRef(matrix, matrix.NativeMatrix)));
         }
 
         public RectangleF GetBounds() => GetBounds(null);
@@ -682,7 +682,7 @@ namespace System.Drawing.Drawing2D
             Gdip.CheckStatus(Gdip.GdipGetPathWorldBounds(
                 new HandleRef(this, _nativePath),
                 out RectangleF bounds,
-                new HandleRef(matrix, matrix?.nativeMatrix ?? IntPtr.Zero),
+                new HandleRef(matrix, matrix?.NativeMatrix ?? IntPtr.Zero),
                 new HandleRef(pen, pen?.NativePen ?? IntPtr.Zero)));
 
             return bounds;
@@ -696,7 +696,7 @@ namespace System.Drawing.Drawing2D
         {
             Gdip.CheckStatus(Gdip.GdipFlattenPath(
                 new HandleRef(this, _nativePath),
-                new HandleRef(matrix, matrix?.nativeMatrix ?? IntPtr.Zero),
+                new HandleRef(matrix, matrix?.NativeMatrix ?? IntPtr.Zero),
                 flatness));
         }
 
@@ -725,7 +725,7 @@ namespace System.Drawing.Drawing2D
             Gdip.CheckStatus(Gdip.GdipWidenPath(
                 new HandleRef(this, _nativePath),
                 new HandleRef(pen, pen.NativePen),
-                new HandleRef(matrix, matrix?.nativeMatrix ?? IntPtr.Zero),
+                new HandleRef(matrix, matrix?.NativeMatrix ?? IntPtr.Zero),
                 flatness));
         }
 
@@ -747,7 +747,7 @@ namespace System.Drawing.Drawing2D
             {
                 Gdip.CheckStatus(Gdip.GdipWarpPath(
                     new HandleRef(this, _nativePath),
-                    new HandleRef(matrix, matrix?.nativeMatrix ?? IntPtr.Zero),
+                    new HandleRef(matrix, matrix?.NativeMatrix ?? IntPtr.Zero),
                     p,
                     destPoints.Length,
                     srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height,

@@ -31,7 +31,7 @@ namespace System.Drawing
             get
             {
                 var region = new Region();
-                int status = Gdip.GdipGetClip(new HandleRef(this, NativeGraphics), new HandleRef(region, region._nativeRegion));
+                int status = Gdip.GdipGetClip(new HandleRef(this, NativeGraphics), new HandleRef(region, region.NativeRegion));
                 Gdip.CheckStatus(status);
 
                 return region;
@@ -301,14 +301,14 @@ namespace System.Drawing
             {
                 var matrix = new Matrix();
                 Gdip.CheckStatus(Gdip.GdipGetWorldTransform(
-                    new HandleRef(this, NativeGraphics), new HandleRef(matrix, matrix.nativeMatrix)));
+                    new HandleRef(this, NativeGraphics), new HandleRef(matrix, matrix.NativeMatrix)));
 
                 return matrix;
             }
             set
             {
                 Gdip.CheckStatus(Gdip.GdipSetWorldTransform(
-                    new HandleRef(this, NativeGraphics), new HandleRef(value, value.nativeMatrix)));
+                    new HandleRef(this, NativeGraphics), new HandleRef(value, value.NativeMatrix)));
             }
         }
 
@@ -393,7 +393,7 @@ namespace System.Drawing
 
             Gdip.CheckStatus(Gdip.GdipSetClipRegion(
                 new HandleRef(this, NativeGraphics),
-                new HandleRef(region, region._nativeRegion),
+                new HandleRef(region, region.NativeRegion),
                 combineMode));
         }
 
@@ -420,7 +420,7 @@ namespace System.Drawing
 
             Gdip.CheckStatus(Gdip.GdipSetClipRegion(
                 new HandleRef(this, NativeGraphics),
-                new HandleRef(region, region._nativeRegion),
+                new HandleRef(region, region.NativeRegion),
                 CombineMode.Intersect));
         }
 
@@ -439,7 +439,7 @@ namespace System.Drawing
 
             Gdip.CheckStatus(Gdip.GdipSetClipRegion(
                 new HandleRef(this, NativeGraphics),
-                new HandleRef(region, region._nativeRegion),
+                new HandleRef(region, region.NativeRegion),
                 CombineMode.Exclude));
         }
 
@@ -535,11 +535,11 @@ namespace System.Drawing
 
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
             // with the libgdiplus backend. Simulate a nop for compatability with GDI+.
-            if (matrix.nativeMatrix == IntPtr.Zero)
+            if (matrix.NativeMatrix == IntPtr.Zero)
                 return;
 
             Gdip.CheckStatus(Gdip.GdipMultiplyWorldTransform(
-                new HandleRef(this, NativeGraphics), new HandleRef(matrix, matrix.nativeMatrix), order));
+                new HandleRef(this, NativeGraphics), new HandleRef(matrix, matrix.NativeMatrix), order));
         }
 
         public void TranslateTransform(float dx, float dy) => TranslateTransform(dx, dy, MatrixOrder.Prepend);
