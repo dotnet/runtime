@@ -19061,7 +19061,9 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 
     if (methAttr & CORINFO_FLG_PINVOKE)
     {
-        if (!impCanPInvokeInlineCallSite(compCurBB))
+        // See comment in impCheckForPInvokeCall
+        BasicBlock* block = compIsForInlining() ? impInlineInfo->iciBlock : compCurBB;
+        if (!impCanPInvokeInlineCallSite(block))
         {
             inlineResult.NoteFatal(InlineObservation::CALLSITE_PINVOKE_EH);
             return;
