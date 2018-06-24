@@ -146,11 +146,8 @@ namespace System.Drawing.Drawing2D
         {
             get
             {
-                GPRECTF rect = new GPRECTF();
-
-                Gdip.CheckStatus(Gdip.GdipGetPathGradientRect(new HandleRef(this, NativeBrush), ref rect));
-
-                return rect.ToRectangleF();
+                Gdip.CheckStatus(Gdip.GdipGetPathGradientRect(new HandleRef(this, NativeBrush), out RectangleF rect));
+                return rect;
             }
         }
 
@@ -174,9 +171,11 @@ namespace System.Drawing.Drawing2D
 
                 // Return the result in a managed array
 
-                Blend blend = new Blend(count);
-                blend.Factors = factors;
-                blend.Positions = positions;
+                Blend blend = new Blend(count)
+                {
+                    Factors = factors,
+                    Positions = positions
+                };
 
                 return blend;
             }

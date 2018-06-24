@@ -27,15 +27,13 @@ namespace System.Drawing
 
         public Region(RectangleF rect)
         {
-            var gprectf = new GPRECTF(rect);
-            Gdip.CheckStatus(Gdip.GdipCreateRegionRect(ref gprectf, out IntPtr region));
+            Gdip.CheckStatus(Gdip.GdipCreateRegionRect(ref rect, out IntPtr region));
             SetNativeRegion(region);
         }
 
         public Region(Rectangle rect)
         {
-            var gprect = new GPRECT(rect);
-            Gdip.CheckStatus(Gdip.GdipCreateRegionRectI(ref gprect, out IntPtr region));
+            Gdip.CheckStatus(Gdip.GdipCreateRegionRectI(ref rect, out IntPtr region));
             SetNativeRegion(region);
         }
 
@@ -131,14 +129,12 @@ namespace System.Drawing
 
         public void Intersect(RectangleF rect)
         {
-            var gprectf = new GPRECTF(rect);
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref gprectf, CombineMode.Intersect));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref rect, CombineMode.Intersect));
         }
 
         public void Intersect(Rectangle rect)
         {
-            var gprect = new GPRECT(rect);
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref gprect, CombineMode.Intersect));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref rect, CombineMode.Intersect));
         }
 
         public void Intersect(GraphicsPath path)
@@ -159,14 +155,12 @@ namespace System.Drawing
 
         public void Union(RectangleF rect)
         {
-            var gprectf = new GPRECTF(rect);
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref gprectf, CombineMode.Union));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref rect, CombineMode.Union));
         }
 
         public void Union(Rectangle rect)
         {
-            var gprect = new GPRECT(rect);
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref gprect, CombineMode.Union));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref rect, CombineMode.Union));
         }
 
         public void Union(GraphicsPath path)
@@ -187,14 +181,12 @@ namespace System.Drawing
 
         public void Xor(RectangleF rect)
         {
-            var gprectf = new GPRECTF(rect);
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref gprectf, CombineMode.Xor));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref rect, CombineMode.Xor));
         }
 
         public void Xor(Rectangle rect)
         {
-            var gprect = new GPRECT(rect);
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref gprect, CombineMode.Xor));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref rect, CombineMode.Xor));
         }
         
         public void Xor(GraphicsPath path)
@@ -215,14 +207,12 @@ namespace System.Drawing
 
         public void Exclude(RectangleF rect)
         {
-            var gprectf = new GPRECTF(rect);
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref gprectf, CombineMode.Exclude));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref rect, CombineMode.Exclude));
         }
 
         public void Exclude(Rectangle rect)
         {
-            var gprect = new GPRECT(rect);
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref gprect, CombineMode.Exclude));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref rect, CombineMode.Exclude));
         }
 
         public void Exclude(GraphicsPath path)
@@ -249,14 +239,12 @@ namespace System.Drawing
 
         public void Complement(RectangleF rect)
         {
-            var gprectf = new GPRECTF(rect);
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref gprectf, CombineMode.Complement));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRect(new HandleRef(this, NativeRegion), ref rect, CombineMode.Complement));
         }
 
         public void Complement(Rectangle rect)
         {
-            var gprect = new GPRECT(rect);
-            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref gprect, CombineMode.Complement));
+            Gdip.CheckStatus(Gdip.GdipCombineRegionRectI(new HandleRef(this, NativeRegion), ref rect, CombineMode.Complement));
         }
 
         public void Complement(GraphicsPath path)
@@ -300,9 +288,8 @@ namespace System.Drawing
             if (g == null)
                 throw new ArgumentNullException(nameof(g));
 
-            var gprectf = new GPRECTF();
-            Gdip.CheckStatus(Gdip.GdipGetRegionBounds(new HandleRef(this, NativeRegion), new HandleRef(g, g.NativeGraphics), ref gprectf));
-            return gprectf.ToRectangleF();
+            Gdip.CheckStatus(Gdip.GdipGetRegionBounds(new HandleRef(this, NativeRegion), new HandleRef(g, g.NativeGraphics), out RectangleF bounds));
+            return bounds;
         }
 
         public IntPtr GetHrgn(Graphics g)
@@ -421,7 +408,7 @@ namespace System.Drawing
             return isVisible != 0;
         }
  
-        public RectangleF[] GetRegionScans(Matrix matrix)
+        public unsafe RectangleF[] GetRegionScans(Matrix matrix)
         {
             if (matrix == null)
                 throw new ArgumentNullException(nameof(matrix));
@@ -431,32 +418,18 @@ namespace System.Drawing
                 out int count,
                 new HandleRef(matrix, matrix.NativeMatrix)));
 
-            int rectsize = Marshal.SizeOf(typeof(GPRECTF));
-            IntPtr memoryRects = Marshal.AllocHGlobal(checked(rectsize * count));
+            RectangleF[] rectangles = new RectangleF[count];
 
-            try
+            fixed (RectangleF* r = rectangles)
             {
                 Gdip.CheckStatus(Gdip.GdipGetRegionScans
                     (new HandleRef(this, NativeRegion),
-                    memoryRects,
+                    r,
                     out count,
                     new HandleRef(matrix, matrix.NativeMatrix)));
-
-                var gprectf = new GPRECTF();
-
-                var rectangles = new RectangleF[count];
-                for (int index = 0; index < count; index++)
-                {
-                    gprectf = (GPRECTF)Marshal.PtrToStructure((IntPtr)(checked((long)memoryRects + rectsize * index)), typeof(GPRECTF));
-                    rectangles[index] = gprectf.ToRectangleF();
-                }
-
-                return rectangles;
             }
-            finally
-            {
-                Marshal.FreeHGlobal(memoryRects);
-            }
+
+            return rectangles;
         }
     }
 }

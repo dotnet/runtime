@@ -403,11 +403,8 @@ namespace System.Drawing
         /// </summary>
         public RectangleF GetBounds(ref GraphicsUnit pageUnit)
         {
-            GPRECTF gprectf = new GPRECTF();
-
-            Gdip.CheckStatus(Gdip.GdipGetImageBounds(new HandleRef(this, nativeImage), ref gprectf, out pageUnit));
-
-            return gprectf.ToRectangleF();
+            Gdip.CheckStatus(Gdip.GdipGetImageBounds(new HandleRef(this, nativeImage), out RectangleF bounds, out pageUnit));
+            return bounds;
         }
 
         /// <summary>
@@ -418,9 +415,7 @@ namespace System.Drawing
         {
             get
             {
-                int size = -1;
-
-                Gdip.CheckStatus(Gdip.GdipGetImagePaletteSize(new HandleRef(this, nativeImage), out size));
+                Gdip.CheckStatus(Gdip.GdipGetImagePaletteSize(new HandleRef(this, nativeImage), out int size));
 
                 // "size" is total byte size:
                 // sizeof(ColorPalette) + (pal->Count-1)*sizeof(ARGB)
