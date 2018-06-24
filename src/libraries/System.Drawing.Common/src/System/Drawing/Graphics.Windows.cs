@@ -1317,7 +1317,7 @@ namespace System.Drawing
             CheckErrorStatus(Gdip.GdipFillRegion(
                 new HandleRef(this, NativeGraphics),
                 new HandleRef(brush, brush.NativeBrush),
-                new HandleRef(region, region._nativeRegion)));
+                new HandleRef(region, region.NativeRegion)));
         }
 
         /// <summary>
@@ -1484,7 +1484,7 @@ namespace System.Drawing
             for (int f = 0; f < count; f++)
             {
                 regions[f] = new Region();
-                gpRegions[f] = regions[f]._nativeRegion;
+                gpRegions[f] = regions[f].NativeRegion;
             }
 
             Gdip.CheckStatus(Gdip.GdipMeasureCharacterRanges(
