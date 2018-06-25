@@ -6156,7 +6156,7 @@ namespace System.Data.SqlClient
             UInt32 outSSPILength = 0;
 
             // only add lengths of password and username if not using SSPI or requesting federated authentication info
-            if (!rec.useSSPI && !(_connHandler._federatedAuthenticationRequested))
+            if (!rec.useSSPI && !_connHandler._federatedAuthenticationRequested)
             {
                 checked
                 {
