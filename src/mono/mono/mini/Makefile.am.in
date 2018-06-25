@@ -35,7 +35,7 @@ sgen_libs = \
 	$(glib_libs)
 
 if ENABLE_LLVM
--include $(top_srcdir)/llvm/llvm_config.mk
+-include $(mono_build_root)/llvm/llvm_config.mk
 LLVM_CFLAGS=$(LLVM_CFLAGS_INTERNAL) $(LLVM_CFLAGS_EXTERNAL)
 LLVM_CXXFLAGS=$(LLVM_CXXFLAGS_INTERNAL) $(LLVM_CXXFLAGS_EXTERNAL)
 LLVM_LDFLAGS=$(LLVM_LDFLAGS_INTERNAL) $(LLVM_LDFLAGS_EXTERNAL)
@@ -994,7 +994,7 @@ tags:
 	etags -o TAGS `find .. -name "*.h" -o -name "*.c"`
 
 if ENABLE_LLVM
-llvm_makefile_dep = $(top_srcdir)/llvm/llvm_config.mk
+llvm_makefile_dep = $(mono_build_root)/llvm/llvm_config.mk
 endif
 
 if HAS_EXTENSION_MODULE
