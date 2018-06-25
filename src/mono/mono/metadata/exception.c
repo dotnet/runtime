@@ -595,6 +595,28 @@ mono_get_exception_not_supported (const char *msg)
 }
 
 /**
+ * mono_get_exception_missing_member:
+ * \param exception_type the specific exception type for the specific member type, i.e. field or method
+ * \param class_name the class where the lookup was performed.
+ * \param member_name the name of the missing method.
+ * \returns a new instance of the \c exception_type (MissingFieldException or MissingMethodException)
+ */
+MonoException *
+mono_get_exception_missing_member (const char *exception_type, const char *class_name, const char *member_name)
+{
+	ERROR_DECL (error);
+	MonoString *s1 = mono_string_new_checked (mono_domain_get (), class_name, error);
+	mono_error_assert_ok (error);
+	MonoString *s2 = mono_string_new_checked (mono_domain_get (), member_name, error);
+	mono_error_assert_ok (error);
+
+	MonoException *ret = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System",
+									   exception_type, s1, s2, error);
+	mono_error_assert_ok (error);
+	return ret;
+}
+
+/**
  * mono_get_exception_missing_method:
  * \param class_name the class where the lookup was performed.
  * \param member_name the name of the missing method.
@@ -603,39 +625,20 @@ mono_get_exception_not_supported (const char *msg)
 MonoException *
 mono_get_exception_missing_method (const char *class_name, const char *member_name)
 {
-	ERROR_DECL (error);
-	MonoString *s1 = mono_string_new_checked (mono_domain_get (), class_name, error);
-	mono_error_assert_ok (error);
-	MonoString *s2 = mono_string_new_checked (mono_domain_get (), member_name, error);
-	mono_error_assert_ok (error);
-
-	MonoException *ret = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System",
-									   "MissingMethodException", s1, s2, error);
-	mono_error_assert_ok (error);
-	return ret;
+	return mono_get_exception_missing_member ("MissingMethodException", class_name, member_name);
 }
 
 /**
  * mono_get_exception_missing_field:
  * \param class_name the class where the lookup was performed
- * \param member_name the name of the missing method.
+ * \param member_name the name of the missing field.
  * \returns a new instance of the \c System.MissingFieldException
  */
 MonoException *
 mono_get_exception_missing_field (const char *class_name, const char *member_name)
 {
-	ERROR_DECL (error);
-	MonoString *s1 = mono_string_new_checked (mono_domain_get (), class_name, error);
-	mono_error_assert_ok (error);
-	MonoString *s2 = mono_string_new_checked (mono_domain_get (), member_name, error);
-	mono_error_assert_ok (error);
-
-	MonoException *ret = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System",
-								   "MissingFieldException", s1, s2, error);
-	mono_error_assert_ok (error);
-	return ret;
+	return mono_get_exception_missing_member ("MissingFieldException", class_name, member_name);
 }
-
 
 /**
  * mono_get_exception_argument_internal:
