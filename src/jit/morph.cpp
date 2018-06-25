@@ -4267,9 +4267,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
             // Build the mkrefany as a GT_FIELD_LIST
             GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST)
-                GenTreeFieldList(argx->gtOp.gtOp1, offsetof(CORINFO_RefAny, dataPtr), TYP_BYREF, nullptr);
+                GenTreeFieldList(argx->gtOp.gtOp1, OFFSETOF__CORINFO_TypedReference__dataPtr, TYP_BYREF, nullptr);
             (void)new (this, GT_FIELD_LIST)
-                GenTreeFieldList(argx->gtOp.gtOp2, offsetof(CORINFO_RefAny, type), TYP_I_IMPL, fieldList);
+                GenTreeFieldList(argx->gtOp.gtOp2, OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL, fieldList);
             fgArgTabEntry* fp = Compiler::gtArgEntryByNode(call, argx);
             fp->node          = fieldList;
             args->gtOp.gtOp1  = fieldList;
@@ -4283,8 +4283,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
             // Build the mkrefany as a comma node:
             // (tmp.ptr=argx),(tmp.type=handle)
-            GenTreeLclFld* destPtrSlot  = gtNewLclFldNode(tmp, TYP_I_IMPL, offsetof(CORINFO_RefAny, dataPtr));
-            GenTreeLclFld* destTypeSlot = gtNewLclFldNode(tmp, TYP_I_IMPL, offsetof(CORINFO_RefAny, type));
+            GenTreeLclFld* destPtrSlot  = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__dataPtr);
+            GenTreeLclFld* destTypeSlot = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__type);
             destPtrSlot->gtFieldSeq     = GetFieldSeqStore()->CreateSingleton(GetRefanyDataField());
             destPtrSlot->gtFlags |= GTF_VAR_DEF;
             destTypeSlot->gtFieldSeq = GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField());
@@ -5756,19 +5756,19 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     ssize_t elemOffs;
     if (tree->gtFlags & GTF_INX_STRING_LAYOUT)
     {
-        lenOffs  = offsetof(CORINFO_String, stringLen);
-        elemOffs = offsetof(CORINFO_String, chars);
+        lenOffs  = OFFSETOF__CORINFO_String__stringLen;
+        elemOffs = OFFSETOF__CORINFO_String__chars;
         tree->gtFlags &= ~GTF_INX_STRING_LAYOUT; // Clear this flag as it is used for GTF_IND_VOLATILE
     }
     else if (tree->gtFlags & GTF_INX_REFARR_LAYOUT)
     {
-        lenOffs  = offsetof(CORINFO_RefArray, length);
+        lenOffs  = OFFSETOF__CORINFO_Array__length;
         elemOffs = eeGetEEInfo()->offsetOfObjArrayData;
     }
     else // We have a standard array
     {
-        lenOffs  = offsetof(CORINFO_Array, length);
-        elemOffs = offsetof(CORINFO_Array, u1Elems);
+        lenOffs  = OFFSETOF__CORINFO_Array__length;
+        elemOffs = OFFSETOF__CORINFO_Array__data;
     }
 
     // In minopts, we expand GT_INDEX to GT_IND(GT_INDEX_ADDR) in order to minimize the size of the IR. As minopts

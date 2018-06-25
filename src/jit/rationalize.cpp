@@ -888,7 +888,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
                 JITDUMP("Rewriting GT_SIMD array init as an explicit load:\n");
                 unsigned int baseTypeSize = genTypeSize(simdNode->gtSIMDBaseType);
                 GenTree*     address = new (comp, GT_LEA) GenTreeAddrMode(TYP_BYREF, simdNode->gtOp1, simdNode->gtOp2,
-                                                                      baseTypeSize, offsetof(CORINFO_Array, u1Elems));
+                                                                      baseTypeSize, OFFSETOF__CORINFO_Array__data);
                 GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
 
                 BlockRange().InsertBefore(simdNode, address, ind);
