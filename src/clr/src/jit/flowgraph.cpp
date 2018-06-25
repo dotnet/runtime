@@ -9551,8 +9551,8 @@ void Compiler::fgSimpleLowering()
 
                     noway_assert(arr->gtNext == tree);
 
-                    noway_assert(arrLen->ArrLenOffset() == offsetof(CORINFO_Array, length) ||
-                                 arrLen->ArrLenOffset() == offsetof(CORINFO_String, stringLen));
+                    noway_assert(arrLen->ArrLenOffset() == OFFSETOF__CORINFO_Array__length ||
+                                 arrLen->ArrLenOffset() == OFFSETOF__CORINFO_String__stringLen);
 
                     if ((arr->gtOper == GT_CNS_INT) && (arr->gtIntCon.gtIconVal == 0))
                     {

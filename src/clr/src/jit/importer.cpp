@@ -1269,11 +1269,11 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         destAddr =
             impCloneExpr(destAddr, &destAddrClone, structHnd, curLevel, pAfterStmt DEBUGARG("MKREFANY assignment"));
 
-        assert(offsetof(CORINFO_RefAny, dataPtr) == 0);
+        assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
         assert(destAddr->gtType == TYP_I_IMPL || destAddr->gtType == TYP_BYREF);
         GetZeroOffsetFieldMap()->Set(destAddr, GetFieldSeqStore()->CreateSingleton(GetRefanyDataField()));
         GenTree*       ptrSlot         = gtNewOperNode(GT_IND, TYP_I_IMPL, destAddr);
-        GenTreeIntCon* typeFieldOffset = gtNewIconNode(offsetof(CORINFO_RefAny, type), TYP_I_IMPL);
+        GenTreeIntCon* typeFieldOffset = gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL);
         typeFieldOffset->gtFieldSeq    = GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField());
         GenTree* typeSlot =
             gtNewOperNode(GT_IND, TYP_I_IMPL, gtNewOperNode(GT_ADD, destAddr->gtType, destAddrClone, typeFieldOffset));
@@ -3530,14 +3530,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             op1 = impPopStack().val;
             if (!opts.MinOpts() && !opts.compDbgCode)
             {
-                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, offsetof(CORINFO_String, stringLen));
+                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen);
                 op1                   = arrLen;
             }
             else
             {
                 /* Create the expression "*(str_addr + stringLengthOffset)" */
                 op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                    gtNewIconNode(offsetof(CORINFO_String, stringLen), TYP_I_IMPL));
+                                    gtNewIconNode(OFFSETOF__CORINFO_String__stringLen, TYP_I_IMPL));
                 op1 = gtNewOperNode(GT_IND, TYP_INT, op1);
             }
 
@@ -14519,7 +14519,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     // Fetch the type from the correct slot
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                        gtNewIconNode(offsetof(CORINFO_RefAny, type), TYP_I_IMPL));
+                                        gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
                     op1 = gtNewOperNode(GT_IND, TYP_BYREF, op1);
                 }
                 else
@@ -15429,7 +15429,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (!opts.MinOpts() && !opts.compDbgCode)
                 {
                     /* Use GT_ARR_LENGTH operator so rng check opts see this */
-                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, offsetof(CORINFO_Array, length));
+                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length);
 
                     /* Mark the block as containing a length expression */
 
@@ -15444,7 +15444,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     /* Create the expression "*(array_addr + ArrLenOffs)" */
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                        gtNewIconNode(offsetof(CORINFO_Array, length), TYP_I_IMPL));
+                                        gtNewIconNode(OFFSETOF__CORINFO_Array__length, TYP_I_IMPL));
                     op1 = gtNewIndir(TYP_INT, op1);
                     op1->gtFlags |= GTF_IND_ARR_LEN;
                 }

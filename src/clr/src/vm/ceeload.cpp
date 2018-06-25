@@ -2255,7 +2255,7 @@ void  Module::GetOffsetsForRegularStaticData(
     *pOutNonGCStaticOffset  = m_pRegularStaticOffsets[index*2 + 1];
 
     // Check we didnt go out of what we predicted we would need for the class
-    if (*pOutStaticHandleOffset + sizeof(OBJECTREF*)*dwGCStaticHandles >
+    if (*pOutStaticHandleOffset + TARGET_POINTER_SIZE*dwGCStaticHandles >
                 m_pRegularStaticOffsets[(index+1)*2] ||
         *pOutNonGCStaticOffset + dwNonGCStaticBytes >
                 m_pRegularStaticOffsets[(index+1)*2 + 1])
@@ -2313,7 +2313,7 @@ void  Module::GetOffsetsForThreadStaticData(
     *pOutNonGCStaticOffset  = m_pThreadStaticOffsets[index*2 + 1];
 
     // Check we didnt go out of what we predicted we would need for the class
-    if (*pOutStaticHandleOffset + sizeof(OBJECTREF*)*dwGCStaticHandles >
+    if (*pOutStaticHandleOffset + TARGET_POINTER_SIZE*dwGCStaticHandles >
                 m_pThreadStaticOffsets[(index+1)*2] ||
         *pOutNonGCStaticOffset + dwNonGCStaticBytes >
                 m_pThreadStaticOffsets[(index+1)*2 + 1])
