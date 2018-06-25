@@ -1086,6 +1086,10 @@ static SRWLOCK g_dynamic_function_table_lock = SRWLOCK_INIT;
 
 // Module handle used when explicit loading ntdll.
 static HMODULE g_ntdll;
+static HMODULE g_kernel32dll;
+
+static RtlInstallFunctionTableCallbackPtr g_rtl_install_function_table_callback;
+static RtlDeleteFunctionTablePtr g_rtl_delete_function_table;
 
 // If Win8 or Win2012Server or later, use growable function tables instead
 // of callbacks. Callback solution will still be fallback on older systems.
@@ -1109,6 +1113,8 @@ init_table_no_lock (void)
 	if (g_dyn_func_table_inited == FALSE) {
 		g_assert_checked (g_dynamic_function_table_begin == NULL);
 		g_assert_checked (g_dynamic_function_table_end == NULL);
+		g_assert_checked (g_rtl_install_function_table_callback == NULL);
+		g_assert_checked (g_rtl_delete_function_table == NULL);
 		g_assert_checked (g_rtl_add_growable_function_table == NULL);
 		g_assert_checked (g_rtl_grow_function_table == NULL);
 		g_assert_checked (g_rtl_delete_growable_function_table == NULL);
@@ -1120,6 +1126,14 @@ init_table_no_lock (void)
 			g_rtl_add_growable_function_table = (RtlAddGrowableFunctionTablePtr)GetProcAddress (g_ntdll, "RtlAddGrowableFunctionTable");
 			g_rtl_grow_function_table = (RtlGrowFunctionTablePtr)GetProcAddress (g_ntdll, "RtlGrowFunctionTable");
 			g_rtl_delete_growable_function_table = (RtlDeleteGrowableFunctionTablePtr)GetProcAddress (g_ntdll, "RtlDeleteGrowableFunctionTable");
+		}
+
+		// Fallback on systems not having RtlAddGrowableFunctionTable.
+		if (g_rtl_add_growable_function_table == NULL) {
+			if (GetModuleHandleEx (0, TEXT ("kernel32.dll"), &g_kernel32dll) == TRUE) {
+				g_rtl_install_function_table_callback = (RtlInstallFunctionTableCallbackPtr)GetProcAddress (g_kernel32dll, "RtlInstallFunctionTableCallback");
+				g_rtl_delete_function_table = (RtlDeleteFunctionTablePtr)GetProcAddress (g_kernel32dll, "RtlDeleteFunctionTable");
+			}
 		}
 
 		g_dyn_func_table_inited = TRUE;
@@ -1165,6 +1179,14 @@ terminate_table_no_lock (void)
 		if (g_ntdll != NULL) {
 			FreeLibrary (g_ntdll);
 			g_ntdll = NULL;
+		}
+
+		g_rtl_delete_function_table = NULL;
+		g_rtl_install_function_table_callback = NULL;
+
+		if (g_kernel32dll != NULL) {
+			FreeLibrary (g_kernel32dll);
+			g_kernel32dll = NULL;
 		}
 
 		g_dyn_func_table_inited = FALSE;
@@ -1392,7 +1414,7 @@ mono_arch_unwindinfo_insert_range_in_table (const gpointer code_block, gsize blo
 										new_entry->rt_funcs, new_entry->rt_funcs_current_count,
 										new_entry->rt_funcs_max_count, new_entry->begin_range, new_entry->end_range);
 					g_assert (!result);
-				} else {
+				} else if (g_rtl_install_function_table_callback != NULL) {
 					WCHAR buffer [MONO_DAC_MODULE_MAX_PATH] = { 0 };
 					WCHAR *path = buffer;
 
@@ -1410,10 +1432,12 @@ mono_arch_unwindinfo_insert_range_in_table (const gpointer code_block, gsize blo
 
 					// Register function table callback + out of proc module.
 					new_entry->handle = (PVOID)((DWORD64)(new_entry->begin_range) | 3);
-					BOOLEAN result = RtlInstallFunctionTableCallback ((DWORD64)(new_entry->handle),
-										(DWORD64)(new_entry->begin_range), (DWORD)(new_entry->end_range - new_entry->begin_range),
-										MONO_GET_RUNTIME_FUNCTION_CALLBACK, new_entry, path);
+					BOOLEAN result = g_rtl_install_function_table_callback ((DWORD64)(new_entry->handle),
+									(DWORD64)(new_entry->begin_range), (DWORD)(new_entry->end_range - new_entry->begin_range),
+									MONO_GET_RUNTIME_FUNCTION_CALLBACK, new_entry, path);
 					g_assert(result);
+				} else {
+					g_assert_not_reached ();
 				}
 
 				// Only included in checked builds. Validates the structure of table after insert.
@@ -1447,8 +1471,10 @@ remove_range_in_table_no_lock (GList *entry)
 		if (removed_entry->handle != NULL) {
 			if (g_rtl_delete_growable_function_table != NULL) {
 				g_rtl_delete_growable_function_table (removed_entry->handle);
+			} else if (g_rtl_delete_function_table != NULL) {
+				g_rtl_delete_function_table ((PRUNTIME_FUNCTION)removed_entry->handle);
 			} else {
-				RtlDeleteFunctionTable ((PRUNTIME_FUNCTION)removed_entry->handle);
+				g_assert_not_reached ();
 			}
 		}
 
