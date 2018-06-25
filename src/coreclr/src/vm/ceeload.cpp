@@ -2017,6 +2017,12 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
     //    | Class Data (one byte per class)  |   pointer to gc statics | primitive type statics |
     //
     //
+#ifndef CROSSBITNESS_COMPILE
+    // The assertions must hold in every non-crossbitness scenario
+    _ASSERTE(OFFSETOF__DomainLocalModule__m_pDataBlob_ == DomainLocalModule::OffsetOfDataBlob());
+    _ASSERTE(OFFSETOF__ThreadLocalModule__m_pDataBlob  == ThreadLocalModule::OffsetOfDataBlob());
+#endif
+
     DWORD      dwNonGCBytes[2] = { 
         DomainLocalModule::OffsetOfDataBlob() + sizeof(BYTE)*dwNumTypes, 
         ThreadLocalModule::OffsetOfDataBlob() + sizeof(BYTE)*dwNumTypes
@@ -2233,11 +2239,14 @@ void  Module::GetOffsetsForRegularStaticData(
         return;
     }
 
+#ifndef CROSSBITNESS_COMPILE
+    _ASSERTE(OFFSETOF__DomainLocalModule__NormalDynamicEntry__m_pDataBlob == DomainLocalModule::DynamicEntry::GetOffsetOfDataBlob());
+#endif
     // Statics for instantiated types are allocated dynamically per-instantiation
     if (bDynamic)
     {
         // Non GC statics are embedded in the Dynamic Entry.
-        *pOutNonGCStaticOffset  = DomainLocalModule::DynamicEntry::GetOffsetOfDataBlob();
+        *pOutNonGCStaticOffset  = OFFSETOF__DomainLocalModule__NormalDynamicEntry__m_pDataBlob;
         return;
     }
 
@@ -2253,6 +2262,9 @@ void  Module::GetOffsetsForRegularStaticData(
     *pOutStaticHandleOffset = m_pRegularStaticOffsets[index*2];
 
     *pOutNonGCStaticOffset  = m_pRegularStaticOffsets[index*2 + 1];
+#ifdef CROSSBITNESS_COMPILE
+    *pOutNonGCStaticOffset += OFFSETOF__DomainLocalModule__m_pDataBlob_ - DomainLocalModule::OffsetOfDataBlob();
+#endif
 
     // Check we didnt go out of what we predicted we would need for the class
     if (*pOutStaticHandleOffset + TARGET_POINTER_SIZE*dwGCStaticHandles >
@@ -2291,11 +2303,14 @@ void  Module::GetOffsetsForThreadStaticData(
         return;
     }
 
+#ifndef CROSSBITNESS_COMPILE
+    _ASSERTE(OFFSETOF__ThreadLocalModule__DynamicEntry__m_pDataBlob == ThreadLocalModule::DynamicEntry::GetOffsetOfDataBlob());
+#endif
     // Statics for instantiated types are allocated dynamically per-instantiation
     if (bDynamic)
     {
         // Non GC thread statics are embedded in the Dynamic Entry.
-        *pOutNonGCStaticOffset  = ThreadLocalModule::DynamicEntry::GetOffsetOfDataBlob();
+        *pOutNonGCStaticOffset  = OFFSETOF__ThreadLocalModule__DynamicEntry__m_pDataBlob;
         return;
     }
 
@@ -2311,6 +2326,9 @@ void  Module::GetOffsetsForThreadStaticData(
     *pOutStaticHandleOffset = m_pThreadStaticOffsets[index*2];
 
     *pOutNonGCStaticOffset  = m_pThreadStaticOffsets[index*2 + 1];
+#ifdef CROSSBITNESS_COMPILE
+    *pOutNonGCStaticOffset += OFFSETOF__ThreadLocalModule__m_pDataBlob - ThreadLocalModule::GetOffsetOfDataBlob();
+#endif
 
     // Check we didnt go out of what we predicted we would need for the class
     if (*pOutStaticHandleOffset + TARGET_POINTER_SIZE*dwGCStaticHandles >
