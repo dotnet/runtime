@@ -985,10 +985,9 @@ mono_get_exception_reflection_type_load (MonoArray *types_raw, MonoArray *except
 	MONO_HANDLE_DCL (MonoArray, types);
 	MONO_HANDLE_DCL (MonoArray, exceptions);
 	MonoExceptionHandle ret = mono_get_exception_reflection_type_load_checked (types, exceptions, error);
-	if (is_ok (error)) {
-		mono_error_cleanup (error);
+	if (!is_ok (error))
 		ret = MONO_HANDLE_CAST (MonoException, NULL_HANDLE);
-	}
+	mono_error_cleanup (error);
 	HANDLE_FUNCTION_RETURN_OBJ (ret);
 
 }
