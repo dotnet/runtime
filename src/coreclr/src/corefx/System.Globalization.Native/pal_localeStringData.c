@@ -22,10 +22,7 @@ GetLocaleInfoDecimalFormatSymbol(const char* locale, UNumberFormatSymbol symbol,
     UNumberFormat* pFormat = unum_open(UNUM_DECIMAL, NULL, 0, locale, NULL, &status);
 
     if (U_FAILURE(status))
-    {
-        unum_close(pFormat);
         return status;
-    }
 
     unum_getSymbol(pFormat, symbol, value, valueLength, &status);
 
@@ -66,10 +63,7 @@ UErrorCode GetLocaleInfoAmPm(const char* locale, bool am, UChar* value, int32_t 
     UDateFormat* pFormat = udat_open(UDAT_DEFAULT, UDAT_DEFAULT, locale, NULL, 0, NULL, 0, &status);
 
     if (U_FAILURE(status))
-    {
-        udat_close(pFormat);
         return status;
-    }
 
     udat_getSymbols(pFormat, UDAT_AM_PMS, am ? 0 : 1, value, valueLength, &status);
 
@@ -381,10 +375,7 @@ int32_t GlobalizationNative_GetLocaleTimeFormat(
     UDateFormat* pFormat = udat_open(style, UDAT_NONE, locale, NULL, 0, NULL, 0, &err);
 
     if (U_FAILURE(err))
-    {
-        udat_close(pFormat);
         return UErrorCodeToBool(err);
-    }
 
     udat_toPattern(pFormat, false, value, valueLength, &err);
 
