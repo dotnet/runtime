@@ -1462,14 +1462,6 @@ void Compiler::compShutdown()
     }
 #endif // FEATURE_JIT_METHOD_PERF
 
-#if FUNC_INFO_LOGGING
-    if (compJitFuncInfoFile != nullptr)
-    {
-        fclose(compJitFuncInfoFile);
-        compJitFuncInfoFile = nullptr;
-    }
-#endif // FUNC_INFO_LOGGING
-
 #if COUNT_RANGECHECKS
     if (optRangeChkAll > 0)
     {
