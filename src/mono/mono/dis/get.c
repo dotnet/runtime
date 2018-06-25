@@ -1002,8 +1002,9 @@ dis_stringify_method_signature_full (MonoImage *m, MonoMethodSignature *method, 
 	g_string_append (result_ret, " (");
 	g_free (retval);
 
-	g_string_prepend (result, result_ret->str);
-	g_string_free (result_ret, FALSE);
+	g_string_append (result_ret, result->str);
+	g_string_free (result, TRUE);
+	result = result_ret;
 
 	if (show_method_tokens && methoddef_row)
 		g_string_append_printf (result, " /* 0x%X */ ",

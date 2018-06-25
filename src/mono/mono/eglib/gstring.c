@@ -146,41 +146,6 @@ g_string_append_unichar (GString *string, gunichar c)
 	return g_string_append_len (string, utf8, len);
 }
 
-GString *
-g_string_prepend (GString *string, const gchar *val)
-{
-	gssize len;
-	
-	g_return_val_if_fail (string != NULL, string);
-	g_return_val_if_fail (val != NULL, string);
-
-	len = strlen (val);
-	
-	GROW_IF_NECESSARY(string, len);	
-	memmove(string->str + len, string->str, string->len + 1);
-	memcpy(string->str, val, len);
-
-	return string;
-}
-
-GString *
-g_string_insert (GString *string, gssize pos, const gchar *val)
-{
-	gssize len;
-	
-	g_return_val_if_fail (string != NULL, string);
-	g_return_val_if_fail (val != NULL, string);
-	g_return_val_if_fail (pos <= string->len, string);
-
-	len = strlen (val);
-	
-	GROW_IF_NECESSARY(string, len);	
-	memmove(string->str + pos + len, string->str + pos, string->len - pos - len + 1);
-	memcpy(string->str + pos, val, len);
-
-	return string;
-}
-
 void
 g_string_append_printf (GString *string, const gchar *format, ...)
 {
@@ -252,25 +217,5 @@ g_string_set_size (GString *string, gsize len)
 	
 	string->len = len;
 	string->str[len] = 0;
-	return string;
-}
-
-GString *
-g_string_erase (GString *string, gssize pos, gssize len)
-{
-	g_return_val_if_fail (string != NULL, string);
-
-	/* Silent return */
-	if (pos >= string->len)
-		return string;
-
-	if (len == -1 || (pos + len) >= string->len) {
-		string->str[pos] = 0;
-	}
-	else {
-		memmove (string->str + pos, string->str + pos + len, string->len - (pos + len) + 1);
-		string->len -= len;
-	}
-
 	return string;
 }

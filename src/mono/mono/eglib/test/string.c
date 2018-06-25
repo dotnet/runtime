@@ -150,38 +150,6 @@ test_truncate (void)
 }
 
 static RESULT
-test_prepend (void)
-{
-	GString *s = g_string_new ("dingus");
-	g_string_prepend (s, "one");
-
-	if (strcmp (s->str, "onedingus") != 0)
-		return FAILED ("Failed, expected onedingus, got [%s]", s->str);
-
-	g_string_free (s, TRUE);
-
-	/* This is to force the code that where stuff does not fit in the allocated block */
-	s = g_string_sized_new (1);
-	g_string_prepend (s, "one");
-	if (strcmp (s->str, "one") != 0)
-		return FAILED ("Got erroneous result, expected [one] got [%s]", s->str);
-	g_string_free (s, TRUE);
-
-	/* This is to force the path where things fit */
-	s = g_string_new ("123123123123123123123123");
-	g_string_truncate (s, 1);
-	if (strcmp (s->str, "1") != 0)
-		return FAILED ("Expected [1] string, got [%s]", s->str);
-
-	g_string_prepend (s, "pre");
-	if (strcmp (s->str, "pre1") != 0)
-		return FAILED ("Expected [pre1], got [%s]", s->str);
-	g_string_free (s, TRUE);
-	
-	return NULL;
-}
-
-static RESULT
 test_appendlen (void)
 {
 	GString *s = g_string_new ("");
@@ -228,7 +196,6 @@ static Test string_tests [] = {
 	{"ctor+append", test_gstring },
 	{"ctor+sized", test_sized },
 	{"truncate", test_truncate },
-	{"prepend", test_prepend },
 	{"append_len", test_appendlen },
 	{"macros", test_macros },
 	{NULL, NULL}

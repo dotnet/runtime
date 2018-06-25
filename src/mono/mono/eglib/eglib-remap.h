@@ -205,12 +205,9 @@
 #define g_string_append_unichar monoeg_g_string_append_unichar
 #define g_string_append_printf monoeg_g_string_append_printf
 #define g_string_append_vprintf monoeg_g_string_append_vprintf
-#define g_string_erase monoeg_g_string_erase
 #define g_string_free monoeg_g_string_free
-#define g_string_insert monoeg_g_string_insert
 #define g_string_new monoeg_g_string_new
 #define g_string_new_len monoeg_g_string_new_len
-#define g_string_prepend monoeg_g_string_prepend
 #define g_string_printf monoeg_g_string_printf
 #define g_string_set_size monoeg_g_string_set_size
 #define g_string_sized_new monoeg_g_string_sized_new
