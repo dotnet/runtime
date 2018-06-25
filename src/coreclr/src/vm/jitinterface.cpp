@@ -1458,12 +1458,12 @@ static CorInfoHelpFunc getInstanceFieldHelper(FieldDesc * pField, CORINFO_ACCESS
         break;
     case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
-    IN_WIN32(default:)
+    IN_TARGET_32BIT(default:)
         helper = CORINFO_HELP_GETFIELD32;
         break;
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
-    IN_WIN64(default:)
+    IN_TARGET_64BIT(default:)
         helper = CORINFO_HELP_GETFIELD64;
         break;
     case ELEMENT_TYPE_R4:
@@ -7303,9 +7303,9 @@ bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
         // The implementation in mscorlib already does this, so we will only substitute a new
         // IL body if we're running on a 64-bit platform.
         //
-        IN_WIN64(VOLATILE_IMPL(Long,  CEE_LDIND_I8, CEE_STIND_I8))
-        IN_WIN64(VOLATILE_IMPL(ULong, CEE_LDIND_I8, CEE_STIND_I8))
-        IN_WIN64(VOLATILE_IMPL(Dbl,   CEE_LDIND_R8, CEE_STIND_R8))
+        IN_TARGET_64BIT(VOLATILE_IMPL(Long,  CEE_LDIND_I8, CEE_STIND_I8))
+        IN_TARGET_64BIT(VOLATILE_IMPL(ULong, CEE_LDIND_I8, CEE_STIND_I8))
+        IN_TARGET_64BIT(VOLATILE_IMPL(Dbl,   CEE_LDIND_R8, CEE_STIND_R8))
     };
 
     mdMethodDef md = ftn->GetMemberDef();

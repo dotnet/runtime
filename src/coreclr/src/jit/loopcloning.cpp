@@ -43,7 +43,7 @@ GenTree* LC_Array::ToGenTree(Compiler* comp)
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)
         {
-            GenTree* arrLen = comp->gtNewArrLen(TYP_INT, arr, offsetof(CORINFO_Array, length));
+            GenTree* arrLen = comp->gtNewArrLen(TYP_INT, arr, OFFSETOF__CORINFO_Array__length);
             return arrLen;
         }
         else
