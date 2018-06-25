@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+//
+// Keep in sync with https://github.com/dotnet/corert/blob/master/src/Native/ObjWriter/cordebuginfo.h
+//
+
 /**********************************************************************************/
 // DebugInfo types shared by JIT-EE interface and EE-Debugger interface
 
@@ -191,104 +195,114 @@ public:
         VLT_INVALID,
     };
 
+    // VLT_REG/VLT_REG_FP -- Any pointer-sized enregistered value (TYP_INT, TYP_REF, etc)
+    // eg. EAX
+    // VLT_REG_BYREF -- the specified register contains the address of the variable
+    // eg. [EAX]
+
+    struct vlReg
+    {
+        RegNum      vlrReg;
+    };
+
+    // VLT_STK -- Any 32 bit value which is on the stack
+    // eg. [ESP+0x20], or [EBP-0x28]
+    // VLT_STK_BYREF -- the specified stack location contains the address of the variable
+    // eg. mov EAX, [ESP+0x20]; [EAX]
+
+    struct vlStk
+    {
+        RegNum      vlsBaseReg;
+        signed      vlsOffset;
+    };
+
+    // VLT_REG_REG -- TYP_LONG with both DWords enregistred
+    // eg. RBM_EAXEDX
+
+    struct vlRegReg
+    {
+        RegNum      vlrrReg1;
+        RegNum      vlrrReg2;
+    };
+
+    // VLT_REG_STK -- Partly enregistered TYP_LONG
+    // eg { LowerDWord=EAX UpperDWord=[ESP+0x8] }
+
+    struct vlRegStk
+    {
+        RegNum      vlrsReg;
+        struct
+        {
+            RegNum      vlrssBaseReg;
+            signed      vlrssOffset;
+        }           vlrsStk;
+    };
+
+    // VLT_STK_REG -- Partly enregistered TYP_LONG
+    // eg { LowerDWord=[ESP+0x8] UpperDWord=EAX }
+
+    struct vlStkReg
+    {
+        struct
+        {
+            RegNum      vlsrsBaseReg;
+            signed      vlsrsOffset;
+        }           vlsrStk;
+        RegNum      vlsrReg;
+    };
+
+    // VLT_STK2 -- Any 64 bit value which is on the stack,
+    // in 2 successsive DWords.
+    // eg 2 DWords at [ESP+0x10]
+
+    struct vlStk2
+    {
+        RegNum      vls2BaseReg;
+        signed      vls2Offset;
+    };
+
+    // VLT_FPSTK -- enregisterd TYP_DOUBLE (on the FP stack)
+    // eg. ST(3). Actually it is ST("FPstkHeigth - vpFpStk")
+
+    struct vlFPstk
+    {
+        unsigned        vlfReg;
+    };
+
+    // VLT_FIXED_VA -- fixed argument of a varargs function.
+    // The argument location depends on the size of the variable
+    // arguments (...). Inspecting the VARARGS_HANDLE indicates the
+    // location of the first arg. This argument can then be accessed
+    // relative to the position of the first arg
+
+    struct vlFixedVarArg
+    {
+        unsigned        vlfvOffset;
+    };
+
+    // VLT_MEMORY
+
+    struct vlMemory
+    {
+        void        *rpValue; // pointer to the in-process
+        // location of the value.
+    };
+
     struct VarLoc
     {
         VarLocType      vlType;
 
         union
         {
-            // VLT_REG/VLT_REG_FP -- Any pointer-sized enregistered value (TYP_INT, TYP_REF, etc)
-            // eg. EAX
-            // VLT_REG_BYREF -- the specified register contains the address of the variable
-            // eg. [EAX]
-
-            struct
-            {
-                RegNum      vlrReg;
-            } vlReg;
-
-            // VLT_STK -- Any 32 bit value which is on the stack
-            // eg. [ESP+0x20], or [EBP-0x28]
-            // VLT_STK_BYREF -- the specified stack location contains the address of the variable
-            // eg. mov EAX, [ESP+0x20]; [EAX]
-
-            struct
-            {
-                RegNum      vlsBaseReg;
-                signed      vlsOffset;
-            } vlStk;
-
-            // VLT_REG_REG -- TYP_LONG with both DWords enregistred
-            // eg. RBM_EAXEDX
-
-            struct
-            {
-                RegNum      vlrrReg1;
-                RegNum      vlrrReg2;
-            } vlRegReg;
-
-            // VLT_REG_STK -- Partly enregistered TYP_LONG
-            // eg { LowerDWord=EAX UpperDWord=[ESP+0x8] }
-
-            struct
-            {
-                RegNum      vlrsReg;
-                struct
-                {
-                    RegNum      vlrssBaseReg;
-                    signed      vlrssOffset;
-                }           vlrsStk;
-            } vlRegStk;
-
-            // VLT_STK_REG -- Partly enregistered TYP_LONG
-            // eg { LowerDWord=[ESP+0x8] UpperDWord=EAX }
-
-            struct
-            {
-                struct
-                {
-                    RegNum      vlsrsBaseReg;
-                    signed      vlsrsOffset;
-                }           vlsrStk;
-                RegNum      vlsrReg;
-            } vlStkReg;
-
-            // VLT_STK2 -- Any 64 bit value which is on the stack,
-            // in 2 successsive DWords.
-            // eg 2 DWords at [ESP+0x10]
-
-            struct
-            {
-                RegNum      vls2BaseReg;
-                signed      vls2Offset;
-            } vlStk2;
-
-            // VLT_FPSTK -- enregisterd TYP_DOUBLE (on the FP stack)
-            // eg. ST(3). Actually it is ST("FPstkHeigth - vpFpStk")
-
-            struct
-            {
-                unsigned        vlfReg;
-            } vlFPstk;
-
-            // VLT_FIXED_VA -- fixed argument of a varargs function.
-            // The argument location depends on the size of the variable
-            // arguments (...). Inspecting the VARARGS_HANDLE indicates the
-            // location of the first arg. This argument can then be accessed
-            // relative to the position of the first arg
-
-            struct
-            {
-                unsigned        vlfvOffset;
-            } vlFixedVarArg;
-
-            // VLT_MEMORY
-
-            struct
-            {
-                void        *rpValue; // pointer to the in-process
-                // location of the value.
-            } vlMemory;
+            vlReg           vlReg;
+            vlStk           vlStk;
+            vlRegReg        vlRegReg;
+            vlRegStk        vlRegStk;
+            vlStkReg        vlStkReg;
+            vlStk2          vlStk2;
+            vlFPstk         vlFPstk;
+            vlFixedVarArg   vlFixedVarArg;
+            vlMemory        vlMemory;
         };
     };
 
