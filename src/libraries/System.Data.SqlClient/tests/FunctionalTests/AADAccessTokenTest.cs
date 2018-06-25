@@ -8,38 +8,31 @@ namespace System.Data.SqlClient.Tests
 {
     public class AADAccessTokenTest
     {
-        SqlConnectionStringBuilder _builder;
-
-        [Fact]
-        public void InvalidCombinationOfAccessToken()
+        private SqlConnectionStringBuilder _builder;
+        private SqlCredential _credential = null;
+        [Theory]
+        [InlineData("Test combination of Access Token and IntegratedSecurity", new object[] { "Integrated Security", true })]
+        [InlineData("Test combination of Access Token and User Id", new object[] { "UID", "sampleUserId" })]
+        [InlineData("Test combination of Access Token and Password", new object[] { "PWD", "samplePassword" })]
+        [InlineData("Test combination of Access Token and Credentials", new object[] { "sampleUserId" })]
+        public void InvalidCombinationOfAccessToken(string description, object[] Params)
         {
             _builder = new SqlConnectionStringBuilder
             {
-                ["Data Source"] = "sample.database.windows.net",
-                ["Integrated Security"] = true
+                ["Data Source"] = "sample.database.windows.net"
             };
-            InvalidCombinationCheck(null);
 
-            _builder = new SqlConnectionStringBuilder
+            if (Params.Length == 1)
             {
-                ["UID"] = "test"
-            };
-            InvalidCombinationCheck(null);
-
-            _builder = new SqlConnectionStringBuilder
+                Security.SecureString password = new Security.SecureString();
+                password.MakeReadOnly();
+                _credential = new SqlCredential(Params[0] as string, password);
+            }
+            else
             {
-                ["PWD"] = "test"
-            };
-            InvalidCombinationCheck(null);
-
-            _builder = new SqlConnectionStringBuilder
-            {
-                ["Data Source"] = "sample.database.windows.net",
-            };
-            Security.SecureString password = new Security.SecureString();
-            password.MakeReadOnly();
-            SqlCredential credential = new SqlCredential("userID", password);
-            InvalidCombinationCheck(credential);
+                _builder[Params[0] as string] = Params[1];
+            }
+            InvalidCombinationCheck(_credential);
         }
 
         private void InvalidCombinationCheck(SqlCredential credential)
