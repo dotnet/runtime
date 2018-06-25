@@ -62,7 +62,7 @@ namespace System.Net
 
         public override string ToString()
         {
-            return "Capabilities:" + String.Format(CultureInfo.InvariantCulture, "0x{0:x}", Capabilities)
+            return "Capabilities:" + string.Format(CultureInfo.InvariantCulture, "0x{0:x}", Capabilities)
                 + " Version:" + Version.ToString(NumberFormatInfo.InvariantInfo)
                 + " RPCID:" + RPCID.ToString(NumberFormatInfo.InvariantInfo)
                 + " MaxToken:" + MaxToken.ToString(NumberFormatInfo.InvariantInfo)

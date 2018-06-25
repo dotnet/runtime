@@ -808,7 +808,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    forestModeValue = Int32.Parse((string)rootDSE.Properties[PropertyManager.ForestFunctionality].Value, NumberFormatInfo.InvariantInfo);
+                    forestModeValue = int.Parse((string)rootDSE.Properties[PropertyManager.ForestFunctionality].Value, NumberFormatInfo.InvariantInfo);
                 }
             }
             catch (COMException e)

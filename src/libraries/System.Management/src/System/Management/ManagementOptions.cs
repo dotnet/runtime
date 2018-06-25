@@ -1276,7 +1276,7 @@ namespace System.Management
         /// </value>
         public string Locale 
         {
-            get { return (null != locale) ? locale : String.Empty; } 
+            get { return (null != locale) ? locale : string.Empty; } 
             set { 
                 if (locale != value)
                 {
@@ -1420,7 +1420,7 @@ namespace System.Management
         /// </remarks>
         public string Authority 
         {
-            get { return (null != authority) ? authority : String.Empty; } 
+            get { return (null != authority) ? authority : string.Empty; } 
             set {
                 if (authority != value)
                 {

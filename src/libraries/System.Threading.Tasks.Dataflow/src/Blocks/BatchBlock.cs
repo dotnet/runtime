@@ -36,7 +36,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Initializes this <see cref="BatchBlock{T}"/> with the specified batch size.</summary>
         /// <param name="batchSize">The number of items to group into a batch.</param>
         /// <exception cref="System.ArgumentOutOfRangeException">The <paramref name="batchSize"/> must be positive.</exception>
-        public BatchBlock(Int32 batchSize) :
+        public BatchBlock(int batchSize) :
             this(batchSize, GroupingDataflowBlockOptions.Default)
         { }
 
@@ -46,7 +46,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentOutOfRangeException">The <paramref name="batchSize"/> must be positive.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">The <paramref name="batchSize"/> must be no greater than the value of the BoundedCapacity option if a non-default value has been set.</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        public BatchBlock(Int32 batchSize, GroupingDataflowBlockOptions dataflowBlockOptions)
+        public BatchBlock(int batchSize, GroupingDataflowBlockOptions dataflowBlockOptions)
         {
             // Validate arguments
             if (batchSize < 1) throw new ArgumentOutOfRangeException(nameof(batchSize), SR.ArgumentOutOfRange_GenericPositive);
@@ -131,7 +131,7 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceive"]/*' />
-        public Boolean TryReceive(Predicate<T[]> filter, out T[] item)
+        public bool TryReceive(Predicate<T[]> filter, out T[] item)
         {
             return _source.TryReceive(filter, out item);
         }
@@ -150,16 +150,16 @@ namespace System.Threading.Tasks.Dataflow
         /// If the number of items provided to the block is not evenly divisible by the batch size provided
         /// to the block's constructor, the block's final batch may contain fewer than the requested number of items.
         /// </remarks>
-        public Int32 BatchSize { get { return _target.BatchSize; } }
+        public int BatchSize { get { return _target.BatchSize; } }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
-        DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, Boolean consumeToAccept)
+        DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, bool consumeToAccept)
         {
             return _target.OfferMessage(messageHeader, messageValue, source, consumeToAccept);
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ConsumeMessage"]/*' />
-        T[] ISourceBlock<T[]>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<T[]> target, out Boolean messageConsumed)
+        T[] ISourceBlock<T[]>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<T[]> target, out bool messageConsumed)
         {
             return _source.ConsumeMessage(messageHeader, target, out messageConsumed);
         }
@@ -317,7 +317,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="BatchBlock{T}"/>.  Assumed to be immutable.</param>
             /// <exception cref="System.ArgumentOutOfRangeException">The <paramref name="batchSize"/> must be positive.</exception>
             /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-            internal BatchBlockTargetCore(BatchBlock<T> owningBatch, Int32 batchSize, Action<T[]> batchCompletedAction, GroupingDataflowBlockOptions dataflowBlockOptions)
+            internal BatchBlockTargetCore(BatchBlock<T> owningBatch, int batchSize, Action<T[]> batchCompletedAction, GroupingDataflowBlockOptions dataflowBlockOptions)
             {
                 Debug.Assert(owningBatch != null, "This batch target core must be associated with a batch block.");
                 Debug.Assert(batchSize >= 1, "Batch sizes must be positive.");
@@ -362,7 +362,7 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
-            internal DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, Boolean consumeToAccept)
+            internal DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, bool consumeToAccept)
             {
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
@@ -488,7 +488,7 @@ namespace System.Threading.Tasks.Dataflow
             internal Task Completion { get { return _completionTask.Task; } }
 
             /// <summary>Gets the size of the batches generated by this <see cref="BatchBlock{T}"/>.</summary>
-            internal Int32 BatchSize { get { return _batchSize; } }
+            internal int BatchSize { get { return _batchSize; } }
 
             /// <summary>Gets whether the target has had cancellation requested or an exception has occurred.</summary>
             private bool CanceledOrFaulted

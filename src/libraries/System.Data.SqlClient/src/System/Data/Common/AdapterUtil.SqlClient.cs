@@ -492,7 +492,7 @@ namespace System.Data.Common
         {
             return Argument(SR.GetString(SR.ADP_InvalidSizeValue, value.ToString(CultureInfo.InvariantCulture)));
         }
-        internal static ArgumentException ParameterValueOutOfRange(Decimal value)
+        internal static ArgumentException ParameterValueOutOfRange(decimal value)
         {
             return ADP.Argument(SR.GetString(SR.ADP_ParameterValueOutOfRange, value.ToString((IFormatProvider)null)));
         }

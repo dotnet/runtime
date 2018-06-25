@@ -622,12 +622,12 @@ namespace System.IO.Packaging
             get
             {
                 // Look for xmlns
-                if (String.Equals(XmlnsDeclaration, Reader.LocalName, StringComparison.Ordinal))
+                if (string.Equals(XmlnsDeclaration, Reader.LocalName, StringComparison.Ordinal))
                 {
-                    return LookupNamespace(String.Empty);
+                    return LookupNamespace(string.Empty);
                 }
                 // Look for xmlns: ...
-                else if (String.Equals(XmlnsDeclaration, Reader.Prefix, StringComparison.Ordinal))
+                else if (string.Equals(XmlnsDeclaration, Reader.Prefix, StringComparison.Ordinal))
                 {
                     return LookupNamespace(Reader.LocalName);
                 }
@@ -759,7 +759,7 @@ namespace System.IO.Packaging
                 {
                     AddKnownNamespace(namespaceName);
 
-                    if (String.IsNullOrEmpty(mappedNamespace) || namespaceName == mappedNamespace)
+                    if (string.IsNullOrEmpty(mappedNamespace) || namespaceName == mappedNamespace)
                     {
                         _namespaceMap[namespaceName] = namespaceName;
                     }
@@ -895,7 +895,7 @@ namespace System.IO.Packaging
             foreach (string pair in content.Trim().Split(' '))
             {
                 // check each non-null, non-empty space-delineated namespace/element pair
-                if (!String.IsNullOrEmpty(pair))
+                if (!string.IsNullOrEmpty(pair))
                 {
                     int colonIndex = pair.IndexOf(':');
                     int length = pair.Length;
@@ -943,7 +943,7 @@ namespace System.IO.Packaging
             foreach (string prefix in prefixes.Trim().Split(' '))
             {
                 // check each non-null, non-empty space-delineated prefix
-                if (!String.IsNullOrEmpty(prefix))
+                if (!string.IsNullOrEmpty(prefix))
                 {
                     string namespaceUri = LookupNamespace(prefix);
 
@@ -1152,7 +1152,7 @@ namespace System.IO.Packaging
                 // Choice must have a requires attribute
                 Error(SR.XCRRequiresAttribNotFound);
             }
-            if (String.IsNullOrEmpty(requiresValue))
+            if (string.IsNullOrEmpty(requiresValue))
             {
                 // Requires attribute may not be empty
                 Error(SR.XCRInvalidRequiresAttribute);

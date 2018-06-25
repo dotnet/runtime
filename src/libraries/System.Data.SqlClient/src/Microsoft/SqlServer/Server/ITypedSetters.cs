@@ -17,9 +17,9 @@ namespace Microsoft.SqlServer.Server
         // By value setters (data copy across the interface boundary implied)
         void SetDBNull(int ordinal);
 
-        void SetBoolean(int ordinal, Boolean value);
+        void SetBoolean(int ordinal, bool value);
 
-        void SetByte(int ordinal, Byte value);
+        void SetByte(int ordinal, byte value);
 
         void SetBytes(int ordinal, long fieldOffset, byte[] buffer, int bufferOffset, int length);
 
@@ -27,15 +27,15 @@ namespace Microsoft.SqlServer.Server
 
         void SetChars(int ordinal, long fieldOffset, char[] buffer, int bufferOffset, int length);
 
-        void SetInt16(int ordinal, Int16 value);
+        void SetInt16(int ordinal, short value);
 
-        void SetInt32(int ordinal, Int32 value);
+        void SetInt32(int ordinal, int value);
 
-        void SetInt64(int ordinal, Int64 value);
+        void SetInt64(int ordinal, long value);
 
-        void SetFloat(int ordinal, Single value);
+        void SetFloat(int ordinal, float value);
 
-        void SetDouble(int ordinal, Double value);
+        void SetDouble(int ordinal, double value);
 
         [ObsoleteAttribute("Not supported as of SMI v2.  Will be removed when v1 support dropped.  Use setter with offset.")]
         void SetString(int ordinal, string value);
@@ -43,7 +43,7 @@ namespace Microsoft.SqlServer.Server
         // Method introduced as of SMI V2
         void SetString(int ordinal, string value, int offset);
 
-        void SetDecimal(int ordinal, Decimal value);
+        void SetDecimal(int ordinal, decimal value);
 
         void SetDateTime(int ordinal, DateTime value);
 

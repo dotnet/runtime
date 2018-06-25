@@ -1827,10 +1827,10 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                string path = String.Format(
+                string path = string.Format(
                     CultureInfo.InvariantCulture,
                     "LDAP://{0}/{1}",
-                    String.IsNullOrEmpty(this.UserSuppliedServerName) ? this.DnsHostName : this.UserSuppliedServerName,
+                    string.IsNullOrEmpty(this.UserSuppliedServerName) ? this.DnsHostName : this.UserSuppliedServerName,
                     this.ContextBasePartitionDN
                     );
 
@@ -2146,7 +2146,7 @@ namespace System.DirectoryServices.AccountManagement
                                                 serverName);
 
                         throw new PrincipalOperationException(
-                                String.Format(CultureInfo.CurrentCulture,
+                                string.Format(CultureInfo.CurrentCulture,
                                                   SR.ADStoreCtxCantResolveSidForCrossStore,
                                                   err));
                     }
@@ -2511,7 +2511,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // If it's not a "DC=" component, skip it
                     if ((component.Length > 3) &&
-                        String.Equals(component.Substring(0, 3), "DC=", StringComparison.OrdinalIgnoreCase))
+                        string.Equals(component.Substring(0, 3), "DC=", StringComparison.OrdinalIgnoreCase))
                     {
                         sb.Append(component, 3, component.Length - 3);
                         sb.Append('.');

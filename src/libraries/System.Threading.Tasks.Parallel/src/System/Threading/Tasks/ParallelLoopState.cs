@@ -466,7 +466,7 @@ namespace System.Threading.Tasks
         // Records the lowest iteration at which a Break() has been called,
         // or Int32.MaxValue if no break has been called.  Used directly
         // by Break().
-        internal volatile int _lowestBreakIteration = Int32.MaxValue;
+        internal volatile int _lowestBreakIteration = int.MaxValue;
 
         // Not strictly necessary, but maintains consistency with ParallelStateFlags64
         internal int LowestBreakIteration
@@ -479,7 +479,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                if (_lowestBreakIteration == Int32.MaxValue) return null;
+                if (_lowestBreakIteration == int.MaxValue) return null;
                 else
                 {
                     // protect against torn read of 64-bit value
@@ -532,7 +532,7 @@ namespace System.Threading.Tasks
         // Records the lowest iteration at which a Break() has been called,
         // or Int64.MaxValue if no break has been called.  Used directly
         // by Break().
-        internal long _lowestBreakIteration = Int64.MaxValue;
+        internal long _lowestBreakIteration = long.MaxValue;
 
         // Performs a conditionally interlocked read of _lowestBreakIteration.
         internal long LowestBreakIteration
@@ -549,7 +549,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                if (_lowestBreakIteration == Int64.MaxValue) return null;
+                if (_lowestBreakIteration == long.MaxValue) return null;
                 else
                 {
                     if (IntPtr.Size >= 8) return _lowestBreakIteration;

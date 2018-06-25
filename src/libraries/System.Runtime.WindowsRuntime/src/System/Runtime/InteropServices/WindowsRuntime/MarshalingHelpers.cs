@@ -135,7 +135,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (s_EventArgsFactory == null)
             {
-                Object factory = null;
+                object factory = null;
                 Guid guid = typeof(INotifyCollectionChangedEventArgsFactory).GUID;
                 int hr = Interop.mincore.RoGetActivationFactory(WinRTNotifyCollectionChangedEventArgsName, ref guid, out factory);
                 if (hr < 0)
@@ -208,7 +208,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if(s_pPCEventArgsFactory != null)
             {
-                Object factory = null;
+                object factory = null;
                 Guid guid = typeof(IPropertyChangedEventArgsFactory).GUID;
                 int hr = Interop.mincore.RoGetActivationFactory(WinRTPropertyChangedEventArgsName, ref guid, out factory);
                 if (hr < 0)
@@ -546,7 +546,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             foreach (KeyValuePair<EventHandler, EventHandler<object>> item in table)
             {
-                if (Object.Equals(item.Key, key))
+                if (object.Equals(item.Key, key))
                     return item.Value;
             }
 

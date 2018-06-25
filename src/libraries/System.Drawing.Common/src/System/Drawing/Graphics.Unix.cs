@@ -194,7 +194,7 @@ namespace System.Drawing
                 blockRegionSize.Height, AllPlanes, 2 /* ZPixmap*/);
             if (image == IntPtr.Zero)
             {
-                string s = String.Format("XGetImage returned NULL when asked to for a {0}x{1} region block",
+                string s = string.Format("XGetImage returned NULL when asked to for a {0}x{1} region block",
                     blockRegionSize.Width, blockRegionSize.Height);
                 throw new InvalidOperationException(s);
             }
@@ -1744,7 +1744,7 @@ namespace System.Drawing
 
         public SizeF MeasureString(string text, Font font, int width)
         {
-            RectangleF rect = new RectangleF(0, 0, width, Int32.MaxValue);
+            RectangleF rect = new RectangleF(0, 0, width, int.MaxValue);
             return GdipMeasureString(NativeGraphics, text, font, ref rect, IntPtr.Zero);
         }
 
@@ -1757,7 +1757,7 @@ namespace System.Drawing
 
         public SizeF MeasureString(string text, Font font, int width, StringFormat format)
         {
-            RectangleF rect = new RectangleF(0, 0, width, Int32.MaxValue);
+            RectangleF rect = new RectangleF(0, 0, width, int.MaxValue);
             IntPtr stringFormat = (format == null) ? IntPtr.Zero : format.nativeFormat;
             return GdipMeasureString(NativeGraphics, text, font, ref rect, stringFormat);
         }

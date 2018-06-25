@@ -215,7 +215,7 @@ namespace System.Net
             }
             set
             {
-                m_domain = (value == null ? String.Empty : value);
+                m_domain = (value == null ? string.Empty : value);
                 m_domain_implicit = false;
                 m_domainKey = string.Empty; //this will get it value when adding into the Container.
             }
@@ -277,7 +277,7 @@ namespace System.Net
             }
             set
             {
-                if (String.IsNullOrEmpty(value) || !InternalSetName(value))
+                if (string.IsNullOrEmpty(value) || !InternalSetName(value))
                 {
                     throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", value == null ? "<null>" : value));
                 }
@@ -286,7 +286,7 @@ namespace System.Net
 
         internal bool InternalSetName(string value)
         {
-            if (String.IsNullOrEmpty(value) || value[0] == '$' || value.IndexOfAny(Reserved2Name) != -1)
+            if (string.IsNullOrEmpty(value) || value[0] == '$' || value.IndexOfAny(Reserved2Name) != -1)
             {
                 m_name = string.Empty;
                 return false;
@@ -306,7 +306,7 @@ namespace System.Net
             }
             set
             {
-                m_path = (value == null ? String.Empty : value);
+                m_path = (value == null ? string.Empty : value);
                 m_path_implicit = false;
             }
         }
@@ -668,7 +668,7 @@ namespace System.Net
                         // Skip spaces
                         if (ports[i] != string.Empty)
                         {
-                            if (!Int32.TryParse(ports[i], out port))
+                            if (!int.TryParse(ports[i], out port))
                                 throw new CookieException(SR.Format(SR.net_cookie_attribute, PortAttributeName, value));
                             // valid values for port 0 - 0xFFFF
                             if ((port < 0) || (port > 0xFFFF))
@@ -731,7 +731,7 @@ namespace System.Net
             }
             set
             {
-                m_value = (value == null ? String.Empty : value);
+                m_value = (value == null ? string.Empty : value);
             }
         }
 
@@ -1200,7 +1200,7 @@ namespace System.Net
         {
             m_tokenLength = 0;
             m_start = m_index;
-            while ((m_index < m_length) && Char.IsWhiteSpace(m_tokenStream[m_index]))
+            while ((m_index < m_length) && char.IsWhiteSpace(m_tokenStream[m_index]))
             {
                 ++m_index;
                 ++m_start;

@@ -224,7 +224,7 @@ namespace System.Collections.Immutable
 
                 var updatedCollection = priorCollection.Add(key, value);
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
-                successful = Object.ReferenceEquals(priorCollection, interlockedResult);
+                successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
             while (!successful);
@@ -268,7 +268,7 @@ namespace System.Collections.Immutable
 
                 var updatedCollection = priorCollection.SetItem(key, newValue);
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
-                successful = Object.ReferenceEquals(priorCollection, interlockedResult);
+                successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
             while (!successful);
@@ -311,7 +311,7 @@ namespace System.Collections.Immutable
 
                 var updatedCollection = priorCollection.SetItem(key, newValue);
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
-                successful = Object.ReferenceEquals(priorCollection, interlockedResult);
+                successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
             while (!successful);
@@ -345,7 +345,7 @@ namespace System.Collections.Immutable
 
                 var updatedCollection = priorCollection.Add(key, value);
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
-                successful = Object.ReferenceEquals(priorCollection, interlockedResult);
+                successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             } while (!successful);
 
@@ -380,7 +380,7 @@ namespace System.Collections.Immutable
 
                 var updatedCollection = priorCollection.SetItem(key, newValue);
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
-                successful = Object.ReferenceEquals(priorCollection, interlockedResult);
+                successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             } while (!successful);
 
@@ -411,7 +411,7 @@ namespace System.Collections.Immutable
 
                 var updatedCollection = priorCollection.Remove(key);
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
-                successful = Object.ReferenceEquals(priorCollection, interlockedResult);
+                successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             } while (!successful);
 
@@ -445,7 +445,7 @@ namespace System.Collections.Immutable
 
                 var updatedCollection = priorCollection.Pop(out value);
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
-                successful = Object.ReferenceEquals(priorCollection, interlockedResult);
+                successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             } while (!successful);
 
@@ -468,7 +468,7 @@ namespace System.Collections.Immutable
 
                 var updatedCollection = priorCollection.Push(value);
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
-                successful = Object.ReferenceEquals(priorCollection, interlockedResult);
+                successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             } while (!successful);
         }
@@ -500,7 +500,7 @@ namespace System.Collections.Immutable
 
                 var updatedCollection = priorCollection.Dequeue(out value);
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
-                successful = Object.ReferenceEquals(priorCollection, interlockedResult);
+                successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             } while (!successful);
 
@@ -523,7 +523,7 @@ namespace System.Collections.Immutable
 
                 var updatedCollection = priorCollection.Enqueue(value);
                 var interlockedResult = Interlocked.CompareExchange(ref location, updatedCollection, priorCollection);
-                successful = Object.ReferenceEquals(priorCollection, interlockedResult);
+                successful = object.ReferenceEquals(priorCollection, interlockedResult);
                 priorCollection = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             } while (!successful);
         }

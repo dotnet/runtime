@@ -96,7 +96,7 @@ namespace System.Data.Odbc
                 }
                 //Database is not available before open, and its not worth parsing the
                 //connection string over.
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -115,7 +115,7 @@ namespace System.Data.Odbc
                     //
                     return GetInfoStringUnhandled(ODBC32.SQL_INFO.SERVER_NAME, true);
                 }
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -339,7 +339,7 @@ namespace System.Data.Odbc
 
         public new OdbcCommand CreateCommand()
         {
-            return new OdbcCommand(String.Empty, this);
+            return new OdbcCommand(string.Empty, this);
         }
 
         internal OdbcStatementHandle CreateStatementHandle()
@@ -380,7 +380,7 @@ namespace System.Data.Odbc
         internal string GetConnectAttrString(ODBC32.SQL_ATTR attribute)
         {
             string value = "";
-            Int32 cbActual = 0;
+            int cbActual = 0;
             byte[] buffer = new byte[100];
             OdbcConnectionHandle connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
@@ -412,8 +412,8 @@ namespace System.Data.Odbc
 
         internal int GetConnectAttr(ODBC32.SQL_ATTR attribute, ODBC32.HANDLER handler)
         {
-            Int32 retval = -1;
-            Int32 cbActual = 0;
+            int retval = -1;
+            int cbActual = 0;
             byte[] buffer = new byte[4];
             OdbcConnectionHandle connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
@@ -451,7 +451,7 @@ namespace System.Data.Odbc
             return sqlstate;
         }
 
-        internal ODBC32.RetCode GetInfoInt16Unhandled(ODBC32.SQL_INFO info, out Int16 resultValue)
+        internal ODBC32.RetCode GetInfoInt16Unhandled(ODBC32.SQL_INFO info, out short resultValue)
         {
             byte[] buffer = new byte[2];
             ODBC32.RetCode retcode = ConnectionHandle.GetInfo1(info, buffer);
@@ -459,7 +459,7 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode GetInfoInt32Unhandled(ODBC32.SQL_INFO info, out Int32 resultValue)
+        internal ODBC32.RetCode GetInfoInt32Unhandled(ODBC32.SQL_INFO info, out int resultValue)
         {
             byte[] buffer = new byte[4];
             ODBC32.RetCode retcode = ConnectionHandle.GetInfo1(info, buffer);
@@ -467,7 +467,7 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        private Int32 GetInfoInt32Unhandled(ODBC32.SQL_INFO infotype)
+        private int GetInfoInt32Unhandled(ODBC32.SQL_INFO infotype)
         {
             byte[] buffer = new byte[4];
             ConnectionHandle.GetInfo1(infotype, buffer);
@@ -483,7 +483,7 @@ namespace System.Data.Odbc
         {
             //SQLGetInfo
             string value = null;
-            Int16 cbActual = 0;
+            short cbActual = 0;
             byte[] buffer = new byte[100];
             OdbcConnectionHandle connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
@@ -775,12 +775,12 @@ namespace System.Data.Odbc
             }
         }
 
-        internal Boolean SQLGetFunctions(ODBC32.SQL_API odbcFunction)
+        internal bool SQLGetFunctions(ODBC32.SQL_API odbcFunction)
         {
             //SQLGetFunctions
             ODBC32.RetCode retcode;
-            Int16 fExists;
-            Debug.Assert((Int16)odbcFunction != 0, "SQL_API_ALL_FUNCTIONS is not supported");
+            short fExists;
+            Debug.Assert((short)odbcFunction != 0, "SQL_API_ALL_FUNCTIONS is not supported");
             OdbcConnectionHandle connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
             {
@@ -953,7 +953,7 @@ namespace System.Data.Odbc
 
             //Set the database
             OdbcConnectionHandle connectionHandle = ConnectionHandle;
-            ODBC32.RetCode retcode = connectionHandle.SetConnectionAttribute3(ODBC32.SQL_ATTR.CURRENT_CATALOG, value, checked((Int32)value.Length * 2));
+            ODBC32.RetCode retcode = connectionHandle.SetConnectionAttribute3(ODBC32.SQL_ATTR.CURRENT_CATALOG, value, checked((int)value.Length * 2));
 
             if (retcode != ODBC32.RetCode.SUCCESS)
             {

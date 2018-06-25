@@ -370,7 +370,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        internal abstract uint EnableMars(ref UInt32 info);
+        internal abstract uint EnableMars(ref uint info);
 
         internal SniContext SniContext
         {
@@ -387,7 +387,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        internal abstract UInt32 Status
+        internal abstract uint Status
         {
             get;
         }
@@ -429,7 +429,7 @@ namespace System.Data.SqlClient
             int remaining;
             if (0 != _timeoutMilliseconds)
             {
-                remaining = (int)Math.Min((long)Int32.MaxValue, _timeoutMilliseconds);
+                remaining = (int)Math.Min((long)int.MaxValue, _timeoutMilliseconds);
                 _timeoutTime = TdsParserStaticMethods.GetTimeout(_timeoutMilliseconds);
                 _timeoutMilliseconds = 0;
             }
@@ -670,7 +670,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        public void CheckSetResetConnectionState(UInt32 error, CallbackType callbackType)
+        public void CheckSetResetConnectionState(uint error, CallbackType callbackType)
         {
             // Should only be called for MARS - that is the only time we need to take
             // the ResetConnection lock!
@@ -882,7 +882,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        internal Int32 IncrementAndObtainOpenResultCount(SqlInternalTransaction transaction)
+        internal int IncrementAndObtainOpenResultCount(SqlInternalTransaction transaction)
         {
             _hasOpenResult = true;
 
@@ -1712,7 +1712,7 @@ namespace System.Data.SqlClient
 
             if (isPlp)
             {
-                if (!TryReadPlpBytes(ref buf, 0, Int32.MaxValue, out length))
+                if (!TryReadPlpBytes(ref buf, 0, int.MaxValue, out length))
                 {
                     value = null;
                     return false;
@@ -1959,7 +1959,7 @@ namespace System.Data.SqlClient
 
             while (num > 0)
             {
-                cbSkip = (int)Math.Min((long)Int32.MaxValue, num);
+                cbSkip = (int)Math.Min((long)int.MaxValue, num);
                 if (!TryReadByteArray(null, 0, cbSkip))
                 {
                     return false;
@@ -2071,7 +2071,7 @@ namespace System.Data.SqlClient
 
             object readPacket = null;
 
-            UInt32 error;
+            uint error;
 
             bool shouldDecrement = false;
             try
@@ -2293,7 +2293,7 @@ namespace System.Data.SqlClient
 
             object readPacket = null;
 
-            UInt32 error = 0;
+            uint error = 0;
 
             try
             {
@@ -2417,7 +2417,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    UInt32 error;
+                    uint error;
 
                     object readPacket = EmptyReadPacket;
 
@@ -2474,7 +2474,7 @@ namespace System.Data.SqlClient
                 return true;
             }
 
-            UInt32 error = TdsEnums.SNI_SUCCESS;
+            uint error = TdsEnums.SNI_SUCCESS;
             SniContext = SniContext.Snix_Connect;
             try
             {
@@ -2489,7 +2489,7 @@ namespace System.Data.SqlClient
         }
 
         // This method should only be called by ReadSni!  If not - it may have problems with timeouts!
-        private void ReadSniError(TdsParserStateObject stateObj, UInt32 error)
+        private void ReadSniError(TdsParserStateObject stateObj, uint error)
         {
             if (TdsEnums.SNI_WAIT_TIMEOUT == error)
             {
@@ -2584,7 +2584,7 @@ namespace System.Data.SqlClient
             AssertValidState();
         }
 
-        public void ProcessSniPacket(object packet, UInt32 error)
+        public void ProcessSniPacket(object packet, uint error)
         {
             if (error != 0)
             {
@@ -2600,9 +2600,9 @@ namespace System.Data.SqlClient
             }
             else
             {
-                UInt32 dataSize = 0;
+                uint dataSize = 0;
 
-                UInt32 getDataError = SNIPacketGetData(packet, _inBuff, ref dataSize);
+                uint getDataError = SNIPacketGetData(packet, _inBuff, ref dataSize);
 
                 if (getDataError == TdsEnums.SNI_SUCCESS)
                 {
@@ -2683,13 +2683,13 @@ namespace System.Data.SqlClient
             }
         }
 
-        public void ReadAsyncCallback<T>(T packet, UInt32 error)
+        public void ReadAsyncCallback<T>(T packet, uint error)
         {
             ReadAsyncCallback(IntPtr.Zero, packet, error);
         }
 
 
-        public void ReadAsyncCallback<T>(IntPtr key, T packet, UInt32 error)
+        public void ReadAsyncCallback<T>(IntPtr key, T packet, uint error)
         {
             // Key never used.
             // Note - it's possible that when native calls managed that an asynchronous exception
@@ -2815,12 +2815,12 @@ namespace System.Data.SqlClient
 
 #pragma warning disable 0420 // a reference to a volatile field will not be treated as volatile
 
-        public void WriteAsyncCallback<T>(T packet, UInt32 sniError)
+        public void WriteAsyncCallback<T>(T packet, uint sniError)
         {
             WriteAsyncCallback(IntPtr.Zero, packet, sniError);
         }
 
-        public void WriteAsyncCallback<T>(IntPtr key, T packet, UInt32 sniError)
+        public void WriteAsyncCallback<T>(IntPtr key, T packet, uint sniError)
         { // Key never used.
             RemovePacketFromPendingList(packet);
             try
@@ -3001,7 +3001,7 @@ namespace System.Data.SqlClient
         //
         // Takes a byte array and writes it to the buffer.
         //
-        internal Task WriteByteArray(Byte[] b, int len, int offsetBuffer, bool canAccumulate = true, TaskCompletionSource<object> completion = null)
+        internal Task WriteByteArray(byte[] b, int len, int offsetBuffer, bool canAccumulate = true, TaskCompletionSource<object> completion = null)
         {
             try
             {
@@ -3087,7 +3087,7 @@ namespace System.Data.SqlClient
         }
 
         // This is in its own method to avoid always allocating the lambda in WriteByteArray
-        private void WriteByteArraySetupContinuation(Byte[] b, int len, TaskCompletionSource<object> completion, int offset, Task packetTask)
+        private void WriteByteArraySetupContinuation(byte[] b, int len, TaskCompletionSource<object> completion, int offset, Task packetTask)
         {
             AsyncHelper.ContinueTask(packetTask, completion,
                 () => WriteByteArray(b, len: len, offsetBuffer: offset, canAccumulate: false, completion: completion),
@@ -3140,7 +3140,7 @@ namespace System.Data.SqlClient
             else
             {
                 status = TdsEnums.ST_EOM;
-                Debug.Assert(false, String.Format((IFormatProvider)null, "Unexpected argument {0,-2:x2} to WritePacket", flushMode));
+                Debug.Assert(false, string.Format((IFormatProvider)null, "Unexpected argument {0,-2:x2} to WritePacket", flushMode));
             }
 
             _outBuff[0] = _outputMessageType;         // Message Type
@@ -3189,7 +3189,7 @@ namespace System.Data.SqlClient
 
 #pragma warning disable 0420 // a reference to a volatile field will not be treated as volatile
 
-        private Task SNIWritePacket(object packet, out UInt32 sniError, bool canAccumulate, bool callerHasConnectionLock)
+        private Task SNIWritePacket(object packet, out uint sniError, bool canAccumulate, bool callerHasConnectionLock)
         {
             // Check for a stored exception
             var delayedException = Interlocked.Exchange(ref _delayedWriteAsyncCallbackException, null);
@@ -3369,7 +3369,7 @@ namespace System.Data.SqlClient
                                 return;
                             }
 
-                            UInt32 sniError;
+                            uint sniError;
                             _parser._asyncWrite = false; // stop async write 
                             SNIWritePacket(attnPacket, out sniError, canAccumulate: false, callerHasConnectionLock: false);
                         }

@@ -352,7 +352,7 @@ namespace System.Numerics
         {
             CultureInfo ci = CultureInfo.CurrentCulture;
 
-            return String.Format(ci, "{{Normal:{0} D:{1}}}", Normal.ToString(), D.ToString(ci));
+            return string.Format(ci, "{{Normal:{0} D:{1}}}", Normal.ToString(), D.ToString(ci));
         }
 
         /// <summary>

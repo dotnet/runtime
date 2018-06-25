@@ -122,7 +122,7 @@ namespace System.Net
         public override string ToString()
         {
             string format = (_address.AddressFamily == AddressFamily.InterNetworkV6) ? "[{0}]:{1}" : "{0}:{1}";
-            return String.Format(format, _address.ToString(), Port.ToString(NumberFormatInfo.InvariantInfo));
+            return string.Format(format, _address.ToString(), Port.ToString(NumberFormatInfo.InvariantInfo));
         }
 
         public override SocketAddress Serialize()

@@ -471,7 +471,7 @@ namespace System.DirectoryServices.AccountManagement
             if (that == null)
                 return false;
 
-            if (Object.ReferenceEquals(this, that))
+            if (object.ReferenceEquals(this, that))
                 return true;
 
             if ((_key != null) && (that._key != null) && (_key.Equals(that._key)))
@@ -1250,7 +1250,7 @@ namespace System.DirectoryServices.AccountManagement
                     return _extensionCache;
 
                 default:
-                    Debug.Fail(String.Format(CultureInfo.CurrentCulture, "Principal.GetValueForProperty: Ran off end of list looking for {0}", propertyName));
+                    Debug.Fail(string.Format(CultureInfo.CurrentCulture, "Principal.GetValueForProperty: Ran off end of list looking for {0}", propertyName));
                     return null;
             }
         }

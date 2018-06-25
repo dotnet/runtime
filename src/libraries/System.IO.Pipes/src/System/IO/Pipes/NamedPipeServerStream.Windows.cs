@@ -34,7 +34,7 @@ namespace System.IO.Pipes
             string fullPipeName = Path.GetFullPath(@"\\.\pipe\" + pipeName);
 
             // Make sure the pipe name isn't one of our reserved names for anonymous pipes.
-            if (String.Equals(fullPipeName, @"\\.\pipe\anonymous", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(fullPipeName, @"\\.\pipe\anonymous", StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentOutOfRangeException(nameof(pipeName), SR.ArgumentOutOfRange_AnonymousReserved);
             }
@@ -214,7 +214,7 @@ namespace System.IO.Pipes
         private static RuntimeHelpers.TryCode tryCode = new RuntimeHelpers.TryCode(ImpersonateAndTryCode);
         private static RuntimeHelpers.CleanupCode cleanupCode = new RuntimeHelpers.CleanupCode(RevertImpersonationOnBackout);
 
-        private static void ImpersonateAndTryCode(Object helper)
+        private static void ImpersonateAndTryCode(object helper)
         {
             ExecuteHelper execHelper = (ExecuteHelper)helper;
 
@@ -239,7 +239,7 @@ namespace System.IO.Pipes
             }
         }
 
-        private static void RevertImpersonationOnBackout(Object helper, bool exceptionThrown)
+        private static void RevertImpersonationOnBackout(object helper, bool exceptionThrown)
         {
             ExecuteHelper execHelper = (ExecuteHelper)helper;
 

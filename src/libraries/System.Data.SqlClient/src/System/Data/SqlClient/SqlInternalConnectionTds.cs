@@ -22,15 +22,15 @@ namespace System.Data.SqlClient
     internal class SessionStateRecord
     {
         internal bool _recoverable;
-        internal UInt32 _version;
-        internal Int32 _dataLength;
+        internal uint _version;
+        internal int _dataLength;
         internal byte[] _data;
     }
 
     internal class SessionData
     {
         internal const int _maxNumberOfSessionStates = 256;
-        internal UInt32 _tdsVersion;
+        internal uint _tdsVersion;
         internal bool _encrypted;
 
         internal string _database;
@@ -171,7 +171,7 @@ namespace System.Data.SqlClient
         private int _asyncCommandCount; // number of async Begins minus number of async Ends.
 
         // FOR SSE
-        private string _instanceName = String.Empty;
+        private string _instanceName = string.Empty;
 
         // FOR NOTIFICATIONS
         private DbConnectionPoolIdentity _identity; // Used to lookup info for notification matching Start().
@@ -545,7 +545,7 @@ namespace System.Data.SqlClient
         {
             get
             {
-                return (String.Format((IFormatProvider)null, "{0:00}.{1:00}.{2:0000}", _loginAck.majorVersion,
+                return (string.Format((IFormatProvider)null, "{0:00}.{1:00}.{2:0000}", _loginAck.majorVersion,
                        (short)_loginAck.minorVersion, _loginAck.buildNum));
             }
         }
@@ -837,7 +837,7 @@ namespace System.Data.SqlClient
                 }
             }
 
-            string transactionName = (null == name) ? String.Empty : name;
+            string transactionName = (null == name) ? string.Empty : name;
 
             ExecuteTransactionYukon(transactionRequest, transactionName, iso, internalTransaction, isDelegateControlRequest);
         }
@@ -1046,7 +1046,7 @@ namespace System.Data.SqlClient
                 _recoverySessionData = null;
             }
 
-            Debug.Assert(SniContext.Snix_Login == Parser._physicalStateObj.SniContext, String.Format((IFormatProvider)null, "SniContext should be Snix_Login; actual Value: {0}", Parser._physicalStateObj.SniContext));
+            Debug.Assert(SniContext.Snix_Login == Parser._physicalStateObj.SniContext, string.Format((IFormatProvider)null, "SniContext should be Snix_Login; actual Value: {0}", Parser._physicalStateObj.SniContext));
             _parser._physicalStateObj.SniContext = SniContext.Snix_EnableMars;
             _parser.EnableMars();
 
@@ -1082,7 +1082,7 @@ namespace System.Data.SqlClient
             if (!timeout.IsInfinite)
             {
                 long t = timeout.MillisecondsRemaining / 1000;
-                if ((long)Int32.MaxValue > t)
+                if ((long)int.MaxValue > t)
                 {
                     timeoutInSeconds = (int)t;
                 }
@@ -1297,7 +1297,7 @@ namespace System.Data.SqlClient
                     _parser.Disconnect();
 
                 _parser = new TdsParser(ConnectionOptions.MARS, ConnectionOptions.Asynchronous);
-                Debug.Assert(SniContext.Undefined == Parser._physicalStateObj.SniContext, String.Format((IFormatProvider)null, "SniContext should be Undefined; actual Value: {0}", Parser._physicalStateObj.SniContext));
+                Debug.Assert(SniContext.Undefined == Parser._physicalStateObj.SniContext, string.Format((IFormatProvider)null, "SniContext should be Undefined; actual Value: {0}", Parser._physicalStateObj.SniContext));
 
                 try
                 {
@@ -1335,7 +1335,7 @@ namespace System.Data.SqlClient
                         _currentLanguage = _originalLanguage = ConnectionOptions.CurrentLanguage;
                         CurrentDatabase = _originalDatabase = ConnectionOptions.InitialCatalog;
                         _currentFailoverPartner = null;
-                        _instanceName = String.Empty;
+                        _instanceName = string.Empty;
 
                         routingAttempts++;
 
@@ -1488,7 +1488,7 @@ namespace System.Data.SqlClient
                     _parser.Disconnect();
 
                 _parser = new TdsParser(ConnectionOptions.MARS, ConnectionOptions.Asynchronous);
-                Debug.Assert(SniContext.Undefined == Parser._physicalStateObj.SniContext, String.Format((IFormatProvider)null, "SniContext should be Undefined; actual Value: {0}", Parser._physicalStateObj.SniContext));
+                Debug.Assert(SniContext.Undefined == Parser._physicalStateObj.SniContext, string.Format((IFormatProvider)null, "SniContext should be Undefined; actual Value: {0}", Parser._physicalStateObj.SniContext));
 
                 ServerInfo currentServerInfo;
                 if (useFailoverHost)
@@ -1750,7 +1750,7 @@ namespace System.Data.SqlClient
                     break;
 
                 case TdsEnums.ENV_PACKETSIZE:
-                    _currentPacketSize = Int32.Parse(rec.newValue, CultureInfo.InvariantCulture);
+                    _currentPacketSize = int.Parse(rec.newValue, CultureInfo.InvariantCulture);
                     break;
 
                 case TdsEnums.ENV_COLLATION:

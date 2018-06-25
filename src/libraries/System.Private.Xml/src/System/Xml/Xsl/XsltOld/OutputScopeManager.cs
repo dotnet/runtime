@@ -182,7 +182,7 @@ namespace System.Xml.Xsl.XsltOld
 
             do
             {
-                prefix = String.Format(CultureInfo.InvariantCulture, format, _prefixIndex++);
+                prefix = string.Format(CultureInfo.InvariantCulture, format, _prefixIndex++);
             } while (_nameTable.Get(prefix) != null);
 
             return _nameTable.Add(prefix);

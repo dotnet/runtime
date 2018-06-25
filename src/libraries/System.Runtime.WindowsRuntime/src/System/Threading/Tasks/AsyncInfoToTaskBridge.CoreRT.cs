@@ -74,7 +74,7 @@ namespace System.Threading.Tasks
 
                 if (!base.Task.IsFaulted)
                 {
-                    Debug.Assert(false, String.Format("Expected base task to already be faulted but found it in state {0}", base.Task.Status));
+                    Debug.Assert(false, string.Format("Expected base task to already be faulted but found it in state {0}", base.Task.Status));
                     base.TrySetException(ex);
                 }
             }

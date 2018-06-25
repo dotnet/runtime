@@ -24,7 +24,7 @@ namespace System.Data.SqlClient
                                     string serverVersionNormalized) :
                 base(XMLStream, serverVersion, serverVersionNormalized) { }
 
-        private void addUDTsToDataTypesTable(DataTable dataTypesTable, SqlConnection connection, String ServerVersion)
+        private void addUDTsToDataTypesTable(DataTable dataTypesTable, SqlConnection connection, string ServerVersion)
         {
             const string sqlCommand =
                 "select " +
@@ -147,10 +147,10 @@ namespace System.Data.SqlClient
                             nameString.Append(", PublicKeyToken=");
 
                             StringBuilder resultString = new StringBuilder();
-                            Byte[] byteArrayValue = (Byte[])values[publicKeyIndex];
+                            byte[] byteArrayValue = (byte[])values[publicKeyIndex];
                             foreach (byte b in byteArrayValue)
                             {
-                                resultString.Append(String.Format((IFormatProvider)null, "{0,-2:x2}", b));
+                                resultString.Append(string.Format((IFormatProvider)null, "{0,-2:x2}", b));
                             }
                             nameString.Append(resultString.ToString());
                         }
@@ -164,7 +164,7 @@ namespace System.Data.SqlClient
             } // end using
         }
 
-        private void AddTVPsToDataTypesTable(DataTable dataTypesTable, SqlConnection connection, String ServerVersion)
+        private void AddTVPsToDataTypesTable(DataTable dataTypesTable, SqlConnection connection, string ServerVersion)
         {
 
             const string sqlCommand =
@@ -260,7 +260,7 @@ namespace System.Data.SqlClient
             return dataTypesTable;
         }
 
-        protected override DataTable PrepareCollection(String collectionName, String[] restrictions, DbConnection connection)
+        protected override DataTable PrepareCollection(string collectionName, string[] restrictions, DbConnection connection)
         {
             SqlConnection sqlConnection = (SqlConnection)connection;
             DataTable resultTable = null;

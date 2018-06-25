@@ -645,7 +645,7 @@ namespace System.Runtime.Serialization
                                     {
                                         typeNs = schema.TargetNamespace;
                                         if (typeNs == null)
-                                            typeNs = String.Empty;
+                                            typeNs = string.Empty;
                                         break;
                                     }
                                 }
@@ -696,7 +696,7 @@ namespace System.Runtime.Serialization
             anyType.Particle = new XmlSchemaSequence();
             XmlSchemaAny any = new XmlSchemaAny();
             any.MinOccurs = 0;
-            any.MaxOccurs = Decimal.MaxValue;
+            any.MaxOccurs = decimal.MaxValue;
             any.ProcessContents = XmlSchemaContentProcessing.Lax;
             ((XmlSchemaSequence)anyType.Particle).Items.Add(any);
             anyType.AnyAttribute = new XmlSchemaAnyAttribute();
@@ -762,7 +762,7 @@ namespace System.Runtime.Serialization
             type.Name = localName;
             type.Particle = new XmlSchemaSequence();
             XmlSchemaAny any = new XmlSchemaAny();
-            any.Namespace = (datasetSchema.TargetNamespace == null) ? String.Empty : datasetSchema.TargetNamespace;
+            any.Namespace = (datasetSchema.TargetNamespace == null) ? string.Empty : datasetSchema.TargetNamespace;
             ((XmlSchemaSequence)type.Particle).Items.Add(any);
             schemas.Add(datasetSchema);
             XmlSchema schema = SchemaHelper.GetSchema(ns, schemas);

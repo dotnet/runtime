@@ -16,10 +16,10 @@ namespace System.Runtime.Caching
     internal sealed class MemoryCacheStore : IDisposable
     {
         private const int INSERT_BLOCK_WAIT = 10000;
-        private const int MAX_COUNT = Int32.MaxValue / 2;
+        private const int MAX_COUNT = int.MaxValue / 2;
 
         private Hashtable _entries;
-        private Object _entriesLock;
+        private object _entriesLock;
         private CacheExpires _expires;
         private CacheUsage _usage;
         private int _disposed;
@@ -33,7 +33,7 @@ namespace System.Runtime.Caching
             _cache = cache;
             _perfCounters = perfCounters;
             _entries = new Hashtable(new MemoryCacheEqualityComparer());
-            _entriesLock = new Object();
+            _entriesLock = new object();
             _expires = new CacheExpires(this);
             _usage = new CacheUsage(this);
             InitDisposableMembers();
@@ -307,7 +307,7 @@ namespace System.Runtime.Caching
                     // get current entry
                     entry = _entries[key] as MemoryCacheEntry;
                     // remove if it matches the entry to be removed (but always remove if entryToRemove is null)
-                    if (entryToRemove == null || Object.ReferenceEquals(entry, entryToRemove))
+                    if (entryToRemove == null || object.ReferenceEquals(entry, entryToRemove))
                     {
                         if (entry != null)
                         {
