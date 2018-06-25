@@ -296,7 +296,7 @@ namespace System.Data.SqlClient
                 ValidateValueLength(_workstationId, TdsEnums.MAXLEN_HOSTNAME, KEY.Workstation_Id);
             }
 
-            if (!String.Equals(DEFAULT.FailoverPartner, _failoverPartner, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(DEFAULT.FailoverPartner, _failoverPartner, StringComparison.OrdinalIgnoreCase))
             {
                 // fail-over partner is set
 
@@ -305,7 +305,7 @@ namespace System.Data.SqlClient
                     throw SQL.MultiSubnetFailoverWithFailoverPartner(serverProvidedFailoverPartner: false, internalConnection: null);
                 }
 
-                if (String.Equals(DEFAULT.Initial_Catalog, _initialCatalog, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(DEFAULT.Initial_Catalog, _initialCatalog, StringComparison.OrdinalIgnoreCase))
                 {
                     throw ADP.MissingConnectionOptionValue(KEY.FailoverPartner, KEY.Initial_Catalog);
                 }
@@ -376,7 +376,7 @@ namespace System.Data.SqlClient
                 throw ADP.InvalidConnectionOptionValue(KEY.TransactionBinding);
             }
 
-            if (_applicationIntent == ApplicationIntent.ReadOnly && !String.IsNullOrEmpty(_failoverPartner))
+            if (_applicationIntent == ApplicationIntent.ReadOnly && !string.IsNullOrEmpty(_failoverPartner))
                 throw SQL.ROR_FailoverNotSupportedConnString();
 
             if ((_connectRetryCount < 0) || (_connectRetryCount > 255))

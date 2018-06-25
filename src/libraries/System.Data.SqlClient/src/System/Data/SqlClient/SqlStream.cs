@@ -122,7 +122,7 @@ namespace System.Data.SqlClient
             }
             if ((offset < 0) || (count < 0))
             {
-                throw ADP.ArgumentOutOfRange(String.Empty, (offset < 0 ? nameof(offset) : nameof(count)));
+                throw ADP.ArgumentOutOfRange(string.Empty, (offset < 0 ? nameof(offset) : nameof(count)));
             }
             if (buffer.Length - offset < count)
             {
@@ -423,7 +423,7 @@ namespace System.Data.SqlClient
 
             if ((offset < 0) || (count < 0))
             {
-                throw ADP.ArgumentOutOfRange(String.Empty, (offset < 0 ? nameof(offset) : nameof(count)));
+                throw ADP.ArgumentOutOfRange(string.Empty, (offset < 0 ? nameof(offset) : nameof(count)));
             }
 
             if (buffer.Length - offset < count)

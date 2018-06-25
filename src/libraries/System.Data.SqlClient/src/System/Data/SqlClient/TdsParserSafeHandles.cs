@@ -21,7 +21,7 @@ namespace System.Data.SqlClient
         internal readonly SNINativeMethodWrapper.SqlAsyncCallbackDelegate ReadAsyncCallbackDispatcher = new SNINativeMethodWrapper.SqlAsyncCallbackDelegate(ReadDispatcher);
         internal readonly SNINativeMethodWrapper.SqlAsyncCallbackDelegate WriteAsyncCallbackDispatcher = new SNINativeMethodWrapper.SqlAsyncCallbackDelegate(WriteDispatcher);
 
-        private readonly UInt32 _sniStatus = TdsEnums.SNI_UNINITIALIZED;
+        private readonly uint _sniStatus = TdsEnums.SNI_UNINITIALIZED;
         private readonly EncryptionOptions _encryptionOption;
 
         private SNILoadHandle() : base(IntPtr.Zero, true)
@@ -34,7 +34,7 @@ namespace System.Data.SqlClient
             {
                 _sniStatus = SNINativeMethodWrapper.SNIInitialize();
 
-                UInt32 value = 0;
+                uint value = 0;
 
                 // VSDevDiv 479597: If initialize fails, don't call QueryInfo.
                 if (TdsEnums.SNI_SUCCESS == _sniStatus)
@@ -72,7 +72,7 @@ namespace System.Data.SqlClient
             return true;
         }
 
-        public UInt32 Status
+        public uint Status
         {
             get
             {
@@ -88,7 +88,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        private static void ReadDispatcher(IntPtr key, IntPtr packet, UInt32 error)
+        private static void ReadDispatcher(IntPtr key, IntPtr packet, uint error)
         {
             // This is the app-domain dispatcher for all async read callbacks, It 
             // simply gets the state object from the key that it is passed, and 
@@ -109,7 +109,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        private static void WriteDispatcher(IntPtr key, IntPtr packet, UInt32 error)
+        private static void WriteDispatcher(IntPtr key, IntPtr packet, uint error)
         {
             // This is the app-domain dispatcher for all async write callbacks, It 
             // simply gets the state object from the key that it is passed, and 
@@ -133,7 +133,7 @@ namespace System.Data.SqlClient
 
     internal sealed class SNIHandle : SafeHandle
     {
-        private readonly UInt32 _status = TdsEnums.SNI_UNINITIALIZED;
+        private readonly uint _status = TdsEnums.SNI_UNINITIALIZED;
         private readonly bool _fSync = false;
 
         // creates a physical connection
@@ -197,7 +197,7 @@ namespace System.Data.SqlClient
             return true;
         }
 
-        internal UInt32 Status
+        internal uint Status
         {
             get
             {

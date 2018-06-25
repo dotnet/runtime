@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -69,7 +69,7 @@ namespace System.Runtime.Serialization
 
         internal static XmlSchema GetSchema(string ns, XmlSchemaSet schemas)
         {
-            if (ns == null) { ns = String.Empty; }
+            if (ns == null) { ns = string.Empty; }
 
             ICollection currentSchemas = schemas.Schemas();
             foreach (XmlSchema schema in currentSchemas)

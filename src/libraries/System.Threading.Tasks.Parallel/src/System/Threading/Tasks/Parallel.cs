@@ -119,7 +119,7 @@ namespace System.Threading.Tasks
             {
                 int rval = MaxDegreeOfParallelism;
                 int schedulerMax = EffectiveTaskScheduler.MaximumConcurrencyLevel;
-                if ((schedulerMax > 0) && (schedulerMax != Int32.MaxValue))
+                if ((schedulerMax > 0) && (schedulerMax != int.MaxValue))
                 {
                     rval = (rval == -1) ? schedulerMax : Math.Min(schedulerMax, rval);
                 }
@@ -972,10 +972,10 @@ namespace System.Threading.Tasks
         }
 
 
-        private static bool CheckTimeoutReached(Int32 timeoutOccursAt)
+        private static bool CheckTimeoutReached(int timeoutOccursAt)
         {
             // Note that both, Environment.TickCount and timeoutOccursAt are ints and can overflow and become negative.            
-            Int32 currentMillis = Environment.TickCount;
+            int currentMillis = Environment.TickCount;
 
             if (currentMillis < timeoutOccursAt)
                 return false;
@@ -987,7 +987,7 @@ namespace System.Threading.Tasks
         }
 
 
-        private static Int32 ComputeTimeoutPoint(Int32 timeoutLength)
+        private static int ComputeTimeoutPoint(int timeoutLength)
         {
             // Environment.TickCount is an int that cycles. We intentionally let the point in time at which the
             // timeout occurs overflow. It will still stay ahead of Environment.TickCount for the comparisons made
@@ -1138,7 +1138,7 @@ namespace System.Threading.Tasks
                                 }
 
                                 // initialize a loop timer which will help us decide whether we should exit early
-                                Int32 loopTimeout = ComputeTimeoutPoint(timeout);
+                                int loopTimeout = ComputeTimeoutPoint(timeout);
 
                                 // Now perform the loop itself.
                                 do
@@ -1403,7 +1403,7 @@ namespace System.Threading.Tasks
                                 }
 
                                 // initialize a loop timer which will help us decide whether we should exit early
-                                Int32 loopTimeout = ComputeTimeoutPoint(timeout);
+                                int loopTimeout = ComputeTimeoutPoint(timeout);
 
                                 // Now perform the loop itself.
                                 do
@@ -3191,7 +3191,7 @@ namespace System.Threading.Tasks
                                 }
 
                                 // initialize a loop timer which will help us decide whether we should exit early
-                                Int32 loopTimeout = ComputeTimeoutPoint(timeout);
+                                int loopTimeout = ComputeTimeoutPoint(timeout);
 
                                 if (orderedSource != null)  // Use this path for OrderablePartitioner:
                                 {
@@ -3385,7 +3385,7 @@ namespace System.Threading.Tasks
 
             // Check all exceptions:
             Exception first = null;
-            foreach (Object exObj in exceptions)
+            foreach (object exObj in exceptions)
             {
                 Debug.Assert(exObj is Exception);
                 Exception ex = (Exception)exObj;

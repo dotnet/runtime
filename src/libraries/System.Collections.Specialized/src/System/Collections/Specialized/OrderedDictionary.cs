@@ -29,7 +29,7 @@ namespace System.Collections.Specialized
         private int _initialCapacity;
         private IEqualityComparer _comparer;
         private bool _readOnly;
-        private Object _syncRoot;
+        private object _syncRoot;
         private SerializationInfo _siInfo; //A temporary variable which we need during deserialization.
 
         private const string KeyComparerName = "KeyComparer"; // Do not rename (binary serialization)
@@ -162,7 +162,7 @@ namespace System.Collections.Specialized
             {
                 if (_syncRoot == null)
                 {
-                    System.Threading.Interlocked.CompareExchange(ref _syncRoot, new Object(), null);
+                    System.Threading.Interlocked.CompareExchange(ref _syncRoot, new object(), null);
                 }
                 return _syncRoot;
             }

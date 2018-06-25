@@ -439,11 +439,11 @@ namespace System.Diagnostics
         //
         // This is from GetProcessShortName in NT code base. 
         // Check base\screg\winreg\perfdlls\process\perfsprc.c for details.
-        internal static string GetProcessShortName(String name)
+        internal static string GetProcessShortName(string name)
         {
-            if (String.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(name))
             {
-                return String.Empty;
+                return string.Empty;
             }
 
             int slash = -1;

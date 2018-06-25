@@ -703,7 +703,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     foreach (string supportedCapability in rootDSE.Properties[PropertyManager.SupportedCapabilities])
                     {
-                        if (String.Equals(supportedCapability, SupportedCapability.ADOid, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(supportedCapability, SupportedCapability.ADOid, StringComparison.OrdinalIgnoreCase))
                         {
                             result = true;
                             break;
@@ -714,7 +714,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     foreach (string supportedCapability in rootDSE.Properties[PropertyManager.SupportedCapabilities])
                     {
-                        if (String.Equals(supportedCapability, SupportedCapability.ADAMOid, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(supportedCapability, SupportedCapability.ADAMOid, StringComparison.OrdinalIgnoreCase))
                         {
                             result = true;
                             break;
@@ -725,8 +725,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     foreach (string supportedCapability in rootDSE.Properties[PropertyManager.SupportedCapabilities])
                     {
-                        if (String.Equals(supportedCapability, SupportedCapability.ADAMOid, StringComparison.OrdinalIgnoreCase) ||
-                            String.Equals(supportedCapability, SupportedCapability.ADOid, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(supportedCapability, SupportedCapability.ADAMOid, StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(supportedCapability, SupportedCapability.ADOid, StringComparison.OrdinalIgnoreCase))
                         {
                             result = true;
                             break;
@@ -798,9 +798,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
             string transportName = component[0].Value;
 
-            if (String.Equals(transportName, "IP", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(transportName, "IP", StringComparison.OrdinalIgnoreCase))
                 return ActiveDirectoryTransportType.Rpc;
-            else if (String.Equals(transportName, "SMTP", StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(transportName, "SMTP", StringComparison.OrdinalIgnoreCase))
                 return ActiveDirectoryTransportType.Smtp;
             else
             {
@@ -1539,7 +1539,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                             // multivalues attribute we can stop here.
                                             foundPartitionEntry = true;
 
-                                            if (String.Compare(dnString, 10, "0", 0, 1, StringComparison.OrdinalIgnoreCase) == 0)
+                                            if (string.Compare(dnString, 10, "0", 0, 1, StringComparison.OrdinalIgnoreCase) == 0)
                                             {
                                                 // this server has the partition fully instantiated
                                                 ntdsaNames.Add(ntdsaName);
@@ -1647,7 +1647,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         // find the property name with the range info
                                         foreach (string property in res.Properties.PropertyNames)
                                         {
-                                            if (String.Compare(property, 0, PropertyManager.MsDSHasInstantiatedNCs, 0, PropertyManager.MsDSHasInstantiatedNCs.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                                            if (string.Compare(property, 0, PropertyManager.MsDSHasInstantiatedNCs, 0, PropertyManager.MsDSHasInstantiatedNCs.Length, StringComparison.OrdinalIgnoreCase) == 0)
                                             {
                                                 propertyName = property;
                                                 break;
@@ -1676,7 +1676,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         {
                                             foundPartitionEntry = true;
 
-                                            if (String.Compare(dnString, 10, "0", 0, 1, StringComparison.OrdinalIgnoreCase) == 0)
+                                            if (string.Compare(dnString, 10, "0", 0, 1, StringComparison.OrdinalIgnoreCase) == 0)
                                             {
                                                 ntdsaNames.Add(ntdsaName);
                                                 if (isADAM)
@@ -2232,7 +2232,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static bool IsMachineDC(String computerName)
+        internal static bool IsMachineDC(string computerName)
         {
             IntPtr dsRoleInfoPtr = IntPtr.Zero;
             int err = -1;
@@ -2247,7 +2247,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (err != 0)
                 {
                     throw new InvalidOperationException(
-                                    String.Format(
+                                    string.Format(
                                             CultureInfo.CurrentCulture,
                                             SR.UnableToRetrieveDomainInfo,
                                             err));

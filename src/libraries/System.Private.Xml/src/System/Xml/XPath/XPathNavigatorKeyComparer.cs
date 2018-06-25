@@ -9,7 +9,7 @@ namespace System.Xml.XPath
 {
     internal class XPathNavigatorKeyComparer : IEqualityComparer
     {
-        bool IEqualityComparer.Equals(Object obj1, Object obj2)
+        bool IEqualityComparer.Equals(object obj1, object obj2)
         {
             XPathNavigator nav1 = obj1 as XPathNavigator;
             XPathNavigator nav2 = obj2 as XPathNavigator;
@@ -21,7 +21,7 @@ namespace System.Xml.XPath
             return false;
         }
 
-        int IEqualityComparer.GetHashCode(Object obj)
+        int IEqualityComparer.GetHashCode(object obj)
         {
             int hashCode;
             XPathNavigator nav;
@@ -37,7 +37,7 @@ namespace System.Xml.XPath
             }
             else if (null != (nav = obj as XPathNavigator))
             {
-                Object underlyingObject = nav.UnderlyingObject;
+                object underlyingObject = nav.UnderlyingObject;
                 if (underlyingObject != null)
                 {
                     hashCode = underlyingObject.GetHashCode();

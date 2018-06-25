@@ -10,11 +10,11 @@ namespace System.Xml
     // Contains a notation declared in the DTD or schema.
     public class XmlNotation : XmlNode
     {
-        private String _publicId;
-        private String _systemId;
-        private String _name;
+        private string _publicId;
+        private string _systemId;
+        private string _name;
 
-        internal XmlNotation(String name, String publicId, String systemId, XmlDocument doc) : base(doc)
+        internal XmlNotation(string name, string publicId, string systemId, XmlDocument doc) : base(doc)
         {
             _name = doc.NameTable.Add(name);
             _publicId = publicId;
@@ -59,27 +59,27 @@ namespace System.Xml
         }
 
         // Gets the value of the public identifier on the notation declaration.
-        public String PublicId
+        public string PublicId
         {
             get { return _publicId; }
         }
 
         // Gets the value of
         // the system identifier on the notation declaration.
-        public String SystemId
+        public string SystemId
         {
             get { return _systemId; }
         }
 
         // Without override these two functions, we can't guarantee that WriteTo()/WriteContent() functions will never be called
-        public override String OuterXml
+        public override string OuterXml
         {
-            get { return String.Empty; }
+            get { return string.Empty; }
         }
 
-        public override String InnerXml
+        public override string InnerXml
         {
-            get { return String.Empty; }
+            get { return string.Empty; }
             set { throw new InvalidOperationException(SR.Xdom_Set_InnerXml); }
         }
 

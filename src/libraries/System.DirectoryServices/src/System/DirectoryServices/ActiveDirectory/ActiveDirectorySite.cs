@@ -1208,9 +1208,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     string linkName = (string)PropertyManager.GetSearchResultPropertyValue(result, PropertyManager.Cn);
                     string transportName = (string)Utils.GetDNComponents(dn)[1].Value;
                     ActiveDirectoryTransportType transportType;
-                    if (String.Equals(transportName, "IP", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(transportName, "IP", StringComparison.OrdinalIgnoreCase))
                         transportType = ActiveDirectoryTransportType.Rpc;
-                    else if (String.Equals(transportName, "SMTP", StringComparison.OrdinalIgnoreCase))
+                    else if (string.Equals(transportName, "SMTP", StringComparison.OrdinalIgnoreCase))
                         transportType = ActiveDirectoryTransportType.Smtp;
                     else
                     {
@@ -1275,9 +1275,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     string cn = (string)PropertyManager.GetSearchResultPropertyValue(result, PropertyManager.Cn);
                     string transport = Utils.GetDNComponents((string)PropertyManager.GetSearchResultPropertyValue(result, PropertyManager.DistinguishedName))[1].Value;
                     ActiveDirectorySiteLink link = null;
-                    if (String.Equals(transport, "IP", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(transport, "IP", StringComparison.OrdinalIgnoreCase))
                         link = new ActiveDirectorySiteLink(context, cn, ActiveDirectoryTransportType.Rpc, true, connectionEntry);
-                    else if (String.Equals(transport, "SMTP", StringComparison.OrdinalIgnoreCase))
+                    else if (string.Equals(transport, "SMTP", StringComparison.OrdinalIgnoreCase))
                         link = new ActiveDirectorySiteLink(context, cn, ActiveDirectoryTransportType.Smtp, true, connectionEntry);
                     else
                     {

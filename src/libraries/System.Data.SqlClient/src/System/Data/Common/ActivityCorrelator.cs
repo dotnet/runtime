@@ -19,7 +19,7 @@ namespace System.Data.Common
         internal class ActivityId
         {
             internal Guid Id { get; private set; }
-            internal UInt32 Sequence { get; private set; }
+            internal uint Sequence { get; private set; }
 
             internal ActivityId()
             {

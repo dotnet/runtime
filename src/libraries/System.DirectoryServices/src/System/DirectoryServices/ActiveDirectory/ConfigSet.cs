@@ -475,7 +475,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                         foreach (string bindingInfo in res.Properties[PropertyManager.ServiceBindingInformation])
                         {
-                            if ((bindingInfo.Length > prefix.Length) && (String.Equals(bindingInfo.Substring(0, prefix.Length), prefix, StringComparison.OrdinalIgnoreCase)))
+                            if ((bindingInfo.Length > prefix.Length) && (string.Equals(bindingInfo.Substring(0, prefix.Length), prefix, StringComparison.OrdinalIgnoreCase)))
                             {
                                 adamInstanceNames.Add(bindingInfo.Substring(prefix.Length));
                             }

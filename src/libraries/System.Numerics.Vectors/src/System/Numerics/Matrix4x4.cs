@@ -2194,7 +2194,7 @@ namespace System.Numerics
         {
             CultureInfo ci = CultureInfo.CurrentCulture;
 
-            return String.Format(ci, "{{ {{M11:{0} M12:{1} M13:{2} M14:{3}}} {{M21:{4} M22:{5} M23:{6} M24:{7}}} {{M31:{8} M32:{9} M33:{10} M34:{11}}} {{M41:{12} M42:{13} M43:{14} M44:{15}}} }}",
+            return string.Format(ci, "{{ {{M11:{0} M12:{1} M13:{2} M14:{3}}} {{M21:{4} M22:{5} M23:{6} M24:{7}}} {{M31:{8} M32:{9} M33:{10} M34:{11}}} {{M41:{12} M42:{13} M43:{14} M44:{15}}} }}",
                                  M11.ToString(ci), M12.ToString(ci), M13.ToString(ci), M14.ToString(ci),
                                  M21.ToString(ci), M22.ToString(ci), M23.ToString(ci), M24.ToString(ci),
                                  M31.ToString(ci), M32.ToString(ci), M33.ToString(ci), M34.ToString(ci),

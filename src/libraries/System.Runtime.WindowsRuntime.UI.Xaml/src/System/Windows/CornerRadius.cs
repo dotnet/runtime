@@ -48,16 +48,16 @@ namespace Windows.UI.Xaml
 
         private static void Validate(double topLeft, double topRight, double bottomRight, double bottomLeft)
         {
-            if (topLeft < 0.0 || Double.IsNaN(topLeft))
+            if (topLeft < 0.0 || double.IsNaN(topLeft))
                 throw new ArgumentException(SR.Format(SR.DirectUI_CornerRadius_InvalidMember, "TopLeft"));
 
-            if (topRight < 0.0 || Double.IsNaN(topRight))
+            if (topRight < 0.0 || double.IsNaN(topRight))
                 throw new ArgumentException(SR.Format(SR.DirectUI_CornerRadius_InvalidMember, "TopRight"));
 
-            if (bottomRight < 0.0 || Double.IsNaN(bottomRight))
+            if (bottomRight < 0.0 || double.IsNaN(bottomRight))
                 throw new ArgumentException(SR.Format(SR.DirectUI_CornerRadius_InvalidMember, "BottomRight"));
 
-            if (bottomLeft < 0.0 || Double.IsNaN(bottomLeft))
+            if (bottomLeft < 0.0 || double.IsNaN(bottomLeft))
                 throw new ArgumentException(SR.Format(SR.DirectUI_CornerRadius_InvalidMember, "BottomLeft"));
         }
 
@@ -88,7 +88,7 @@ namespace Windows.UI.Xaml
 
         internal string InternalToString(double l, CultureInfo cultureInfo)
         {
-            if (Double.IsNaN(l)) return "Auto";
+            if (double.IsNaN(l)) return "Auto";
             return Convert.ToString(l, cultureInfo);
         }
 

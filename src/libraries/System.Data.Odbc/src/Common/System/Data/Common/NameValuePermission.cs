@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -272,7 +272,7 @@ namespace System.Data.Common
                 for (int i = 0; i < valuetree.Length; ++i)
                 {
                     NameValuePermission permitValue = valuetree[i];
-                    if (String.Equals(keyInQuestion, permitValue._value, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(keyInQuestion, permitValue._value, StringComparison.OrdinalIgnoreCase))
                     {
                         return permitValue;
                     }
