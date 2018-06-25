@@ -65,6 +65,9 @@
     <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.CoreCLR.cs" />
     <Compile Include="System\Threading\WindowsRuntimeSynchronizationContext.cs" />
     <Compile Include="System\WindowsRuntimeSystemExtensions.CoreCLR.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RoGetActivationFactory.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RoGetActivationFactory.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs">
       <Link>Common\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs</Link>
     </Compile>
