@@ -497,6 +497,12 @@ public:
 
 };  // struct DomainLocalModule
 
+#define OFFSETOF__DomainLocalModule__m_pDataBlob_                    (6 * TARGET_POINTER_SIZE)
+#ifdef FEATURE_64BIT_ALIGNMENT
+#define OFFSETOF__DomainLocalModule__NormalDynamicEntry__m_pDataBlob (TARGET_POINTER_SIZE /* m_pGCStatics */ + TARGET_POINTER_SIZE /* m_padding */)
+#else
+#define OFFSETOF__DomainLocalModule__NormalDynamicEntry__m_pDataBlob TARGET_POINTER_SIZE /* m_pGCStatics */
+#endif
 
 typedef DPTR(class DomainLocalBlock) PTR_DomainLocalBlock;
 class DomainLocalBlock

@@ -7719,7 +7719,7 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
     if (bmtProp->fDynamicStatics)
     {
         _ASSERTE(dwNonGCOffset == 0 ||  // no statics at all
-                 dwNonGCOffset == DomainLocalModule::DynamicEntry::GetOffsetOfDataBlob()); // We need space to point to the GC statics
+                 dwNonGCOffset == OFFSETOF__DomainLocalModule__NormalDynamicEntry__m_pDataBlob); // We need space to point to the GC statics
         bmtProp->dwNonGCRegularStaticFieldBytes = dwCumulativeStaticFieldPos;
     }
     else
@@ -7841,7 +7841,7 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
     if (bmtProp->fDynamicStatics)
     {
         _ASSERTE(dwNonGCOffset == 0 ||  // no thread statics at all
-                 dwNonGCOffset == ThreadLocalModule::DynamicEntry::GetOffsetOfDataBlob()); // We need space to point to the GC statics
+                 dwNonGCOffset == OFFSETOF__ThreadLocalModule__DynamicEntry__m_pDataBlob); // We need space to point to the GC statics
         bmtProp->dwNonGCThreadStaticFieldBytes = dwCumulativeStaticFieldPos;
     }
     else
