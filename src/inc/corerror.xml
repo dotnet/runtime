@@ -71,109 +71,9 @@
 	<Comment> STATUS: Data value was truncated. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x131109">
-	<SymbolicName>CLDB_S_NULL</SymbolicName>
-	<Comment> NULL data value. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131125">
-	<SymbolicName>CLDB_S_INDEX_TABLESCANREQUIRED</SymbolicName>
-	<Comment> Table scan required to run query. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x13116c">
-	<SymbolicName>TLBX_I_TYPEINFO_IMPORTED</SymbolicName>
-	<Comment> Typelib import: progress report. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x13116f">
-	<SymbolicName>TLBX_I_USEIUNKNOWN</SymbolicName>
-	<Comment> Typelib export: substituted IUnknown for type. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131170">
-	<SymbolicName>TLBX_I_UNCONVERTABLE_ARGS</SymbolicName>
-	<Comment> Typelib import: signature can't be converted (eg, struct**) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131171">
-	<SymbolicName>TLBX_I_UNCONVERTABLE_FIELD</SymbolicName>
-	<Comment> Typelib import: signature can't be converted (eg, struct**) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131173">
-	<SymbolicName>TLBX_W_WARNING_MESSAGE</SymbolicName>
-	<Comment> Typelib export: Warning message wrapper. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131179">
-	<SymbolicName>TLBX_I_TYPE_EXPORTED</SymbolicName>
-	<Comment> Typelib export: type exported </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x13117a">
-	<SymbolicName>TLBX_I_DUPLICATE_DISPID</SymbolicName>
-	<Comment> Typelib export: duplicate dispid -- auto corrected. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x13117c">
-	<SymbolicName>TLBX_I_REF_TYPE_AS_STRUCT</SymbolicName>
-	<Comment> Typelib export: reference type had layout, exported as struct. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x13117f">
-	<SymbolicName>TLBX_I_GENERIC_TYPE</SymbolicName>
-	<Comment> TypeLib export: generic type definition </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131184">
-	<SymbolicName>TLBX_W_NON_INTEGRAL_CA_TYPE</SymbolicName>
-	<Comment> TypeLib import: Ignoring IDL custom attribute -- does not have an integral value. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131185">
-	<SymbolicName>TLBX_W_IENUM_CA_ON_IUNK</SymbolicName>
-	<Comment> TypeLib import: Ignoring IDL custom attribute -- using IEnum CA on an IUnknown derived interface. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131189">
-	<SymbolicName>META_S_PARAM_MISMATCH</SymbolicName>
-	<Comment> Merge: Parameter information mismatched. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x131197">
 	<SymbolicName>META_S_DUPLICATE</SymbolicName>
 	<Comment> Attempt to define an object that already exists in valid scenerios. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x1311ac">
-	<SymbolicName>TLBX_S_REFERENCED_TYPELIB</SymbolicName>
-	<Comment> TypeLib import: reference to an external typelib. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x1311b3">
-	<SymbolicName>TLBX_S_NOSTDINTERFACE</SymbolicName>
-	<Comment> Typelib export: Found an interface marked as IID_IDispatch or IID_IUnknown. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x1311b4">
-	<SymbolicName>TLBX_S_DUPLICATE_DISPID</SymbolicName>
-	<Comment> Typelib export: duplicate dispid found; ignored. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x1311d5">
-	<SymbolicName>TLBX_W_ENUM_VALUE_TOOBIG</SymbolicName>
-	<Comment> Typelib export: The enum value is not legal for a typelib. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x1311d9">
-	<SymbolicName>TLBX_W_EXPORTING_AUTO_LAYOUT</SymbolicName>
-	<Comment> TypeLib export: Exporting an auto-layout type. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x1311db">
-	<SymbolicName>TLBX_W_DEFAULT_INTF_NOT_VISIBLE</SymbolicName>
-	<Comment> TypeLib export: ComDefaultInterface is not COMVisible. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x1311de">
@@ -191,21 +91,6 @@
 	<Comment> TypeLib export: type deriving from a generic type. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x131200">
-	<SymbolicName>VLDTR_S_WRN</SymbolicName>
-	<Comment> Warnings found in the validator. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131201">
-	<SymbolicName>VLDTR_S_ERR</SymbolicName>
-	<Comment> Errors found in the validator. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x131202">
-	<SymbolicName>VLDTR_S_WRNERR</SymbolicName>
-	<Comment> Warnings and errors found in the validator. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x13130b">
 	<SymbolicName>CORDBG_S_BAD_START_SEQUENCE_POINT</SymbolicName>
 	<Comment> Attempt to SetIP not at a sequence point sequence point. </Comment>
@@ -214,11 +99,6 @@
 <HRESULT NumericValue="0x13130c">
 	<SymbolicName>CORDBG_S_BAD_END_SEQUENCE_POINT</SymbolicName>
 	<Comment> Attempt to SetIP when not going to a sequence point. If both this and CORDBG_E_BAD_START_SEQUENCE_POINT are true, only CORDBG_E_BAD_START_SEQUENCE_POINT will be reported.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x13130d">
-	<SymbolicName>CORDBG_S_INSUFFICIENT_INFO_FOR_SET_IP</SymbolicName>
-	<Comment> SetIP is possible, but the debugger doesn't  have enough info to fix variable locations, GC refs, or anything else. Use at your own risk. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x131316">
@@ -247,34 +127,10 @@
 	<Comment> Not all bits specified were successfully applied </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131000">
-	<SymbolicName>CEE_E_ENTRYPOINT</SymbolicName>
-	<Message>"Invalid entrypoint information."</Message>
-	<Comment> The entry point info is invalid. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131001">
 	<SymbolicName>CEE_E_CVTRES_NOT_FOUND</SymbolicName>
 	<Message>"cvtres.exe not found."</Message>
 	<Comment> cannot find cvtres.exe </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131010">
-	<SymbolicName>MSEE_E_LOADLIBFAILED</SymbolicName>
-	<Message>"Failed to delayload a library."</Message>
-	<Comment> Failed to delay load library %s (Win32 error: %d). </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131011">
-	<SymbolicName>MSEE_E_GETPROCFAILED</SymbolicName>
-	<Message>"Failed to get dll entrypoint."</Message>
-	<Comment> Failed to get entry point %s (Win32 error: %d). </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131012">
-	<SymbolicName>MSEE_E_MULTCOPIESLOADED</SymbolicName>
-	<Message>"Multiple copies of mscoree.dll have been loaded into the same process."</Message>
-	<Comment> Multiple copies of MSCOREE.dll have been loaded by the same process. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131013">
@@ -301,12 +157,6 @@
 	<Comment> Assembly is being currently being loaded </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131017">
-	<SymbolicName>MSEE_E_CANNOTCREATEAPPDOMAIN</SymbolicName>
-	<Message>"Attempt to create appdomain failed."</Message>
-	<Comment> Attempt to create appdomain failed </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131018">
 	<SymbolicName>COR_E_ASSEMBLYEXPECTED</SymbolicName>
 	<Message>"The module was expected to contain an assembly manifest."</Message>
@@ -317,12 +167,6 @@
 	<SymbolicName>COR_E_FIXUPSINEXE</SymbolicName>
 	<Message>"Attempt to load an unverifiable executable with fixups (IAT with more than 2 sections or a TLS section.)"</Message>
 	<Comment> Attempt to load an unverifiable exe with fixups (IAT with more than 2 sections or a TLS section) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013101a">
-	<SymbolicName>COR_E_NO_LOADLIBRARY_ALLOWED</SymbolicName>
-	<Message>"Attempt to LoadLibrary a managed image in an improper way (only assemblies with EAT area allowed)."</Message>
-	<Comment> Attempt to LoadLibrary a managed image in an improper way (only assemblies with EAT's area allowed.) </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013101b">
@@ -445,12 +289,6 @@
 	<Comment> A module specified in the manifest was not found. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131043">
-	<SymbolicName>FUSION_E_UNEXPECTED_MODULE_FOUND</SymbolicName>
-	<Message>"Modules which are not in the manifest were streamed in."</Message>
-	<Comment> Modules which are not in the manifest were streamed in. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131044">
 	<SymbolicName>FUSION_E_PRIVATE_ASM_DISALLOWED</SymbolicName>
 	<Message>"A strongly-named assembly is required."</Message>
@@ -463,12 +301,6 @@
 	<Comment> The check of the signature failed. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131046">
-	<SymbolicName>FUSION_E_DATABASE_ERROR</SymbolicName>
-	<Message>"An unexpected error was encountered in the Assembly Cache database."</Message>
-	<Comment> An unexpected error was encountered in the Assembly Cache database. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131047">
 	<SymbolicName>FUSION_E_INVALID_NAME</SymbolicName>
 	<Message>"The given assembly name or codebase was invalid."</Message>
@@ -479,12 +311,6 @@
 	<SymbolicName>FUSION_E_CODE_DOWNLOAD_DISABLED</SymbolicName>
 	<Message>"HTTP download of assemblies has been disabled for this appdomain."</Message>
 	<Comment> HTTP download of assemblies has been disabled for this appdomain. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131049">
-	<SymbolicName>FUSION_E_UNINSTALL_DISALLOWED</SymbolicName>
-	<Message>"Uninstall of given assembly is not allowed."</Message>
-	<Comment> Uninstall of given assembly is not allowed. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013104A">
@@ -571,34 +397,10 @@
 	<Comment> Error occurred during a write. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131103">
-	<SymbolicName>CLDB_E_FILE_READONLY</SymbolicName>
-	<Message>"File is read only."</Message>
-	<Comment> File is read only. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131105">
-	<SymbolicName>CLDB_E_NAME_ERROR</SymbolicName>
-	<Message>"Ill-formed name."</Message>
-	<Comment> An ill-formed name was given. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131106">
-	<SymbolicName>CLDB_E_TRUNCATION</SymbolicName>
-	<Message>"Data value was truncated."</Message>
-	<Comment> ERROR:  Data value was truncated. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131107">
 	<SymbolicName>CLDB_E_FILE_OLDVER</SymbolicName>
 	<Message>"Old version error."</Message>
 	<Comment> Old version error. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131108">
-	<SymbolicName>CLDB_E_RELOCATED</SymbolicName>
-	<Message>"A shared memory open failed to open at the originally assigned memory address."</Message>
-	<Comment> A shared mem open failed to open at the originally </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013110a">
@@ -613,12 +415,6 @@
 	<Comment> There isn't .CLB data in the memory or stream. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x8013110c">
-	<SymbolicName>CLDB_E_READONLY</SymbolicName>
-	<Message>"Database is read only."</Message>
-	<Comment> Database is read only. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x8013110d">
 	<SymbolicName>CLDB_E_INCOMPATIBLE</SymbolicName>
 	<Message>"Importing scope is not compatible with the emitting scope."</Message>
@@ -631,34 +427,10 @@
 	<Comment> File is corrupt. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x8013110f">
-	<SymbolicName>CLDB_E_SCHEMA_VERNOTFOUND</SymbolicName>
-	<Message>"Required version of schema not found."</Message>
-	<Comment> Version %d of schema '%s' not found. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131110">
 	<SymbolicName>CLDB_E_BADUPDATEMODE</SymbolicName>
 	<Message>"Cannot open a incrementally build scope for full update."</Message>
 	<Comment> cannot open a incrementally build scope for full update </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131121">
-	<SymbolicName>CLDB_E_INDEX_NONULLKEYS</SymbolicName>
-	<Message>"Null value not allowed in unique index or primary key."</Message>
-	<Comment> Null value not allowed in unique index or primary key. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131122">
-	<SymbolicName>CLDB_E_INDEX_DUPLICATE</SymbolicName>
-	<Message>"Index has been duplicated."</Message>
-	<Comment> Unique index %s has been violated. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131123">
-	<SymbolicName>CLDB_E_INDEX_BADTYPE</SymbolicName>
-	<Message>"The columns data type is not allowed in an index."</Message>
-	<Comment> The columns data type is not allowed in an index. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131124">
@@ -673,82 +445,10 @@
 	<Comment> Record wasn't found on lookup. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131131">
-	<SymbolicName>CLDB_E_RECORD_OVERFLOW</SymbolicName>
-	<Message>"Too many records were returned for criteria."</Message>
-	<Comment> Too many records were returned for criteria. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131132">
-	<SymbolicName>CLDB_E_RECORD_DUPLICATE</SymbolicName>
-	<Message>"Record is a duplicate."</Message>
-	<Comment> Record is a duplicate. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131133">
-	<SymbolicName>CLDB_E_RECORD_PKREQUIRED</SymbolicName>
-	<Message>"Primary key value is required."</Message>
-	<Comment> Primary key value is required. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131134">
-	<SymbolicName>CLDB_E_RECORD_DELETED</SymbolicName>
-	<Message>"Record is valid but deleted."</Message>
-	<Comment> Record is valid but deleted. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131135">
 	<SymbolicName>CLDB_E_RECORD_OUTOFORDER</SymbolicName>
 	<Message>"Record is emitted out of order."</Message>
 	<Comment> Record is emitted out of order. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131140">
-	<SymbolicName>CLDB_E_COLUMN_OVERFLOW</SymbolicName>
-	<Message>"Data too large."</Message>
-	<Comment> Data too large. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131141">
-	<SymbolicName>CLDB_E_COLUMN_READONLY</SymbolicName>
-	<Message>"Column cannot be changed."</Message>
-	<Comment> Column cannot be changed. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131142">
-	<SymbolicName>CLDB_E_COLUMN_SPECIALCOL</SymbolicName>
-	<Message>"Too many RID or primary key columns, 1 is max."</Message>
-	<Comment> Too many RID or primary key columns, 1 is max. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131143">
-	<SymbolicName>CLDB_E_COLUMN_PKNONULLS</SymbolicName>
-	<Message>"Primary key column may not allow the null value."</Message>
-	<Comment> Primary key column %s may not allow the null value. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131150">
-	<SymbolicName>CLDB_E_TABLE_CANTDROP</SymbolicName>
-	<Message>"Attempted auto-drop of table while open."</Message>
-	<Comment> Can't auto-drop table while open. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131151">
-	<SymbolicName>CLDB_E_OBJECT_NOTFOUND</SymbolicName>
-	<Message>"Object not found in the database."</Message>
-	<Comment> Object was not found in the database. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131152">
-	<SymbolicName>CLDB_E_OBJECT_COLNOTFOUND</SymbolicName>
-	<Message>"Column not found."</Message>
-	<Comment> The column was not found. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131153">
-	<SymbolicName>CLDB_E_VECTOR_BADINDEX</SymbolicName>
-	<Message>"Invalid index."</Message>
-	<Comment> The index given was invalid. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131154">
@@ -763,237 +463,16 @@
 	<Comment> A token of the wrong type passed to a metadata function. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131160">
-	<SymbolicName>TLBX_E_INVALID_TYPEINFO</SymbolicName>
-	<Message>"Typelib import: Invalid type, not converted."</Message>
-	<Comment> Typelib import: invalid type, not converted. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131161">
-	<SymbolicName>TLBX_E_INVALID_TYPEINFO_UNNAMED</SymbolicName>
-	<Message>"Typelib import: Invalid type, not converted - name unknown."</Message>
-	<Comment> Typelib import: invalid type, not converted -- name unknown. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131162">
-	<SymbolicName>TLBX_E_CTX_NESTED</SymbolicName>
-	<Message>"Typelib export: TLBX_E_CTX_NESTED"</Message>
-	<Comment> Typelib export: Format string for nested contexts. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131163">
-	<SymbolicName>TLBX_E_ERROR_MESSAGE</SymbolicName>
-	<Message>"Typelib export: General error. See IError info for more information."</Message>
-	<Comment> Typelib export: Error message wrapper. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131164">
-	<SymbolicName>TLBX_E_CANT_SAVE</SymbolicName>
-	<Message>"Typelib export: SaveAllChanges() failed."</Message>
-	<Comment> Typelib export: cant "SaveAllChanges()" </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131165">
-	<SymbolicName>TLBX_W_LIBNOTREGISTERED</SymbolicName>
-	<Message>"Typelib export: Type library is not registered."</Message>
-	<Comment> Typelib export: type library is not registered. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131166">
-	<SymbolicName>TLBX_E_CANTLOADLIBRARY</SymbolicName>
-	<Message>"Typelib export: Type library could not be loaded."</Message>
-	<Comment> Typelib export: type library cannot be loaded. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131167">
-	<SymbolicName>TLBX_E_BAD_VT_TYPE</SymbolicName>
-	<Message>"Typelib import: Invalid vartype, not converted."</Message>
-	<Comment> Typelib import: invalid VT_*, not converted. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131168">
-	<SymbolicName>TLBX_E_NO_MSCOREE_TLB</SymbolicName>
-	<Message>"Typelib export: Could not load mscoree.tlb."</Message>
-	<Comment> Typelib export: can't load mscoree.tlb </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131169">
-	<SymbolicName>TLBX_E_BAD_MSCOREE_TLB</SymbolicName>
-	<Message>"Typelib export: Could not get a required typeinfo from mscoree.tlb."</Message>
-	<Comment> Typelib export: can't get a required typeinfo from mscoree.tlb. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013116a">
-	<SymbolicName>TLBX_E_TLB_EXCEPTION</SymbolicName>
-	<Message>"Typelib import: Fault reading a typelib."</Message>
-	<Comment> Typelib import: fault reading a typelib. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013116b">
-	<SymbolicName>TLBX_E_MULTIPLE_LCIDS</SymbolicName>
-	<Message>"Typelib import: Multiple [lcid] parameters on a method."</Message>
-	<Comment> Typelib import: Multiple LCID's parameters on a method. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013116d">
-	<SymbolicName>TLBX_E_AMBIGUOUS_RETURN</SymbolicName>
-	<Message>"Typelib import: Duplicate or ambiguous return types."</Message>
-	<Comment> Typelib import: duplicate or ambiguous return types. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013116e">
-	<SymbolicName>TLBX_E_DUPLICATE_TYPE_NAME</SymbolicName>
-	<Message>"Typelib import: Duplicate name (due to user-defined name)."</Message>
-	<Comment> Typelib import: duplicate name (due to user-defined name). </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131172">
-	<SymbolicName>TLBX_I_NONSEQUENTIALSTRUCT</SymbolicName>
-	<Message>"Typelib export: Cannot convert non-sequential structs."</Message>
-	<Comment> Typelib export: Can't convert non-sequential structs. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131174">
-	<SymbolicName>TLBX_I_RESOLVEREFFAILED</SymbolicName>
-	<Message>"Typelib import: The resolve ref call failed."</Message>
-	<Comment> Typelib import: The resolve ref call failed. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131175">
-	<SymbolicName>TLBX_E_ASANY</SymbolicName>
-	<Message>"Typelib export: Encountered AsAny - ignored."</Message>
-	<Comment> Typelib export: Encounterd "AsAny" -- ignored. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131176">
-	<SymbolicName>TLBX_E_INVALIDLCIDPARAM</SymbolicName>
-	<Message>"Typelib export: Encountered an [lcid] attribute set to an invalid parameter."</Message>
-	<Comment> Typelib export: Encounterd an LCID attribute set to an invalid param. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131177">
-	<SymbolicName>TLBX_E_LCIDONDISPONLYITF</SymbolicName>
-	<Message>"Typelib export: Encountered an [lcid] attribute on a pure dispatch interface."</Message>
-	<Comment> Typelib export: Encounterd an LCID attribute on a disp only interface. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131178">
-	<SymbolicName>TLBX_E_NONPUBLIC_FIELD</SymbolicName>
-	<Message>"Typelib export: Non-public field in public struct."</Message>
-	<Comment> Typelib export: Non-public field in public struct. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013117b">
-	<SymbolicName>TLBX_E_BAD_NAMES</SymbolicName>
-	<Message>"Typelib export: Bad names list."</Message>
-	<Comment> Typelib export: bad names list. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013117d">
-	<SymbolicName>TLBX_E_GENERICINST_SIGNATURE</SymbolicName>
-	<Message>"TypeLib export: generic type instance in signature."</Message>
-	<Comment> TypeLib export: generic type instance in signature. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013117e">
-	<SymbolicName>TLBX_E_GENERICPAR_SIGNATURE</SymbolicName>
-	<Message>"TypeLib export: generic type parameter in signature."</Message>
-	<Comment> TypeLib export: generic type parameter in signature. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131180">
-	<SymbolicName>META_E_DUPLICATE</SymbolicName>
-	<Message>"Attempted to define an object that already exists."</Message>
-	<Comment> Attempt to define an object that already exists. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131181">
-	<SymbolicName>META_E_GUID_REQUIRED</SymbolicName>
-	<Message>"A guid was not provided where one was required."</Message>
-	<Comment> A guid was not provided where one was required. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131182">
-	<SymbolicName>META_E_TYPEDEF_MISMATCH</SymbolicName>
-	<Message>"Merge: an import typedef matched ns.name, but not version and guid."</Message>
-	<Comment> Merge: an import typedef matched ns.name, but not version and guid. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131183">
-	<SymbolicName>META_E_MERGE_COLLISION</SymbolicName>
-	<Message>"Merge: conflict between import and emit."</Message>
-	<Comment> Merge: conflict between import and emit </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131186">
-	<SymbolicName>TLBX_E_NO_SAFEHANDLE_ARRAYS</SymbolicName>
-	<Message>"TypeLib export: Detected array of SafeHandles."</Message>
-	<Comment> TypeLib export: detected array of SafeHandles </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131187">
-	<SymbolicName>META_E_METHD_NOT_FOUND</SymbolicName>
-	<Message>"Merge: Class already in emit scope, but member not found."</Message>
-	<Comment> Merge: Class already in emit scope, but member not found </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131188">
-	<SymbolicName>META_E_FIELD_NOT_FOUND</SymbolicName>
-	<Message>"Merge: Class already in emit scope, but member not found."</Message>
-	<Comment> Merge: Class already in emit scope, but member not found </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131189">
-	<SymbolicName>META_E_PARAM_MISMATCH</SymbolicName>
-	<Message>"Merge: Parameter information mismatched."</Message>
-	<Comment> Merge: Parameter information mismatched. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x8013118a">
 	<SymbolicName>META_E_BADMETADATA</SymbolicName>
 	<Message>"Merge: Inconsistency in meta data import scope."</Message>
 	<Comment> Merge: Inconsistency in meta data import scope </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x8013118b">
-	<SymbolicName>META_E_INTFCEIMPL_NOT_FOUND</SymbolicName>
-	<Message>"Merge: Class already in emit scope, but interfaceimpl not found."</Message>
-	<Comment> Merge: Class already in emit scope, but interfaceimpl not found </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x8013118c">
 	<SymbolicName>TLBX_E_NO_CRITICALHANDLE_ARRAYS</SymbolicName>
 	<Message>"TypeLib export: Detected array of CriticalHandles."</Message>
 	<Comment> TypeLib export: detected array of CriticalHandles </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013118d">
-	<SymbolicName>META_E_CLASS_LAYOUT_INCONSISTENT</SymbolicName>
-	<Message>"Merge: Duplicate classes have inconsistent class layout information."</Message>
-	<Comment> Merge: Class is duplicated but class layout information is not consistent </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013118e">
-	<SymbolicName>META_E_FIELD_MARSHAL_NOT_FOUND</SymbolicName>
-	<Message>"Merge: Field is duplicated but no matching FieldMarshal information."</Message>
-	<Comment> Merge: Field is duplicated but we cannot find the matching FieldMarshal information </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013118f">
-	<SymbolicName>META_E_METHODSEM_NOT_FOUND</SymbolicName>
-	<Comment> Merge: </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131190">
-	<SymbolicName>META_E_EVENT_NOT_FOUND</SymbolicName>
-	<Message>"Merge: Method is duplicated but no matching event info."</Message>
-	<Comment> Merge: Method is duplicated but we cannot find the matching event info. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131191">
-	<SymbolicName>META_E_PROP_NOT_FOUND</SymbolicName>
-	<Message>"Merge: Method is duplicated but no matching property info."</Message>
-	<Comment> Merge: Method is duplicated but we cannot find the maching property info. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131192">
@@ -1008,18 +487,6 @@
 	<Comment> Bad input parameters </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131194">
-	<SymbolicName>META_E_METHDIMPL_INCONSISTENT</SymbolicName>
-	<Message>"Merge: duplicated methods have inconsistent ImplFlags."</Message>
-	<Comment> Merge: duplicated methods have inconsistent ImplFlags </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131195">
-	<SymbolicName>META_E_MD_INCONSISTENCY</SymbolicName>
-	<Message>"Merge: Inconsistency in meta data."</Message>
-	<Comment> Merge: Inconsistency in meta data </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131196">
 	<SymbolicName>META_E_CANNOTRESOLVETYPEREF</SymbolicName>
 	<Message>"Cannot resolve typeref."</Message>
@@ -1030,12 +497,6 @@
 	<SymbolicName>META_E_STRINGSPACE_FULL</SymbolicName>
 	<Message>"No logical space left to create more user strings."</Message>
 	<Comment> No logical space left to create more user strings. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131199">
-	<SymbolicName>META_E_UNEXPECTED_REMAP</SymbolicName>
-	<Message>"Unexpected TokenRemap."</Message>
-	<Comment> A TokenRemap occurred which we weren't prepared to handle. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013119a">
@@ -1074,184 +535,10 @@
 	<Comment> Merge: An input scope has a TypeRef which should but doesn't have a matching TypeDef. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x801311a0">
-	<SymbolicName>TLBX_E_CANT_LOAD_MODULE</SymbolicName>
-	<Message>"TypeLib export: cannot open the module to export."</Message>
-	<Comment> TypeLib export: can't open the module to export. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311a1">
-	<SymbolicName>TLBX_E_CANT_LOAD_CLASS</SymbolicName>
-	<Message>"TypeLib export: cannot load a class."</Message>
-	<Comment> TypeLib export: can't load a class. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311a2">
-	<SymbolicName>TLBX_E_NULL_MODULE</SymbolicName>
-	<Message>"TypeLib export: the hModule of a loaded class is 0; cannot export it."</Message>
-	<Comment> TypeLib export: the hMod of a loaded class is 0; can't export it. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311a3">
-	<SymbolicName>TLBX_E_NO_CLSID_KEY</SymbolicName>
-	<Message>"TypeLib export: no CLSID or Interface subkey to HKCR."</Message>
-	<Comment> TypeLib export: no CLSID or Interface subkey to HKCR. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311a4">
-	<SymbolicName>TLBX_E_CIRCULAR_EXPORT</SymbolicName>
-	<Message>"TypeLib export: attempted to export an Assembly imported from a TLB."</Message>
-	<Comment> TypeLib export: attempt to export a CLB imported from a TLB. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311a5">
-	<SymbolicName>TLBX_E_CIRCULAR_IMPORT</SymbolicName>
-	<Message>"TypeLib import: attempted to import a TLB exported from an Assembly."</Message>
-	<Comment> TypeLib import: attempt to import a TLB exported from a CLB. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311a6">
-	<SymbolicName>TLBX_E_BAD_NATIVETYPE</SymbolicName>
-	<Message>"TypeLib export: bad Native type in method signature."</Message>
-	<Comment> TypeLib export: bad Native type in method signature. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311a7">
-	<SymbolicName>TLBX_E_BAD_VTABLE</SymbolicName>
-	<Message>"TypeLib import: non-increasing vtable (duplicate slots)."</Message>
-	<Comment> TypeLib import: non-increasing vtable (duplicate slots). </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311a8">
-	<SymbolicName>TLBX_E_CRM_NON_STATIC</SymbolicName>
-	<Message>"TypeLib export: the COM register method is non static."</Message>
-	<Comment> TypeLib export: the COM register method is non static. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311a9">
-	<SymbolicName>TLBX_E_CRM_INVALID_SIG</SymbolicName>
-	<Message>"TypeLib export: the specified COM register method does not have the correct signature."</Message>
-	<Comment> TypeLib export: the specified COM register method does not have the correct signature. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311aa">
-	<SymbolicName>TLBX_E_CLASS_LOAD_EXCEPTION</SymbolicName>
-	<Message>"TypeLib export: cannot load CLR type."</Message>
-	<Comment> TypeLib export: can't load, have the class load exception. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311ab">
-	<SymbolicName>TLBX_E_UNKNOWN_SIGNATURE</SymbolicName>
-	<Message>"TypeLib export: unknown element in signature."</Message>
-	<Comment> TypeLib export: unknown element in signature. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311ac">
-	<SymbolicName>TLBX_E_REFERENCED_TYPELIB</SymbolicName>
-	<Message>"TypeLib import: reference to an external typelib."</Message>
-	<Comment> TypeLib import: reference to an external typelib. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x801311ad">
 	<SymbolicName>TLBX_E_INVALID_NAMESPACE</SymbolicName>
 	<Message>"TypeLib import: an imported typelib has an invalid namespace name."</Message>
 	<Comment> TypeLib import: an imported typelib has an invalid namespace name. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311ae">
-	<SymbolicName>TLBX_E_LAYOUT_ERROR</SymbolicName>
-	<Message>"Typelib export: an error on Layout()"</Message>
-	<Comment> Typelib export: an error on Layout() </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311af">
-	<SymbolicName>TLBX_E_NOTIUNKNOWN</SymbolicName>
-	<Message>"Typelib import: Interface not derived from IUnknown."</Message>
-	<Comment> Typelib import: Interface not derived from IUnknown. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311b0">
-	<SymbolicName>TLBX_E_NONVISIBLEVALUECLASS</SymbolicName>
-	<Message>"Typelib export: Non COM visible value type in method signature."</Message>
-	<Comment> Typelib export: Non COM visible value type in method signature. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311b1">
-	<SymbolicName>TLBX_E_LPTSTR_NOT_ALLOWED</SymbolicName>
-	<Message>"Typelib export: Types which contain the native type NATIVE_TYPE_LPTSTR are not allowed to be exported to COM."</Message>
-	<Comment> Typelib export: Types which contain the native type NATIVE_TYPE_LPTSTR are not allowed to be exported to COM. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311b2">
-	<SymbolicName>TLBX_E_AUTO_CS_NOT_ALLOWED</SymbolicName>
-	<Message>"Typelib export: Types with a charset of auto are not allowed to be exported to COM."</Message>
-	<Comment> Typelib export: Types with a char set of auto are not allowed to be exported to COM. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311b5">
-	<SymbolicName>TLBX_E_ENUM_VALUE_INVALID</SymbolicName>
-	<Message>"Typelib export: The enum value is not legal for a typelib."</Message>
-	<Comment> Typelib export: The enum value is not legal for a typelib. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311b6">
-	<SymbolicName>TLBX_E_DUPLICATE_IID</SymbolicName>
-	<Message>"Typelib export: Duplicate IID."</Message>
-	<Comment> Typelib export: Duplicate IID </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311b7">
-	<SymbolicName>TLBX_E_NO_NESTED_ARRAYS</SymbolicName>
-	<Message>"Typelib export: detected nested arrays."</Message>
-	<Comment> Tyeplib export: detected nested arrays. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311b8">
-	<SymbolicName>TLBX_E_PARAM_ERROR_NAMED</SymbolicName>
-	<Message>"Typelib import: parameter type could not be converted."</Message>
-	<Comment> Typelib import: param type couldn't be converted. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311b9">
-	<SymbolicName>TLBX_E_PARAM_ERROR_UNNAMED</SymbolicName>
-	<Message>"Typelib import: parameter type could not be converted - parameter name unknown."</Message>
-	<Comment> Typelib import: param type couldn't be converted -- param name unknown. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311ba">
-	<SymbolicName>TLBX_E_AGNOST_SIGNATURE</SymbolicName>
-	<Message>"TypeLib export: size agnostic element in signature."</Message>
-	<Comment> TypeLib export: size agnostic element in signature. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311bb">
-	<SymbolicName>TLBX_E_CONVERT_FAIL</SymbolicName>
-	<Message>"TypeLib export: exporter failed."</Message>
-	<Comment> TypeLib export: exporter failed. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311bc">
-	<SymbolicName>TLBX_W_DUAL_NOT_DISPATCH</SymbolicName>
-	<Message>"Typelib import: [dual] interface not derived from IDispatch."</Message>
-	<Comment> Typelib import: [dual] interface not derived from IDispatch. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311bd">
-	<SymbolicName>TLBX_E_BAD_SIGNATURE</SymbolicName>
-	<Message>"Typelib export: bad signature."</Message>
-	<Comment> Typelib export: unconvertable signature (use specific error for reporting!) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311be">
-	<SymbolicName>TLBX_E_ARRAY_NEEDS_NT_FIXED</SymbolicName>
-	<Message>"Typelib export: non-fixed or non-safearray array in struct."</Message>
-	<Comment> Typelib export: non-fixed/non-safearray array in struct </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311bf">
-	<SymbolicName>TLBX_E_CLASS_NEEDS_NT_INTF</SymbolicName>
-	<Message>"Typelib export: non-interface class in struct."</Message>
-	<Comment> Typelib export: non-interface class in struct </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x801311c0">
@@ -1282,18 +569,6 @@
 	<SymbolicName>META_E_CA_UNKNOWN_ARGUMENT</SymbolicName>
 	<Message>"Known custom attribute named argument not recognized."</Message>
 	<Comment> Known custom attrubte named arg not recognized. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311c5">
-	<SymbolicName>META_E_CA_VARIANT_NYI</SymbolicName>
-	<Message>"Known attribute named argument does not support variant."</Message>
-	<Comment> Known attribute named argument doesn't support variant. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311c6">
-	<SymbolicName>META_E_CA_ARRAY_NYI</SymbolicName>
-	<Message>"Known attribute named argument does not support array."</Message>
-	<Comment> Known attribute named argument doesn't support array. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x801311c7">
@@ -1338,12 +613,6 @@
 	<Comment> The parameter index cannot be negative. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x801311ce">
-	<SymbolicName>META_E_CA_NEGATIVE_MULTIPLIER</SymbolicName>
-	<Message>"The multiplier cannot be negative."</Message>
-	<Comment> The multiplier cannot be negative. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x801311cf">
 	<SymbolicName>META_E_CA_NEGATIVE_CONSTSIZE</SymbolicName>
 	<Message>"The constant size cannot be negative."</Message>
@@ -1360,18 +629,6 @@
 	<SymbolicName>META_E_CA_CUSTMARSH_TYPE_REQUIRED</SymbolicName>
 	<Message>"A custom marshaler requires the custom marshaler type."</Message>
 	<Comment> A custom marshaler requires the custom marshaler type. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311d2">
-	<SymbolicName>META_E_CA_FILENAME_REQUIRED</SymbolicName>
-	<Message>"A DllImport attribute requires a filename."</Message>
-	<Comment> A DllImport attribute requires a filename. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311d3">
-	<SymbolicName>TLBX_W_NO_PROPS_IN_EVENTS</SymbolicName>
-	<Message>"TypeLib import: Detected properties in a source dispinterface."</Message>
-	<Comment> TypeLib import: Detected properties in a source dispinterface. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x801311d4">
@@ -1398,26 +655,9 @@
 	<Comment> Merge: different param counts in import and emit scopes. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x801311da">
-	<SymbolicName>TLBX_E_TYPED_REF</SymbolicName>
-	<Message>"TypeLib export: Exporting a TypedReference."</Message>
-	<Comment> TypeLib export: Exporting a TypedReference. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311e1">
-	<SymbolicName>TLBX_E_BITNESS_MISMATCH</SymbolicName>
-	<Message>"TypeLib export: bitness of assembly does not match bitness of output type library."</Message>
-	<Comment> TypeLib export: bitness of assembly doesn't match bitness of output type library </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x801311e2">
 	<SymbolicName>TLBX_E_EVENT_WITH_NEWENUM</SymbolicName>
 	<Comment> TypeLib import: source interface with NewEnum member. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311e3">
-	<SymbolicName>TLBX_E_PROPGET_WITHOUT_RETURN</SymbolicName>
-	<Comment> TypeLib import: propget without return type </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x801311e4">
@@ -1442,18 +682,6 @@
 	<Comment> Rid is out of range. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131204">
-	<SymbolicName>VLDTR_E_CDTKN_OUTOFRANGE</SymbolicName>
-	<Message>"Coded token type is out of range."</Message>
-	<Comment> Coded token type is out of range. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131205">
-	<SymbolicName>VLDTR_E_CDRID_OUTOFRANGE</SymbolicName>
-	<Message>"Coded rid is out of range."</Message>
-	<Comment> Coded rid is out of range. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131206">
 	<SymbolicName>VLDTR_E_STRING_INVALID</SymbolicName>
 	<Message>"String offset is invalid."</Message>
@@ -1472,292 +700,16 @@
 	<Comment> Blob offset if invalid. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131209">
-	<SymbolicName>VLDTR_E_MOD_MULTI</SymbolicName>
-	<Message>"Multiple module records found."</Message>
-	<Comment> Multiple module records found. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013120a">
-	<SymbolicName>VLDTR_E_MOD_NULLMVID</SymbolicName>
-	<Message>"Module has null MVID."</Message>
-	<Comment> Module has null MVID. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013120b">
-	<SymbolicName>VLDTR_E_TR_NAMENULL</SymbolicName>
-	<Message>"TypeRef name is NULL."</Message>
-	<Comment> TypeRef name is NULL. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013120c">
-	<SymbolicName>VLDTR_E_TR_DUP</SymbolicName>
-	<Message>"TypeRef has a duplicate."</Message>
-	<Comment> TypeRef has a dup. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013120d">
-	<SymbolicName>VLDTR_E_TD_NAMENULL</SymbolicName>
-	<Message>"TypeDef name is NULL."</Message>
-	<Comment> TypeDef name is NULL. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013120e">
-	<SymbolicName>VLDTR_E_TD_DUPNAME</SymbolicName>
-	<Message>"TypeDef has a duplicate based on name+namespace."</Message>
-	<Comment> TypeDef has a dup based on name+namespace. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013120f">
-	<SymbolicName>VLDTR_E_TD_DUPGUID</SymbolicName>
-	<Message>"TypeDef has a duplicate based on GUID."</Message>
-	<Comment> TypeDef has a dup based on GUID. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131210">
-	<SymbolicName>VLDTR_E_TD_NOTIFACEOBJEXTNULL</SymbolicName>
-	<Message>"TypeDef that is not an Interface and not System.Object extends nil parent."</Message>
-	<Comment> TypeDef that's not an Interface and not System.Object extends nil parent. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131211">
-	<SymbolicName>VLDTR_E_TD_OBJEXTENDSNONNULL</SymbolicName>
-	<Message>"System.Object extends a non-nil parent."</Message>
-	<Comment> System.Object extends a non-nil parent. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131212">
-	<SymbolicName>VLDTR_E_TD_EXTENDSSEALED</SymbolicName>
-	<Message>"TypeDef extends sealed class."</Message>
-	<Comment> TypeDef extends sealed class. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131213">
-	<SymbolicName>VLDTR_E_TD_DLTNORTSPCL</SymbolicName>
-	<Message>"TypeDef is Deleted but not marked with RTSpecialName."</Message>
-	<Comment> TypeDef is Deleted but not marked with RTSpecialName. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131214">
-	<SymbolicName>VLDTR_E_TD_RTSPCLNOTDLT</SymbolicName>
-	<Message>"TypeDef is marked RTSpecialName, but is not a Deleted record."</Message>
-	<Comment> TypeDef is marked RTSpecialName, but is not a Deleted record. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131215">
-	<SymbolicName>VLDTR_E_MI_DECLPRIV</SymbolicName>
-	<Message>"MethodImpl's Decl is private."</Message>
-	<Comment> MethodImpl's Decl is private </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131216">
-	<SymbolicName>VLDTR_E_AS_BADNAME</SymbolicName>
-	<Message>"Assembly [Ref] name has path and/or extension."</Message>
-	<Comment> Assembly [Ref] name has path and/or extension. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131217">
-	<SymbolicName>VLDTR_E_FILE_SYSNAME</SymbolicName>
-	<Message>"File has a system name (con, com, aux, etc.)."</Message>
-	<Comment> File has a system name (con, com, aux, etc.). </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131218">
-	<SymbolicName>VLDTR_E_MI_BODYSTATIC</SymbolicName>
-	<Message>"MethodImpl's body is static."</Message>
-	<Comment> MethodImpl's body is static. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131219">
-	<SymbolicName>VLDTR_E_TD_IFACENOTABS</SymbolicName>
-	<Message>"TypeDef is marked Interface but not Abstract."</Message>
-	<Comment> TypeDef is marked Interface but not Abstract. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013121a">
-	<SymbolicName>VLDTR_E_TD_IFACEPARNOTNIL</SymbolicName>
-	<Message>"TypeDef is marked Interface but parent is not Nil."</Message>
-	<Comment> TypeDef is marked Interface but parent is not Nil. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013121b">
-	<SymbolicName>VLDTR_E_TD_IFACEGUIDNULL</SymbolicName>
-	<Message>"TypeDef is marked Interface but GUID is NULL."</Message>
-	<Comment> TypeDef is marked Interface but GUID is NULL. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013121c">
-	<SymbolicName>VLDTR_E_MI_DECLFINAL</SymbolicName>
-	<Message>"TMethodImpl's Decl is final."</Message>
-	<Comment> TMethodImpl's Decl is final. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013121d">
-	<SymbolicName>VLDTR_E_TD_VTNOTSEAL</SymbolicName>
-	<Message>"TypeDef is marked ValueType but not marked Sealed."</Message>
-	<Comment> TypeDef is marked ValueType but not marked Sealed. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013121e">
-	<SymbolicName>VLDTR_E_PD_BADFLAGS</SymbolicName>
-	<Message>"Parameter has extra bits in flags."</Message>
-	<Comment> Param has extra bits in flags. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013121f">
-	<SymbolicName>VLDTR_E_IFACE_DUP</SymbolicName>
-	<Message>"InterfaceImpl has a duplicate."</Message>
-	<Comment> InterfaceImpl has a dup. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131220">
-	<SymbolicName>VLDTR_E_MR_NAMENULL</SymbolicName>
-	<Message>"MemberRef name is NULL."</Message>
-	<Comment> MemberRef name is NULL. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131221">
-	<SymbolicName>VLDTR_E_MR_VTBLNAME</SymbolicName>
-	<Message>"MemberRef has an invalid name, _VtblGap*."</Message>
-	<Comment> MemberRef has an invalid name, _VtblGap*. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131222">
-	<SymbolicName>VLDTR_E_MR_DELNAME</SymbolicName>
-	<Message>"MemberRef has an invalid name, _Deleted*."</Message>
-	<Comment> MemberRef has an invalid name, _Deleted*. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131223">
-	<SymbolicName>VLDTR_E_MR_PARNIL</SymbolicName>
-	<Message>"MemberRef parent Nil in a PE file."</Message>
-	<Comment> MemberRef parent Nil in a PE file. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131224">
 	<SymbolicName>VLDTR_E_MR_BADCALLINGCONV</SymbolicName>
 	<Message>"MemberRef has invalid calling convention."</Message>
 	<Comment> MemberRef has invalid calling convention. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131225">
-	<SymbolicName>VLDTR_E_MR_NOTVARARG</SymbolicName>
-	<Message>"MemberRef has Method parent but calling convention is not VARARG."</Message>
-	<Comment> MemberRef has Method parent but calling convention is not VARARG. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131226">
-	<SymbolicName>VLDTR_E_MR_NAMEDIFF</SymbolicName>
-	<Message>"MemberRef name different from parent MethodDef."</Message>
-	<Comment> MemberRef name different from parent MethodDef. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131227">
-	<SymbolicName>VLDTR_E_MR_SIGDIFF</SymbolicName>
-	<Message>"MemberRef signature different from parent MethodDef."</Message>
-	<Comment> MemberRef signature different from parent MethodDef. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131228">
-	<SymbolicName>VLDTR_E_MR_DUP</SymbolicName>
-	<Message>"MemberRef has a duplicate."</Message>
-	<Comment> MemberRef has a dup. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131229">
-	<SymbolicName>VLDTR_E_CL_TDAUTO</SymbolicName>
-	<Message>"ClassLayout parent TypeDef is marked AutoLayout."</Message>
-	<Comment> ClassLayout parent TypeDef is marked AutoLayout. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013122a">
-	<SymbolicName>VLDTR_E_CL_BADPCKSZ</SymbolicName>
-	<Message>"ClassLayout has bad PackingSize."</Message>
-	<Comment> ClassLayout has bad PackingSize. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013122b">
-	<SymbolicName>VLDTR_E_CL_DUP</SymbolicName>
-	<Message>"ClassLayout has a duplicate."</Message>
-	<Comment> ClassLayout has dup. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013122c">
-	<SymbolicName>VLDTR_E_FL_BADOFFSET</SymbolicName>
-	<Message>"FieldLayout2 has bad offset."</Message>
-	<Comment> FieldLayout2 has bad offset. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013122d">
-	<SymbolicName>VLDTR_E_FL_TDNIL</SymbolicName>
-	<Message>"FieldLayout2 has field with nil parent."</Message>
-	<Comment> FieldLayout2 has field with nil parent. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013122e">
-	<SymbolicName>VLDTR_E_FL_NOCL</SymbolicName>
-	<Message>"FieldLayout2 has no ClassLayout record."</Message>
-	<Comment> FieldLayout2 has no ClassLayout record. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013122f">
-	<SymbolicName>VLDTR_E_FL_TDNOTEXPLCT</SymbolicName>
-	<Message>"FieldLayout2 parent TypeDef is not marked with ExplicitLayout."</Message>
-	<Comment> FieldLayout2 parent TypeDef is not marked with ExplicitLayout. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131230">
-	<SymbolicName>VLDTR_E_FL_FLDSTATIC</SymbolicName>
-	<Message>"FieldLayout2 has field marked Static."</Message>
-	<Comment> FieldLayout2 has field marked Static. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131231">
-	<SymbolicName>VLDTR_E_FL_DUP</SymbolicName>
-	<Message>"FieldLayout2 has a duplicate."</Message>
-	<Comment> FieldLayout2 has a dup. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131232">
-	<SymbolicName>VLDTR_E_MODREF_NAMENULL</SymbolicName>
-	<Message>"ModuleRef name is NULL."</Message>
-	<Comment> ModuleRef name is NULL. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131233">
-	<SymbolicName>VLDTR_E_MODREF_DUP</SymbolicName>
-	<Message>"ModuleRef has a duplicate."</Message>
-	<Comment> ModuleRef has a dup. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131234">
-	<SymbolicName>VLDTR_E_TR_BADSCOPE</SymbolicName>
-	<Message>"TypeRef has a bad resolution scope."</Message>
-	<Comment> TypeRef has a bad resolution scope. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131235">
-	<SymbolicName>VLDTR_E_TD_NESTEDNOENCL</SymbolicName>
-	<Message>"TypeDef marked nested has no encloser."</Message>
-	<Comment> TypeDef marked nested has no encloser. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131236">
-	<SymbolicName>VLDTR_E_TD_EXTTRRES</SymbolicName>
-	<Message>"TypeDef extends a TypeRef which resolves to a TypeDef in the same module."</Message>
-	<Comment> TypeDef extends a TypeRef which resolves to a TypeDef in the same module. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131237">
 	<SymbolicName>VLDTR_E_SIGNULL</SymbolicName>
 	<Message>"Signature specified is zero-sized."</Message>
 	<Comment> Signature specified is zero-sized. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131238">
-	<SymbolicName>VLDTR_E_SIGNODATA</SymbolicName>
-	<Message>"Signature does not have enough data at specified byte."</Message>
-	<Comment> Signature does not have enough data at specified byte. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131239">
@@ -1856,886 +808,16 @@
 	<Comment> Signature has value array missing size. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131249">
-	<SymbolicName>VLDTR_E_FD_BADCALLINGCONV</SymbolicName>
-	<Message>"Field signature has invalid calling convention."</Message>
-	<Comment> Field signature has invalid calling convention. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013124a">
-	<SymbolicName>VLDTR_E_MD_NAMENULL</SymbolicName>
-	<Message>"Method name is NULL."</Message>
-	<Comment> Method name is NULL. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013124b">
-	<SymbolicName>VLDTR_E_MD_PARNIL</SymbolicName>
-	<Message>"Method has parent NIL."</Message>
-	<Comment> Method has parent NIL. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013124c">
-	<SymbolicName>VLDTR_E_MD_DUP</SymbolicName>
-	<Message>"Method has a duplicate."</Message>
-	<Comment> Method has dup. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013124d">
-	<SymbolicName>VLDTR_E_FD_NAMENULL</SymbolicName>
-	<Message>"Field name is NULL."</Message>
-	<Comment> Field name is NULL. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013124e">
-	<SymbolicName>VLDTR_E_FD_PARNIL</SymbolicName>
-	<Message>"Field parent is Nil."</Message>
-	<Comment> Field parent is Nil. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013124f">
-	<SymbolicName>VLDTR_E_FD_DUP</SymbolicName>
-	<Message>"Field has a duplicate."</Message>
-	<Comment> Field has dup. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131250">
-	<SymbolicName>VLDTR_E_AS_MULTI</SymbolicName>
-	<Message>"Multiple Assembly records found."</Message>
-	<Comment> Multiple Assembly records found. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131251">
-	<SymbolicName>VLDTR_E_AS_NAMENULL</SymbolicName>
-	<Message>"Assembly name is NULL."</Message>
-	<Comment> Assembly name is NULL. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131252">
-	<SymbolicName>VLDTR_E_SIG_TOKTYPEMISMATCH</SymbolicName>
-	<Message>"E_T_VALUETYPE&lt;class token&gt; or E_T_CLASS&lt;vtype token&gt;."</Message>
-	<Comment> E_T_VALUETYPE&lt;class token&gt; or E_T_CLASS&lt;vtype token&gt;. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131253">
-	<SymbolicName>VLDTR_E_CL_TDINTF</SymbolicName>
-	<Message>"Class layout on an Interface."</Message>
-	<Comment> Class layout on an Interface. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131254">
-	<SymbolicName>VLDTR_E_ASOS_OSPLTFRMIDINVAL</SymbolicName>
-	<Message>"AssemblyOS platform ID invalid."</Message>
-	<Comment> AssemblyOS platform ID invalid. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131255">
-	<SymbolicName>VLDTR_E_AR_NAMENULL</SymbolicName>
-	<Message>"AssemblyRef name is NULL."</Message>
-	<Comment> AssemblyRef name is NULL. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131256">
 	<SymbolicName>VLDTR_E_TD_ENCLNOTNESTED</SymbolicName>
 	<Message>"TypeDef not nested has encloser."</Message>
 	<Comment> TypeDef not nested has encloser. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131257">
-	<SymbolicName>VLDTR_E_AROS_OSPLTFRMIDINVAL</SymbolicName>
-	<Message>"AssemblyRefOS has invalid platform ID."</Message>
-	<Comment> AssemblyRefOS has invalid platform ID. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131258">
-	<SymbolicName>VLDTR_E_FILE_NAMENULL</SymbolicName>
-	<Message>"File name is NULL."</Message>
-	<Comment> File name is NULL. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131259">
-	<SymbolicName>VLDTR_E_CT_NAMENULL</SymbolicName>
-	<Message>"ExportedType name is NULL."</Message>
-	<Comment> ExportedType name is NULL. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013125a">
-	<SymbolicName>VLDTR_E_TD_EXTENDSCHILD</SymbolicName>
-	<Message>"TypeDef extends its own child."</Message>
-	<Comment> TypeDef extends its own child. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013125b">
-	<SymbolicName>VLDTR_E_MAR_NAMENULL</SymbolicName>
-	<Message>"ManifestResource name is NULL."</Message>
-	<Comment> ManifestResource name is NULL. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013125c">
-	<SymbolicName>VLDTR_E_FILE_DUP</SymbolicName>
-	<Message>"File has a duplicate."</Message>
-	<Comment> File has dup. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013125d">
-	<SymbolicName>VLDTR_E_FILE_NAMEFULLQLFD</SymbolicName>
-	<Message>"File name is fully qualified."</Message>
-	<Comment> File name is fully qualified. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013125e">
-	<SymbolicName>VLDTR_E_CT_DUP</SymbolicName>
-	<Message>"ExportedType has a duplicate."</Message>
-	<Comment> ExportedType has dup. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013125f">
-	<SymbolicName>VLDTR_E_MAR_DUP</SymbolicName>
-	<Message>"ManifestResource has a duplicate."</Message>
-	<Comment> ManifestResource has dup. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131260">
-	<SymbolicName>VLDTR_E_MAR_NOTPUBPRIV</SymbolicName>
-	<Message>"ManifestResource is neither Public nor Private."</Message>
-	<Comment> ManifestResource is neither Public not Private. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131261">
-	<SymbolicName>VLDTR_E_TD_ENUMNOVALUE</SymbolicName>
-	<Message>"Enum has no value__ field."</Message>
-	<Comment> Enum has no "value__" field. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131262">
-	<SymbolicName>VLDTR_E_TD_ENUMVALSTATIC</SymbolicName>
-	<Message>"Enum's value__ field is static."</Message>
-	<Comment> Enum's "value__" field is static. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131263">
-	<SymbolicName>VLDTR_E_TD_ENUMVALNOTSN</SymbolicName>
-	<Message>"Enum's value__ field is not SpecialName."</Message>
-	<Comment> Enum's "value__" field is not SpecialName. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131264">
-	<SymbolicName>VLDTR_E_TD_ENUMFLDNOTST</SymbolicName>
-	<Message>"Enum's field is not static."</Message>
-	<Comment> Enum's field is not static. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131265">
-	<SymbolicName>VLDTR_E_TD_ENUMFLDNOTLIT</SymbolicName>
-	<Message>"Enum's field is not literal."</Message>
-	<Comment> Enum's field is not literal. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131266">
-	<SymbolicName>VLDTR_E_TD_ENUMNOLITFLDS</SymbolicName>
-	<Message>"Enum has no literal fields."</Message>
-	<Comment> Enum has no literal fields. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131267">
-	<SymbolicName>VLDTR_E_TD_ENUMFLDSIGMISMATCH</SymbolicName>
-	<Message>"Enum's field signature does not match value__ signature."</Message>
-	<Comment> Enum's field sig does not match value__ sig. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131268">
-	<SymbolicName>VLDTR_E_TD_ENUMVALNOT1ST</SymbolicName>
-	<Message>"Enum's value__ field is not first."</Message>
-	<Comment> Enum's "value__" field is not first. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131269">
-	<SymbolicName>VLDTR_E_FD_NOTVALUERTSN</SymbolicName>
-	<Message>"Field is RTSpecialName but name is not value__."</Message>
-	<Comment> Field is RTSpecialName but name is not "value__". </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013126a">
-	<SymbolicName>VLDTR_E_FD_VALUEPARNOTENUM</SymbolicName>
-	<Message>"Field value__ in not Enum class."</Message>
-	<Comment> Field "value__" in not Enum class. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013126b">
-	<SymbolicName>VLDTR_E_FD_INSTINIFACE</SymbolicName>
-	<Message>"Instance field in interface."</Message>
-	<Comment> Instance field in interface. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013126c">
-	<SymbolicName>VLDTR_E_FD_NOTPUBINIFACE</SymbolicName>
-	<Message>"Non-public field in interface."</Message>
-	<Comment> Non-public field in interface. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013126d">
-	<SymbolicName>VLDTR_E_FMD_GLOBALNOTPUBPRIVSC</SymbolicName>
-	<Message>"Global field or method is neither Public nor PrivateScope."</Message>
-	<Comment> Global field/method neither Public nor PrivateScope. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013126e">
-	<SymbolicName>VLDTR_E_FMD_GLOBALNOTSTATIC</SymbolicName>
-	<Message>"Global field or method is not static."</Message>
-	<Comment> Global field/method not static. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013126f">
-	<SymbolicName>VLDTR_E_FD_GLOBALNORVA</SymbolicName>
-	<Message>"Global field has no RVA."</Message>
-	<Comment> Global field has no RVA. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131270">
-	<SymbolicName>VLDTR_E_MD_CTORZERORVA</SymbolicName>
-	<Message>".ctor or .cctor has zero RVA."</Message>
-	<Comment> .ctor,.cctor has zero RVA. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131271">
-	<SymbolicName>VLDTR_E_FD_MARKEDNOMARSHAL</SymbolicName>
-	<Message>"Field is marked marshaled but has no marshaling record."</Message>
-	<Comment> Field is marked marshaled but has no marshaling rec. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131272">
-	<SymbolicName>VLDTR_E_FD_MARSHALNOTMARKED</SymbolicName>
-	<Message>"Field has marshaling record but is not marked marshaled."</Message>
-	<Comment> Field has marshaling rec but is not marked marshaled. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131273">
-	<SymbolicName>VLDTR_E_FD_MARKEDNODEFLT</SymbolicName>
-	<Message>"Field is marked HasDefault but has no const value."</Message>
-	<Comment> Field is marked HasDefault but has no const value. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131274">
-	<SymbolicName>VLDTR_E_FD_DEFLTNOTMARKED</SymbolicName>
-	<Message>"Field has const value record but is not marked HasDefault."</Message>
-	<Comment> Field has const value rec but is not marked HasDefault. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131275">
-	<SymbolicName>VLDTR_E_FMD_MARKEDNOSECUR</SymbolicName>
-	<Message>"Field or method is marked HasSecurity but has no security record."</Message>
-	<Comment> Field/method is marked HasSecurity but has no security rec. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131276">
-	<SymbolicName>VLDTR_E_FMD_SECURNOTMARKED</SymbolicName>
-	<Message>"Field or method has security record but is not marked HasSecurity."</Message>
-	<Comment> Field/method has security rec but is not marked HasSecurity. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131277">
 	<SymbolicName>VLDTR_E_FMD_PINVOKENOTSTATIC</SymbolicName>
 	<Message>"Field or method is PInvoke but is not marked Static."</Message>
 	<Comment> Field/method is PInvoke but is not marked Static. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131278">
-	<SymbolicName>VLDTR_E_FMD_MARKEDNOPINVOKE</SymbolicName>
-	<Message>"Field or method is marked PInvoke but has no ImplMap."</Message>
-	<Comment> Field/method is marked PInvoke but has no ImplMap. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131279">
-	<SymbolicName>VLDTR_E_FMD_PINVOKENOTMARKED</SymbolicName>
-	<Message>"Field or method has ImplMap but is not marked PInvoke."</Message>
-	<Comment> Field/method has ImplMap but is not marked PInvoke. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013127a">
-	<SymbolicName>VLDTR_E_FMD_BADIMPLMAP</SymbolicName>
-	<Message>"Field or method has invalid ImplMap."</Message>
-	<Comment> Field/method has invalid ImplMap </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013127b">
-	<SymbolicName>VLDTR_E_IMAP_BADMODREF</SymbolicName>
-	<Message>"ImplMap has invalid ModuleRef."</Message>
-	<Comment> ImplMap has invalid ModuleRef </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013127c">
-	<SymbolicName>VLDTR_E_IMAP_BADMEMBER</SymbolicName>
-	<Message>"ImplMap has invalid MemberForwarded."</Message>
-	<Comment> ImplMap has invalid MemberForwarded </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013127d">
-	<SymbolicName>VLDTR_E_IMAP_BADIMPORTNAME</SymbolicName>
-	<Message>"ImplMap has invalid ImportName."</Message>
-	<Comment> ImplMap has invalid ImportName </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013127e">
-	<SymbolicName>VLDTR_E_IMAP_BADCALLCONV</SymbolicName>
-	<Message>"ImplMap has invalid call conv."</Message>
-	<Comment> ImplMap has invalid call conv </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013127f">
-	<SymbolicName>VLDTR_E_FMD_BADACCESSFLAG</SymbolicName>
-	<Message>"Field or method has invalid access flag."</Message>
-	<Comment> Field/method has invalid access flag </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131280">
-	<SymbolicName>VLDTR_E_FD_INITONLYANDLITERAL</SymbolicName>
-	<Message>"Field is InitOnly and Literal."</Message>
-	<Comment> Field is InitOnly and Literal </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131281">
-	<SymbolicName>VLDTR_E_FD_LITERALNOTSTATIC</SymbolicName>
-	<Message>"Field is Literal but not Static."</Message>
-	<Comment> Field is Literal but not Static </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131282">
-	<SymbolicName>VLDTR_E_FMD_RTSNNOTSN</SymbolicName>
-	<Message>"Field or method is RTSpec.Name but not Spec.Name."</Message>
-	<Comment> Field/method is RTSpec.Name but not Spec.Name </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131283">
-	<SymbolicName>VLDTR_E_MD_ABSTPARNOTABST</SymbolicName>
-	<Message>"Method is abstract, parent is not."</Message>
-	<Comment> Method is abstract, parent is not </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131284">
-	<SymbolicName>VLDTR_E_MD_NOTSTATABSTININTF</SymbolicName>
-	<Message>"Method not static or abstract in interface."</Message>
-	<Comment> Method not static or abstract in interface </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131285">
-	<SymbolicName>VLDTR_E_MD_NOTPUBININTF</SymbolicName>
-	<Message>"Method not public in interface."</Message>
-	<Comment> Method not public in interface </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131286">
-	<SymbolicName>VLDTR_E_MD_CTORININTF</SymbolicName>
-	<Message>".ctor in interface."</Message>
-	<Comment> ctor in interface </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131287">
-	<SymbolicName>VLDTR_E_MD_GLOBALCTORCCTOR</SymbolicName>
-	<Message>"global .ctor or .cctor."</Message>
-	<Comment> global ctor or cctor </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131288">
-	<SymbolicName>VLDTR_E_MD_CTORSTATIC</SymbolicName>
-	<Message>"static .ctor."</Message>
-	<Comment> static ctor </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131289">
-	<SymbolicName>VLDTR_E_MD_CTORNOTSNRTSN</SymbolicName>
-	<Message>".ctor or .cctor not marked SpecialName or RTSpecialName."</Message>
-	<Comment> ctor,cctor not marked SpecialName,RTSpecialName </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013128a">
-	<SymbolicName>VLDTR_E_MD_CTORVIRT</SymbolicName>
-	<Message>"virtual .ctor or .cctor."</Message>
-	<Comment> virtual ctor,cctor </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013128b">
-	<SymbolicName>VLDTR_E_MD_CTORABST</SymbolicName>
-	<Message>"abstract .ctor or .cctor."</Message>
-	<Comment> abstract ctor,cctor </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013128c">
-	<SymbolicName>VLDTR_E_MD_CCTORNOTSTATIC</SymbolicName>
-	<Message>"instance .cctor."</Message>
-	<Comment> instance cctor </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013128d">
-	<SymbolicName>VLDTR_E_MD_ZERORVA</SymbolicName>
-	<Message>"RVA set to zero, but method not abstract or pinvoke or runtime, or reverse."</Message>
-	<Comment> RVA=0, method not abstract or pinvoke or runtime, or reverse </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013128e">
-	<SymbolicName>VLDTR_E_MD_FINNOTVIRT</SymbolicName>
-	<Message>"Method is final and not virtual."</Message>
-	<Comment> Method is final and not virtual </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013128f">
-	<SymbolicName>VLDTR_E_MD_STATANDFINORVIRT</SymbolicName>
-	<Message>"Method is static and final or virtual."</Message>
-	<Comment> Method is static and final or virtual </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131290">
-	<SymbolicName>VLDTR_E_MD_ABSTANDFINAL</SymbolicName>
-	<Message>"Method is abstract and final."</Message>
-	<Comment> Method is abstract and final </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131291">
-	<SymbolicName>VLDTR_E_MD_ABSTANDIMPL</SymbolicName>
-	<Message>"Method is abstract and implemented."</Message>
-	<Comment> Method is abstract and implemented </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131292">
-	<SymbolicName>VLDTR_E_MD_ABSTANDPINVOKE</SymbolicName>
-	<Message>"Method is abstract and pinvoke."</Message>
-	<Comment> Method is abstract and pinvoke </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131293">
-	<SymbolicName>VLDTR_E_MD_ABSTNOTVIRT</SymbolicName>
-	<Message>"Method is abstract and not virtual."</Message>
-	<Comment> Method is abstract and not virtual </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131294">
-	<SymbolicName>VLDTR_E_MD_NOTABSTNOTIMPL</SymbolicName>
-	<Message>"Method is not abstract and not implemented."</Message>
-	<Comment> Method is not abstract and not implemented </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131295">
-	<SymbolicName>VLDTR_E_MD_NOTABSTBADFLAGSRVA</SymbolicName>
-	<Message>"Method is not abstract and not (non-zero RVA or PInvoke or runtime)."</Message>
-	<Comment> Method is not abstract and not (RVA!=0 or pinvoke or runtime) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131296">
-	<SymbolicName>VLDTR_E_MD_PRIVSCOPENORVA</SymbolicName>
-	<Message>"Method is PrivateScope and has RVA set to zero."</Message>
-	<Comment> Method is PrivateScope and has RVA==0 </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131297">
-	<SymbolicName>VLDTR_E_MD_GLOBALABSTORVIRT</SymbolicName>
-	<Message>"Global method is abstract or virtual."</Message>
-	<Comment> Global method is abstract or virtual </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131298">
-	<SymbolicName>VLDTR_E_SIG_LONGFORM</SymbolicName>
-	<Message>"Signature uses long form."</Message>
-	<Comment> Signature uses long form </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131299">
-	<SymbolicName>VLDTR_E_MD_MULTIPLESEMANTICS</SymbolicName>
-	<Message>"Method has multiple semantics (warning)."</Message>
-	<Comment> Method has multiple semantics (warning) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013129a">
-	<SymbolicName>VLDTR_E_MD_INVALIDSEMANTICS</SymbolicName>
-	<Message>"Method has invalid semantics (not event or property.)"</Message>
-	<Comment> Method has invalid semantics (not event or prop) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013129b">
-	<SymbolicName>VLDTR_E_MD_SEMANTICSNOTEXIST</SymbolicName>
-	<Message>"Method has semantics association that does not exist."</Message>
-	<Comment> Method has semantics assoc that does not exist </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013129c">
-	<SymbolicName>VLDTR_E_MI_DECLNOTVIRT</SymbolicName>
-	<Message>"MethodImpl's Decl is not virtual."</Message>
-	<Comment> MethodImpl's Decl is not virtual </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013129d">
-	<SymbolicName>VLDTR_E_FMD_GLOBALITEM</SymbolicName>
-	<Message>"Global field or method (warning, CLS)."</Message>
-	<Comment> Global field/method (warning,CLS) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013129e">
-	<SymbolicName>VLDTR_E_MD_MULTSEMANTICFLAGS</SymbolicName>
-	<Message>"Method has multiple semantic flags set."</Message>
-	<Comment> Method has multiple semantic flags set </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013129f">
-	<SymbolicName>VLDTR_E_MD_NOSEMANTICFLAGS</SymbolicName>
-	<Message>"Method has no semantic flags set."</Message>
-	<Comment> Method has no semantic flags set </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312a0">
-	<SymbolicName>VLDTR_E_FD_FLDINIFACE</SymbolicName>
-	<Message>"Field in Interface (warning, CLS)."</Message>
-	<Comment> Field in Interface (warning, CLS) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312a1">
-	<SymbolicName>VLDTR_E_AS_HASHALGID</SymbolicName>
-	<Message>"Unrecognized Hash Alg ID (warning)."</Message>
-	<Comment> Unrecognized Hash Alg ID (warning) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312a2">
-	<SymbolicName>VLDTR_E_AS_PROCID</SymbolicName>
-	<Message>"Unrecognized Processor ID in Assembly(warning)."</Message>
-	<Comment> Unrecognized Processor ID in Assembly(warning) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312a3">
-	<SymbolicName>VLDTR_E_AR_PROCID</SymbolicName>
-	<Message>"Unrecognized Processor ID in AssemblyRef(warning)."</Message>
-	<Comment> Unrecognized Processor ID in AssemblyRef(warning) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312a4">
-	<SymbolicName>VLDTR_E_CN_PARENTRANGE</SymbolicName>
-	<Message>"Constant: parent token out of range."</Message>
-	<Comment> Constant: parent token out of range </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312a5">
-	<SymbolicName>VLDTR_E_AS_BADFLAGS</SymbolicName>
-	<Message>"Invalid flags in Assembly."</Message>
-	<Comment> Invalid flags in Assembly </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312a6">
-	<SymbolicName>VLDTR_E_TR_HASTYPEDEF</SymbolicName>
-	<Message>"There is TypeDef with same name as TypeRef (warning)."</Message>
-	<Comment> There is TypeDef with same name as TypeRef (warning) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312a7">
-	<SymbolicName>VLDTR_E_IFACE_BADIMPL</SymbolicName>
-	<Message>"In InterfaceImpl, the implementing token is not TypeDef."</Message>
-	<Comment> In InterfaceImpl, the implementing token is not TypeDef </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312a8">
-	<SymbolicName>VLDTR_E_IFACE_BADIFACE</SymbolicName>
-	<Message>"In InterfaceImpl, the implemented token is not TypeDef or TypeRef."</Message>
-	<Comment> In InterfaceImpl, the implemented token is not TypeDef or TypeRef </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312a9">
-	<SymbolicName>VLDTR_E_TD_SECURNOTMARKED</SymbolicName>
-	<Message>"TypeDef has security record but it is not marked HasSecurity."</Message>
-	<Comment> TypeDef has security rec but not marked HasSecurity </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312aa">
-	<SymbolicName>VLDTR_E_TD_MARKEDNOSECUR</SymbolicName>
-	<Message>"TypeDef marked HasSecurity but has no security record."</Message>
-	<Comment> TypeDef marked HasSecurity but has no security rec </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ab">
-	<SymbolicName>VLDTR_E_MD_CCTORHASARGS</SymbolicName>
-	<Message>".cctor has arguments."</Message>
-	<Comment> .cctor has arguments </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ac">
-	<SymbolicName>VLDTR_E_CT_BADIMPL</SymbolicName>
-	<Message>"ExportedType has invalid Implementation."</Message>
-	<Comment> ExportedType has invalid Implementation </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ad">
-	<SymbolicName>VLDTR_E_MI_ALIENBODY</SymbolicName>
-	<Message>"MethodImpl has body from other class."</Message>
-	<Comment> MethodImpl has body from other class </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ae">
-	<SymbolicName>VLDTR_E_MD_CCTORCALLCONV</SymbolicName>
-	<Message>".cctor has invalid calling convention."</Message>
-	<Comment> .cctor has invalid calling convention </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312af">
-	<SymbolicName>VLDTR_E_MI_BADCLASS</SymbolicName>
-	<Message>"MethodImpl has invalid Class token."</Message>
-	<Comment> MethodImpl has invalid Class token </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312b0">
-	<SymbolicName>VLDTR_E_MI_CLASSISINTF</SymbolicName>
-	<Message>"MethodImpl declared in Interface."</Message>
-	<Comment> MethodImpl declared in Interface </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312b1">
-	<SymbolicName>VLDTR_E_MI_BADDECL</SymbolicName>
-	<Message>"MethodImpl has invalid MethodDeclaration token."</Message>
-	<Comment> MethodImpl has invalid MethodDeclaration token </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312b2">
-	<SymbolicName>VLDTR_E_MI_BADBODY</SymbolicName>
-	<Message>"MethodImpl has invalid MethodBody token."</Message>
-	<Comment> MethodImpl has invalid MethodBody token </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312b3">
-	<SymbolicName>VLDTR_E_MI_DUP</SymbolicName>
-	<Message>"MethodImpl has duplicate."</Message>
-	<Comment> MethodImpl has duplicate </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312b4">
-	<SymbolicName>VLDTR_E_FD_BADPARENT</SymbolicName>
-	<Message>"Bad field parent."</Message>
-	<Comment> Bad field parent </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312b5">
-	<SymbolicName>VLDTR_E_MD_PARAMOUTOFSEQ</SymbolicName>
-	<Message>"Parameter out of sequence (warning)."</Message>
-	<Comment> Param out of sequence (warning) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312b6">
-	<SymbolicName>VLDTR_E_MD_PARASEQTOOBIG</SymbolicName>
-	<Message>"Parameter's sequence number exceeds number of arguments."</Message>
-	<Comment> Param's sequence num exceeds num of args </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312b7">
-	<SymbolicName>VLDTR_E_MD_PARMMARKEDNOMARSHAL</SymbolicName>
-	<Message>"Parameter marked HasMarshal, has no marshaling info."</Message>
-	<Comment> Param marked HasMarshal, has no marshaling info </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312b8">
-	<SymbolicName>VLDTR_E_MD_PARMMARSHALNOTMARKED</SymbolicName>
-	<Message>"Parameter has marshaling info, not marked HasMarshal."</Message>
-	<Comment> Param has marshaling info, not marked HasMarshal </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ba">
-	<SymbolicName>VLDTR_E_MD_PARMMARKEDNODEFLT</SymbolicName>
-	<Message>"Parameter marked HasDefault, has no const value."</Message>
-	<Comment> Param marked HasDefault, has no const value </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312bb">
-	<SymbolicName>VLDTR_E_MD_PARMDEFLTNOTMARKED</SymbolicName>
-	<Message>"Parameter has const value, not marked HasDefault."</Message>
-	<Comment> Param has const value, not marked HasDefault </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312bc">
-	<SymbolicName>VLDTR_E_PR_BADSCOPE</SymbolicName>
-	<Message>"Property has invalid scope."</Message>
-	<Comment> Prop has invalid scope </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312bd">
-	<SymbolicName>VLDTR_E_PR_NONAME</SymbolicName>
-	<Message>"Property has no name."</Message>
-	<Comment> Prop has no name </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312be">
-	<SymbolicName>VLDTR_E_PR_NOSIG</SymbolicName>
-	<Message>"Property has no signature."</Message>
-	<Comment> Prop has no signature </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312bf">
-	<SymbolicName>VLDTR_E_PR_DUP</SymbolicName>
-	<Message>"Property has a duplicate."</Message>
-	<Comment> Prop has a duplicate </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312c0">
-	<SymbolicName>VLDTR_E_PR_BADCALLINGCONV</SymbolicName>
-	<Message>"Property has bad calling convention."</Message>
-	<Comment> Prop has bad calling convention </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312c1">
-	<SymbolicName>VLDTR_E_PR_MARKEDNODEFLT</SymbolicName>
-	<Message>"Property marked HasDefault, has no const value."</Message>
-	<Comment> Prop marked HasDefault, has no const value </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312c2">
-	<SymbolicName>VLDTR_E_PR_DEFLTNOTMARKED</SymbolicName>
-	<Message>"Property has const value, not marked HasDefault."</Message>
-	<Comment> Prop has const value, not marked HasDefault </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312c3">
-	<SymbolicName>VLDTR_E_PR_BADSEMANTICS</SymbolicName>
-	<Message>"Property has method that is neither a Setter nor a Getter."</Message>
-	<Comment> Prop has method not (Setter,Getter, or Other) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312c4">
-	<SymbolicName>VLDTR_E_PR_BADMETHOD</SymbolicName>
-	<Message>"Property has method with invalid token."</Message>
-	<Comment> Prop has method with invalid token </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312c5">
-	<SymbolicName>VLDTR_E_PR_ALIENMETHOD</SymbolicName>
-	<Message>"Property has method from another class."</Message>
-	<Comment> Prop has method from another class </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312c6">
-	<SymbolicName>VLDTR_E_CN_BLOBNOTNULL</SymbolicName>
-	<Message>"Const has non-null blob when it should not."</Message>
-	<Comment> Const has non-null blob when it should not </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312c7">
-	<SymbolicName>VLDTR_E_CN_BLOBNULL</SymbolicName>
-	<Message>"Const has null value blob."</Message>
-	<Comment> Const has null value blob </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312c8">
-	<SymbolicName>VLDTR_E_EV_BADSCOPE</SymbolicName>
-	<Message>"Event has invalid scope."</Message>
-	<Comment> Event has invalid scope </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ca">
-	<SymbolicName>VLDTR_E_EV_NONAME</SymbolicName>
-	<Message>"Event has no name."</Message>
-	<Comment> Event has no name </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312cb">
-	<SymbolicName>VLDTR_E_EV_DUP</SymbolicName>
-	<Message>"Event has a duplicate."</Message>
-	<Comment> Event has a duplicate </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312cc">
-	<SymbolicName>VLDTR_E_EV_BADEVTYPE</SymbolicName>
-	<Message>"Event has invalid EventType."</Message>
-	<Comment> Event has invalid EventType </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312cd">
-	<SymbolicName>VLDTR_E_EV_EVTYPENOTCLASS</SymbolicName>
-	<Message>"Event's EventType is not a class."</Message>
-	<Comment> Event's EventType is not a class </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ce">
-	<SymbolicName>VLDTR_E_EV_BADSEMANTICS</SymbolicName>
-	<Message>"Event has method not (AddOn,RemoveOn,Fire,Other)."</Message>
-	<Comment> Event has method not (AddOn,RemoveOn,Fire,Other) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312cf">
-	<SymbolicName>VLDTR_E_EV_BADMETHOD</SymbolicName>
-	<Message>"Event has method with invalid token."</Message>
-	<Comment> Event has method with invalid token </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312d0">
-	<SymbolicName>VLDTR_E_EV_ALIENMETHOD</SymbolicName>
-	<Message>"Event has method from another class."</Message>
-	<Comment> Event has method from another class </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312d1">
-	<SymbolicName>VLDTR_E_EV_NOADDON</SymbolicName>
-	<Message>"Event has no AddOn method."</Message>
-	<Comment> Event has no AddOn method </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312d2">
-	<SymbolicName>VLDTR_E_EV_NOREMOVEON</SymbolicName>
-	<Message>"Event has no RemoveOn method."</Message>
-	<Comment> Event has no RemoveOn method </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312d3">
-	<SymbolicName>VLDTR_E_CT_DUPTDNAME</SymbolicName>
-	<Message>"ExportedType has same name as TypeDef."</Message>
-	<Comment> ExportedType has same name as TypeDef </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312d4">
-	<SymbolicName>VLDTR_E_MAR_BADOFFSET</SymbolicName>
-	<Message>"MRes refers to non-PE file with non-zero offset."</Message>
-	<Comment> MRes refers to non-PE file with offset !=0 </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312d5">
-	<SymbolicName>VLDTR_E_DS_BADOWNER</SymbolicName>
-	<Message>"Declarative security has invalid owner token."</Message>
-	<Comment> Decl.security has invalid owner token </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312d6">
-	<SymbolicName>VLDTR_E_DS_BADFLAGS</SymbolicName>
-	<Message>"Declarative security has invalid action flags."</Message>
-	<Comment> Decl.security has invalid action flags </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312d7">
-	<SymbolicName>VLDTR_E_DS_NOBLOB</SymbolicName>
-	<Message>"Declarative security has no permission blob."</Message>
-	<Comment> Decl.security has no permission blob </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312d8">
-	<SymbolicName>VLDTR_E_MAR_BADIMPL</SymbolicName>
-	<Message>"Manifest resource has invalid Implementation."</Message>
-	<Comment> Manifest resource has invalid Implementation </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312da">
-	<SymbolicName>VLDTR_E_MR_VARARGCALLINGCONV</SymbolicName>
-	<Message>"MemberRef has VARARG calling conv. (CLS warning)."</Message>
-	<Comment> MemberRef has VARARG calling conv. (CLS warning) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312db">
-	<SymbolicName>VLDTR_E_MD_CTORNOTVOID</SymbolicName>
-	<Message>".ctor or .cctor returns something other than void."</Message>
-	<Comment> .ctor,.cctor returning not void </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312dc">
-	<SymbolicName>VLDTR_E_EV_FIRENOTVOID</SymbolicName>
-	<Message>"Fire method returns something other than void."</Message>
-	<Comment> Fire method returning not void </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312dd">
-	<SymbolicName>VLDTR_E_AS_BADLOCALE</SymbolicName>
-	<Message>"Invalid locale."</Message>
-	<Comment> Invalid locale </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312de">
-	<SymbolicName>VLDTR_E_CN_PARENTTYPE</SymbolicName>
-	<Message>"Constant has parent of invalid type."</Message>
-	<Comment> Constant has parent of invalid type </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x801312df">
@@ -2756,12 +838,6 @@
 	<Comment> Multiple E_T_SENTINELs </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x801312e2">
-	<SymbolicName>VLDTR_E_SIG_LASTSENTINEL</SymbolicName>
-	<Message>"E_T_SENTINEL not followed by type."</Message>
-	<Comment> E_T_SENTINEL not followed by type </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x801312e3">
 	<SymbolicName>VLDTR_E_SIG_MISSARG</SymbolicName>
 	<Message>"Signature missing argument."</Message>
@@ -2772,168 +848,6 @@
 	<SymbolicName>VLDTR_E_SIG_BYREFINFIELD</SymbolicName>
 	<Message>"Field of ByRef type."</Message>
 	<Comment> Field of ByRef type </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312e5">
-	<SymbolicName>VLDTR_E_MD_SYNCMETHODINVTYPE</SymbolicName>
-	<Message>"Synchronized method in value class."</Message>
-	<Comment> Synchronized method in value class </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312e6">
-	<SymbolicName>VLDTR_E_TD_NAMETOOLONG</SymbolicName>
-	<Message>"TypeDef name too long."</Message>
-	<Comment> TypeDef name too long </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312e7">
-	<SymbolicName>VLDTR_E_AS_PROCDUP</SymbolicName>
-	<Message>"Duplicate Assembly Processor."</Message>
-	<Comment> Duplicate Assembly Processor </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312e8">
-	<SymbolicName>VLDTR_E_ASOS_DUP</SymbolicName>
-	<Message>"Duplicate Assembly OS (ID+ver.major+ver.minor)."</Message>
-	<Comment> Duplicate Assembly OS (ID+ver.major+ver.minor) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312e9">
-	<SymbolicName>VLDTR_E_MAR_BADFLAGS</SymbolicName>
-	<Message>"Manifest Resource has bad flags."</Message>
-	<Comment> Manifest Resource has bad flags </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ea">
-	<SymbolicName>VLDTR_E_CT_NOTYPEDEFID</SymbolicName>
-	<Message>"ExportedType has nil TypeDefId."</Message>
-	<Comment> ExportedType has nil TypeDefId </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312eb">
-	<SymbolicName>VLDTR_E_FILE_BADFLAGS</SymbolicName>
-	<Message>"File has bad flags."</Message>
-	<Comment> File has bad flags </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ec">
-	<SymbolicName>VLDTR_E_FILE_NULLHASH</SymbolicName>
-	<Message>"File has no hash blob."</Message>
-	<Comment> File has no hash blob </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ed">
-	<SymbolicName>VLDTR_E_MOD_NONAME</SymbolicName>
-	<Message>"Module has no name."</Message>
-	<Comment> Module has no name </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ee">
-	<SymbolicName>VLDTR_E_MOD_NAMEFULLQLFD</SymbolicName>
-	<Message>"Module has fully-qualified name."</Message>
-	<Comment> Module has fully-qualified name </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ef">
-	<SymbolicName>VLDTR_E_TD_RTSPCLNOTSPCL</SymbolicName>
-	<Message>"TypeDef is tdRTSpecialName but not tdSpecialName."</Message>
-	<Comment> TypeDef is tdRTSpecialName but not tdSpecialName </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312f0">
-	<SymbolicName>VLDTR_E_TD_EXTENDSIFACE</SymbolicName>
-	<Message>"TypeDef extends interface."</Message>
-	<Comment> TypeDef extends interface </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312f1">
-	<SymbolicName>VLDTR_E_MD_CTORPINVOKE</SymbolicName>
-	<Message>".ctor or .cctor is PInvokeImpl."</Message>
-	<Comment> .ctor,.cctor is PInvokeImpl </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312f2">
-	<SymbolicName>VLDTR_E_TD_SYSENUMNOTCLASS</SymbolicName>
-	<Message>"System.Enum is not a class."</Message>
-	<Comment> System.Enum is not a class </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312f3">
-	<SymbolicName>VLDTR_E_TD_SYSENUMNOTEXTVTYPE</SymbolicName>
-	<Message>"System.Enum extends not System.ValueType."</Message>
-	<Comment> System.Enum extends not System.ValueType </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312f4">
-	<SymbolicName>VLDTR_E_MI_SIGMISMATCH</SymbolicName>
-	<Message>"MethodImpl's Decl and Body signatures mismatch."</Message>
-	<Comment> MethodImpl's Decl and Body signatures mismatch </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312f5">
-	<SymbolicName>VLDTR_E_TD_ENUMHASMETHODS</SymbolicName>
-	<Message>"TypeDef extends System.Enum but has methods."</Message>
-	<Comment> TypeDef extends System.Enum but has methods </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312f6">
-	<SymbolicName>VLDTR_E_TD_ENUMIMPLIFACE</SymbolicName>
-	<Message>"TypeDef extends System.Enum but implements an interface."</Message>
-	<Comment> TypeDef extends System.Enum but impls interface(s) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312f7">
-	<SymbolicName>VLDTR_E_TD_ENUMHASPROP</SymbolicName>
-	<Message>"TypeDef extends System.Enum but has a property."</Message>
-	<Comment> TypeDef extends System.Enum but has prop(s) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312f8">
-	<SymbolicName>VLDTR_E_TD_ENUMHASEVENT</SymbolicName>
-	<Message>"TypeDef extends System.Enum but has an event."</Message>
-	<Comment> TypeDef extends System.Enum but has event(s) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312f9">
-	<SymbolicName>VLDTR_E_TD_BADMETHODLST</SymbolicName>
-	<Message>"TypeDef has MethodList &gt; Nmethods+1."</Message>
-	<Comment> TypeDef has MethodList &gt; Nmethods+1 </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312fa">
-	<SymbolicName>VLDTR_E_TD_BADFIELDLST</SymbolicName>
-	<Message>"TypeDef has FieldList &gt; Nfields+1."</Message>
-	<Comment> TypeDef has FieldList &gt; Nfields+1 </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312fb">
-	<SymbolicName>VLDTR_E_CN_BADTYPE</SymbolicName>
-	<Message>"Constant has wrong type."</Message>
-	<Comment> Constant has wrong type </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312fc">
-	<SymbolicName>VLDTR_E_TD_ENUMNOINSTFLD</SymbolicName>
-	<Message>"Enum has no instance fields."</Message>
-	<Comment> Enum has no instance fields </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312fd">
-	<SymbolicName>VLDTR_E_TD_ENUMMULINSTFLD</SymbolicName>
-	<Message>"Enum has multiple instance fields."</Message>
-	<Comment> Enum has multiple instance fields </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312fe">
-	<SymbolicName>VLDTR_E_INTERRUPTED</SymbolicName>
-	<Message>"Validator has been interrupted by the VEHandler."</Message>
-	<Comment> Validator has been interrupted by the VEHandler. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801312ff">
-	<SymbolicName>VLDTR_E_NOTINIT</SymbolicName>
-	<Message>"Validator failed to initialize correctly."</Message>
-	<Comment> Validator failed to initialize correctly. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131300">
@@ -2982,12 +896,6 @@
 	<SymbolicName>CORDBG_E_NON_NATIVE_FRAME</SymbolicName>
 	<Message>"'Native-frame-only' operation on non-native frame."</Message>
 	<Comment> "Native frame only" operation on </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131308">
-	<SymbolicName>CORDBG_E_NONCONTINUABLE_EXCEPTION</SymbolicName>
-	<Message>"Cannot Continue on non-continuable exception."</Message>
-	<Comment> Continue on non-continuable exception </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131309">
@@ -3050,22 +958,10 @@
 	<Comment> If you call CordbEval::GetResult before the </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131318">
-	<SymbolicName>CORDBG_E_INPROC_NOT_IMPL</SymbolicName>
-	<Message>"The in-process version of the debugging API does not support this function."</Message>
-	<Comment> The inproc version of the debugging API </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x8013131a">
 	<SymbolicName>CORDBG_E_STATIC_VAR_NOT_AVAILABLE</SymbolicName>
 	<Message>"A static variable is not available because it has not been initialized yet."</Message>
 	<Comment> A static variable isn't available because </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013131b">
-	<SymbolicName>CORDBG_E_OBJECT_IS_NOT_COPYABLE_VALUE_CLASS</SymbolicName>
-	<Message>"Cannot copy a VC with object refs in it."</Message>
-	<Comment> Can't copy a VC with object refs in it. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013131c">
@@ -3090,24 +986,6 @@
 	<SymbolicName>CORDBG_E_CANT_SET_IP_OUT_OF_CATCH_ON_WIN64</SymbolicName>
 	<Message>"SetIP is not possible because it would move EIP from within a catch clause to a point outside of one on WIN64 platforms."</Message>
 	<Comment> SetIP isn't possible because it would move </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131320">
-	<SymbolicName>CORDBG_E_REMOTE_CONNECTION_CONN_RESET</SymbolicName>
-	<Message>"The remote device closed the connection."</Message>
-	<Comment> The remote device closed the connection. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131321">
-	<SymbolicName>CORDBG_E_REMOTE_CONNECTION_KEEP_ALIVE</SymbolicName>
-	<Message>"The connection was closed due to a keep-alive failure."</Message>
-	<Comment> The connection was closed due to akeep alive failure. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131322">
-	<SymbolicName>CORDBG_E_REMOTE_CONNECTION_FATAL_ERROR</SymbolicName>
-	<Message>"Generic error that the device connection has been broken with no chance for recovery."</Message>
-	<Comment> Generic error that the device connection has been broken with no chance for recovery. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131323">
@@ -3172,12 +1050,6 @@
 	<Comment> Can't perfrom SetValue on non-leaf frames. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131331">
-	<SymbolicName>CORDBG_E_ENC_EH_MAX_NESTING_LEVEL_CANT_INCREASE</SymbolicName>
-	<Message>"When doing Edit and Continue, some JITs do not allow increasing the maximum level to which exception handling can be nested."</Message>
-	<Comment> When doing EnC, some JITters don't let you </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131332">
 	<SymbolicName>CORDBG_E_ENC_MODULE_NOT_ENC_ENABLED</SymbolicName>
 	<Message>"Tried to do Edit and Continue on a module that was not started in Edit and Continue mode."</Message>
@@ -3202,34 +1074,10 @@
 	<Comment> Process has been detached from </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131336">
-	<SymbolicName>CORDBG_E_ENC_METHOD_SIG_CHANGED</SymbolicName>
-	<Message>"Not allowed to change the signature of an existing method."</Message>
-	<Comment> Not allowed to change the signature of an </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131337">
-	<SymbolicName>CORDBG_E_ENC_METHOD_NO_LOCAL_SIG</SymbolicName>
-	<Message>"Cannot get the local signature for the method."</Message>
-	<Comment> Can't get the local signature for the method </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131338">
 	<SymbolicName>CORDBG_E_ENC_CANT_ADD_FIELD_TO_VALUE_OR_LAYOUT_CLASS</SymbolicName>
 	<Message>"Adding a field to a value or layout class is prohibited."</Message>
 	<Comment> Adding a field to a value or layout class is prohibitted, </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131339">
-	<SymbolicName>CORDBG_E_ENC_CANT_CHANGE_FIELD</SymbolicName>
-	<Message>"Cannot change field after adding."</Message>
-	<Comment> Once you've got a field, you're not allowed to change </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013133a">
-	<SymbolicName>CORDBG_E_ENC_CANT_ADD_NON_PRIVATE_MEMBER</SymbolicName>
-	<Message>"Only support addition of private members."</Message>
-	<Comment> Only support addition of private members. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013133b">
@@ -3244,28 +1092,10 @@
 	<Comment> Returned if someone tries to call GetStaticFieldValue </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x8013133d">
-	<SymbolicName>CORDBG_E_ENC_ZAPPED_WITHOUT_ENC</SymbolicName>
-	<Message>"If a zap file was created without the Edit and Continue flag set, then we cannot do Edit and Continue on it, no matter what."</Message>
-	<Comment> If a zap file was created without the EnC flag set, then </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013133e">
-	<SymbolicName>CORDBG_E_ENC_BAD_METHOD_INFO</SymbolicName>
-	<Message>"Lacking information about method."</Message>
-	<Comment> Lacking information about method. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x8013133f">
 	<SymbolicName>CORDBG_E_ENC_JIT_CANT_UPDATE</SymbolicName>
 	<Message>"The JIT is unable to update the method."</Message>
 	<Comment> The JIT is unable to update the method. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131340">
-	<SymbolicName>CORDBG_E_ENC_MISSING_CLASS</SymbolicName>
-	<Message>"An internal structure about the class is missing."</Message>
-	<Comment> An internal structure about the class is missing </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131341">
@@ -3284,12 +1114,6 @@
 	<SymbolicName>CORDBG_E_MODULE_NOT_LOADED</SymbolicName>
 	<Message>"Module not loaded."</Message>
 	<Comment> If the module isn't loaded, including if it's been unloaded. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131344">
-	<SymbolicName>CORDBG_E_ENC_CANT_CHANGE_SUPERCLASS</SymbolicName>
-	<Message>"Not allowed to change base class."</Message>
-	<Comment> Not allowed to change which class something inherits from </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131345">
@@ -3314,18 +1138,6 @@
 	<SymbolicName>CORDBG_E_KERNEL_DEBUGGER_PRESENT</SymbolicName>
 	<Message>"A kernel debugger is present on the system.  User-mode debugging will trap to the kernel debugger."</Message>
 	<Comment> Debugging isn't possible because a kernel debugger is present on the system. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131349">
-	<SymbolicName>CORDBG_E_HELPER_THREAD_DEAD</SymbolicName>
-	<Message>"The debugger's internal helper thread is dead."</Message>
-	<Comment> The debugger's internal helper thread is dead. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013134a">
-	<SymbolicName>CORDBG_E_INTERFACE_INHERITANCE_CANT_CHANGE</SymbolicName>
-	<Message>"Not allowed to change interface inheritance."</Message>
-	<Comment> Not allowed to change interface inheritance. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013134b">
@@ -3370,18 +1182,6 @@
 	<Comment> The ID is not fully loaded/defined yet. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131352">
-	<SymbolicName>CORPROF_E_NOT_REJITABLE_METHODS</SymbolicName>
-	<Message>"The Module is not configured for updateable methods."</Message>
-	<Comment> The Module is not configured for updateable methods. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131353">
-	<SymbolicName>CORPROF_E_CANNOT_UPDATE_METHOD</SymbolicName>
-	<Message>"The Method could not be updated for re-JIT."</Message>
-	<Comment> The Method could not be updated for re-jit. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131354">
 	<SymbolicName>CORPROF_E_FUNCTION_NOT_IL</SymbolicName>
 	<Message>"The Method has no associated IL."</Message>
@@ -3400,29 +1200,6 @@
 	<Comment> The function may only be called during profiler init </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131357">
-	<SymbolicName>CORPROF_E_INPROC_NOT_ENABLED</SymbolicName>
-	<Message>"In-process debugging must be enabled during initialization."</Message>
-	<Comment> Inprocess debugging must be enabled during init </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131358">
-	<SymbolicName>CORPROF_E_JITMAPS_NOT_ENABLED</SymbolicName>
-	<Message>"Cannot get a JIT map becuase they are not enabled."</Message>
-	<Comment> Can't get a JIT map becuase they are not enabled </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131359">
-	<SymbolicName>CORPROF_E_INPROC_ALREADY_BEGUN</SymbolicName>
-	<Message>"BeginInprocDebugging already called."</Message>
-	<Comment> If a profiler tries to call BeginInprocDebugging more than </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013135a">
-	<SymbolicName>CORPROF_E_INPROC_NOT_AVAILABLE</SymbolicName>
-	<Message>"In-process debugging not allowed at this point."</Message>
-	<Comment> States that inprocess debugging not allowed at this point </Comment>
-</HRESULT>
 
 <HRESULT NumericValue="0x8013135b">
 	<SymbolicName>CORPROF_E_NOT_YET_AVAILABLE</SymbolicName>
@@ -3616,12 +1393,6 @@
     <Comment> Profiler must implement ICorProfilerCallback7 interface for this call to be supported. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131400">
-	<SymbolicName>SECURITY_E_XML_TO_ASN_ENCODING</SymbolicName>
-	<Message>"Failed to convert XML to ASN."</Message>
-	<Comment> Failed to convert XML to ASN </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131401">
 	<SymbolicName>SECURITY_E_INCOMPATIBLE_SHARE</SymbolicName>
 	<Message>"Loading this assembly would produce a different grant set from other instances."</Message>
@@ -3640,29 +1411,6 @@
 	<Comment> Assembly already loaded without additional security evidence. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131410">
-	<SymbolicName>CORSEC_E_DECODE_SET</SymbolicName>
-	<Message>"Failure decoding permission set."</Message>
-	<Comment> Failure decoding permission set </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131411">
-	<SymbolicName>CORSEC_E_ENCODE_SET</SymbolicName>
-	<Message>"Failure encoding permission set."</Message>
-	<Comment> Failure encoding permission set </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131412">
-	<SymbolicName>CORSEC_E_UNSUPPORTED_FORMAT</SymbolicName>
-	<Message>"Unrecognized encoding format."</Message>
-	<Comment> Unrecognized encoding format </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131413">
-	<SymbolicName>SN_CRYPTOAPI_CALL_FAILED</SymbolicName>
-	<Comment> StrongName APIs not supported on system </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131413">
 	<SymbolicName>CORSEC_E_CRYPTOAPI_CALL_FAILED</SymbolicName>
 	<Message>"StrongName APIs not supported on system."</Message>
@@ -3670,20 +1418,9 @@
 </HRESULT>
 
 <HRESULT NumericValue="0x80131414">
-	<SymbolicName>SN_NO_SUITABLE_CSP</SymbolicName>
-	<Comment> StrongName APIs couldn't locate a matching CSP </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131414">
 	<SymbolicName>CORSEC_E_NO_SUITABLE_CSP</SymbolicName>
 	<Message>"StrongName APIs could not locate a matching CSP."</Message>
 	<Comment> StrongName APIs couldn't locate a matching CSP </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131415">
-	<SymbolicName>CORSEC_E_INVALID_ATTR</SymbolicName>
-	<Message>"Invalid security custom attribute."</Message>
-	<Comment> Invalid security custom attribute </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131416">
@@ -3720,12 +1457,6 @@
 	<SymbolicName>CORSEC_E_MISSING_STRONGNAME</SymbolicName>
 	<Message>"Assembly is not strong named."</Message>
 	<Comment> Assembly is not strong named </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013141c">
-	<SymbolicName>CORSEC_E_CONTAINER_NOT_FOUND</SymbolicName>
-	<Message>"Strong name key container not found."</Message>
-	<Comment> Strong name key container not found </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013141d">
@@ -3776,255 +1507,10 @@
 	<Comment> generic CryptographicUnexpectedOperationException </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x8013143a">
-	<SymbolicName>CORSECATTR_E_BAD_ATTRIBUTE</SymbolicName>
-	<Message>"Generic problem with a custom attribute."</Message>
-	<Comment> Generic problem with a custom attribute </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013143b">
-	<SymbolicName>CORSECATTR_E_MISSING_CONSTRUCTOR</SymbolicName>
-	<Message>"Missing a required constructor."</Message>
-	<Comment> Missing a required constructor </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013143c">
-	<SymbolicName>CORSECATTR_E_FAILED_TO_CREATE_PERM</SymbolicName>
-	<Message>"Unable to create a permission for this attribute."</Message>
-	<Comment> Unable to create a permission for this attribute </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013143d">
-	<SymbolicName>CORSECATTR_E_BAD_ACTION_ASM</SymbolicName>
-	<Message>"SecurityAction type invalid on assembly."</Message>
-	<Comment> SecurityAction type invalid on assembly </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013143e">
-	<SymbolicName>CORSECATTR_E_BAD_ACTION_OTHER</SymbolicName>
-	<Message>"SecurityAction type invalid on types and methods."</Message>
-	<Comment> SecurityAction type invalid on types and methods </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013143f">
-	<SymbolicName>CORSECATTR_E_BAD_PARENT</SymbolicName>
-	<Message>"Security custom attribute attached to invalid parent."</Message>
-	<Comment> Security custom attribute attached to invalid parent </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131440">
-	<SymbolicName>CORSECATTR_E_TRUNCATED</SymbolicName>
-	<Message>"Bad custom attribute serialized blob."</Message>
-	<Comment> Bad custom attribute serialized blob </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131441">
-	<SymbolicName>CORSECATTR_E_BAD_VERSION</SymbolicName>
-	<Message>"Bad custom attribute serialized blob version."</Message>
-	<Comment> Bad custom attribute serialized blob version </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131442">
 	<SymbolicName>CORSECATTR_E_BAD_ACTION</SymbolicName>
 	<Message>"Invalid security action code."</Message>
 	<Comment> Invalid security action code </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131443">
-	<SymbolicName>CORSECATTR_E_NO_SELF_REF</SymbolicName>
-	<Message>"CA reference to CA definition in same assembly."</Message>
-	<Comment> CA ref to CA def'd in same assembly </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131444">
-	<SymbolicName>CORSECATTR_E_BAD_NONCAS</SymbolicName>
-	<Message>"Use of non-CAS permission with invalid action."</Message>
-	<Comment> Use of non-CAS perm with invalid action </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131445">
-	<SymbolicName>CORSECATTR_E_ASSEMBLY_LOAD_FAILED</SymbolicName>
-	<Message>"Failed to load assembly containing CA (or required CA type)."</Message>
-	<Comment> Failed to load assembly containing CA (or req'd CA type) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131446">
-	<SymbolicName>CORSECATTR_E_ASSEMBLY_LOAD_FAILED_EX</SymbolicName>
-	<Message>"Failed to load assembly containing CA (or required CA type)."</Message>
-	<Comment> Failed to load assembly containing CA (or req'd CA type) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131447">
-	<SymbolicName>CORSECATTR_E_TYPE_LOAD_FAILED</SymbolicName>
-	<Message>"Failed to load CA type (or required CA type)."</Message>
-	<Comment> Failed to load CA type (or reqd CA type) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131448">
-	<SymbolicName>CORSECATTR_E_TYPE_LOAD_FAILED_EX</SymbolicName>
-	<Message>"Failed to load CA type (or required CA type)."</Message>
-	<Comment> Failed to load CA type (or reqd CA type) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131449">
-	<SymbolicName>CORSECATTR_E_ABSTRACT</SymbolicName>
-	<Message>"CA type is abstract."</Message>
-	<Comment> CA type is abstract </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013144a">
-	<SymbolicName>CORSECATTR_E_UNSUPPORTED_TYPE</SymbolicName>
-	<Message>"Security custom attributes do not support array or Type fields and properties."</Message>
-	<Comment> Security custom attributes do not support array or Type fields and properties </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013144b">
-	<SymbolicName>CORSECATTR_E_UNSUPPORTED_ENUM_TYPE</SymbolicName>
-	<Message>"Unsupported base type for enum field or property."</Message>
-	<Comment> Unsupported base type for enum field/property </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013144c">
-	<SymbolicName>CORSECATTR_E_NO_FIELD</SymbolicName>
-	<Message>"Could not find a CA field."</Message>
-	<Comment> Couldn't find a CA field </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013144d">
-	<SymbolicName>CORSECATTR_E_NO_PROPERTY</SymbolicName>
-	<Message>"Could not find a CA property."</Message>
-	<Comment> Couldn't find a CA property </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013144e">
-	<SymbolicName>CORSECATTR_E_EXCEPTION</SymbolicName>
-	<Message>"Unexpected exception."</Message>
-	<Comment> Unexpected exception </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013144f">
-	<SymbolicName>CORSECATTR_E_EXCEPTION_HR</SymbolicName>
-	<Message>"Unexpected exception."</Message>
-	<Comment> Unexpected exception </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131450">
-	<SymbolicName>ISS_E_ISOSTORE</SymbolicName>
-	<Message>"IsolatedStorage operation failed."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131460">
-	<SymbolicName>ISS_E_OPEN_STORE_FILE</SymbolicName>
-	<Message>"Unable to open the store."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131461">
-	<SymbolicName>ISS_E_OPEN_FILE_MAPPING</SymbolicName>
-	<Message>"Unable to create store file mapping."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131462">
-	<SymbolicName>ISS_E_MAP_VIEW_OF_FILE</SymbolicName>
-	<Message>"Unable to map the store file."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131463">
-	<SymbolicName>ISS_E_GET_FILE_SIZE</SymbolicName>
-	<Message>"Unable to determine store file size."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131464">
-	<SymbolicName>ISS_E_CREATE_MUTEX</SymbolicName>
-	<Message>"Unable to create mutex."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131465">
-	<SymbolicName>ISS_E_LOCK_FAILED</SymbolicName>
-	<Message>"Unable to lock the store."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131466">
-	<SymbolicName>ISS_E_FILE_WRITE</SymbolicName>
-	<Message>"File Write failed."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131467">
-	<SymbolicName>ISS_E_SET_FILE_POINTER</SymbolicName>
-	<Message>"Cannot set file pointer."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131468">
-	<SymbolicName>ISS_E_CREATE_DIR</SymbolicName>
-	<Message>"Unable to create the store directory."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131469">
-	<SymbolicName>ISS_E_STORE_NOT_OPEN</SymbolicName>
-	<Message>"Store must be open for this operation."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131480">
-	<SymbolicName>ISS_E_CORRUPTED_STORE_FILE</SymbolicName>
-	<Message>"Store file is corrupt."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131481">
-	<SymbolicName>ISS_E_STORE_VERSION</SymbolicName>
-	<Message>"Store version is not supported."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131482">
-	<SymbolicName>ISS_E_FILE_NOT_MAPPED</SymbolicName>
-	<Message>"Store file is not mapped."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131483">
-	<SymbolicName>ISS_E_BLOCK_SIZE_TOO_SMALL</SymbolicName>
-	<Message>"Block size is too small."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131484">
-	<SymbolicName>ISS_E_ALLOC_TOO_LARGE</SymbolicName>
-	<Message>"Allocation size is too large."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131485">
-	<SymbolicName>ISS_E_USAGE_WILL_EXCEED_QUOTA</SymbolicName>
-	<Message>"Allowed quota is fully used."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131486">
-	<SymbolicName>ISS_E_TABLE_ROW_NOT_FOUND</SymbolicName>
-	<Message>"Row not found."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801314a0">
-	<SymbolicName>ISS_E_DEPRECATE</SymbolicName>
-	<Message>"Unable to deprecate old store."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801314a1">
-	<SymbolicName>ISS_E_CALLER</SymbolicName>
-	<Message>"Unable to determine the caller."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801314a2">
-	<SymbolicName>ISS_E_PATH_LENGTH</SymbolicName>
-	<Message>"Path length is too long."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801314a3">
-	<SymbolicName>ISS_E_MACHINE</SymbolicName>
-	<Message>"Machine Store is not supported."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801314a4">
-	<SymbolicName>ISS_E_MACHINE_DACL</SymbolicName>
-	<Message>"The DACL for the machine store is incorrect or could not be created."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801314ff">
-	<SymbolicName>ISS_E_ISOSTORE_END</SymbolicName>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131500">
@@ -4093,11 +1579,6 @@
 	<Comment> An error relating to security occurred.</Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x8013150b">
-	<SymbolicName>COR_E_REMOTING</SymbolicName>
-	<Message>"An error relating to remoting occurred."</Message>
-	<Comment> An error relating to remoting occurred.</Comment>
-</HRESULT>
 
 <HRESULT NumericValue="0x8013150c">
 	<SymbolicName>COR_E_SERIALIZATION</SymbolicName>
@@ -4109,17 +1590,6 @@
 	<SymbolicName>COR_E_VERIFICATION</SymbolicName>
 	<Message>"A verification failure has occurred."</Message>
 	<Comment> A verification failure occurred</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013150e">
-	<SymbolicName>COR_E_SERVER</SymbolicName>
-	<Message>"An error relating to remoting occurred."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013150f">
-	<SymbolicName>COR_E_SERVICEDCOMPONENT</SymbolicName>
-	<Message>"An error relating to ServicedComponent occurred."</Message>
-	<Comment> An error relating to ServicedComponent occurred.</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131510">
@@ -4341,12 +1811,6 @@
 	<Comment> An object that does not derive from System.Exception has been wrapped in a RuntimeWrappedException.</Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131540">
-	<SymbolicName>COR_E_DEVICESNOTSUPPORTED</SymbolicName>
-	<Message>"Devices not supported."</Message>
-	<Comment></Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131541">
 	<SymbolicName>COR_E_DATAMISALIGNED</SymbolicName>
 	<Message>"A datatype misalignment was detected in a load or store instruction."</Message>
@@ -4468,24 +1932,6 @@
 	<Comment> Failed to load the runtime </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131701">
-	<SymbolicName>CLR_E_SHIM_RUNTIMEEXPORT</SymbolicName>
-	<Message>"Failed to find a required export in the runtime."</Message>
-	<Comment> Failed to find a required export in the runtime </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131702">
-	<SymbolicName>CLR_E_SHIM_INSTALLROOT</SymbolicName>
-	<Message>"Install root is not defined."</Message>
-	<Comment> Install root is not defined </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131703">
-	<SymbolicName>CLR_E_SHIM_INSTALLCOMP</SymbolicName>
-	<Message>"Expected component of the runtime is not available."</Message>
-	<Comment> Expected component of the runtime is not available </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131704">
 	<SymbolicName>CLR_E_SHIM_LEGACYRUNTIMEALREADYBOUND</SymbolicName>
 	<Message>"A runtime has already been bound for legacy activation policy use."</Message>
@@ -4496,72 +1942,8 @@
   <Message>"The operation is invalid because the process may be shutting down."</Message>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131801">
-	<SymbolicName>VER_E_HRESULT</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131802">
-	<SymbolicName>VER_E_OFFSET</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131803">
-	<SymbolicName>VER_E_OPCODE</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131804">
-	<SymbolicName>VER_E_OPERAND</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131805">
-	<SymbolicName>VER_E_TOKEN</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131806">
-	<SymbolicName>VER_E_EXCEPT</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131807">
-	<SymbolicName>VER_E_STACK_SLOT</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131808">
-	<SymbolicName>VER_E_LOC</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131809">
-	<SymbolicName>VER_E_ARG</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013180a">
-	<SymbolicName>VER_E_FOUND</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013180b">
-	<SymbolicName>VER_E_EXPECTED</SymbolicName>
-</HRESULT>
-
 <HRESULT NumericValue="0x8013180c">
 	<SymbolicName>VER_E_LOC_BYNAME</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131810">
-	<SymbolicName>VER_E_UNKNOWN_OPCODE</SymbolicName>
-	<Message>"Unknown opcode."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131811">
-	<SymbolicName>VER_E_SIG_CALLCONV</SymbolicName>
-	<Message>"Unknown calling convention."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131812">
-	<SymbolicName>VER_E_SIG_ELEMTYPE</SymbolicName>
-	<Message>"Unknown ELEMENT_TYPE."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131814">
-	<SymbolicName>VER_E_RET_SIG</SymbolicName>
-	<Message>"[return sig]"</Message>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131815">
@@ -4572,814 +1954,6 @@
 <HRESULT NumericValue="0x80131816">
     <SymbolicName>VER_E_OPEN_DLGT_PROT_ACC</SymbolicName>
     <Message>"Protected method access through an open instance delegate is not verifiable."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131818">
-	<SymbolicName>VER_E_INTERNAL</SymbolicName>
-	<Message>"Internal error."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131819">
-	<SymbolicName>VER_E_STACK_TOO_LARGE</SymbolicName>
-	<Message>"Stack is too large."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013181a">
-	<SymbolicName>VER_E_ARRAY_NAME_LONG</SymbolicName>
-	<Message>"Array name is too long."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131820">
-	<SymbolicName>VER_E_FALLTHRU</SymbolicName>
-	<Message>"fall through end of the method without returning"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131821">
-	<SymbolicName>VER_E_TRY_GTEQ_END</SymbolicName>
-	<Message>"try start &gt;= try end"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131822">
-	<SymbolicName>VER_E_TRYEND_GT_CS</SymbolicName>
-	<Message>"try end &gt; code size"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131823">
-	<SymbolicName>VER_E_HND_GTEQ_END</SymbolicName>
-	<Message>"handler start &gt;= handler end"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131824">
-	<SymbolicName>VER_E_HNDEND_GT_CS</SymbolicName>
-	<Message>"handler end &gt; code size"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131825">
-	<SymbolicName>VER_E_FLT_GTEQ_CS</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131826">
-	<SymbolicName>VER_E_TRY_START</SymbolicName>
-	<Message>"Try starts in the middle of an instruction."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131827">
-	<SymbolicName>VER_E_HND_START</SymbolicName>
-	<Message>"Handler starts in the middle of an instruction."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131828">
-	<SymbolicName>VER_E_FLT_START</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131829">
-	<SymbolicName>VER_E_TRY_OVERLAP</SymbolicName>
-	<Message>"Try block overlap with another block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013182a">
-	<SymbolicName>VER_E_TRY_EQ_HND_FIL</SymbolicName>
-	<Message>"Try and filter/handler blocks are equivalent."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013182b">
-	<SymbolicName>VER_E_TRY_SHARE_FIN_FAL</SymbolicName>
-	<Message>"Shared try has finally or fault handler."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013182c">
-	<SymbolicName>VER_E_HND_OVERLAP</SymbolicName>
-	<Message>"Handler block overlaps with another block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013182d">
-	<SymbolicName>VER_E_HND_EQ</SymbolicName>
-	<Message>"Handler block is the same as another block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013182e">
-	<SymbolicName>VER_E_FIL_OVERLAP</SymbolicName>
-	<Message>"Filter block overlaps with another block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013182f">
-	<SymbolicName>VER_E_FIL_EQ</SymbolicName>
-	<Message>"Filter block is the same as another block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131830">
-	<SymbolicName>VER_E_FIL_CONT_TRY</SymbolicName>
-	<Message>"Filter contains try."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131831">
-	<SymbolicName>VER_E_FIL_CONT_HND</SymbolicName>
-	<Message>"Filter contains handler."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131832">
-	<SymbolicName>VER_E_FIL_CONT_FIL</SymbolicName>
-	<Message>"Nested filters."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131833">
-	<SymbolicName>VER_E_FIL_GTEQ_CS</SymbolicName>
-	<Message>"filter &gt;= code size"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131834">
-	<SymbolicName>VER_E_FIL_START</SymbolicName>
-	<Message>"Filter starts in the middle of an instruction."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131835">
-	<SymbolicName>VER_E_FALLTHRU_EXCEP</SymbolicName>
-	<Message>"fallthru the end of an exception block"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131836">
-	<SymbolicName>VER_E_FALLTHRU_INTO_HND</SymbolicName>
-	<Message>"fallthru into an exception handler"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131837">
-	<SymbolicName>VER_E_FALLTHRU_INTO_FIL</SymbolicName>
-	<Message>"fallthru into an exception filter"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131838">
-	<SymbolicName>VER_E_LEAVE</SymbolicName>
-	<Message>"Leave from outside a try or catch block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131839">
-	<SymbolicName>VER_E_RETHROW</SymbolicName>
-	<Message>"Rethrow from outside a catch handler."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013183a">
-	<SymbolicName>VER_E_ENDFINALLY</SymbolicName>
-	<Message>"Endfinally from outside a finally handler"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013183b">
-	<SymbolicName>VER_E_ENDFILTER</SymbolicName>
-	<Message>"Endfilter from outside an exception filter block"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013183c">
-	<SymbolicName>VER_E_ENDFILTER_MISSING</SymbolicName>
-	<Message>"Missing Endfilter."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013183d">
-	<SymbolicName>VER_E_BR_INTO_TRY</SymbolicName>
-	<Message>"Branch into try block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013183e">
-	<SymbolicName>VER_E_BR_INTO_HND</SymbolicName>
-	<Message>"Branch into exception handler block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013183f">
-	<SymbolicName>VER_E_BR_INTO_FIL</SymbolicName>
-	<Message>"Branch into exception filter block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131840">
-	<SymbolicName>VER_E_BR_OUTOF_TRY</SymbolicName>
-	<Message>"Branch out of try block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131841">
-	<SymbolicName>VER_E_BR_OUTOF_HND</SymbolicName>
-	<Message>"Branch out of exception handler block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131842">
-	<SymbolicName>VER_E_BR_OUTOF_FIL</SymbolicName>
-	<Message>"Branch out of exception filter block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131843">
-	<SymbolicName>VER_E_BR_OUTOF_FIN</SymbolicName>
-	<Message>"Branch out of finally block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131844">
-	<SymbolicName>VER_E_RET_FROM_TRY</SymbolicName>
-	<Message>"Return out of try block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131845">
-	<SymbolicName>VER_E_RET_FROM_HND</SymbolicName>
-	<Message>"Return out of exception handler block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131846">
-	<SymbolicName>VER_E_RET_FROM_FIL</SymbolicName>
-	<Message>"Return out of exception filter block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131847">
-	<SymbolicName>VER_E_BAD_JMP_TARGET</SymbolicName>
-	<Message>"jmp / exception into the middle of an instruction."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131848">
-	<SymbolicName>VER_E_PATH_LOC</SymbolicName>
-	<Message>"Non-compatible types depending on path."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131849">
-	<SymbolicName>VER_E_PATH_THIS</SymbolicName>
-	<Message>"Init state for this differs depending on path."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013184a">
-	<SymbolicName>VER_E_PATH_STACK</SymbolicName>
-	<Message>"Non-compatible types on stack depending on path."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013184b">
-	<SymbolicName>VER_E_PATH_STACK_DEPTH</SymbolicName>
-	<Message>"Stack depth differs depending on path."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013184c">
-	<SymbolicName>VER_E_THIS</SymbolicName>
-	<Message>"Instance variable (this) missing."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013184d">
-	<SymbolicName>VER_E_THIS_UNINIT_EXCEP</SymbolicName>
-	<Message>"Uninitialized this on entering a try block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013184e">
-	<SymbolicName>VER_E_THIS_UNINIT_STORE</SymbolicName>
-	<Message>"Store into this when it is uninitialized."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013184f">
-	<SymbolicName>VER_E_THIS_UNINIT_RET</SymbolicName>
-	<Message>"Return from .ctor when this is uninitialized."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131850">
-	<SymbolicName>VER_E_THIS_UNINIT_V_RET</SymbolicName>
-	<Message>"Return from .ctor before all fields are initialized."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131851">
-	<SymbolicName>VER_E_THIS_UNINIT_BR</SymbolicName>
-	<Message>"Branch back when this is uninitialized."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131852">
-	<SymbolicName>VER_E_LDFTN_CTOR</SymbolicName>
-	<Message>"ldftn and ldvirtftn not allowed on .ctor."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131853">
-	<SymbolicName>VER_E_STACK_NOT_EQ</SymbolicName>
-	<Message>"Non-compatible types on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131854">
-	<SymbolicName>VER_E_STACK_UNEXPECTED</SymbolicName>
-	<Message>"Unexpected type on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131855">
-	<SymbolicName>VER_E_STACK_EXCEPTION</SymbolicName>
-	<Message>"Missing stack slot for exception."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131856">
-	<SymbolicName>VER_E_STACK_OVERFLOW</SymbolicName>
-	<Message>"Stack overflow."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131857">
-	<SymbolicName>VER_E_STACK_UNDERFLOW</SymbolicName>
-	<Message>"Stack underflow."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131858">
-	<SymbolicName>VER_E_STACK_EMPTY</SymbolicName>
-	<Message>"Stack empty."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131859">
-	<SymbolicName>VER_E_STACK_UNINIT</SymbolicName>
-	<Message>"Uninitialized item on stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013185a">
-	<SymbolicName>VER_E_STACK_I_I4_I8</SymbolicName>
-	<Message>"Expected I, I4, or I8 on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013185b">
-	<SymbolicName>VER_E_STACK_R_R4_R8</SymbolicName>
-	<Message>"Expected R, R4, or R8 on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013185c">
-	<SymbolicName>VER_E_STACK_NO_R_I8</SymbolicName>
-	<Message>"unexpected R, R4, R8, or I8 on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013185d">
-	<SymbolicName>VER_E_STACK_NUMERIC</SymbolicName>
-	<Message>"Expected numeric type on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013185e">
-	<SymbolicName>VER_E_STACK_OBJREF</SymbolicName>
-	<Message>"Expected an ObjRef on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013185f">
-	<SymbolicName>VER_E_STACK_P_OBJREF</SymbolicName>
-	<Message>"Expected address of an ObjRef on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131860">
-	<SymbolicName>VER_E_STACK_BYREF</SymbolicName>
-	<Message>"Expected ByRef on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131861">
-	<SymbolicName>VER_E_STACK_METHOD</SymbolicName>
-	<Message>"Expected pointer to function on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131862">
-	<SymbolicName>VER_E_STACK_ARRAY_SD</SymbolicName>
-	<Message>"Expected single dimension array on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131863">
-	<SymbolicName>VER_E_STACK_VALCLASS</SymbolicName>
-	<Message>"Expected value type instance on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131864">
-	<SymbolicName>VER_E_STACK_P_VALCLASS</SymbolicName>
-	<Message>"Expected address of value type on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131865">
-	<SymbolicName>VER_E_STACK_NO_VALCLASS</SymbolicName>
-	<Message>"Unexpected value type instance on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131866">
-	<SymbolicName>VER_E_LOC_DEAD</SymbolicName>
-	<Message>"Local variable is unusable at this point."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131867">
-	<SymbolicName>VER_E_LOC_NUM</SymbolicName>
-	<Message>"Unrecognized local variable number."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131868">
-	<SymbolicName>VER_E_ARG_NUM</SymbolicName>
-	<Message>"Unrecognized argument number."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131869">
-	<SymbolicName>VER_E_TOKEN_RESOLVE</SymbolicName>
-	<Message>"Unable to resolve token."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013186a">
-	<SymbolicName>VER_E_TOKEN_TYPE</SymbolicName>
-	<Message>"Unable to resolve type of the token."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013186b">
-	<SymbolicName>VER_E_TOKEN_TYPE_MEMBER</SymbolicName>
-	<Message>"Expected memberRef, memberDef or methodSpec token."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013186c">
-	<SymbolicName>VER_E_TOKEN_TYPE_FIELD</SymbolicName>
-	<Message>"Expected memberRef or fieldDef token."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013186d">
-	<SymbolicName>VER_E_TOKEN_TYPE_SIG</SymbolicName>
-	<Message>"Expected signature token."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013186e">
-	<SymbolicName>VER_E_UNVERIFIABLE</SymbolicName>
-	<Message>"Instruction cannot be verified."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013186f">
-	<SymbolicName>VER_E_LDSTR_OPERAND</SymbolicName>
-	<Message>"Operand does not point to a valid string ref."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131870">
-	<SymbolicName>VER_E_RET_PTR_TO_STACK</SymbolicName>
-	<Message>"Return type is ByRef, TypedReference, ArgHandle, or ArgIterator."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131871">
-	<SymbolicName>VER_E_RET_VOID</SymbolicName>
-	<Message>"Stack must be empty on return from a void function."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131872">
-	<SymbolicName>VER_E_RET_MISSING</SymbolicName>
-	<Message>"Return value missing on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131873">
-	<SymbolicName>VER_E_RET_EMPTY</SymbolicName>
-	<Message>"Stack must contain only the return value."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131874">
-	<SymbolicName>VER_E_RET_UNINIT</SymbolicName>
-	<Message>"Return uninitialized data."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131875">
-	<SymbolicName>VER_E_ARRAY_ACCESS</SymbolicName>
-	<Message>"Illegal array access."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131876">
-	<SymbolicName>VER_E_ARRAY_V_STORE</SymbolicName>
-	<Message>"Store non Object type into Object array."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131877">
-	<SymbolicName>VER_E_ARRAY_SD</SymbolicName>
-	<Message>"Expected single dimension array."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131878">
-	<SymbolicName>VER_E_ARRAY_SD_PTR</SymbolicName>
-	<Message>"Expected single dimension array of pointer types."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131879">
-	<SymbolicName>VER_E_ARRAY_FIELD</SymbolicName>
-	<Message>"Array field access is denied."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013187a">
-	<SymbolicName>VER_E_ARGLIST</SymbolicName>
-	<Message>"Allowed only in vararg methods."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013187b">
-	<SymbolicName>VER_E_VALCLASS</SymbolicName>
-	<Message>"Value type expected."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013187c">
-	<SymbolicName>VER_E_METHOD_ACCESS</SymbolicName>
-	<Message>"Method is not visible."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013187d">
-	<SymbolicName>VER_E_FIELD_ACCESS</SymbolicName>
-	<Message>"Field is not visible."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013187e">
-	<SymbolicName>VER_E_DEAD</SymbolicName>
-	<Message>"Item is unusable at this point."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013187f">
-	<SymbolicName>VER_E_FIELD_STATIC</SymbolicName>
-	<Message>"Expected static field."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131880">
-	<SymbolicName>VER_E_FIELD_NO_STATIC</SymbolicName>
-	<Message>"Expected non-static field."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131881">
-	<SymbolicName>VER_E_ADDR</SymbolicName>
-	<Message>"Address of not allowed for this item."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131882">
-	<SymbolicName>VER_E_ADDR_BYREF</SymbolicName>
-	<Message>"Address of not allowed for ByRef."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131883">
-	<SymbolicName>VER_E_ADDR_LITERAL</SymbolicName>
-	<Message>"Address of not allowed for literal field."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131884">
-	<SymbolicName>VER_E_INITONLY</SymbolicName>
-	<Message>"Cannot change initonly field outside its .ctor."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131885">
-	<SymbolicName>VER_E_THROW</SymbolicName>
-	<Message>"Cannot throw this object."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131886">
-	<SymbolicName>VER_E_CALLVIRT_VALCLASS</SymbolicName>
-	<Message>"Callvirt on a value type method."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131887">
-	<SymbolicName>VER_E_CALL_SIG</SymbolicName>
-	<Message>"Call signature mismatch."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131888">
-	<SymbolicName>VER_E_CALL_STATIC</SymbolicName>
-	<Message>"Static function expected."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131889">
-	<SymbolicName>VER_E_CTOR</SymbolicName>
-	<Message>".ctor expected."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013188a">
-	<SymbolicName>VER_E_CTOR_VIRT</SymbolicName>
-	<Message>"Cannot use callvirt on .ctor."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013188b">
-	<SymbolicName>VER_E_CTOR_OR_SUPER</SymbolicName>
-	<Message>"Only super::ctor or typeof(this)::ctor allowed here."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013188c">
-	<SymbolicName>VER_E_CTOR_MUL_INIT</SymbolicName>
-	<Message>"Possible call to .ctor more than once."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013188d">
-	<SymbolicName>VER_E_SIG</SymbolicName>
-	<Message>"Unrecognized signature."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013188e">
-	<SymbolicName>VER_E_SIG_ARRAY</SymbolicName>
-	<Message>"Cannot resolve Array type."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013188f">
-	<SymbolicName>VER_E_SIG_ARRAY_PTR</SymbolicName>
-	<Message>"Array of ELEMENT_TYPE_PTR."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131890">
-	<SymbolicName>VER_E_SIG_ARRAY_BYREF</SymbolicName>
-	<Message>"Array of ELEMENT_TYPE_BYREF or ELEMENT_TYPE_TYPEDBYREF."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131891">
-	<SymbolicName>VER_E_SIG_ELEM_PTR</SymbolicName>
-	<Message>"ELEMENT_TYPE_PTR cannot be verified."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131892">
-	<SymbolicName>VER_E_SIG_VARARG</SymbolicName>
-	<Message>"Unexpected vararg."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131893">
-	<SymbolicName>VER_E_SIG_VOID</SymbolicName>
-	<Message>"Unexpected Void."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131894">
-	<SymbolicName>VER_E_SIG_BYREF_BYREF</SymbolicName>
-	<Message>"ByRef of ByRef"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131896">
-	<SymbolicName>VER_E_CODE_SIZE_ZERO</SymbolicName>
-	<Message>"Code size is zero."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131897">
-	<SymbolicName>VER_E_BAD_VARARG</SymbolicName>
-	<Message>"Unrecognized use of vararg."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131898">
-	<SymbolicName>VER_E_TAIL_CALL</SymbolicName>
-	<Message>"Missing call, callvirt or calli."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131899">
-	<SymbolicName>VER_E_TAIL_BYREF</SymbolicName>
-	<Message>"Cannot pass ByRef to a tail call."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013189a">
-	<SymbolicName>VER_E_TAIL_RET</SymbolicName>
-	<Message>"Missing ret."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013189b">
-	<SymbolicName>VER_E_TAIL_RET_VOID</SymbolicName>
-	<Message>"Void ret type expected for tail call."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013189c">
-	<SymbolicName>VER_E_TAIL_RET_TYPE</SymbolicName>
-	<Message>"Tail call return type not compatible."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013189d">
-	<SymbolicName>VER_E_TAIL_STACK_EMPTY</SymbolicName>
-	<Message>"Stack not empty after tail call."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013189e">
-	<SymbolicName>VER_E_METHOD_END</SymbolicName>
-	<Message>"Method ends in the middle of an instruction."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013189f">
-	<SymbolicName>VER_E_BAD_BRANCH</SymbolicName>
-	<Message>"Branch out of the method."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318a0">
-	<SymbolicName>VER_E_FIN_OVERLAP</SymbolicName>
-	<Message>"Finally handler blocks overlap."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318a1">
-	<SymbolicName>VER_E_LEXICAL_NESTING</SymbolicName>
-	<Message>"Lexical nesting."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318a2">
-	<SymbolicName>VER_E_VOLATILE</SymbolicName>
-	<Message>"Missing ldsfld, stsfld, ldind, stind, ldfld, stfld, ldobj, stobj, initblk or cpblk."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318a3">
-	<SymbolicName>VER_E_UNALIGNED</SymbolicName>
-	<Message>"Missing ldind, stind, ldfld, stfld, ldobj, stobj, initblk or cpblk."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318a4">
-	<SymbolicName>VER_E_INNERMOST_FIRST</SymbolicName>
-	<Message>"Innermost exception blocks should be declared first."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318a5">
-	<SymbolicName>VER_E_CALLI_VIRTUAL</SymbolicName>
-	<Message>"Calli not allowed on virtual methods."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318a6">
-	<SymbolicName>VER_E_CALL_ABSTRACT</SymbolicName>
-	<Message>"Call not allowed on abstract methods."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318a7">
-	<SymbolicName>VER_E_STACK_UNEXP_ARRAY</SymbolicName>
-	<Message>"Unexpected array type on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318a8">
-	<SymbolicName>VER_E_NOT_IN_GC_HEAP</SymbolicName>
-	<Message>"Value type with NotInGCHeap attribute being created on the GC heap."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318a9">
-	<SymbolicName>VER_E_TRY_N_EMPTY_STACK</SymbolicName>
-	<Message>"Attempt to enter a try block with nonempty stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318aa">
-	<SymbolicName>VER_E_DLGT_CTOR</SymbolicName>
-	<Message>"Unrecognized arguments for delegate .ctor."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318ab">
-	<SymbolicName>VER_E_DLGT_BB</SymbolicName>
-	<Message>"Delegate .ctor not allowed at the start of a basic block when the function pointer argument is a virtual method."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318ac">
-	<SymbolicName>VER_E_DLGT_PATTERN</SymbolicName>
-	<Message>"Dup, ldvirtftn, newobj delegate::.ctor() pattern expected (in the same basic block)."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318ad">
-	<SymbolicName>VER_E_DLGT_LDFTN</SymbolicName>
-	<Message>"Ldftn or ldvirtftn instruction required before call to a delegate .ctor."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318ae">
-	<SymbolicName>VER_E_FTN_ABSTRACT</SymbolicName>
-	<Message>"Attempt to load address of an abstract method."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318af">
-	<SymbolicName>VER_E_SIG_C_VC</SymbolicName>
-	<Message>"ELEMENT_TYPE_CLASS ValueClass in signature."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318b0">
-	<SymbolicName>VER_E_SIG_VC_C</SymbolicName>
-	<Message>"ELEMENT_TYPE_VALUETYPE non-ValueClass in signature."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318b1">
-	<SymbolicName>VER_E_BOX_PTR_TO_STACK</SymbolicName>
-	<Message>"Box operation on TypedReference, ArgHandle, or ArgIterator."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318b2">
-	<SymbolicName>VER_E_SIG_BYREF_TB_AH</SymbolicName>
-	<Message>"ByRef of TypedReference, ArgHandle, or ArgIterator."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318b3">
-	<SymbolicName>VER_E_SIG_ARRAY_TB_AH</SymbolicName>
-	<Message>"Array of TypedReference, ArgHandle, or ArgIterator."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318b4">
-	<SymbolicName>VER_E_ENDFILTER_STACK</SymbolicName>
-	<Message>"Stack not empty when leaving an exception filter."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318b5">
-	<SymbolicName>VER_E_DLGT_SIG_I</SymbolicName>
-	<Message>"Unrecognized delegate .ctor signature; expected I."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318b6">
-	<SymbolicName>VER_E_DLGT_SIG_O</SymbolicName>
-	<Message>"Unrecognized delegate .ctor signature; expected Object."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318b7">
-	<SymbolicName>VER_E_RA_PTR_TO_STACK</SymbolicName>
-	<Message>"Mkrefany on TypedReference, ArgHandle, or ArgIterator."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318b8">
-	<SymbolicName>VER_E_CATCH_VALUE_TYPE</SymbolicName>
-	<Message>"Value type not allowed as catch type."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318b9">
-	<SymbolicName>VER_E_CATCH_BYREF</SymbolicName>
-	<Message>"ByRef not allowed as catch type."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318ba">
-	<SymbolicName>VER_E_FIL_PRECEED_HND</SymbolicName>
-	<Message>"filter block should immediately precede handler block"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318bb">
-	<SymbolicName>VER_E_LDVIRTFTN_STATIC</SymbolicName>
-	<Message>"ldvirtftn on static"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318bc">
-	<SymbolicName>VER_E_CALLVIRT_STATIC</SymbolicName>
-	<Message>"callvirt on static"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318bd">
-	<SymbolicName>VER_E_INITLOCALS</SymbolicName>
-	<Message>"initlocals must be set for verifiable methods with one or more local variables."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318be">
-	<SymbolicName>VER_E_BR_TO_EXCEPTION</SymbolicName>
-	<Message>"branch or leave to the beginning of a catch/filter handler"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318bf">
-	<SymbolicName>VER_E_CALL_CTOR</SymbolicName>
-	<Message>"Call to .ctor only allowed to initialize this pointer from within a .ctor. Try newobj."</Message>
 </HRESULT>
 
 <HRESULT NumericValue="0x801318c0">
@@ -5557,36 +2131,6 @@
 	<Message>"Expected I4 on the stack."</Message>
 </HRESULT>
 
-<HRESULT NumericValue="0x801318f0">
-	<SymbolicName>VER_E_BAD_PE</SymbolicName>
-	<Message>"Unverifiable PE Header/native stub."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318f1">
-	<SymbolicName>VER_E_BAD_MD</SymbolicName>
-	<Message>"Unrecognized metadata, unable to verify IL."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318f2">
-	<SymbolicName>VER_E_BAD_APPDOMAIN</SymbolicName>
-	<Message>"Unrecognized appdomain pointer."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318f3">
-	<SymbolicName>VER_E_TYPELOAD</SymbolicName>
-	<Message>"Type load failed."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318f4">
-	<SymbolicName>VER_E_PE_LOAD</SymbolicName>
-	<Message>"Module load failed."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318f5">
-	<SymbolicName>VER_E_WRITE_RVA_STATIC</SymbolicName>
-	<Message>"Cannot modify an imaged based (RVA) static"</Message>
-</HRESULT>
-
 <HRESULT NumericValue="0x801318f6">
 	<SymbolicName>VER_E_INITIALIZE_ARRAY_MISSING_TOKEN</SymbolicName>
 	<Message>"Ldtoken instruction required before call to System.Runtime.CompilerServices.InitializeArray."</Message>
@@ -5594,216 +2138,6 @@
 
 <HRESULT NumericValue="0x80131920">
 	<SymbolicName>COR_E_Data</SymbolicName>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b00">
-	<SymbolicName>VLDTR_E_IFACE_NOTIFACE</SymbolicName>
-	<Message>"Interface in InterfaceImpl is not marked tdInterface."</Message>
-	<Comment> Interface in InterfaceImpl is not marked tdInterface </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b01">
-	<SymbolicName>VLDTR_E_FD_RVAHASNORVA</SymbolicName>
-	<Message>"Field marked fdHasFieldRVA but has no RVA record."</Message>
-	<Comment> Field marked fdHasFieldRVA but has no RVA rec </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b02">
-	<SymbolicName>VLDTR_E_FD_RVAHASZERORVA</SymbolicName>
-	<Message>"Field marked fdHasFieldRVA has RVA set to zero."</Message>
-	<Comment> Field marked fdHasFieldRVA has RVA =0 </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b03">
-	<SymbolicName>VLDTR_E_MD_RVAANDIMPLMAP</SymbolicName>
-	<Message>"Method has both non-zero RVA and ImplMap."</Message>
-	<Comment> Method has both RVA !=0 and ImplMap </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b04">
-	<SymbolicName>VLDTR_E_TD_EXTRAFLAGS</SymbolicName>
-	<Message>"TypeDef has extraneous bits in flags."</Message>
-	<Comment> TypeDef has extraneous bits in flags </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b05">
-	<SymbolicName>VLDTR_E_TD_EXTENDSITSELF</SymbolicName>
-	<Message>"TypeDef extends itself."</Message>
-	<Comment> TypeDef extends itself </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b06">
-	<SymbolicName>VLDTR_E_TD_SYSVTNOTEXTOBJ</SymbolicName>
-	<Message>"System.ValueType does not extend System.Object."</Message>
-	<Comment> System.ValueType does not extend System.Object </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b07">
-	<SymbolicName>VLDTR_E_TD_EXTTYPESPEC</SymbolicName>
-	<Message>"Class extends TypeSpec (warning)."</Message>
-	<Comment> Class extends TypeSpec (warning) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b09">
-	<SymbolicName>VLDTR_E_TD_VTNOSIZE</SymbolicName>
-	<Message>"Value Class has zero size."</Message>
-	<Comment> Value Class has zero size </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b0a">
-	<SymbolicName>VLDTR_E_TD_IFACESEALED</SymbolicName>
-	<Message>"Interface is sealed."</Message>
-	<Comment> Interface is sealed </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b0b">
-	<SymbolicName>VLDTR_E_NC_BADNESTED</SymbolicName>
-	<Message>"Bad 'nested' token in NestedClass."</Message>
-	<Comment> Bad "nested" token in NestedClass </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b0c">
-	<SymbolicName>VLDTR_E_NC_BADENCLOSER</SymbolicName>
-	<Message>"Bad 'enclosing' token in NestedClass."</Message>
-	<Comment> Bad "enclosing" token in NestedClass </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b0d">
-	<SymbolicName>VLDTR_E_NC_DUP</SymbolicName>
-	<Message>"Duplicate NestedClass record."</Message>
-	<Comment> Duplicate NestedClass record </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b0e">
-	<SymbolicName>VLDTR_E_NC_DUPENCLOSER</SymbolicName>
-	<Message>"Duplicate NestedClass with different encloser."</Message>
-	<Comment> Duplicate NestedClass with different encloser </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b0f">
-	<SymbolicName>VLDTR_E_FRVA_ZERORVA</SymbolicName>
-	<Message>"RVA set to zero in FieldRVA record."</Message>
-	<Comment> RVA=0 in FieldRVA record </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b10">
-	<SymbolicName>VLDTR_E_FRVA_BADFIELD</SymbolicName>
-	<Message>"Invalid field token in FieldRVA record."</Message>
-	<Comment> Invalid field token in FieldRVA record </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b11">
-	<SymbolicName>VLDTR_E_FRVA_DUPRVA</SymbolicName>
-	<Message>"Duplicate RVA in FieldRVA record."</Message>
-	<Comment> Duplicate RVA in FieldRVA record </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b12">
-	<SymbolicName>VLDTR_E_FRVA_DUPFIELD</SymbolicName>
-	<Message>"Duplicate field in FieldRVA record."</Message>
-	<Comment> Duplicate field in FieldRVA record </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b13">
-	<SymbolicName>VLDTR_E_EP_BADTOKEN</SymbolicName>
-	<Message>"Bad token as entry point in CLR header."</Message>
-	<Comment> Bad token as entry point in CLR header </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b14">
-	<SymbolicName>VLDTR_E_EP_INSTANCE</SymbolicName>
-	<Message>"Entry point in CLR header is a token of instance method."</Message>
-	<Comment> Entry point in CLR header is a token of instance method </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b15">
-	<SymbolicName>VLDTR_E_TD_ENUMFLDBADTYPE</SymbolicName>
-	<Message>"Enum has non-integral underlying type."</Message>
-	<Comment> Enum has non-integral underlying type </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b16">
-	<SymbolicName>VLDTR_E_MD_BADRVA</SymbolicName>
-	<Message>"Method has bogus RVA."</Message>
-	<Comment> Method has bogus RVA </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b17">
-	<SymbolicName>VLDTR_E_FD_LITERALNODEFAULT</SymbolicName>
-	<Message>"Literal field has no const value."</Message>
-	<Comment> Literal field has no const value </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b18">
-	<SymbolicName>VLDTR_E_IFACE_METHNOTIMPL</SymbolicName>
-	<Message>"Class implementing an interface does not implement one of methods."</Message>
-	<Comment> Class implementing an interface doesn't impl.one of methods </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b19">
-	<SymbolicName>VLDTR_E_CA_BADPARENT</SymbolicName>
-	<Message>"CA has invalid owner."</Message>
-	<Comment> CA has invalid owner </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b1a">
-	<SymbolicName>VLDTR_E_CA_BADTYPE</SymbolicName>
-	<Message>"CA has invalid type."</Message>
-	<Comment> CA has invalid type </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b1b">
-	<SymbolicName>VLDTR_E_CA_NOTCTOR</SymbolicName>
-	<Message>"CA type is not .ctor."</Message>
-	<Comment> CA type is not .ctor </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b1c">
-	<SymbolicName>VLDTR_E_CA_BADSIG</SymbolicName>
-	<Message>"CA type has bad signature."</Message>
-	<Comment> CA type has bad signature </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b1d">
-	<SymbolicName>VLDTR_E_CA_NOSIG</SymbolicName>
-	<Message>"CA type has no signature."</Message>
-	<Comment> CA type has no signature </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b1e">
-	<SymbolicName>VLDTR_E_CA_BADPROLOG</SymbolicName>
-	<Message>"CA blob has bad prolog (not 0x01 0x00)."</Message>
-	<Comment> CA blob has bad prolog (not 0x01 0x00) </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b1f">
-	<SymbolicName>VLDTR_E_MD_BADLOCALSIGTOK</SymbolicName>
-	<Message>"Method has invalid LocalSig token."</Message>
-	<Comment> Method has invalid LocalSig token </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b20">
-	<SymbolicName>VLDTR_E_MD_BADHEADER</SymbolicName>
-	<Message>"Method has invalid header."</Message>
-	<Comment> Method has invalid header </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b21">
-	<SymbolicName>VLDTR_E_EP_TOOMANYARGS</SymbolicName>
-	<Message>"Entry point has more than one argument."</Message>
-	<Comment> Entry point has more than one arg </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b22">
-	<SymbolicName>VLDTR_E_EP_BADRET</SymbolicName>
-	<Message>"Entry point has bad return type."</Message>
-	<Comment> Entry point has bad return type </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b23">
-	<SymbolicName>VLDTR_E_EP_BADARG</SymbolicName>
-	<Message>"Entry point has bad argument."</Message>
-	<Comment> Entry point has bad argument </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131b24">
@@ -5950,46 +2284,10 @@
 	<Comment> Signature has generic type of arity instantiated at different arity </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131b3c">
-	<SymbolicName>VLDTR_E_MD_GENERIC_CCTOR</SymbolicName>
-	<Message>"Method cannot be both generic and a class constructor."</Message>
-	<Comment> Method cannot be both generic and a class constructor </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b3d">
-	<SymbolicName>VLDTR_E_MD_GENERIC_CTOR</SymbolicName>
-	<Message>"Method cannot be both generic and an instance constructor."</Message>
-	<Comment> Method cannot be both generic and an instance constructor </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b3e">
-	<SymbolicName>VLDTR_E_MD_GENERIC_IMPORT</SymbolicName>
-	<Message>"Method cannot be both generic and defined on an imported type."</Message>
-	<Comment> Method cannot be both generic and defined on an imported type </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b3f">
-	<SymbolicName>VLDTR_E_MD_GENERIC_BADCALLCONV</SymbolicName>
-	<Message>"Method cannot be both generic and have non-default calling convention."</Message>
-	<Comment> Method cannot be both generic and have non-default calling convention </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131b40">
 	<SymbolicName>VLDTR_E_EP_GENERIC_METHOD</SymbolicName>
 	<Message>"Entry point in CLR header is the token for a generic method."</Message>
 	<Comment> Entry point in CLR header is the token for a generic method </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b41">
-	<SymbolicName>VLDTR_E_MD_MISSARITY</SymbolicName>
-	<Message>"Method signature is generic but is missing its arity."</Message>
-	<Comment> Method signature is generic but is missing its arity </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b42">
-	<SymbolicName>VLDTR_E_MD_ARITYZERO</SymbolicName>
-	<Message>"Method signature is generic but its arity is zero."</Message>
-	<Comment> Method signature is generic but its arity is zero </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131b43">
@@ -6002,12 +2300,6 @@
 	<SymbolicName>VLDTR_E_MS_ARITYZERO</SymbolicName>
 	<Message>"MethodSpec signature has arity 0."</Message>
 	<Comment> MethodSpec signature has arity 0 </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b45">
-	<SymbolicName>VLDTR_E_MD_GPMISMATCH</SymbolicName>
-	<Message>"MethodDef signature has arity n but owns m GenericParams."</Message>
-	<Comment> MethodDef signature has arity n but owns m GenericParams </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131b46">
@@ -6080,12 +2372,6 @@
 	<SymbolicName>VLDTR_E_IFACE_METHNOTIMPLTHISMOD</SymbolicName>
 	<Message>"Warning: Class does not implement interface method in this module."</Message>
 	<Comment> Warn:Class doesn't implement interface method in this module </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b52">
-	<SymbolicName>TLBX_E_CIRCULAR_EXPORT2</SymbolicName>
-	<Message>"TypeLib export: attempted to export an Assembly imported from a TLB."</Message>
-	<Comment> TypeLib export: attempt to export a CLB imported from a TLB. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131c00">
@@ -6781,11 +3067,6 @@
 <HRESULT NumericValue="__HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW)">
 	<SymbolicName>COR_E_ARITHMETIC</SymbolicName>
 	<Comment> 0x80070216 // Overflow or underflow in mathematical operations.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="__HRESULT_FROM_WIN32(ERROR_BAD_PATHNAME)">
-	<SymbolicName>COR_E_BAD_PATHNAME</SymbolicName>
-	<Comment>  The specified path is invalid.</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="__HRESULT_FROM_WIN32(ERROR_FILENAME_EXCED_RANGE)">
