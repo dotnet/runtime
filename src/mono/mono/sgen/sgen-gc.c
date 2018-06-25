@@ -3460,7 +3460,13 @@ sgen_gc_init (void)
 								"`nursery-size` must be at least %d bytes.", SGEN_MAX_NURSERY_WASTE);
 						continue;
 					}
-
+#ifdef SGEN_MAX_NURSERY_SIZE
+					if (val > SGEN_MAX_NURSERY_SIZE) {
+						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default value.",
+								"`nursery-size` must be smaller than %lld bytes.", SGEN_MAX_NURSERY_SIZE);
+						continue;
+					}
+#endif
 					min_nursery_size = max_nursery_size = val;
 					dynamic_nursery = FALSE;
 				} else {

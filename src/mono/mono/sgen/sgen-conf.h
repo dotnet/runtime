@@ -169,6 +169,15 @@ typedef mword SgenDescriptor;
 
 
 /*
+ * Max nursery size that we support.
+ *
+ * We depend on an array of longs to mark empty sections and we only support 4 byte indexes
+ */
+#if SIZEOF_VOID_P == 8
+#define SGEN_MAX_NURSERY_SIZE ((mword)1 << 35)
+#endif
+
+/*
  * Minimum allowance for nursery allocations, as a multiple of the size of nursery.
  *
  * We allow at least this much allocation to happen to the major heap from multiple

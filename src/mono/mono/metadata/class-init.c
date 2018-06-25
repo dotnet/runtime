@@ -5400,10 +5400,10 @@ mono_class_create_array_fill_type (void)
 	static gboolean inited = FALSE;
 
 	if (!inited) {
-		klass.element_class = mono_defaults.byte_class;
+		klass.element_class = mono_defaults.int64_class;
 		klass.rank = 1;
 		klass.instance_size = MONO_SIZEOF_MONO_ARRAY;
-		klass.sizes.element_size = 1;
+		klass.sizes.element_size = 8;
 		klass.size_inited = 1;
 		klass.name = "array_filler_type";
 
