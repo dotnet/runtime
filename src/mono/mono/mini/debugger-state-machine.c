@@ -306,7 +306,7 @@ dump_thread_state (gpointer key, gpointer value, gpointer user_data)
 void
 mono_debugger_state (JsonWriter *writer)
 {
-	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_UNINIT))
+	if (!debugger_log || debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_UNINIT))
 		return;
 
 	mono_coop_mutex_lock (&debugger_log_mutex);
@@ -435,7 +435,7 @@ mono_debugger_state (JsonWriter *writer)
 char *
 mono_debugger_state_str (void)
 {
-	if (debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_UNINIT))
+	if (!debugger_log || debugger_log == GINT_TO_POINTER (MONO_DEBUGGER_LOG_UNINIT))
 		return NULL;
 
 	JsonWriter writer;
