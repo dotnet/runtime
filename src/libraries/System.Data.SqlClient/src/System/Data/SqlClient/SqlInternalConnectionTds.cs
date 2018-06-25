@@ -1943,7 +1943,6 @@ namespace System.Data.SqlClient
 
                         switch (_fedAuthFeatureExtensionData.Value.libraryType)
                         {
-                            case TdsEnums.FedAuthLibrary.ADAL: // For later support
                             case TdsEnums.FedAuthLibrary.SecurityToken:
                                 // The server shouldn't have sent any additional data with the ack (like a nonce)
                                 if (data.Length != 0)
