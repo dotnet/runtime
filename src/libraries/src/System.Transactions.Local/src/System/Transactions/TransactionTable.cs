@@ -382,7 +382,7 @@ namespace System.Transactions
 
 
         // Process a timer event
-        private void ThreadTimer(Object state)
+        private void ThreadTimer(object state)
         {
             //
             // Theory of operation.

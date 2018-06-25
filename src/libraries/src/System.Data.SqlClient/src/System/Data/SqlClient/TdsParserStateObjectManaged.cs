@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -29,7 +29,7 @@ namespace System.Data.SqlClient.SNI
 
         internal SNIHandle Handle => _sessionHandle;
 
-        internal override UInt32 Status => _sessionHandle != null ? _sessionHandle.Status : TdsEnums.SNI_UNINITIALIZED;
+        internal override uint Status => _sessionHandle != null ? _sessionHandle.Status : TdsEnums.SNI_UNINITIALIZED;
 
         internal override object SessionHandle => _sessionHandle;
 
@@ -72,9 +72,9 @@ namespace System.Data.SqlClient.SNI
             }
         }
 
-        internal void ReadAsyncCallback(SNIPacket packet, UInt32 error) => ReadAsyncCallback(IntPtr.Zero, packet, error);
+        internal void ReadAsyncCallback(SNIPacket packet, uint error) => ReadAsyncCallback(IntPtr.Zero, packet, error);
 
-        internal void WriteAsyncCallback(SNIPacket packet, UInt32 sniError) => WriteAsyncCallback(IntPtr.Zero, packet, sniError);
+        internal void WriteAsyncCallback(SNIPacket packet, uint sniError) => WriteAsyncCallback(IntPtr.Zero, packet, sniError);
 
         protected override void RemovePacketFromPendingList(object packet)
         {

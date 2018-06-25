@@ -39,14 +39,14 @@ namespace System.Diagnostics
         [ObsoleteAttribute("This field has been deprecated and is not used.  Use machine.config or an application configuration file to set the size of the PerformanceCounter file mapping.")]
         public static int DefaultFileMappingSize = 524288;
 
-        private Object _instanceLockObject;
-        private Object InstanceLockObject
+        private object _instanceLockObject;
+        private object InstanceLockObject
         {
             get
             {
                 if (_instanceLockObject == null)
                 {
-                    Object o = new Object();
+                    object o = new object();
                     Interlocked.CompareExchange(ref _instanceLockObject, o, null);
                 }
                 return _instanceLockObject;

@@ -27,33 +27,33 @@ namespace System.IO.Pipes
         private readonly PipeDirection _direction;
 
         // Creates a named pipe client using default server (same machine, or "."), and PipeDirection.InOut 
-        public NamedPipeClientStream(String pipeName)
+        public NamedPipeClientStream(string pipeName)
             : this(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None)
         { 
         }
 
-        public NamedPipeClientStream(String serverName, String pipeName)
+        public NamedPipeClientStream(string serverName, string pipeName)
             : this(serverName, pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None)
         {
         }
 
-        public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction)
+        public NamedPipeClientStream(string serverName, string pipeName, PipeDirection direction)
             : this(serverName, pipeName, direction, PipeOptions.None, TokenImpersonationLevel.None, HandleInheritability.None)
         {
         }
 
-        public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction, PipeOptions options)
+        public NamedPipeClientStream(string serverName, string pipeName, PipeDirection direction, PipeOptions options)
             : this(serverName, pipeName, direction, options, TokenImpersonationLevel.None, HandleInheritability.None)
         {
         }
 
-        public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction,
+        public NamedPipeClientStream(string serverName, string pipeName, PipeDirection direction,
             PipeOptions options, TokenImpersonationLevel impersonationLevel)
             : this(serverName, pipeName, direction, options, impersonationLevel, HandleInheritability.None)
         {
         }
 
-        public NamedPipeClientStream(String serverName, String pipeName, PipeDirection direction,
+        public NamedPipeClientStream(string serverName, string pipeName, PipeDirection direction,
             PipeOptions options, TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability)
             : base(direction, 0)
         {

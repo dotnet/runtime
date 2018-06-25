@@ -2129,9 +2129,9 @@ namespace System.ComponentModel
 
             Debug.Assert(!IsLiteralPosition(charDex), "Setting char in literal position.");
 
-            if (Char.IsLetter(input))
+            if (char.IsLetter(input))
             {
-                if (Char.IsUpper(input))
+                if (char.IsUpper(input))
                 {
                     if (charDescriptor.CaseConversion == CaseConversion.ToLower)
                     {
@@ -2308,7 +2308,7 @@ namespace System.ComponentModel
             switch (Mask[charDex.MaskPosition])
             {
                 case '#':   // digit or plus/minus sign optional.
-                    if (!Char.IsDigit(input) && (input != '-') && (input != '+') && input != SPACE_CHAR)
+                    if (!char.IsDigit(input) && (input != '-') && (input != '+') && input != SPACE_CHAR)
                     {
                         resultHint = MaskedTextResultHint.DigitExpected;
                         return false;
@@ -2316,7 +2316,7 @@ namespace System.ComponentModel
                     break;
 
                 case '0':   // digit required.
-                    if (!Char.IsDigit(input))
+                    if (!char.IsDigit(input))
                     {
                         resultHint = MaskedTextResultHint.DigitExpected;
                         return false;
@@ -2324,7 +2324,7 @@ namespace System.ComponentModel
                     break;
 
                 case '9':   // digit optional.
-                    if (!Char.IsDigit(input) && input != SPACE_CHAR)
+                    if (!char.IsDigit(input) && input != SPACE_CHAR)
                     {
                         resultHint = MaskedTextResultHint.DigitExpected;
                         return false;
@@ -2332,7 +2332,7 @@ namespace System.ComponentModel
                     break;
 
                 case 'L':   // letter required.
-                    if (!Char.IsLetter(input))
+                    if (!char.IsLetter(input))
                     {
                         resultHint = MaskedTextResultHint.LetterExpected;
                         return false;
@@ -2345,7 +2345,7 @@ namespace System.ComponentModel
                     break;
 
                 case '?':   // letter optional.
-                    if (!Char.IsLetter(input) && input != SPACE_CHAR)
+                    if (!char.IsLetter(input) && input != SPACE_CHAR)
                     {
                         resultHint = MaskedTextResultHint.LetterExpected;
                         return false;

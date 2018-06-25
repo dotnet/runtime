@@ -455,7 +455,7 @@ namespace System.Data.SqlClient
             string CatalogName = parts[MultipartIdentifier.CatalogIndex];
             if (isTempTable && string.IsNullOrEmpty(CatalogName))
             {
-                TDSCommand += String.Format((IFormatProvider)null, "exec tempdb..{0} N'{1}.{2}'",
+                TDSCommand += string.Format((IFormatProvider)null, "exec tempdb..{0} N'{1}.{2}'",
                     TableCollationsStoredProc,
                     SchemaName,
                     TableName
@@ -468,7 +468,7 @@ namespace System.Data.SqlClient
                 {
                     CatalogName = SqlServerEscapeHelper.EscapeIdentifier(CatalogName);
                 }
-                TDSCommand += String.Format((IFormatProvider)null, "exec {0}..{1} N'{2}.{3}'",
+                TDSCommand += string.Format((IFormatProvider)null, "exec {0}..{1} N'{2}.{3}'",
                     CatalogName,
                     TableCollationsStoredProc,
                     SchemaName,
@@ -1004,7 +1004,7 @@ namespace System.Data.SqlClient
                                         else
                                         {
                                             isSqlType = true;
-                                            return new SqlDecimal((Decimal)currentRowValue);
+                                            return new SqlDecimal((decimal)currentRowValue);
                                         }
                                     }
                                 default:
@@ -1129,7 +1129,7 @@ namespace System.Data.SqlClient
                         break;
                 }
 
-                if (typeof(SqlDecimal) == t || typeof(Decimal) == t)
+                if (typeof(SqlDecimal) == t || typeof(decimal) == t)
                 {
                     isSqlType = true;
                     method = ValueMethod.SqlTypeSqlDecimal;  // Source Type Decimal
@@ -1417,7 +1417,7 @@ namespace System.Data.SqlClient
                         }
                         else
                         {
-                            sqlValue = new SqlDecimal((Decimal)value);
+                            sqlValue = new SqlDecimal((decimal)value);
                         }
 
                         if (sqlValue.Scale != metadata.scale)
@@ -2054,7 +2054,7 @@ namespace System.Data.SqlClient
             bool isSqlType;
             bool isDataFeed;
             bool isNull;
-            Object value = GetValueFromSourceRow(col, out isSqlType, out isDataFeed, out isNull); //this will return Task/null in future: as rTask
+            object value = GetValueFromSourceRow(col, out isSqlType, out isDataFeed, out isNull); //this will return Task/null in future: as rTask
 
             _SqlMetaData metadata = _sortedColumnMappings[col]._metadata;
             if (!isDataFeed)

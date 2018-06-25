@@ -61,7 +61,7 @@ namespace System.Xml
 
             char[] outArray = new char[2 * count];
             int lenOut = Encode(inArray, offsetIn, count, outArray);
-            return new String(outArray, 0, lenOut);
+            return new string(outArray, 0, lenOut);
         }
 
         private static int Encode(byte[] inArray, int offsetIn, int count, char[] outArray)

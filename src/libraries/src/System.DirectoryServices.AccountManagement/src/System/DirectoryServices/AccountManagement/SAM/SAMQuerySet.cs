@@ -264,7 +264,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // Must be a property we don't support
                     throw new NotSupportedException(
-                                String.Format(
+                                string.Format(
                                         CultureInfo.CurrentCulture,
                                         SR.StoreCtxUnsupportedPropertyForQuery,
                                         PropertyNamesExternal.GetExternalForm(filter.PropertyName)));
@@ -372,7 +372,7 @@ namespace System.DirectoryServices.AccountManagement
                         if (values.Count != 0)
                         {
                             Debug.Assert(values.Count == 1);
-                            Debug.Assert(values[0] is Int32);
+                            Debug.Assert(values[0] is int);
 
                             int secondsLapsed = (int)values[0];
 
@@ -785,7 +785,7 @@ namespace System.DirectoryServices.AccountManagement
             if (values.Count != 0)
             {
                 Debug.Assert(values.Count == 1);
-                Debug.Assert(values[0] is Int32);
+                Debug.Assert(values[0] is int);
 
                 int secondsLapsed = (int)values[0];
 

@@ -593,7 +593,7 @@ namespace System.Xml.Schema
                 }
                 if (this.HasLexicalFacets)
                 {
-                    string s1 = (string)this.ValueConverter.ChangeType(value, typeof(System.String), namespaceResolver); //Using value here to avoid info loss
+                    string s1 = (string)this.ValueConverter.ChangeType(value, typeof(string), namespaceResolver); //Using value here to avoid info loss
                     exception = this.FacetsChecker.CheckLexicalFacets(ref s1, this);
                     if (exception != null) goto Error;
                 }
@@ -1064,7 +1064,7 @@ namespace System.Xml.Schema
                     item = valuesToCheck.GetValue(i);
                     if (checkItemLexical)
                     {
-                        string s1 = (string)itemValueConverter.ChangeType(item, typeof(System.String), namespaceResolver);
+                        string s1 = (string)itemValueConverter.ChangeType(item, typeof(string), namespaceResolver);
                         exception = itemFacetsChecker.CheckLexicalFacets(ref s1, _itemType);
                         if (exception != null) goto Error;
                     }
@@ -1078,7 +1078,7 @@ namespace System.Xml.Schema
                 //Check facets on the list itself
                 if (this.HasLexicalFacets)
                 {
-                    string s1 = (string)this.ValueConverter.ChangeType(valueToCheck, typeof(System.String), namespaceResolver);
+                    string s1 = (string)this.ValueConverter.ChangeType(valueToCheck, typeof(string), namespaceResolver);
                     exception = listFacetsChecker.CheckLexicalFacets(ref s1, this);
                     if (exception != null) goto Error;
                 }
@@ -1322,7 +1322,7 @@ namespace System.Xml.Schema
             {
                 if (this.HasLexicalFacets)
                 {
-                    string s1 = (string)this.ValueConverter.ChangeType(valueToCheck, typeof(System.String), nsmgr); //Using value here to avoid info loss
+                    string s1 = (string)this.ValueConverter.ChangeType(valueToCheck, typeof(string), nsmgr); //Using value here to avoid info loss
                     exception = unionFacetsChecker.CheckLexicalFacets(ref s1, this);
                     if (exception != null) goto Error;
                 }
@@ -1385,7 +1385,7 @@ namespace System.Xml.Schema
         internal override int Compare(object value1, object value2)
         {
             //Changed StringComparison.CurrentCulture to StringComparison.Ordinal to handle zero-weight code points like the cyrillic E
-            return String.Compare(value1.ToString(), value2.ToString(), StringComparison.Ordinal);
+            return string.Compare(value1.ToString(), value2.ToString(), StringComparison.Ordinal);
         }
 
         internal override Exception TryParseValue(string s, XmlNameTable nameTable, IXmlNamespaceResolver nsmgr, out object typedValue)

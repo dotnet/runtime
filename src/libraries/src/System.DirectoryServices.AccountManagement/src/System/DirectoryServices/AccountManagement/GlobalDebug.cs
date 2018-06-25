@@ -67,7 +67,7 @@ namespace System.DirectoryServices.AccountManagement
 
             Debug.WriteLineIf(
                             f,
-                            String.Format(
+                            string.Format(
                                 CultureInfo.InvariantCulture,
                                 message,
                                 args),

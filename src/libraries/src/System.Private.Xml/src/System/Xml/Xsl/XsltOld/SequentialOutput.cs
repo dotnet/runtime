@@ -369,7 +369,7 @@ namespace System.Xml.Xsl.XsltOld
             switch (node.NodeType)
             {
                 case XmlNodeType.Element:
-                    if (node.NamespaceURI.Length == 0 && String.Equals("html", node.LocalName, StringComparison.OrdinalIgnoreCase))
+                    if (node.NamespaceURI.Length == 0 && string.Equals("html", node.LocalName, StringComparison.OrdinalIgnoreCase))
                     {
                         method = XsltOutput.OutputMethod.Html;
                     }

@@ -284,17 +284,17 @@ namespace System.Runtime.Serialization.Json
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, Int16[] array, int offset, int count)
+        public override void WriteArray(string prefix, string localName, string namespaceUri, short[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, Int32[] array, int offset, int count)
+        public override void WriteArray(string prefix, string localName, string namespaceUri, int[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }
 
-        public override void WriteArray(string prefix, string localName, string namespaceUri, Int64[] array, int offset, int count)
+        public override void WriteArray(string prefix, string localName, string namespaceUri, long[] array, int offset, int count)
         {
             throw new NotSupportedException(SR.JsonWriteArrayNotSupported);
         }

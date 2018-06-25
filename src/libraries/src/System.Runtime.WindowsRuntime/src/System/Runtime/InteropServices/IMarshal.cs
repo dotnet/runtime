@@ -14,17 +14,17 @@ namespace System.Runtime.InteropServices
     /// </summary>
     internal interface IMarshal
     {
-        void GetUnmarshalClass([In] ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlFlags, out Guid pCid);
+        void GetUnmarshalClass([In] ref Guid riid, IntPtr pv, uint dwDestContext, IntPtr pvDestContext, uint mshlFlags, out Guid pCid);
 
-        void GetMarshalSizeMax([In] ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlflags, out UInt32 pSize);
+        void GetMarshalSizeMax([In] ref Guid riid, IntPtr pv, uint dwDestContext, IntPtr pvDestContext, uint mshlflags, out uint pSize);
 
-        void MarshalInterface(IntPtr pStm, [In] ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlflags);
+        void MarshalInterface(IntPtr pStm, [In] ref Guid riid, IntPtr pv, uint dwDestContext, IntPtr pvDestContext, uint mshlflags);
 
         void UnmarshalInterface(IntPtr pStm, [In] ref Guid riid, out IntPtr ppv);
 
         void ReleaseMarshalData(IntPtr pStm);
 
-        void DisconnectObject(UInt32 dwReserved);
+        void DisconnectObject(uint dwReserved);
     }  // interface IMarshal
 }  // namespace 
 

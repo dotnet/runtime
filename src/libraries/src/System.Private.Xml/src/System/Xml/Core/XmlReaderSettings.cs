@@ -412,7 +412,7 @@ namespace System.Xml
             return _valEventHandler;
         }
 
-        internal XmlReader CreateReader(String inputUri, XmlParserContext inputContext)
+        internal XmlReader CreateReader(string inputUri, XmlParserContext inputContext)
         {
             if (inputUri == null)
             {

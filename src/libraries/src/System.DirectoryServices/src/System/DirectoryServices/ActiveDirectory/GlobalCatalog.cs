@@ -64,7 +64,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 gcDnsName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DnsHostName);
-                isGlobalCatalog = (bool)Boolean.Parse((string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.IsGlobalCatalogReady));
+                isGlobalCatalog = (bool)bool.Parse((string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.IsGlobalCatalogReady));
                 if (!isGlobalCatalog)
                 {
                     throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.GCNotFound , context.Name), typeof(GlobalCatalog), context.Name);

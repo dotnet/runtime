@@ -165,7 +165,7 @@ namespace System.Diagnostics
             lock (critSec)
             {
                 InitializeSettings();
-                if (t_indentLevel < Int32.MaxValue)
+                if (t_indentLevel < int.MaxValue)
                 {
                     t_indentLevel++;
                 }

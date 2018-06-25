@@ -713,7 +713,7 @@ namespace System.Data.Odbc
                         if ((localReader.IsBehavior(CommandBehavior.KeyInfo) || localReader.IsBehavior(CommandBehavior.SchemaOnly))
                             && (CommandType != CommandType.StoredProcedure))
                         {
-                            Int16 cColsAffected;
+                            short cColsAffected;
                             retcode = stmt.NumberOfResultColumns(out cColsAffected);
                             if (retcode == ODBC32.RetCode.SUCCESS || retcode == ODBC32.RetCode.SUCCESS_WITH_INFO)
                             {
@@ -786,12 +786,12 @@ namespace System.Data.Odbc
                                 retcode = stmt.Statistics((string)methodArguments[0],  //TableCatalog
                                     (string)methodArguments[1],  //TableSchema
                                     (string)methodArguments[2],  //TableName
-                                    (Int16)methodArguments[3],   //IndexTrpe
-                                    (Int16)methodArguments[4]);  //Accuracy
+                                    (short)methodArguments[3],   //IndexTrpe
+                                    (short)methodArguments[4]);  //Accuracy
                                 break;
 
                             case ODBC32.SQL_API.SQLGETTYPEINFO:
-                                retcode = stmt.GetTypeInfo((Int16)methodArguments[0]);  //SQL Type
+                                retcode = stmt.GetTypeInfo((short)methodArguments[0]);  //SQL Type
                                 break;
 
                             default:

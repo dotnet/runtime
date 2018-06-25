@@ -49,7 +49,7 @@ namespace System.IO.Packaging
 
             string partName = GetStringForPartUriFromAnyUri(resolvedUri);
 
-            if (partName == String.Empty)
+            if (partName == string.Empty)
                 throw new ArgumentException(SR.PartUriIsEmpty);
 
             ThrowIfPartNameEndsWithSlash(partName);
@@ -390,7 +390,7 @@ namespace System.IO.Packaging
 
         private static Exception GetExceptionIfPartUriInvalid(Uri partUri, out string partUriString)
         {
-            partUriString = String.Empty;
+            partUriString = string.Empty;
 
             if (partUri == null)
                 return new ArgumentNullException(nameof(partUri));
@@ -405,7 +405,7 @@ namespace System.IO.Packaging
 
             //We need to make sure that the URI passed to us is not just "/"
             //"/" is a valid relative uri, but is not a valid partname
-            if (partName == String.Empty)
+            if (partName == string.Empty)
                 return new ArgumentException(SR.PartUriIsEmpty);
 
             if (partName[0] != ForwardSlashChar)
@@ -556,11 +556,11 @@ namespace System.IO.Packaging
 
             // Step 2: Get the canonically escaped Path with only ascii characters
             //Get the escaped string for the part name as part names should have only ascii characters
-            String partName = safeUnescapedUri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped);
+            string partName = safeUnescapedUri.GetComponents(UriComponents.SerializationInfoString, UriFormat.UriEscaped);
 
             //The part name can be empty in cases where we were passed a pack URI that has no part component
             if (IsPartNameEmpty(partName))
-                return String.Empty;
+                return string.Empty;
             else
                 return partName;
         }
@@ -816,10 +816,10 @@ namespace System.IO.Packaging
                 // String.Split, will always return an empty string as the
                 // first member in the array as the string starts with a "/"
 
-                Debug.Assert(segments.Length > 0 && segments[0] == String.Empty);
+                Debug.Assert(segments.Length > 0 && segments[0] == string.Empty);
 
                 //If the extension was not equal to .rels, we would have exited early.
-                Debug.Assert(String.CompareOrdinal((Path.GetExtension(segments[segments.Length - 1])), s_relationshipPartUpperCaseExtension) == 0);
+                Debug.Assert(string.CompareOrdinal((Path.GetExtension(segments[segments.Length - 1])), s_relationshipPartUpperCaseExtension) == 0);
 
                 // must be at least two segments and the last one must end with .RELs
                 // and the length of the segment should be greater than just the extension.
@@ -827,7 +827,7 @@ namespace System.IO.Packaging
                     (segments[segments.Length - 1].Length > s_relationshipPartExtensionName.Length))
                 {
                     // look for "_RELS" segment which must be second last segment
-                    result = (String.CompareOrdinal(segments[segments.Length - 2], s_relationshipPartUpperCaseSegmentName) == 0);
+                    result = (string.CompareOrdinal(segments[segments.Length - 2], s_relationshipPartUpperCaseSegmentName) == 0);
                 }
 
                 // In addition we need to make sure that the relationship is not created by taking another relationship
@@ -837,7 +837,7 @@ namespace System.IO.Packaging
                     if ((segments[segments.Length - 1]).EndsWith(s_relsrelsUpperCaseExtension, StringComparison.Ordinal))
                     {
                         // look for "_rels" segment in the third last segment
-                        if (String.CompareOrdinal(segments[segments.Length - 3], s_relationshipPartUpperCaseSegmentName) == 0)
+                        if (string.CompareOrdinal(segments[segments.Length - 3], s_relationshipPartUpperCaseSegmentName) == 0)
                             throw new ArgumentException(SR.NotAValidRelationshipPartUri);
                     }
                 }
@@ -877,7 +877,7 @@ namespace System.IO.Packaging
                     return 1;
 
                 //Compare the normalized uri strings for the two part uris.
-                return String.CompareOrdinal(this.NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
+                return string.CompareOrdinal(this.NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
             }
 
             //------------------------------------------------------
@@ -897,7 +897,7 @@ namespace System.IO.Packaging
 
             private static readonly string s_relationshipPartUpperCaseExtension = ".RELS";
             private static readonly string s_relationshipPartUpperCaseSegmentName = "_RELS";
-            private static readonly string s_relsrelsUpperCaseExtension = String.Concat(s_relationshipPartUpperCaseExtension, s_relationshipPartUpperCaseExtension);
+            private static readonly string s_relsrelsUpperCaseExtension = string.Concat(s_relationshipPartUpperCaseExtension, s_relationshipPartUpperCaseExtension);
 
             //need to use the private constructor to initialize this particular partUri as we need this in the 
             //IsRelationshipPartUri, that is called from the constructor.

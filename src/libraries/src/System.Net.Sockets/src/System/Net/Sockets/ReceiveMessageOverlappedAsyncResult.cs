@@ -12,7 +12,7 @@ namespace System.Net.Sockets
         private SocketFlags _socketFlags;
         private IPPacketInformation _ipPacketInformation;
 
-        internal ReceiveMessageOverlappedAsyncResult(Socket socket, Object asyncState, AsyncCallback asyncCallback) :
+        internal ReceiveMessageOverlappedAsyncResult(Socket socket, object asyncState, AsyncCallback asyncCallback) :
             base(socket, asyncState, asyncCallback)
         { }
 

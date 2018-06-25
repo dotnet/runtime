@@ -138,7 +138,7 @@ namespace System.Drawing
 
         private static int IntFromString(string value, NumberFormatInfo formatInfo)
         {
-            return Int32.Parse(value, NumberStyles.Integer, formatInfo);
+            return int.Parse(value, NumberStyles.Integer, formatInfo);
         }
     }
 }

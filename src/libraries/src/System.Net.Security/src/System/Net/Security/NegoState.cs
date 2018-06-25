@@ -415,7 +415,7 @@ namespace System.Net.Security
 
             string clientSpn = _context.ClientSpecifiedSpn;
 
-            if (String.IsNullOrEmpty(clientSpn))
+            if (string.IsNullOrEmpty(clientSpn))
             {
                 if (_extendedProtectionPolicy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
                 {

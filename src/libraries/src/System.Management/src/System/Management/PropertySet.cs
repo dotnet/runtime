@@ -122,7 +122,7 @@ namespace System.Management
         /// </summary>
         /// <param name='array'>The array to which to copy the <see cref='System.Management.PropertyDataCollection'/>. </param>
         /// <param name='index'>The index from which to start copying. </param>
-        public void CopyTo(Array array, Int32 index) 
+        public void CopyTo(Array array, int index) 
         {
             if (null == array)
                 throw new ArgumentNullException(nameof(array));
@@ -170,7 +170,7 @@ namespace System.Management
         /// </summary>
         /// <param name='propertyArray'>The destination array to contain the copied <see cref='System.Management.PropertyDataCollection'/>.</param>
         /// <param name=' index'>The index in the destination array from which to start copying.</param>
-        public void CopyTo(PropertyData[] propertyArray, Int32 index)
+        public void CopyTo(PropertyData[] propertyArray, int index)
         {
             CopyTo((Array)propertyArray, index);	
         }
@@ -402,7 +402,7 @@ namespace System.Management
         ///       in
         ///       a <see cref='System.Management.ManagementClass'/>.</para>
         /// </remarks>
-        public virtual void Add(string propertyName, Object propertyValue)
+        public virtual void Add(string propertyName, object propertyValue)
         {
             if (null == propertyValue)
                 throw new ArgumentNullException(nameof(propertyValue));
@@ -441,7 +441,7 @@ namespace System.Management
         ///       in
         ///       a <see cref='System.Management.ManagementClass'/>.</para>
         /// </remarks>
-        public void Add(string propertyName, Object propertyValue, CimType propertyType)
+        public void Add(string propertyName, object propertyValue, CimType propertyType)
         {
             if (null == propertyName)
                 throw new ArgumentNullException(nameof(propertyName));

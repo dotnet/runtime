@@ -106,9 +106,9 @@ namespace System.Data.Odbc
                              OdbcType odbcType,
                              int size,
                              ParameterDirection parameterDirection,
-                             Boolean isNullable,
-                             Byte precision,
-                             Byte scale,
+                             bool isNullable,
+                             byte precision,
+                             byte scale,
                              string srcColumn,
                              DataRowVersion srcVersion,
                              object value
@@ -130,7 +130,7 @@ namespace System.Data.Odbc
         public OdbcParameter(string parameterName,
                                  OdbcType odbcType, int size,
                                  ParameterDirection parameterDirection,
-                                 Byte precision, Byte scale,
+                                 byte precision, byte scale,
                                  string sourceColumn, DataRowVersion sourceVersion, bool sourceColumnNullMapping,
                                  object value) : this()
         { // V2.0 everything - round trip all browsable properties + precision/scale
@@ -342,7 +342,7 @@ namespace System.Data.Odbc
                         {
                             cch = 0;
                         }
-                        else if (value is String)
+                        else if (value is string)
                         {
                             cch = ((String)value).Length - offset;
 
@@ -407,7 +407,7 @@ namespace System.Data.Odbc
                     }
                 }
             }
-            Debug.Assert((0 <= cch) && (cch < 0x3fffffff), String.Format((IFormatProvider)null, "GetColumnSize: cch = {0} out of range, _internalShouldSerializeSize = {1}, _internalSize = {2}", cch, _internalShouldSerializeSize, _internalSize));
+            Debug.Assert((0 <= cch) && (cch < 0x3fffffff), string.Format((IFormatProvider)null, "GetColumnSize: cch = {0} out of range, _internalShouldSerializeSize = {1}, _internalSize = {2}", cch, _internalShouldSerializeSize, _internalSize));
             return cch;
         }
 
@@ -425,7 +425,7 @@ namespace System.Data.Odbc
             if (0 >= cch)
             {
                 bool twobytesperunit = false;
-                if (value is String)
+                if (value is string)
                 {
                     cch = ((string)value).Length - offset;
                     twobytesperunit = true;
@@ -452,7 +452,7 @@ namespace System.Data.Odbc
                     cch *= 2;
                 }
             }
-            Debug.Assert((0 <= cch) && (cch < 0x3fffffff), String.Format((IFormatProvider)null, "GetValueSize: cch = {0} out of range, _internalShouldSerializeSize = {1}, _internalSize = {2}", cch, _internalShouldSerializeSize, _internalSize));
+            Debug.Assert((0 <= cch) && (cch < 0x3fffffff), string.Format((IFormatProvider)null, "GetValueSize: cch = {0} out of range, _internalShouldSerializeSize = {1}, _internalSize = {2}", cch, _internalShouldSerializeSize, _internalSize));
             return cch;
         }
 
@@ -488,7 +488,7 @@ namespace System.Data.Odbc
                                 ccb = 0;
                             }
                         }
-                        else if (value is String)
+                        else if (value is string)
                         {
                             ccb = (((String)value).Length - offset) * 2 + 2;
                         }
@@ -512,7 +512,7 @@ namespace System.Data.Odbc
                     }
                     else if (ODBC32.SQL_C.WCHAR == _bindtype._sql_c)
                     {
-                        if ((value is String) && (ccb < ((String)value).Length) && (_bindtype == _originalbindtype))
+                        if ((value is string) && (ccb < ((String)value).Length) && (_bindtype == _originalbindtype))
                         {
                             // silently truncate ... MDAC 84408 ... do not truncate upgraded values ... MDAC 84706
                             ccb = ((String)value).Length;
@@ -549,7 +549,7 @@ namespace System.Data.Odbc
                 }
                 return ADP.DecimalMaxPrecision;
             }
-            if ((null == value) || (value is Decimal) || Convert.IsDBNull(value))
+            if ((null == value) || (value is decimal) || Convert.IsDBNull(value))
             { // MDAC 60882
                 return ADP.DecimalMaxPrecision28;
             }
@@ -570,7 +570,7 @@ namespace System.Data.Odbc
             // If the user specified a lower scale we return the user specified scale,
             // otherwise the values scale
             //
-            byte s = (byte)((Decimal.GetBits((Decimal)value)[3] & 0x00ff0000) >> 0x10);
+            byte s = (byte)((decimal.GetBits((decimal)value)[3] & 0x00ff0000) >> 0x10);
             if ((_internalScale > 0) && (_internalScale < s))
             {
                 return _internalScale;
@@ -702,7 +702,7 @@ namespace System.Data.Odbc
                 case ODBC32.SQL_TYPE.WCHAR: // MDAC 68993
                 case ODBC32.SQL_TYPE.WVARCHAR:
                 case ODBC32.SQL_TYPE.WLONGVARCHAR:
-                    if (value is Char)
+                    if (value is char)
                     {
                         value = value.ToString();
                         size = ((string)value).Length;
@@ -810,7 +810,7 @@ namespace System.Data.Odbc
                 // for input/output parameters we need to adjust the scale of the input value since the convert function in
                 // sqlsrv32 takes this scale for the output parameter (possible bug in sqlsrv32?)
                 //
-                if ((ODBC32.SQL_PARAM.INPUT_OUTPUT == sqldirection) && (value is Decimal))
+                if ((ODBC32.SQL_PARAM.INPUT_OUTPUT == sqldirection) && (value is decimal))
                 {
                     if (scale < _internalScale)
                     {
@@ -965,14 +965,14 @@ namespace System.Data.Odbc
                             int lcid = System.Globalization.CultureInfo.CurrentCulture.LCID;
                             CultureInfo culInfo = new CultureInfo(lcid);
                             Encoding cpe = System.Text.Encoding.GetEncoding(culInfo.TextInfo.ANSICodePage);
-                            Value = cpe.GetString((Byte[])Value);
+                            Value = cpe.GetString((byte[])Value);
                         }
                     }
 
                     if ((typemap != _typemap) && (null != Value) && !Convert.IsDBNull(Value) && (Value.GetType() != _typemap._type))
                     {
                         Debug.Assert(ODBC32.SQL_C.NUMERIC == _typemap._sql_c, "unexpected");
-                        Value = Decimal.Parse((string)Value, System.Globalization.CultureInfo.CurrentCulture);
+                        Value = decimal.Parse((string)Value, System.Globalization.CultureInfo.CurrentCulture);
                     }
                 }
             }
@@ -1008,7 +1008,7 @@ namespace System.Data.Odbc
                     }
                     else if (valueType == typeof(char[]))
                     {
-                        value = new String((char[])value);
+                        value = new string((char[])value);
                     }
                 }
             }

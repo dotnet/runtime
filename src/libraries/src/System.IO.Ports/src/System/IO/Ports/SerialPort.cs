@@ -339,7 +339,7 @@ namespace System.IO.Ports
                     throw new ArgumentException(SR.PortNameEmpty_String, nameof(PortName));
 
                 if (IsOpen)
-                    throw new InvalidOperationException(String.Format(SR.Cant_be_set_when_open, nameof(PortName)));
+                    throw new InvalidOperationException(string.Format(SR.Cant_be_set_when_open, nameof(PortName)));
                 _portName = value;
             }
         }
@@ -1257,7 +1257,7 @@ namespace System.IO.Ports
         private static int GetElapsedTime(int currentTickCount, int startTickCount)
         {
             int elapsedTime = unchecked(currentTickCount - startTickCount);
-            return (elapsedTime >= 0) ? (int)elapsedTime : Int32.MaxValue;
+            return (elapsedTime >= 0) ? (int)elapsedTime : int.MaxValue;
         }
     }
 }

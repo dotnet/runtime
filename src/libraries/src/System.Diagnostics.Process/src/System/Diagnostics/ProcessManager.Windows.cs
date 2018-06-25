@@ -235,7 +235,7 @@ namespace System.Diagnostics
         private const string PerfCounterQueryString = "230 232";
         internal const int IdleProcessID = 0;
 
-        private static readonly Dictionary<String, ValueId> s_valueIds = new Dictionary<string, ValueId>(19)
+        private static readonly Dictionary<string, ValueId> s_valueIds = new Dictionary<string, ValueId>(19)
         {
             { "Pool Paged Bytes", ValueId.PoolPagedBytes },
             { "Pool Nonpaged Bytes", ValueId.PoolNonpagedBytes },

@@ -29,16 +29,16 @@ namespace System.Xml.Schema
         {
         }
 
-        public XmlSchemaInferenceException(String message) : base(message, ((Exception)null), 0, 0)
+        public XmlSchemaInferenceException(string message) : base(message, ((Exception)null), 0, 0)
         {
         }
 
-        public XmlSchemaInferenceException(String message, Exception innerException) : base(message, innerException, 0, 0)
+        public XmlSchemaInferenceException(string message, Exception innerException) : base(message, innerException, 0, 0)
         {
         }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException3"]/*' />
-        public XmlSchemaInferenceException(String message, Exception innerException, int lineNumber, int linePosition) :
+        public XmlSchemaInferenceException(string message, Exception innerException, int lineNumber, int linePosition) :
             base(message, innerException, lineNumber, linePosition)
         {
         }

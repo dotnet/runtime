@@ -590,13 +590,13 @@ namespace System.Xml
         // Element Helper Methods
 
         // Writes out an element with the specified name containing the specified string value.
-        public void WriteElementString(string localName, String value)
+        public void WriteElementString(string localName, string value)
         {
             WriteElementString(localName, null, value);
         }
 
         // Writes out an attribute with the specified name, namespace URI and string value.
-        public void WriteElementString(string localName, String ns, String value)
+        public void WriteElementString(string localName, string ns, string value)
         {
             WriteStartElement(localName, ns);
             if (null != value && 0 != value.Length)
@@ -607,7 +607,7 @@ namespace System.Xml
         }
 
         // Writes out an attribute with the specified name, namespace URI, and string value.
-        public void WriteElementString(string prefix, String localName, String ns, String value)
+        public void WriteElementString(string prefix, string localName, string ns, string value)
         {
             WriteStartElement(prefix, localName, ns);
             if (null != value && 0 != value.Length)

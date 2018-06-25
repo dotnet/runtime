@@ -25,7 +25,7 @@ namespace System.IO
     {
         #region ReadAsync implementations
 
-        internal static IAsyncOperationWithProgress<IBuffer, UInt32> ReadAsync_MemoryStream(Stream stream, IBuffer buffer, UInt32 count)
+        internal static IAsyncOperationWithProgress<IBuffer, uint> ReadAsync_MemoryStream(Stream stream, IBuffer buffer, uint count)
         {
             Debug.Assert(stream != null);
             Debug.Assert(stream is MemoryStream);
@@ -34,7 +34,7 @@ namespace System.IO
             Debug.Assert(buffer != null);
             Debug.Assert(buffer is IBufferByteAccess);
             Debug.Assert(0 <= count);
-            Debug.Assert(count <= Int32.MaxValue);
+            Debug.Assert(count <= int.MaxValue);
             Debug.Assert(count <= buffer.Capacity);
             Contract.EndContractBlock();
 
@@ -48,7 +48,7 @@ namespace System.IO
 
             try
             {
-                IBuffer dataBuffer = memStream.GetWindowsRuntimeBuffer((Int32)memStream.Position, (Int32)count);
+                IBuffer dataBuffer = memStream.GetWindowsRuntimeBuffer((int)memStream.Position, (int)count);
                 if (dataBuffer.Length > 0)
                     memStream.Seek(dataBuffer.Length, SeekOrigin.Current);
 
@@ -61,7 +61,7 @@ namespace System.IO
         }  // ReadAsync_MemoryStream
 
 
-        internal static IAsyncOperationWithProgress<IBuffer, UInt32> ReadAsync_AbstractStream(Stream stream, IBuffer buffer, UInt32 count,
+        internal static IAsyncOperationWithProgress<IBuffer, uint> ReadAsync_AbstractStream(Stream stream, IBuffer buffer, uint count,
                                                                                               InputStreamOptions options)
         {
             Debug.Assert(stream != null);
@@ -69,12 +69,12 @@ namespace System.IO
             Debug.Assert(buffer != null);
             Debug.Assert(buffer is IBufferByteAccess);
             Debug.Assert(0 <= count);
-            Debug.Assert(count <= Int32.MaxValue);
+            Debug.Assert(count <= int.MaxValue);
             Debug.Assert(count <= buffer.Capacity);
             Debug.Assert(options == InputStreamOptions.None || options == InputStreamOptions.Partial || options == InputStreamOptions.ReadAhead);
             Contract.EndContractBlock();
 
-            Int32 bytesRequested = (Int32)count;
+            int bytesRequested = (int)count;
 
             // Check if the buffer is our implementation.
             // IF YES: In that case, we can read directly into its data array.
@@ -88,28 +88,28 @@ namespace System.IO
             IBuffer dataBuffer = buffer as WindowsRuntimeBuffer;
 
             if (dataBuffer == null)
-                dataBuffer = WindowsRuntimeBuffer.Create((Int32)Math.Min((UInt32)Int32.MaxValue, buffer.Capacity));
+                dataBuffer = WindowsRuntimeBuffer.Create((int)Math.Min((uint)int.MaxValue, buffer.Capacity));
 
             // This operation delegate will we run inside of the returned IAsyncOperationWithProgress:
-            Func<CancellationToken, IProgress<UInt32>, Task<IBuffer>> readOperation = async (cancelToken, progressListener) =>
+            Func<CancellationToken, IProgress<uint>, Task<IBuffer>> readOperation = async (cancelToken, progressListener) =>
             {
                 // No bytes read yet:
                 dataBuffer.Length = 0;
 
                 // Get the buffer backing array:
-                Byte[] data;
-                Int32 offset;
+                byte[] data;
+                int offset;
                 bool managedBufferAssert = dataBuffer.TryGetUnderlyingData(out data, out offset);
                 Debug.Assert(managedBufferAssert);
 
                 // Init tracking values:
                 bool done = cancelToken.IsCancellationRequested;
-                Int32 bytesCompleted = 0;
+                int bytesCompleted = 0;
 
                 // Loop until EOS, cancelled or read enough data according to options:
                 while (!done)
                 {
-                    Int32 bytesRead = 0;
+                    int bytesRead = 0;
 
                     try
                     {
@@ -134,7 +134,7 @@ namespace System.IO
                     }
 
                     // Update target buffer:
-                    dataBuffer.Length = (UInt32)bytesCompleted;
+                    dataBuffer.Length = (uint)bytesCompleted;
 
                     Debug.Assert(bytesCompleted <= bytesRequested);
 
@@ -161,7 +161,7 @@ namespace System.IO
 
         #region WriteAsync implementations
 
-        internal static IAsyncOperationWithProgress<UInt32, UInt32> WriteAsync_AbstractStream(Stream stream, IBuffer buffer)
+        internal static IAsyncOperationWithProgress<uint, uint> WriteAsync_AbstractStream(Stream stream, IBuffer buffer)
         {
             Debug.Assert(stream != null);
             Debug.Assert(stream.CanWrite);
@@ -169,9 +169,9 @@ namespace System.IO
             Contract.EndContractBlock();
 
             // Choose the optimal writing strategy for the kind of buffer supplied:
-            Func<CancellationToken, IProgress<UInt32>, Task<UInt32>> writeOperation;
-            Byte[] data;
-            Int32 offset;
+            Func<CancellationToken, IProgress<uint>, Task<uint>> writeOperation;
+            byte[] data;
+            int offset;
 
             // If buffer is backed by a managed array:
             if (buffer.TryGetUnderlyingData(out data, out offset))
@@ -181,16 +181,16 @@ namespace System.IO
                     if (cancelToken.IsCancellationRequested)  // CancellationToken is non-nullable
                         return 0;
 
-                    Debug.Assert(buffer.Length <= Int32.MaxValue);
+                    Debug.Assert(buffer.Length <= int.MaxValue);
 
-                    Int32 bytesToWrite = (Int32)buffer.Length;
+                    int bytesToWrite = (int)buffer.Length;
 
                     await stream.WriteAsync(data, offset, bytesToWrite, cancelToken).ConfigureAwait(continueOnCapturedContext: false);
 
                     if (progressListener != null)
-                        progressListener.Report((UInt32)bytesToWrite);
+                        progressListener.Report((uint)bytesToWrite);
 
-                    return (UInt32)bytesToWrite;
+                    return (uint)bytesToWrite;
                 };
                 // Otherwise buffer is of an unknown implementation:
             }
@@ -201,19 +201,19 @@ namespace System.IO
                     if (cancelToken.IsCancellationRequested)  // CancellationToken is non-nullable
                         return 0;
 
-                    UInt32 bytesToWrite = buffer.Length;
+                    uint bytesToWrite = buffer.Length;
                     Stream dataStream = buffer.AsStream();
 
-                    Int32 buffSize = 0x4000;
+                    int buffSize = 0x4000;
                     if (bytesToWrite < buffSize)
-                        buffSize = (Int32)bytesToWrite;
+                        buffSize = (int)bytesToWrite;
 
                     await dataStream.CopyToAsync(stream, buffSize, cancelToken).ConfigureAwait(continueOnCapturedContext: false);
 
                     if (progressListener != null)
-                        progressListener.Report((UInt32)bytesToWrite);
+                        progressListener.Report((uint)bytesToWrite);
 
-                    return (UInt32)bytesToWrite;
+                    return (uint)bytesToWrite;
                 };
             }  // if-else
 
@@ -226,13 +226,13 @@ namespace System.IO
 
         #region FlushAsync implementations
 
-        internal static IAsyncOperation<Boolean> FlushAsync_AbstractStream(Stream stream)
+        internal static IAsyncOperation<bool> FlushAsync_AbstractStream(Stream stream)
         {
             Debug.Assert(stream != null);
             Debug.Assert(stream.CanWrite);
             Contract.EndContractBlock();
 
-            Func<CancellationToken, Task<Boolean>> flushOperation = async (cancelToken) =>
+            Func<CancellationToken, Task<bool>> flushOperation = async (cancelToken) =>
             {
                 if (cancelToken.IsCancellationRequested)  // CancellationToken is non-nullable
                     return false;

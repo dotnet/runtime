@@ -14,7 +14,7 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
-            String lpValueName,
+            string lpValueName,
             int Reserved,
             RegistryValueKind dwType,
             byte[] lpData,
@@ -23,7 +23,7 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
-            String lpValueName,
+            string lpValueName,
             int Reserved,
             RegistryValueKind dwType,
             char[] lpData,
@@ -32,7 +32,7 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
-            String lpValueName,
+            string lpValueName,
             int Reserved,
             RegistryValueKind dwType,
             ref int lpData,
@@ -41,7 +41,7 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
-            String lpValueName,
+            string lpValueName,
             int Reserved,
             RegistryValueKind dwType,
             ref long lpData,
@@ -50,10 +50,10 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
-            String lpValueName,
+            string lpValueName,
             int Reserved,
             RegistryValueKind dwType,
-            String lpData,
+            string lpData,
             int cbData);
     }
 }

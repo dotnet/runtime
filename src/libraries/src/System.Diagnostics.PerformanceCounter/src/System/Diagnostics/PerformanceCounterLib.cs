@@ -58,18 +58,18 @@ namespace System.Diagnostics
         private Hashtable _categoryTable;
         private Hashtable _nameTable;
         private Hashtable _helpTable;
-        private readonly object _categoryTableLock = new Object();
-        private readonly object _nameTableLock = new Object();
-        private readonly object _helpTableLock = new Object();
+        private readonly object _categoryTableLock = new object();
+        private readonly object _nameTableLock = new object();
+        private readonly object _helpTableLock = new object();
 
-        private static Object s_internalSyncObject;
-        private static Object InternalSyncObject
+        private static object s_internalSyncObject;
+        private static object InternalSyncObject
         {
             get
             {
                 if (s_internalSyncObject == null)
                 {
-                    Object o = new Object();
+                    object o = new object();
                     Interlocked.CompareExchange(ref s_internalSyncObject, o, null);
                 }
                 return s_internalSyncObject;
@@ -1094,7 +1094,7 @@ namespace System.Diagnostics
                             nameString = string.Empty;
 
                         int key;
-                        if (!Int32.TryParse(names[index * 2], NumberStyles.Integer, CultureInfo.InvariantCulture, out key))
+                        if (!int.TryParse(names[index * 2], NumberStyles.Integer, CultureInfo.InvariantCulture, out key))
                         {
                             if (isHelp)
                             {

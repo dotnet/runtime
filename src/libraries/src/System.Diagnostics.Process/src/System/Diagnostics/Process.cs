@@ -1305,7 +1305,7 @@ namespace System.Diagnostics
                 string processName = ProcessName;
                 if (processName.Length != 0)
                 {
-                    return String.Format(CultureInfo.CurrentCulture, "{0} ({1})", base.ToString(), processName);
+                    return string.Format(CultureInfo.CurrentCulture, "{0} ({1})", base.ToString(), processName);
                 }
             }
             return base.ToString();
@@ -1453,7 +1453,7 @@ namespace System.Diagnostics
             _pendingErrorRead = false;
         }
 
-        internal void OutputReadNotifyUser(String data)
+        internal void OutputReadNotifyUser(string data)
         {
             // To avoid race between remove handler and raising the event
             DataReceivedEventHandler outputDataReceived = OutputDataReceived;
@@ -1464,7 +1464,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal void ErrorReadNotifyUser(String data)
+        internal void ErrorReadNotifyUser(string data)
         {
             // To avoid race between remove handler and raising the event
             DataReceivedEventHandler errorDataReceived = ErrorDataReceived;

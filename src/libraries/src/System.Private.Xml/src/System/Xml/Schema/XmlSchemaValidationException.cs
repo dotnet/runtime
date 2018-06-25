@@ -16,7 +16,7 @@ namespace System.Xml.Schema
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class XmlSchemaValidationException : XmlSchemaException
     {
-        private Object _sourceNodeObject;
+        private object _sourceNodeObject;
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException5"]/*' />
         protected XmlSchemaValidationException(SerializationInfo info, StreamingContext context) : base(info, context)
@@ -35,17 +35,17 @@ namespace System.Xml.Schema
         }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException2"]/*' />
-        public XmlSchemaValidationException(String message) : base(message, ((Exception)null), 0, 0)
+        public XmlSchemaValidationException(string message) : base(message, ((Exception)null), 0, 0)
         {
         }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException0"]/*' />
-        public XmlSchemaValidationException(String message, Exception innerException) : base(message, innerException, 0, 0)
+        public XmlSchemaValidationException(string message, Exception innerException) : base(message, innerException, 0, 0)
         {
         }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException3"]/*' />
-        public XmlSchemaValidationException(String message, Exception innerException, int lineNumber, int linePosition) :
+        public XmlSchemaValidationException(string message, Exception innerException, int lineNumber, int linePosition) :
             base(message, innerException, lineNumber, linePosition)
         {
         }
@@ -72,12 +72,12 @@ namespace System.Xml.Schema
         }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.SourceUri"]/*' />
-        public Object SourceObject
+        public object SourceObject
         {
             get { return _sourceNodeObject; }
         }
 
-        protected internal void SetSourceObject(Object sourceObject)
+        protected internal void SetSourceObject(object sourceObject)
         {
             _sourceNodeObject = sourceObject;
         }

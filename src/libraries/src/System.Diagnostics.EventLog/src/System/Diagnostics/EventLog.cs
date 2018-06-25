@@ -830,7 +830,7 @@ namespace System.Diagnostics
                     if (formatString.Length > i + 1)
                     {
                         StringBuilder sb = new StringBuilder();
-                        while (i + 1 < formatString.Length && Char.IsDigit(formatString[i + 1]))
+                        while (i + 1 < formatString.Length && char.IsDigit(formatString[i + 1]))
                         {
                             sb.Append(formatString[i + 1]);
                             i++;
@@ -841,7 +841,7 @@ namespace System.Diagnostics
                         if (sb.Length > 0)
                         {
                             int num = -1;
-                            if (Int32.TryParse(sb.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out num))
+                            if (int.TryParse(sb.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out num))
                             {
                                 largestNumber = Math.Max(largestNumber, num);
                             }
@@ -939,7 +939,7 @@ namespace System.Diagnostics
         // the code here.  
         private static bool CharIsPrintable(char c)
         {
-            UnicodeCategory uc = Char.GetUnicodeCategory(c);
+            UnicodeCategory uc = char.GetUnicodeCategory(c);
             return (!(uc == UnicodeCategory.Control) || (uc == UnicodeCategory.Format) ||
                     (uc == UnicodeCategory.LineSeparator) || (uc == UnicodeCategory.ParagraphSeparator) ||
             (uc == UnicodeCategory.OtherNotAssigned));
@@ -1015,17 +1015,17 @@ namespace System.Diagnostics
             _underlyingEventLog.WriteEntry(message, type, eventID, category, rawData);
         }
 
-        public void WriteEvent(EventInstance instance, params Object[] values)
+        public void WriteEvent(EventInstance instance, params object[] values)
         {
             WriteEvent(instance, null, values);
         }
 
-        public void WriteEvent(EventInstance instance, byte[] data, params Object[] values)
+        public void WriteEvent(EventInstance instance, byte[] data, params object[] values)
         {
             _underlyingEventLog.WriteEvent(instance, data, values);
         }
 
-        public static void WriteEvent(string source, EventInstance instance, params Object[] values)
+        public static void WriteEvent(string source, EventInstance instance, params object[] values)
         {
             using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source)))
             {
@@ -1033,7 +1033,7 @@ namespace System.Diagnostics
             }
         }
 
-        public static void WriteEvent(string source, EventInstance instance, byte[] data, params Object[] values)
+        public static void WriteEvent(string source, EventInstance instance, byte[] data, params object[] values)
         {
             using (EventLogInternal log = new EventLogInternal(string.Empty, ".", CheckAndNormalizeSourceName(source)))
             {

@@ -271,7 +271,7 @@ namespace System.Xml
             XmlAttribute attr = GetAttributeNode(name);
             if (attr != null)
                 return attr.Value;
-            return String.Empty;
+            return string.Empty;
         }
 
         // Sets the value of the attribute
@@ -339,7 +339,7 @@ namespace System.Xml
             XmlAttribute attr = GetAttributeNode(localName, namespaceURI);
             if (attr != null)
                 return attr.Value;
-            return String.Empty;
+            return string.Empty;
         }
 
         // Sets the value of the attribute with the specified name
