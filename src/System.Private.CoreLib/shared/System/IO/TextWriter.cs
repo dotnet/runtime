@@ -184,7 +184,7 @@ namespace System.IO
         }
 
         // Writes the text representation of a boolean to the text stream. This
-        // method outputs either Boolean.TrueString or Boolean.FalseString.
+        // method outputs either bool.TrueString or bool.FalseString.
         //
         public virtual void Write(bool value)
         {
@@ -231,7 +231,7 @@ namespace System.IO
 
         // Writes the text representation of a float to the text stream. The
         // text representation of the given value is produced by calling the
-        // Float.toString(float) method.
+        // float.ToString(float) method.
         //
         public virtual void Write(float value)
         {
@@ -240,7 +240,7 @@ namespace System.IO
 
         // Writes the text representation of a double to the text stream. The
         // text representation of the given value is produced by calling the
-        // Double.toString(double) method.
+        // double.ToString(double) method.
         //
         public virtual void Write(double value)
         {
