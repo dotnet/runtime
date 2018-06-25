@@ -34,7 +34,9 @@ int TreeComparer(const void* left, const void* right)
 {
     const TCollatorMap* leftMap = left;
     const TCollatorMap* rightMap = right;
-    return leftMap->key - rightMap->key;
+    if (leftMap->key < rightMap->key) return -1;
+    if (leftMap->key > rightMap->key) return 1;
+    return 0;
 }
 
 // Hiragana character range
@@ -120,11 +122,11 @@ bool IsHalfFullHigherSymbol(UChar character)
 static bool AddItem(UCharList* list, size_t* currentCapacity, const UChar item)
 {
     size_t size = list->size++;
-    if(size >= *currentCapacity)
+    if (size >= *currentCapacity)
     {
         *currentCapacity *= 2;
         UChar* ptr = (UChar*)realloc(list->items, *currentCapacity * sizeof(UChar*));
-        if(ptr == NULL)
+        if (ptr == NULL)
         {
             return false;
         }
@@ -284,6 +286,7 @@ UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options,
         }
 
         pClonedCollator = ucol_openRules(completeRules, completeRulesLength, UCOL_DEFAULT, strength, NULL, pErr);
+        free(customRules);
     }
 
     if (isIgnoreSymbols)
@@ -349,21 +352,31 @@ bool CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lpStr, i
 
 }
 
-ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandle** ppSortHandle)
+void CreateSortHandle(SortHandle** ppSortHandle)
 {
-    assert(ppSortHandle != NULL);
-
     *ppSortHandle = (SortHandle*)malloc(sizeof(SortHandle));
     if ((*ppSortHandle) == NULL)
     {
-        return GetResultCode(U_MEMORY_ALLOCATION_ERROR);
+        return;
     }
 
     (*ppSortHandle)->pRoot = NULL;
     int result = pthread_mutex_init(&(*ppSortHandle)->collatorsLockObject, NULL);
+
     if (result != 0)
     {
         assert(false && "Unexpected pthread_mutex_init return value.");
+    }
+}
+
+ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandle** ppSortHandle)
+{
+    assert(ppSortHandle != NULL);
+
+    CreateSortHandle(ppSortHandle);
+    if ((*ppSortHandle) == NULL)
+    {
+        return GetResultCode(U_MEMORY_ALLOCATION_ERROR);
     }
 
     UErrorCode err = U_ZERO_ERROR;
@@ -372,9 +385,6 @@ ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandl
 
     if (U_FAILURE(err))
     {
-        if ((*ppSortHandle)->regular != NULL)
-            ucol_close((*ppSortHandle)->regular);
-
         free(*ppSortHandle);
         (*ppSortHandle) = NULL;
     }
@@ -426,6 +436,7 @@ const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t opti
         }
         else
         {
+            free(map);
             pCollator = (*(TCollatorMap**)entry)->UCollator;
         }
 
@@ -483,11 +494,11 @@ Function:
 IndexOf
 */
 int32_t GlobalizationNative_IndexOf(
-                        SortHandle* pSortHandle, 
-                        const UChar* lpTarget, 
-                        int32_t cwTargetLength, 
-                        const UChar* lpSource, 
-                        int32_t cwSourceLength, 
+                        SortHandle* pSortHandle,
+                        const UChar* lpTarget,
+                        int32_t cwTargetLength,
+                        const UChar* lpSource,
+                        int32_t cwSourceLength,
                         int32_t options,
                         int32_t* pMatchedLength)
 {
@@ -508,8 +519,8 @@ int32_t GlobalizationNative_IndexOf(
             // if the search was successful,
             // we'll try to get the matched string length.
             if(result != USEARCH_DONE && pMatchedLength != NULL)
-            { 
-                *pMatchedLength = usearch_getMatchedLength(pSearch);	
+            {
+                *pMatchedLength = usearch_getMatchedLength(pSearch);
             }
             usearch_close(pSearch);
         }
@@ -523,11 +534,11 @@ Function:
 LastIndexOf
 */
 int32_t GlobalizationNative_LastIndexOf(
-                        SortHandle* pSortHandle, 
-                        const UChar* lpTarget, 
-                        int32_t cwTargetLength, 
-                        const UChar* lpSource, 
-                        int32_t cwSourceLength, 
+                        SortHandle* pSortHandle,
+                        const UChar* lpTarget,
+                        int32_t cwTargetLength,
+                        const UChar* lpSource,
+                        int32_t cwSourceLength,
                         int32_t options)
 {
     static_assert(USEARCH_DONE == -1, "managed side requires -1 for not found");
@@ -624,11 +635,11 @@ int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
 int32_t GlobalizationNative_StartsWith(
-                        SortHandle* pSortHandle, 
-                        const UChar* lpTarget, 
-                        int32_t cwTargetLength, 
-                        const UChar* lpSource, 
-                        int32_t cwSourceLength, 
+                        SortHandle* pSortHandle,
+                        const UChar* lpTarget,
+                        int32_t cwTargetLength,
+                        const UChar* lpSource,
+                        int32_t cwSourceLength,
                         int32_t options)
 {
     int32_t result = FALSE;
@@ -666,11 +677,11 @@ int32_t GlobalizationNative_StartsWith(
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
 int32_t GlobalizationNative_EndsWith(
-                        SortHandle* pSortHandle, 
-                        const UChar* lpTarget, 
-                        int32_t cwTargetLength, 
-                        const UChar* lpSource, 
-                        int32_t cwSourceLength, 
+                        SortHandle* pSortHandle,
+                        const UChar* lpTarget,
+                        int32_t cwTargetLength,
+                        const UChar* lpSource,
+                        int32_t cwSourceLength,
                         int32_t options)
 {
     int32_t result = FALSE;
@@ -709,11 +720,11 @@ int32_t GlobalizationNative_EndsWith(
 }
 
 int32_t GlobalizationNative_GetSortKey(
-                        SortHandle* pSortHandle, 
-                        const UChar* lpStr, 
-                        int32_t cwStrLength, 
-                        uint8_t* sortKey, 
-                        int32_t cbSortKeyLength, 
+                        SortHandle* pSortHandle,
+                        const UChar* lpStr,
+                        int32_t cwStrLength,
+                        uint8_t* sortKey,
+                        int32_t cbSortKeyLength,
                         int32_t options)
 {
     UErrorCode err = U_ZERO_ERROR;

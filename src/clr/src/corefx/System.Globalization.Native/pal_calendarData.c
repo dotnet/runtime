@@ -123,10 +123,7 @@ int32_t GlobalizationNative_GetCalendars(
     UEnumeration* pEnum = ucal_getKeywordValuesForLocale("calendar", locale, TRUE, &err);
 
     if (U_FAILURE(err))
-    {
-        uenum_close(pEnum);
         return 0;
-    }
 
     int stringEnumeratorCount = uenum_count(pEnum, &err);
     if (U_FAILURE(err))
@@ -167,10 +164,7 @@ ResultCode GetMonthDayPattern(const char* locale, UChar* sMonthDay, int32_t stri
     UDateTimePatternGenerator* pGenerator = udatpg_open(locale, &err);
 
     if (U_FAILURE(err))
-    {
-        udatpg_close(pGenerator);
         return GetResultCode(err);
-    }
 
     udatpg_getBestPattern(pGenerator, UDAT_MONTH_DAY_UCHAR, -1, sMonthDay, stringCapacity, &err);
 
@@ -240,10 +234,7 @@ bool InvokeCallbackForDatePattern(const char* locale,
     UDateFormat* pFormat = udat_open(UDAT_NONE, style, locale, NULL, 0, NULL, 0, &err);
 
     if (U_FAILURE(err))
-    {
-        unum_close(pFormat);
         return false;
-    }
 
     UErrorCode ignore = U_ZERO_ERROR;
     int32_t patternLen = udat_toPattern(pFormat, false, NULL, 0, &ignore) + 1;
@@ -251,11 +242,11 @@ bool InvokeCallbackForDatePattern(const char* locale,
     UChar* pattern = calloc(patternLen, sizeof(UChar));
     if (pattern == NULL)
     {
+        udat_close(pFormat);
         return false;
     }
 
     udat_toPattern(pFormat, false, pattern, patternLen, &err);
-
     udat_close(pFormat);
 
     if (U_SUCCESS(err))
@@ -283,10 +274,7 @@ bool InvokeCallbackForDateTimePattern(const char* locale,
     UDateTimePatternGenerator* pGenerator = udatpg_open(locale, &err);
 
     if (U_FAILURE(err))
-    {
-        udatpg_close(pGenerator);
         return false;
-    }
 
     UErrorCode ignore = U_ZERO_ERROR;
     int32_t patternLen = udatpg_getBestPattern(pGenerator, patternSkeleton, -1, NULL, 0, &ignore) + 1;
@@ -294,12 +282,13 @@ bool InvokeCallbackForDateTimePattern(const char* locale,
     UChar* bestPattern = calloc(patternLen, sizeof(UChar));
     if (bestPattern == NULL)
     {
+        udatpg_close(pGenerator);
         return false;
     }
 
     udatpg_getBestPattern(pGenerator, patternSkeleton, -1, bestPattern, patternLen, &err);
-
     udatpg_close(pGenerator);
+
     if (U_SUCCESS(err))
     {
         callback(bestPattern, context);
@@ -327,10 +316,7 @@ bool EnumSymbols(const char* locale,
     UDateFormat* pFormat = udat_open(UDAT_DEFAULT, UDAT_DEFAULT, locale, NULL, 0, NULL, 0, &err);
 
     if (U_FAILURE(err))
-    {
-        udat_close(pFormat);
         return false;
-    }
 
     char localeWithCalendarName[ULOC_FULLNAME_CAPACITY];
     strncpy(localeWithCalendarName, locale, ULOC_FULLNAME_CAPACITY);
@@ -363,7 +349,7 @@ bool EnumSymbols(const char* locale,
         if (symbolBuf == NULL)
         {
             udat_close(pFormat);
-            free(symbolBuf);
+            ucal_close(pCalendar);
             return false;
         }
 
@@ -374,6 +360,7 @@ bool EnumSymbols(const char* locale,
         if (U_FAILURE(err))
         {
             udat_close(pFormat);
+            ucal_close(pCalendar);
             free(symbolBuf);
             return false;
         }
@@ -383,6 +370,7 @@ bool EnumSymbols(const char* locale,
     }
 
     udat_close(pFormat);
+    ucal_close(pCalendar);
     return true;
 }
 
@@ -571,10 +559,7 @@ int32_t GlobalizationNative_GetLatestJapaneseEra()
     UCalendar* pCal = ucal_open(NULL, 0, JAPANESE_LOCALE_AND_CALENDAR, UCAL_TRADITIONAL, &err);
 
     if (U_FAILURE(err))
-    {
-        ucal_close(pCal);
         return 0;
-    }
 
     ucal_set(pCal, UCAL_EXTENDED_YEAR, 9999);
     int32_t ret = ucal_get(pCal, UCAL_ERA, &err);
@@ -600,10 +585,7 @@ int32_t GlobalizationNative_GetJapaneseEraStartDate(
     UCalendar* pCal = ucal_open(NULL, 0, JAPANESE_LOCALE_AND_CALENDAR, UCAL_TRADITIONAL, &err);
 
     if (U_FAILURE(err))
-    {
-        ucal_close(pCal);
         return false;
-    }
 
     ucal_set(pCal, UCAL_ERA, era);
     ucal_set(pCal, UCAL_YEAR, 1);
