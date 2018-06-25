@@ -213,7 +213,7 @@ static gsize namedmutex_typesize (void)
 void
 mono_w32mutex_init (void)
 {
-	static MonoW32HandleOps mutex_ops = {
+	static const MonoW32HandleOps mutex_ops = {
 		NULL,			/* close */
 		mutex_handle_signal,	/* signal */
 		mutex_handle_own,	/* own */
@@ -225,7 +225,7 @@ mono_w32mutex_init (void)
 		mutex_typesize,	/* typesize */
 	};
 
-	static MonoW32HandleOps namedmutex_ops = {
+	static const MonoW32HandleOps namedmutex_ops = {
 		NULL,			/* close */
 		mutex_handle_signal,	/* signal */
 		mutex_handle_own,	/* own */

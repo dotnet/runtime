@@ -103,7 +103,7 @@ static gsize namedsema_typesize (void)
 void
 mono_w32semaphore_init (void)
 {
-	static MonoW32HandleOps sem_ops = {
+	static const MonoW32HandleOps sem_ops = {
 		NULL,			/* close */
 		sem_handle_signal,		/* signal */
 		sem_handle_own,		/* own */
@@ -115,7 +115,7 @@ mono_w32semaphore_init (void)
 		sema_typesize,	/* typesize */
 	};
 
-	static MonoW32HandleOps namedsem_ops = {
+	static const MonoW32HandleOps namedsem_ops = {
 		NULL,			/* close */
 		sem_handle_signal,	/* signal */
 		sem_handle_own,		/* own */

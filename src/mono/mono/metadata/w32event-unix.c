@@ -112,7 +112,7 @@ static gsize namedevent_typesize (void)
 void
 mono_w32event_init (void)
 {
-	static MonoW32HandleOps event_ops = {
+	static const MonoW32HandleOps event_ops = {
 		NULL,			/* close */
 		event_handle_signal,		/* signal */
 		event_handle_own,		/* own */
@@ -124,7 +124,7 @@ mono_w32event_init (void)
 		event_typesize, /* typesize */
 	};
 
-	static MonoW32HandleOps namedevent_ops = {
+	static const MonoW32HandleOps namedevent_ops = {
 		NULL,			/* close */
 		event_handle_signal,	/* signal */
 		event_handle_own,		/* own */

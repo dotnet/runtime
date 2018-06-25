@@ -33,7 +33,7 @@ struct _MonoW32HandleSlot {
 };
 
 static MonoW32HandleCapability handle_caps [MONO_W32TYPE_COUNT];
-static MonoW32HandleOps *handle_ops [MONO_W32TYPE_COUNT];
+static MonoW32HandleOps const *handle_ops [MONO_W32TYPE_COUNT];
 
 static MonoW32HandleSlot *handles_slots_first;
 static MonoW32HandleSlot *handles_slots_last;
@@ -440,7 +440,8 @@ mono_w32handle_unref_core (MonoW32Handle *handle_data)
 	return new == 0;
 }
 
-static void (*_wapi_handle_ops_get_close_func (MonoW32Type type))(gpointer, gpointer);
+static void
+mono_w32handle_ops_close (MonoW32Type type, gpointer handle_specific);
 
 static void
 w32handle_destroy (MonoW32Handle *handle_data)
@@ -453,7 +454,6 @@ w32handle_destroy (MonoW32Handle *handle_data)
 	 */
 	MonoW32Type type;
 	gpointer handle_specific;
-	void (*close_func)(gpointer, gpointer);
 
 	g_assert (!handle_data->in_use);
 
@@ -471,10 +471,7 @@ w32handle_destroy (MonoW32Handle *handle_data)
 
 	mono_coop_mutex_unlock (&scan_mutex);
 
-	close_func = _wapi_handle_ops_get_close_func (type);
-	if (close_func != NULL) {
-		close_func (handle_data, handle_specific);
-	}
+	mono_w32handle_ops_close (type, handle_specific);
 
 	memset (handle_specific, 0, mono_w32handle_ops_typesize (type));
 
@@ -493,7 +490,7 @@ mono_w32handle_unref (MonoW32Handle *handle_data)
 }
 
 void
-mono_w32handle_register_ops (MonoW32Type type, MonoW32HandleOps *ops)
+mono_w32handle_register_ops (MonoW32Type type, const MonoW32HandleOps *ops)
 {
 	handle_ops [type] = ops;
 }
@@ -513,14 +510,12 @@ mono_w32handle_test_capabilities (MonoW32Handle *handle_data, MonoW32HandleCapab
 	return (handle_caps [handle_data->type] & caps) != 0;
 }
 
-static void (*_wapi_handle_ops_get_close_func (MonoW32Type type))(gpointer, gpointer)
+static void
+mono_w32handle_ops_close (MonoW32Type type, gpointer data)
 {
-	if (handle_ops[type] != NULL &&
-	    handle_ops[type]->close != NULL) {
-		return (handle_ops[type]->close);
-	}
-
-	return (NULL);
+	const MonoW32HandleOps *ops = handle_ops [type];
+	if (ops && ops->close)
+		ops->close (data);
 }
 
 static void
