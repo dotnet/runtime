@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
      * setup of the TestProject, copying test projects for perf on build/restore,
      * and building/publishing/restoring test projects where necessary.
      */
-    public class TestProjectFixture
+    public class TestProjectFixture : IDisposable
     {
         private static readonly string s_testArtifactDirectoryEnvironmentVariable = "TEST_ARTIFACTS";
 
@@ -32,6 +32,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         private TestProject _sourceTestProject;
         private TestProject _testProject;
+        private List<TestProject> _copiedTestProjects = new List<TestProject>();
 
         public DotNetCli SdkDotnet => _sdkDotnet;
         public DotNetCli BuiltDotnet => _builtDotnet;
@@ -116,6 +117,24 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 _sharedLibraryExtension,
                 _sharedLibraryPrefix,
                 _assemblyName);
+
+            fixtureToCopy._copiedTestProjects.Add(_testProject);
+        }
+
+        public void Dispose()
+        {
+            if (_testProject != null)
+            {
+                _testProject.Dispose();
+                _testProject = null;
+            }
+
+            foreach (var project in _copiedTestProjects)
+            {
+                project.Dispose();
+            }
+
+            _copiedTestProjects.Clear();
         }
 
         private void InitializeTestProject(
@@ -159,6 +178,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             EnsureDirectoryBuildProps(testArtifactDirectory);
 
             sourceTestProject.CopyProjectFiles(copiedTestProjectDirectory);
+
             return new TestProject(
                 copiedTestProjectDirectory,
                 exeExtension,

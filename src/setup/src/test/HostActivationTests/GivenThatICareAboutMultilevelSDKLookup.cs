@@ -2,15 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using Microsoft.DotNet.InternalAbstractions;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
 {
-    public class GivenThatICareAboutMultilevelSDKLookup
+    public class GivenThatICareAboutMultilevelSDKLookup : IDisposable
     {
-        private static readonly Mutex id_mutex = new Mutex();
         private static IDictionary<string, string> s_DefaultEnvironment = new Dictionary<string, string>()
         {
             {"COREHOST_TRACE", "1" },
@@ -32,6 +30,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
         private string _userSelectedMessage;
         private string _exeSelectedMessage;
         private string _sdkDir;
+        private string _multilevelDir;
 
         private const string _dotnetSdkDllMessageTerminator = "dotnet.dll]";
 
@@ -45,18 +44,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // The dotnetMultilevelSDKLookup dir will contain some folders and files that will be
             // necessary to perform the tests
             string baseMultilevelDir = Path.Combine(artifactsDir, "dotnetMultilevelSDKLookup");
-            string multilevelDir = CalculateMultilevelDirectory(baseMultilevelDir);
+            _multilevelDir = SharedFramework.CalculateUniqueTestDirectory(baseMultilevelDir);
 
             // The three tested locations will be the cwd, the user folder and the exe dir. cwd and user are no longer supported.
             //     All dirs will be placed inside the multilevel folder
 
-            _currentWorkingDir = Path.Combine(multilevelDir, "cwd");
-            _userDir = Path.Combine(multilevelDir, "user");
-            _executableDir = Path.Combine(multilevelDir, "exe");
+            _currentWorkingDir = Path.Combine(_multilevelDir, "cwd");
+            _userDir = Path.Combine(_multilevelDir, "user");
+            _executableDir = Path.Combine(_multilevelDir, "exe");
 
             // It's necessary to copy the entire publish folder to the exe dir because
             // we'll need to build from it. The CopyDirectory method automatically creates the dest dir
-            CopyDirectory(builtDotnet, _executableDir);
+            SharedFramework.CopyDirectory(builtDotnet, _executableDir);
 
             RepoDirectories = new RepoDirectoriesProvider(builtDotnet: _executableDir);
 
@@ -80,7 +79,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // always pick the framework from this to avoid interference with the sharedFxLookup
             string exeDirDummyFxVersion = Path.Combine(_executableDir, "shared", "Microsoft.NETCore.App", "9999.0.0");
             string builtSharedFxDir = fixture.BuiltDotnet.GreatestVersionSharedFxPath;
-            CopyDirectory(builtSharedFxDir, exeDirDummyFxVersion);
+            SharedFramework.CopyDirectory(builtSharedFxDir, exeDirDummyFxVersion);
 
             // The actual SDK version can be obtained from the built fixture. We'll use it to
             // locate the sdkDir from which we can get the files contained in the version folder
@@ -101,7 +100,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             _userSelectedMessage = $"Using dotnet SDK dll=[{_userSdkBaseDir}";
             _exeSelectedMessage = $"Using dotnet SDK dll=[{_exeSdkBaseDir}";
         }
-        
+
+        public void Dispose()
+        {
+            PreviouslyBuiltAndRestoredPortableTestProjectFixture.Dispose();
+
+            if (!TestProject.PreserveTestRuns())
+            {
+                Directory.Delete(_multilevelDir, true);
+            }
+        }
+
         [Fact]
         public void SdkLookup_Global_Json_Single_Digit_Patch_Rollup()
         {
@@ -676,74 +685,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             foreach (string version in availableVersions)
             {
                 string newSdkDir = Path.Combine(sdkBaseDir, version);
-                CopyDirectory(_sdkDir, newSdkDir);
+                SharedFramework.CopyDirectory(_sdkDir, newSdkDir);
 
                 string runtimeConfig = Path.Combine(newSdkDir, "dotnet.runtimeconfig.json");
                 File.Copy(dummyRuntimeConfig, runtimeConfig, true);
-            }
-        }
-
-        // This method removes a list of sdk version folders from the specified sdkBaseDir.
-        // Remarks:
-        // - If the sdkBaseDir does not exist, then a DirectoryNotFoundException
-        //   is thrown.
-        // - If a specified version folder does not exist, then a DirectoryNotFoundException
-        //   is thrown.
-        private void DeleteAvailableSdkVersions(string sdkBaseDir, params string[] availableVersions)
-        {
-            DirectoryInfo sdkBaseDirInfo = new DirectoryInfo(sdkBaseDir);
-
-            if (!sdkBaseDirInfo.Exists)
-            {
-                throw new DirectoryNotFoundException();
-            }
-
-            foreach (string version in availableVersions)
-            {
-                string sdkDir = Path.Combine(sdkBaseDir, version);
-                if (!Directory.Exists(sdkDir))
-                {
-                    throw new DirectoryNotFoundException();
-                }
-                Directory.Delete(sdkDir, true);
-            }
-        }
-
-        // CopyDirectory recursively copies a directory.
-        // Remarks:
-        // - If the dest dir does not exist, then it is created.
-        // - If the dest dir exists, then it is substituted with the new one
-        //   (original files and subfolders are deleted).
-        // - If the src dir does not exist, then a DirectoryNotFoundException
-        //   is thrown.
-        private void CopyDirectory(string srcDir, string dstDir)
-        {
-            DirectoryInfo srcDirInfo = new DirectoryInfo(srcDir);
-
-            if (!srcDirInfo.Exists)
-            {
-                throw new DirectoryNotFoundException();
-            }
-
-            DirectoryInfo dstDirInfo = new DirectoryInfo(dstDir);
-
-            if (dstDirInfo.Exists)
-            {
-                dstDirInfo.Delete(true);
-            }
-
-            dstDirInfo.Create();
-
-            foreach (FileInfo fileInfo in srcDirInfo.GetFiles())
-            {
-                string newFile = Path.Combine(dstDir, fileInfo.Name);
-                fileInfo.CopyTo(newFile);
-            }
-
-            foreach (DirectoryInfo subdirInfo in srcDirInfo.GetDirectories())
-            {
-                string newDir = Path.Combine(dstDir, subdirInfo.Name);
-                CopyDirectory(subdirInfo.FullName, newDir);
             }
         }
 
@@ -755,26 +700,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 "SDKLookup", globalJsonFileName);
 
             File.Copy(srcFile, destFile, true);
-        }
-
-        // MultilevelDirectory is %TEST_ARTIFACTS%\dotnetMultilevelSDKLookup\id.
-        // We must locate the first non existing id.
-        private string CalculateMultilevelDirectory(string baseMultilevelDir)
-        {
-            id_mutex.WaitOne();
-
-            int count = 0;
-            string multilevelDir;
-
-            do
-            {
-                multilevelDir = Path.Combine(baseMultilevelDir, count.ToString());
-                count++;
-            } while (Directory.Exists(multilevelDir));
-
-            id_mutex.ReleaseMutex();
-        
-            return multilevelDir;
         }
     }
 }

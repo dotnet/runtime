@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
-    public class TestProject
+    public class TestProject : IDisposable
     {
         private string _projectDirectory;
         private string _projectName;
@@ -66,6 +66,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
         }
 
+        public void Dispose()
+        {
+            if (!PreserveTestRuns())
+            {
+                Directory.Delete(_projectDirectory, true);
+            }
+        }
+
         public void CopyProjectFiles(string directory)
         {
             CopyRecursive(_projectDirectory, directory, overwrite: true);
@@ -114,6 +122,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     File.Copy(file, dest, overwrite: true);
                 }
             }
+        }
+
+        public static bool PreserveTestRuns()
+        {
+            return Environment.GetEnvironmentVariable("PRESERVE_TEST_RUNS") == "1";
         }
     }
 }

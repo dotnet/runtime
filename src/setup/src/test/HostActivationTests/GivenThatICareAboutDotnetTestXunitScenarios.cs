@@ -22,22 +22,27 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
         [Fact]
         public void Muxer_activation_of_dotnet_test_XUnit_on_Portable_Test_App_Succeeds()
         {
-            var portableTestAppFixture = new TestProjectFixture("PortableTestApp", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages)
-                .BuildProject();
+            using (var portableTestAppFixture = new TestProjectFixture("PortableTestApp", RepoDirectories))
+            {
+                portableTestAppFixture
+                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .BuildProject();
 
-            ActivateDotnetTestXunitOnTestProject(RepoDirectories, portableTestAppFixture);
+                ActivateDotnetTestXunitOnTestProject(RepoDirectories, portableTestAppFixture);
+            }
         }
 
         [Fact]
         public void Muxer_activation_of_dotnet_test_XUnit_on_Standalone_Test_App_Succeeds()
         {
-            var standaloneTestAppFixture = new TestProjectFixture("StandaloneTestApp", RepoDirectories);
-            standaloneTestAppFixture
-                .EnsureRestoredForRid(standaloneTestAppFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                .BuildProject(runtime: standaloneTestAppFixture.CurrentRid);
+            using (var standaloneTestAppFixture = new TestProjectFixture("StandaloneTestApp", RepoDirectories))
+            {
+                standaloneTestAppFixture
+                    .EnsureRestoredForRid(standaloneTestAppFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .BuildProject(runtime: standaloneTestAppFixture.CurrentRid);
 
-            ActivateDotnetTestXunitOnTestProject(RepoDirectories, standaloneTestAppFixture);
+                ActivateDotnetTestXunitOnTestProject(RepoDirectories, standaloneTestAppFixture);
+            }
         }
 
         public void ActivateDotnetTestXunitOnTestProject(
