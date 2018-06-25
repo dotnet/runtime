@@ -30,6 +30,8 @@ They can be downloaded from [here](https://www.microsoft.com/net/download#core).
 Daily Builds
 ------------
 
+[What build version has the CoreFX/CoreCLR commits I want?](Documentation/project-docs/how-to-track-changes.md)
+
 |   Platform   |   Master   |   Release/2.1.X   |   Release/2.0.X   |   Release/1.1.X   |   Release/1.0.X   |
 |---------|:----------:|:----------:|:----------:|:----------:|:----------:|
 |   **Windows (x64)**        |   [![][win-x64-badge-master]][win-x64-version-master]<br>[Installer][win-x64-installer-master] ([Checksum][win-x64-installer-checksum-master])<br>[zip][win-x64-zip-master] ([Checksum][win-x64-zip-checksum-master])<br>[Symbols (zip)][win-x64-symbols-zip-master]   |   [![][win-x64-badge-2.1.X]][win-x64-version-2.1.X]<br>[Installer][win-x64-installer-2.1.X] ([Checksum][win-x64-installer-checksum-2.1.X])<br>[zip][win-x64-zip-2.1.X] ([Checksum][win-x64-zip-checksum-2.1.X])<br>[Symbols (zip)][win-x64-symbols-zip-2.1.X]   |   [![][win-x64-badge-2.0.X]][win-x64-version-2.0.X]<br>[Installer][win-x64-installer-2.0.X] ([Checksum][win-x64-installer-checksum-2.0.X])<br>[zip][win-x64-zip-2.0.X] ([Checksum][win-x64-zip-checksum-2.0.X])<br>[Symbols (zip)][win-x64-symbols-zip-2.0.X]   |   [![][win-x64-badge-1.1.X]][win-x64-version-1.1.X]<br>[Installer][win-x64-installer-1.1.X]<br>[zip][win-x64-zip-1.1.X]   |   [![][win-x64-badge-preview]][win-x64-version-preview]<br>[Installer][win-x64-installer-preview]<br>[zip][win-x64-zip-preview]   |
