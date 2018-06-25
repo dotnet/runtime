@@ -2223,9 +2223,10 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                                 buildCommands += "build-test.cmd ${lowerConfiguration} ${arch} skipmanaged"                                
                                 buildCommands += "tests\\runtest.cmd ${runtestArguments} CoreFXTests"
                                 
-                                // Archive and process (only) the test results
-                                Utilities.addArchival(newJob, "bin/Logs/**/testResults.xml")
-                                Utilities.addXUnitDotNETResults(newJob, "bin/Logs/**/testResults.xml")
+                                // CI will report missing logs as a test failure - disable until https://github.com/dotnet/coreclr/pull/18365 is merged
+                                // // Archive and process (only) the test results
+                                // Utilities.addArchival(newJob, "bin/Logs/**/testResults.xml")
+                                // Utilities.addXUnitDotNETResults(newJob, "bin/Logs/**/testResults.xml")
                             }
                             else {
                               def workspaceRelativeFxRoot = "_/fx"
