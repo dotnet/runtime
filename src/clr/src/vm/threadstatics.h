@@ -440,6 +440,12 @@ public:
 };  // struct ThreadLocalModule
 
 
+#define OFFSETOF__ThreadLocalModule__m_pDataBlob               (3 * TARGET_POINTER_SIZE /* m_pDynamicClassTable + m_aDynamicEntries + m_pGCStatics */)
+#ifdef FEATURE_64BIT_ALIGNMENT
+#define OFFSETOF__ThreadLocalModule__DynamicEntry__m_pDataBlob (TARGET_POINTER_SIZE /* m_pGCStatics */ + TARGET_POINTER_SIZE /* m_padding */)
+#else
+#define OFFSETOF__ThreadLocalModule__DynamicEntry__m_pDataBlob TARGET_POINTER_SIZE /* m_pGCStatics */
+#endif
 
 typedef DPTR(struct TLMTableEntry) PTR_TLMTableEntry;
 
