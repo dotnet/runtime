@@ -17,36 +17,19 @@ using Microsoft.DotNet.InternalAbstractions;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 {
-    public class GivenThatICareAboutStandaloneAppActivation
+    public class GivenThatICareAboutStandaloneAppActivation : IClassFixture<GivenThatICareAboutStandaloneAppActivation.SharedTestState>
     {
-        public static TestProjectFixture PreviouslyBuiltAndRestoredStandaloneTestProjectFixture { get; private set; }
-        public static TestProjectFixture PreviouslyPublishedAndRestoredStandaloneTestProjectFixture { get; private set; }
-        private static RepoDirectoriesProvider RepoDirectories { get; set; }
+        private SharedTestState sharedTestState;
 
-        static GivenThatICareAboutStandaloneAppActivation()
+        public GivenThatICareAboutStandaloneAppActivation(GivenThatICareAboutStandaloneAppActivation.SharedTestState fixture)
         {
-            RepoDirectories = new RepoDirectoriesProvider();
-
-            var buildFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
-            buildFixture
-                .EnsureRestoredForRid(buildFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                .BuildProject(runtime: buildFixture.CurrentRid);
-
-            var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
-            publishFixture
-                .EnsureRestoredForRid(publishFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                .PublishProject(runtime: publishFixture.CurrentRid);
-
-            ReplaceTestProjectOutputHostInTestProjectFixture(buildFixture);
-
-            PreviouslyBuiltAndRestoredStandaloneTestProjectFixture = buildFixture;
-            PreviouslyPublishedAndRestoredStandaloneTestProjectFixture = publishFixture;
+            sharedTestState = fixture;
         }
 
         [Fact]
         public void Running_Build_Output_Standalone_EXE_with_DepsJson_and_RuntimeConfig_Local_Succeeds()
         {
-            var fixture = PreviouslyBuiltAndRestoredStandaloneTestProjectFixture
+            var fixture = sharedTestState.PreviouslyBuiltAndRestoredStandaloneTestProjectFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
@@ -64,7 +47,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
         [Fact]
         public void Running_Publish_Output_Standalone_EXE_with_DepsJson_and_RuntimeConfig_Local_Succeeds()
         {
-            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
@@ -82,13 +65,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
         [Fact]
         public void Running_Publish_Output_Standalone_EXE_with_Unbound_AppHost_Fails()
         {
-            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
 
             string hostExeName = $"apphost{Constants.ExeSuffix}";
-            string builtAppHost = Path.Combine(RepoDirectories.HostArtifacts, hostExeName);
+            string builtAppHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, hostExeName);
             File.Copy(builtAppHost, appExe, true);
 
             int exitCode = Command.Create(appExe)
@@ -111,13 +94,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
         [Fact]
         public void Running_Publish_Output_Standalone_EXE_By_Renaming_dotnet_exe_Fails()
         {
-            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
 
             string hostExeName = $"dotnet{Constants.ExeSuffix}";
-            string builtHost = Path.Combine(RepoDirectories.HostArtifacts, hostExeName);
+            string builtHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, hostExeName);
             File.Copy(builtHost, appExe, true);
 
             int exitCode = Command.Create(appExe)
@@ -140,7 +123,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
         [Fact]
         public void Running_Publish_Output_Standalone_EXE_By_Renaming_apphost_exe_Succeeds()
         {
-            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
@@ -161,7 +144,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
         [Fact]
         public void Running_Publish_Output_Standalone_EXE_With_Relative_Embedded_Path_Succeeds()
         {
-            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
@@ -198,7 +181,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
         [Fact]
         public void Running_Publish_Output_Standalone_EXE_With_DOTNET_ROOT_Fails()
         {
-            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
@@ -243,13 +226,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
         [Fact]
         public void Running_Publish_Output_Standalone_EXE_with_Bound_AppHost_Succeeds()
         {
-            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
 
             string hostExeName = $"apphost{Constants.ExeSuffix}";
-            string builtAppHost = Path.Combine(RepoDirectories.HostArtifacts, hostExeName);
+            string builtAppHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, hostExeName);
             string appName = Path.GetFileNameWithoutExtension(appExe);
             string appDll = $"{appName}.dll";
             string appDir = Path.GetDirectoryName(appExe);
@@ -279,31 +262,64 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .HaveStdOutContaining("Hello World");
         }
 
-        /*
-         * This method is needed to workaround dotnet build not placing the host from the package
-         * graph in the build output.
-         * https://github.com/dotnet/cli/issues/2343
-         */
-        private static void ReplaceTestProjectOutputHostInTestProjectFixture(TestProjectFixture testProjectFixture)
+        public class SharedTestState : IDisposable
         {
-            var dotnet = testProjectFixture.BuiltDotnet;
+            public TestProjectFixture PreviouslyBuiltAndRestoredStandaloneTestProjectFixture { get; set; }
+            public TestProjectFixture PreviouslyPublishedAndRestoredStandaloneTestProjectFixture { get; set; }
+            public RepoDirectoriesProvider RepoDirectories { get; set; }
 
-            var testProjectHostPolicy = testProjectFixture.TestProject.HostPolicyDll;
-            var testProjectHostFxr = testProjectFixture.TestProject.HostFxrDll;
-
-            if (!File.Exists(testProjectHostPolicy))
+            public SharedTestState()
             {
-                throw new Exception("host or hostpolicy does not exist in test project output. Is this a standalone app?");
+                RepoDirectories = new RepoDirectoriesProvider();
+
+                var buildFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
+                buildFixture
+                    .EnsureRestoredForRid(buildFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .BuildProject(runtime: buildFixture.CurrentRid);
+
+                var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
+                publishFixture
+                    .EnsureRestoredForRid(publishFixture.CurrentRid, RepoDirectories.CorehostPackages)
+                    .PublishProject(runtime: publishFixture.CurrentRid);
+
+                ReplaceTestProjectOutputHostInTestProjectFixture(buildFixture);
+
+                PreviouslyBuiltAndRestoredStandaloneTestProjectFixture = buildFixture;
+                PreviouslyPublishedAndRestoredStandaloneTestProjectFixture = publishFixture;
             }
 
-            var dotnetHostPolicy = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{testProjectFixture.SharedLibraryPrefix}hostpolicy{testProjectFixture.SharedLibraryExtension}");
-            var dotnetHostFxr = Path.Combine(dotnet.GreatestVersionHostFxrPath, $"{testProjectFixture.SharedLibraryPrefix}hostfxr{testProjectFixture.SharedLibraryExtension}");
-
-            File.Copy(dotnetHostPolicy, testProjectHostPolicy, true);
-
-            if (File.Exists(testProjectHostFxr))
+            public void Dispose()
             {
-                File.Copy(dotnetHostFxr, testProjectHostFxr, true);
+                PreviouslyBuiltAndRestoredStandaloneTestProjectFixture.Dispose();
+                PreviouslyPublishedAndRestoredStandaloneTestProjectFixture.Dispose();
+            }
+
+            /*
+             * This method is needed to workaround dotnet build not placing the host from the package
+             * graph in the build output.
+             * https://github.com/dotnet/cli/issues/2343
+             */
+            private static void ReplaceTestProjectOutputHostInTestProjectFixture(TestProjectFixture testProjectFixture)
+            {
+                var dotnet = testProjectFixture.BuiltDotnet;
+
+                var testProjectHostPolicy = testProjectFixture.TestProject.HostPolicyDll;
+                var testProjectHostFxr = testProjectFixture.TestProject.HostFxrDll;
+
+                if (!File.Exists(testProjectHostPolicy))
+                {
+                    throw new Exception("host or hostpolicy does not exist in test project output. Is this a standalone app?");
+                }
+
+                var dotnetHostPolicy = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{testProjectFixture.SharedLibraryPrefix}hostpolicy{testProjectFixture.SharedLibraryExtension}");
+                var dotnetHostFxr = Path.Combine(dotnet.GreatestVersionHostFxrPath, $"{testProjectFixture.SharedLibraryPrefix}hostfxr{testProjectFixture.SharedLibraryExtension}");
+
+                File.Copy(dotnetHostPolicy, testProjectHostPolicy, true);
+
+                if (File.Exists(testProjectHostFxr))
+                {
+                    File.Copy(dotnetHostFxr, testProjectHostFxr, true);
+                }
             }
         }
     }
