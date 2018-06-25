@@ -1924,18 +1924,9 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
 
     CASE_IID_INLINE(  enum_IAgileObject            ,0x94ea2b94,0xe9cc,0x49e0,0xc0,0xff,0xee,0x64,0xca,0x8f,0x5b,0x90)
         {
-            // Don't implement IAgileObject if we are aggregated, if we are in a non AppX process, if the object explicitly implements IMarshal,
-            // or if its ICustomQI returns Failed or Handled for IID_IMarshal (compat).
-            //
-            // The AppX check was primarily done to ensure that we dont break VS in classic mode when it loads the desktop CLR since it needs
-            // objects to be non-Agile. In Apollo, we had objects agile in CoreCLR and even though we introduced AppX support in PhoneBlue,
-            // we should not constrain object agility using the desktop constraint, especially since VS does not rely on CoreCLR for its 
-            // desktop execution. 
-            //
-            // Keeping the Apollo behaviour also ensures that we allow SL 8.1 scenarios (which do not pass the AppX flag like the modern host) 
-            // to use CorDispatcher for async, in the expected manner, as the OS implementation for CoreDispatcher expects objects to be Agile.
-            if (!IsAggregated() 
-            )
+            // Don't implement IAgileObject if we are aggregated, if the object explicitly implements IMarshal, or if its ICustomQI returns
+            // Failed or Handled for IID_IMarshal (compat).
+            if (!IsAggregated())
             {
                 ComCallWrapperTemplate *pTemplate = GetComCallWrapperTemplate();
                 if (!pTemplate->ImplementsIMarshal())
