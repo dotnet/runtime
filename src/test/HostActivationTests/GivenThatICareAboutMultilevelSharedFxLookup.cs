@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLookup
 {
-    public class GivenThatICareAboutMultilevelSharedFxLookup
+    public class GivenThatICareAboutMultilevelSharedFxLookup : IDisposable
     {
         private const string SystemCollectionsImmutableFileVersion = "1.2.3.4";
         private const string SystemCollectionsImmutableAssemblyVersion = "1.0.1.2";
@@ -119,6 +119,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             _globalFoundUberFxMessage = $"Chose FX version [{_globalSharedUberFxBaseDir}";
         }
 
+        public void Dispose()
+        {
+            PreviouslyBuiltAndRestoredPortableTestProjectFixture.Dispose();
+
+            if (!TestProject.PreserveTestRuns())
+            {
+                Directory.Delete(_multilevelDir, true);
+            }
+        }
+
         [Fact]
         public void SharedFxLookup_Must_Verify_Folders_in_the_Correct_Order()
         {
@@ -200,9 +210,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Pass()
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
-            SharedFramework.DeleteAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.0.0");
         }
 
         [Fact]
@@ -264,8 +271,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.3")
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.0-dummy3");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0", "9999.0.2", "9999.0.0-dummy2", "9999.0.3", "9999.0.0-dummy3");
         }
 
         [Fact]
@@ -332,8 +337,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdOutContaining("Microsoft.NETCore.App 10000.1.1")
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 10000.1.3");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1", "10000.1.1", "10000.1.3");
         }
 
         [Fact]
@@ -412,8 +415,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.1.1")
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 10000.1.1");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1", "10000.1.1");
         }
 
         [Fact]
@@ -516,8 +517,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.2.1-dummy1")
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.2.2-dummy1");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1-dummy1", "9999.2.1", "9999.2.1-dummy1", "9999.2.2-dummy1");
         }
 
         [Fact]
@@ -582,8 +581,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdOutContaining("9999.0.0")
                 .And
                 .HaveStdOutContaining("9999.0.1-dummy1");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0-dummy2", "9999.0.0-dummy3", "9999.0.0", "9999.0.1-dummy1");
         }
 
         [Fact]
@@ -633,8 +630,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.0.1")
                 .And
                 .HaveStdOutContaining("Microsoft.NETCore.App 9999.1.0");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9998.0.1", "9998.1.0", "9999.0.0", "9999.0.1", "9999.1.0");
         }
 
         [Fact]
@@ -711,9 +706,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdOutContaining("Microsoft.UberFramework 7777.0.0")
                 .And
                 .HaveStdOutContaining("Microsoft.UberFramework 7777.0.1");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0", "9999.0.1");
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0", "7777.0.1");
         }
 
         [Fact]
@@ -801,9 +793,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining(Path.Combine(_exeFoundUberFxMessage, "7777.0.0"))
                 .And
                 .HaveStdErrContaining("Property TestProperty = AppValue");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
 
         [Fact]
@@ -892,9 +881,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Fail()
                 .And
                 .HaveStdErrContaining("It was not possible to find any compatible framework version");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
 
         [Fact]
@@ -933,9 +919,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Pass()
                 .And
                 .HaveStdErrContaining($"Replacing deps entry [{uberFile}, AssemblyVersion:1.0.1.2, FileVersion:{SystemCollectionsImmutableFileVersion}] with [{netCoreAppFile}");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
 
         [Fact]
@@ -974,9 +957,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining(Path.Combine("7777.0.0", "System.Collections.Immutable.dll"))
                 .And
                 .NotHaveStdErrContaining(Path.Combine("9999.1.0", "System.Collections.Immutable.dll"));
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1");
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
 
         [Fact]
@@ -1026,9 +1006,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Pass()
                 .And
                 .HaveStdErrContaining($"Replacing deps entry [{appAssembly}, AssemblyVersion:{SystemCollectionsImmutableAssemblyVersion}, FileVersion:{SystemCollectionsImmutableFileVersion}] with [{uberAssembly}, AssemblyVersion:{SystemCollectionsImmutableAssemblyVersion}, FileVersion:{SystemCollectionsImmutableFileVersion}]");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.1.0");
         }
 
         [Fact]
@@ -1082,9 +1059,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .NotHaveStdErrContaining($"Adding tpa entry: {netcoreAssembly}, AssemblyVersion: {SystemCollectionsImmutableAssemblyVersion}, FileVersion :{SystemCollectionsImmutableFileVersion}")
                 .And
                 .NotHaveStdErrContaining($"Replacing deps entry");
-
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
-            SharedFramework.DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
 
         static private JObject GetAdditionalFramework(string fxName, string fxVersion, bool? applyPatches, int? rollForwardOnNoCandidateFx)

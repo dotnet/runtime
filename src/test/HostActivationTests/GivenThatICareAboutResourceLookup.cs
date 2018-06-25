@@ -12,29 +12,19 @@ using Microsoft.DotNet.CoreSetup.Test;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ResourceLookup
 {
-    public class GivenThatICareAboutResourceLookup
+    public class GivenThatICareAboutResourceLookup : IClassFixture<GivenThatICareAboutResourceLookup.SharedTestState>
     {
-        private static TestProjectFixture PreviouslyBuiltAndRestoredResourceLookupTestProjectFixture { get; set; }
-        private static TestProjectFixture PreviouslyPublishedAndRestoredResourceLookupTestProjectFixture { get; set; }
-        private static RepoDirectoriesProvider RepoDirectories { get; set; }
+        private SharedTestState sharedTestState;
 
-        static GivenThatICareAboutResourceLookup()
+        public GivenThatICareAboutResourceLookup(GivenThatICareAboutResourceLookup.SharedTestState fixture)
         {
-            RepoDirectories = new RepoDirectoriesProvider();
-
-            PreviouslyBuiltAndRestoredResourceLookupTestProjectFixture = new TestProjectFixture("ResourceLookup", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages)
-                .BuildProject();
-
-            PreviouslyPublishedAndRestoredResourceLookupTestProjectFixture = new TestProjectFixture("ResourceLookup", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages)
-                .PublishProject();
+            sharedTestState = fixture;
         }
 
         [Fact]
         public void Muxer_activation_of_Build_Output_Resource_DLL_with_DepsJson_and_RuntimeConfig_Local_Succeeds()
         {
-            var fixture = PreviouslyBuiltAndRestoredResourceLookupTestProjectFixture
+            var fixture = sharedTestState.PreviouslyBuiltAndRestoredResourceLookupTestProjectFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -62,7 +52,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ResourceLookup
         [Fact]
         public void Muxer_activation_of_Publish_Output_ResourceLookup_DLL_with_DepsJson_and_RuntimeConfig_Local_Succeeds()
         {
-            var fixture = PreviouslyPublishedAndRestoredResourceLookupTestProjectFixture
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredResourceLookupTestProjectFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -85,6 +75,32 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ResourceLookup
                 .Pass()
                 .And
                 .HaveStdOutContaining("Hello World");
+        }
+
+        public class SharedTestState : IDisposable
+        {
+            public TestProjectFixture PreviouslyBuiltAndRestoredResourceLookupTestProjectFixture { get; set; }
+            public TestProjectFixture PreviouslyPublishedAndRestoredResourceLookupTestProjectFixture { get; set; }
+            public RepoDirectoriesProvider RepoDirectories { get; set; }
+
+            public SharedTestState()
+            {
+                RepoDirectories = new RepoDirectoriesProvider();
+
+                PreviouslyBuiltAndRestoredResourceLookupTestProjectFixture = new TestProjectFixture("ResourceLookup", RepoDirectories)
+                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .BuildProject();
+
+                PreviouslyPublishedAndRestoredResourceLookupTestProjectFixture = new TestProjectFixture("ResourceLookup", RepoDirectories)
+                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .PublishProject();
+            }
+
+            public void Dispose()
+            {
+                PreviouslyBuiltAndRestoredResourceLookupTestProjectFixture.Dispose();
+                PreviouslyPublishedAndRestoredResourceLookupTestProjectFixture.Dispose();
+            }
         }
     }
 }

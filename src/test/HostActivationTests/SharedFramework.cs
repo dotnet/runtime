@@ -4,6 +4,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
+using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -12,10 +13,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
     /// </summary>
     internal static class SharedFramework
     {
+        private static readonly Mutex id_mutex = new Mutex();
+
         // MultilevelDirectory is %TEST_ARTIFACTS%\dotnetMultilevelSharedFxLookup\id.
         // We must locate the first non existing id.
         public static string CalculateUniqueTestDirectory(string baseDir)
         {
+            id_mutex.WaitOne();
+
             int count = 0;
             string dir;
 
@@ -24,6 +29,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 dir = Path.Combine(baseDir, count.ToString());
                 count++;
             } while (Directory.Exists(dir));
+
+            id_mutex.ReleaseMutex();
 
             return dir;
         }
@@ -70,33 +77,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
                 string runtimeBaseConfig = Path.Combine(newSharedFxDir, "Microsoft.UberFramework.runtimeconfig.json");
                 SharedFramework.SetRuntimeConfigJson(runtimeBaseConfig, sharedFxBaseVersion, null, testConfigPropertyValue);
-            }
-        }
-
-        // This method removes a list of framework version folders from the specified
-        // sharedFxBaseDir.
-        // Remarks:
-        // - If the sharedFxBaseDir does not exist, then a DirectoryNotFoundException
-        //   is thrown.
-        // - If a specified version folder does not exist, then a DirectoryNotFoundException
-        //   is thrown.
-        public static void DeleteAvailableSharedFxVersions(string sharedFxBaseDir, params string[] availableVersions)
-        {
-            DirectoryInfo sharedFxBaseDirInfo = new DirectoryInfo(sharedFxBaseDir);
-
-            if (!sharedFxBaseDirInfo.Exists)
-            {
-                throw new DirectoryNotFoundException();
-            }
-
-            foreach (string version in availableVersions)
-            {
-                string sharedFxDir = Path.Combine(sharedFxBaseDir, version);
-                if (!Directory.Exists(sharedFxDir))
-                {
-                    throw new DirectoryNotFoundException();
-                }
-                Directory.Delete(sharedFxDir, true);
             }
         }
 

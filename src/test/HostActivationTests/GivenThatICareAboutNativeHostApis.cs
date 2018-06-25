@@ -10,23 +10,13 @@ using Microsoft.DotNet.CoreSetup.Test;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
 {
-    public class GivenThatICareAboutNativeHostApis
+    public class GivenThatICareAboutNativeHostApis : IClassFixture<GivenThatICareAboutNativeHostApis.SharedTestState>
     {
-        private static TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture { get; set; }
-        private static TestProjectFixture PreviouslyPublishedAndRestoredPortableTestProjectFixture { get; set; }
-        private static RepoDirectoriesProvider RepoDirectories { get; set; }
+        private SharedTestState sharedTestState;
 
-        static GivenThatICareAboutNativeHostApis()
+        public GivenThatICareAboutNativeHostApis(GivenThatICareAboutNativeHostApis.SharedTestState fixture)
         {
-            RepoDirectories = new RepoDirectoriesProvider();
-
-            PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("HostApiInvokerApp", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages)
-                .BuildProject();
-
-            PreviouslyPublishedAndRestoredPortableTestProjectFixture = new TestProjectFixture("HostApiInvokerApp", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages)
-                .PublishProject();
+            sharedTestState = fixture;
         }
 
         [Fact]
@@ -39,7 +29,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 return;
             }
 
-            var fixture = PreviouslyPublishedAndRestoredPortableTestProjectFixture.Copy();
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableTestProjectFixture.Copy();
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
 
@@ -60,6 +50,32 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .HaveStdOutContaining("hostfxr_get_native_search_directories:Success")
                 .And
                 .HaveStdOutContaining("hostfxr_get_native_search_directories buffer:[" + dotnet.GreatestVersionSharedFxPath);
+        }
+
+        public class SharedTestState : IDisposable
+        {
+            public TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture { get; set; }
+            public TestProjectFixture PreviouslyPublishedAndRestoredPortableTestProjectFixture { get; set; }
+            public RepoDirectoriesProvider RepoDirectories { get; set; }
+
+            public SharedTestState()
+            {
+                RepoDirectories = new RepoDirectoriesProvider();
+
+                PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("HostApiInvokerApp", RepoDirectories)
+                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .BuildProject();
+
+                PreviouslyPublishedAndRestoredPortableTestProjectFixture = new TestProjectFixture("HostApiInvokerApp", RepoDirectories)
+                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .PublishProject();
+            }
+
+            public void Dispose()
+            {
+                PreviouslyBuiltAndRestoredPortableTestProjectFixture.Dispose();
+                PreviouslyPublishedAndRestoredPortableTestProjectFixture.Dispose();
+            }
         }
     }
 }

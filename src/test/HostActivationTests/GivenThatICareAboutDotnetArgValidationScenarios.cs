@@ -11,24 +11,19 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
 {
-    public class GivenThatICareAboutDotnetArgValidationScenarios
+    public class GivenThatICareAboutDotnetArgValidationScenarios : IClassFixture<GivenThatICareAboutDotnetArgValidationScenarios.SharedTestState>
     {
-        private RepoDirectoriesProvider RepoDirectories { get; set; }
-        private TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture { get; set; }
+        private SharedTestState sharedTestState;
 
-        public GivenThatICareAboutDotnetArgValidationScenarios()
+        public GivenThatICareAboutDotnetArgValidationScenarios(GivenThatICareAboutDotnetArgValidationScenarios.SharedTestState fixture)
         {
-            RepoDirectories = new RepoDirectoriesProvider();
-
-            PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages)
-                .BuildProject();
+            sharedTestState = fixture;
         }
 
         [Fact]
         public void Muxer_Exec_With_Missing_App_Assembly_Fails()
         {
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -48,7 +43,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
         [Fact]
         public void Muxer_Exec_With_Missing_App_Assembly_And_Bad_Extension_Fails()
         {
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -68,7 +63,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
         [Fact]
         public void Muxer_Exec_With_Bad_Extension_Fails()
         {
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -91,7 +86,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
         [Fact]
         public void Detect_Missing_Argument_Value()
         {
-            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+            var fixture = sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
@@ -109,7 +104,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.ArgValidation
         // Return a non-exisitent path that contains a mix of / and \
         private string GetNonexistentAndUnnormalizedPath()
         {
-            return Path.Combine(PreviouslyBuiltAndRestoredPortableTestProjectFixture.SdkDotnet.BinPath, @"x\y/");
+            return Path.Combine(sharedTestState.PreviouslyBuiltAndRestoredPortableTestProjectFixture.SdkDotnet.BinPath, @"x\y/");
+        }
+
+        public class SharedTestState : IDisposable
+        {
+            public RepoDirectoriesProvider RepoDirectories { get; set; }
+            public TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture { get; set; }
+
+            public SharedTestState()
+            {
+                RepoDirectories = new RepoDirectoriesProvider();
+
+                PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
+                    .EnsureRestored(RepoDirectories.CorehostPackages)
+                    .BuildProject();
+            }
+
+            public void Dispose()
+            {
+                PreviouslyBuiltAndRestoredPortableTestProjectFixture.Dispose();
+            }
         }
     }
 }
