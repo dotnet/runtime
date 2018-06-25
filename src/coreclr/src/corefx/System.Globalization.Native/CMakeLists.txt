@@ -71,12 +71,6 @@ _add_library(System.Globalization.Native_Static
 # Disable the "lib" prefix.
 set_target_properties(System.Globalization.Native PROPERTIES PREFIX "")
 
-# Force CMake to not link against libstdc++
-# http://cmake.3232098.n2.nabble.com/setting-LINKER-LANGUAGE-still-adds-lstdc-td7581940.html
-set_target_properties(System.Globalization.Native PROPERTIES LINKER_LANGUAGE "C")
-set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "")
-set(CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "")
-
 # Disable the "lib" prefix and override default name
 set_target_properties(System.Globalization.Native_Static PROPERTIES PREFIX "")
 set_target_properties(System.Globalization.Native_Static PROPERTIES OUTPUT_NAME System.Globalization.Native)
