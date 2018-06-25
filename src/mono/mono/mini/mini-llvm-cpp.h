@@ -16,7 +16,9 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
 
+#ifdef HAVE_UNWIND_H
 #include <unwind.h>
+#endif
 
 G_BEGIN_DECLS
 
@@ -113,9 +115,11 @@ mono_llvm_add_param_attr (LLVMValueRef param, AttrKind kind);
 void
 mono_llvm_add_instr_attr (LLVMValueRef val, int index, AttrKind kind);
 
+#if defined(ENABLE_LLVM) && defined(HAVE_UNWIND_H)
 _Unwind_Reason_Code 
 mono_debug_personality (int a, _Unwind_Action b,
 	uint64_t c, struct _Unwind_Exception *d, struct _Unwind_Context *e);
+#endif
 
 void
 default_mono_llvm_unhandled_exception (void);

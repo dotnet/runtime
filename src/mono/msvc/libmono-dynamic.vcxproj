@@ -97,7 +97,7 @@
     <ClCompile>
       <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);MONO_DLL_EXPORT;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -114,12 +114,13 @@
     </ProjectReference>
     <Link>
       <AdditionalDependencies Condition="'$(MONO_TARGET_GC)'=='boehm'">$(GC_LIB);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <ImportLibrary>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\$(TargetName).lib</ImportLibrary>
+      <AdditionalDependencies>$(MONO_LLVM_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>.\libmono.bat "$(MONO_INCLUDE_DIR)" "$(SolutionDir)include\mono" -q</Command>
@@ -136,7 +137,7 @@
     <ClCompile>
       <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);MONO_DLL_EXPORT;WIN64;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -153,10 +154,11 @@
     </ProjectReference>
     <Link>
       <AdditionalDependencies Condition="'$(MONO_TARGET_GC)'=='boehm'">$(GC_LIB);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
       <ImportLibrary>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\$(TargetName).lib</ImportLibrary>
+      <AdditionalDependencies>$(MONO_LLVM_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>.\libmono.bat "$(MONO_INCLUDE_DIR)" "$(SolutionDir)include\mono" -q</Command>
@@ -170,7 +172,7 @@
     <ClCompile>
       <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);MONO_DLL_EXPORT;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>
@@ -184,12 +186,13 @@
     <ProjectReference />
     <Link>
       <AdditionalDependencies Condition="'$(MONO_TARGET_GC)'=='boehm'">$(GC_LIB);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <ImportLibrary>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\$(TargetName).lib</ImportLibrary>
+      <AdditionalDependencies>$(MONO_LLVM_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>.\libmono.bat "$(MONO_INCLUDE_DIR)" "$(SolutionDir)include\mono" -q</Command>
@@ -209,7 +212,7 @@
     <ClCompile>
       <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);MONO_DLL_EXPORT;WIN64;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>
@@ -223,10 +226,11 @@
     <ProjectReference />
     <Link>
       <AdditionalDependencies Condition="'$(MONO_TARGET_GC)'=='boehm'">$(GC_LIB);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
       <ImportLibrary>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\$(TargetName).lib</ImportLibrary>
+      <AdditionalDependencies>$(MONO_LLVM_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>.\libmono.bat "$(MONO_INCLUDE_DIR)" "$(SolutionDir)include\mono" -q</Command>

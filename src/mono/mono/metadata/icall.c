@@ -8377,7 +8377,7 @@ mono_create_icall_signature (const char *sigstr)
 	res = mono_metadata_signature_alloc (corlib, len - 1);
 	res->pinvoke = 1;
 
-#ifdef TARGET_WIN32
+#if defined(TARGET_WIN32) && defined(TARGET_X86)
 	/* 
 	 * Under windows, the default pinvoke calling convention is STDCALL but
 	 * we need CDECL.

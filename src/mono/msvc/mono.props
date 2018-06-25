@@ -5,6 +5,8 @@
     <MONO_BUILD_DIR_PREFIX>$(MSBuildProjectDirectory)/./build/</MONO_BUILD_DIR_PREFIX>
     <!-- Change this to custom distribution tree location to enable out of source tree distribution, example c:/mono-dist/ -->
     <MONO_INSTALL_DIR_PREFIX>$(MSBuildProjectDirectory)/./dist/</MONO_INSTALL_DIR_PREFIX>
+    <!-- Change this to custom install tree location to enable out of source tree builds, example c:/mono-llvm/ -->
+    <MONO_LLVM_INSTALL_DIR_PREFIX>$(MONO_INSTALL_DIR_PREFIX)llvm/</MONO_LLVM_INSTALL_DIR_PREFIX>
     <!-- GC in use, sgen or boehm, default is sgen. -->
     <MONO_TARGET_GC>sgen</MONO_TARGET_GC>
     <!-- When true, build targets will get a suffix based on used GC. Makes it possible to have builds using different GC's in same build folders, sharing common targets. -->
@@ -15,6 +17,8 @@
     <MONO_USE_STATIC_C_RUNTIME>false</MONO_USE_STATIC_C_RUNTIME>
     <!-- When true, mono binaries will link using static libmono. When false, mono binaries will link using dynamic libmono.  -->
     <MONO_USE_STATIC_LIBMONO>false</MONO_USE_STATIC_LIBMONO>
+    <!-- When true, mono binaries will link and include llvm. When false, mono binaries will not link and include llvm.  -->
+    <MONO_ENABLE_LLVM>false</MONO_ENABLE_LLVM>
   </PropertyGroup>
   <PropertyGroup Label="MonoDirectories">
     <MonoSourceLocation Condition="'$(MonoSourceLocation)' == '' ">..</MonoSourceLocation>
@@ -29,6 +33,11 @@
     <MONO_JIT_SOURCE_DIR>$(MONO_INCLUDE_DIR)/jit</MONO_JIT_SOURCE_DIR>
     <LIBGC_CPPFLAGS_INCLUDE>$(MONO_LIBGC_INCLUDE_DIR)</LIBGC_CPPFLAGS_INCLUDE>
     <GLIB_CFLAGS_INCLUDE>$(MONO_EGLIB_SOURCE_DIR)</GLIB_CFLAGS_INCLUDE>
+  </PropertyGroup>
+  <PropertyGroup Label="MonoLLVMDirectories">
+    <MONO_LLVM_INCLUDE_DIR>$(MONO_LLVM_INSTALL_DIR_PREFIX)include</MONO_LLVM_INCLUDE_DIR>
+    <MONO_LLVM_LIB_DIR>$(MONO_LLVM_INSTALL_DIR_PREFIX)lib</MONO_LLVM_LIB_DIR>
+    <MONO_LLVM_BIN_DIR>$(MONO_LLVM_INSTALL_DIR_PREFIX)bin</MONO_LLVM_BIN_DIR>
   </PropertyGroup>
   <PropertyGroup Label="Static-C-Runtime" Condition="$(MONO_USE_STATIC_C_RUNTIME)=='true'">
     <MONO_C_RUNTIME Condition="'$(Configuration)'=='Debug'">MultiThreadedDebug</MONO_C_RUNTIME>
@@ -66,12 +75,21 @@
   <PropertyGroup Label="MonoProfiler">
     <VTUNE_INCLUDE_DIR>$(ProgramFiles)/Intel/VTune Amplifier XE 2013/include</VTUNE_INCLUDE_DIR>
   </PropertyGroup>
+  <PropertyGroup Label="MONO_ENABLE_LLVM" Condition="$(MONO_ENABLE_LLVM)=='true'">
+    <MONO_LLVM_CODEGEN_LIBS>LLVMX86CodeGen.lib;LLVMX86Desc.lib;LLVMX86Info.lib;LLVMObject.lib;LLVMBitReader.lib;LLVMMCDisassembler.lib;LLVMX86AsmPrinter.lib;LLVMX86Utils.lib;LLVMSelectionDAG.lib;LLVMAsmPrinter.lib;LLVMMCParser.lib;LLVMCodeGen.lib;LLVMScalarOpts.lib;LLVMInstCombine.lib;LLVMTransformUtils.lib;LLVMipa.lib</MONO_LLVM_CODEGEN_LIBS>
+    <MONO_LLVM_JIT_LIBS>LLVMMCJIT.lib;LLVMRuntimeDyld.lib;LLVMObject.lib;LLVMMCParser.lib;LLVMBitReader.lib;LLVMJIT.lib;LLVMExecutionEngine.lib;LLVMCodeGen.lib;LLVMScalarOpts.lib;LLVMInstCombine.lib;LLVMTransformUtils.lib</MONO_LLVM_JIT_LIBS>
+    <MONO_LLVM_LIBS>$(MONO_LLVM_CODEGEN_LIBS);$(MONO_LLVM_JIT_LIBS);LLVMBitWriter.lib;LLVMAnalysis.lib;LLVMTarget.lib;LLVMMC.lib;LLVMCore.lib;LLVMSupport.lib</MONO_LLVM_LIBS>
+    <MONO_ADDITIONAL_PREPROCESSOR_DEFINITIONS>ENABLE_LLVM=1;$(MONO_ADDITIONAL_PREPROCESSOR_DEFINITIONS)</MONO_ADDITIONAL_PREPROCESSOR_DEFINITIONS>
+  </PropertyGroup>
   <ItemGroup>
     <BuildMacro Include="MONO_BUILD_DIR_PREFIX">
       <Value>$(MONO_BUILD_DIR_PREFIX)</Value>
     </BuildMacro>
     <BuildMacro Include="MONO_INSTALL_DIR_PREFIX">
       <Value>$(MONO_INSTALL_DIR_PREFIX)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_LLVM_INSTALL_DIR_PREFIX">
+      <Value>$(MONO_LLVM_INSTALL_DIR_PREFIX)</Value>
     </BuildMacro>
     <BuildMacro Include="MONO_TARGET_GC">
       <Value>$(MONO_TARGET_GC)</Value>
@@ -88,12 +106,18 @@
     <BuildMacro Include="MONO_USE_STATIC_LIBMONO">
       <Value>$(MONO_USE_STATIC_LIBMONO)</Value>
     </BuildMacro>
+    <BuildMacro Include="MONO_ENABLE_LLVM">
+      <Value>$(MONO_ENABLE_LLVM)</Value>
+    </BuildMacro>
   </ItemGroup>
+  <PropertyGroup Label="MonoDefaultPreprocessorDefinitions">
+    <MONO_PREPROCESSOR_DEFINITIONS>__default_codegen__;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;HAVE_CONFIG_H;GC_NOT_DLL;WIN32_THREADS;WINVER=0x0600;_WIN32_WINNT=0x0600;_WIN32_IE=0x0501;_UNICODE;UNICODE;FD_SETSIZE=1024;NVALGRIND;$(MONO_ADDITIONAL_PREPROCESSOR_DEFINITIONS)</MONO_PREPROCESSOR_DEFINITIONS>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <DllExportPreprocessorDefinitions>MONO_DLL_EXPORT</DllExportPreprocessorDefinitions>
       <DllImportPreprocessorDefinitions>MONO_DLL_IMPORT</DllImportPreprocessorDefinitions>
-      <PreprocessorDefinitions>__default_codegen__;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_DEPRECATE;HAVE_CONFIG_H;GC_NOT_DLL;WIN32_THREADS;WINVER=0x0600;_WIN32_WINNT=0x0600;_WIN32_IE=0x0501;_UNICODE;UNICODE;FD_SETSIZE=1024;NVALGRIND;%(PreprocessorDefinitions);</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(MONO_PREPROCESSOR_DEFINITIONS);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4273;4005;4152;4221;4214;4204;4201</DisableSpecificWarnings>
       <RuntimeLibrary>$(MONO_C_RUNTIME)</RuntimeLibrary>
     </ClCompile>
