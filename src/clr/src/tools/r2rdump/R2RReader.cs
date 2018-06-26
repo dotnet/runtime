@@ -262,10 +262,14 @@ namespace R2RDump
                     int unwindRva = NativeReader.ReadInt32(Image, ref curOffset);
                     int unwindOffset = GetOffset(unwindRva);
 
-                    UnwindInfo unwindInfo = new UnwindInfo(Image, unwindOffset);
-                    if (isEntryPoint[runtimeFunctionId])
+                    BaseUnwindInfo unwindInfo = null;
+                    if (Machine == Machine.Amd64)
                     {
-                        gcInfo = new GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
+                        unwindInfo = new Amd64.UnwindInfo(Image, unwindOffset);
+                        if (isEntryPoint[runtimeFunctionId])
+                        {
+                            gcInfo = new GcInfo(Image, unwindOffset + ((Amd64.UnwindInfo)unwindInfo).Size, Machine, R2RHeader.MajorVersion);
+                        }
                     }
 
                     RuntimeFunction rtf = new RuntimeFunction(runtimeFunctionId, startRva, endRva, unwindRva, codeOffset, method, unwindInfo, gcInfo);
