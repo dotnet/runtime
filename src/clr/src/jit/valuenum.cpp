@@ -2568,49 +2568,41 @@ ValueNum ValueNumStore::VNApplySelectorsTypeCheck(ValueNum elem, var_types indTy
 
     if (indType != elemTyp)
     {
-        bool isConstant = IsVNConstant(elem);
-        if (isConstant && (elemTyp == genActualType(indType)))
+        // We are trying to read from an 'elem' of type 'elemType' using 'indType' read
+
+        size_t elemTypSize = (elemTyp == TYP_STRUCT) ? elemStructSize : genTypeSize(elemTyp);
+        size_t indTypeSize = genTypeSize(indType);
+
+        if ((indType == TYP_REF) && (varTypeIsStruct(elemTyp)))
         {
-            // (i.e. We recorded a constant of TYP_INT for a TYP_BYTE field)
+            // indType is TYP_REF and elemTyp is TYP_STRUCT
+            //
+            // We have a pointer to a static that is a Boxed Struct
+            //
+            return elem;
+        }
+        else if (indTypeSize > elemTypSize)
+        {
+            // Reading beyong the end of 'elem'
+
+            // return a new unique value number
+            elem = VNForExpr(nullptr, indType);
+            JITDUMP("    *** Mismatched types in VNApplySelectorsTypeCheck (reading beyond the end)\n");
+        }
+        else if (varTypeIsStruct(indType))
+        {
+            // indType is TYP_STRUCT
+
+            // return a new unique value number
+            elem = VNForExpr(nullptr, indType);
+            JITDUMP("    *** Mismatched types in VNApplySelectorsTypeCheck (indType is TYP_STRUCT)\n");
         }
         else
         {
-            // We are trying to read from an 'elem' of type 'elemType' using 'indType' read
+            // We are trying to read an 'elem' of type 'elemType' using 'indType' read
 
-            size_t elemTypSize = (elemTyp == TYP_STRUCT) ? elemStructSize : genTypeSize(elemTyp);
-            size_t indTypeSize = genTypeSize(indType);
-
-            if ((indType == TYP_REF) && (varTypeIsStruct(elemTyp)))
-            {
-                // indType is TYP_REF and elemTyp is TYP_STRUCT
-                //
-                // We have a pointer to a static that is a Boxed Struct
-                //
-                return elem;
-            }
-            else if (indTypeSize > elemTypSize)
-            {
-                // Reading beyong the end of 'elem'
-
-                // return a new unique value number
-                elem = VNForExpr(nullptr, indType);
-                JITDUMP("    *** Mismatched types in VNApplySelectorsTypeCheck (reading beyond the end)\n");
-            }
-            else if (varTypeIsStruct(indType))
-            {
-                // indType is TYP_STRUCT
-
-                // return a new unique value number
-                elem = VNForExpr(nullptr, indType);
-                JITDUMP("    *** Mismatched types in VNApplySelectorsTypeCheck (indType is TYP_STRUCT)\n");
-            }
-            else
-            {
-                // We are trying to read an 'elem' of type 'elemType' using 'indType' read
-
-                // insert a cast of elem to 'indType'
-                elem = VNForCast(elem, indType, elemTyp);
-            }
+            // insert a cast of elem to 'indType'
+            elem = VNForCast(elem, indType, elemTyp);
         }
     }
     return elem;
