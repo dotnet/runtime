@@ -224,9 +224,9 @@ namespace System.Drawing
                 }
                 else
                 {
-                    string r = Char.ToString(htmlColor[1]);
-                    string g = Char.ToString(htmlColor[2]);
-                    string b = Char.ToString(htmlColor[3]);
+                    string r = char.ToString(htmlColor[1]);
+                    string g = char.ToString(htmlColor[2]);
+                    string b = char.ToString(htmlColor[3]);
 
                     c = Color.FromArgb(Convert.ToInt32(r + r, 16),
                                        Convert.ToInt32(g + g, 16),
@@ -235,7 +235,7 @@ namespace System.Drawing
             }
 
             // special case. Html requires LightGrey, but .NET uses LightGray
-            if (c.IsEmpty && String.Equals(htmlColor, "LightGrey", StringComparison.OrdinalIgnoreCase))
+            if (c.IsEmpty && string.Equals(htmlColor, "LightGrey", StringComparison.OrdinalIgnoreCase))
             {
                 c = Color.LightGray;
             }
@@ -276,7 +276,7 @@ namespace System.Drawing
         /// </summary>
         public static string ToHtml(Color c)
         {
-            string colorString = String.Empty;
+            string colorString = string.Empty;
 
             if (c.IsEmpty)
                 return colorString;

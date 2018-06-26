@@ -31,6 +31,17 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        public void Ctor_InitialCapacity_CanAppend()
+        {
+            var vsb = new ValueStringBuilder(1);
+            Assert.Equal(0, vsb.Length);
+
+            vsb.Append('a');
+            Assert.Equal(1, vsb.Length);
+            Assert.Equal("a", vsb.ToString());
+        }
+
+        [Fact]
         public void Append_Char_MatchesStringBuilder()
         {
             var sb = new StringBuilder();
@@ -153,6 +164,26 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        public void AsSpan_ReturnsCorrectValue_DoesntClearBuilder()
+        {
+            var sb = new StringBuilder();
+            var vsb = new ValueStringBuilder();
+
+            for (int i = 1; i <= 100; i++)
+            {
+                string s = i.ToString();
+                sb.Append(s);
+                vsb.Append(s);
+            }
+
+            var resultString = new string(vsb.AsSpan());
+            Assert.Equal(sb.ToString(), resultString);
+
+            Assert.NotEqual(0, sb.Length);
+            Assert.Equal(sb.Length, vsb.Length);
+        }
+
+        [Fact]
         public void ToString_ClearsBuilder_ThenReusable()
         {
             const string Text1 = "test";
@@ -202,6 +233,27 @@ namespace System.Text.Tests
             Assert.True(vsb.TryCopyTo(dst, out int charsWritten));
             Assert.Equal(Text1.Length, charsWritten);
             Assert.Equal(Text1, new string(dst));
+
+            Assert.Equal(0, vsb.Length);
+            Assert.Equal(string.Empty, vsb.ToString());
+            Assert.True(vsb.TryCopyTo(Span<char>.Empty, out _));
+
+            const string Text2 = "another test";
+            vsb.Append(Text2);
+            Assert.Equal(Text2.Length, vsb.Length);
+            Assert.Equal(Text2, vsb.ToString());
+        }
+
+        [Fact]
+        public void Dispose_ClearsBuilder_ThenReusable()
+        {
+            const string Text1 = "test";
+            var vsb = new ValueStringBuilder();
+
+            vsb.Append(Text1);
+            Assert.Equal(Text1.Length, vsb.Length);
+
+            vsb.Dispose();
 
             Assert.Equal(0, vsb.Length);
             Assert.Equal(string.Empty, vsb.ToString());

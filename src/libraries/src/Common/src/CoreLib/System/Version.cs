@@ -73,7 +73,7 @@ namespace System
             _Minor = minor;
         }
 
-        public Version(String version)
+        public Version(string version)
         {
             Version v = Version.Parse(version);
             _Major = v.Major;
@@ -134,7 +134,7 @@ namespace System
             get { return (short)(_Revision & 0xFFFF); }
         }
 
-        public int CompareTo(Object version)
+        public int CompareTo(object version)
         {
             if (version == null)
             {
@@ -162,7 +162,7 @@ namespace System
                 0;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             return Equals(obj as Version);
         }
@@ -422,14 +422,14 @@ namespace System
 
         public static bool operator <(Version v1, Version v2)
         {
-            if ((Object)v1 == null)
+            if ((object)v1 == null)
                 throw new ArgumentNullException(nameof(v1));
             return (v1.CompareTo(v2) < 0);
         }
 
         public static bool operator <=(Version v1, Version v2)
         {
-            if ((Object)v1 == null)
+            if ((object)v1 == null)
                 throw new ArgumentNullException(nameof(v1));
             return (v1.CompareTo(v2) <= 0);
         }

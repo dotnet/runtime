@@ -209,27 +209,68 @@ namespace System.Security.Principal
             _isAuthenticated = isAuthenticated;
         }
 
+        private static SafeAccessTokenHandle DuplicateAccessToken(IntPtr accessToken)
+        {
+            if (accessToken == IntPtr.Zero)
+            {
+                throw new ArgumentException(SR.Argument_TokenZero);
+            }
+
+            // Find out if the specified token is a valid.
+            uint dwLength = sizeof(uint);
+            if (!Interop.Advapi32.GetTokenInformation(
+                    accessToken,
+                    (uint)TokenInformationClass.TokenType,
+                    IntPtr.Zero,
+                    0,
+                    out dwLength) &&
+                Marshal.GetLastWin32Error() == Interop.Errors.ERROR_INVALID_HANDLE)
+            {
+                throw new ArgumentException(SR.Argument_InvalidImpersonationToken);
+            }
+
+            SafeAccessTokenHandle duplicateAccessToken = SafeAccessTokenHandle.InvalidHandle;
+            IntPtr currentProcessHandle = Interop.Kernel32.GetCurrentProcess();
+            if (!Interop.Kernel32.DuplicateHandle(
+                    currentProcessHandle,
+                    accessToken,
+                    currentProcessHandle,
+                    ref duplicateAccessToken,
+                    0,
+                    true,
+                    Interop.DuplicateHandleOptions.DUPLICATE_SAME_ACCESS))
+            {
+                throw new SecurityException(new Win32Exception().Message);
+            }
+
+            return duplicateAccessToken;
+        }
+
+        private static SafeAccessTokenHandle DuplicateAccessToken(SafeAccessTokenHandle accessToken)
+        {
+            if (accessToken.IsInvalid)
+            {
+                return accessToken;
+            }
+
+            bool refAdded = false;
+            try
+            {
+                accessToken.DangerousAddRef(ref refAdded);
+                return DuplicateAccessToken(accessToken.DangerousGetHandle());
+            }
+            finally
+            {
+                if (refAdded)
+                {
+                    accessToken.DangerousRelease();
+                }
+            }
+        }
 
         private void CreateFromToken(IntPtr userToken)
         {
-            if (userToken == IntPtr.Zero)
-                throw new ArgumentException(SR.Argument_TokenZero);
-
-            // Find out if the specified token is a valid.
-            uint dwLength = (uint)sizeof(uint);
-            bool result = Interop.Advapi32.GetTokenInformation(userToken, (uint)TokenInformationClass.TokenType,
-                                                          SafeLocalAllocHandle.InvalidHandle, 0, out dwLength);
-            if (Marshal.GetLastWin32Error() == Interop.Errors.ERROR_INVALID_HANDLE)
-                throw new ArgumentException(SR.Argument_InvalidImpersonationToken);
-
-            if (!Interop.Kernel32.DuplicateHandle(Interop.Kernel32.GetCurrentProcess(),
-                                             userToken,
-                                             Interop.Kernel32.GetCurrentProcess(),
-                                             ref _safeTokenHandle,
-                                             0,
-                                             true,
-                                             Interop.DuplicateHandleOptions.DUPLICATE_SAME_ACCESS))
-                throw new SecurityException(new Win32Exception().Message);
+            _safeTokenHandle = DuplicateAccessToken(userToken);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2229", Justification = "Public API has already shipped.")]
@@ -289,13 +330,13 @@ namespace System.Security.Principal
             {
                 // If this is an anonymous identity, return an empty string
                 if (_safeTokenHandle.IsInvalid)
-                    return String.Empty;
+                    return string.Empty;
 
                 if (_authType == null)
                 {
                     Interop.LUID authId = GetLogonAuthId(_safeTokenHandle);
                     if (authId.LowPart == Interop.LuidOptions.ANONYMOUS_LOGON_LUID)
-                        return String.Empty; // no authentication, just return an empty string
+                        return string.Empty; // no authentication, just return an empty string
 
                     SafeLsaReturnBufferHandle pLogonSessionData = SafeLsaReturnBufferHandle.InvalidHandle;
                     try
@@ -476,11 +517,11 @@ namespace System.Security.Principal
             }
         }
 
-        internal String GetName()
+        internal string GetName()
         {
             // special case the anonymous identity.
             if (_safeTokenHandle.IsInvalid)
-                return String.Empty;
+                return string.Empty;
 
             if (_name == null)
             {
@@ -640,6 +681,8 @@ namespace System.Security.Principal
         
         private static void RunImpersonatedInternal(SafeAccessTokenHandle token, Action action)
         {
+            token = DuplicateAccessToken(token);
+
             bool isImpersonating;
             int hr;
             SafeAccessTokenHandle previousToken = GetCurrentToken(TokenAccessLevels.MaximumAllowed, false, out isImpersonating, out hr);
@@ -937,7 +980,7 @@ namespace System.Security.Principal
                         _userClaims = new List<Claim>();
                         _deviceClaims = new List<Claim>();
 
-                        if (!String.IsNullOrEmpty(Name))
+                        if (!string.IsNullOrEmpty(Name))
                         {
                             //
                             // Add the name claim only if the WindowsIdentity.Name is populated

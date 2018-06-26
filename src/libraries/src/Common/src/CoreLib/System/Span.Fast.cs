@@ -240,6 +240,7 @@ namespace System
         /// <exception cref="System.ArgumentException">
         /// Thrown when the destination Span is shorter than the source Span.
         /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(Span<T> destination)
         {
             // Using "if (!TryCopyTo(...))" results in two branches: one for the length

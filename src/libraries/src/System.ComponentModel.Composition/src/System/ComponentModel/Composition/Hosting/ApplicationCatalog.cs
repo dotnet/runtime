@@ -26,22 +26,22 @@ namespace System.ComponentModel.Composition.Hosting
 
         public ApplicationCatalog(ICompositionElement definitionOrigin)
         {
-            Requires.NotNull(definitionOrigin, "definitionOrigin");
+            Requires.NotNull(definitionOrigin, nameof(definitionOrigin));
 
             _definitionOrigin = definitionOrigin;
         }
         
         public ApplicationCatalog(ReflectionContext reflectionContext)
         {
-            Requires.NotNull(reflectionContext, "reflectionContext");
+            Requires.NotNull(reflectionContext, nameof(reflectionContext));
 
             _reflectionContext = reflectionContext;
         }
 
         public ApplicationCatalog(ReflectionContext reflectionContext, ICompositionElement definitionOrigin)
         {
-            Requires.NotNull(reflectionContext, "reflectionContext");
-            Requires.NotNull(definitionOrigin, "definitionOrigin");
+            Requires.NotNull(reflectionContext, nameof(reflectionContext));
+            Requires.NotNull(definitionOrigin, nameof(definitionOrigin));
 
             _reflectionContext = reflectionContext;
             _definitionOrigin = definitionOrigin;
@@ -158,7 +158,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             ThrowIfDisposed();
 
-            Requires.NotNull(definition, "definition");
+            Requires.NotNull(definition, nameof(definition));
 
             return InnerCatalog.GetExports(definition);
         }

@@ -198,7 +198,7 @@ namespace System.Tests
             TimeZoneInfo.TransitionTime e2 = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 4, 0, 0), 11, 2, DayOfWeek.Sunday);
 
             TimeZoneInfo.AdjustmentRule r1 = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(new DateTime(2000, 1, 1), new DateTime(2005, 1, 1), new TimeSpan(1, 0, 0), s1, e1);
-            
+
             // AdjustmentRules overlap
             TimeZoneInfo.AdjustmentRule r2 = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(new DateTime(2004, 1, 1), new DateTime(2007, 1, 1), new TimeSpan(1, 0, 0), s2, e2);
             VerifyCustomTimeZoneException<InvalidTimeZoneException>("mytimezone", new TimeSpan(6, 0, 0), null, null, null, new TimeZoneInfo.AdjustmentRule[] { r1, r2 });
@@ -272,6 +272,66 @@ namespace System.Tests
             TimeZoneInfo deserializedTimeZone = TimeZoneInfo.FromSerializedString(serialized);
             Assert.Equal(timeZone, deserializedTimeZone);
             Assert.Equal(serialized, deserializedTimeZone.ToSerializedString());
+        }
+
+        [Fact]
+        public static void TimeZoneInfo_DoesNotCreateAdjustmentRulesWithOffsetOutsideOfRange()
+        {
+            // On some OSes with some time zones setting
+            // time zone may contain old adjustment rule which have offset higher than 14h
+            // Assert.DoesNotThrow
+            DateTimeOffset.FromFileTime(0);
+        }
+
+        [Fact]
+        public static void TimeZoneInfo_DoesConvertTimeForOldDatesOfTimeZonesWithExceedingMaxRange()
+        {
+            // On some OSes this time zone contains old adjustment rules which have offset higher than 14h
+            TimeZoneInfo tzi = TryGetSystemTimeZone("Asia/Manila");
+            if (tzi == null)
+            {
+                // Time zone could not be found
+                return;
+            }
+
+            // Assert.DoesNotThrow
+            TimeZoneInfo.ConvertTime(new DateTimeOffset(1800, 4, 4, 10, 10, 4, 2, TimeSpan.Zero), tzi);
+        }
+
+        [Fact]
+        public static void GetSystemTimeZones_AllTimeZonesHaveOffsetInValidRange()
+        {
+            foreach (TimeZoneInfo tzi in TimeZoneInfo.GetSystemTimeZones())
+            {
+                foreach (TimeZoneInfo.AdjustmentRule ar in tzi.GetAdjustmentRules())
+                {
+                    Assert.True(Math.Abs((tzi.GetUtcOffset(ar.DateStart)).TotalHours) <= 14.0);
+                }
+            }
+        }
+
+        [Fact]
+        public static void TimeZoneInfo_DaylightDeltaIsNoMoreThan12Hours()
+        {
+            foreach (TimeZoneInfo tzi in TimeZoneInfo.GetSystemTimeZones())
+            {
+                foreach (TimeZoneInfo.AdjustmentRule ar in tzi.GetAdjustmentRules())
+                {
+                    Assert.True(Math.Abs(ar.DaylightDelta.TotalHours) <= 12.0);
+                }
+            }
+        }
+
+        private static TimeZoneInfo TryGetSystemTimeZone(string id)
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(id);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                return null;
+            }
         }
 
         private static TimeZoneInfo CreateCustomLondonTimeZone()

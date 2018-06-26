@@ -33,7 +33,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 ActiveDirectorySubnet subnet = (ActiveDirectorySubnet)value;
 
                 if (subnet == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 if (!subnet.existing)
                     throw new InvalidOperationException(SR.Format(SR.SubnetNotCommitted , subnet.Name));
@@ -41,14 +41,14 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (!Contains(subnet))
                     List[index] = subnet;
                 else
-                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , subnet), "value");
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , subnet), nameof(value));
             }
         }
 
         public int Add(ActiveDirectorySubnet subnet)
         {
             if (subnet == null)
-                throw new ArgumentNullException("subnet");
+                throw new ArgumentNullException(nameof(subnet));
 
             if (!subnet.existing)
                 throw new InvalidOperationException(SR.Format(SR.SubnetNotCommitted , subnet.Name));
@@ -56,19 +56,19 @@ namespace System.DirectoryServices.ActiveDirectory
             if (!Contains(subnet))
                 return List.Add(subnet);
             else
-                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , subnet), "subnet");
+                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , subnet), nameof(subnet));
         }
 
         public void AddRange(ActiveDirectorySubnet[] subnets)
         {
             if (subnets == null)
-                throw new ArgumentNullException("subnets");
+                throw new ArgumentNullException(nameof(subnets));
 
             foreach (ActiveDirectorySubnet s in subnets)
             {
                 if (s == null)
                 {
-                    throw new ArgumentException("subnets");
+                    throw new ArgumentException(nameof(subnets));
                 }
             }
 
@@ -79,7 +79,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public void AddRange(ActiveDirectorySubnetCollection subnets)
         {
             if (subnets == null)
-                throw new ArgumentNullException("subnets");
+                throw new ArgumentNullException(nameof(subnets));
 
             int count = subnets.Count;
             for (int i = 0; i < count; i++)
@@ -89,7 +89,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(ActiveDirectorySubnet subnet)
         {
             if (subnet == null)
-                throw new ArgumentNullException("subnet");
+                throw new ArgumentNullException(nameof(subnet));
 
             if (!subnet.existing)
                 throw new InvalidOperationException(SR.Format(SR.SubnetNotCommitted , subnet.Name));
@@ -117,7 +117,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(ActiveDirectorySubnet subnet)
         {
             if (subnet == null)
-                throw new ArgumentNullException("subnet");
+                throw new ArgumentNullException(nameof(subnet));
 
             if (!subnet.existing)
                 throw new InvalidOperationException(SR.Format(SR.SubnetNotCommitted , subnet.Name));
@@ -140,7 +140,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public void Insert(int index, ActiveDirectorySubnet subnet)
         {
             if (subnet == null)
-                throw new ArgumentNullException("subnet");
+                throw new ArgumentNullException(nameof(subnet));
 
             if (!subnet.existing)
                 throw new InvalidOperationException(SR.Format(SR.SubnetNotCommitted , subnet.Name));
@@ -148,13 +148,13 @@ namespace System.DirectoryServices.ActiveDirectory
             if (!Contains(subnet))
                 List.Insert(index, subnet);
             else
-                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , subnet), "subnet");
+                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , subnet), nameof(subnet));
         }
 
         public void Remove(ActiveDirectorySubnet subnet)
         {
             if (subnet == null)
-                throw new ArgumentNullException("subnet");
+                throw new ArgumentNullException(nameof(subnet));
 
             if (!subnet.existing)
                 throw new InvalidOperationException(SR.Format(SR.SubnetNotCommitted , subnet.Name));
@@ -174,7 +174,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // something that does not exist in the collectio
-            throw new ArgumentException(SR.Format(SR.NotFoundInCollection , subnet), "subnet");
+            throw new ArgumentException(SR.Format(SR.NotFoundInCollection , subnet), nameof(subnet));
         }
 
         protected override void OnClear()
@@ -258,12 +258,12 @@ namespace System.DirectoryServices.ActiveDirectory
             OnInsertComplete(index, newValue);
         }
 
-        protected override void OnValidate(Object value)
+        protected override void OnValidate(object value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+            if (value == null) throw new ArgumentNullException(nameof(value));
 
             if (!(value is ActiveDirectorySubnet))
-                throw new ArgumentException("value");
+                throw new ArgumentException(nameof(value));
 
             if (!((ActiveDirectorySubnet)value).existing)
                 throw new InvalidOperationException(SR.Format(SR.SubnetNotCommitted , ((ActiveDirectorySubnet)value).Name));

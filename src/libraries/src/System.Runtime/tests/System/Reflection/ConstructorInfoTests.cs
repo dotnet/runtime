@@ -44,7 +44,7 @@ namespace System.Reflection.Tests
         public static void TestInvoke_Nullery()
         {
             ConstructorInfo[] cis = GetConstructors(typeof(ConstructorInfoClassA));
-            Object obj = cis[0].Invoke(null, new object[] { });
+            object obj = cis[0].Invoke(null, new object[] { });
             Assert.Null(obj);
         }
 
@@ -52,7 +52,7 @@ namespace System.Reflection.Tests
         public static void TestInvokeNeg()
         {
             ConstructorInfo[] cis = GetConstructors(typeof(ConstructorInfoClassA));
-            Object obj = null;
+            object obj = null;
             Assert.Throws<MemberAccessException>(() => { obj = cis[0].Invoke(new object[] { }); });
             Assert.Null(obj);
         }
@@ -60,7 +60,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void TestInvoke_1DArray()
         {
-            ConstructorInfo[] cis = GetConstructors(typeof(System.Object[]));
+            ConstructorInfo[] cis = GetConstructors(typeof(object[]));
             object[] arr = null;
             //Test data for array length
             int[] arraylength = { 1, 2, 99, 65535 };
@@ -69,7 +69,7 @@ namespace System.Reflection.Tests
             foreach (int length in arraylength)
             {
                 //create big Array with  elements
-                arr = (object[])cis[0].Invoke(new Object[] { length });
+                arr = (object[])cis[0].Invoke(new object[] { length });
                 Assert.NotNull(arr);
                 Assert.Equal(arr.Length, length);
             }
@@ -78,7 +78,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void TestInvoke_1DArrayWithNegativeLength()
         {
-            ConstructorInfo[] cis = GetConstructors(typeof(System.Object[]));
+            ConstructorInfo[] cis = GetConstructors(typeof(object[]));
             object[] arr = null;
             //Test data for array length
             int[] arraylength = { -1, -2, -99 };
@@ -86,7 +86,7 @@ namespace System.Reflection.Tests
             foreach (int length in arraylength)
             {
                 //create big Array with  elements
-                Assert.Throws<OverflowException>(() => { arr = (object[])cis[0].Invoke(new Object[] { length }); });
+                Assert.Throws<OverflowException>(() => { arr = (object[])cis[0].Invoke(new object[] { length }); });
             }
         }
 
@@ -159,7 +159,7 @@ namespace System.Reflection.Tests
         public static void TestInvoke_AbstractConstructor()
         {
             ConstructorInfo[] cis = GetConstructors(typeof(Base));
-            Object obj = null;
+            object obj = null;
             Assert.Throws<MemberAccessException>(() => { obj = (Base)cis[0].Invoke(new object[] { }); });
         }
 

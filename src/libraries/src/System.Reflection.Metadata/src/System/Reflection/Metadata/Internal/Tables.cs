@@ -699,7 +699,7 @@ namespace System.Reflection.Metadata.Ecma335
             _IsHasConstantRefSizeSmall = hasConstantRefSize == 2;
             _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
             _TypeOffset = 0;
-            _ParentOffset = _TypeOffset + sizeof(Byte) + 1; // Alignment here (+1)...
+            _ParentOffset = _TypeOffset + sizeof(byte) + 1; // Alignment here (+1)...
             _ValueOffset = _ParentOffset + hasConstantRefSize;
             this.RowSize = _ValueOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, this.RowSize * numberOfRows);

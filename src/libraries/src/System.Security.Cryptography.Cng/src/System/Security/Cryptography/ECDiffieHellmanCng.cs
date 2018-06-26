@@ -55,7 +55,7 @@ namespace System.Security.Cryptography
             {
                 if (_hashAlgorithm == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 _hashAlgorithm = value;
@@ -146,9 +146,9 @@ namespace System.Security.Cryptography
             _core.DisposeKey();
         }
 
-        internal string GetCurveName()
+        internal string GetCurveName(out string oidValue)
         {
-            return Key.GetCurveName();
+            return Key.GetCurveName(out oidValue);
         }
 
         private void ImportFullKeyBlob(byte[] ecfullKeyBlob, bool includePrivateParameters)
@@ -169,6 +169,37 @@ namespace System.Security.Cryptography
         private byte[] ExportFullKeyBlob(bool includePrivateParameters)
         {
             return ECCng.ExportFullKeyBlob(Key, includePrivateParameters);
+        }
+
+        private void AcceptImport(CngPkcs8.Pkcs8Response response)
+        {
+            Key = response.Key;
+        }
+
+        public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten)
+        {
+            return Key.TryExportKeyBlob(
+                Interop.NCrypt.NCRYPT_PKCS8_PRIVATE_KEY_BLOB,
+                destination,
+                out bytesWritten);
+        }
+
+        private byte[] ExportEncryptedPkcs8(ReadOnlySpan<char> pkcs8Password, int kdfCount)
+        {
+            return Key.ExportPkcs8KeyBlob(pkcs8Password, kdfCount);
+        }
+
+        private bool TryExportEncryptedPkcs8(
+            ReadOnlySpan<char> pkcs8Password,
+            int kdfCount,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            return Key.TryExportPkcs8KeyBlob(
+                pkcs8Password,
+                kdfCount,
+                destination,
+                out bytesWritten);
         }
     }
 }

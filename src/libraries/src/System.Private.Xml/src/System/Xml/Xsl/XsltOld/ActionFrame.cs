@@ -4,16 +4,14 @@
 
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Xml;
-    using System.Xml.XPath;
-    using MS.Internal.Xml.XPath;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Xml.Xsl.XsltOld.Debugger;
+    using System.Xml;
+    using System.Xml.XPath;
+    using MS.Internal.Xml.XPath;
 
-    internal class ActionFrame : IStackFrame
+    internal class ActionFrame
     {
         private int _state;         // Action execution state
         private int _counter;       // Counter, for the use of particular action
@@ -314,40 +312,6 @@ namespace System.Xml.Xsl.XsltOld
                 }
             }
             return next;
-        }
-
-        // ----------------------- IStackFrame : --------------------
-        XPathNavigator IStackFrame.Instruction
-        {
-            get
-            {
-                if (_action == null)
-                {
-                    return null; // for builtIn action this shoud be null;
-                }
-                return _action.GetDbgData(this).StyleSheet;
-            }
-        }
-        XPathNodeIterator IStackFrame.NodeSet
-        {
-            get { return _nodeSet.Clone(); }
-        }
-        // Variables:
-        int IStackFrame.GetVariablesCount()
-        {
-            if (_action == null)
-            {
-                return 0;
-            }
-            return _action.GetDbgData(this).Variables.Length;
-        }
-        XPathNavigator IStackFrame.GetVariable(int varIndex)
-        {
-            return _action.GetDbgData(this).Variables[varIndex].GetDbgData(null).StyleSheet;
-        }
-        object IStackFrame.GetVariableValue(int varIndex)
-        {
-            return GetVariable(_action.GetDbgData(this).Variables[varIndex].VarKey);
         }
 
         // special array iterator that iterates over ArrayList of SortKey

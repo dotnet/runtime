@@ -161,7 +161,7 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         // Must be a property we don't support
                         throw new InvalidOperationException(
-                                    String.Format(
+                                    string.Format(
                                         CultureInfo.CurrentCulture,
                                         SR.StoreCtxUnsupportedPropertyForQuery,
                                         PropertyNamesExternal.GetExternalForm(filter.PropertyName)));
@@ -208,7 +208,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     Debug.Fail("ADStoreCtx.GetObjectClassPortion: fell off end looking for " + principalType.ToString());
                     throw new InvalidOperationException(
-                                    String.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForQuery, principalType.ToString()));
+                                    string.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForQuery, principalType.ToString()));
                 }
                 StringBuilder SB = new StringBuilder();
                 SB.Append("(&(objectClass=");
@@ -460,7 +460,7 @@ namespace System.DirectoryServices.AccountManagement
             return sb.ToString();
         }
 
-        protected static bool IdentityClaimToFilter(string identity, string identityFormat, ref String filter, bool throwOnFail)
+        protected static bool IdentityClaimToFilter(string identity, string identityFormat, ref string filter, bool throwOnFail)
         {
             if (identity == null)
                 identity = "";
@@ -489,7 +489,7 @@ namespace System.DirectoryServices.AccountManagement
                             return false;
                     }
 
-                    Byte[] gByte = g.ToByteArray();
+                    byte[] gByte = g.ToByteArray();
 
                     StringBuilder stringguid = new StringBuilder();
 
@@ -671,7 +671,7 @@ namespace System.DirectoryServices.AccountManagement
         }
         protected static string UserAccountControlConverter(FilterBase filter, string suggestedAdProperty)
         {
-            Debug.Assert(String.Compare(suggestedAdProperty, "userAccountControl", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(string.Equals(suggestedAdProperty, "userAccountControl", StringComparison.OrdinalIgnoreCase));
 
             StringBuilder sb = new StringBuilder();
 
@@ -734,7 +734,7 @@ namespace System.DirectoryServices.AccountManagement
                     // This bit doesn't work correctly in AD (AD models the "user can't change password"
                     // setting as special ACEs in the ntSecurityDescriptor).
                     throw new InvalidOperationException(
-                                            String.Format(
+                                            string.Format(
                                                     CultureInfo.CurrentCulture,
                                                     SR.StoreCtxUnsupportedPropertyForQuery,
                                                     PropertyNamesExternal.GetExternalForm(filter.PropertyName)));
@@ -781,7 +781,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static string ExpirationDateConverter(FilterBase filter, string suggestedAdProperty)
         {
-            Debug.Assert(String.Compare(suggestedAdProperty, "accountExpires", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(string.Equals(suggestedAdProperty, "accountExpires", StringComparison.OrdinalIgnoreCase));
             Debug.Assert(filter is ExpirationDateFilter);
 
             Nullable<DateTime> date = (Nullable<DateTime>)filter.Value;
@@ -804,7 +804,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static string GuidConverter(FilterBase filter, string suggestedAdProperty)
         {
-            Debug.Assert(String.Compare(suggestedAdProperty, "objectGuid", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(string.Equals(suggestedAdProperty, "objectGuid", StringComparison.OrdinalIgnoreCase));
             Debug.Assert(filter is GuidFilter);
 
             Nullable<Guid> guid = (Nullable<Guid>)filter.Value;
@@ -884,7 +884,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static string GroupTypeConverter(FilterBase filter, string suggestedAdProperty)
         {
-            Debug.Assert(String.Compare(suggestedAdProperty, "groupType", StringComparison.OrdinalIgnoreCase) == 0);
+            Debug.Assert(string.Equals(suggestedAdProperty, "groupType", StringComparison.OrdinalIgnoreCase));
             Debug.Assert(filter is GroupIsSecurityGroupFilter || filter is GroupScopeFilter);
 
             // 1.2.840.113556.1.4.803 is like a bit-wise AND operator
@@ -1033,12 +1033,12 @@ namespace System.DirectoryServices.AccountManagement
             return (ldapFilter.ToString());
         }
 
-        public static string ExtensionTypeConverter(string attributeName, Type type, Object value, MatchType mt)
+        public static string ExtensionTypeConverter(string attributeName, Type type, object value, MatchType mt)
         {
             StringBuilder ldapFilter = new StringBuilder("(");
             string ldapValue;
 
-            if (typeof(Boolean) == type)
+            if (typeof(bool) == type)
             {
                 ldapValue = ((bool)value ? "TRUE" : "FALSE");
             }

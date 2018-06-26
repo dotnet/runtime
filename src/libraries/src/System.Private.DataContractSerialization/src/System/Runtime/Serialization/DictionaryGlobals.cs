@@ -95,7 +95,7 @@ namespace System.Runtime.Serialization
                 IdLocalName = dictionary.Add(Globals.IdLocalName);
                 RefLocalName = dictionary.Add(Globals.RefLocalName);
                 ArraySizeLocalName = dictionary.Add(Globals.ArraySizeLocalName);
-                EmptyString = dictionary.Add(String.Empty);
+                EmptyString = dictionary.Add(string.Empty);
                 ISerializableFactoryTypeLocalName = dictionary.Add(Globals.ISerializableFactoryTypeLocalName);
 
                 // 10

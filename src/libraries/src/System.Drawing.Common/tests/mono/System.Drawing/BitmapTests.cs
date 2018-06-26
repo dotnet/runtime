@@ -1301,13 +1301,13 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void BitmapImageIntIntCtor()
         {
-            Assert.Throws<ArgumentException>(() => new Bitmap((Image)null, Int32.MinValue, Int32.MaxValue));
+            Assert.Throws<ArgumentException>(() => new Bitmap((Image)null, int.MinValue, int.MaxValue));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void BitmapIntIntCtor()
         {
-            Assert.Throws<ArgumentException>(() => new Bitmap(Int32.MinValue, Int32.MaxValue));
+            Assert.Throws<ArgumentException>(() => new Bitmap(int.MinValue, int.MaxValue));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -1319,7 +1319,7 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void BitmapIntIntPixelFormatCtor()
         {
-            Assert.Throws<ArgumentException>(() => new Bitmap(Int32.MinValue, Int32.MaxValue, PixelFormat.Format1bppIndexed));
+            Assert.Throws<ArgumentException>(() => new Bitmap(int.MinValue, int.MaxValue, PixelFormat.Format1bppIndexed));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
@@ -1387,25 +1387,25 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SetResolution_MaxValue()
         {
-            SetResolution(Single.MaxValue, Single.MaxValue);
+            SetResolution(float.MaxValue, float.MaxValue);
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SetResolution_PositiveInfinity()
         {
-            SetResolution(Single.PositiveInfinity, Single.PositiveInfinity);
+            SetResolution(float.PositiveInfinity, float.PositiveInfinity);
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SetResolution_NaN()
         {
-            Assert.Throws<ArgumentException>(() => SetResolution(Single.NaN, Single.NaN));
+            Assert.Throws<ArgumentException>(() => SetResolution(float.NaN, float.NaN));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SetResolution_NegativeInfinity()
         {
-            Assert.Throws<ArgumentException>(() => SetResolution(Single.NegativeInfinity, Single.NegativeInfinity));
+            Assert.Throws<ArgumentException>(() => SetResolution(float.NegativeInfinity, float.NegativeInfinity));
         }
     }
 

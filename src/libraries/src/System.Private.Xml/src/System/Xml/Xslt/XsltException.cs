@@ -66,9 +66,9 @@ namespace System.Xml.Xsl
 
         public XsltException() : this(string.Empty, (Exception)null) { }
 
-        public XsltException(String message) : this(message, (Exception)null) { }
+        public XsltException(string message) : this(message, (Exception)null) { }
 
-        public XsltException(String message, Exception innerException) :
+        public XsltException(string message, Exception innerException) :
             this(SR.Xml_UserException, new string[] { message }, null, 0, 0, innerException)
         {
         }
@@ -159,9 +159,9 @@ namespace System.Xml.Xsl
 
         public XsltCompileException() : base() { }
 
-        public XsltCompileException(String message) : base(message) { }
+        public XsltCompileException(string message) : base(message) { }
 
-        public XsltCompileException(String message, Exception innerException) : base(message, innerException) { }
+        public XsltCompileException(string message, Exception innerException) : base(message, innerException) { }
 
         public XsltCompileException(Exception inner, string sourceUri, int lineNumber, int linePosition) :
             base(

@@ -25,11 +25,11 @@ namespace System.Data.Odbc
         {
             if (null == connection)
             {
-                throw ADP.ArgumentNull("connection");
+                throw ADP.ArgumentNull(nameof(connection));
             }
             if (null == constr)
             {
-                throw ADP.ArgumentNull("constr");
+                throw ADP.ArgumentNull(nameof(constr));
             }
 
             ODBC32.RetCode retcode;
@@ -40,7 +40,7 @@ namespace System.Data.Odbc
             //a odbc 3.0 feature.  The ConnectionTimeout on the managed providers represents
             //the login timeout, nothing more.
             int connectionTimeout = connection.ConnectionTimeout;
-            retcode = SetConnectionAttribute2(ODBC32.SQL_ATTR.LOGIN_TIMEOUT, (IntPtr)connectionTimeout, (Int32)ODBC32.SQL_IS.UINTEGER);
+            retcode = SetConnectionAttribute2(ODBC32.SQL_ATTR.LOGIN_TIMEOUT, (IntPtr)connectionTimeout, (int)ODBC32.SQL_IS.UINTEGER);
 
             string connectionString = constr.UsersConnectionString(false);
 
@@ -64,7 +64,7 @@ namespace System.Data.Odbc
             try { }
             finally
             {
-                retcode = Interop.Odbc.SQLSetConnectAttrW(this, ODBC32.SQL_ATTR.AUTOCOMMIT, ODBC32.SQL_AUTOCOMMIT_OFF, (Int32)ODBC32.SQL_IS.UINTEGER);
+                retcode = Interop.Odbc.SQLSetConnectAttrW(this, ODBC32.SQL_ATTR.AUTOCOMMIT, ODBC32.SQL_AUTOCOMMIT_OFF, (int)ODBC32.SQL_IS.UINTEGER);
                 switch (retcode)
                 {
                     case ODBC32.RetCode.SUCCESS:
@@ -114,7 +114,7 @@ namespace System.Data.Odbc
                 }
 
                 //Set the isolation level (unless its unspecified)
-                retcode = SetConnectionAttribute2(isolationAttribute, (IntPtr)sql_iso, (Int32)ODBC32.SQL_IS.INTEGER);
+                retcode = SetConnectionAttribute2(isolationAttribute, (IntPtr)sql_iso, (int)ODBC32.SQL_IS.INTEGER);
 
                 //Note: The Driver can return success_with_info to indicate it "rolled" the
                 //isolevel to the next higher value.  If this is the case, we need to requery
@@ -181,7 +181,7 @@ namespace System.Data.Odbc
 
                 if (HandleState.Transacted == _handleState)
                 { // AutoCommitOn
-                    retcode = Interop.Odbc.SQLSetConnectAttrW(handle, ODBC32.SQL_ATTR.AUTOCOMMIT, ODBC32.SQL_AUTOCOMMIT_ON, (Int32)ODBC32.SQL_IS.UINTEGER);
+                    retcode = Interop.Odbc.SQLSetConnectAttrW(handle, ODBC32.SQL_ATTR.AUTOCOMMIT, ODBC32.SQL_AUTOCOMMIT_ON, (int)ODBC32.SQL_IS.UINTEGER);
                     _handleState = HandleState.Connected;
                 }
             }
@@ -238,7 +238,7 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode GetFunctions(ODBC32.SQL_API fFunction, out Int16 fExists)
+        internal ODBC32.RetCode GetFunctions(ODBC32.SQL_API fFunction, out short fExists)
         {
             ODBC32.RetCode retcode = Interop.Odbc.SQLGetFunctions(this, fFunction, out fExists);
             ODBC.TraceODBC(3, "SQLGetFunctions", retcode);
@@ -257,20 +257,20 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.RetCode SetConnectionAttribute2(ODBC32.SQL_ATTR attribute, IntPtr value, Int32 length)
+        internal ODBC32.RetCode SetConnectionAttribute2(ODBC32.SQL_ATTR attribute, IntPtr value, int length)
         {
             ODBC32.RetCode retcode = Interop.Odbc.SQLSetConnectAttrW(this, attribute, value, length);
             ODBC.TraceODBC(3, "SQLSetConnectAttrW", retcode);
             return retcode;
         }
 
-        internal ODBC32.RetCode SetConnectionAttribute3(ODBC32.SQL_ATTR attribute, string buffer, Int32 length)
+        internal ODBC32.RetCode SetConnectionAttribute3(ODBC32.SQL_ATTR attribute, string buffer, int length)
         {
             ODBC32.RetCode retcode = Interop.Odbc.SQLSetConnectAttrW(this, attribute, buffer, length);
             return retcode;
         }
 
-        internal ODBC32.RetCode SetConnectionAttribute4(ODBC32.SQL_ATTR attribute, System.Transactions.IDtcTransaction transaction, Int32 length)
+        internal ODBC32.RetCode SetConnectionAttribute4(ODBC32.SQL_ATTR attribute, System.Transactions.IDtcTransaction transaction, int length)
         {
             ODBC32.RetCode retcode = Interop.Odbc.SQLSetConnectAttrW(this, attribute, transaction, length);
             ODBC.TraceODBC(3, "SQLSetConnectAttrW", retcode);

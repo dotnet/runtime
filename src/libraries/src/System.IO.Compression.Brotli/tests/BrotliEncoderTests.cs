@@ -1,8 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Compression.Tests
@@ -36,7 +38,7 @@ namespace System.IO.Compression.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>("length", () => BrotliEncoder.GetMaxCompressedLength(-1));
             Assert.Throws<ArgumentOutOfRangeException>("length", () => BrotliEncoder.GetMaxCompressedLength(2147483133));
-            Assert.InRange(BrotliEncoder.GetMaxCompressedLength(2147483132), 0, Int32.MaxValue);
+            Assert.InRange(BrotliEncoder.GetMaxCompressedLength(2147483132), 0, int.MaxValue);
             Assert.Equal(1, BrotliEncoder.GetMaxCompressedLength(0));
         }
 
@@ -165,10 +167,10 @@ namespace System.IO.Compression.Tests
                 byte[] uncompressed = new byte[chunkSize];
                 new Random().NextBytes(uncompressed);
                 byte[] compressed = new byte[BrotliEncoder.GetMaxCompressedLength(chunkSize)];
-                byte[] deompressed = new byte[chunkSize];
+                byte[] decompressed = new byte[chunkSize];
                 var uncompressedSpan = new ReadOnlySpan<byte>(uncompressed);
                 var compressedSpan = new Span<byte>(compressed);
-                var decompressedSpan = new Span<byte>(deompressed);
+                var decompressedSpan = new Span<byte>(decompressed);
 
                 int totalWrittenThisIteration = 0;
                 var compress = encoder.Compress(uncompressedSpan, compressedSpan, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
@@ -179,9 +181,7 @@ namespace System.IO.Compression.Tests
                 var res = decoder.Decompress(compressedSpan.Slice(0, totalWrittenThisIteration), decompressedSpan, out int decompressbytesConsumed, out int decompressbytesWritten);
                 Assert.Equal(totalWrittenThisIteration, decompressbytesConsumed);
                 Assert.Equal(bytesConsumed, decompressbytesWritten);
-                for (int j = 0; j < bytesConsumed; j++)
-                    Assert.Equal(uncompressed[j], decompressedSpan[j]);
-
+                Assert.Equal<byte>(uncompressed, decompressedSpan.ToArray());
             }
         }
 
@@ -197,8 +197,7 @@ namespace System.IO.Compression.Tests
             Span<byte> destination = new Span<byte>(actualUncompressedBytes);
             Assert.True(BrotliDecoder.TryDecompress(source, destination, out int bytesWritten), "TryDecompress did not complete successfully");
             Assert.Equal(correctUncompressedBytes.Length, bytesWritten);
-            for (int i = 0; i < correctUncompressedBytes.Length; i++)
-                Assert.Equal(correctUncompressedBytes[i], actualUncompressedBytes[i]);
+            Assert.Equal<byte>(correctUncompressedBytes, actualUncompressedBytes.AsSpan(0, correctUncompressedBytes.Length).ToArray());
         }
 
         [Theory]
@@ -211,8 +210,7 @@ namespace System.IO.Compression.Tests
             byte[] actualUncompressedBytes = new byte[correctUncompressedBytes.Length];
             Decompress_WithState(compressedBytes, actualUncompressedBytes);
 
-            for (int i = 0; i < correctUncompressedBytes.Length; i++)
-                Assert.Equal(correctUncompressedBytes[i], actualUncompressedBytes[i]);
+            Assert.Equal<byte>(correctUncompressedBytes, actualUncompressedBytes);
         }
 
         [Theory]
@@ -225,8 +223,7 @@ namespace System.IO.Compression.Tests
             byte[] actualUncompressedBytes = new byte[correctUncompressedBytes.Length];
             Decompress_WithoutState(compressedBytes, actualUncompressedBytes);
 
-            for (int i = 0; i < correctUncompressedBytes.Length; i++)
-                Assert.Equal(correctUncompressedBytes[i], actualUncompressedBytes[i]);
+            Assert.Equal<byte>(correctUncompressedBytes, actualUncompressedBytes);
         }
 
         [Theory]
@@ -244,8 +241,7 @@ namespace System.IO.Compression.Tests
             Assert.True(BrotliDecoder.TryDecompress(destination, actualUncompressedBytes, out bytesWritten));
             Assert.Equal(correctUncompressedBytes.Length, bytesWritten);
 
-            for (int i = 0; i < correctUncompressedBytes.Length; i++)
-                Assert.Equal(correctUncompressedBytes[i], actualUncompressedBytes[i]);
+            Assert.Equal<byte>(correctUncompressedBytes, actualUncompressedBytes.AsSpan(0, correctUncompressedBytes.Length).ToArray());
         }
 
         [Theory]
@@ -260,8 +256,7 @@ namespace System.IO.Compression.Tests
             Compress_WithState(correctUncompressedBytes, compressedBytes);
             Decompress_WithState(compressedBytes, actualUncompressedBytes);
 
-            for (int i = 0; i < correctUncompressedBytes.Length; i++)
-                Assert.Equal(correctUncompressedBytes[i], actualUncompressedBytes[i]);
+            Assert.Equal<byte>(correctUncompressedBytes, actualUncompressedBytes);
         }
 
         [Theory]
@@ -276,8 +271,7 @@ namespace System.IO.Compression.Tests
             Compress_WithoutState(correctUncompressedBytes, compressedBytes);
             Decompress_WithoutState(compressedBytes, actualUncompressedBytes);
 
-            for (int i = 0; i < correctUncompressedBytes.Length; i++)
-                Assert.Equal(correctUncompressedBytes[i], actualUncompressedBytes[i]);
+            Assert.Equal<byte>(correctUncompressedBytes, actualUncompressedBytes);
         }
 
         [Theory]
@@ -286,11 +280,76 @@ namespace System.IO.Compression.Tests
         public void WriteStream(string testFile)
         {
             byte[] correctUncompressedBytes = File.ReadAllBytes(testFile);
-            byte[] compressedBytes = ((MemoryStream)Compress_Stream(correctUncompressedBytes)).ToArray();
-            byte[] actualUncompressedBytes = ((MemoryStream)Decompress_Stream(compressedBytes)).ToArray();
+            byte[] compressedBytes = Compress_Stream(correctUncompressedBytes, CompressionLevel.Optimal).ToArray();
+            byte[] actualUncompressedBytes = Decompress_Stream(compressedBytes).ToArray();
 
-            for (int i = 0; i < correctUncompressedBytes.Length; i++)
-                Assert.Equal(correctUncompressedBytes[i], actualUncompressedBytes[i]);
+            Assert.Equal<byte>(correctUncompressedBytes, actualUncompressedBytes);
+        }
+
+        [OuterLoop("Full set of tests takes seconds to run")]
+        [Theory]
+        [InlineData(1, 0x400001, false)]
+        [InlineData(1, 0x400001, true)]
+        [InlineData(4, 0x800000, false)]
+        [InlineData(4, 0x800000, true)]
+        [InlineData(53, 12345, false)]
+        [InlineData(53, 12345, true)]
+        public static async Task Roundtrip_VaryingSizeReadsAndLengths_Success(int readSize, int totalLength, bool useAsync)
+        {
+            byte[] correctUncompressedBytes = Enumerable.Range(0, totalLength).Select(i => (byte)i).ToArray();
+            byte[] compressedBytes = Compress_Stream(correctUncompressedBytes, CompressionLevel.Fastest).ToArray();
+            byte[] actualBytes = new byte[correctUncompressedBytes.Length];
+
+            using (var s = new BrotliStream(new MemoryStream(compressedBytes), CompressionMode.Decompress))
+            {
+                int totalRead = 0;
+                while (totalRead < actualBytes.Length)
+                {
+                    int numRead = useAsync ?
+                        await s.ReadAsync(actualBytes, totalRead, Math.Min(readSize, actualBytes.Length - totalRead)) :
+                        s.Read(actualBytes, totalRead, Math.Min(readSize, actualBytes.Length - totalRead));
+                    totalRead += numRead;
+                }
+
+                Assert.Equal<byte>(correctUncompressedBytes, actualBytes);
+            }
+        }
+
+        [Theory]
+        [InlineData(1000, CompressionLevel.Fastest)]
+        [InlineData(1000, CompressionLevel.Optimal)]
+        [InlineData(1000, CompressionLevel.NoCompression)]
+        public static void Roundtrip_WriteByte_ReadByte_Success(int totalLength, CompressionLevel level)
+        {
+            byte[] correctUncompressedBytes = Enumerable.Range(0, totalLength).Select(i => (byte)i).ToArray();
+
+            byte[] compressedBytes;
+            using (var ms = new MemoryStream())
+            {
+                var bs = new BrotliStream(ms, level);
+                foreach (byte b in correctUncompressedBytes)
+                {
+                    bs.WriteByte(b);
+                }
+                bs.Dispose();
+                compressedBytes = ms.ToArray();
+            }
+
+            byte[] decompressedBytes = new byte[correctUncompressedBytes.Length];
+            using (var ms = new MemoryStream(compressedBytes))
+            using (var bs = new BrotliStream(ms, CompressionMode.Decompress))
+            {
+                for (int i = 0; i < decompressedBytes.Length; i++)
+                {
+                    int b = bs.ReadByte();
+                    Assert.InRange(b, 0, 255);
+                    decompressedBytes[i] = (byte)b;
+                }
+                Assert.Equal(-1, bs.ReadByte());
+                Assert.Equal(-1, bs.ReadByte());
+            }
+
+            Assert.Equal<byte>(correctUncompressedBytes, decompressedBytes);
         }
 
         public static void Compress_WithState(ReadOnlySpan<byte> input, Span<byte> output)
@@ -326,19 +385,19 @@ namespace System.IO.Compression.Tests
             BrotliDecoder.TryDecompress(input, output, out int bytesWritten);
         }
 
-        public static Stream Compress_Stream(ReadOnlySpan<byte> input)
+        public static MemoryStream Compress_Stream(ReadOnlySpan<byte> input, CompressionLevel compressionLevel)
         {
             using (var inputStream = new MemoryStream(input.ToArray()))
             {
                 var outputStream = new MemoryStream();
-                var compressor = new BrotliStream(outputStream, CompressionMode.Compress, true);
+                var compressor = new BrotliStream(outputStream, compressionLevel, true);
                 inputStream.CopyTo(compressor);
                 compressor.Dispose();
                 return outputStream;
             }
         }
 
-        public static Stream Decompress_Stream(ReadOnlySpan<byte> input)
+        public static MemoryStream Decompress_Stream(ReadOnlySpan<byte> input)
         {
             using (var inputStream = new MemoryStream(input.ToArray()))
             {

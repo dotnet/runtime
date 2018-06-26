@@ -512,5 +512,34 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(paramName, () => int.Parse("1", style));
             AssertExtensions.Throws<ArgumentException>(paramName, () => int.Parse("1", style, null));
         }
+
+        [Theory]
+        [InlineData("N")]
+        [InlineData("F")]
+        public static void ToString_N_F_EmptyNumberGroup_Success(string specifier)
+        {
+            var nfi = (NumberFormatInfo)NumberFormatInfo.InvariantInfo.Clone();
+            nfi.NumberGroupSizes = new int[0];
+            nfi.NumberGroupSeparator = ",";
+            Assert.Equal("1234", 1234.ToString($"{specifier}0", nfi));
+        }
+
+        [Fact]
+        public static void ToString_P_EmptyPercentGroup_Success()
+        {
+            var nfi = (NumberFormatInfo)NumberFormatInfo.InvariantInfo.Clone();
+            nfi.PercentGroupSizes = new int[0];
+            nfi.PercentSymbol = "%";
+            Assert.Equal("123400 %", 1234.ToString("P0", nfi));
+        }
+
+        [Fact]
+        public static void ToString_C_EmptyPercentGroup_Success()
+        {
+            var nfi = (NumberFormatInfo)NumberFormatInfo.InvariantInfo.Clone();
+            nfi.CurrencyGroupSizes = new int[0];
+            nfi.CurrencySymbol = "$";
+            Assert.Equal("$1234", 1234.ToString("C0", nfi));
+        }
     }
 }

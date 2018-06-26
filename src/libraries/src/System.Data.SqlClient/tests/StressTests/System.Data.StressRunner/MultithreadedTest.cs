@@ -123,7 +123,7 @@ namespace DPStressHarness
         }
 
 
-        public static void RunThread(Object state)
+        public static void RunThread(object state)
         {
             try
             {
@@ -155,7 +155,7 @@ namespace DPStressHarness
 
             LogStandardMetrics(logger);
 
-            logger.AddTestMetric(Constants.TEST_METRIC_RPS, String.Format("{0:F2}", rps), "rps", true);
+            logger.AddTestMetric(Constants.TEST_METRIC_RPS, string.Format("{0:F2}", rps), "rps", true);
 
             logger.Save();
 

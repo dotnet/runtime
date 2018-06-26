@@ -8,27 +8,22 @@ using System.Resources;
 namespace System.ComponentModel.Design
 {
     /// <summary>
-    ///    <para> 
-    ///       Provides designers a way to
-    ///       access a resource for the current design-time
-    ///       object.</para>
+    /// Provides designers a way to access a resource for the current design-time object.
     /// </summary>
     public interface IResourceService
     {
         /// <summary>
-        ///    <para> 
-        ///       Locates the resource reader for the specified culture and
-        ///       returns it.</para>
+        /// Locates the resource reader for the specified culture and
+        /// returns it.
         /// </summary>
         IResourceReader GetResourceReader(CultureInfo info);
 
         /// <summary>
-        ///    <para>Locates the resource writer for the specified culture
-        ///       and returns it. This will create a new resource for
-        ///       the specified culture and destroy any existing resource,
-        ///       should it exist.</para>
+        /// Locates the resource writer for the specified culture
+        /// and returns it. This will create a new resource for
+        /// the specified culture and destroy any existing resource,
+        /// should it exist.
         /// </summary>
         IResourceWriter GetResourceWriter(CultureInfo info);
     }
 }
-

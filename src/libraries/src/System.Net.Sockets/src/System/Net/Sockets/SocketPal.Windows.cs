@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -116,16 +117,31 @@ namespace System.Net.Sockets
                 IntPtr.Zero);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
-
         public static SocketError Send(SafeCloseSocket handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
         {
+            const int StackThreshold = 16; // arbitrary limit to avoid too much space on stack (note: may be over-sized, that's OK - length passed separately)
             int count = buffers.Count;
-            WSABuffer[] WSABuffers = new WSABuffer[count];
-            GCHandle[] objectsToPin = null;
+            bool useStack = count <= StackThreshold;
+
+            WSABuffer[] leasedWSA = null;
+            GCHandle[] leasedGC = null;
+            Span<WSABuffer> WSABuffers = stackalloc WSABuffer[0];
+            Span<GCHandle> objectsToPin = stackalloc GCHandle[0];
+            if (useStack)
+            {
+                WSABuffers = stackalloc WSABuffer[StackThreshold];
+                objectsToPin = stackalloc GCHandle[StackThreshold];
+            }
+            else
+            {
+                WSABuffers = leasedWSA = ArrayPool<WSABuffer>.Shared.Rent(count);
+                objectsToPin = leasedGC = ArrayPool<GCHandle>.Shared.Rent(count);
+            }
+            objectsToPin = objectsToPin.Slice(0, count);
+            objectsToPin.Clear(); // note: touched in finally
 
             try
             {
-                objectsToPin = new GCHandle[count];
                 for (int i = 0; i < count; ++i)
                 {
                     ArraySegment<byte> buffer = buffers[i];
@@ -156,15 +172,17 @@ namespace System.Net.Sockets
             }
             finally
             {
-                if (objectsToPin != null)
+                for (int i = 0; i < count; ++i)
                 {
-                    for (int i = 0; i < objectsToPin.Length; ++i)
+                    if (objectsToPin[i].IsAllocated)
                     {
-                        if (objectsToPin[i].IsAllocated)
-                        {
-                            objectsToPin[i].Free();
-                        }
+                        objectsToPin[i].Free();
                     }
+                }
+                if (!useStack)
+                {
+                    ArrayPool<WSABuffer>.Shared.Return(leasedWSA);
+                    ArrayPool<GCHandle>.Shared.Return(leasedGC);
                 }
             }
         }
@@ -239,13 +257,29 @@ namespace System.Net.Sockets
 
         public static SocketError Receive(SafeCloseSocket handle, IList<ArraySegment<byte>> buffers, ref SocketFlags socketFlags, out int bytesTransferred)
         {
+            const int StackThreshold = 16; // arbitrary limit to avoid too much space on stack (note: may be over-sized, that's OK - length passed separately)
             int count = buffers.Count;
-            WSABuffer[] WSABuffers = new WSABuffer[count];
-            GCHandle[] objectsToPin = null;
+            bool useStack = count <= StackThreshold;
+
+            WSABuffer[] leasedWSA = null;
+            GCHandle[] leasedGC = null;
+            Span<WSABuffer> WSABuffers = stackalloc WSABuffer[0];
+            Span<GCHandle> objectsToPin = stackalloc GCHandle[0];
+            if (useStack)
+            {
+                WSABuffers = stackalloc WSABuffer[StackThreshold];
+                objectsToPin = stackalloc GCHandle[StackThreshold];
+            }
+            else
+            {
+                WSABuffers = leasedWSA = ArrayPool<WSABuffer>.Shared.Rent(count);
+                objectsToPin = leasedGC = ArrayPool<GCHandle>.Shared.Rent(count);
+            }
+            objectsToPin = objectsToPin.Slice(0, count);
+            objectsToPin.Clear(); // note: touched in finally
 
             try
             {
-                objectsToPin = new GCHandle[count];
                 for (int i = 0; i < count; ++i)
                 {
                     ArraySegment<byte> buffer = buffers[i];
@@ -276,15 +310,17 @@ namespace System.Net.Sockets
             }
             finally
             {
-                if (objectsToPin != null)
+                for (int i = 0; i < count; ++i)
                 {
-                    for (int i = 0; i < objectsToPin.Length; ++i)
+                    if (objectsToPin[i].IsAllocated)
                     {
-                        if (objectsToPin[i].IsAllocated)
-                        {
-                            objectsToPin[i].Free();
-                        }
+                        objectsToPin[i].Free();
                     }
+                }
+                if (!useStack)
+                {
+                    ArrayPool<WSABuffer>.Shared.Return(leasedWSA);
+                    ArrayPool<GCHandle>.Shared.Return(leasedGC);
                 }
             }
         }
@@ -668,10 +704,10 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static SocketError Poll(SafeCloseSocket handle, int microseconds, SelectMode mode, out bool status)
+        public static unsafe SocketError Poll(SafeCloseSocket handle, int microseconds, SelectMode mode, out bool status)
         {
             IntPtr rawHandle = handle.DangerousGetHandle();
-            IntPtr[] fileDescriptorSet = new IntPtr[2] { (IntPtr)1, rawHandle };
+            IntPtr* fileDescriptorSet = stackalloc IntPtr[2] { (IntPtr)1, rawHandle };
             Interop.Winsock.TimeValue IOwait = new Interop.Winsock.TimeValue();
 
             // A negative timeout value implies an indefinite wait.
@@ -708,61 +744,97 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static SocketError Select(IList checkRead, IList checkWrite, IList checkError, int microseconds)
+        public static unsafe SocketError Select(IList checkRead, IList checkWrite, IList checkError, int microseconds)
         {
-            IntPtr[] readfileDescriptorSet = Socket.SocketListToFileDescriptorSet(checkRead);
-            IntPtr[] writefileDescriptorSet = Socket.SocketListToFileDescriptorSet(checkWrite);
-            IntPtr[] errfileDescriptorSet = Socket.SocketListToFileDescriptorSet(checkError);
-
-            // This code used to erroneously pass a non-null timeval structure containing zeroes 
-            // to select() when the caller specified (-1) for the microseconds parameter.  That 
-            // caused select to actually have a *zero* timeout instead of an infinite timeout
-            // turning the operation into a non-blocking poll.
-            //
-            // Now we pass a null timeval struct when microseconds is (-1).
-            // 
-            // Negative microsecond values that weren't exactly (-1) were originally successfully 
-            // converted to a timeval struct containing unsigned non-zero integers.  This code 
-            // retains that behavior so that any app working around the original bug with, 
-            // for example, (-2) specified for microseconds, will continue to get the same behavior.
-
-            int socketCount;
-            if (microseconds != -1)
+            const int StackThreshold = 64; // arbitrary limit to avoid too much space on stack
+            bool ShouldStackAlloc(IList list, ref IntPtr[] lease, out Span<IntPtr> span)
             {
-                Interop.Winsock.TimeValue IOwait = new Interop.Winsock.TimeValue();
-                MicrosecondsToTimeValue((long)(uint)microseconds, ref IOwait);
-
-                socketCount =
-                    Interop.Winsock.select(
-                        0, // ignored value
-                        readfileDescriptorSet,
-                        writefileDescriptorSet,
-                        errfileDescriptorSet,
-                        ref IOwait);
-            }
-            else
-            {
-                socketCount =
-                    Interop.Winsock.select(
-                        0, // ignored value
-                        readfileDescriptorSet,
-                        writefileDescriptorSet,
-                        errfileDescriptorSet,
-                        IntPtr.Zero);
+                int count;
+                if (list == null || (count = list.Count) == 0)
+                {
+                    span = default;
+                    return false;
+                }
+                if (count >= StackThreshold) // note on >= : the first element is reserved for internal length
+                {
+                    span = lease = ArrayPool<IntPtr>.Shared.Rent(count + 1);
+                    return false;
+                }
+                span = default;
+                return true;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Interop.Winsock.select returns socketCount:{socketCount}");
-
-            if ((SocketError)socketCount == SocketError.SocketError)
+            IntPtr[] leaseRead = null, leaseWrite = null, leaseError = null;
+            try
             {
-                return GetLastSocketError();
+                Span<IntPtr> readfileDescriptorSet = ShouldStackAlloc(checkRead, ref leaseRead, out var tmp) ? stackalloc IntPtr[StackThreshold] : tmp;
+                Socket.SocketListToFileDescriptorSet(checkRead, readfileDescriptorSet);
+                Span<IntPtr> writefileDescriptorSet = ShouldStackAlloc(checkWrite, ref leaseWrite, out tmp) ? stackalloc IntPtr[StackThreshold] : tmp;
+                Socket.SocketListToFileDescriptorSet(checkWrite, writefileDescriptorSet);
+                Span<IntPtr> errfileDescriptorSet = ShouldStackAlloc(checkError, ref leaseError, out tmp) ? stackalloc IntPtr[StackThreshold] : tmp;
+                Socket.SocketListToFileDescriptorSet(checkError, errfileDescriptorSet);
+                
+                // This code used to erroneously pass a non-null timeval structure containing zeroes 
+                // to select() when the caller specified (-1) for the microseconds parameter.  That 
+                // caused select to actually have a *zero* timeout instead of an infinite timeout
+                // turning the operation into a non-blocking poll.
+                //
+                // Now we pass a null timeval struct when microseconds is (-1).
+                // 
+                // Negative microsecond values that weren't exactly (-1) were originally successfully 
+                // converted to a timeval struct containing unsigned non-zero integers.  This code 
+                // retains that behavior so that any app working around the original bug with, 
+                // for example, (-2) specified for microseconds, will continue to get the same behavior.
+
+                int socketCount;
+                fixed (IntPtr* readPtr = &MemoryMarshal.GetReference(readfileDescriptorSet))
+                fixed (IntPtr* writePtr = &MemoryMarshal.GetReference(writefileDescriptorSet))
+                fixed (IntPtr* errPtr = &MemoryMarshal.GetReference(errfileDescriptorSet))
+                {
+                    if (microseconds != -1)
+                    {
+                        Interop.Winsock.TimeValue IOwait = new Interop.Winsock.TimeValue();
+                        MicrosecondsToTimeValue((long)(uint)microseconds, ref IOwait);
+
+                        socketCount =
+                            Interop.Winsock.select(
+                                0, // ignored value
+                                readPtr,
+                                writePtr,
+                                errPtr,
+                                ref IOwait);
+                    }
+                    else
+                    {
+                        socketCount =
+                            Interop.Winsock.select(
+                                0, // ignored value
+                                readPtr,
+                                writePtr,
+                                errPtr,
+                                IntPtr.Zero);
+                    }
+                }
+                if (NetEventSource.IsEnabled)
+                    NetEventSource.Info(null, $"Interop.Winsock.select returns socketCount:{socketCount}");
+
+                if ((SocketError)socketCount == SocketError.SocketError)
+                {
+                    return GetLastSocketError();
+                }
+
+                Socket.SelectFileDescriptor(checkRead, readfileDescriptorSet);
+                Socket.SelectFileDescriptor(checkWrite, writefileDescriptorSet);
+                Socket.SelectFileDescriptor(checkError, errfileDescriptorSet);
+
+                return SocketError.Success;
             }
-
-            Socket.SelectFileDescriptor(checkRead, readfileDescriptorSet);
-            Socket.SelectFileDescriptor(checkWrite, writefileDescriptorSet);
-            Socket.SelectFileDescriptor(checkError, errfileDescriptorSet);
-
-            return SocketError.Success;
+            finally
+            {
+                if (leaseRead != null) ArrayPool<IntPtr>.Shared.Return(leaseRead);
+                if (leaseWrite != null) ArrayPool<IntPtr>.Shared.Return(leaseWrite);
+                if (leaseError != null) ArrayPool<IntPtr>.Shared.Return(leaseError);
+            }
         }
 
         public static SocketError Shutdown(SafeCloseSocket handle, bool isConnected, bool isDisconnected, SocketShutdown how)

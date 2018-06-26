@@ -2,13 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Xml;
-using System.Xml.Schema;
-using System.Xml.Xsl;
 
 namespace System.Xml.Xsl.Qil
 {
@@ -17,11 +11,6 @@ namespace System.Xml.Xsl.Qil
     /// </summary>
     internal abstract class QilPatternVisitor : QilReplaceVisitor
     {
-        private QilPatterns _patterns;
-        private int _replacementCnt;
-        private int _lastReplacement;
-        private int _threshold = Int32.MaxValue;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -30,27 +19,12 @@ namespace System.Xml.Xsl.Qil
             Patterns = patterns;
         }
 
-        public QilPatterns Patterns
-        {
-            get { return _patterns; }
-            set { _patterns = value; }
-        }
+        public QilPatterns Patterns { get; set; }
 
-        public int Threshold
-        {
-            get { return _threshold; }
-            set { _threshold = value; }
-        }
+        public int Threshold { get; set; } = int.MaxValue;
+        public int ReplacementCount { get; private set; }
 
-        public int ReplacementCount
-        {
-            get { return _replacementCnt; }
-        }
-
-        public int LastReplacement
-        {
-            get { return _lastReplacement; }
-        }
+        public int LastReplacement { get; private set; }
 
         public bool Matching
         {
@@ -67,10 +41,10 @@ namespace System.Xml.Xsl.Qil
             if (Matching)
             {
                 // Increment the replacement count
-                _replacementCnt++;
+                ReplacementCount++;
 
                 // Save the id of this pattern in case it's the last
-                _lastReplacement = pattern;
+                LastReplacement = pattern;
 
                 return true;
             }
@@ -299,26 +273,16 @@ namespace System.Xml.Xsl.Qil
         {
             private BitArray _bits;
 
-            private QilPatterns(QilPatterns toCopy)
-            {
-                _bits = new BitArray(toCopy._bits);
-            }
             public QilPatterns(int szBits, bool allSet)
             {
                 _bits = new BitArray(szBits, allSet);
             }
-            public QilPatterns Clone()
-            {
-                return new QilPatterns(this);
-            }
-            public void ClearAll()
-            {
-                _bits.SetAll(false);
-            }
+
             public void Add(int i)
             {
                 _bits.Set(i, true);
             }
+
             public bool IsSet(int i)
             {
                 return _bits[i];

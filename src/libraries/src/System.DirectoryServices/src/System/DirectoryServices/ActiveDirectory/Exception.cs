@@ -125,11 +125,11 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public string Name { get; }
 
-        public override String Message
+        public override string Message
         {
             get
             {
-                String s = base.Message;
+                string s = base.Message;
                 if (!((Name == null) ||
                        (Name.Length == 0)))
                     return s + Environment.NewLine + SR.Format(SR.Name , Name) + Environment.NewLine;
@@ -185,7 +185,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 if (_errors == null)
-                    return new SyncFromAllServersErrorInformation[0];
+                    return Array.Empty<SyncFromAllServersErrorInformation>();
 
                 SyncFromAllServersErrorInformation[] tempError = new SyncFromAllServersErrorInformation[_errors.Length];
                 for (int i = 0; i < _errors.Length; i++)

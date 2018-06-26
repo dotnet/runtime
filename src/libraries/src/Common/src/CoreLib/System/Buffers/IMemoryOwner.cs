@@ -13,6 +13,5 @@ namespace System.Buffers
         /// Returns a Memory<typeparamref name="T"/>.
         /// </summary>
         Memory<T> Memory { get; }
-
     }
 }

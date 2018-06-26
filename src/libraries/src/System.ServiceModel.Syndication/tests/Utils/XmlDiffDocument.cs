@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -37,7 +37,7 @@ namespace System.ServiceModel.Syndication.Tests
         public virtual int LineNumber { get { return 0; } }
         public virtual int LinePosition { get { return 0; } }
 
-        public static PositionInfo GetPositionInfo(Object o)
+        public static PositionInfo GetPositionInfo(object o)
         {
             IXmlLineInfo lineInfo = o as IXmlLineInfo;
             if (lineInfo != null && lineInfo.HasLineInfo())
@@ -383,7 +383,7 @@ namespace System.ServiceModel.Syndication.Tests
         //returns 0 if the same string; 1 if s1 > s1 and -1 if s1 < s2
         private int CompareText(string s1, string s2)
         {
-            return Math.Sign(String.Compare(s1, s2, StringComparison.Ordinal));
+            return Math.Sign(string.Compare(s1, s2, StringComparison.Ordinal));
         }
 
         public virtual void Load(string xmlFileName)
@@ -508,7 +508,7 @@ namespace System.ServiceModel.Syndication.Tests
             if (!this.TreatWhitespaceTextAsWSNode) return false;
             for (int i = 0; i < p.Length; i++)
             {
-                if (!Char.IsWhiteSpace(p[i])) return false;
+                if (!char.IsWhiteSpace(p[i])) return false;
             }
             return true;
         }
@@ -557,7 +557,7 @@ namespace System.ServiceModel.Syndication.Tests
 
         private void LoadTextNode(XmlDiffNode parent, string text, PositionInfo pInfo, XmlDiffNodeType nt)
         {
-            if (!this.IgnoreEmptyTextNodes || !String.IsNullOrEmpty(text))
+            if (!this.IgnoreEmptyTextNodes || !string.IsNullOrEmpty(text))
             {
                 XmlDiffCharacterData textNode = new XmlDiffCharacterData(text, nt, this.NormalizeNewline);
                 textNode.LineNumber = pInfo.LineNumber;
@@ -820,7 +820,7 @@ namespace System.ServiceModel.Syndication.Tests
                 }
             }
         }
-        public override String GetAttribute(String localName, String namespaceURI)
+        public override string GetAttribute(string localName, string namespaceURI)
         {
             if (_currentNode is XmlDiffElement)
             {
@@ -829,7 +829,7 @@ namespace System.ServiceModel.Syndication.Tests
             return "";
         }
 
-        public override String GetNamespace(String name)
+        public override string GetNamespace(string name)
         {
             Debug.Assert(false, "GetNamespace is NYI");
             return "";
@@ -862,7 +862,7 @@ namespace System.ServiceModel.Syndication.Tests
             return false;
         }
 
-        public override bool MoveToAttribute(String localName, String namespaceURI)
+        public override bool MoveToAttribute(string localName, string namespaceURI)
         {
             if (_currentNode is XmlDiffElement)
             {
@@ -953,12 +953,12 @@ namespace System.ServiceModel.Syndication.Tests
         {
             return this.MoveToFirstNamespace();
         }
-        public override bool MoveToId(String id)
+        public override bool MoveToId(string id)
         {
             Debug.Assert(false, "MoveToId is NYI");
             return false;
         }
-        public override bool MoveToNamespace(String name)
+        public override bool MoveToNamespace(string name)
         {
             Debug.Assert(false, "MoveToNamespace is NYI");
             return false;

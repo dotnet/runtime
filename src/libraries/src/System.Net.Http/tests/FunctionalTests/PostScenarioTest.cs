@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -13,7 +14,6 @@ namespace System.Net.Http.Functional.Tests
 
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
-    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
     public abstract class PostScenarioTest : HttpClientTestBase
     {
         private const string ExpectedContent = "Test contest";
@@ -40,7 +40,31 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [ActiveIssue(30057, TargetFrameworkMonikers.Uap)]
+        [OuterLoop("Uses external servers")]
+        [Theory, MemberData(nameof(EchoServers))]
+        public async Task PostRewindableStreamContentMultipleTimes_StreamContentFullySent(Uri serverUri)
+        {
+            const string requestBody = "ABC";
+
+            using (var client = new HttpClient())
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(requestBody)))
+            {
+                var content = new StreamContent(ms);
+
+                for (int i = 1; i <= 3; i++)
+                {
+                    HttpResponseMessage response = await client.PostAsync(serverUri, content);
+                    Assert.Equal(requestBody.Length, ms.Position); // Stream left at end after send.
+
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    _output.WriteLine(responseBody);
+                    Assert.True(TestHelper.JsonMessageContainsKeyValue(responseBody, "BodyContent", requestBody));
+                }
+            }
+        }
+
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostNoContentUsingContentLengthSemantics_Success(Uri serverUri)
         {
@@ -48,7 +72,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostEmptyContentUsingContentLengthSemantics_Success(Uri serverUri)
         {
@@ -56,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostEmptyContentUsingChunkedEncoding_Success(Uri serverUri)
         {
@@ -64,7 +88,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostEmptyContentUsingConflictingSemantics_Success(Uri serverUri)
         {
@@ -72,7 +96,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: true);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostUsingContentLengthSemantics_Success(Uri serverUri)
         {
@@ -80,7 +104,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostUsingChunkedEncoding_Success(Uri serverUri)
         {
@@ -88,7 +112,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostSyncBlockingContentUsingChunkedEncoding_Success(Uri serverUri)
         {
@@ -96,7 +120,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostRepeatedFlushContentUsingChunkedEncoding_Success(Uri serverUri)
         {
@@ -104,7 +128,7 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: true);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostUsingUsingConflictingSemantics_UsesChunkedSemantics(Uri serverUri)
         {
@@ -112,20 +136,21 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: true);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx behaves differently and will buffer content and use 'Content-Length' semantics")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT behaves differently and will use 'Content-Length' semantics")]
         public async Task PostUsingNoSpecifiedSemantics_UsesChunkedSemantics(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new StringContent(ExpectedContent),
                 useContentLengthUpload: false, useChunkedEncodingUpload: false);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Theory]
         [InlineData(5 * 1024)]
         [InlineData(63 * 1024)]
-        public async Task PostLongerContentLengths_UsesChunkedSemantics(int contentLength)
+        public async Task PostLargeContentUsingContentLengthSemantics_Success(int contentLength)
         {
             var rand = new Random(42);
             var sb = new StringBuilder(contentLength);
@@ -139,7 +164,8 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT based handler has PreAuthenticate always true")]
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostRewindableContentUsingAuth_NoPreAuthenticate_Success(Uri serverUri)
         {
@@ -148,7 +174,8 @@ namespace System.Net.Http.Functional.Tests
             await PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, false);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT based handler has PreAuthenticate always true")]
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostNonRewindableContentUsingAuth_NoPreAuthenticate_ThrowsHttpRequestException(Uri serverUri)
         {
@@ -158,7 +185,8 @@ namespace System.Net.Http.Functional.Tests
                 PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, preAuthenticate: false));
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT based handler has PreAuthenticate always true")]
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostNonRewindableContentUsingAuth_PreAuthenticate_Success(Uri serverUri)
         {
@@ -173,7 +201,7 @@ namespace System.Net.Http.Functional.Tests
             await PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, preAuthenticate: true);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostAsync_EmptyContent_ContentTypeHeaderNotSent(Uri serverUri)
         {

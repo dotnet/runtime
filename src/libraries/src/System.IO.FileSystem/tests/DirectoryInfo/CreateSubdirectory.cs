@@ -89,14 +89,38 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory + "/path").CreateSubdirectory("../../path2"));
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void SubdirectoryOverlappingName_ThrowsArgumentException()
+        {
+            // What we're looking for here is trying to create C:\FooBar under C:\Foo by passing "..\FooBar"
+            DirectoryInfo info = Directory.CreateDirectory(GetTestFilePath());
+
+            string overlappingName = ".." + Path.DirectorySeparatorChar + info.Name + "overlap";
+
+            Assert.Throws<ArgumentException>(() => info.CreateSubdirectory(overlappingName));
+
+            // Now try with an info with a trailing separator
+            info = new DirectoryInfo(info.FullName + Path.DirectorySeparatorChar);
+            Assert.Throws<ArgumentException>(() => info.CreateSubdirectory(overlappingName));
+        }
+
         [Theory,
             MemberData(nameof(ValidPathComponentNames))]
         public void ValidPathWithTrailingSlash(string component)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
 
-            string path = IOServices.AddTrailingSlashIfNeeded(component);
+            string path = component + Path.DirectorySeparatorChar;
             DirectoryInfo result = new DirectoryInfo(testDir.FullName).CreateSubdirectory(path);
+
+            Assert.Equal(Path.Combine(testDir.FullName, path), result.FullName);
+            Assert.True(Directory.Exists(result.FullName));
+
+            // Now try creating subdirectories when the directory info itself has a slash
+            testDir = Directory.CreateDirectory(GetTestFilePath() + Path.DirectorySeparatorChar);
+
+            result = new DirectoryInfo(testDir.FullName).CreateSubdirectory(path);
 
             Assert.Equal(Path.Combine(testDir.FullName, path), result.FullName);
             Assert.True(Directory.Exists(result.FullName));
@@ -114,6 +138,13 @@ namespace System.IO.Tests
             Assert.Equal(Path.Combine(testDir.FullName, path), result.FullName);
             Assert.True(Directory.Exists(result.FullName));
 
+            // Now try creating subdirectories when the directory info itself has a slash
+            testDir = Directory.CreateDirectory(GetTestFilePath() + Path.DirectorySeparatorChar);
+
+            result = new DirectoryInfo(testDir.FullName).CreateSubdirectory(path);
+
+            Assert.Equal(Path.Combine(testDir.FullName, path), result.FullName);
+            Assert.True(Directory.Exists(result.FullName));
         }
 
         [Fact]

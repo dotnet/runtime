@@ -625,7 +625,7 @@ namespace System.Net.WebSockets
                     MessageHeader header = _lastReceiveHeader;
                     if (header.PayloadLength == 0)
                     {
-                        if (_receiveBufferCount < (_isServer ? (MaxMessageHeaderLength - MaskLength) : MaxMessageHeaderLength))
+                        if (_receiveBufferCount < (_isServer ? MaxMessageHeaderLength : (MaxMessageHeaderLength - MaskLength)))
                         {
                             // Make sure we have the first two bytes, which includes the start of the payload length.
                             if (_receiveBufferCount < 2)

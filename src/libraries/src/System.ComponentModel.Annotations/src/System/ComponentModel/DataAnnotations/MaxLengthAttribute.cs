@@ -104,8 +104,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             if (Length == 0 || Length < -1)
             {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture,
-                    SR.MaxLengthAttribute_InvalidMaxLength));
+                throw new InvalidOperationException(SR.MaxLengthAttribute_InvalidMaxLength);
             }
         }
     }

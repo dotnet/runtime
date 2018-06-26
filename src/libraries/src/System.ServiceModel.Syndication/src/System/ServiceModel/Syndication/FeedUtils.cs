@@ -17,7 +17,7 @@ namespace System.ServiceModel.Syndication
             IXmlLineInfo lineInfo = reader as IXmlLineInfo;
             if (lineInfo != null && lineInfo.HasLineInfo())
             {
-                error = String.Format(CultureInfo.InvariantCulture, "{0} {1}", SR.Format(SR.ErrorInLine, lineInfo.LineNumber, lineInfo.LinePosition), SR.Format(error));
+                error = string.Format(CultureInfo.InvariantCulture, "{0} {1}", SR.Format(SR.ErrorInLine, lineInfo.LineNumber, lineInfo.LinePosition), SR.Format(error));
             }
             return error;
         }

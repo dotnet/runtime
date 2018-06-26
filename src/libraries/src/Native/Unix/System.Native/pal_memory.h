@@ -5,9 +5,6 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 
 /**
@@ -16,5 +13,3 @@ BEGIN_EXTERN_C
  * Returns a pointer to the memory.
  */
 DLLEXPORT void* SystemNative_MemSet(void *s, int c, uintptr_t n);
-
-END_EXTERN_C

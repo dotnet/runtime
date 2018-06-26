@@ -2,25 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Security.Permissions;
 
 namespace System.ComponentModel.Design
 {
     /// <summary>
-    /// Allows specification of the context keyword that will be specified for this class or member.  By default,
+    /// Allows specification of the context keyword that will be specified for this class or member. By default,
     /// the help keyword for a class is the Type's full name, and for a member it's the full name of the type that declared the property,
     /// plus the property name itself.
     ///
     /// For example, consider System.Windows.Forms.Button and it's Text property:
     ///
     /// The class keyword is "System.Windows.Forms.Button", but the Text property keyword is "System.Windows.Forms.Control.Text", because the Text
-    /// property is declared on the System.Windows.Forms.Control class rather than the Button class itself; the Button class inherits the property.  
+    /// property is declared on the System.Windows.Forms.Control class rather than the Button class itself; the Button class inherits the property. 
     /// By contrast, the DialogResult property is declared on the Button so its keyword would be "System.Windows.Forms.Button.DialogResult".
     ///
-    /// When the help system gets the keywords, it will first look at this attribute.  At the class level, it will return the string specified by the 
-    /// HelpContextAttribute.  Note this will not be used for members of the Type in question.  They will still reflect the declaring Type's actual
-    /// full name, plus the member name.  To override this, place the attribute on the member itself.
+    /// When the help system gets the keywords, it will first look at this attribute. At the class level, it will return the string specified by the 
+    /// HelpContextAttribute. Note this will not be used for members of the Type in question. They will still reflect the declaring Type's actual
+    /// full name, plus the member name. To override this, place the attribute on the member itself.
     ///
     /// Example:
     ///
@@ -28,10 +26,10 @@ namespace System.ComponentModel.Design
     /// public class MyComponent : Component {
     /// 
     /// 
-    ///     public string Property1 { get{return "";};
+    /// public string Property1 { get{return "";};
     ///
-    ///     [HelpKeywordAttribute("SomeNamespace.SomeOtherClass.Property2")]
-    ///     public string Property2 { get{return "";};
+    /// [HelpKeywordAttribute("SomeNamespace.SomeOtherClass.Property2")]
+    /// public string Property2 { get{return "";};
     ///
     /// }
     ///
@@ -47,7 +45,7 @@ namespace System.ComponentModel.Design
     public sealed class HelpKeywordAttribute : Attribute
     {
         /// <summary>
-        /// Default value for HelpKeywordAttribute, which is null.  
+        /// Default value for HelpKeywordAttribute, which is null. 
         /// </summary>
         public static readonly HelpKeywordAttribute Default = new HelpKeywordAttribute();
 
@@ -63,11 +61,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public HelpKeywordAttribute(string keyword)
         {
-            if (keyword == null)
-            {
-                throw new ArgumentNullException(nameof(keyword));
-            }
-            HelpKeyword = keyword;
+            HelpKeyword = keyword ?? throw new ArgumentNullException(nameof(keyword));
         }
 
         /// <summary>
@@ -79,6 +73,7 @@ namespace System.ComponentModel.Design
             {
                 throw new ArgumentNullException(nameof(t));
             }
+
             HelpKeyword = t.FullName;
         }
 
@@ -86,7 +81,6 @@ namespace System.ComponentModel.Design
         /// Retrieves the HelpKeyword this attribute supplies.
         /// </summary>
         public string HelpKeyword { get; }
-
 
         /// <summary>
         /// Two instances of a HelpKeywordAttribute are equal if they're HelpKeywords are equal.
@@ -107,18 +101,11 @@ namespace System.ComponentModel.Design
 
         /// <summary>
         /// </summary>
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
         /// <summary>
         /// Returns true if this Attribute's HelpKeyword is null.
         /// </summary>
-        public override bool IsDefaultAttribute()
-        {
-            return Equals(Default);
-        }
+        public override bool IsDefaultAttribute() => Equals(Default);
     }
 }
-

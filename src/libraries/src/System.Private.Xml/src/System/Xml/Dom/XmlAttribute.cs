@@ -65,25 +65,25 @@ namespace System.Xml
         }
 
         // Gets the name of the node.
-        public override String Name
+        public override string Name
         {
             get { return _name.Name; }
         }
 
         // Gets the name of the node without the namespace prefix.
-        public override String LocalName
+        public override string LocalName
         {
             get { return _name.LocalName; }
         }
 
         // Gets the namespace URI of this node.
-        public override String NamespaceURI
+        public override string NamespaceURI
         {
             get { return _name.NamespaceURI; }
         }
 
         // Gets or sets the namespace prefix of this node.
-        public override String Prefix
+        public override string Prefix
         {
             get { return _name.Prefix; }
             set { _name = _name.OwnerDocument.AddAttrXmlName(value, LocalName, NamespaceURI, SchemaInfo); }
@@ -105,7 +105,7 @@ namespace System.Xml
         }
 
         // Gets or sets the value of the node.
-        public override String Value
+        public override string Value
         {
             get { return InnerText; }
             set { InnerText = value; } //use InnerText which has perf optimization
@@ -119,7 +119,7 @@ namespace System.Xml
             }
         }
 
-        public override String InnerText
+        public override string InnerText
         {
             set
             {
@@ -355,13 +355,13 @@ namespace System.Xml
             }
         }
 
-        public override String BaseURI
+        public override string BaseURI
         {
             get
             {
                 if (OwnerElement != null)
                     return OwnerElement.BaseURI;
-                return String.Empty;
+                return string.Empty;
             }
         }
 
@@ -380,13 +380,13 @@ namespace System.Xml
             }
         }
 
-        internal override String XmlLang
+        internal override string XmlLang
         {
             get
             {
                 if (OwnerElement != null)
                     return OwnerElement.XmlLang;
-                return String.Empty;
+                return string.Empty;
             }
         }
         internal override XPathNodeType XPNodeType

@@ -12,8 +12,8 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> FirstDayOfWeek_TestData()
         {
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, DayOfWeek.Sunday };
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, DayOfWeek.Sunday };
-            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, DayOfWeek.Monday };
+            yield return new object[] { new CultureInfo("en-US", false).DateTimeFormat, DayOfWeek.Sunday };
+            yield return new object[] { new CultureInfo("fr-FR", false).DateTimeFormat, DayOfWeek.Monday };
         }
 
         [Theory]

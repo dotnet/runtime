@@ -91,15 +91,13 @@ namespace System.ComponentModel.DataAnnotations
         {
             if (minimum.CompareTo(maximum) > 0)
             {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture,
-                    SR.RangeAttribute_MinGreaterThanMax, maximum, minimum));
+                throw new InvalidOperationException(SR.Format(SR.RangeAttribute_MinGreaterThanMax, maximum, minimum));
             }
 
             Minimum = minimum;
             Maximum = maximum;
             Conversion = conversion;
         }
-
 
         /// <summary>
         ///     Returns true if the value falls between min and max, inclusive.
@@ -192,18 +190,14 @@ namespace System.ComponentModel.DataAnnotations
                     Type type = OperandType;
                     if (type == null)
                     {
-                        throw new InvalidOperationException(
-                            SR.RangeAttribute_Must_Set_Operand_Type);
+                        throw new InvalidOperationException(SR.RangeAttribute_Must_Set_Operand_Type);
                     }
                     Type comparableType = typeof(IComparable);
                     if (!comparableType.IsAssignableFrom(type))
                     {
-                        throw new InvalidOperationException(
-                            string.Format(
-                                CultureInfo.CurrentCulture,
-                                SR.RangeAttribute_ArbitraryTypeNotIComparable,
-                                type.FullName,
-                                comparableType.FullName));
+                        throw new InvalidOperationException(SR.Format(SR.RangeAttribute_ArbitraryTypeNotIComparable,
+                                                            type.FullName,
+                                                            comparableType.FullName));
                     }
 
                     TypeConverter converter = TypeDescriptor.GetConverter(type);
@@ -217,13 +211,13 @@ namespace System.ComponentModel.DataAnnotations
                     Func<object, object> conversion;
                     if (ConvertValueInInvariantCulture)
                     {
-                        conversion = value => value?.GetType() == type
+                        conversion = value => value.GetType() == type
                             ? value
                             : converter.ConvertFrom(null, CultureInfo.InvariantCulture, value);
                     }
                     else
                     {
-                        conversion = value => value?.GetType() == type ? value : converter.ConvertFrom(value);
+                        conversion = value => value.GetType() == type ? value : converter.ConvertFrom(value);
                     }
 
                     Initialize(min, max, conversion);

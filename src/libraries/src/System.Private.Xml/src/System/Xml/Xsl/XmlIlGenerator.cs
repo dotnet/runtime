@@ -124,13 +124,13 @@ namespace System.Xml.Xsl
 
             // Create metadata for the Execute function, which is the entry point to the query
             // public static void Execute(XmlQueryRuntime);
-            MethodInfo methExec = _module.DefineMethod("Execute", typeof(void), new Type[] { }, new string[] { }, XmlILMethodAttributes.NonUser);
+            MethodInfo methExec = _module.DefineMethod("Execute", typeof(void), Array.Empty<Type>(), Array.Empty<string>(), XmlILMethodAttributes.NonUser);
 
             // Create metadata for the root expression
             // public void Root()
             Debug.Assert(_qil.Root != null);
             XmlILMethodAttributes methAttrs = (_qil.Root.SourceLine == null) ? XmlILMethodAttributes.NonUser : XmlILMethodAttributes.None;
-            MethodInfo methRoot = _module.DefineMethod("Root", typeof(void), new Type[] { }, new string[] { }, methAttrs);
+            MethodInfo methRoot = _module.DefineMethod("Root", typeof(void), Array.Empty<Type>(), Array.Empty<string>(), methAttrs);
 
             // Declare all early bound function objects
             foreach (EarlyBoundInfo info in _qil.EarlyBoundTypes)
@@ -253,7 +253,7 @@ namespace System.Xml.Xsl
                 // public T GlobalValue()
                 typReturn = XmlILTypeHelper.GetStorageType(ndRef.XmlType);
                 methAttrs = ndRef.SourceLine == null ? XmlILMethodAttributes.NonUser : XmlILMethodAttributes.None;
-                methInfo = _module.DefineMethod(ndRef.DebugName.ToString(), typReturn, new Type[] { }, new string[] { }, methAttrs);
+                methInfo = _module.DefineMethod(ndRef.DebugName.ToString(), typReturn, Array.Empty<Type>(), Array.Empty<string>(), methAttrs);
 
                 // Annotate function with MethodBuilder
                 XmlILAnnotation.Write(ndRef).FunctionBinding = methInfo;

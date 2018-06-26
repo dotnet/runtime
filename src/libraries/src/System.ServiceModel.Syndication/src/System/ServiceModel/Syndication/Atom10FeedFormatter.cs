@@ -50,12 +50,12 @@ namespace System.ServiceModel.Syndication
         {
             if (feedTypeToCreate == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("feedTypeToCreate");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(feedTypeToCreate));
             }
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("feedTypeToCreate",
-                    SR.Format(SR.InvalidObjectTypePassed, "feedTypeToCreate", "SyndicationFeed"));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(nameof(feedTypeToCreate),
+                    SR.Format(SR.InvalidObjectTypePassed, nameof(feedTypeToCreate), "SyndicationFeed"));
             }
             _maxExtensionSize = int.MaxValue;
             _preserveAttributeExtensions = _preserveElementExtensions = true;
@@ -105,7 +105,7 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
             }
             return reader.IsStartElement(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
         }
@@ -121,7 +121,7 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
             }
             TraceFeedReadBegin();
             ReadFeed(reader);
@@ -133,7 +133,7 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
             }
             TraceFeedWriteBegin();
             WriteFeed(writer);
@@ -155,7 +155,7 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
             }
             TraceFeedWriteBegin();
             writer.WriteStartElement(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
@@ -548,11 +548,11 @@ namespace System.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("feed");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(feed));
             }
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
             }
             SyndicationItem item = CreateItem(feed);
             TraceItemReadBegin();
@@ -566,11 +566,11 @@ namespace System.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("feed");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(feed));
             }
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
             }
             NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
             while (reader.IsStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace))

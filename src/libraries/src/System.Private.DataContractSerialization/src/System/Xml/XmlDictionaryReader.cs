@@ -662,7 +662,7 @@ namespace System.Xml
             return XmlConverter.ToDecimal(ReadContentAsString());
         }
 
-        public override Single ReadContentAsFloat()
+        public override float ReadContentAsFloat()
         {
             return XmlConverter.ToSingle(ReadContentAsString());
         }
@@ -1068,48 +1068,48 @@ namespace System.Xml
         }
 
         // Int16
-        public virtual Int16[] ReadInt16Array(string localName, string namespaceUri)
+        public virtual short[] ReadInt16Array(string localName, string namespaceUri)
         {
             return Int16ArrayHelperWithString.Instance.ReadArray(this, localName, namespaceUri, Quotas.MaxArrayLength);
         }
 
-        public virtual Int16[] ReadInt16Array(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public virtual short[] ReadInt16Array(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
         {
             return Int16ArrayHelperWithDictionaryString.Instance.ReadArray(this, localName, namespaceUri, Quotas.MaxArrayLength);
         }
 
-        public virtual int ReadArray(string localName, string namespaceUri, Int16[] array, int offset, int count)
+        public virtual int ReadArray(string localName, string namespaceUri, short[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             int actual = 0;
             while (actual < count && IsStartElement(localName, namespaceUri))
             {
                 int i = ReadElementContentAsInt();
-                if (i < Int16.MinValue || i > Int16.MaxValue)
+                if (i < short.MinValue || i > short.MaxValue)
                     XmlExceptionHelper.ThrowConversionOverflow(this, i.ToString(NumberFormatInfo.CurrentInfo), "Int16");
-                array[offset + actual] = (Int16)i;
+                array[offset + actual] = (short)i;
                 actual++;
             }
             return actual;
         }
 
-        public virtual int ReadArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int16[] array, int offset, int count)
+        public virtual int ReadArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, short[] array, int offset, int count)
         {
             return ReadArray(XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // Int32
-        public virtual Int32[] ReadInt32Array(string localName, string namespaceUri)
+        public virtual int[] ReadInt32Array(string localName, string namespaceUri)
         {
             return Int32ArrayHelperWithString.Instance.ReadArray(this, localName, namespaceUri, Quotas.MaxArrayLength);
         }
 
-        public virtual Int32[] ReadInt32Array(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public virtual int[] ReadInt32Array(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
         {
             return Int32ArrayHelperWithDictionaryString.Instance.ReadArray(this, localName, namespaceUri, Quotas.MaxArrayLength);
         }
 
-        public virtual int ReadArray(string localName, string namespaceUri, Int32[] array, int offset, int count)
+        public virtual int ReadArray(string localName, string namespaceUri, int[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             int actual = 0;
@@ -1121,23 +1121,23 @@ namespace System.Xml
             return actual;
         }
 
-        public virtual int ReadArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int32[] array, int offset, int count)
+        public virtual int ReadArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, int[] array, int offset, int count)
         {
             return ReadArray(XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
         // Int64
-        public virtual Int64[] ReadInt64Array(string localName, string namespaceUri)
+        public virtual long[] ReadInt64Array(string localName, string namespaceUri)
         {
             return Int64ArrayHelperWithString.Instance.ReadArray(this, localName, namespaceUri, Quotas.MaxArrayLength);
         }
 
-        public virtual Int64[] ReadInt64Array(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public virtual long[] ReadInt64Array(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
         {
             return Int64ArrayHelperWithDictionaryString.Instance.ReadArray(this, localName, namespaceUri, Quotas.MaxArrayLength);
         }
 
-        public virtual int ReadArray(string localName, string namespaceUri, Int64[] array, int offset, int count)
+        public virtual int ReadArray(string localName, string namespaceUri, long[] array, int offset, int count)
         {
             CheckArray(array, offset, count);
             int actual = 0;
@@ -1149,7 +1149,7 @@ namespace System.Xml
             return actual;
         }
 
-        public virtual int ReadArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, Int64[] array, int offset, int count)
+        public virtual int ReadArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, long[] array, int offset, int count)
         {
             return ReadArray(XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
@@ -1644,7 +1644,7 @@ namespace System.Xml
                 }
             }
 
-            public override Boolean ReadContentAsBoolean()
+            public override bool ReadContentAsBoolean()
             {
                 try
                 {
@@ -1665,11 +1665,11 @@ namespace System.Xml
                 return _reader.ReadContentAsDateTime();
             }
 
-            public override Decimal ReadContentAsDecimal()
+            public override decimal ReadContentAsDecimal()
             {
                 try
                 {
-                    return (Decimal)_reader.ReadContentAs(typeof(Decimal), null);
+                    return (decimal)_reader.ReadContentAs(typeof(decimal), null);
                 }
                 catch (ArgumentException exception)
                 {
@@ -1685,7 +1685,7 @@ namespace System.Xml
                 }
             }
 
-            public override Double ReadContentAsDouble()
+            public override double ReadContentAsDouble()
             {
                 try
                 {
@@ -1705,7 +1705,7 @@ namespace System.Xml
                 }
             }
 
-            public override Int32 ReadContentAsInt()
+            public override int ReadContentAsInt()
             {
                 try
                 {
@@ -1725,7 +1725,7 @@ namespace System.Xml
                 }
             }
 
-            public override Int64 ReadContentAsLong()
+            public override long ReadContentAsLong()
             {
                 try
                 {
@@ -1745,7 +1745,7 @@ namespace System.Xml
                 }
             }
 
-            public override Single ReadContentAsFloat()
+            public override float ReadContentAsFloat()
             {
                 try
                 {

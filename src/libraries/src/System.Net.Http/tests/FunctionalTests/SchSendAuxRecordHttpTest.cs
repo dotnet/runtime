@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "HttpsTestServer not compatible on UAP")]
     public abstract class SchSendAuxRecordHttpTest : HttpClientTestBase
     {
         readonly ITestOutputHelper _output;
@@ -21,7 +21,6 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task HttpClient_ClientUsesAuxRecord_Ok()

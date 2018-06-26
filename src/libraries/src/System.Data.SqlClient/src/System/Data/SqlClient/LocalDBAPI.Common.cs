@@ -53,7 +53,7 @@ namespace System.Data
         private static readonly object s_dllLock = new object();
 
 
-        private const UInt32 const_LOCALDB_TRUNCATE_ERR_MESSAGE = 1;// flag for LocalDBFormatMessage that indicates that message can be truncated if it does not fit in the buffer
+        private const uint const_LOCALDB_TRUNCATE_ERR_MESSAGE = 1;// flag for LocalDBFormatMessage that indicates that message can be truncated if it does not fit in the buffer
         private const int const_ErrorMessageBufferSize = 1024;      // Buffer size for Local DB error message 1K will be enough for all messages
 
 
@@ -63,7 +63,7 @@ namespace System.Data
             try
             {
                 StringBuilder buffer = new StringBuilder((int)const_ErrorMessageBufferSize);
-                UInt32 len = (UInt32)buffer.Capacity;
+                uint len = (uint)buffer.Capacity;
 
 
                 // First try for current culture                
@@ -75,7 +75,7 @@ namespace System.Data
                 {
                     // Message is not available for current culture, try default 
                     buffer = new StringBuilder((int)const_ErrorMessageBufferSize);
-                    len = (UInt32)buffer.Capacity;
+                    len = (uint)buffer.Capacity;
                     hResult = LocalDBFormatMessage(hrLocalDB: hrCode, dwFlags: const_LOCALDB_TRUNCATE_ERR_MESSAGE, dwLanguageId: 0 /* thread locale with fallback to English */,
                                                  buffer: buffer, buflen: ref len);
                     if (hResult >= 0)
@@ -102,7 +102,7 @@ namespace System.Data
             if (sniError != 0)
             {
                 string sniErrorMessage = SQL.GetSNIErrorMessage(sniError);
-                errorMessage = String.Format((IFormatProvider)null, "{0} (error: {1} - {2})",
+                errorMessage = string.Format((IFormatProvider)null, "{0} (error: {1} - {2})",
                          errorMessage, sniError, sniErrorMessage);
             }
 

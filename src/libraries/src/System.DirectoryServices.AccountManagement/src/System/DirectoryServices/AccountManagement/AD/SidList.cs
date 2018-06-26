@@ -15,11 +15,11 @@ namespace System.DirectoryServices.AccountManagement
 {
     internal class SidList
     {
-        internal SidList(List<Byte[]> sidListByteFormat) : this(sidListByteFormat, null, null)
+        internal SidList(List<byte[]> sidListByteFormat) : this(sidListByteFormat, null, null)
         {
         }
 
-        internal SidList(List<Byte[]> sidListByteFormat, string target, NetCred credentials)
+        internal SidList(List<byte[]> sidListByteFormat, string target, NetCred credentials)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SidList", "SidList: processing {0} ByteFormat SIDs", sidListByteFormat.Count);
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SidList", "SidList: Targetting {0} ", (target != null) ? target : "local store");
@@ -150,7 +150,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: couldn't get policy handle, err={0}", err);
 
-                    throw new PrincipalOperationException(String.Format(CultureInfo.CurrentCulture,
+                    throw new PrincipalOperationException(string.Format(CultureInfo.CurrentCulture,
                                                                SR.AuthZErrorEnumeratingGroups,
                                                                SafeNativeMethods.LsaNtStatusToWinError(err)));
                 }
@@ -176,7 +176,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: LsaLookupSids failed, err={0}", err);
 
-                    throw new PrincipalOperationException(String.Format(CultureInfo.CurrentCulture,
+                    throw new PrincipalOperationException(string.Format(CultureInfo.CurrentCulture,
                                                                SR.AuthZErrorEnumeratingGroups,
                                                                SafeNativeMethods.LsaNtStatusToWinError(err)));
                 }

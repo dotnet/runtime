@@ -139,7 +139,7 @@ namespace System.Security
                 {
                     throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexString);
                 }
-                Debug.Assert(index <= Int32.MaxValue / sizeof(char));
+                Debug.Assert(index <= int.MaxValue / sizeof(char));
 
                 EnsureNotDisposed();
                 EnsureNotReadOnly();

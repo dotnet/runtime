@@ -380,9 +380,10 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ActiveIssue(30150)]
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_StreamToStream_KerberosAuthDefaultCredentialsNoSeed_Failure()
+        public async Task NegotiateStream_StreamToStream_KerberosAuthDefaultCredentialsNoSeed_Failure()
         {
             if (!_isKrbAvailable)
             {
@@ -399,13 +400,14 @@ namespace System.Net.Security.Tests
 
                 string user = string.Format("{0}@{1}", TestConfiguration.KerberosUser, TestConfiguration.Realm);
                 string target = string.Format("{0}@{1}", TestConfiguration.HostTarget, TestConfiguration.Realm);
-                Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, target));
+                await Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, target));
             }
         }
 
+        [ActiveIssue(30150)]
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_StreamToStream_KerberosAuthInvalidUser_Failure()
+        public async Task NegotiateStream_StreamToStream_KerberosAuthInvalidUser_Failure()
         {
             if (!_isKrbAvailable)
             {
@@ -425,14 +427,15 @@ namespace System.Net.Security.Tests
                 string user = string.Format("{0}@{1}", TestConfiguration.KerberosUser, TestConfiguration.Realm);
                 string target = string.Format("{0}@{1}", TestConfiguration.HostTarget, TestConfiguration.Realm);
                 NetworkCredential credential = new NetworkCredential(user.Substring(1), _fixture.password);
-                Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(credential, target));
-                Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync());
+                await Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(credential, target));
+                await Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync());
             }
         }
 
+        [ActiveIssue(30150)]
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_StreamToStream_KerberosAuthInvalidPassword_Failure()
+        public async Task NegotiateStream_StreamToStream_KerberosAuthInvalidPassword_Failure()
         {
             if (!_isKrbAvailable)
             {
@@ -453,14 +456,15 @@ namespace System.Net.Security.Tests
                 string target = string.Format("{0}@{1}", TestConfiguration.HostTarget, TestConfiguration.Realm);
                 NetworkCredential credential = new NetworkCredential(user, _fixture.password.Substring(1));
                 Task serverAuth = server.AuthenticateAsServerAsync();
-                Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(credential, target));
-                Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync());
+                await Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(credential, target));
+                await Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync());
             }
         }
 
+        [ActiveIssue(30150)]
         [Fact, OuterLoop]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_StreamToStream_KerberosAuthInvalidTarget_Failure()
+        public async Task NegotiateStream_StreamToStream_KerberosAuthInvalidTarget_Failure()
         {
             if (!_isKrbAvailable)
             {
@@ -478,7 +482,7 @@ namespace System.Net.Security.Tests
                 string user = string.Format("{0}@{1}", TestConfiguration.KerberosUser, TestConfiguration.Realm);
                 string target = string.Format("{0}@{1}", TestConfiguration.HostTarget, TestConfiguration.Realm);
                 NetworkCredential credential = new NetworkCredential(user, _fixture.password);
-                Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(credential, target.Substring(1)));
+                await Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(credential, target.Substring(1)));
             }
         }
 
@@ -746,7 +750,7 @@ namespace System.Net.Security.Tests
         [Theory, OuterLoop]
         [MemberData(nameof(InvalidNtlmCredentials))]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void NegotiateStream_StreamToStream_NtlmAuthentication_NtlmUser_InvalidCredentials_Fail(NetworkCredential credential)
+        public async Task NegotiateStream_StreamToStream_NtlmAuthentication_NtlmUser_InvalidCredentials_Fail(NetworkCredential credential)
         {
             if (!_isNtlmAvailable)
             {
@@ -761,8 +765,8 @@ namespace System.Net.Security.Tests
             using (var server = new UnixGssFakeNegotiateStream(serverStream))
             {
                 Assert.False(client.IsAuthenticated, "client.IsAuthenticated");
-                Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync());
-                Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(credential, _testTarget, ProtectionLevel.None, TokenImpersonationLevel.Identification));
+                await Assert.ThrowsAsync<AuthenticationException>(() => server.AuthenticateAsServerAsync());
+                await Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(credential, _testTarget, ProtectionLevel.None, TokenImpersonationLevel.Identification));
             }
         }
 

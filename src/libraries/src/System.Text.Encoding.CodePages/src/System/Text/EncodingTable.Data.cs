@@ -754,7 +754,7 @@ namespace System.Text
         // names listed in s_encodingNames. The way mapping works is we binary search
         // s_encodingNames using s_encodingNamesIndices until we find a match for a given name.
         // The index of the entry in s_encodingNamesIndices will be the index of codepage in s_codePagesByName.
-        private static readonly UInt16[] s_codePagesByName = new UInt16[]
+        private static readonly ushort[] s_codePagesByName = new ushort[]
         {
             437, // 437
             28596, // arabic
@@ -1127,7 +1127,7 @@ namespace System.Text
         // given codepage. This is used to index WebNameIndices to get the start
         // index of the web name in the string WebNames, and to index
         // s_englishNameIndices to get the start of the English name in s_englishNames.
-        private static readonly UInt16[] s_mappedCodePages = new UInt16[]
+        private static readonly ushort[] s_mappedCodePages = new ushort[]
         {
             37, // ibm037
             437, // ibm437

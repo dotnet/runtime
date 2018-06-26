@@ -37,7 +37,15 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public SignerInfo this[int index] => _signerInfos[index];
+        public SignerInfo this[int index]
+        {
+            get
+            {
+                if (index < 0 || index >= _signerInfos.Length)
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                return _signerInfos[index];
+            }
+        }
 
         public int Count => _signerInfos.Length;
 

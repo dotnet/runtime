@@ -15,7 +15,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// We will never generate this Id, so this value can be used as an invalid, uninitialised or a <em>no-Id</em> value.
         /// </summary>
-        internal const UInt32 InvalidId = Int32.MaxValue;
+        internal const uint InvalidId = int.MaxValue;
 
 
         /// <summary>
@@ -30,12 +30,12 @@ namespace System.Threading.Tasks
         /// The returned value will never be equal to <code>AsyncInfoIdGenerator.InvalidId</code>.
         /// </summary>
         /// <returns>A new unique IAsyncInfo Id.</returns>
-        internal static UInt32 CreateNext()
+        internal static uint CreateNext()
         {
             lock (s_idGenerator)
             {
-                Int32 newId = s_idGenerator.Next(1, (Int32)InvalidId);  // Valid IDs will be larger than zero and smaller than InvalidId
-                return unchecked((UInt32)newId);
+                int newId = s_idGenerator.Next(1, (int)InvalidId);  // Valid IDs will be larger than zero and smaller than InvalidId
+                return unchecked((uint)newId);
             }
         }
 
@@ -48,12 +48,12 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="id">The IAsyncInfo ID to initialise.</param>
         /// <returns>The unique value to which the specified reference target was initialised.</returns>
-        internal static UInt32 EnsureInitializedThreadsafe(ref UInt32 id)
+        internal static uint EnsureInitializedThreadsafe(ref uint id)
         {
             if (id != InvalidId)
                 return id;
 
-            UInt32 newId = CreateNext();
+            uint newId = CreateNext();
 
             // There is no overload of Interlocked.CompareExchange that accepts an UInt32.
             // We apply some pointer tricks to pass the arguments to the overload that takes an Int32.
@@ -64,9 +64,9 @@ namespace System.Threading.Tasks
 
             unsafe
             {
-                fixed (UInt32* idPtr = &id)
+                fixed (uint* idPtr = &id)
                 {
-                    UInt32 asyncIdVal = unchecked((UInt32)Interlocked.CompareExchange(ref *(Int32*)idPtr, (Int32)newId, (Int32)InvalidId));
+                    uint asyncIdVal = unchecked((uint)Interlocked.CompareExchange(ref *(int*)idPtr, (int)newId, (int)InvalidId));
                     if (asyncIdVal == InvalidId)
                         return newId;
 

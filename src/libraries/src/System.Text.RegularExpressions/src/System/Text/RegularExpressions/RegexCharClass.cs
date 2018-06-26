@@ -685,25 +685,34 @@ namespace System.Text.RegularExpressions
 
         public static string ConvertOldStringsToClass(string set, string category)
         {
-            StringBuilder sb = StringBuilderCache.Acquire(set.Length + category.Length + 3);
+            bool startsWithNulls = set.Length >= 2 && set[0] == '\0' && set[1] == '\0';
+            int strLength = set.Length + category.Length + 3;
+            if (startsWithNulls)
+                strLength -= 2;
 
-            if (set.Length >= 2 && set[0] == '\0' && set[1] == '\0')
+            return string.Create(strLength, (set, category, startsWithNulls), (span, state) =>
             {
-                sb.Append((char)0x1);
-                sb.Append((char)(set.Length - 2));
-                sb.Append((char)category.Length);
-                sb.Append(set.Substring(2));
-            }
-            else
-            {
-                sb.Append((char)0x0);
-                sb.Append((char)set.Length);
-                sb.Append((char)category.Length);
-                sb.Append(set);
-            }
-            sb.Append(category);
+                int index;
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+                if (state.startsWithNulls)
+                {
+                    span[0] = (char)0x1;
+                    span[1] = (char)(state.set.Length - 2);
+                    span[2] = (char)state.category.Length;
+                    state.set.AsSpan(2).CopyTo(span.Slice(3));
+                    index = 3 + state.set.Length - 2;
+                }
+                else
+                {
+                    span[0] = (char)0x0;
+                    span[1] = (char)state.set.Length;
+                    span[2] = (char)state.category.Length;
+                    state.set.AsSpan().CopyTo(span.Slice(3));
+                    index = 3 + state.set.Length;
+                }
+
+                state.category.AsSpan().CopyTo(span.Slice(index));
+            });
         }
 
         /// <summary>
@@ -957,14 +966,14 @@ namespace System.Text.RegularExpressions
             if (category == null)
                 return null;
 
-            StringBuilder sb = StringBuilderCache.Acquire(category.Length);
-
-            for (int i = 0; i < category.Length; i++)
+            return string.Create(category.Length, category, (span, _category) =>
             {
-                short ch = (short)category[i];
-                sb.Append(unchecked((char)-ch));
-            }
-            return StringBuilderCache.GetStringAndRelease(sb);
+                for (int i = 0; i < _category.Length; i++)
+                {
+                    short ch = (short)_category[i];
+                    span[i] = unchecked((char)-ch);
+                }
+            });
         }
 
         public static RegexCharClass Parse(string charClass)
@@ -1022,35 +1031,40 @@ namespace System.Text.RegularExpressions
             // This is important because if the last range ends in LastChar, we won't append
             // LastChar to the list.
             int rangeLen = _rangelist.Count * 2;
-            StringBuilder sb = StringBuilderCache.Acquire(rangeLen + _categories.Length + 3);
+            int strGuessCount = rangeLen + _categories.Length + 3;
 
-            int flags;
-            if (_negate)
-                flags = 1;
-            else
-                flags = 0;
+            Span<char> buffer = strGuessCount <= 256 ? stackalloc char[256] : null;
+            ValueStringBuilder vsb = buffer != null ?
+                new ValueStringBuilder(buffer) :
+                new ValueStringBuilder(strGuessCount);
 
-            sb.Append((char)flags);
-            sb.Append((char)rangeLen);
-            sb.Append((char)_categories.Length);
+            int flags = _negate ? 1 : 0;
+
+            vsb.Append((char)flags);
+            vsb.Append((char)rangeLen);
+            vsb.Append((char)_categories.Length);
 
             for (int i = 0; i < _rangelist.Count; i++)
             {
                 SingleRange currentRange = _rangelist[i];
-                sb.Append(currentRange.First);
+                vsb.Append(currentRange.First);
 
                 if (currentRange.Last != LastChar)
-                    sb.Append((char)(currentRange.Last + 1));
+                    vsb.Append((char)(currentRange.Last + 1));
             }
 
-            sb[SETLENGTH] = (char)(sb.Length - SETSTART);
+            vsb[SETLENGTH] = (char)(vsb.Length - SETSTART);
 
-            sb.Append(_categories);
+            // Append the categories string
+            foreach (ReadOnlyMemory<char> chunk in _categories.GetChunks())
+            {
+                vsb.Append(chunk.Span);
+            }
 
             if (_subtractor != null)
-                sb.Append(_subtractor.ToStringClass());
+                vsb.Append(_subtractor.ToStringClass());
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return vsb.ToString();
         }
 
         /// <summary>

@@ -359,7 +359,7 @@ namespace System.Runtime.Serialization
         internal static string TryAddLineInfo(XmlReaderDelegator reader, string errorMessage)
         {
             if (reader.HasLineInfo())
-                return String.Format(CultureInfo.InvariantCulture, "{0} {1}", SR.Format(SR.ErrorInLine, reader.LineNumber, reader.LinePosition), errorMessage);
+                return string.Format(CultureInfo.InvariantCulture, "{0} {1}", SR.Format(SR.ErrorInLine, reader.LineNumber, reader.LinePosition), errorMessage);
             return errorMessage;
         }
 

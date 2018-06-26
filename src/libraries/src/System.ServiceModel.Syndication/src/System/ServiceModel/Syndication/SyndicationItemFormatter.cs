@@ -29,7 +29,7 @@ namespace System.ServiceModel.Syndication
         {
             if (itemToWrite == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("itemToWrite");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(itemToWrite));
             }
             _item = itemToWrite;
         }
@@ -42,7 +42,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public abstract String Version
+        public abstract string Version
         { get; }
 
         public abstract bool CanRead(XmlReader reader);
@@ -51,7 +51,7 @@ namespace System.ServiceModel.Syndication
 
         public override string ToString()
         {
-            return String.Format(CultureInfo.CurrentCulture, "{0}, SyndicationVersion={1}", this.GetType(), this.Version);
+            return string.Format(CultureInfo.CurrentCulture, "{0}, SyndicationVersion={1}", this.GetType(), this.Version);
         }
 
         public abstract void WriteTo(XmlWriter writer);
@@ -60,7 +60,7 @@ namespace System.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(item));
             }
             _item = item;
         }

@@ -25,9 +25,9 @@ namespace System.Diagnostics
 
         private static ConcurrentDictionary<(string machineName, string lcidString), PerformanceCounterLib> s_libraryTable;
         private Dictionary<int, string> _nameTable;
-        private readonly object _nameTableLock = new Object();
+        private readonly object _nameTableLock = new object();
 
-        private static Object s_internalSyncObject;
+        private static object s_internalSyncObject;
 
         internal PerformanceCounterLib(string machineName, string lcid)
         {

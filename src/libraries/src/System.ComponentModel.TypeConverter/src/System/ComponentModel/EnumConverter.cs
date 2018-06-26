@@ -10,57 +10,29 @@ using System.Reflection;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// <para>Provides a type converter to convert <see cref='System.Enum'/>
-    /// objects to and from various
-    /// other representations.</para>
+    /// Provides a type converter to convert <see cref='System.Enum'/> objects to and
+    /// from various other representations
     /// </summary>
     public class EnumConverter : TypeConverter
     {
         private static readonly char[] s_separators = {','};
-        /// <summary>
-        ///    <para>
-        ///       Provides a <see cref='System.ComponentModel.TypeConverter.StandardValuesCollection'/> that specifies the
-        ///       possible values for the enumeration.
-        ///    </para>
-        /// </summary>
-        private StandardValuesCollection _values;
 
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.EnumConverter'/> class for the given
-        ///       type.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.EnumConverter'/> class for the given
+        /// type.
         /// </summary>
         public EnumConverter(Type type)
         {
             EnumType = type;
         }
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         protected Type EnumType { get; }
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
-        protected StandardValuesCollection Values
-        {
-            get
-            {
-                return _values;
-            }
-            set
-            {
-                _values = value;
-            }
-        }
+        protected StandardValuesCollection Values { get; set; }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Gets a value indicating whether this converter
-        ///       can convert an object in the given source type to an enumeration object using
-        ///       the specified context.</para>
+        /// Gets a value indicating whether this converter can convert an object in the given
+        /// source type to an enumeration object using the specified context.
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
@@ -72,8 +44,8 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Gets a value indicating whether this converter can
-        ///       convert an object to the given destination type using the context.</para>
+        /// Gets a value indicating whether this converter can convert an object to the
+        /// given destination type using the context.
         /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
@@ -85,21 +57,17 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     <para>
-        ///         Gets an <see cref='System.Collections.IComparer'/> interface that can
-        ///         be used to sort the values of the enumerator.
-        ///     </para>
+        /// Gets an <see cref='System.Collections.IComparer'/> interface that can
+        /// be used to sort the values of the enumerator.
         /// </summary>
         protected virtual IComparer Comparer => InvariantComparer.Default;
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Converts the specified value object to an enumeration object.</para>
+        /// Converts the specified value object to an enumeration object.
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            string strValue = value as string;
-            if (strValue != null)
+            if (value is string strValue)
             {
                 try
                 {
@@ -135,11 +103,8 @@ namespace System.ComponentModel
             return base.ConvertFrom(context, culture, value);
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Converts the given
-        ///       value object to the
-        ///       specified destination type.</para>
+        /// Converts the given value object to the specified destination type.
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
@@ -152,7 +117,6 @@ namespace System.ComponentModel
             {
                 // Raise an argument exception if the value isn't defined and if
                 // the enum isn't a flags style.
-                //
                 if (!EnumType.IsDefined(typeof(FlagsAttribute), false) && !Enum.IsDefined(EnumType, value))
                 {
                     throw new ArgumentException(SR.Format(SR.EnumConverterInvalidValue, value.ToString(), EnumType.Name));
@@ -212,19 +176,17 @@ namespace System.ComponentModel
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Gets a collection of standard values for the data type this validator is
-        ///       designed for.</para>
+        /// Gets a collection of standard values for the data type this validator is
+        /// designed for.
         /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
-            if (_values == null)
+            if (Values == null)
             {
                 // We need to get the enum values in this rather round-about way so we can filter
                 // out fields marked Browsable(false). Note that if multiple fields have the same value,
                 // the behavior is undefined, since what we return are just enum values, not names.
-
                 Type reflectType = TypeDescriptor.GetReflectionType(EnumType) ?? EnumType;
 
                 FieldInfo[] fields = reflectType.GetFields(BindingFlags.Public | BindingFlags.Static);
@@ -276,41 +238,30 @@ namespace System.ComponentModel
                 }
 
                 Array arr = objValues?.ToArray();
-                _values = new StandardValuesCollection(arr);
+                Values = new StandardValuesCollection(arr);
             }
-            return _values;
+            return Values;
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Gets a value indicating whether the list of standard values returned from
-        ///    <see cref='System.ComponentModel.TypeConverter.GetStandardValues'/> 
-        ///    is an exclusive list using the specified context.</para>
+        /// Gets a value indicating whether the list of standard values returned from
+        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues'/> 
+        /// is an exclusive list using the specified context.
         /// </summary>
         public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
         {
             return !EnumType.IsDefined(typeof(FlagsAttribute), false);
         }
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Gets a value indicating
-        ///       whether this object
-        ///       supports a standard set of values that can be picked
-        ///       from a list using the specified context.</para>
+        /// Gets a value indicating whether this object supports a standard set of values
+        /// that can be picked from a list using the specified context.
         /// </summary>
-        public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
-        {
-            return true;
-        }
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext context) => true;
 
-        /// <internalonly/>
         /// <summary>
-        ///    <para>Gets a value indicating whether the given object value is valid for this type.</para>
+        /// Gets a value indicating whether the given object value is valid for this type.
         /// </summary>
-        public override bool IsValid(ITypeDescriptorContext context, object value)
-        {
-            return Enum.IsDefined(EnumType, value);
-        }
+        public override bool IsValid(ITypeDescriptorContext context, object value) => Enum.IsDefined(EnumType, value);
     }
 }

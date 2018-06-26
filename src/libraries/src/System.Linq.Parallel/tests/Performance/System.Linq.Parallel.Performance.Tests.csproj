@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <IncludePerformanceTests>true</IncludePerformanceTests>
+    <ProjectGuid>{11ABE2F8-4FB9-48AC-91AA-D04503059550}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <!-- Default configurations to help VS understand the configurations -->
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\Helpers\DeliberateTestException.cs">
+      <Link>Helpers\DeliberateTestException.cs</Link>
+    </Compile>
+    <Compile Include="..\Helpers\Enumerables.cs">
+      <Link>Helpers\Enumerables.cs</Link>
+    </Compile>
+    <Compile Include="..\Helpers\KeyValuePair.cs">
+      <Link>Helpers\KeyValuePair.cs</Link>
+    </Compile>
+    <Compile Include="..\Helpers\Labeled.cs">
+      <Link>Helpers\Labeled.cs</Link>
+    </Compile>
+    <Compile Include="..\Helpers\Sources.cs">
+      <Link>Helpers\Sources.cs</Link>
+    </Compile>
+    <Compile Include="..\Helpers\UnorderedSources.cs">
+      <Link>Helpers\UnorderedSources.cs</Link>
+    </Compile>
+    <Compile Include="QueryOperators\Perf.GroupBy.cs" />
+    <Compile Include="QueryOperators\Perf.GroupJoin.cs" />
+    <Compile Include="QueryOperators\Perf.Join.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

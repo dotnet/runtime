@@ -97,7 +97,7 @@ namespace Microsoft.Test.ModuleCore
         public static void Write(string text, params object[] args)
         {
             //Delegate
-            Write(TestLogFlags.Text, String.Format(text, args));
+            Write(TestLogFlags.Text, string.Format(text, args));
         }
 
         public static void WriteLine(string text)
@@ -108,7 +108,7 @@ namespace Microsoft.Test.ModuleCore
         public static void WriteLine(string text, params object[] args)
         {
             //Delegate
-            WriteLine(String.Format(text, args));
+            WriteLine(string.Format(text, args));
         }
 
         public static void Write(char[] value)
@@ -157,12 +157,12 @@ namespace Microsoft.Test.ModuleCore
                 Console.WriteLine(text);
         }
 
-        public static void Trace(String value)
+        public static void Trace(string value)
         {
             Trace(TraceLevel.Default, value);
         }
 
-        public static void TraceLine(String value)
+        public static void TraceLine(string value)
         {
             TraceLine(TraceLevel.Default, value);
         }
@@ -172,13 +172,13 @@ namespace Microsoft.Test.ModuleCore
             TraceLine(TraceLevel.Default, null);
         }
 
-        public static void Trace(TraceLevel level, String value)
+        public static void Trace(TraceLevel level, string value)
         {
             if (WillTrace(level))
                 Write(TestLogFlags.Trace | TestLogFlags.Ignore, value);
         }
 
-        public static void TraceLine(TraceLevel level, String value)
+        public static void TraceLine(TraceLevel level, string value)
         {
             if (WillTrace(level))
                 Write(TestLogFlags.Trace | TestLogFlags.Ignore, value + TestLog.NewLine);
@@ -286,7 +286,7 @@ namespace Microsoft.Test.ModuleCore
             return expected.Equals(actual);
         }
 
-        public static void Error(TestResult result, object actual, object expected, string source, string message, string stack, String filename, int lineno)
+        public static void Error(TestResult result, object actual, object expected, string source, string message, string stack, string filename, int lineno)
         {
             //Log the error
             if (Internal != null)
@@ -328,18 +328,18 @@ namespace Microsoft.Test.ModuleCore
 
             while (inner != null)
             {
-                String source = inner.Source;
+                string source = inner.Source;
 
                 //Message
-                String message = inner.Message;
+                string message = inner.Message;
                 if (inner != e)
                     message = "Inner Exception -> " + message;
 
                 //Expected / Actual
-                Object actual = inner.GetType();
-                Object expected = null;
-                String details = inner.StackTrace;
-                String filename = null;
+                object actual = inner.GetType();
+                object expected = null;
+                string details = inner.StackTrace;
+                string filename = null;
                 int line = 0;
                 if (inner is TestException)
                 {
@@ -368,7 +368,7 @@ namespace Microsoft.Test.ModuleCore
             return result;
         }
 
-        private static String FixupXml(String value)
+        private static string FixupXml(string value)
         {
             bool escapeXmlStuff = false;
             if (value == null) return null;

@@ -3,15 +3,22 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{7E0E1B11-FF70-461E-99F7-C0AF252C0C60}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_ETLEVENTS</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_EVENTCOUNTER_DISPOSE</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp' And '$(TargetsWindows)' == 'true'">$(DefineConstants);USE_ETW</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <!--Windows only files -->
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' And '$(TargetsWindows)' == 'true'">
+    <Compile Include="BasicEventSourceTest\Harness\EtwListener.cs" />
+    <Compile Include="BasicEventSourceTest\TestEventCounter.Etw.cs" />
+    <Compile Include="BasicEventSourceTest\TestsWrite.Etw.cs" />
+    <Compile Include="BasicEventSourceTest\TestsUserErrors.Etw.cs" />
+    <Compile Include="BasicEventSourceTest\TestsWriteEvent.Etw.cs" />
+    <Compile Include="BasicEventSourceTest\FuzzyTests.Etw.cs" />
+    <Compile Include="BasicEventSourceTest\TestsWriteEventToListener.Etw.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="BasicEventSourceTest\Harness\EventTestHarness.cs" />
     <Compile Include="BasicEventSourceTest\FuzzyTests.cs" />
@@ -40,7 +47,7 @@
     <Compile Include="CustomEventSources\UseInterfaceEventSource.cs" />
   </ItemGroup>
   <ItemGroup>
-      <ReferenceFromRuntime Include="Microsoft.Diagnostics.Tracing.TraceEvent" />
+    <ReferenceFromRuntime Include="Microsoft.Diagnostics.Tracing.TraceEvent" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />

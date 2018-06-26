@@ -1181,7 +1181,7 @@ namespace System.Net.Tests
                 using (var sr = new StreamReader(myStream))
                 {
                     string strContent = sr.ReadToEnd();
-                    Assert.True(strContent.Contains("\"Host\": \"" + System.Net.Test.Common.Configuration.Http.Host + "\""));
+                    Assert.True(strContent.Contains("\"Host\": \"" + remoteServer.Host + "\""));
                 }
             }
         }

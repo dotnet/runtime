@@ -13,16 +13,16 @@ namespace System.CodeDom
 
         public string Name
         {
-            get { return _name ?? string.Empty; }
-            set { _name = value; }
+            get => _name ?? string.Empty;
+            set => _name = value;
         }
 
         public MemberAttributes Attributes { get; set; } = MemberAttributes.Private | MemberAttributes.Final;
 
         public CodeAttributeDeclarationCollection CustomAttributes
         {
-            get { return _customAttributes ?? (_customAttributes = new CodeAttributeDeclarationCollection()); }
-            set { _customAttributes = value; }
+            get => _customAttributes ?? (_customAttributes = new CodeAttributeDeclarationCollection());
+            set => _customAttributes = value;
         }
 
         public CodeLinePragma LinePragma { get; set; }

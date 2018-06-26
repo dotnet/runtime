@@ -34,8 +34,8 @@ namespace System
     public struct DateTimeOffset : IComparable, IFormattable, IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>, ISerializable, IDeserializationCallback, ISpanFormattable
     {
         // Constants
-        internal const Int64 MaxOffset = TimeSpan.TicksPerHour * 14;
-        internal const Int64 MinOffset = -MaxOffset;
+        internal const long MaxOffset = TimeSpan.TicksPerHour * 14;
+        internal const long MinOffset = -MaxOffset;
 
         private const long UnixEpochSeconds = DateTime.UnixEpochTicks / TimeSpan.TicksPerSecond; // 62,135,596,800
         private const long UnixEpochMilliseconds = DateTime.UnixEpochTicks / TimeSpan.TicksPerMillisecond; // 62,135,596,800,000
@@ -50,7 +50,7 @@ namespace System
 
         // Instance Fields
         private DateTime _dateTime;
-        private Int16 _offsetMinutes;
+        private short _offsetMinutes;
 
         // Constructors
 
@@ -447,7 +447,7 @@ namespace System
         // argument must be another DateTimeOffset, or otherwise an exception
         // occurs.  Null is considered less than any instance.
         //
-        int IComparable.CompareTo(Object obj)
+        int IComparable.CompareTo(object obj)
         {
             if (obj == null) return 1;
             if (!(obj is DateTimeOffset))
@@ -477,7 +477,7 @@ namespace System
         // is equal to the value of this DateTimeOffset. Returns false
         // otherwise.
         //
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is DateTimeOffset)
             {
@@ -549,7 +549,7 @@ namespace System
 
         // ----- SECTION: private serialization instance methods  ----------------*
 
-        void IDeserializationCallback.OnDeserialization(Object sender)
+        void IDeserializationCallback.OnDeserialization(object sender)
         {
             try
             {
@@ -583,7 +583,7 @@ namespace System
             }
 
             _dateTime = (DateTime)info.GetValue("DateTime", typeof(DateTime)); // Do not rename (binary serialization)
-            _offsetMinutes = (Int16)info.GetValue("OffsetMinutes", typeof(Int16)); // Do not rename (binary serialization)
+            _offsetMinutes = (short)info.GetValue("OffsetMinutes", typeof(short)); // Do not rename (binary serialization)
         }
 
         // Returns the hash code for this DateTimeOffset.
@@ -597,7 +597,7 @@ namespace System
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
         // 
-        public static DateTimeOffset Parse(String input)
+        public static DateTimeOffset Parse(string input)
         {
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
 
@@ -613,13 +613,13 @@ namespace System
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
         // 
-        public static DateTimeOffset Parse(String input, IFormatProvider formatProvider)
+        public static DateTimeOffset Parse(string input, IFormatProvider formatProvider)
         {
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             return Parse(input, formatProvider, DateTimeStyles.None);
         }
 
-        public static DateTimeOffset Parse(String input, IFormatProvider formatProvider, DateTimeStyles styles)
+        public static DateTimeOffset Parse(string input, IFormatProvider formatProvider, DateTimeStyles styles)
         {
             styles = ValidateStyles(styles, nameof(styles));
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
@@ -643,7 +643,7 @@ namespace System
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
         // 
-        public static DateTimeOffset ParseExact(String input, String format, IFormatProvider formatProvider)
+        public static DateTimeOffset ParseExact(string input, string format, IFormatProvider formatProvider)
         {
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             if (format == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
@@ -654,7 +654,7 @@ namespace System
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
         // 
-        public static DateTimeOffset ParseExact(String input, String format, IFormatProvider formatProvider, DateTimeStyles styles)
+        public static DateTimeOffset ParseExact(string input, string format, IFormatProvider formatProvider, DateTimeStyles styles)
         {
             styles = ValidateStyles(styles, nameof(styles));
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
@@ -676,7 +676,7 @@ namespace System
             return new DateTimeOffset(dateResult.Ticks, offset);
         }
 
-        public static DateTimeOffset ParseExact(String input, String[] formats, IFormatProvider formatProvider, DateTimeStyles styles)
+        public static DateTimeOffset ParseExact(string input, string[] formats, IFormatProvider formatProvider, DateTimeStyles styles)
         {
             styles = ValidateStyles(styles, nameof(styles));
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
@@ -753,22 +753,22 @@ namespace System
             return new DateTimeOffset(UtcDateTime.ToLocalTime(throwOnOverflow));
         }
 
-        public override String ToString()
+        public override string ToString()
         {
             return DateTimeFormat.Format(ClockDateTime, null, null, Offset);
         }
 
-        public String ToString(String format)
+        public string ToString(string format)
         {
             return DateTimeFormat.Format(ClockDateTime, format, null, Offset);
         }
 
-        public String ToString(IFormatProvider formatProvider)
+        public string ToString(IFormatProvider formatProvider)
         {
             return DateTimeFormat.Format(ClockDateTime, null, formatProvider, Offset);
         }
 
-        public String ToString(String format, IFormatProvider formatProvider)
+        public string ToString(string format, IFormatProvider formatProvider)
         {
             return DateTimeFormat.Format(ClockDateTime, format, formatProvider, Offset);
         }
@@ -781,11 +781,11 @@ namespace System
             return new DateTimeOffset(UtcDateTime);
         }
 
-        public static Boolean TryParse(String input, out DateTimeOffset result)
+        public static bool TryParse(string input, out DateTimeOffset result)
         {
             TimeSpan offset;
             DateTime dateResult;
-            Boolean parsed = DateTimeParse.TryParse(input,
+            bool parsed = DateTimeParse.TryParse(input,
                                                     DateTimeFormatInfo.CurrentInfo,
                                                     DateTimeStyles.None,
                                                     out dateResult,
@@ -801,7 +801,7 @@ namespace System
             return parsed;
         }
 
-        public static Boolean TryParse(String input, IFormatProvider formatProvider, DateTimeStyles styles, out DateTimeOffset result)
+        public static bool TryParse(string input, IFormatProvider formatProvider, DateTimeStyles styles, out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
             if (input == null)
@@ -812,7 +812,7 @@ namespace System
 
             TimeSpan offset;
             DateTime dateResult;
-            Boolean parsed = DateTimeParse.TryParse(input,
+            bool parsed = DateTimeParse.TryParse(input,
                                                     DateTimeFormatInfo.GetInstance(formatProvider),
                                                     styles,
                                                     out dateResult,
@@ -829,7 +829,7 @@ namespace System
             return parsed;
         }
 
-        public static Boolean TryParseExact(String input, String format, IFormatProvider formatProvider, DateTimeStyles styles,
+        public static bool TryParseExact(string input, string format, IFormatProvider formatProvider, DateTimeStyles styles,
                                             out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
@@ -841,7 +841,7 @@ namespace System
 
             TimeSpan offset;
             DateTime dateResult;
-            Boolean parsed = DateTimeParse.TryParseExact(input,
+            bool parsed = DateTimeParse.TryParseExact(input,
                                                          format,
                                                          DateTimeFormatInfo.GetInstance(formatProvider),
                                                          styles,
@@ -860,7 +860,7 @@ namespace System
             return parsed;
         }
 
-        public static Boolean TryParseExact(String input, String[] formats, IFormatProvider formatProvider, DateTimeStyles styles,
+        public static bool TryParseExact(string input, string[] formats, IFormatProvider formatProvider, DateTimeStyles styles,
                                             out DateTimeOffset result)
         {
             styles = ValidateStyles(styles, nameof(styles));
@@ -872,7 +872,7 @@ namespace System
 
             TimeSpan offset;
             DateTime dateResult;
-            Boolean parsed = DateTimeParse.TryParseExactMultiple(input,
+            bool parsed = DateTimeParse.TryParseExactMultiple(input,
                                                                  formats,
                                                                  DateTimeFormatInfo.GetInstance(formatProvider),
                                                                  styles,
@@ -892,9 +892,9 @@ namespace System
         }
 
         // Ensures the TimeSpan is valid to go in a DateTimeOffset.
-        private static Int16 ValidateOffset(TimeSpan offset)
+        private static short ValidateOffset(TimeSpan offset)
         {
-            Int64 ticks = offset.Ticks;
+            long ticks = offset.Ticks;
             if (ticks % TimeSpan.TicksPerMinute != 0)
             {
                 throw new ArgumentException(SR.Argument_OffsetPrecision, nameof(offset));
@@ -903,7 +903,7 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.Argument_OffsetOutOfRange);
             }
-            return (Int16)(offset.Ticks / TimeSpan.TicksPerMinute);
+            return (short)(offset.Ticks / TimeSpan.TicksPerMinute);
         }
 
         // Ensures that the time and offset are in range.
@@ -914,8 +914,8 @@ namespace System
             Debug.Assert(offset.Ticks >= MinOffset && offset.Ticks <= MaxOffset, "Offset not validated.");
 
             // This operation cannot overflow because offset should have already been validated to be within
-            // 14 hours and the DateTime instance is more than that distance from the boundaries of Int64.
-            Int64 utcTicks = dateTime.Ticks - offset.Ticks;
+            // 14 hours and the DateTime instance is more than that distance from the boundaries of long.
+            long utcTicks = dateTime.Ticks - offset.Ticks;
             if (utcTicks < DateTime.MinTicks || utcTicks > DateTime.MaxTicks)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.Argument_UTCOutOfRange);
@@ -925,7 +925,7 @@ namespace System
             return new DateTime(utcTicks, DateTimeKind.Unspecified);
         }
 
-        private static DateTimeStyles ValidateStyles(DateTimeStyles style, String parameterName)
+        private static DateTimeStyles ValidateStyles(DateTimeStyles style, string parameterName)
         {
             if ((style & DateTimeFormatInfo.InvalidDateTimeStyles) != 0)
             {

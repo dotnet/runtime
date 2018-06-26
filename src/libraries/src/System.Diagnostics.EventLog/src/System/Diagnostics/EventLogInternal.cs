@@ -75,14 +75,14 @@ namespace System.Diagnostics
         private Hashtable messageLibraries;
         private readonly static Hashtable listenerInfos = new Hashtable(StringComparer.OrdinalIgnoreCase);
 
-        private Object m_InstanceLockObject;
-        private Object InstanceLockObject
+        private object m_InstanceLockObject;
+        private object InstanceLockObject
         {
             get
             {
                 if (m_InstanceLockObject == null)
                 {
-                    Object o = new Object();
+                    object o = new object();
                     Interlocked.CompareExchange(ref m_InstanceLockObject, o, null);
                 }
 
@@ -90,14 +90,14 @@ namespace System.Diagnostics
             }
         }
 
-        private static Object s_InternalSyncObject;
-        private static Object InternalSyncObject
+        private static object s_InternalSyncObject;
+        private static object InternalSyncObject
         {
             get
             {
                 if (s_InternalSyncObject == null)
                 {
-                    Object o = new Object();
+                    object o = new object();
                     Interlocked.CompareExchange(ref s_InternalSyncObject, o, null);
                 }
 
@@ -1062,7 +1062,7 @@ namespace System.Diagnostics
             string currentMachineName = this.machineName;
 
             if (action < OverflowAction.DoNotOverwrite || action > OverflowAction.OverwriteOlder)
-                throw new InvalidEnumArgumentException("action", (int)action, typeof(OverflowAction));
+                throw new InvalidEnumArgumentException(nameof(action), (int)action, typeof(OverflowAction));
             // this is a long because in the if statement we may need to store values as
             // large as UInt32.MaxValue - 1.  This would overflow an int.
             long retentionvalue = (long)action;
@@ -1264,7 +1264,7 @@ namespace System.Diagnostics
 
         private static bool CharIsPrintable(char c)
         {
-            UnicodeCategory uc = Char.GetUnicodeCategory(c);
+            UnicodeCategory uc = char.GetUnicodeCategory(c);
             return (!(uc == UnicodeCategory.Control) || (uc == UnicodeCategory.Format) ||
                     (uc == UnicodeCategory.LineSeparator) || (uc == UnicodeCategory.ParagraphSeparator) ||
             (uc == UnicodeCategory.OtherNotAssigned));
@@ -1312,7 +1312,7 @@ namespace System.Diagnostics
                     {
                         string rightLogName = EventLog.LogNameFromSourceName(sourceName, currentMachineName);
                         string currentLogName = GetLogName(currentMachineName);
-                        if (rightLogName != null && currentLogName != null && String.Compare(rightLogName, currentLogName, StringComparison.OrdinalIgnoreCase) != 0)
+                        if (rightLogName != null && currentLogName != null && !string.Equals(rightLogName, currentLogName, StringComparison.OrdinalIgnoreCase))
                             throw new ArgumentException(SR.Format(SR.LogSourceMismatch, Source.ToString(), currentLogName, rightLogName));
                     }
                 }
@@ -1329,7 +1329,7 @@ namespace System.Diagnostics
             {
                 string rightLogName = EventLog._InternalLogNameFromSourceName(sourceName, currentMachineName);
                 string currentLogName = GetLogName(currentMachineName);
-                if (rightLogName != null && currentLogName != null && String.Compare(rightLogName, currentLogName, StringComparison.OrdinalIgnoreCase) != 0)
+                if (rightLogName != null && currentLogName != null && !string.Equals(rightLogName, currentLogName, StringComparison.OrdinalIgnoreCase))
                     throw new ArgumentException(SR.Format(SR.LogSourceMismatch, Source.ToString(), currentLogName, rightLogName));
             }
             boolFlags[Flag_sourceVerified] = true;
@@ -1361,7 +1361,7 @@ namespace System.Diagnostics
             InternalWriteEvent((uint)eventID, (ushort)category, type, new string[] { message }, rawData, currentMachineName);
         }
 
-        public void WriteEvent(EventInstance instance, byte[] data, params Object[] values)
+        public void WriteEvent(EventInstance instance, byte[] data, params object[] values)
         {
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
@@ -1386,7 +1386,7 @@ namespace System.Diagnostics
                     if (values[i] != null)
                         strings[i] = values[i].ToString();
                     else
-                        strings[i] = String.Empty;
+                        strings[i] = string.Empty;
                 }
             }
 
@@ -1405,7 +1405,7 @@ namespace System.Diagnostics
             for (int i = 0; i < strings.Length; i++)
             {
                 if (strings[i] == null)
-                    strings[i] = String.Empty;
+                    strings[i] = string.Empty;
 
                 // make sure the strings aren't too long.  MSDN says each string has a limit of 32k (32768) characters, but 
                 // experimentation shows that it doesn't like anything larger than 32766

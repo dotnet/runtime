@@ -1,3 +1,0 @@
-Compat issues with assembly System.Reflection.Emit.Lightweight:
-TypesMustExist : Type 'System.Reflection.Emit.DynamicMethod' does not exist in the implementation but it does exist in the contract.
-Total Issues: 1

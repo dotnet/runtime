@@ -17,25 +17,21 @@
 **
 ============================================================*/
 
-using System;
-using System.Text;
 using System.Collections;
 using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System
 {
     [Obsolete("System.CurrentSystemTimeZone has been deprecated.  Please investigate the use of System.TimeZoneInfo.Local instead.")]
-    internal partial class CurrentSystemTimeZone : TimeZone
+    internal class CurrentSystemTimeZone : TimeZone
     {
         // Standard offset in ticks to the Universal time if
         // no daylight saving is in used.
         // E.g. the offset for PST (Pacific Standard time) should be -8 * 60 * 60 * 1000 * 10000.
         // (1 millisecond = 10000 ticks)
         private long m_ticksOffset;
-        private String m_standardName;
-        private String m_daylightName;
+        private string m_standardName;
+        private string m_daylightName;
 
         internal CurrentSystemTimeZone()
         {
@@ -46,7 +42,7 @@ namespace System
             m_daylightName = local.DaylightName;
         }
 
-        public override String StandardName
+        public override string StandardName
         {
             get
             {
@@ -54,7 +50,7 @@ namespace System
             }
         }
 
-        public override String DaylightName
+        public override string DaylightName
         {
             get
             {
@@ -62,7 +58,7 @@ namespace System
             }
         }
 
-        internal long GetUtcOffsetFromUniversalTime(DateTime time, ref Boolean isAmbiguousLocalDst)
+        internal long GetUtcOffsetFromUniversalTime(DateTime time, ref bool isAmbiguousLocalDst)
         {
             // Get the daylight changes for the year of the specified time.
             TimeSpan offset = new TimeSpan(m_ticksOffset);
@@ -93,7 +89,7 @@ namespace System
                 ambiguousEnd = startTime - daylightTime.Delta;
             }
 
-            Boolean isDst = false;
+            bool isDst = false;
             if (startTime > endTime)
             {
                 // In southern hemisphere, the daylight saving time starts later in the year, and ends in the beginning of next year.
@@ -126,8 +122,8 @@ namespace System
             {
                 return time;
             }
-            Boolean isAmbiguousLocalDst = false;
-            Int64 offset = GetUtcOffsetFromUniversalTime(time, ref isAmbiguousLocalDst);
+            bool isAmbiguousLocalDst = false;
+            long offset = GetUtcOffsetFromUniversalTime(time, ref isAmbiguousLocalDst);
             long tick = time.Ticks + offset;
             if (tick > DateTime.MaxTicks)
             {
@@ -193,5 +189,29 @@ namespace System
                 return new TimeSpan(TimeZone.CalculateUtcOffset(time, GetDaylightChanges(time.Year)).Ticks + m_ticksOffset);
             }
         }
+
+        private DaylightTime GetCachedDaylightChanges(int year)
+        {
+            object objYear = (object)year;
+
+            if (!m_CachedDaylightChanges.Contains(objYear))
+            {
+                DaylightTime currentDaylightChanges = CreateDaylightChanges(year);
+                lock (m_CachedDaylightChanges)
+                {
+                    if (!m_CachedDaylightChanges.Contains(objYear))
+                    {
+                        m_CachedDaylightChanges.Add(objYear, currentDaylightChanges);
+                    }
+                }
+            }
+
+            return (DaylightTime)m_CachedDaylightChanges[objYear];
+        }
+
+        // The per-year information is cached in in this instance value. As a result it can
+        // be cleaned up by CultureInfo.ClearCachedData, which will clear the instance of this object
+        private readonly Hashtable m_CachedDaylightChanges = new Hashtable();
+
     } // class CurrentSystemTimeZone
 }

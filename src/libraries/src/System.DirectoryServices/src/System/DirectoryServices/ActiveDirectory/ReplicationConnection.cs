@@ -121,7 +121,7 @@ namespace System.DirectoryServices.ActiveDirectory
             ValidateArgument(context, name);
 
             if (sourceServer == null)
-                throw new ArgumentNullException("sourceServer");
+                throw new ArgumentNullException(nameof(sourceServer));
 
             if (transport < ActiveDirectoryTransportType.Rpc || transport > ActiveDirectoryTransportType.Smtp)
                 throw new InvalidEnumArgumentException("value", (int)transport, typeof(ActiveDirectoryTransportType));
@@ -159,7 +159,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 // schedule property
                 if (schedule != null)
-                    cachedDirectoryEntry.Properties["schedule"].Value = schedule.GetUnmanagedSchedule();
+                    cachedDirectoryEntry.Properties[nameof(schedule)].Value = schedule.GetUnmanagedSchedule();
 
                 // transporttype property
                 string transportPath = Utils.GetDNFromTransportType(TransportType, context);
@@ -558,7 +558,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 if (value < NotificationStatus.NoNotification || value > NotificationStatus.NotificationAlways)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(NotificationStatus));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(NotificationStatus));
 
                 try
                 {
@@ -913,17 +913,17 @@ namespace System.DirectoryServices.ActiveDirectory
         private static void ValidateArgument(DirectoryContext context, string name)
         {
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             // the target of the scope must be server
             if (context.Name == null || !context.isServer())
                 throw new ArgumentException(SR.DirectoryContextNeedHost);
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "name");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(name));
         }
 
         private void ValidateTargetAndSourceServer(DirectoryContext context, DirectoryServer sourceServer)
@@ -943,18 +943,18 @@ namespace System.DirectoryServices.ActiveDirectory
                 else if (!Utils.CheckCapability(targetDE, Capability.ActiveDirectoryApplicationMode))
                 {
                     // if it is also not an ADAM instance, it is invalid then
-                    throw new ArgumentException(SR.DirectoryContextNeedHost, "context");
+                    throw new ArgumentException(SR.DirectoryContextNeedHost, nameof(context));
                 }
 
                 if (targetIsDC && !(sourceServer is DomainController))
                 {
                     // target and sourceServer are not of the same type
-                    throw new ArgumentException(SR.ConnectionSourcServerShouldBeDC, "sourceServer");
+                    throw new ArgumentException(SR.ConnectionSourcServerShouldBeDC, nameof(sourceServer));
                 }
                 else if (!targetIsDC && (sourceServer is DomainController))
                 {
                     // target and sourceServer are not of the same type
-                    throw new ArgumentException(SR.ConnectionSourcServerShouldBeADAM, "sourceServer");
+                    throw new ArgumentException(SR.ConnectionSourcServerShouldBeADAM, nameof(sourceServer));
                 }
 
                 sourceDE = DirectoryEntryManager.GetDirectoryEntry(sourceServer.Context, WellKnownDN.RootDSE);
@@ -966,7 +966,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     string sourceRoot = (string)PropertyManager.GetPropertyValue(sourceServer.Context, sourceDE, PropertyManager.RootDomainNamingContext);
                     if (Utils.Compare(targetRoot, sourceRoot) != 0)
                     {
-                        throw new ArgumentException(SR.ConnectionSourcServerSameForest, "sourceServer");
+                        throw new ArgumentException(SR.ConnectionSourcServerSameForest, nameof(sourceServer));
                     }
                 }
                 else
@@ -975,7 +975,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     string sourceRoot = (string)PropertyManager.GetPropertyValue(sourceServer.Context, sourceDE, PropertyManager.ConfigurationNamingContext);
                     if (Utils.Compare(targetRoot, sourceRoot) != 0)
                     {
-                        throw new ArgumentException(SR.ConnectionSourcServerSameConfigSet, "sourceServer");
+                        throw new ArgumentException(SR.ConnectionSourcServerSameConfigSet, nameof(sourceServer));
                     }
                 }
             }

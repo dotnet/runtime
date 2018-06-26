@@ -5,9 +5,7 @@
 using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -168,16 +166,16 @@ namespace Microsoft.CSharp
 
         private bool _generatingForLoop = false;
 
-        private string FileExtension { get { return ".cs"; } }
+        private string FileExtension => ".cs";
 
-        private string CompilerName { get { return "csc.exe"; } }
+        private string CompilerName => "csc.exe";
 
         private string CurrentTypeName => _currentClass != null ? _currentClass.Name : "<% unknown %>";
 
         private int Indent
         {
-            get { return _output.Indent; }
-            set { _output.Indent = value; }
+            get => _output.Indent;
+            set => _output.Indent = value;
         }
 
         private bool IsCurrentInterface => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsInterface : false;
@@ -191,8 +189,6 @@ namespace Microsoft.CSharp
         private bool IsCurrentDelegate => _currentClass != null && _currentClass is CodeTypeDelegate;
 
         private string NullToken => "null";
-
-        private CodeGeneratorOptions Options => _options;
 
         private TextWriter Output => _output;
 
@@ -242,12 +238,10 @@ namespace Microsoft.CSharp
 
                 if (i > 0 && i % MaxLineLength == 0)
                 {
-                    //
                     // If current character is a high surrogate and the following 
-                    // character is a low surrogate, don't break them. 
+                    // character is a low surrogate, don't break them.
                     // Otherwise when we write the string to a file, we might lose 
                     // the characters.
-                    // 
                     if (char.IsHighSurrogate(value[i]) && (i < value.Length - 1) && char.IsLowSurrogate(value[i + 1]))
                     {
                         b.Append(value[++i]);
@@ -1042,7 +1036,7 @@ namespace Microsoft.CSharp
             if (falseStatemetns.Count > 0)
             {
                 Output.Write('}');
-                if (Options.ElseOnClosing)
+                if (_options.ElseOnClosing)
                 {
                     Output.Write(' ');
                 }
@@ -1072,7 +1066,7 @@ namespace Microsoft.CSharp
                 foreach (CodeCatchClause current in catches)
                 {
                     Output.Write('}');
-                    if (Options.ElseOnClosing)
+                    if (_options.ElseOnClosing)
                     {
                         Output.Write(' ');
                     }
@@ -1096,7 +1090,7 @@ namespace Microsoft.CSharp
             if (finallyStatements.Count > 0)
             {
                 Output.Write('}');
-                if (Options.ElseOnClosing)
+                if (_options.ElseOnClosing)
                 {
                     Output.Write(' ');
                 }
@@ -1935,7 +1929,7 @@ namespace Microsoft.CSharp
 
             GenerateTypeStart(e);
 
-            if (Options.VerbatimOrder)
+            if (_options.VerbatimOrder)
             {
                 foreach (CodeTypeMember member in e.Members)
                 {
@@ -2968,7 +2962,7 @@ namespace Microsoft.CSharp
 
         private void OutputStartingBrace()
         {
-            if (Options.BracingStyle == "C")
+            if (_options.BracingStyle == "C")
             {
                 Output.WriteLine();
                 Output.WriteLine('{');
@@ -3156,7 +3150,7 @@ namespace Microsoft.CSharp
                 using (var fs = new FileStream(filenames[i], FileMode.Create, FileAccess.Write, FileShare.Read))
                 using (StreamWriter sw = new StreamWriter(fs, Encoding.UTF8))
                 {
-                    ((ICodeGenerator)this).GenerateCodeFromCompileUnit(ea[i], sw, Options);
+                    ((ICodeGenerator)this).GenerateCodeFromCompileUnit(ea[i], sw, _options);
                     sw.Flush();
                 }
             }

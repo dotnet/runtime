@@ -18,7 +18,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(ActiveDirectorySiteLinkBridge bridge)
         {
             if (bridge == null)
-                throw new ArgumentNullException("bridge");
+                throw new ArgumentNullException(nameof(bridge));
 
             string dn = (string)PropertyManager.GetPropertyValue(bridge.context, bridge.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -38,7 +38,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(ActiveDirectorySiteLinkBridge bridge)
         {
             if (bridge == null)
-                throw new ArgumentNullException("bridge");
+                throw new ArgumentNullException(nameof(bridge));
 
             string dn = (string)PropertyManager.GetPropertyValue(bridge.context, bridge.cachedEntry, PropertyManager.DistinguishedName);
 

@@ -304,7 +304,7 @@ namespace System.Management
         /// <returns>
         ///    <para>The new cloned object.</para>
         /// </returns>
-        public virtual Object Clone()
+        public virtual object Clone()
         {
             IWbemClassObjectFreeThreaded theClone = null;
 
@@ -409,9 +409,9 @@ namespace System.Management
         { 
             get 
             { 
-                Object serverName = null;
-                Object scopeName = null;
-                Object className = null;
+                object serverName = null;
+                object scopeName = null;
+                object className = null;
                 int propertyType = 0;
                 int propertyFlavor = 0;
                 int status = (int)ManagementStatus.NoError;
@@ -437,9 +437,9 @@ namespace System.Management
                 ManagementPath classPath = new ManagementPath();
 
                 // initialize in case of throw
-                classPath.Server = String.Empty;
-                classPath.NamespacePath = String.Empty;
-                classPath.ClassName = String.Empty;
+                classPath.Server = string.Empty;
+                classPath.NamespacePath = string.Empty;
+                classPath.ClassName = string.Empty;
 
                 // Some of these may throw if they are NULL
                 try 
@@ -472,7 +472,7 @@ namespace System.Management
         ///    An <see cref='System.Object'/> containing the
         ///    value of the requested property.
         /// </value>
-        public Object this[string propertyName] 
+        public object this[string propertyName] 
         { 
             get { return GetPropertyValue(propertyName); }
             set 
@@ -499,10 +499,10 @@ namespace System.Management
         /// <returns>
         ///    <para>The value of the specified property.</para>
         /// </returns>
-        public Object GetPropertyValue(string propertyName)
+        public object GetPropertyValue(string propertyName)
         { 
             if (null == propertyName)
-                throw new ArgumentNullException ("propertyName");
+                throw new ArgumentNullException (nameof(propertyName));
 
             // Check for system properties
             if (propertyName.StartsWith ("__", StringComparison.Ordinal))
@@ -521,7 +521,7 @@ namespace System.Management
         /// <returns>
         ///    <para>The value of the specified qualifier.</para>
         /// </returns>
-        public Object GetQualifierValue(string qualifierName)
+        public object GetQualifierValue(string qualifierName)
         {
             return Qualifiers [qualifierName].Value;
         }
@@ -551,7 +551,7 @@ namespace System.Management
         /// <returns>
         ///    <para>The value of the specified qualifier.</para>
         /// </returns>
-        public Object GetPropertyQualifierValue(string propertyName, string qualifierName)
+        public object GetPropertyQualifierValue(string propertyName, string qualifierName)
         {
             return Properties[propertyName].Qualifiers[qualifierName].Value;
         }
@@ -676,7 +676,7 @@ namespace System.Management
 
                     if (this is ManagementObject && obj is ManagementObject)
                     {
-                        int compareRes = String.Compare(((ManagementObject)this).Path.Path,
+                        int compareRes = string.Compare(((ManagementObject)this).Path.Path,
                             ((ManagementObject)obj).Path.Path,
                             StringComparison.OrdinalIgnoreCase);
                         return (compareRes == 0);
@@ -739,7 +739,7 @@ namespace System.Management
         public bool CompareTo(ManagementBaseObject otherObject, ComparisonSettings settings)
         {
             if (null == otherObject)
-                throw new ArgumentNullException ("otherObject");
+                throw new ArgumentNullException (nameof(otherObject));
 
             bool result = false;
 
@@ -781,7 +781,7 @@ namespace System.Management
                 }
 
                 if (val is System.DBNull)
-                    return String.Empty;
+                    return string.Empty;
                 else
                     return ((string) val);
             }
@@ -823,7 +823,7 @@ namespace System.Management
             object propertyValue)
         {
             if (null == propertyName)
-                throw new ArgumentNullException ("propertyName");
+                throw new ArgumentNullException (nameof(propertyName));
 
             // Check for system properties
             if (propertyName.StartsWith ("__", StringComparison.Ordinal))

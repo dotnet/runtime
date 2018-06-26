@@ -40,8 +40,7 @@ namespace System.Net.Http
         private static async Task<HttpResponseMessage> SendWithNtAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, bool isProxyAuth, HttpConnection connection, CancellationToken cancellationToken)
         {
             HttpResponseMessage response = await InnerSendAsync(request, isProxyAuth, connection, cancellationToken).ConfigureAwait(false);
-
-            if (!isProxyAuth && connection.UsingProxy && !ProxySupportsConnectionAuth(response))
+            if (!isProxyAuth && connection.Kind == HttpConnectionKind.Proxy && !ProxySupportsConnectionAuth(response))
             {
                 // Proxy didn't indicate that it supports connection-based auth, so we can't proceed.
                 if (NetEventSource.IsEnabled)

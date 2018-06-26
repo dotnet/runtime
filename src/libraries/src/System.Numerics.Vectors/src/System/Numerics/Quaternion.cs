@@ -779,7 +779,7 @@ namespace System.Numerics
         {
             CultureInfo ci = CultureInfo.CurrentCulture;
 
-            return String.Format(ci, "{{X:{0} Y:{1} Z:{2} W:{3}}}", X.ToString(ci), Y.ToString(ci), Z.ToString(ci), W.ToString(ci));
+            return string.Format(ci, "{{X:{0} Y:{1} Z:{2} W:{3}}}", X.ToString(ci), Y.ToString(ci), Z.ToString(ci), W.ToString(ci));
         }
 
         /// <summary>

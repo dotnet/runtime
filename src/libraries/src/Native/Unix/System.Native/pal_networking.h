@@ -5,9 +5,6 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 #include "pal_errno.h"
 
@@ -15,7 +12,7 @@ BEGIN_EXTERN_C
  * These error values are different on every platform so make a
  * platform-agnostic version that we convert to and send to managed
  */
-enum GetAddrInfoErrorFlags
+typedef enum
 {
     GetAddrInfoErrorFlags_EAI_SUCCESS = 0,  // Success
     GetAddrInfoErrorFlags_EAI_AGAIN = 1,    // Temporary failure in name resolution.
@@ -25,22 +22,22 @@ enum GetAddrInfoErrorFlags
     GetAddrInfoErrorFlags_EAI_NONAME = 5,   // NAME or SERVICE is unknown.
     GetAddrInfoErrorFlags_EAI_BADARG = 6,   // One or more input arguments were invalid.
     GetAddrInfoErrorFlags_EAI_NOMORE = 7,   // No more entries are present in the list.
-};
+} GetAddrInfoErrorFlags;
 
 /**
  * Flags to pass to GetNameInfo. These do not match
  * from platform to platform and must be converted
  */
-enum GetNameInfoFlags
+typedef enum
 {
     GetAddrInfoErrorFlags_NI_NAMEREQD = 0x1,
     GetAddrInfoErrorFlags_NI_NUMERICHOST = 0x2,
-};
+} GetNameInfoFlags;
 
 /**
  * Error codes from GetHostByName and GetHostByAddr
  */
-enum GetHostErrorCodes
+typedef enum
 {
     GetHostErrorCodes_HOST_NOT_FOUND = 1,
     GetHostErrorCodes_TRY_AGAIN = 2,
@@ -49,7 +46,7 @@ enum GetHostErrorCodes
     GetHostErrorCodes_NO_ADDRESS = GetHostErrorCodes_NO_DATA,
     GetHostErrorCodes_BAD_ARG = 5,
     GetHostErrorCodes_NO_MEM = 6,
-};
+} GetHostErrorCodes;
 
 /**
  * Address families recognized by {Get,Set}AddressFamily.
@@ -57,74 +54,74 @@ enum GetHostErrorCodes
  * NOTE: these values are taken from System.Net.AddressFamily. If you add
  *       new entries, be sure that the values are chosen accordingly.
  */
-enum AddressFamily
+typedef enum
 {
     AddressFamily_AF_UNSPEC = 0, // System.Net.AddressFamily.Unspecified
     AddressFamily_AF_UNIX = 1,   // System.Net.AddressFamily.Unix
     AddressFamily_AF_INET = 2,   // System.Net.AddressFamily.InterNetwork
     AddressFamily_AF_INET6 = 23, // System.Net.AddressFamily.InterNetworkV6
-};
+} AddressFamily;
 
 /*
  * Socket types.
  *
  * NOTE: these values are taken from System.Net.SocketType.
  */
-enum SocketType
+typedef enum
 {
     SocketType_SOCK_STREAM = 1,    // System.Net.SocketType.Stream
     SocketType_SOCK_DGRAM = 2,     // System.Net.SocketType.Dgram
     SocketType_SOCK_RAW = 3,       // System.Net.SocketType.Raw
     SocketType_SOCK_RDM = 4,       // System.Net.SocketType.Rdm
     SocketType_SOCK_SEQPACKET = 5, // System.Net.SocketType.SeqPacket
-};
+} SocketType;
 
 /*
  * Protocol types.
  *
  * NOTE: these values are taken from System.Net.ProtocolType.
  */
-enum ProtocolType
+typedef enum
 {
     ProtocolType_PT_UNSPECIFIED = 0, // System.Net.ProtocolType.Unspecified
     ProtocolType_PT_ICMP = 1,        // System.Net.ProtocolType.Icmp
     ProtocolType_PT_TCP = 6,         // System.Net.ProtocolType.Tcp
     ProtocolType_PT_UDP = 17,        // System.Net.ProtocolType.Udp
     ProtocolType_PT_ICMPV6 = 58,     // System.Net.ProtocolType.IcmpV6
-};
+} ProtocolType;
 
-enum MulticastOption
+typedef enum
 {
     MulticastOption_MULTICAST_ADD = 0,  // IP{,V6}_ADD_MEMBERSHIP
     MulticastOption_MULTICAST_DROP = 1, // IP{,V6}_DROP_MEMBERSHIP
     MulticastOption_MULTICAST_IF = 2    // IP_MULTICAST_IF
-};
+} MulticastOption;
 
 /*
  * Socket shutdown modes.
  *
  * NOTE: these values are taken from System.Net.SocketShutdown.
  */
-enum SocketShutdown
+typedef enum
 {
     SocketShutdown_SHUT_READ = 0,  // SHUT_RD
     SocketShutdown_SHUT_WRITE = 1, // SHUT_WR
     SocketShutdown_SHUT_BOTH = 2,  // SHUT_RDWR
-};
+} SockerShutdown;
 
 /*
  * Socket option levels.
  *
  * NOTE: these values are taken from System.Net.SocketOptionLevel.
  */
-enum SocketOptionLevel
+typedef enum
 {
     SocketOptionLevel_SOL_SOCKET = 0xffff,
     SocketOptionLevel_SOL_IP = 0,
     SocketOptionLevel_SOL_IPV6 = 41,
     SocketOptionLevel_SOL_TCP = 6,
     SocketOptionLevel_SOL_UDP = 17,
-};
+} SocketOptionLevel;
 
 /*
  * Socket option names.
@@ -132,7 +129,7 @@ enum SocketOptionLevel
  * NOTE: these values are taken from System.Net.SocketOptionName. Only values that are known to be usable on all target
  *       platforms are represented here. Unsupported values are present as commented-out entries.
  */
-enum SocketOptionName
+typedef enum
 {
     // Names for level SocketOptionLevel_SOL_SOCKET
     SocketOptionName_SO_DEBUG = 0x0001,
@@ -181,13 +178,16 @@ enum SocketOptionName
     // Names for SocketOptionLevel_SOL_TCP
     SocketOptionName_SO_TCP_NODELAY = 1,
     // SocketOptionName_SO_TCP_BSDURGENT = 2,
+    SocketOptionName_SO_TCP_KEEPALIVE_RETRYCOUNT = 16,
+    SocketOptionName_SO_TCP_KEEPALIVE_TIME = 3,
+    SocketOptionName_SO_TCP_KEEPALIVE_INTERVAL = 17,
 
     // Names for SocketOptionLevel_SOL_UDP
     // SocketOptionName_SO_UDP_NOCHECKSUM = 1,
     // SocketOptionName_SO_UDP_CHECKSUM_COVERAGE = 20,
     // SocketOptionName_SO_UDP_UPDATEACCEPTCONTEXT = 0x700b,
     // SocketOptionName_SO_UDP_UPDATECONNECTCONTEXT = 0x7010,
-};
+} SocketOptionName;
 
 /*
  * Socket flags.
@@ -196,19 +196,19 @@ enum SocketOptionName
  *       platforms are represented here. Unsupported values are present as commented-out entries.
  */
 
-enum SocketFlags
+typedef enum
 {
     SocketFlags_MSG_OOB = 0x0001,       // SocketFlags.OutOfBand
     SocketFlags_MSG_PEEK = 0x0002,      // SocketFlags.Peek
     SocketFlags_MSG_DONTROUTE = 0x0004, // SocketFlags.DontRoute
     SocketFlags_MSG_TRUNC = 0x0100,     // SocketFlags.Truncated
     SocketFlags_MSG_CTRUNC = 0x0200,    // SocketFlags.ControlDataTruncated
-};
+} SocketFlags;
 
 /*
  * Socket async events.
  */
-enum SocketEvents
+typedef enum
 {
     SocketEvents_SA_NONE = 0x00,
     SocketEvents_SA_READ = 0x01,
@@ -216,7 +216,7 @@ enum SocketEvents
     SocketEvents_SA_READCLOSE = 0x04,
     SocketEvents_SA_CLOSE = 0x08,
     SocketEvents_SA_ERROR = 0x10,
-};
+} SocketEvents;
 
 /**
  * IP address sizes.
@@ -228,79 +228,80 @@ enum
     MAX_IP_ADDRESS_BYTES = 16,
 };
 
-struct IPAddress
+typedef struct
 {
     uint8_t Address[MAX_IP_ADDRESS_BYTES]; // Buffer to fit IPv4 or IPv6 address
     uint32_t IsIPv6;                       // Non-zero if this is an IPv6 endpoint; zero for IPv4.
     uint32_t ScopeId;                      // Scope ID (IPv6 only)
-};
+} IPAddress;
 
-struct HostEntry
+typedef struct
 {
     uint8_t* CanonicalName;  // Canonical name of the host
     uint8_t** Aliases;       // List of aliases for the host
     struct addrinfo* AddressListHandle; // Handle for host socket addresses
     int32_t IPAddressCount;  // Number of IP end points in the list
-};
+} HostEntry;
 
-struct IPPacketInformation
+typedef struct
 {
-    struct IPAddress Address;      // Destination IP address
+    IPAddress Address;      // Destination IP address
     int32_t InterfaceIndex; // Interface index
     int32_t Padding;        // Pad out to 8-byte alignment
-};
+} IPPacketInformation;
 
-struct IPv4MulticastOption
+typedef struct
 {
     uint32_t MulticastAddress; // Multicast address
     uint32_t LocalAddress;     // Local address
     int32_t InterfaceIndex;    // Interface index
     int32_t Padding;           // Pad out to 8-byte alignment
-};
+} IPv4MulticastOption;
 
-struct IPv6MulticastOption
+typedef struct
 {
-    struct IPAddress Address;      // Multicast address
+    IPAddress Address;      // Multicast address
     int32_t InterfaceIndex; // Interface index
     int32_t Padding;        // Pad out to 8-byte alignment
-};
+} IPv6MulticastOption;
 
-struct LingerOption
+typedef struct
 {
     int32_t OnOff;   // Non-zero to enable linger
     int32_t Seconds; // Number of seconds to linger for
-};
+} LingerOption;
 
 // NOTE: the layout of this type is intended to exactly  match the layout of a `struct iovec`. There are
 //       assertions in pal_networking.cpp that validate this.
-struct IOVector
+typedef struct
 {
     uint8_t* Base;
     uintptr_t Count;
-};
+} IOVector;
 
-struct MessageHeader
+typedef struct
 {
     uint8_t* SocketAddress;
-    struct IOVector* IOVectors;
+    IOVector* IOVectors;
     uint8_t* ControlBuffer;
     int32_t SocketAddressLen;
     int32_t IOVectorCount;
     int32_t ControlBufferLen;
     int32_t Flags;
-};
-struct SocketEvent
+} MessageHeader;
+
+typedef struct
 {
     uintptr_t Data;      // User data for this event
     int32_t Events;      // Event flags
     uint32_t Padding;    // Pad out to 8-byte alignment
-};
+} SocketEvent;
 
-DLLEXPORT int32_t SystemNative_GetHostEntryForName(const uint8_t* address, struct HostEntry* entry);
+DLLEXPORT int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entry);
 
-DLLEXPORT int32_t SystemNative_GetNextIPAddress(const struct HostEntry* entry, struct addrinfo** addressListHandle, struct IPAddress* endPoint);
+DLLEXPORT int32_t SystemNative_GetNextIPAddress(const HostEntry* entry, struct addrinfo** addressListHandle, IPAddress* endPoint);
 
-DLLEXPORT void SystemNative_FreeHostEntry(struct HostEntry* entry);
+DLLEXPORT void SystemNative_FreeHostEntry(HostEntry* entry);
 
 DLLEXPORT int32_t SystemNative_GetNameInfo(const uint8_t* address,
                                int32_t addressLength,
@@ -337,28 +338,27 @@ DLLEXPORT int32_t SystemNative_SetIPv6Address(
 
 DLLEXPORT int32_t SystemNative_GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6);
 
-DLLEXPORT int32_t SystemNative_TryGetIPPacketInformation(
-    struct MessageHeader* messageHeader, int32_t isIPv4, struct IPPacketInformation* packetInfo);
+DLLEXPORT int32_t SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo);
 
-DLLEXPORT int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, struct IPv4MulticastOption* option);
+DLLEXPORT int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option);
 
-DLLEXPORT int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, struct IPv4MulticastOption* option);
+DLLEXPORT int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option);
 
-DLLEXPORT int32_t SystemNative_GetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, struct IPv6MulticastOption* option);
+DLLEXPORT int32_t SystemNative_GetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option);
 
-DLLEXPORT int32_t SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, struct IPv6MulticastOption* option);
+DLLEXPORT int32_t SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option);
 
-DLLEXPORT int32_t SystemNative_GetLingerOption(intptr_t socket, struct LingerOption* option);
+DLLEXPORT int32_t SystemNative_GetLingerOption(intptr_t socket, LingerOption* option);
 
-DLLEXPORT int32_t SystemNative_SetLingerOption(intptr_t socket, struct LingerOption* option);
+DLLEXPORT int32_t SystemNative_SetLingerOption(intptr_t socket, LingerOption* option);
 
 DLLEXPORT int32_t SystemNative_SetReceiveTimeout(intptr_t socket, int32_t millisecondsTimeout);
 
 DLLEXPORT int32_t SystemNative_SetSendTimeout(intptr_t socket, int32_t millisecondsTimeout);
 
-DLLEXPORT int32_t SystemNative_ReceiveMessage(intptr_t socket, struct MessageHeader* messageHeader, int32_t flags, int64_t* received);
+DLLEXPORT int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
 
-DLLEXPORT int32_t SystemNative_SendMessage(intptr_t socket, struct MessageHeader* messageHeader, int32_t flags, int64_t* sent);
+DLLEXPORT int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent);
 
 DLLEXPORT int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, intptr_t* acceptedSocket);
 
@@ -392,14 +392,14 @@ DLLEXPORT int32_t SystemNative_CreateSocketEventPort(intptr_t* port);
 
 DLLEXPORT int32_t SystemNative_CloseSocketEventPort(intptr_t port);
 
-DLLEXPORT int32_t SystemNative_CreateSocketEventBuffer(int32_t count, struct SocketEvent** buffer);
+DLLEXPORT int32_t SystemNative_CreateSocketEventBuffer(int32_t count, SocketEvent** buffer);
 
-DLLEXPORT int32_t SystemNative_FreeSocketEventBuffer(struct SocketEvent* buffer);
+DLLEXPORT int32_t SystemNative_FreeSocketEventBuffer(SocketEvent* buffer);
 
 DLLEXPORT int32_t SystemNative_TryChangeSocketEventRegistration(
     intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
 
-DLLEXPORT int32_t SystemNative_WaitForSocketEvents(intptr_t port, struct SocketEvent* buffer, int32_t* count);
+DLLEXPORT int32_t SystemNative_WaitForSocketEvents(intptr_t port, SocketEvent* buffer, int32_t* count);
 
 DLLEXPORT int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void);
 
@@ -408,5 +408,3 @@ DLLEXPORT char* SystemNative_GetPeerUserName(intptr_t socket);
 DLLEXPORT void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize);
 
 DLLEXPORT int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent);
-
-END_EXTERN_C

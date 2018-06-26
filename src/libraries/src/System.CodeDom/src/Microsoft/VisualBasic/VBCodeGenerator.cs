@@ -5,7 +5,6 @@
 using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -264,14 +263,22 @@ namespace Microsoft.VisualBasic
 
         private void EnsureInDoubleQuotes(ref bool fInDoubleQuotes, StringBuilder b)
         {
-            if (fInDoubleQuotes) return;
+            if (fInDoubleQuotes)
+            {
+                return;
+            }
+
             b.Append("&\"");
             fInDoubleQuotes = true;
         }
 
         private void EnsureNotInDoubleQuotes(ref bool fInDoubleQuotes, StringBuilder b)
         {
-            if (!fInDoubleQuotes) return;
+            if (!fInDoubleQuotes)
+            {
+                return;
+            }
+
             b.Append('\"');
             fInDoubleQuotes = false;
         }
@@ -339,12 +346,10 @@ namespace Microsoft.VisualBasic
 
                 if (i > 0 && i % MaxLineLength == 0)
                 {
-                    //
                     // If current character is a high surrogate and the following 
-                    // character is a low surrogate, don't break them. 
+                    // character is a low surrogate, don't break them.
                     // Otherwise when we write the string to a file, we might lose 
                     // the characters.
-                    // 
                     if (char.IsHighSurrogate(value[i])
                         && (i < value.Length - 1)
                         && char.IsLowSurrogate(value[i + 1]))
@@ -490,7 +495,6 @@ namespace Microsoft.VisualBasic
             // Visual Basic does not need to adorn the calling point with a direction, so just output the expression.
             GenerateExpression(e.Expression);
         }
-
 
         protected override void OutputFieldScopeModifier(MemberAttributes attributes)
         {

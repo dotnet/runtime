@@ -37,6 +37,18 @@
 #include <sys/inotify.h>
 #endif
 
+#ifdef _AIX
+#include <alloca.h>
+// Somehow, AIX mangles the definition for this behind a C++ def
+// Redeclare it here
+extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
+// This function declaration is hidden behind `_XOPEN_SOURCE=700`, but we need
+// `_ALL_SOURCE` to build the runtime, and that resets that definition to 600.
+// Instead of trying to wrangle ifdefs in system headers with more definitions,
+// just declare it here.
+extern ssize_t  getline(char **, size_t *, FILE *);
+#endif
+
 #if HAVE_STAT64
 #define stat_ stat64
 #define fstat_ fstat64
@@ -78,6 +90,8 @@ c_static_assert(PAL_S_IFSOCK == S_IFSOCK);
 
 // Validate that our enum for inode types is the same as what is
 // declared by the dirent.h header on the local system.
+// (AIX doesn't have dirent d_type, so none of this there)
+#if defined(DT_UNKNOWN)
 c_static_assert(PAL_DT_UNKNOWN == DT_UNKNOWN);
 c_static_assert(PAL_DT_FIFO == DT_FIFO);
 c_static_assert(PAL_DT_CHR == DT_CHR);
@@ -87,6 +101,7 @@ c_static_assert(PAL_DT_REG == DT_REG);
 c_static_assert(PAL_DT_LNK == DT_LNK);
 c_static_assert(PAL_DT_SOCK == DT_SOCK);
 c_static_assert(PAL_DT_WHT == DT_WHT);
+#endif
 
 // Validate that our Lock enum value are correct for the platform
 c_static_assert(PAL_LOCK_SH == LOCK_SH);
@@ -106,12 +121,15 @@ c_static_assert(PAL_SEEK_CUR == SEEK_CUR);
 c_static_assert(PAL_SEEK_END == SEEK_END);
 
 // Validate our PollFlags enum values are correct for the platform
+// HACK: AIX values are different; we convert them between PAL_POLL and POLL now
+#ifndef _AIX
 c_static_assert(PAL_POLLIN == POLLIN);
 c_static_assert(PAL_POLLPRI == POLLPRI);
 c_static_assert(PAL_POLLOUT == POLLOUT);
 c_static_assert(PAL_POLLERR == POLLERR);
 c_static_assert(PAL_POLLHUP == POLLHUP);
 c_static_assert(PAL_POLLNVAL == POLLNVAL);
+#endif
 
 // Validate our FileAdvice enum values are correct for the platform
 #if HAVE_POSIX_ADVISE
@@ -142,7 +160,7 @@ c_static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK);
 c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 #endif // HAVE_INOTIFY
 
-static void ConvertFileStatus(const struct stat_* src, struct FileStatus* dst)
+static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
     dst->Dev = (int64_t)src->st_dev;
     dst->Ino = (int64_t)src->st_ino;
@@ -173,7 +191,7 @@ static void ConvertFileStatus(const struct stat_* src, struct FileStatus* dst)
 
 // CoreCLR expects the "2" suffixes on these: they should be cleaned up in our
 // next coordinated System.Native changes
-int32_t SystemNative_Stat2(const char* path, struct FileStatus* output)
+int32_t SystemNative_Stat2(const char* path, FileStatus* output)
 {
     struct stat_ result;
     int ret;
@@ -187,7 +205,7 @@ int32_t SystemNative_Stat2(const char* path, struct FileStatus* output)
     return ret;
 }
 
-int32_t SystemNative_FStat2(intptr_t fd, struct FileStatus* output)
+int32_t SystemNative_FStat2(intptr_t fd, FileStatus* output)
 {
     struct stat_ result;
     int ret;
@@ -201,7 +219,7 @@ int32_t SystemNative_FStat2(intptr_t fd, struct FileStatus* output)
     return ret;
 }
 
-int32_t SystemNative_LStat2(const char* path, struct FileStatus* output)
+int32_t SystemNative_LStat2(const char* path, FileStatus* output)
 {
     struct stat_ result;
     int ret = lstat_(path, &result);
@@ -239,8 +257,10 @@ static int32_t ConvertOpenFlags(int32_t flags)
         return -1;
     }
 
+#if HAVE_O_CLOEXEC
     if (flags & PAL_O_CLOEXEC)
         ret |= O_CLOEXEC;
+#endif
     if (flags & PAL_O_CREAT)
         ret |= O_CREAT;
     if (flags & PAL_O_EXCL)
@@ -256,6 +276,11 @@ static int32_t ConvertOpenFlags(int32_t flags)
 
 intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 {
+// these two ifdefs are for platforms where we dont have the open version of CLOEXEC and thus
+// must simulate it by doing a fcntl with the SETFFD version after the open instead
+#if !HAVE_O_CLOEXEC
+    int32_t old_flags = flags;
+#endif
     flags = ConvertOpenFlags(flags);
     if (flags == -1)
     {
@@ -265,6 +290,12 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 
     int result;
     while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);
+#if !HAVE_O_CLOEXEC
+    if (old_flags & PAL_O_CLOEXEC)
+    {
+        fcntl(result, F_SETFD, FD_CLOEXEC);
+    }
+#endif
     return result;
 }
 
@@ -276,7 +307,13 @@ int32_t SystemNative_Close(intptr_t fd)
 intptr_t SystemNative_Dup(intptr_t oldfd)
 {
     int result;
+#if HAVE_F_DUPFD_CLOEXEC
     while ((result = fcntl(ToFileDescriptor(oldfd), F_DUPFD_CLOEXEC, 0)) < 0 && errno == EINTR);
+#else
+    while ((result = fcntl(ToFileDescriptor(oldfd), F_DUPFD, 0)) < 0 && errno == EINTR);
+    // do CLOEXEC here too
+    fcntl(result, F_SETFD, FD_CLOEXEC);
+#endif
     return result;
 }
 
@@ -319,13 +356,51 @@ int32_t SystemNative_ShmUnlink(const char* name)
 #endif
 }
 
-static void ConvertDirent(const struct dirent* entry, struct DirectoryEntry* outputEntry)
+static void ConvertDirent(const struct dirent* entry, DirectoryEntry* outputEntry)
 {
     // We use Marshal.PtrToStringAnsi on the managed side, which takes a pointer to
     // the start of the unmanaged string. Give the caller back a pointer to the
     // location of the start of the string that exists in their own byte buffer.
     outputEntry->Name = entry->d_name;
+#if !defined(DT_UNKNOWN)
+    /* AIX has no d_type, make a substitute */
+    struct stat s;
+    stat(entry->d_name, &s);
+    if (S_ISDIR(s.st_mode))
+    {
+        outputEntry->InodeType = PAL_DT_DIR;
+    }
+    else if (S_ISFIFO(s.st_mode))
+    {
+        outputEntry->InodeType = PAL_DT_FIFO;
+    }
+    else if (S_ISCHR(s.st_mode))
+    {
+        outputEntry->InodeType = PAL_DT_CHR;
+    }
+    else if (S_ISBLK(s.st_mode))
+    {
+        outputEntry->InodeType = PAL_DT_BLK;
+    }
+    else if (S_ISREG(s.st_mode))
+    {
+        outputEntry->InodeType = PAL_DT_REG;
+    }
+    else if (S_ISLNK(s.st_mode))
+    {
+        outputEntry->InodeType = PAL_DT_LNK;
+    }
+    else if (S_ISSOCK(s.st_mode))
+    {
+        outputEntry->InodeType = PAL_DT_SOCK;
+    }
+    else
+    {
+        outputEntry->InodeType = PAL_DT_UNKNOWN;
+    }
+#else
     outputEntry->InodeType = (int32_t)entry->d_type;
+#endif
 
 #if HAVE_DIRENT_NAME_LEN
     outputEntry->NameLength = entry->d_namlen;
@@ -356,7 +431,7 @@ int32_t SystemNative_GetReadDirRBufferSize(void)
 // If the platform supports readdir_r, the caller provides a buffer into which the data is read.
 // If the platform uses readdir, the caller must ensure no calls are made to readdir/closedir since those will invalidate
 // the current dirent. We assume the platform supports concurrent readdir calls to different DIRs.
-int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, struct DirectoryEntry* outputEntry)
+int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
 {
     assert(dir != NULL);
     assert(outputEntry != NULL);
@@ -435,7 +510,9 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
         case 0:
             break;
         case PAL_O_CLOEXEC:
+#if HAVE_O_CLOEXEC
             flags = O_CLOEXEC;
+#endif
             break;
         default:
             assert_msg(false, "Unknown pipe flag", (int)flags);
@@ -452,7 +529,11 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
     while ((result = pipe(pipeFds)) < 0 && errno == EINTR);
 
     // Then, if O_CLOEXEC was specified, use fcntl to configure the file descriptors appropriately.
+#if HAVE_O_CLOEXEC
     if ((flags & O_CLOEXEC) != 0 && result == 0)
+#else
+    if ((flags & PAL_O_CLOEXEC) != 0 && result == 0)
+#endif
     {
         while ((result = fcntl(pipeFds[0], F_SETFD, FD_CLOEXEC)) < 0 && errno == EINTR);
         if (result == 0)
@@ -581,11 +662,6 @@ int32_t SystemNative_ChDir(const char* path)
 int32_t SystemNative_Access(const char* path, int32_t mode)
 {
     return access(path, mode);
-}
-
-int32_t SystemNative_FnMatch(const char* pattern, const char* path, int32_t flags)
-{
-    return fnmatch(pattern, path, flags);
 }
 
 int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence)
@@ -800,46 +876,6 @@ int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
     return -1;
 }
 
-int32_t SystemNative_MLock(void* address, uint64_t length)
-{
-    if (length > SIZE_MAX)
-    {
-        errno = ERANGE;
-        return -1;
-    }
-
-    return mlock(address, (size_t)length);
-}
-
-int32_t SystemNative_MUnlock(void* address, uint64_t length)
-{
-    if (length > SIZE_MAX)
-    {
-        errno = ERANGE;
-        return -1;
-    }
-
-    return munlock(address, (size_t)length);
-}
-
-int32_t SystemNative_MProtect(void* address, uint64_t length, int32_t protection)
-{
-    if (length > SIZE_MAX)
-    {
-        errno = ERANGE;
-        return -1;
-    }
-
-    protection = ConvertMMapProtection(protection);
-    if (protection == -1)
-    {
-        errno = EINVAL;
-        return -1;
-    }
-
-    return mprotect(address, (size_t)length, protection);
-}
-
 int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)
 {
     if (length > SIZE_MAX)
@@ -888,7 +924,7 @@ int32_t SystemNative_FTruncate(intptr_t fd, int64_t length)
     return result;
 }
 
-int32_t SystemNative_Poll(struct PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
+int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
 {
     if (pollEvents == NULL || triggered == NULL)
     {
@@ -916,9 +952,34 @@ int32_t SystemNative_Poll(struct PollEvent* pollEvents, uint32_t eventCount, int
 
     for (uint32_t i = 0; i < eventCount; i++)
     {
-        const struct PollEvent* event = &pollEvents[i];
+        const PollEvent* event = &pollEvents[i];
         pollfds[i].fd = event->FileDescriptor;
-        pollfds[i].events = event->Events;
+        // we need to do this for platforms like AIX where PAL_POLL* doesn't
+        // match up to their reality; this is PollEvent -> system polling
+        switch (event->Events)
+        {
+            case PAL_POLLIN:
+                pollfds[i].events = POLLIN;
+                break;
+            case PAL_POLLPRI:
+                pollfds[i].events = POLLPRI;
+                break;
+            case PAL_POLLOUT:
+                pollfds[i].events = POLLOUT;
+                break;
+            case PAL_POLLERR:
+                pollfds[i].events = POLLERR;
+                break;
+            case PAL_POLLHUP:
+                pollfds[i].events = POLLHUP;
+                break;
+            case PAL_POLLNVAL:
+                pollfds[i].events = POLLNVAL;
+                break;
+            default:
+                pollfds[i].events = event->Events;
+                break;
+        }
         pollfds[i].revents = 0;
     }
 
@@ -942,7 +1003,31 @@ int32_t SystemNative_Poll(struct PollEvent* pollEvents, uint32_t eventCount, int
         assert(pfd->fd == pollEvents[i].FileDescriptor);
         assert(pfd->events == pollEvents[i].Events);
 
-        pollEvents[i].TriggeredEvents = (int16_t)pfd->revents;
+        // same as the other switch, just system -> PollEvent
+        switch (pfd->revents)
+        {
+            case POLLIN:
+                pollEvents[i].TriggeredEvents = PAL_POLLIN;
+                break;
+            case POLLPRI:
+                pollEvents[i].TriggeredEvents = PAL_POLLPRI;
+                break;
+            case POLLOUT:
+                pollEvents[i].TriggeredEvents = PAL_POLLOUT;
+                break;
+            case POLLERR:
+                pollEvents[i].TriggeredEvents = PAL_POLLERR;
+                break;
+            case POLLHUP:
+                pollEvents[i].TriggeredEvents = PAL_POLLHUP;
+                break;
+            case POLLNVAL:
+                pollEvents[i].TriggeredEvents = PAL_POLLNVAL;
+                break;
+            default:
+                pollEvents[i].TriggeredEvents = (int16_t)pfd->revents;
+                break;
+        }
     }
 
     *triggered = (uint32_t)rv;

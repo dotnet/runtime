@@ -10,13 +10,18 @@ using Xunit;
 
 namespace System.Transactions.Tests
 {
-    public class LTMEnlistmentTests
+    public class LTMEnlistmentTests : IDisposable
     {
         const int MaxTransactionCommitTimeoutInSeconds = 5;
 
         public LTMEnlistmentTests()
         {
             // Make sure we start with Transaction.Current = null.
+            Transaction.Current = null;
+        }
+
+        public void Dispose()
+        {
             Transaction.Current = null;
         }
 

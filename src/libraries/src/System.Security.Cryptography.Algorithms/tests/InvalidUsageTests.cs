@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("count", null, () => hmac.ExposedHashCore(new byte[1], 0, -1));
                 AssertExtensions.Throws<ArgumentException>(null, () => hmac.ExposedHashCore(new byte[1], 0, 2));
                 AssertExtensions.Throws<ArgumentException>(null, () => hmac.ExposedHashCore(new byte[2], 1, 2));
-                AssertExtensions.Throws<ArgumentException>(null, () => hmac.ExposedHashCore(new byte[1], Int32.MaxValue, Int32.MaxValue));
+                AssertExtensions.Throws<ArgumentException>(null, () => hmac.ExposedHashCore(new byte[1], int.MaxValue, int.MaxValue));
             }
         }
 

@@ -188,11 +188,5 @@ namespace MS.Internal.Xml.XPath
             Debug.Assert(value is XPathNavigator, "Unknown value type");
             return XPathResultType_Navigator;
         }
-
-        // =================== Serialization ======================
-        public virtual void PrintQuery(XmlWriter w)
-        {
-            w.WriteElementString(this.GetType().Name, string.Empty);
-        }
     }
 }

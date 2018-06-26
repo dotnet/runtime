@@ -28,9 +28,6 @@
     <Compile Include="System\OperatingSystemTests.cs" />
     <Compile Include="System\Runtime\Versioning\VersioningHelperTests.cs" />
     <Compile Include="System\AppDomainTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
     <Compile Include="System\Reflection\AssemblyNameProxyTests.cs" />
     <Compile Include="System\MarshalByRefObjectTest.cs" />
     <Compile Include="TestHelpers.cs" />

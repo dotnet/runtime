@@ -107,7 +107,7 @@ namespace System.DirectoryServices.ActiveDirectory
             //
             if (contextType != DirectoryContextType.Domain && contextType != DirectoryContextType.Forest)
             {
-                throw new ArgumentException(SR.OnlyDomainOrForest, "contextType");
+                throw new ArgumentException(SR.OnlyDomainOrForest, nameof(contextType));
             }
 
             InitializeDirectoryContext(contextType, null, null, null);
@@ -117,17 +117,17 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (contextType < DirectoryContextType.Domain || contextType > DirectoryContextType.ApplicationPartition)
             {
-                throw new InvalidEnumArgumentException("contextType", (int)contextType, typeof(DirectoryContextType));
+                throw new InvalidEnumArgumentException(nameof(contextType), (int)contextType, typeof(DirectoryContextType));
             }
 
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             if (name.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "name");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(name));
             }
 
             InitializeDirectoryContext(contextType, name, null, null);
@@ -141,7 +141,7 @@ namespace System.DirectoryServices.ActiveDirectory
             //
             if (contextType != DirectoryContextType.Domain && contextType != DirectoryContextType.Forest)
             {
-                throw new ArgumentException(SR.OnlyDomainOrForest, "contextType");
+                throw new ArgumentException(SR.OnlyDomainOrForest, nameof(contextType));
             }
 
             InitializeDirectoryContext(contextType, null, username, password);
@@ -151,17 +151,17 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (contextType < DirectoryContextType.Domain || contextType > DirectoryContextType.ApplicationPartition)
             {
-                throw new InvalidEnumArgumentException("contextType", (int)contextType, typeof(DirectoryContextType));
+                throw new InvalidEnumArgumentException(nameof(contextType), (int)contextType, typeof(DirectoryContextType));
             }
 
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
 
             if (name.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "name");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(name));
             }
 
             InitializeDirectoryContext(contextType, name, username, password);

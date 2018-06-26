@@ -1,9 +1,9 @@
-project(System.IO.Compression.Native)
+project(System.IO.Compression.Native C)
 
 find_package(ZLIB REQUIRED)
 
 set(NATIVECOMPRESSION_SOURCES
-    pal_zlib.cpp
+    ../../AnyOS/zlib/pal_zlib.c
 )
 
 #Include Brotli include files

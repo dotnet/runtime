@@ -16,7 +16,7 @@ namespace System.Xml
         {
         }
 
-        public XmlDOMTextWriter(String filename, Encoding encoding) : base(filename, encoding)
+        public XmlDOMTextWriter(string filename, Encoding encoding) : base(filename, encoding)
         {
         }
 

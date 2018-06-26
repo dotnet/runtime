@@ -11,7 +11,7 @@ namespace System.Text
     // Latin1Encoding is a simple override to optimize the GetString version of Latin1Encoding.
     // because of the best fit cases we can't do this when encoding the string, only when decoding
     //
-    internal class Latin1Encoding : EncodingNLS
+    internal sealed class Latin1Encoding : EncodingNLS
     {
         // Used by Encoding.Latin1 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
@@ -42,7 +42,7 @@ namespace System.Text
             if (encoder != null)
             {
                 charLeftOver = encoder._charLeftOver;
-                Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
+                Debug.Assert(charLeftOver == 0 || char.IsHighSurrogate(charLeftOver),
                     "[Latin1Encoding.GetByteCount]leftover character should be high surrogate");
 
                 fallback = encoder.Fallback as EncoderReplacementFallback;
@@ -164,7 +164,7 @@ namespace System.Text
             {
                 charLeftOver = encoder._charLeftOver;
                 fallback = encoder.Fallback as EncoderReplacementFallback;
-                Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
+                Debug.Assert(charLeftOver == 0 || char.IsHighSurrogate(charLeftOver),
                     "[Latin1Encoding.GetBytes]leftover character should be high surrogate");
 
                 // Verify that we have no fallbackbuffer, for ASCII its always empty, so just assert

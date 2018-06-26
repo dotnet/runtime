@@ -11,11 +11,16 @@ using Xunit;
 namespace System.Transactions.Tests
 {
     public enum CloneType { Normal, BlockingDependent, RollbackDependent };
-    public class CloneTxTests
+    public class CloneTxTests : IDisposable
     {
         public CloneTxTests()
         {
             // Make sure we start with Transaction.Current = null.
+            Transaction.Current = null;
+        }
+
+        public void Dispose()
+        {
             Transaction.Current = null;
         }
 

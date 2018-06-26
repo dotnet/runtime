@@ -159,21 +159,6 @@ namespace System.Xml.Schema
                 qname = name;
                 xso = value;
             }
-
-            public XmlSchemaObject IsMatch(string localName, string ns)
-            {
-                if (localName == qname.Name && ns == qname.Namespace)
-                {
-                    return xso;
-                }
-                return null;
-            }
-
-            public void Reset()
-            {
-                qname = null;
-                xso = null;
-            }
         }
 
         internal class NamesCollection : ICollection
@@ -192,7 +177,7 @@ namespace System.Xml.Schema
                 get { return _size; }
             }
 
-            public Object SyncRoot
+            public object SyncRoot
             {
                 get
                 {
@@ -247,7 +232,7 @@ namespace System.Xml.Schema
                 get { return _size; }
             }
 
-            public Object SyncRoot
+            public object SyncRoot
             {
                 get
                 {
@@ -304,7 +289,7 @@ namespace System.Xml.Schema
                 currentIndex = -1;
             }
 
-            public Object Current
+            public object Current
             {
                 get
                 {

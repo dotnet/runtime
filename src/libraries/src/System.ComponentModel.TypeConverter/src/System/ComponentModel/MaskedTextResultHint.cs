@@ -5,14 +5,14 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///     Enum defining hints about the reason of the result of a particular operation.
+    /// Enum defining hints about the reason of the result of a particular operation.
     /// </summary>
     public enum MaskedTextResultHint
     {
         // Unknown/Uninitialized
         Unknown = 0,
 
-        ////////// Success (positive values, excluded).  /////////
+        ////////// Success (positive values, excluded). /////////
         /// WARNING: Do NOT modify the order of the success enum values, they are ordered the way TestString give precedence 
         /// to the result hint when multiple chars tested giving different success hints.
 
@@ -26,7 +26,7 @@ namespace System.ComponentModel
         Success = 4,
 
 
-        /////////  Failure values (negative values). /////////
+        ///////// Failure values (negative values). /////////
 
         // Failure due to mask violation. (values in the range of [-1, -49]
 

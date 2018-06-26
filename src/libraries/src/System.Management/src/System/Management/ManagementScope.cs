@@ -99,59 +99,59 @@ namespace System.Management
                                                                         int impersonationLevel,
                                                                         int authenticationLevel);
 
-         internal delegate int GetPropertyHandle(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszPropertyName, [Out] out Int32 pType, [Out] out Int32 plHandle);
-         internal delegate int WritePropertyValue(int vFunc, IntPtr pWbemClassObject, [In] Int32 lHandle, [In] Int32 lNumBytes, [In][MarshalAs(UnmanagedType.LPWStr)] string str);
+         internal delegate int GetPropertyHandle(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszPropertyName, [Out] out int pType, [Out] out int plHandle);
+         internal delegate int WritePropertyValue(int vFunc, IntPtr pWbemClassObject, [In] int lHandle, [In] int lNumBytes, [In][MarshalAs(UnmanagedType.LPWStr)] string str);
          internal delegate int GetQualifierSet(int vFunc, IntPtr pWbemClassObject, [Out] out IntPtr ppQualSet);
-         internal delegate int Get(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] Int32 lFlags, [In][Out] ref object pVal, [In][Out] ref Int32 pType, [In][Out] ref Int32 plFlavor);
-         internal delegate int Put(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] Int32 lFlags, [In] ref object pVal, [In] Int32 Type);
+         internal delegate int Get(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [In][Out] ref object pVal, [In][Out] ref int pType, [In][Out] ref int plFlavor);
+         internal delegate int Put(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [In] ref object pVal, [In] int Type);
          internal delegate int Delete(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName);
-         internal delegate int GetNames(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszQualifierName, [In] Int32 lFlags, [In] ref object pQualifierVal, [Out][MarshalAs(UnmanagedType.SafeArray, SafeArraySubType=VarEnum.VT_BSTR)]  out string[]   pNames);
-         internal delegate int BeginEnumeration(int vFunc, IntPtr pWbemClassObject, [In] Int32 lEnumFlags);
-         internal delegate int Next(int vFunc, IntPtr pWbemClassObject, [In] Int32 lFlags, [In][Out][MarshalAs(UnmanagedType.BStr)]  ref string   strName, [In][Out] ref object pVal, [In][Out] ref Int32 pType, [In][Out] ref Int32 plFlavor);
+         internal delegate int GetNames(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszQualifierName, [In] int lFlags, [In] ref object pQualifierVal, [Out][MarshalAs(UnmanagedType.SafeArray, SafeArraySubType=VarEnum.VT_BSTR)]  out string[]   pNames);
+         internal delegate int BeginEnumeration(int vFunc, IntPtr pWbemClassObject, [In] int lEnumFlags);
+         internal delegate int Next(int vFunc, IntPtr pWbemClassObject, [In] int lFlags, [In][Out][MarshalAs(UnmanagedType.BStr)]  ref string   strName, [In][Out] ref object pVal, [In][Out] ref int pType, [In][Out] ref int plFlavor);
          internal delegate int EndEnumeration(int vFunc, IntPtr pWbemClassObject);
          internal delegate int GetPropertyQualifierSet(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszProperty, [Out] out IntPtr ppQualSet);
          internal delegate int Clone(int vFunc, IntPtr pWbemClassObject, [Out] out IntPtr ppCopy);
-         internal delegate int GetObjectText(int vFunc, IntPtr pWbemClassObject, [In] Int32 lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrObjectText);
-         internal delegate int SpawnDerivedClass(int vFunc, IntPtr pWbemClassObject, [In] Int32 lFlags, [Out] out IntPtr ppNewClass);
-         internal delegate int SpawnInstance(int vFunc, IntPtr pWbemClassObject, [In] Int32 lFlags, [Out] out IntPtr ppNewInstance);
-         internal delegate int CompareTo(int vFunc, IntPtr pWbemClassObject, [In] Int32 lFlags, [In] IntPtr pCompareTo);
+         internal delegate int GetObjectText(int vFunc, IntPtr pWbemClassObject, [In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrObjectText);
+         internal delegate int SpawnDerivedClass(int vFunc, IntPtr pWbemClassObject, [In] int lFlags, [Out] out IntPtr ppNewClass);
+         internal delegate int SpawnInstance(int vFunc, IntPtr pWbemClassObject, [In] int lFlags, [Out] out IntPtr ppNewInstance);
+         internal delegate int CompareTo(int vFunc, IntPtr pWbemClassObject, [In] int lFlags, [In] IntPtr pCompareTo);
          internal delegate int GetPropertyOrigin(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrClassName);
          internal delegate int InheritsFrom(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   strAncestor);
-         internal delegate int GetMethod(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] Int32 lFlags, [Out]out IntPtr ppInSignature, [Out] out IntPtr ppOutSignature);
-         internal delegate int PutMethod(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] Int32 lFlags, [In] IntPtr pInSignature, [In] IntPtr pOutSignature);
+         internal delegate int GetMethod(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [Out]out IntPtr ppInSignature, [Out] out IntPtr ppOutSignature);
+         internal delegate int PutMethod(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [In] IntPtr pInSignature, [In] IntPtr pOutSignature);
          internal delegate int DeleteMethod(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName);
-         internal delegate int BeginMethodEnumeration(int vFunc, IntPtr pWbemClassObject, [In] Int32 lEnumFlags);
-         internal delegate int NextMethod(int vFunc, IntPtr pWbemClassObject, [In] Int32 lFlags, [Out][MarshalAs(UnmanagedType.BStr)] out string pstrName, [Out] out IntPtr ppInSignature, [Out] out IntPtr ppOutSignature);
+         internal delegate int BeginMethodEnumeration(int vFunc, IntPtr pWbemClassObject, [In] int lEnumFlags);
+         internal delegate int NextMethod(int vFunc, IntPtr pWbemClassObject, [In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)] out string pstrName, [Out] out IntPtr ppInSignature, [Out] out IntPtr ppOutSignature);
          internal delegate int EndMethodEnumeration(int vFunc, IntPtr pWbemClassObject);
          internal delegate int GetMethodQualifierSet(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszMethod, [Out] out IntPtr ppQualSet);
          internal delegate int GetMethodOrigin(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszMethodName, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrClassName);
-         internal delegate int QualifierSet_Get(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] Int32 lFlags, [In][Out] ref object pVal, [In][Out] ref Int32 plFlavor);
-         internal delegate int QualifierSet_Put(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] ref object pVal, [In] Int32 lFlavor);
+         internal delegate int QualifierSet_Get(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] int lFlags, [In][Out] ref object pVal, [In][Out] ref int plFlavor);
+         internal delegate int QualifierSet_Put(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] ref object pVal, [In] int lFlavor);
          internal delegate int QualifierSet_Delete(int vFunc, IntPtr pWbemClassObject, [In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName);
-         internal delegate int QualifierSet_GetNames(int vFunc, IntPtr pWbemClassObject, [In] Int32 lFlags, [Out][MarshalAs(UnmanagedType.SafeArray, SafeArraySubType=VarEnum.VT_BSTR)]  out string[]   pNames);
-         internal delegate int QualifierSet_BeginEnumeration(int vFunc, IntPtr pWbemClassObject, [In] Int32 lFlags);
-         internal delegate int QualifierSet_Next(int vFunc, IntPtr pWbemClassObject, [In] Int32 lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrName, [Out] out object pVal, [Out] out Int32 plFlavor);
+         internal delegate int QualifierSet_GetNames(int vFunc, IntPtr pWbemClassObject, [In] int lFlags, [Out][MarshalAs(UnmanagedType.SafeArray, SafeArraySubType=VarEnum.VT_BSTR)]  out string[]   pNames);
+         internal delegate int QualifierSet_BeginEnumeration(int vFunc, IntPtr pWbemClassObject, [In] int lFlags);
+         internal delegate int QualifierSet_Next(int vFunc, IntPtr pWbemClassObject, [In] int lFlags, [Out][MarshalAs(UnmanagedType.BStr)]  out string   pstrName, [Out] out object pVal, [Out] out int plFlavor);
          internal delegate int QualifierSet_EndEnumeration(int vFunc, IntPtr pWbemClassObject);
          internal delegate int GetCurrentApartmentType(int vFunc, IntPtr pComThreadingInfo, [Out] out APTTYPE aptType);
          internal delegate void VerifyClientKey();  
          internal delegate int  GetDemultiplexedStub([In,MarshalAs(UnmanagedType.IUnknown)]object pIUnknown, [In]bool isLocal, [Out,MarshalAs(UnmanagedType.IUnknown)]out object ppIUnknown);         
          internal delegate int CreateInstanceEnumWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strFilter, 
-                                                                                            [In] Int32 lFlags, 
+                                                                                            [In] int lFlags, 
                                                                                             [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, 
                                                                                             [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum,
-                                                                                            [In] Int32 impLevel,
-                                                                                            [In] Int32 authnLevel,
+                                                                                            [In] int impLevel,
+                                                                                            [In] int authnLevel,
                                                                                             [In] [MarshalAs(UnmanagedType.Interface)] IWbemServices pCurrentNamespace,
                                                                                             [In][MarshalAs(UnmanagedType.BStr)]  string   strUser,
                                                                                             [In]IntPtr   strPassword,
                                                                                             [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority
                                                                                             );
          internal delegate int CreateClassEnumWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strSuperclass,
-                                                                                        [In] Int32 lFlags,
+                                                                                        [In] int lFlags,
                                                                                         [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx,
                                                                                         [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum,
-                                                                                        [In] Int32 impLevel,
-                                                                                        [In] Int32 authnLevel,
+                                                                                        [In] int impLevel,
+                                                                                        [In] int authnLevel,
                                                                                         [In] [MarshalAs(UnmanagedType.Interface)] IWbemServices pCurrentNamespace,
                                                                                         [In][MarshalAs(UnmanagedType.BStr)]  string   strUser,
                                                                                         [In]IntPtr   strPassword,
@@ -159,11 +159,11 @@ namespace System.Management
                                                                                         );
          internal delegate int ExecQueryWmi([In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, 
                                                                             [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, 
-                                                                            [In] Int32 lFlags, 
+                                                                            [In] int lFlags, 
                                                                             [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, 
                                                                             [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum,
-                                                                            [In] Int32 impLevel,
-                                                                            [In] Int32 authnLevel,
+                                                                            [In] int impLevel,
+                                                                            [In] int authnLevel,
                                                                             [In] [MarshalAs(UnmanagedType.Interface)] IWbemServices pCurrentNamespace,
                                                                             [In][MarshalAs(UnmanagedType.BStr)]  string   strUser,
                                                                             [In]IntPtr   strPassword,
@@ -171,33 +171,33 @@ namespace System.Management
                                                                             );
         internal delegate int ExecNotificationQueryWmi( [In][MarshalAs(UnmanagedType.BStr)]  string   strQueryLanguage, 
                                                                                                 [In][MarshalAs(UnmanagedType.BStr)]  string   strQuery, 
-                                                                                                [In] Int32 lFlags, 
+                                                                                                [In] int lFlags, 
                                                                                                 [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx, 
                                                                                                 [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum,
-                                                                                                [In] Int32 impLevel,
-                                                                                                [In] Int32 authnLevel,
+                                                                                                [In] int impLevel,
+                                                                                                [In] int authnLevel,
                                                                                                 [In] [MarshalAs(UnmanagedType.Interface)] IWbemServices pCurrentNamespace,
                                                                                                 [In][MarshalAs(UnmanagedType.BStr)]  string   strUser,
                                                                                                 [In]IntPtr   strPassword,
                                                                                                 [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority
                                                                                                 );
         internal delegate int PutInstanceWmi([In] IntPtr pInst,
-                                                                            [In] Int32 lFlags,
+                                                                            [In] int lFlags,
                                                                             [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx,
                                                                             [In] IntPtr ppCallResult,
-                                                                            [In] Int32 impLevel,
-                                                                            [In] Int32 authnLevel,
+                                                                            [In] int impLevel,
+                                                                            [In] int authnLevel,
                                                                             [In] [MarshalAs(UnmanagedType.Interface)] IWbemServices pCurrentNamespace,
                                                                             [In][MarshalAs(UnmanagedType.BStr)]  string   strUser,
                                                                             [In]IntPtr   strPassword,
                                                                             [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority
                                                                             );
         internal delegate int PutClassWmi([In] IntPtr pObject,
-                                                                        [In] Int32 lFlags,
+                                                                        [In] int lFlags,
                                                                         [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx,
                                                                         [In] IntPtr ppCallResult,
-                                                                        [In] Int32 impLevel,
-                                                                        [In] Int32 authnLevel,
+                                                                        [In] int impLevel,
+                                                                        [In] int authnLevel,
                                                                         [In] [MarshalAs(UnmanagedType.Interface)] IWbemServices pCurrentNamespace,
                                                                         [In][MarshalAs(UnmanagedType.BStr)]  string   strUser,
                                                                         [In]IntPtr   strPassword,
@@ -205,8 +205,8 @@ namespace System.Management
                                                                         );
         internal delegate int CloneEnumWbemClassObject(
                                                                 [Out][MarshalAs(UnmanagedType.Interface)]  out IEnumWbemClassObject   ppEnum,
-                                                                [In] Int32 impLevel,
-                                                                [In] Int32 authnLevel,
+                                                                [In] int impLevel,
+                                                                [In] int authnLevel,
                                                                 [In] [MarshalAs(UnmanagedType.Interface)] IEnumWbemClassObject pCurrentEnumWbemClassObject,
                                                                 [In][MarshalAs(UnmanagedType.BStr)]  string   strUser,
                                                                 [In]IntPtr   strPassword,
@@ -217,7 +217,7 @@ namespace System.Management
                                                                         [In][MarshalAs(UnmanagedType.BStr)]  string   strUser,
                                                                         [In]  IntPtr strPassword,
                                                                         [In][MarshalAs(UnmanagedType.BStr)]  string   strLocale,
-                                                                        [In] Int32 lSecurityFlags,
+                                                                        [In] int lSecurityFlags,
                                                                         [In][MarshalAs(UnmanagedType.BStr)]  string   strAuthority,
                                                                         [In][MarshalAs(UnmanagedType.Interface)]  IWbemContext   pCtx,
                                                                         [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemServices   ppNamespace,
@@ -551,7 +551,7 @@ namespace System.Management
                 IntPtr pUnk = Marshal.GetIUnknownForObject(wbemServices);
 
                 // Get an 'IUnknown RCW' for this apartment
-                Object unknown = Marshal.GetObjectForIUnknown(pUnk);
+                object unknown = Marshal.GetObjectForIUnknown(pUnk);
 
                 // Release the ref count on the IUnknwon
                 Marshal.Release(pUnk);
@@ -828,7 +828,7 @@ namespace System.Management
                     HandleIdentifierChange(this,null);
                 }
                 else
-                    throw new ArgumentNullException ("value");
+                    throw new ArgumentNullException (nameof(value));
             }
         }
     
@@ -871,7 +871,7 @@ namespace System.Management
                     HandleIdentifierChange(this,null);
                 }
                 else
-                    throw new ArgumentNullException ("value");
+                    throw new ArgumentNullException (nameof(value));
             }
         }
 
@@ -893,7 +893,7 @@ namespace System.Management
         ///    A new copy of this object.
         ///    object.
         /// </returns>
-        Object ICloneable.Clone()
+        object ICloneable.Clone()
         {
             return Clone();
         }
@@ -1157,7 +1157,7 @@ namespace System.Management
             this.scope = theScope;
             pWbemServiecsSecurityHelper = pWbemServiecs;
         }
-        internal int OpenNamespace_(string strNamespace, Int32 lFlags, ref IWbemServices ppWorkingNamespace, IntPtr ppCallResult)
+        internal int OpenNamespace_(string strNamespace, int lFlags, ref IWbemServices ppWorkingNamespace, IntPtr ppCallResult)
         {
             int status = (int)tag_WBEMSTATUS.WBEM_E_NOT_SUPPORTED;
             //This should go through WMINET_utils layer and ppWorkingNamespace should be secured. See implementation of CreateInstanceEnum method.
@@ -1170,29 +1170,29 @@ namespace System.Management
             status = pWbemServiecsSecurityHelper.CancelAsyncCall_(pSink);
             return status;
         }
-        internal int QueryObjectSink_( Int32 lFlags, ref IWbemObjectSink ppResponseHandler)
+        internal int QueryObjectSink_( int lFlags, ref IWbemObjectSink ppResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
              status = pWbemServiecsSecurityHelper.QueryObjectSink_(lFlags, out ppResponseHandler);
             return status;
         }
-        internal int GetObject_(string strObjectPath, Int32 lFlags, IWbemContext pCtx, ref IWbemClassObjectFreeThreaded ppObject,  IntPtr ppCallResult)
+        internal int GetObject_(string strObjectPath, int lFlags, IWbemContext pCtx, ref IWbemClassObjectFreeThreaded ppObject,  IntPtr ppCallResult)
         {
              //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
             //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.            
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( !Object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
+            if( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
                 status = pWbemServiecsSecurityHelper.GetObject_(strObjectPath, lFlags, pCtx, out ppObject, ppCallResult);
             return status;
         }
 
-        internal int GetObjectAsync_(string strObjectPath, Int32 lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
+        internal int GetObjectAsync_(string strObjectPath, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
              status = pWbemServiecsSecurityHelper.GetObjectAsync_(strObjectPath, lFlags, pCtx, pResponseHandler);
             return status;
         }
-        internal int PutClass_(IWbemClassObjectFreeThreaded pObject, Int32 lFlags, IWbemContext pCtx,  IntPtr ppCallResult)
+        internal int PutClass_(IWbemClassObjectFreeThreaded pObject, int lFlags, IWbemContext pCtx,  IntPtr ppCallResult)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
             if( null != scope)
@@ -1212,28 +1212,28 @@ namespace System.Management
             }
             return status;
         }
-         internal int PutClassAsync_(IWbemClassObjectFreeThreaded pObject, Int32 lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
+         internal int PutClassAsync_(IWbemClassObjectFreeThreaded pObject, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
              status = pWbemServiecsSecurityHelper.PutClassAsync_(pObject, lFlags,pCtx, pResponseHandler);
             return status;
         }
-         internal int DeleteClass_( string strClass, Int32 lFlags, IWbemContext pCtx, IntPtr ppCallResult)
+         internal int DeleteClass_( string strClass, int lFlags, IWbemContext pCtx, IntPtr ppCallResult)
          {
              //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
             //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.            
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( !Object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
+            if( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
                 status = pWbemServiecsSecurityHelper.DeleteClass_(strClass, lFlags, pCtx, ppCallResult);
             return status;
          }
-         internal int DeleteClassAsync_(string strClass, Int32 lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
+         internal int DeleteClassAsync_(string strClass, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
              status = pWbemServiecsSecurityHelper.DeleteClassAsync_(strClass, lFlags, pCtx,pResponseHandler);
             return status;
         }
-         internal int CreateClassEnum_(string strSuperClass, Int32 lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
+         internal int CreateClassEnum_(string strSuperClass, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
          {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
             if( null != scope )
@@ -1253,13 +1253,13 @@ namespace System.Management
             }
             return status;
          }
-          internal int CreateClassEnumAsync_(string strSuperClass, Int32 lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
+          internal int CreateClassEnumAsync_(string strSuperClass, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
              status = pWbemServiecsSecurityHelper.CreateClassEnumAsync_(strSuperClass, lFlags, pCtx, pResponseHandler);
             return status;
         }
-         internal int PutInstance_( IWbemClassObjectFreeThreaded pInst, Int32 lFlags, IWbemContext pCtx, IntPtr ppCallResult)
+         internal int PutInstance_( IWbemClassObjectFreeThreaded pInst, int lFlags, IWbemContext pCtx, IntPtr ppCallResult)
          {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
             if( null != scope)
@@ -1279,29 +1279,29 @@ namespace System.Management
             }
             return status;
          }
-         internal int PutInstanceAsync_(IWbemClassObjectFreeThreaded pInst, Int32 lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
+         internal int PutInstanceAsync_(IWbemClassObjectFreeThreaded pInst, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
              status = pWbemServiecsSecurityHelper.PutInstanceAsync_(pInst, lFlags, pCtx, pResponseHandler);
             return status;
         }
-         internal int DeleteInstance_(string strObjectPath, Int32 lFlags, IWbemContext pCtx, IntPtr ppCallResult)
+         internal int DeleteInstance_(string strObjectPath, int lFlags, IWbemContext pCtx, IntPtr ppCallResult)
          {
              //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
             //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.            
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( !Object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
+            if( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
                 status = pWbemServiecsSecurityHelper.DeleteInstance_(strObjectPath, lFlags, pCtx, ppCallResult);
             return status;
          }
-         internal int DeleteInstanceAsync_(string strObjectPath, Int32 lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
+         internal int DeleteInstanceAsync_(string strObjectPath, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
              status = pWbemServiecsSecurityHelper.DeleteInstanceAsync_(strObjectPath, lFlags, pCtx, pResponseHandler);
             return status;
         }
 
-         internal int CreateInstanceEnum_(string strFilter, Int32 lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
+         internal int CreateInstanceEnum_(string strFilter, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
          {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
             if( null != scope)
@@ -1321,13 +1321,13 @@ namespace System.Management
             }
             return status;
          }
-         internal int CreateInstanceEnumAsync_(string strFilter, Int32 lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
+         internal int CreateInstanceEnumAsync_(string strFilter, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
              status = pWbemServiecsSecurityHelper.CreateInstanceEnumAsync_(strFilter, lFlags, pCtx, pResponseHandler);
             return status;
         }
-         internal int ExecQuery_(string strQueryLanguage, string strQuery, Int32 lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
+         internal int ExecQuery_(string strQueryLanguage, string strQuery, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
          {
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
             if( null != scope)
@@ -1348,13 +1348,13 @@ namespace System.Management
             }
             return status;
          }
-         internal int ExecQueryAsync_(string strQueryLanguage, string strQuery, Int32 lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
+         internal int ExecQueryAsync_(string strQueryLanguage, string strQuery, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
              status = pWbemServiecsSecurityHelper.ExecQueryAsync_(strQueryLanguage, strQuery, lFlags, pCtx, pResponseHandler);
             return status;
         }
-         internal int ExecNotificationQuery_(string strQueryLanguage, string strQuery, Int32 lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
+         internal int ExecNotificationQuery_(string strQueryLanguage, string strQuery, int lFlags, IWbemContext pCtx, ref IEnumWbemClassObject ppEnum)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
             if( null != scope)
@@ -1375,22 +1375,22 @@ namespace System.Management
             }
             return status;
         }
-         internal int ExecNotificationQueryAsync_(string strQueryLanguage, string strQuery, Int32 lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
+         internal int ExecNotificationQueryAsync_(string strQueryLanguage, string strQuery, int lFlags, IWbemContext pCtx, IWbemObjectSink pResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
              status = pWbemServiecsSecurityHelper.ExecNotificationQueryAsync_(strQueryLanguage, strQuery, lFlags, pCtx, pResponseHandler);
             return status;
         }
-         internal int ExecMethod_( string strObjectPath, string strMethodName, Int32 lFlags, IWbemContext pCtx, IWbemClassObjectFreeThreaded pInParams, ref IWbemClassObjectFreeThreaded ppOutParams, IntPtr ppCallResult)
+         internal int ExecMethod_( string strObjectPath, string strMethodName, int lFlags, IWbemContext pCtx, IWbemClassObjectFreeThreaded pInParams, ref IWbemClassObjectFreeThreaded ppOutParams, IntPtr ppCallResult)
          {
             //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
             //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if( !Object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
+            if( !object.ReferenceEquals(ppCallResult, IntPtr.Zero) )
                 status = pWbemServiecsSecurityHelper.ExecMethod_(strObjectPath, strMethodName, lFlags, pCtx, pInParams, out ppOutParams, ppCallResult);
             return status;
          }
-          internal int ExecMethodAsync_(string strObjectPath, string strMethodName, Int32 lFlags, IWbemContext pCtx, IWbemClassObjectFreeThreaded pInParams, IWbemObjectSink pResponseHandler)
+          internal int ExecMethodAsync_(string strObjectPath, string strMethodName, int lFlags, IWbemContext pCtx, IWbemClassObjectFreeThreaded pInParams, IWbemObjectSink pResponseHandler)
         {
              int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
              status = pWbemServiecsSecurityHelper.ExecMethodAsync_(strObjectPath, strMethodName, lFlags, pCtx, pInParams, pResponseHandler);
@@ -1498,7 +1498,7 @@ namespace System.Management
         /// <returns>
         ///    <para>true if this converter can perform the conversion; otherwise, false.</para>
         /// </returns>
-        public override Boolean CanConvertFrom(ITypeDescriptorContext context, Type sourceType) 
+        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType) 
         {
             if ((sourceType == typeof(ManagementScope))) 
             {
@@ -1515,7 +1515,7 @@ namespace System.Management
         /// <returns>
         ///    <para>true if this converter can perform the conversion; otherwise, false.</para>
         /// </returns>
-        public override Boolean CanConvertTo(ITypeDescriptorContext context, Type destinationType) 
+        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) 
         {
             if ((destinationType == typeof(InstanceDescriptor))) 
             {
@@ -1541,13 +1541,13 @@ namespace System.Management
 
             if (destinationType == null) 
             {
-                throw new ArgumentNullException("destinationType");
+                throw new ArgumentNullException(nameof(destinationType));
             }
 
             if (value is ManagementScope && destinationType == typeof(InstanceDescriptor)) 
             {
                 ManagementScope obj = ((ManagementScope)(value));
-                ConstructorInfo ctor = typeof(ManagementScope).GetConstructor(new Type[] {typeof(System.String)});
+                ConstructorInfo ctor = typeof(ManagementScope).GetConstructor(new Type[] {typeof(string)});
                 if (ctor != null) 
                 {
                     return new InstanceDescriptor(ctor, new object[] {obj.Path.Path});

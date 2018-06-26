@@ -55,7 +55,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
         def isLocal = (localType == 'local')
 
         def newJobName = 'code_coverage_windows'
-        def batchCommand = 'call build.cmd && call build-tests.cmd -coverage -outerloop -- /p:IsCIBuild=true'
+        def batchCommand = 'call build.cmd && call build-tests.cmd -coverage -outerloop -- /p:IsCIBuild=true /p:CodeCoverageAssemblies="System.Private.CoreLib"'
         if (isLocal) {
             newJobName = "${newJobName}_local"
             batchCommand = "${batchCommand}"

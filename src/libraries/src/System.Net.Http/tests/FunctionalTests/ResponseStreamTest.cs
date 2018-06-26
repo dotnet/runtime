@@ -15,7 +15,6 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
     public abstract class ResponseStreamTest : HttpClientTestBase
     {
         private readonly ITestOutputHelper _output;
@@ -25,7 +24,7 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -106,7 +105,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public async Task GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success()
         {
@@ -125,7 +124,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public async Task GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success()
         {
@@ -149,7 +148,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public async Task GetStreamAsync_ReadZeroBytes_Success()
         {
@@ -162,7 +161,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public async Task ReadAsStreamAsync_Cancel_TaskIsCanceled()
         {
@@ -206,7 +205,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT based Http stack ignores these errors")]
         [Theory]
         [InlineData(TransferType.ContentLength, TransferError.ContentLengthTooLarge)]
         [InlineData(TransferType.Chunked, TransferError.MissingChunkTerminator)]
@@ -221,7 +220,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(TransferType.None, TransferError.None)]
         [InlineData(TransferType.ContentLength, TransferError.None)]

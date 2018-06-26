@@ -23,7 +23,7 @@ namespace System.ServiceModel.Syndication
         {
             if (documentToWrite == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("documentToWrite");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(documentToWrite));
             }
             _document = documentToWrite;
         }

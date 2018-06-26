@@ -41,7 +41,7 @@ namespace System.Security.AccessControl
         { }
 
         public AccessRule(
-            String identity,
+            string identity,
             T rights,
             AccessControlType type)
             : this(
@@ -73,7 +73,7 @@ namespace System.Security.AccessControl
         { }
 
         public AccessRule(
-            String identity,
+            string identity,
             T rights,
             InheritanceFlags inheritanceFlags,
             PropagationFlags propagationFlags,
@@ -154,7 +154,7 @@ namespace System.Security.AccessControl
         }
 
         public AuditRule(
-            String identity,
+            string identity,
             T rights,
             AuditFlags flags)
             : this(
@@ -167,7 +167,7 @@ namespace System.Security.AccessControl
         }
 
         public AuditRule(
-            String identity,
+            string identity,
             T rights,
             InheritanceFlags inheritanceFlags,
             PropagationFlags propagationFlags,
@@ -320,7 +320,7 @@ namespace System.Security.AccessControl
 
         // Use this in your own Persist after you have demanded any appropriate CAS permissions.
         // Note that you will want your version to be internal. 
-        protected internal void Persist(String name)
+        protected internal void Persist(string name)
         {
             WriteLock();
 

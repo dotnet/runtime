@@ -75,8 +75,8 @@ internal class WmiEventSink : IWmiEventSource
             if (null != path)
             {
                 this.path = new ManagementPath (path);
-                if((0==String.Compare(this.path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
-                    (0==String.Compare(this.path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
+                if((0==string.Compare(this.path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
+                    (0==string.Compare(this.path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
                 {
                             this.isLocal = true;
                 }
@@ -87,8 +87,8 @@ internal class WmiEventSink : IWmiEventSource
                 this.scope = (ManagementScope) scope.Clone ();
                 if (null == path) // use scope to see if sink is local
                 {
-                    if((0==String.Compare(this.scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
-                        (0==String.Compare(this.scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
+                    if((0==string.Compare(this.scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
+                        (0==string.Compare(this.scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
                     {
                                 this.isLocal = true;
                     }
@@ -128,7 +128,7 @@ internal class WmiEventSink : IWmiEventSource
     public void SetStatus (
                     int flags, 
                     int hResult, 
-                    String message, 
+                    string message, 
                     IntPtr pErrorObj)
     {
         IWbemClassObjectFreeThreaded errObj = null;

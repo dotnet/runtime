@@ -214,7 +214,7 @@ namespace System.Xml
             }
         }
 
-        public Boolean ToBoolean()
+        public bool ToBoolean()
         {
             ValueHandleType type = _type;
             if (type == ValueHandleType.False)
@@ -318,7 +318,7 @@ namespace System.Xml
             return XmlConverter.ToUInt64(GetString());
         }
 
-        public Single ToSingle()
+        public float ToSingle()
         {
             ValueHandleType type = _type;
             if (type == ValueHandleType.Single)
@@ -327,9 +327,9 @@ namespace System.Xml
             {
                 double value = GetDouble();
 
-                if ((value >= Single.MinValue && value <= Single.MaxValue) || !double.IsFinite(value))
+                if ((value >= float.MinValue && value <= float.MaxValue) || !double.IsFinite(value))
                 {
-                    return (Single)value;
+                    return (float)value;
                 }
             }
             if (type == ValueHandleType.Zero)
@@ -345,7 +345,7 @@ namespace System.Xml
             return XmlConverter.ToSingle(GetString());
         }
 
-        public Double ToDouble()
+        public double ToDouble()
         {
             ValueHandleType type = _type;
             if (type == ValueHandleType.Double)
@@ -367,7 +367,7 @@ namespace System.Xml
             return XmlConverter.ToDouble(GetString());
         }
 
-        public Decimal ToDecimal()
+        public decimal ToDecimal()
         {
             ValueHandleType type = _type;
             if (type == ValueHandleType.Decimal)

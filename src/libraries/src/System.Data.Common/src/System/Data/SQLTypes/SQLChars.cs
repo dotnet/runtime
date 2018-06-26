@@ -43,7 +43,7 @@ namespace System.Data.SqlTypes
         private char[] _rgchWorkBuf;   // A 1-char work buffer.
 
         // The max data length that we support at this time.
-        private const long x_lMaxLen = System.Int32.MaxValue;
+        private const long x_lMaxLen = int.MaxValue;
 
         private const long x_lNull = -1L;
 

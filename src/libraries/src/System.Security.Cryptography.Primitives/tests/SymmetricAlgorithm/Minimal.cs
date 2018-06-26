@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
                 Assert.Equal(0, s.KeySize);
                 Assert.Equal(0, s.BlockSize);
 
-                Object ignored;
+                object ignored;
                 Assert.Throws<GenerateKeyNotImplementedException>(() => ignored = s.Key);
                 Assert.Throws<GenerateIvNotImplementedException>(() => ignored = s.IV);
 

@@ -20,14 +20,14 @@ namespace System.Reflection.Tests
 
         static ConstructorTestClassWithMultipleConstructors() { }
 
-        private ConstructorTestClassWithMultipleConstructors(String s) { }
+        private ConstructorTestClassWithMultipleConstructors(string s) { }
 
         protected ConstructorTestClassWithMultipleConstructors(int i) { }
 
         public ConstructorTestClassWithMultipleConstructors() { }
         public ConstructorTestClassWithMultipleConstructors(TimeSpan ts) { }
-        public ConstructorTestClassWithMultipleConstructors(Object o1, Object o2) { }
-        public ConstructorTestClassWithMultipleConstructors(Object obj0, Int32 i4) { }
+        public ConstructorTestClassWithMultipleConstructors(object o1, object o2) { }
+        public ConstructorTestClassWithMultipleConstructors(object obj0, int i4) { }
     }
 
     public class ConstructorTestBaseClass
@@ -37,7 +37,7 @@ namespace System.Reflection.Tests
 
         static ConstructorTestBaseClass() { }
         public ConstructorTestBaseClass() { }
-        public ConstructorTestBaseClass(Int16 i2) { }
+        public ConstructorTestBaseClass(short i2) { }
     }
 
     public class ConstructorTestSubClass : ConstructorTestBaseClass
@@ -45,7 +45,7 @@ namespace System.Reflection.Tests
         public new static int Members = 5; //.cctor is added
         public new static int MembersEverything = 11;
 
-        public ConstructorTestSubClass(String s) { }
-        public ConstructorTestSubClass(Int16 i2) { }
+        public ConstructorTestSubClass(string s) { }
+        public ConstructorTestSubClass(short i2) { }
     }
 }

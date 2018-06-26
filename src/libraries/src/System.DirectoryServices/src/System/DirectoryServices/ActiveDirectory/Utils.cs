@@ -135,7 +135,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (dsNameResultItem.status == NativeMethods.DS_NAME_ERROR_NO_SYNTACTICAL_MAPPING ||
                             dsNameResultItem.name == null)
                         {
-                            throw new ArgumentException(SR.InvalidDNFormat, "distinguishedName");
+                            throw new ArgumentException(SR.InvalidDNFormat, nameof(distinguishedName));
                         }
                         else if (dsNameResultItem.status != 0)
                         {
@@ -177,7 +177,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             else if (result == NativeMethods.DS_NAME_ERROR_NO_SYNTACTICAL_MAPPING)
             {
-                throw new ArgumentException(SR.InvalidDNFormat, "distinguishedName");
+                throw new ArgumentException(SR.InvalidDNFormat, nameof(distinguishedName));
             }
             else
             {
@@ -268,7 +268,7 @@ namespace System.DirectoryServices.ActiveDirectory
             int index = dn.IndexOf(',');
             if (index == -1)
             {
-                throw new ArgumentException(SR.InvalidDNFormat, "dn");
+                throw new ArgumentException(SR.InvalidDNFormat, nameof(dn));
             }
 
             // get parent name simply by removing the first component
@@ -461,19 +461,19 @@ namespace System.DirectoryServices.ActiveDirectory
                 string[] subComponents = Split(components[i], '=');
                 if (subComponents.GetLength(0) != 2)
                 {
-                    throw new ArgumentException(SR.InvalidDNFormat, "distinguishedName");
+                    throw new ArgumentException(SR.InvalidDNFormat, nameof(distinguishedName));
                 }
 
                 dnComponents[i].Name = subComponents[0].Trim();
                 if (dnComponents[i].Name.Length == 0)
                 {
-                    throw new ArgumentException(SR.InvalidDNFormat, "distinguishedName");
+                    throw new ArgumentException(SR.InvalidDNFormat, nameof(distinguishedName));
                 }
 
                 dnComponents[i].Value = subComponents[1].Trim();
                 if (dnComponents[i].Value.Length == 0)
                 {
-                    throw new ArgumentException(SR.InvalidDNFormat, "distinguishedName");
+                    throw new ArgumentException(SR.InvalidDNFormat, nameof(distinguishedName));
                 }
             }
             return dnComponents;
@@ -562,7 +562,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // if we are still in quoted string, the format is invalid
                     if (inQuotedString)
                     {
-                        throw new ArgumentException(SR.InvalidDNFormat, "distinguishedName");
+                        throw new ArgumentException(SR.InvalidDNFormat, nameof(distinguishedName));
                     }
 
                     // we need to end the last token
@@ -703,7 +703,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     foreach (string supportedCapability in rootDSE.Properties[PropertyManager.SupportedCapabilities])
                     {
-                        if (String.Compare(supportedCapability, SupportedCapability.ADOid, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Equals(supportedCapability, SupportedCapability.ADOid, StringComparison.OrdinalIgnoreCase))
                         {
                             result = true;
                             break;
@@ -714,7 +714,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     foreach (string supportedCapability in rootDSE.Properties[PropertyManager.SupportedCapabilities])
                     {
-                        if (String.Compare(supportedCapability, SupportedCapability.ADAMOid, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Equals(supportedCapability, SupportedCapability.ADAMOid, StringComparison.OrdinalIgnoreCase))
                         {
                             result = true;
                             break;
@@ -725,8 +725,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     foreach (string supportedCapability in rootDSE.Properties[PropertyManager.SupportedCapabilities])
                     {
-                        if (String.Compare(supportedCapability, SupportedCapability.ADAMOid, StringComparison.OrdinalIgnoreCase) == 0 ||
-                            String.Compare(supportedCapability, SupportedCapability.ADOid, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Equals(supportedCapability, SupportedCapability.ADAMOid, StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(supportedCapability, SupportedCapability.ADOid, StringComparison.OrdinalIgnoreCase))
                         {
                             result = true;
                             break;
@@ -798,9 +798,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
             string transportName = component[0].Value;
 
-            if (String.Compare(transportName, "IP", StringComparison.OrdinalIgnoreCase) == 0)
+            if (string.Equals(transportName, "IP", StringComparison.OrdinalIgnoreCase))
                 return ActiveDirectoryTransportType.Rpc;
-            else if (String.Compare(transportName, "SMTP", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Equals(transportName, "SMTP", StringComparison.OrdinalIgnoreCase))
                 return ActiveDirectoryTransportType.Smtp;
             else
             {
@@ -1087,7 +1087,7 @@ namespace System.DirectoryServices.ActiveDirectory
         //
         internal static Hashtable GetValuesWithRangeRetrieval(DirectoryEntry searchRootEntry, string filter, ArrayList propertiesWithRangeRetrieval, ArrayList propertiesWithoutRangeRetrieval, SearchScope searchScope)
         {
-            ADSearcher searcher = new ADSearcher(searchRootEntry, filter, new string[] { }, searchScope, false /* paged search */, false /* cache results */);
+            ADSearcher searcher = new ADSearcher(searchRootEntry, filter, Array.Empty<string>(), searchScope, false /* paged search */, false /* cache results */);
             SearchResult res = null;
             int rangeStart = 0;
             Hashtable results = new Hashtable();
@@ -1450,7 +1450,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 string[] propertiesToLoad2 = new string[5];
 
-                ADSearcher searcher2 = new ADSearcher(searchRootEntry, filter2, new string[] { }, SearchScope.Subtree);
+                ADSearcher searcher2 = new ADSearcher(searchRootEntry, filter2, Array.Empty<string>(), SearchScope.Subtree);
                 SearchResultCollection resCol = null;
                 bool needToContinueRangeRetrieval = false;
                 ArrayList ntdsaNamesForRangeRetrieval = new ArrayList();
@@ -1539,7 +1539,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                             // multivalues attribute we can stop here.
                                             foundPartitionEntry = true;
 
-                                            if (String.Compare(dnString, 10, "0", 0, 1, StringComparison.OrdinalIgnoreCase) == 0)
+                                            if (string.Compare(dnString, 10, "0", 0, 1, StringComparison.OrdinalIgnoreCase) == 0)
                                             {
                                                 // this server has the partition fully instantiated
                                                 ntdsaNames.Add(ntdsaName);
@@ -1647,7 +1647,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         // find the property name with the range info
                                         foreach (string property in res.Properties.PropertyNames)
                                         {
-                                            if (String.Compare(property, 0, PropertyManager.MsDSHasInstantiatedNCs, 0, PropertyManager.MsDSHasInstantiatedNCs.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                                            if (string.Compare(property, 0, PropertyManager.MsDSHasInstantiatedNCs, 0, PropertyManager.MsDSHasInstantiatedNCs.Length, StringComparison.OrdinalIgnoreCase) == 0)
                                             {
                                                 propertyName = property;
                                                 break;
@@ -1676,7 +1676,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         {
                                             foundPartitionEntry = true;
 
-                                            if (String.Compare(dnString, 10, "0", 0, 1, StringComparison.OrdinalIgnoreCase) == 0)
+                                            if (string.Compare(dnString, 10, "0", 0, 1, StringComparison.OrdinalIgnoreCase) == 0)
                                             {
                                                 ntdsaNames.Add(ntdsaName);
                                                 if (isADAM)
@@ -1897,11 +1897,11 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (s1 == null)
             {
-                throw new ArgumentNullException("s1");
+                throw new ArgumentNullException(nameof(s1));
             }
             if (s2 == null)
             {
-                throw new ArgumentNullException("s2");
+                throw new ArgumentNullException(nameof(s2));
             }
             return Compare(s1.Substring(offset1, length1), s2.Substring(offset2, length2));
         }
@@ -1910,11 +1910,11 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (s1 == null)
             {
-                throw new ArgumentNullException("s1");
+                throw new ArgumentNullException(nameof(s1));
             }
             if (s2 == null)
             {
-                throw new ArgumentNullException("s2");
+                throw new ArgumentNullException(nameof(s2));
             }
             return Compare(s1.Substring(offset1, length1), s2.Substring(offset2, length2), compareFlags);
         }
@@ -2232,7 +2232,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static bool IsMachineDC(String computerName)
+        internal static bool IsMachineDC(string computerName)
         {
             IntPtr dsRoleInfoPtr = IntPtr.Zero;
             int err = -1;
@@ -2247,7 +2247,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (err != 0)
                 {
                     throw new InvalidOperationException(
-                                    String.Format(
+                                    string.Format(
                                             CultureInfo.CurrentCulture,
                                             SR.UnableToRetrieveDomainInfo,
                                             err));

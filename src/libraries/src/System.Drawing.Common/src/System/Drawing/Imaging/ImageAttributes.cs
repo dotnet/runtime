@@ -45,7 +45,7 @@ namespace System.Drawing.Imaging
         internal void SetNativeImageAttributes(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
-                throw new ArgumentNullException("handle");
+                throw new ArgumentNullException(nameof(handle));
 
             nativeImageAttributes = handle;
         }
@@ -398,12 +398,12 @@ namespace System.Drawing.Imaging
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        public void SetOutputChannelColorProfile(String colorProfileFilename)
+        public void SetOutputChannelColorProfile(string colorProfileFilename)
         {
             SetOutputChannelColorProfile(colorProfileFilename, ColorAdjustType.Default);
         }
 
-        public void SetOutputChannelColorProfile(String colorProfileFilename,
+        public void SetOutputChannelColorProfile(string colorProfileFilename,
                                                  ColorAdjustType type)
         {
             // Called in order to emulate exception behavior from netfx related to invalid file paths.

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
@@ -22,9 +21,7 @@ namespace System.Security.Authentication.ExtendedProtection
         {
             if (destinationType == typeof(InstanceDescriptor))
             {
-                ExtendedProtectionPolicy policy = value as ExtendedProtectionPolicy;
-
-                if (policy != null)
+                if (value is ExtendedProtectionPolicy policy)
                 {
                     Type[] parameterTypes;
                     object[] parameterValues;

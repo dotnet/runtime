@@ -93,7 +93,7 @@ namespace System.Text
                 SetDefaultFallbacks();
         }
 
-        internal override void SetDefaultFallbacks()
+        internal sealed override void SetDefaultFallbacks()
         {
             // For UTF-X encodings, we use a replacement fallback with an empty string
             if (_isThrowException)
@@ -130,13 +130,13 @@ namespace System.Text
         {
             // Validate input parameters
             if (chars == null)
-                throw new ArgumentNullException("chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - index < count)
-                throw new ArgumentOutOfRangeException("chars", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             // If no input, return 0, avoid fixed empty array problem
             if (count == 0)
@@ -152,7 +152,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        public override unsafe int GetByteCount(String chars)
+        public override unsafe int GetByteCount(string chars)
         {
             // Validate input
             if (chars==null)
@@ -171,13 +171,21 @@ namespace System.Text
         {
             // Validate Parameters
             if (chars == null)
-                throw new ArgumentNullException("chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             // Call it with empty encoder
             return GetByteCount(chars, count, null);
+        }
+
+        public override unsafe int GetByteCount(ReadOnlySpan<char> chars)
+        {
+            fixed (char* charsPtr = &MemoryMarshal.GetNonNullPinnableReference(chars))
+            {
+                return GetByteCount(charsPtr, chars.Length, baseEncoder: null);
+            }
         }
 
         // Parent method is safe.
@@ -185,20 +193,20 @@ namespace System.Text
         // So if you fix this, fix the others.  Currently those include:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
-        public override unsafe int GetBytes(String s, int charIndex, int charCount,
+        public override unsafe int GetBytes(string s, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex)
         {
             if (s == null || bytes == null)
-                throw new ArgumentNullException((s == null ? "s" : "bytes"), SR.ArgumentNull_Array);
+                throw new ArgumentNullException((s == null ? nameof(s) : nameof(bytes)), SR.ArgumentNull_Array);
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (s.Length - charIndex < charCount)
-                throw new ArgumentOutOfRangeException("s", SR.ArgumentOutOfRange_IndexCount);
+                throw new ArgumentOutOfRangeException(nameof(s), SR.ArgumentOutOfRange_IndexCount);
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException("byteIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
 
             int byteCount = bytes.Length - byteIndex;
 
@@ -225,16 +233,16 @@ namespace System.Text
         {
             // Validate parameters
             if (chars == null || bytes == null)
-                throw new ArgumentNullException((chars == null ? "chars" : "bytes"), SR.ArgumentNull_Array);
+                throw new ArgumentNullException((chars == null ? nameof(chars) : nameof(bytes)), SR.ArgumentNull_Array);
 
             if (charIndex < 0 || charCount < 0)
-                throw new ArgumentOutOfRangeException((charIndex < 0 ? "charIndex" : "charCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - charIndex < charCount)
-                throw new ArgumentOutOfRangeException("chars", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException("byteIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
 
             // If nothing to encode return 0, avoid fixed problem
             if (charCount == 0)
@@ -257,12 +265,21 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
 
             if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((charCount < 0 ? "charCount" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             return GetBytes(chars, charCount, bytes, byteCount, null);
+        }
+
+        public override unsafe int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes)
+        {
+            fixed (char* charsPtr = &MemoryMarshal.GetNonNullPinnableReference(chars))
+            fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
+            {
+                return GetBytes(charsPtr, chars.Length, bytesPtr, bytes.Length, baseEncoder: null);
+            }
         }
 
         // Returns the number of characters produced by decoding a range of bytes
@@ -277,13 +294,13 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (bytes.Length - index < count)
-                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             // If no input just return 0, fixed doesn't like 0 length arrays.
             if (count == 0)
@@ -303,12 +320,20 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             return GetCharCount(bytes, count, null);
+        }
+
+        public override unsafe int GetCharCount(ReadOnlySpan<byte> bytes)
+        {
+            fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
+            {
+                return GetCharCount(bytesPtr, bytes.Length, baseDecoder: null);
+            }
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -321,16 +346,16 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
 
             if (byteIndex < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((byteIndex < 0 ? "byteIndex" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if ( bytes.Length - byteIndex < byteCount)
-                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (charIndex < 0 || charIndex > chars.Length)
-                throw new ArgumentOutOfRangeException("charIndex", SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ArgumentOutOfRange_Index);
 
             // If no input, return 0 & avoid fixed problem
             if (byteCount == 0)
@@ -353,12 +378,21 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? "bytes" : "chars", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
 
             if (charCount < 0 || byteCount < 0)
-                throw new ArgumentOutOfRangeException((charCount < 0 ? "charCount" : "byteCount"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             return GetChars(bytes, byteCount, chars, charCount, null);
+        }
+
+        public override unsafe int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars)
+        {
+            fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
+            fixed (char* charsPtr = &MemoryMarshal.GetNonNullPinnableReference(chars))
+            {
+                return GetChars(bytesPtr, bytes.Length, charsPtr, chars.Length, baseDecoder: null);
+            }
         }
 
         // Returns a string containing the decoded representation of a range of
@@ -373,13 +407,13 @@ namespace System.Text
         {
             // Validate Parameters
             if (bytes == null)
-                throw new ArgumentNullException("bytes", SR.ArgumentNull_Array);
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "count"), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (bytes.Length - index < count)
-                throw new ArgumentOutOfRangeException("bytes", SR.ArgumentOutOfRange_IndexCountBuffer);
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             // Avoid problems with empty input buffer
             if (count == 0) return string.Empty;
@@ -395,7 +429,7 @@ namespace System.Text
 
         // To simplify maintenance, the structure of GetByteCount and GetBytes should be
         // kept the same as much as possible
-        internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
+        internal sealed override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
         {
             // For fallback we may need a fallback buffer.
             // We wait to initialize it though in case we don't have any broken input unicode
@@ -715,12 +749,15 @@ namespace System.Text
                     break;
 
                 LongCodeWithMask:
-#if BIGENDIAN
-                    // be careful about the sign extension
-                    ch = (int)(((uint)ch) >> 16);
-#else // BIGENDIAN
-                    ch = (char)ch;
-#endif // BIGENDIAN
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ch = (char)ch;
+                    }
+                    else
+                    {
+                        // be careful about the sign extension
+                        ch = (int)(((uint)ch) >> 16);
+                    }
                     pSrc++;
 
                     if (ch <= 0x7F)
@@ -801,8 +838,8 @@ namespace System.Text
 
         // Our workhorse
         // Note:  We ignore mismatched surrogates, unless the exception flag is set in which case we throw
-        internal override unsafe int GetBytes(char* chars, int charCount,
-                                                byte* bytes, int byteCount, EncoderNLS baseEncoder)
+        internal sealed override unsafe int GetBytes(
+            char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS baseEncoder)
         {
             Debug.Assert(chars != null, "[UTF8Encoding.GetBytes]chars!=null");
             Debug.Assert(byteCount >= 0, "[UTF8Encoding.GetBytes]byteCount >=0");
@@ -1142,31 +1179,37 @@ namespace System.Text
                         }
 
                         // Unfortunately, this is endianess sensitive
-#if BIGENDIAN
-                        *pTarget = (byte)(ch>>16);
-                        *(pTarget+1) = (byte)ch;
-                        pSrc += 4;
-                        *(pTarget+2) = (byte)(chc>>16);
-                        *(pTarget+3) = (byte)chc;
-                        pTarget += 4;
-#else // BIGENDIAN
-                        *pTarget = (byte)ch;
-                        *(pTarget + 1) = (byte)(ch >> 16);
-                        pSrc += 4;
-                        *(pTarget + 2) = (byte)chc;
-                        *(pTarget + 3) = (byte)(chc >> 16);
-                        pTarget += 4;
-#endif // BIGENDIAN
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            *pTarget = (byte)ch;
+                            *(pTarget + 1) = (byte)(ch >> 16);
+                            pSrc += 4;
+                            *(pTarget + 2) = (byte)chc;
+                            *(pTarget + 3) = (byte)(chc >> 16);
+                            pTarget += 4;
+                        }
+                        else
+                        {
+                            *pTarget = (byte)(ch>>16);
+                            *(pTarget+1) = (byte)ch;
+                            pSrc += 4;
+                            *(pTarget+2) = (byte)(chc>>16);
+                            *(pTarget+3) = (byte)chc;
+                            pTarget += 4;
+                        }
                     }
                     continue;
 
                 LongCodeWithMask:
-#if BIGENDIAN
-                    // be careful about the sign extension
-                    ch = (int)(((uint)ch) >> 16);
-#else // BIGENDIAN
-                    ch = (char)ch;
-#endif // BIGENDIAN
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ch = (char)ch;
+                    }
+                    else
+                    {
+                        // be careful about the sign extension
+                        ch = (int)(((uint)ch) >> 16);
+                    }
                     pSrc++;
 
                     if (ch > 0x7F)
@@ -1284,7 +1327,7 @@ namespace System.Text
         //
         // To simplify maintenance, the structure of GetCharCount and GetChars should be
         // kept the same as much as possible
-        internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
+        internal sealed override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
             Debug.Assert(count >= 0, "[UTF8Encoding.GetCharCount]count >=0");
             Debug.Assert(bytes != null, "[UTF8Encoding.GetCharCount]bytes!=null");
@@ -1564,17 +1607,26 @@ namespace System.Text
                     }
                     break;
 
-#if BIGENDIAN
                 LongCodeWithMask32:
-                    // be careful about the sign extension
-                    ch = (int)(((uint)ch) >> 16);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ch &= 0xFF;
+                    }
+                    else
+                    {
+                        // be careful about the sign extension
+                        ch = (int)(((uint)ch) >> 16);
+                    }
                 LongCodeWithMask16:
-                    ch = (int)(((uint)ch) >> 8);
-#else // BIGENDIAN
-                LongCodeWithMask32:
-                LongCodeWithMask16:
-                    ch &= 0xFF;
-#endif // BIGENDIAN
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ch &= 0xFF;
+                    }
+                    else
+                    {
+                        ch = (int)(((uint)ch) >> 8);
+                    }
+
                     pSrc++;
                     if (ch <= 0x7F)
                     {
@@ -1713,8 +1765,8 @@ namespace System.Text
         //
         // To simplify maintenance, the structure of GetCharCount and GetChars should be
         // kept the same as much as possible
-        internal override unsafe int GetChars(byte* bytes, int byteCount,
-                                                char* chars, int charCount, DecoderNLS baseDecoder)
+        internal sealed override unsafe int GetChars(
+            byte* bytes, int byteCount, char* chars, int charCount, DecoderNLS baseDecoder)
         {
             Debug.Assert(chars != null, "[UTF8Encoding.GetChars]chars!=null");
             Debug.Assert(byteCount >= 0, "[UTF8Encoding.GetChars]count >=0");
@@ -2048,17 +2100,20 @@ namespace System.Text
                         }
 
                         // Unfortunately, this is endianess sensitive
-#if BIGENDIAN
-                        *pTarget = (char)((ch >> 8) & 0x7F);
-                        pSrc += 2;
-                        *(pTarget+1) = (char)(ch & 0x7F);
-                        pTarget += 2;
-#else // BIGENDIAN
-                        *pTarget = (char)(ch & 0x7F);
-                        pSrc += 2;
-                        *(pTarget + 1) = (char)((ch >> 8) & 0x7F);
-                        pTarget += 2;
-#endif // BIGENDIAN
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            *pTarget = (char)(ch & 0x7F);
+                            pSrc += 2;
+                            *(pTarget + 1) = (char)((ch >> 8) & 0x7F);
+                            pTarget += 2;
+                        }
+                        else
+                        {
+                            *pTarget = (char)((ch >> 8) & 0x7F);
+                            pSrc += 2;
+                            *(pTarget+1) = (char)(ch & 0x7F);
+                            pTarget += 2;
+                        }
                     }
 
                     // Run 8 characters at a time!
@@ -2072,43 +2127,54 @@ namespace System.Text
                         }
 
                         // Unfortunately, this is endianess sensitive
-#if BIGENDIAN
-                        *pTarget = (char)((ch >> 24) & 0x7F);
-                        *(pTarget+1) = (char)((ch >> 16) & 0x7F);
-                        *(pTarget+2) = (char)((ch >> 8) & 0x7F);
-                        *(pTarget+3) = (char)(ch & 0x7F);
-                        pSrc += 8;
-                        *(pTarget+4) = (char)((chb >> 24) & 0x7F);
-                        *(pTarget+5) = (char)((chb >> 16) & 0x7F);
-                        *(pTarget+6) = (char)((chb >> 8) & 0x7F);
-                        *(pTarget+7) = (char)(chb & 0x7F);
-                        pTarget += 8;
-#else // BIGENDIAN
-                        *pTarget = (char)(ch & 0x7F);
-                        *(pTarget + 1) = (char)((ch >> 8) & 0x7F);
-                        *(pTarget + 2) = (char)((ch >> 16) & 0x7F);
-                        *(pTarget + 3) = (char)((ch >> 24) & 0x7F);
-                        pSrc += 8;
-                        *(pTarget + 4) = (char)(chb & 0x7F);
-                        *(pTarget + 5) = (char)((chb >> 8) & 0x7F);
-                        *(pTarget + 6) = (char)((chb >> 16) & 0x7F);
-                        *(pTarget + 7) = (char)((chb >> 24) & 0x7F);
-                        pTarget += 8;
-#endif // BIGENDIAN
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            *pTarget = (char)(ch & 0x7F);
+                            *(pTarget + 1) = (char)((ch >> 8) & 0x7F);
+                            *(pTarget + 2) = (char)((ch >> 16) & 0x7F);
+                            *(pTarget + 3) = (char)((ch >> 24) & 0x7F);
+                            pSrc += 8;
+                            *(pTarget + 4) = (char)(chb & 0x7F);
+                            *(pTarget + 5) = (char)((chb >> 8) & 0x7F);
+                            *(pTarget + 6) = (char)((chb >> 16) & 0x7F);
+                            *(pTarget + 7) = (char)((chb >> 24) & 0x7F);
+                            pTarget += 8;
+                        }
+                        else
+                        {
+                            *pTarget = (char)((ch >> 24) & 0x7F);
+                            *(pTarget+1) = (char)((ch >> 16) & 0x7F);
+                            *(pTarget+2) = (char)((ch >> 8) & 0x7F);
+                            *(pTarget+3) = (char)(ch & 0x7F);
+                            pSrc += 8;
+                            *(pTarget+4) = (char)((chb >> 24) & 0x7F);
+                            *(pTarget+5) = (char)((chb >> 16) & 0x7F);
+                            *(pTarget+6) = (char)((chb >> 8) & 0x7F);
+                            *(pTarget+7) = (char)(chb & 0x7F);
+                            pTarget += 8;
+                        }
                     }
                     break;
 
-#if BIGENDIAN
                 LongCodeWithMask32:
-                    // be careful about the sign extension
-                    ch = (int)(((uint)ch) >> 16);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ch &= 0xFF;
+                    }
+                    else
+                    {
+                        // be careful about the sign extension
+                        ch = (int)(((uint)ch) >> 16);
+                    }
                 LongCodeWithMask16:
-                    ch = (int)(((uint)ch) >> 8);
-#else // BIGENDIAN
-                LongCodeWithMask32:
-                LongCodeWithMask16:
-                    ch &= 0xFF;
-#endif // BIGENDIAN
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        ch &= 0xFF;
+                    }
+                    else
+                    {
+                        ch = (int)(((uint)ch) >> 8);
+                    }
                     pSrc++;
                     if (ch <= 0x7F)
                     {
@@ -2173,7 +2239,7 @@ namespace System.Text
 
                             // extra byte, we're already planning 2 chars for 2 of these bytes,
                             // but the big loop is testing the target against pStop, so we need
-                            // to subtract 2 more or we risk overrunning the input.  Subtract 
+                            // to subtract 2 more or we risk overrunning the input.  Subtract
                             // one here and one below.
                             pStop--;
                         }
@@ -2323,11 +2389,17 @@ namespace System.Text
         private unsafe int FallbackInvalidByteSequence(
             byte* pSrc, int ch, DecoderFallbackBuffer fallback)
         {
+            // Calling GetBytesUnknown can adjust the pSrc pointer but we need to pass the pointer before the adjustment
+            // to fallback.InternalFallback. The input pSrc to fallback.InternalFallback will only be used to calculate the
+            // index inside bytesUnknown and if we pass the adjusted pointer we can end up with negative index values.
+            // We store the original pSrc in pOriginalSrc and then pass pOriginalSrc to fallback.InternalFallback.
+            byte* pOriginalSrc = pSrc;
+
             // Get our byte[]
             byte[] bytesUnknown = GetBytesUnknown(ref pSrc, ch);
 
             // Do the actual fallback
-            int count = fallback.InternalFallback(bytesUnknown, pSrc);
+            int count = fallback.InternalFallback(bytesUnknown, pOriginalSrc);
 
             // # of fallback chars expected.
             // Note that we only get here for "long" sequences, and have already unreserved
@@ -2336,7 +2408,7 @@ namespace System.Text
         }
 
         // Note that some of these bytes may have come from a previous fallback, so we cannot
-        // just decrement the pointer and use the values we read.  In those cases we have 
+        // just decrement the pointer and use the values we read.  In those cases we have
         // to regenerate the original values.
         private unsafe byte[] GetBytesUnknown(ref byte* pSrc, int ch)
         {
@@ -2481,7 +2553,7 @@ namespace System.Text
             _emitUTF8Identifier ? s_preamble :
             Array.Empty<byte>();
 
-        public override bool Equals(Object value)
+        public override bool Equals(object value)
         {
             UTF8Encoding that = value as UTF8Encoding;
             if (that != null)

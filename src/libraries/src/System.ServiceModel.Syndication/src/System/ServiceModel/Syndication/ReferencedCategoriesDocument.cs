@@ -25,7 +25,7 @@ namespace System.ServiceModel.Syndication
         {
             if (link == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("link");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(link));
             }
             _link = link;
         }
