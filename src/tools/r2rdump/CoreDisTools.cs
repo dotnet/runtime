@@ -42,36 +42,17 @@ namespace R2RDump
         [DllImport(_dll)]
         public static extern void FinishDisasm(IntPtr Disasm);
 
-        public unsafe static string GetCodeBlock(IntPtr Disasm, RuntimeFunction rtf, int imageOffset, byte[] image)
+        public unsafe static int GetInstruction(IntPtr Disasm, RuntimeFunction rtf, int imageOffset, int rtfOffset, byte[] image, out string instr)
         {
-            StringBuilder sb = new StringBuilder();
-
-            int rtfOffset = 0;
-            int codeOffset = rtf.CodeOffset;
-            Dictionary<int, GcInfo.GcTransition> transitions = rtf.Method.GcInfo.Transitions;
-            GcSlotTable slotTable = rtf.Method.GcInfo.SlotTable;
-            while (rtfOffset < rtf.Size)
+            int instrSize = 1;
+            fixed (byte* p = image)
             {
-                int instrSize = 1;
-                fixed (byte* p = image)
-                {
-                    IntPtr ptr = (IntPtr)(p + imageOffset + rtfOffset);
-                    instrSize = DumpInstruction(Disasm, (ulong)(rtf.StartAddress + rtfOffset), ptr, rtf.Size);
-                }
-                IntPtr pBuffer = GetOutputBuffer();
-                string instr = Marshal.PtrToStringAnsi(pBuffer);
-
-                sb.Append(instr);
-                if (transitions.ContainsKey(codeOffset))
-                {
-                    sb.AppendLine($"\t\t\t\t{transitions[codeOffset].GetSlotState(slotTable)}");
-                }
-
-                ClearOutputBuffer();
-                rtfOffset += instrSize;
-                codeOffset += instrSize;
+                IntPtr ptr = (IntPtr)(p + imageOffset + rtfOffset);
+                instrSize = DumpInstruction(Disasm, (ulong)(rtf.StartAddress + rtfOffset), ptr, rtf.Size);
             }
-            return sb.ToString();
+            IntPtr pBuffer = GetOutputBuffer();
+            instr = Marshal.PtrToStringAnsi(pBuffer);
+            return instrSize;
         }
 
         public static IntPtr GetDisasm(Machine machine)

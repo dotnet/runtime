@@ -122,14 +122,14 @@ namespace R2RDump
                 methodNode.AppendChild(gcNode);
                 Serialize(method.GcInfo, gcNode);
 
-                foreach (KeyValuePair<int, GcInfo.GcTransition> transition in method.GcInfo.Transitions)
+                foreach (GcInfo.GcTransition transition in method.GcInfo.Transitions.Values)
                 {
                     Serialize(transition, gcNode);
                 }
 
                 if (_raw)
                 {
-                    DumpBytes(method.GcInfo.Offset, (uint)method.GcInfo.Size, methodNode, false);
+                    DumpBytes(method.GcInfo.Offset, (uint)method.GcInfo.Size, gcNode, "Raw", false);
                 }
             }
 
@@ -155,8 +155,7 @@ namespace R2RDump
 
             if (_disasm)
             {
-                string disassembly = CoreDisTools.GetCodeBlock(_disassembler, rtf, _r2r.GetOffset(rtf.StartAddress), _r2r.Image);
-                AddXMLNode("Disassembly", disassembly, rtfNode);
+                DumpDisasm(_disassembler, rtf, _r2r.GetOffset(rtf.StartAddress), _r2r.Image, rtfNode);
             }
 
             if (_raw)
@@ -177,10 +176,33 @@ namespace R2RDump
             }
         }
 
+        internal unsafe override void DumpDisasm(IntPtr Disasm, RuntimeFunction rtf, int imageOffset, byte[] image, XmlNode parentNode)
+        {
+            int rtfOffset = 0;
+            int codeOffset = rtf.CodeOffset;
+            Dictionary<int, GcInfo.GcTransition> transitions = rtf.Method.GcInfo.Transitions;
+            GcSlotTable slotTable = rtf.Method.GcInfo.SlotTable;
+            while (rtfOffset < rtf.Size)
+            {
+                string instr;
+                int instrSize = CoreDisTools.GetInstruction(Disasm, rtf, imageOffset, rtfOffset, image, out instr);
+
+                AddXMLNode("offset"+codeOffset, instr, parentNode);
+                if (transitions.ContainsKey(codeOffset))
+                {
+                    AddXMLNode("Transition", transitions[codeOffset].GetSlotState(slotTable), parentNode);
+                }
+
+                CoreDisTools.ClearOutputBuffer();
+                rtfOffset += instrSize;
+                codeOffset += instrSize;
+            }
+        }
+
         /// <summary>
         /// Prints a formatted string containing a block of bytes from the relative virtual address and size
         /// </summary>
-        internal override void DumpBytes(int rva, uint size, XmlNode parentNode, bool convertToOffset = true)
+        internal override void DumpBytes(int rva, uint size, XmlNode parentNode, string name = "Raw", bool convertToOffset = true)
         {
             int start = rva;
             if (convertToOffset)
@@ -198,28 +220,8 @@ namespace R2RDump
                 {
                     sb.Append($" {_r2r.Image[start + i]:X2}");
                 }
-                AddXMLNode("Raw", sb.ToString(), parentNode);
+                AddXMLNode(name, sb.ToString(), parentNode);
                 return;
-            }
-
-            _writer.Write("    ");
-            if (rva % 16 != 0)
-            {
-                int floor = rva / 16 * 16;
-                _writer.Write($"{floor:X8}:");
-                _writer.Write(new String(' ', (rva - floor) * 3));
-            }
-            for (uint i = 0; i < size; i++)
-            {
-                if ((rva + i) % 16 == 0)
-                {
-                    _writer.Write($"{rva + i:X8}:");
-                }
-                _writer.Write($" {_r2r.Image[start + i]:X2}");
-                if ((rva + i) % 16 == 15 && i != size - 1)
-                {
-                    _writer.Write("    ");
-                }
             }
         }
 
@@ -249,7 +251,7 @@ namespace R2RDump
                     }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER:
-                    AddXMLNode("CompileIdentifier", _r2r.CompileIdentifier, contentsNode);
+                    AddXMLNode("CompilerIdentifier", _r2r.CompilerIdentifier, contentsNode);
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS:
                     foreach (R2RImportSection importSection in _r2r.ImportSections)
@@ -259,15 +261,15 @@ namespace R2RDump
                         {
                             if (importSection.SectionRVA != 0)
                             {
-                                DumpBytes(importSection.SectionRVA, (uint)importSection.SectionSize, contentsNode);
+                                DumpBytes(importSection.SectionRVA, (uint)importSection.SectionSize, contentsNode, "SectionBytes");
                             }
                             if (importSection.SignatureRVA != 0)
                             {
-                                DumpBytes(importSection.SignatureRVA, (uint)importSection.Entries.Count * sizeof(int), contentsNode);
+                                DumpBytes(importSection.SignatureRVA, (uint)importSection.Entries.Count * sizeof(int), contentsNode, "SignatureBytes");
                             }
                             if (importSection.AuxiliaryDataRVA != 0)
                             {
-                                DumpBytes(importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size, contentsNode);
+                                DumpBytes(importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size, contentsNode, "AuxiliaryDataBytes");
                             }
                         }
                         foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
