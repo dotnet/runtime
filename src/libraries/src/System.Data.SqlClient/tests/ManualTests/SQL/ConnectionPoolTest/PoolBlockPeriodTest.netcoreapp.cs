@@ -10,7 +10,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     public class PoolBlockPeriodTest
     {
         private static readonly string _sampleAzureEndpoint = "nonexistance.database.windows.net";
-        private static readonly string _sampleNonAzureEndpoint = "nonexistanceserver";
         private static readonly string _policyKeyword = "PoolBlockingPeriod";
 
         [Theory]
@@ -64,126 +63,83 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [InlineData("Test policy with Auto (lowercase)", new object[] { "auto" })]
         [InlineData("Test policy with Auto (miXedcase)", new object[] { "auTo" })]
         [InlineData("Test policy with Auto (Pascalcase)", new object[] { "Auto" })]
-        public void TestSetPolicyWithAutoVariations(string description, object[] Params)
-        {
-            SqlConnection.ClearAllPools();
-            string policyString = Params[0] as string;
-
-            string connString = CreateConnectionString(_sampleAzureEndpoint, null) + $";{_policyKeyword}={policyString}";
-            PoolBlockingPeriodAzureTest(connString, PoolBlockingPeriod.Auto);
-        }
-
-        [Theory]
         [InlineData("Test policy with Always (lowercase)", new object[] { "alwaysblock" })]
         [InlineData("Test policy with Always (miXedcase)", new object[] { "aLwAysBlock" })]
         [InlineData("Test policy with Always (Pascalcase)", new object[] { "AlwaysBlock" })]
-        public void TestSetPolicyWithAlwaysVariations(string description, object[] Params)
-        {
-            SqlConnection.ClearAllPools();
-            string policyString = Params[0] as string;
-
-            string connString = CreateConnectionString(_sampleAzureEndpoint, null) + $";{_policyKeyword}={policyString}";
-            PoolBlockingPeriodAzureTest(connString, PoolBlockingPeriod.AlwaysBlock);
-        }
-
-        [Theory]
         [InlineData("Test policy with Never (lowercase)", new object[] { "neverblock" })]
         [InlineData("Test policy with Never (miXedcase)", new object[] { "neVeRblock" })]
         [InlineData("Test policy with Never (Pascalcase)", new object[] { "NeverBlock" })]
-        public void TestSetPolicyWithNeverVariations(string description, object[] Params)
+        public void TestSetPolicyWithVariations(string description, object[] Params)
         {
             SqlConnection.ClearAllPools();
             string policyString = Params[0] as string;
-
-            string connString = CreateConnectionString(_sampleNonAzureEndpoint, null) + $";{_policyKeyword}={policyString}";
-            PoolBlockingPeriodNonAzureTest(connString, PoolBlockingPeriod.NeverBlock);
+            PoolBlockingPeriod? policy = null;
+            if (policyString.ToLower().Contains("auto"))
+            {
+                policy = PoolBlockingPeriod.Auto;
+            }
+            else if (policyString.ToLower().Contains("always"))
+            {
+                policy = PoolBlockingPeriod.AlwaysBlock;
+            }
+            else
+            {
+                policy = PoolBlockingPeriod.NeverBlock;
+            }
+            string connString = CreateConnectionString(_sampleAzureEndpoint, null) + $";{_policyKeyword}={policyString}";
+            PoolBlockingPeriodAzureTest(connString, policy);
         }
 
         public void PoolBlockingPeriodNonAzureTest(string connStr, PoolBlockingPeriod? policy)
         {
             SqlConnection.ClearAllPools();
-            Guid previousConnectionId = Guid.Empty;
-            int count = 0;
-
-            while (count < 2)
+            int firstErrorTimeInSecs = GetConnectionOpenTimeInSeconds(connStr);
+            int secondErrorTimeInSecs = GetConnectionOpenTimeInSeconds(connStr);
+            switch (policy)
             {
-                using (SqlConnection sqlConnection = new SqlConnection(connStr))
-                {
-                    try
-                    {
-                        sqlConnection.Open();
-                        throw new Exception("Connection Open must expect an exception!");
-                    }
-                    catch (SqlException e)
-                    {
-                        // if it is the first time the exception is happening (previousConnectionId == Guid.Empty) skip the check
-                        if (previousConnectionId != Guid.Empty)
-                        {
-                            switch (policy)
-                            {
-                                case PoolBlockingPeriod.Auto:
-                                case PoolBlockingPeriod.AlwaysBlock:
-                                    if (e.ClientConnectionId != previousConnectionId)
-                                    {
-                                        throw new Exception($"Connection Open with Policy '{policy}' expect an exception with same connection id!");
-                                    }
-                                    break;
-                                case PoolBlockingPeriod.NeverBlock:
-                                    if (e.ClientConnectionId == previousConnectionId)
-                                    {
-                                        throw new Exception($"Connection Open with Policy '{policy}' expect an exception with different connection id!");
-                                    }
-                                    break;
-                            }
-                        }
-                        previousConnectionId = e.ClientConnectionId;
-                    }
-                }
-                count++;
+                case PoolBlockingPeriod.Auto:
+                case PoolBlockingPeriod.AlwaysBlock:
+                    Assert.InRange(secondErrorTimeInSecs, 0, firstErrorTimeInSecs);
+                    break;
+                case PoolBlockingPeriod.NeverBlock:
+                    Assert.InRange(secondErrorTimeInSecs, 1, int.MaxValue);
+                    break;
             }
         }
 
         public void PoolBlockingPeriodAzureTest(string connStr, PoolBlockingPeriod? policy)
         {
             SqlConnection.ClearAllPools();
-            Guid previousConnectionId = Guid.Empty;
-            int count = 0;
-
-            while (count < 2)
+            int firstErrorTimeInSecs = GetConnectionOpenTimeInSeconds(connStr);
+            int secondErrorTimeInSecs = GetConnectionOpenTimeInSeconds(connStr);
+            switch (policy)
             {
-                using (SqlConnection sqlConnection = new SqlConnection(connStr))
+                case PoolBlockingPeriod.AlwaysBlock:
+                    Assert.InRange(secondErrorTimeInSecs, 0, firstErrorTimeInSecs);
+                    break;
+                case PoolBlockingPeriod.Auto:
+                case PoolBlockingPeriod.NeverBlock:
+                    Assert.InRange(secondErrorTimeInSecs, 1, int.MaxValue);
+                    break;
+            }
+        }
+
+        private int GetConnectionOpenTimeInSeconds(string connString)
+        {
+            using (SqlConnection conn = new SqlConnection(connString))
+            {
+                System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+                try
                 {
-                    try
-                    {
-                        sqlConnection.Open();
-                        throw new Exception("Connection Open must expect an exception!");
-                    }
-                    catch (SqlException e)
-                    {
-                        // if it is the first time the exception is happening (previousConnectionId == Guid.Empty) skip the check
-                        if (previousConnectionId != Guid.Empty)
-                        {
-                            switch (policy)
-                            {
-                                case PoolBlockingPeriod.AlwaysBlock:
-                                    if (e.ClientConnectionId != previousConnectionId)
-                                    {
-                                        throw new Exception($"Connection Open with Policy '{policy}' expect an exception with same connection id!");
-                                    }
-                                    break;
-                                case PoolBlockingPeriod.Auto:
-                                case PoolBlockingPeriod.NeverBlock:
-                                    if (e.ClientConnectionId == previousConnectionId)
-                                    {
-                                        throw new Exception($"Connection Open with Policy '{policy}' expect an exception with different connection id!");
-                                    }
-                                    break;
-                            }
-                        }
-                        previousConnectionId = e.ClientConnectionId;
-                    }
+                    stopwatch.Start();
+                    conn.Open();
+                    throw new Exception("Connection Open must expect an exception");
                 }
-                count++;
+                catch (Exception)
+                {
+                    stopwatch.Stop();
+                }
+                return stopwatch.Elapsed.Seconds;
             }
         }
 
