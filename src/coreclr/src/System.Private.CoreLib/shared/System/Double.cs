@@ -26,7 +26,7 @@ namespace System
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct Double : IComparable, IConvertible, IFormattable, IComparable<double>, IEquatable<double>, ISpanFormattable
     {
-        private double m_value; // Do not rename (binary serialization)
+        private readonly double m_value; // Do not rename (binary serialization)
 
         //
         // Public Constants
@@ -226,7 +226,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // 64-bit constants make the IL unusually large that makes the inliner to reject the method
         public override int GetHashCode()
         {
-            var bits = Unsafe.As<double, long>(ref m_value);
+            var bits = BitConverter.DoubleToInt64Bits(m_value);
 
             // Optimized check for IsNan() || IsZero()
             if (((bits - 1) & 0x7FFFFFFFFFFFFFFF) >= 0x7FF0000000000000)
