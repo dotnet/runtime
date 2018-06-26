@@ -75,7 +75,7 @@ namespace System.Security.Cryptography
 
         public override string ToString()
         {
-            return _name ?? String.Empty;
+            return _name ?? string.Empty;
         }
 
         public override bool Equals(object obj)

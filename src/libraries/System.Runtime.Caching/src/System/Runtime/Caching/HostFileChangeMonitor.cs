@@ -21,9 +21,9 @@ namespace System.Runtime.Caching
     {
         private const int MAX_CHAR_COUNT_OF_LONG_CONVERTED_TO_HEXADECIMAL_STRING = 16;
         private static IFileChangeNotificationSystem s_fcn;
-        private readonly ReadOnlyCollection<String> _filePaths;
-        private String _uniqueId;
-        private Object _fcnState;
+        private readonly ReadOnlyCollection<string> _filePaths;
+        private string _uniqueId;
+        private object _fcnState;
         private DateTimeOffset _lastModified;
 
         private HostFileChangeMonitor() { } // hide default .ctor
@@ -146,19 +146,19 @@ namespace System.Runtime.Caching
         // public and internal members
         //
 
-        public override ReadOnlyCollection<String> FilePaths { get { return _filePaths; } }
-        public override String UniqueId { get { return _uniqueId; } }
+        public override ReadOnlyCollection<string> FilePaths { get { return _filePaths; } }
+        public override string UniqueId { get { return _uniqueId; } }
         public override DateTimeOffset LastModified { get { return _lastModified; } }
 
-        public HostFileChangeMonitor(IList<String> filePaths)
+        public HostFileChangeMonitor(IList<string> filePaths)
         {
             if (filePaths == null)
             {
-                throw new ArgumentNullException("filePaths");
+                throw new ArgumentNullException(nameof(filePaths));
             }
             if (filePaths.Count == 0)
             {
-                throw new ArgumentException(RH.Format(SR.Empty_collection, "filePaths"));
+                throw new ArgumentException(RH.Format(SR.Empty_collection, nameof(filePaths)));
             }
 
             _filePaths = SanitizeFilePathsList(filePaths);
@@ -173,9 +173,9 @@ namespace System.Runtime.Caching
 
             foreach (string path in filePaths)
             {
-                if (String.IsNullOrEmpty(path))
+                if (string.IsNullOrEmpty(path))
                 {
-                    throw new ArgumentException(RH.Format(SR.Collection_contains_null_or_empty_string, "filePaths"));
+                    throw new ArgumentException(RH.Format(SR.Collection_contains_null_or_empty_string, nameof(filePaths)));
                 }
                 else
                 {

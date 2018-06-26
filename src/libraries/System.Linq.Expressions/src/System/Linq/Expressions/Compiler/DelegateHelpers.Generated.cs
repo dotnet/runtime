@@ -155,7 +155,7 @@ namespace System.Linq.Expressions.Compiler
                 for (int i = 0; i < types.Length; i++)
                 {
                     Type type = types[i];
-                    if (type.IsByRef || type.IsPointer)
+                    if (type.IsByRef || type.IsByRefLike || type.IsPointer)
                     {
                         needCustom = true;
                         break;

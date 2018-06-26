@@ -1053,7 +1053,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.genclas
                 dynamic dy = s_mc;
                 byte?[] p1 = new byte?[]
                 {
-                Byte.MaxValue, byte.MinValue
+                byte.MaxValue, byte.MinValue
                 }
 
                 ;

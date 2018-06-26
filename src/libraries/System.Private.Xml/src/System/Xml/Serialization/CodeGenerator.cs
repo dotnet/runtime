@@ -35,7 +35,6 @@ namespace System.Xml.Serialization
         internal static MethodAttributes PublicOverrideMethodAttributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig;
         internal static MethodAttributes ProtectedOverrideMethodAttributes = MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig;
         internal static MethodAttributes PrivateMethodAttributes = MethodAttributes.Private | MethodAttributes.HideBySig;
-        internal static Type[] EmptyTypeArray = new Type[] { };
 
         private TypeBuilder _typeBuilder;
         private MethodBuilder _methodBuilder;
@@ -206,7 +205,7 @@ namespace System.Xml.Serialization
                 return true;
             }
             int val;
-            if (Int32.TryParse(name, out val))
+            if (int.TryParse(name, out val))
             {
                 variable = val;
                 return true;
@@ -315,7 +314,7 @@ namespace System.Xml.Serialization
                     MethodInfo ICollection_get_Count = typeof(ICollection).GetMethod(
                           "get_Count",
                           CodeGenerator.InstanceBindingFlags,
-                          CodeGenerator.EmptyTypeArray
+                          Array.Empty<Type>()
                           );
                     Call(ICollection_get_Count);
                 }
@@ -819,20 +818,20 @@ namespace System.Xml.Serialization
                     case TypeCode.Decimal:
                         ConstructorInfo Decimal_ctor = typeof(Decimal).GetConstructor(
                              CodeGenerator.InstanceBindingFlags,
-                             new Type[] { typeof(Int32), typeof(Int32), typeof(Int32), typeof(Boolean), typeof(Byte) }
+                             new Type[] { typeof(int), typeof(int), typeof(int), typeof(bool), typeof(byte) }
                              );
-                        int[] bits = Decimal.GetBits((decimal)o);
+                        int[] bits = decimal.GetBits((decimal)o);
                         Ldc(bits[0]); // digit
                         Ldc(bits[1]); // digit
                         Ldc(bits[2]); // digit
                         Ldc((bits[3] & 0x80000000) == 0x80000000); // sign
-                        Ldc((Byte)((bits[3] >> 16) & 0xFF)); // decimal location
+                        Ldc((byte)((bits[3] >> 16) & 0xFF)); // decimal location
                         New(Decimal_ctor);
                         break;
                     case TypeCode.DateTime:
                         ConstructorInfo DateTime_ctor = typeof(DateTime).GetConstructor(
                             CodeGenerator.InstanceBindingFlags,
-                            new Type[] { typeof(Int64) }
+                            new Type[] { typeof(long) }
                             );
                         Ldc(((DateTime)o).Ticks); // ticks
                         New(DateTime_ctor);
@@ -846,7 +845,7 @@ namespace System.Xml.Serialization
                             ConstructorInfo TimeSpan_ctor = typeof(TimeSpan).GetConstructor(
                             CodeGenerator.InstanceBindingFlags,
                             null,
-                            new Type[] { typeof(Int64) },
+                            new Type[] { typeof(long) },
                             null
                             );
                             Ldc(((TimeSpan)o).Ticks); // ticks

@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Xunit;
 using System.Threading;
 #if USE_MDT_EVENTSOURCE
@@ -17,19 +15,14 @@ using SdtEventSources;
 
 namespace BasicEventSourceTests
 {
-    public class TestsWriteEventToListener
+    public partial class TestsWriteEventToListener
     {
-#if USE_ETW
-        // Specifies whether the process is elevated or not.
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
-        private static bool IsProcessElevated => s_isElevated.Value;
-#endif // USE_ETW
-
         [Fact]
         [ActiveIssue("dotnet/corefx #19462", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_ArgsBasicTypes()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
+
             using (var log = new EventSourceTest())
             {
                 using (var el = new LoudListener(log))
@@ -44,7 +37,8 @@ namespace BasicEventSourceTests
                     Assert.Equal(1, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(0, LoudListener.t_lastEvent.Payload.Count);
 
-#region Validate "int" arguments
+                    #region Validate "int" arguments
+
                     log.EventI(10);
                     Assert.Equal(2, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
@@ -62,9 +56,11 @@ namespace BasicEventSourceTests
                     Assert.Equal(10, (int)LoudListener.t_lastEvent.Payload[0]);
                     Assert.Equal(11, (int)LoudListener.t_lastEvent.Payload[1]);
                     Assert.Equal(12, (int)LoudListener.t_lastEvent.Payload[2]);
-#endregion
 
-#region Validate "long" arguments
+                    #endregion
+
+                    #region Validate "long" arguments
+
                     log.EventL(10);
                     Assert.Equal(5, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
@@ -83,9 +79,10 @@ namespace BasicEventSourceTests
                     Assert.Equal(11, (long)LoudListener.t_lastEvent.Payload[1]);
                     Assert.Equal(12, (long)LoudListener.t_lastEvent.Payload[2]);
 
-#endregion
+                    #endregion
 
-#region Validate "string" arguments
+                    #region Validate "string" arguments
+
                     log.EventS("10");
                     Assert.Equal(8, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
@@ -103,17 +100,21 @@ namespace BasicEventSourceTests
                     Assert.Equal("10", (string)LoudListener.t_lastEvent.Payload[0]);
                     Assert.Equal("11", (string)LoudListener.t_lastEvent.Payload[1]);
                     Assert.Equal("12", (string)LoudListener.t_lastEvent.Payload[2]);
-#endregion
 
-#region Validate byte array arguments
+                    #endregion
+
+                    #region Validate byte array arguments
+
                     byte[] arr = new byte[20];
                     log.EventWithByteArray(arr);
                     Assert.Equal(52, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
                     Assert.Equal(arr.Length, ((byte[])LoudListener.t_lastEvent.Payload[0]).Length);
-#endregion
 
-#region Validate mixed type arguments
+                    #endregion
+
+                    #region Validate mixed type arguments
+
                     log.EventSI("10", 11);
                     Assert.Equal(11, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(2, LoudListener.t_lastEvent.Payload.Count);
@@ -132,9 +133,11 @@ namespace BasicEventSourceTests
                     Assert.Equal("10", (string)LoudListener.t_lastEvent.Payload[0]);
                     Assert.Equal(11, (int)LoudListener.t_lastEvent.Payload[1]);
                     Assert.Equal(12, (int)LoudListener.t_lastEvent.Payload[2]);
-#endregion
 
-#region Validate enums/flags
+                    #endregion
+
+                    #region Validate enums/flags
+
                     log.EventEnum(MyColor.Blue);
                     Assert.Equal(19, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
@@ -154,21 +157,19 @@ namespace BasicEventSourceTests
                     Assert.Equal(22, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
                     Assert.Equal(MyFlags.Flag1, (MyFlags)LoudListener.t_lastEvent.Payload[0]);
-#endregion
 
-#if USE_ETW
-#region Validate DateTime
-                    DateTime now = DateTime.Now;
-                    log.EventDateTime(now);
-                    Assert.Equal(24, LoudListener.LastEvent.EventId);
-                    Assert.Equal(1, LoudListener.LastEvent.Payload.Count);
-                    Assert.Equal((DateTime)LoudListener.LastEvent.Payload[0], now);
-#endregion
-#endif // USE_ETW
+                    #endregion
+
+                    #region Validate DateTime
+                    Test_WriteEvent_ArgsBasicTypes_Etw_Validate_DateTime(log);
+                    #endregion
                 }
             }
+
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
+
+        static partial void Test_WriteEvent_ArgsBasicTypes_Etw_Validate_DateTime(EventSourceTest log);
 
         [Fact]
         [ActiveIssue("dotnet/corefx #19462", TargetFrameworkMonikers.NetFramework)]
@@ -183,24 +184,7 @@ namespace BasicEventSourceTests
                     var options = new Dictionary<string, string>() { { "arg", "val" } };
                     EventSource.SendCommand(log, EventCommand.SendManifest, options);
 
-                    Guid guid = Guid.NewGuid();
-#if USE_ETW
-                    log.EventWithManyTypeArgs("Hello", 0, 0, 0, 'a', 0, 0, 0, 0, (float)10.0, (double)11.0, guid);
-                    Assert.Equal(25, LoudListener.LastEvent.EventId);
-                    Assert.Equal(12, LoudListener.LastEvent.Payload.Count);
-                    Assert.Equal("Hello", (string)LoudListener.LastEvent.Payload[0]);
-                    Assert.Equal(0, (long)LoudListener.LastEvent.Payload[1]);
-                    Assert.Equal((uint)0, (uint)LoudListener.LastEvent.Payload[2]);
-                    Assert.Equal((ulong)0, (ulong)LoudListener.LastEvent.Payload[3]);
-                    Assert.Equal('a', (char)LoudListener.LastEvent.Payload[4]);
-                    Assert.Equal((byte)0, (byte)LoudListener.LastEvent.Payload[5]);
-                    Assert.Equal((sbyte)0, (sbyte)LoudListener.LastEvent.Payload[6]);
-                    Assert.Equal((short)0, (short)LoudListener.LastEvent.Payload[7]);
-                    Assert.Equal((ushort)0, (ushort)LoudListener.LastEvent.Payload[8]);
-                    Assert.Equal((float)10.0, (float)LoudListener.LastEvent.Payload[9]);
-                    Assert.Equal((double)11.0, (double)LoudListener.LastEvent.Payload[10]);
-                    Assert.Equal(guid, (Guid)LoudListener.LastEvent.Payload[11]);
-#endif // USE_ETW
+
                     log.EventWith7Strings("s0", "s1", "s2", "s3", "s4", "s5", "s6");
                     Assert.Equal(26, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(7, LoudListener.t_lastEvent.Payload.Count);
@@ -212,19 +196,14 @@ namespace BasicEventSourceTests
                     Assert.Equal(9, LoudListener.t_lastEvent.Payload.Count);
                     Assert.Equal("s0", (string)LoudListener.t_lastEvent.Payload[0]);
                     Assert.Equal("s8", (string)LoudListener.t_lastEvent.Payload[8]);
-#if USE_ETW
-                    log.EventWithWeirdArgs(IntPtr.Zero, true, MyLongEnum.LongVal1 /*, 9999999999999999999999999999m*/);
-                    Assert.Equal(30, LoudListener.LastEvent.EventId);
-                    Assert.Equal(3 /*4*/, LoudListener.LastEvent.Payload.Count);
-                    Assert.Equal(IntPtr.Zero, (IntPtr)LoudListener.LastEvent.Payload[0]);
-                    Assert.Equal(true, (bool)LoudListener.LastEvent.Payload[1]);
-                    Assert.Equal(MyLongEnum.LongVal1, (MyLongEnum)LoudListener.LastEvent.Payload[2]);
-                    // Assert.Equal(9999999999999999999999999999m, (decimal)LoudListener.LastEvent.Payload[3]);
-#endif // USE_ETW
+
+                    Test_WriteEvent_ArgsCornerCases_TestEtw(log);
                 }
             }
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
+
+        static partial void Test_WriteEvent_ArgsCornerCases_TestEtw(EventSourceTest log);
 
         [Fact]
         public void Test_WriteEvent_InvalidCalls()
@@ -260,66 +239,6 @@ namespace BasicEventSourceTests
             }
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
-
-#if USE_ETW
-        [ConditionalFact(nameof(IsProcessElevated))]
-        public void Test_WriteEvent_TransferEvents()
-        {
-            TestUtilities.CheckNoEventSourcesRunning("Start");
-            using (var log = new EventSourceTest())
-            {
-                using (var el = new LoudListener(log))
-                {
-                    Guid actid = Guid.NewGuid();
-                    log.LogTaskScheduled(actid, "Hello from a test");
-                    Assert.Equal(17, LoudListener.LastEvent.EventId);
-                    Assert.Equal(actid, LoudListener.LastEvent.RelatedActivityId);
-                    Assert.Equal(1, LoudListener.LastEvent.Payload.Count);
-                    Assert.Equal("Hello from a test", (string)LoudListener.LastEvent.Payload[0]);
-
-                    actid = Guid.NewGuid();
-                    log.LogTaskScheduledBad(actid, "Hello again");
-                    Assert.Equal(23, LoudListener.LastEvent.EventId);
-                    Assert.Equal(actid, LoudListener.LastEvent.RelatedActivityId);
-                    Assert.Equal(1, LoudListener.LastEvent.Payload.Count);
-                    Assert.Equal("Hello again", (string)LoudListener.LastEvent.Payload[0]);
-
-                    actid = Guid.NewGuid();
-                    Guid guid = Guid.NewGuid();
-                    log.EventWithXferManyTypeArgs(actid, 0, 0, 0, 'a', 0, 0, 0, 0, (float)10.0, (double)11.0, guid);
-                    Assert.Equal(29, LoudListener.LastEvent.EventId);
-                    Assert.Equal(actid, LoudListener.LastEvent.RelatedActivityId);
-                    Assert.Equal(11, LoudListener.LastEvent.Payload.Count);
-                    Assert.Equal(0, (long)LoudListener.LastEvent.Payload[0]);
-                    Assert.Equal((uint)0, (uint)LoudListener.LastEvent.Payload[1]);
-                    Assert.Equal((ulong)0, (ulong)LoudListener.LastEvent.Payload[2]);
-                    Assert.Equal('a', (char)LoudListener.LastEvent.Payload[3]);
-                    Assert.Equal((byte)0, (byte)LoudListener.LastEvent.Payload[4]);
-                    Assert.Equal((sbyte)0, (sbyte)LoudListener.LastEvent.Payload[5]);
-                    Assert.Equal((short)0, (short)LoudListener.LastEvent.Payload[6]);
-                    Assert.Equal((ushort)0, (ushort)LoudListener.LastEvent.Payload[7]);
-                    Assert.Equal((float)10.0, (float)LoudListener.LastEvent.Payload[8]);
-                    Assert.Equal((double)11.0, (double)LoudListener.LastEvent.Payload[9]);
-                    Assert.Equal(guid, (Guid)LoudListener.LastEvent.Payload[10]);
-
-                    actid = Guid.NewGuid();
-                    log.EventWithXferWeirdArgs(actid, IntPtr.Zero, true, MyLongEnum.LongVal1 /*, 9999999999999999999999999999m*/);
-                    Assert.Equal(31, LoudListener.LastEvent.EventId);
-                    Assert.Equal(actid, LoudListener.LastEvent.RelatedActivityId);
-                    Assert.Equal(3 /*4*/, LoudListener.LastEvent.Payload.Count);
-                    Assert.Equal(IntPtr.Zero, (IntPtr)LoudListener.LastEvent.Payload[0]);
-                    Assert.Equal(true, (bool)LoudListener.LastEvent.Payload[1]);
-                    Assert.Equal(MyLongEnum.LongVal1, (MyLongEnum)LoudListener.LastEvent.Payload[2]);
-                    // Assert.Equal(9999999999999999999999999999m, (decimal)LoudListener.LastEvent.Payload[3]);
-
-                    actid = Guid.NewGuid();
-                    Assert.Throws<EventSourceException>(() => log.LogTransferNoOpcode(actid));
-                }
-            }
-            TestUtilities.CheckNoEventSourcesRunning("Stop");
-        }
-
-#endif // USE_ETW
 
         [Fact]
         [ActiveIssue("dotnet/corefx #19462", TargetFrameworkMonikers.NetFramework)]
@@ -358,7 +277,6 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-#if FEATURE_ETLEVENTS
         [Fact]
         public void Test_EventSourceCreatedEvents_BeforeListener()
         {
@@ -483,6 +401,5 @@ namespace BasicEventSourceTests
 
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
-#endif
     }
 }

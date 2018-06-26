@@ -7,16 +7,14 @@ using System.Globalization;
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Provides
-    ///       a type converter to convert Unicode
-    ///       character objects to and from various other representations.</para>
+    /// Provides a type converter to convert Unicode character objects
+    /// to and from various other representations.
     /// </summary>
     public class CharConverter : TypeConverter
     {
         /// <summary>
-        ///    <para>Gets a value indicating whether this converter can
-        ///       convert an object in the given source type to a Unicode character object using
-        ///       the specified context.</para>
+        /// Gets a value indicating whether this converter can convert an object in the given
+        /// source type to a Unicode character object using the specified context.
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
@@ -24,7 +22,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///      Converts the given object to another type.
+        /// Converts the given object to another type.
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
@@ -40,12 +38,11 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Converts the given object to a Unicode character object.</para>
+        /// Converts the given object to a Unicode character object.
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            string text = value as string;
-            if (text != null)
+            if (value is string text)
             {
                 if (text.Length > 1)
                 {

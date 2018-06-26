@@ -17,6 +17,7 @@ namespace System.Xml.Tests
             _output = output;
         }
 
+        [ActiveIssue(30017)]
         //[Variation("3", Desc = "Exercise basic use case, a supported option val", Pri = 1, Params = new object[] { "/platform:x64 pft3.xsl", "", "pft3.dll", "pft3.txt" })]
         [InlineData("/platform:x64 pft3.xsl", "", "pft3.dll", "pft3.txt")]
         //[Variation("8", Desc = "Exercise keyword case sensitivity -2", Pri = 1, Params = new object[] { "/PLAtforM:ItaNiuM pft8.xsl", "", "pft8.dll", "pft8.txt" })]
@@ -27,17 +28,18 @@ namespace System.Xml.Tests
         [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var1(object param0, object param1, object param2, object param3)
         {
-            String cmdLine = param0.ToString();
-            String asmName = param2.ToString();
+            string cmdLine = param0.ToString();
+            string asmName = param2.ToString();
             bool asmCreated = true;
-            String typeName = param1.ToString();
-            String pdbName = Path.ChangeExtension(param2.ToString(), ".pdb");
+            string typeName = param1.ToString();
+            string pdbName = Path.ChangeExtension(param2.ToString(), ".pdb");
             bool pdbCreated = false;
-            String baselineFile = param3.ToString();
+            string baselineFile = param3.ToString();
 
             VerifyTest(cmdLine, asmName, asmCreated, typeName, pdbName, pdbCreated, baselineFile, _createFromInputFile);
         }
 
+        [ActiveIssue(30017)]
         //[Variation("2", Desc = "Exercise basic use case, no option value", Pri = 1, Params = new object[] { "/platform: pft2.xsl", "pft2.txt" })]
         [InlineData("/platform: pft2.xsl", "pft2.txt")]
         //[Variation("4", Desc = "Exercise basic use case, an unsupported option value", Pri = 1, Params = new object[] { "/platform:foo pft4.xsl", "pft4.txt" })]
@@ -50,8 +52,8 @@ namespace System.Xml.Tests
         [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var2(object param0, object param1)
         {
-            String cmdLine = param0.ToString();
-            String baselineFile = param1.ToString();
+            string cmdLine = param0.ToString();
+            string baselineFile = param1.ToString();
 
             VerifyTest(cmdLine, baselineFile, _createFromInputFile);
         }
@@ -62,8 +64,8 @@ namespace System.Xml.Tests
         [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var3(object param0, object param1, object param2, object param3, object param4, object param5, object param6, object param7)
         {
-            String platform = "X86"; //CModInfo.Options["Arc"] as String;
-            bool isSameMachine = String.Compare(param7.ToString(), "yes", true) == 0;
+            string platform = "X86"; //CModInfo.Options["Arc"] as String;
+            bool isSameMachine = string.Compare(param7.ToString(), "yes", true) == 0;
 
             string[] platforms = { "x86", "x64", "Itanium" };
             int index;
@@ -72,7 +74,7 @@ namespace System.Xml.Tests
             {
                 Assert.True(false);
             }
-            if (String.Compare("AMD64", platform, true) == 0)
+            if (string.Compare("AMD64", platform, true) == 0)
             {
                 index = 1;
             }
@@ -85,13 +87,13 @@ namespace System.Xml.Tests
                                                ? 0
                                                : 1)) % platforms.Length];
 
-            String cmdLine = param0 + " " + "/platform:" + platform;
-            String asmName = param1.ToString();
-            bool asmCreated = String.Compare(param2.ToString(), "yes", true) == 0;
-            String typeName = param3.ToString();
-            String pdbName = param4.ToString();
-            bool pdbCreated = String.Compare(param5.ToString(), "yes", true) == 0;
-            String baselineFile = param6.ToString();
+            string cmdLine = param0 + " " + "/platform:" + platform;
+            string asmName = param1.ToString();
+            bool asmCreated = string.Compare(param2.ToString(), "yes", true) == 0;
+            string typeName = param3.ToString();
+            string pdbName = param4.ToString();
+            bool pdbCreated = string.Compare(param5.ToString(), "yes", true) == 0;
+            string baselineFile = param6.ToString();
 
             VerifyTest(cmdLine, asmName, asmCreated, typeName, pdbName, pdbCreated, baselineFile, _createFromInputFile);
         }

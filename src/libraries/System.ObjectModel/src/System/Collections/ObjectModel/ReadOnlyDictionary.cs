@@ -17,7 +17,7 @@ namespace System.Collections.ObjectModel
     {
         private readonly IDictionary<TKey, TValue> m_dictionary; // Do not rename (binary serialization)
         [NonSerialized]
-        private Object _syncRoot;
+        private object _syncRoot;
         [NonSerialized]
         private KeyCollection _keys;
         [NonSerialized]
@@ -344,7 +344,7 @@ namespace System.Collections.ObjectModel
                     }
                     else
                     {
-                        System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
+                        System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new object(), null);
                     }
                 }
                 return _syncRoot;
@@ -421,7 +421,7 @@ namespace System.Collections.ObjectModel
         {
             private readonly ICollection<TKey> _collection;
             [NonSerialized]
-            private Object _syncRoot;
+            private object _syncRoot;
 
             internal KeyCollection(ICollection<TKey> collection)
             {
@@ -514,7 +514,7 @@ namespace System.Collections.ObjectModel
                         }
                         else
                         {
-                            System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
+                            System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new object(), null);
                         }
                     }
                     return _syncRoot;
@@ -529,7 +529,7 @@ namespace System.Collections.ObjectModel
         {
             private readonly ICollection<TValue> _collection;
             [NonSerialized]
-            private Object _syncRoot;
+            private object _syncRoot;
 
             internal ValueCollection(ICollection<TValue> collection)
             {
@@ -622,7 +622,7 @@ namespace System.Collections.ObjectModel
                         }
                         else
                         {
-                            System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
+                            System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new object(), null);
                         }
                     }
                     return _syncRoot;

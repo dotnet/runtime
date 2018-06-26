@@ -33,7 +33,7 @@ namespace System.Runtime.Caching
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (Interlocked.CompareExchange(ref s_host, value, null) != null)
                 {
@@ -54,7 +54,7 @@ namespace System.Runtime.Caching
             return ((IEnumerable<KeyValuePair<string, object>>)this).GetEnumerator();
         }
 
-        public abstract CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<String> keys, String regionName = null);
+        public abstract CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null);
 
         IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
         {
@@ -102,7 +102,7 @@ namespace System.Runtime.Caching
         public abstract void Set(string key, object value, CacheItemPolicy policy, string regionName = null);
 
         //Get multiple items by keys
-        public abstract IDictionary<string, object> GetValues(IEnumerable<String> keys, string regionName = null);
+        public abstract IDictionary<string, object> GetValues(IEnumerable<string> keys, string regionName = null);
 
         public virtual IDictionary<string, object> GetValues(string regionName, params string[] keys)
         {

@@ -157,9 +157,9 @@ namespace System.Net.Http.Headers
 
             if (HasRange)
             {
-                sb.Append(_from.Value.ToString(NumberFormatInfo.InvariantInfo));
+                sb.Append(_from.Value);
                 sb.Append('-');
-                sb.Append(_to.Value.ToString(NumberFormatInfo.InvariantInfo));
+                sb.Append(_to.Value);
             }
             else
             {
@@ -169,7 +169,7 @@ namespace System.Net.Http.Headers
             sb.Append('/');
             if (HasLength)
             {
-                sb.Append(_length.Value.ToString(NumberFormatInfo.InvariantInfo));
+                sb.Append(_length.Value);
             }
             else
             {

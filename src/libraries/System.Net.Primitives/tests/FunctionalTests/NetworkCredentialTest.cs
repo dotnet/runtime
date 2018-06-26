@@ -15,9 +15,9 @@ namespace System.Net.Primitives.Functional.Tests
         public static void Ctor_Empty_Success()
         {
             NetworkCredential nc = new NetworkCredential();
-            Assert.Equal(String.Empty, nc.UserName);
-            Assert.Equal(String.Empty, nc.Password);
-            Assert.Equal(String.Empty, nc.Domain);
+            Assert.Equal(string.Empty, nc.UserName);
+            Assert.Equal(string.Empty, nc.Password);
+            Assert.Equal(string.Empty, nc.Domain);
         }
 
         [Fact]
@@ -26,7 +26,7 @@ namespace System.Net.Primitives.Functional.Tests
             NetworkCredential nc = new NetworkCredential("username", "password");
             Assert.Equal("username", nc.UserName);
             Assert.Equal("password", nc.Password);
-            Assert.Equal(String.Empty, nc.Domain);
+            Assert.Equal(string.Empty, nc.Domain);
         }
 
         [Fact]
@@ -47,7 +47,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Equal("username", nc.UserName);
 
             nc.UserName = null;
-            Assert.Equal(String.Empty, nc.UserName);
+            Assert.Equal(string.Empty, nc.UserName);
         }
 
         [Fact]
@@ -68,7 +68,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Equal("domain", nc.Domain);
 
             nc.Domain = null;
-            Assert.Equal(String.Empty, nc.Domain);
+            Assert.Equal(string.Empty, nc.Domain);
         }
 
         [Fact]

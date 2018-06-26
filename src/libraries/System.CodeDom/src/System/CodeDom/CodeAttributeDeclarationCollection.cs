@@ -24,8 +24,8 @@ namespace System.CodeDom
 
         public CodeAttributeDeclaration this[int index]
         {
-            get { return ((CodeAttributeDeclaration)(List[index])); }
-            set { List[index] = value; }
+            get => ((CodeAttributeDeclaration)(List[index]));
+            set => List[index] = value;
         }
 
         public int Add(CodeAttributeDeclaration value) => List.Add(value);

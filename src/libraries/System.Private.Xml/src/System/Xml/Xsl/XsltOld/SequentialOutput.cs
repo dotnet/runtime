@@ -369,7 +369,7 @@ namespace System.Xml.Xsl.XsltOld
             switch (node.NodeType)
             {
                 case XmlNodeType.Element:
-                    if (node.NamespaceURI.Length == 0 && String.Compare("html", node.LocalName, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (node.NamespaceURI.Length == 0 && string.Equals("html", node.LocalName, StringComparison.OrdinalIgnoreCase))
                     {
                         method = XsltOutput.OutputMethod.Html;
                     }
@@ -718,7 +718,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 Write(s_Space);
                 WriteName(attribute.Prefix, attribute.LocalName);
-                if (abr && 0 == string.Compare(attribute.LocalName, attrValue, StringComparison.OrdinalIgnoreCase))
+                if (abr && string.Equals(attribute.LocalName, attrValue, StringComparison.OrdinalIgnoreCase))
                 {
                     // Since the name of the attribute = the value of the attribute, 
                     // this is a boolean attribute whose value should be suppressed

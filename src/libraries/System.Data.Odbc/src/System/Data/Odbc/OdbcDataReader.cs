@@ -175,7 +175,7 @@ namespace System.Data.Odbc
                 }
                 if (null == _dataCache)
                 {
-                    Int16 cColsAffected;
+                    short cColsAffected;
                     ODBC32.RetCode retcode = this.FieldCountNoThrow(out cColsAffected);
                     if (retcode != ODBC32.RetCode.SUCCESS)
                     {
@@ -209,7 +209,7 @@ namespace System.Data.Odbc
             }
         }
 
-        internal ODBC32.RetCode FieldCountNoThrow(out Int16 cColsAffected)
+        internal ODBC32.RetCode FieldCountNoThrow(out short cColsAffected)
         {
             if (IsCancelingCommand)
             {
@@ -233,7 +233,7 @@ namespace System.Data.Odbc
                             if (isHidden.ToInt64() == 1)
                             {
                                 _hiddenColumns = (int)cColsAffected - i;
-                                cColsAffected = (Int16)i;
+                                cColsAffected = (short)i;
                                 break;
                             }
                         }
@@ -399,7 +399,7 @@ namespace System.Data.Odbc
             //base.Dispose(disposing)
         }
 
-        public override String GetDataTypeName(int i)
+        public override string GetDataTypeName(int i)
         {
             if (null != _dataCache)
             {
@@ -432,7 +432,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        public override String GetName(int i)
+        public override string GetName(int i)
         {
             if (null != _dataCache)
             {
@@ -678,9 +678,9 @@ namespace System.Data.Odbc
             }
         }
 
-        public override Byte GetByte(int i)
+        public override byte GetByte(int i)
         {
-            return (Byte)internalGetByte(i);
+            return (byte)internalGetByte(i);
         }
 
         private object internalGetByte(int i)
@@ -699,9 +699,9 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        public override Char GetChar(int i)
+        public override char GetChar(int i)
         {
-            return (Char)internalGetChar(i);
+            return (char)internalGetChar(i);
         }
         private object internalGetChar(int i)
         {
@@ -719,9 +719,9 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        public override Int16 GetInt16(int i)
+        public override short GetInt16(int i)
         {
-            return (Int16)internalGetInt16(i);
+            return (short)internalGetInt16(i);
         }
         private object internalGetInt16(int i)
         {
@@ -739,9 +739,9 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        public override Int32 GetInt32(int i)
+        public override int GetInt32(int i)
         {
-            return (Int32)internalGetInt32(i);
+            return (int)internalGetInt32(i);
         }
         private object internalGetInt32(int i)
         {
@@ -759,9 +759,9 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        public override Int64 GetInt64(int i)
+        public override long GetInt64(int i)
         {
-            return (Int64)internalGetInt64(i);
+            return (long)internalGetInt64(i);
         }
         // ---------------------------------------------------------------------------------------------- //
         // internal internalGetInt64
@@ -779,7 +779,7 @@ namespace System.Data.Odbc
                     if (GetData(i, ODBC32.SQL_C.WCHAR))
                     {
                         string value = (string)Buffer.MarshalToManaged(0, ODBC32.SQL_C.WCHAR, ODBC32.SQL_NTS);
-                        _dataCache[i] = Int64.Parse(value, CultureInfo.InvariantCulture);
+                        _dataCache[i] = long.Parse(value, CultureInfo.InvariantCulture);
                     }
                 }
                 return _dataCache[i];
@@ -893,7 +893,7 @@ namespace System.Data.Odbc
                         try
                         {
                             s = (string)Buffer.MarshalToManaged(0, ODBC32.SQL_C.WCHAR, ODBC32.SQL_NTS);
-                            _dataCache[i] = Decimal.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
+                            _dataCache[i] = decimal.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
                         }
                         catch (OverflowException e)
                         {
@@ -948,9 +948,9 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        public override String GetString(int i)
+        public override string GetString(int i)
         {
-            return (String)internalGetString(i);
+            return (string)internalGetString(i);
         }
 
         private object internalGetString(int i)
@@ -998,7 +998,7 @@ namespace System.Data.Odbc
                         // Char[] buffer for the junks
                         // StringBuilder for the actual string
                         //
-                        Char[] rgChars = new Char[cbMaxData / 2];
+                        char[] rgChars = new char[cbMaxData / 2];
 
                         // RFC 50002644: negative value cannot be used for capacity.
                         // in case of SQL_NO_TOTAL, set the capacity to cbMaxData, StringBuilder will automatically reallocate 
@@ -1111,15 +1111,15 @@ namespace System.Data.Odbc
             if (dataIndex < 0)
             {
                 // test only for negative value here, Int32.MaxValue will be validated only in case of random access
-                throw ADP.ArgumentOutOfRange("dataIndex");
+                throw ADP.ArgumentOutOfRange(nameof(dataIndex));
             }
             if (bufferIndex < 0)
             {
-                throw ADP.ArgumentOutOfRange("bufferIndex");
+                throw ADP.ArgumentOutOfRange(nameof(bufferIndex));
             }
             if (length < 0)
             {
-                throw ADP.ArgumentOutOfRange("length");
+                throw ADP.ArgumentOutOfRange(nameof(length));
             }
 
             string originalMethodName = isCharsBuffer ? "GetChars" : "GetBytes";
@@ -1149,11 +1149,11 @@ namespace System.Data.Odbc
                 // random access (cases 1 or 2) and sequential access with cache (case 3)
                 // preserve the original behavior as before the fix
 
-                if (Int32.MaxValue < dataIndex)
+                if (int.MaxValue < dataIndex)
                 {
                     // indices greater than allocable size are not supported in random access
                     // (negative value is already tested in the beginning of ths function)
-                    throw ADP.ArgumentOutOfRange("dataIndex");
+                    throw ADP.ArgumentOutOfRange(nameof(dataIndex));
                 }
 
                 if (cachedObj == null)
@@ -1164,7 +1164,7 @@ namespace System.Data.Odbc
 
                     if (isCharsBuffer)
                     {
-                        cachedObj = (String)internalGetString(i);
+                        cachedObj = (string)internalGetString(i);
                         Debug.Assert((cachedObj != null), "internalGetString should always return non-null or raise exception");
                     }
                     else
@@ -1483,7 +1483,7 @@ namespace System.Data.Odbc
             {
                 // Obtain _ALL_ the bytes...
                 // The first time GetData returns the true length (so we have to min it).
-                Byte[] rgBytes;
+                byte[] rgBytes;
                 int cbBufferLen = Buffer.Length - 4;
                 int cbActual;
                 int cbOffset = 0;
@@ -1494,7 +1494,7 @@ namespace System.Data.Odbc
 
                     if (ODBC32.SQL_NO_TOTAL != cbActual)
                     {
-                        rgBytes = new Byte[cbActual];
+                        rgBytes = new byte[cbActual];
                         Buffer.ReadBytes(0, rgBytes, cbOffset, Math.Min(cbActual, cbBufferLen));
 
                         // Chunking.  The data may be larger than our native buffer.  In which case
@@ -1513,21 +1513,21 @@ namespace System.Data.Odbc
                     }
                     else
                     {
-                        List<Byte[]> junkArray = new List<Byte[]>();
+                        List<byte[]> junkArray = new List<byte[]>();
                         int junkSize;
                         int totalSize = 0;
                         do
                         {
                             junkSize = (ODBC32.SQL_NO_TOTAL != cbActual) ? cbActual : cbBufferLen;
-                            rgBytes = new Byte[junkSize];
+                            rgBytes = new byte[junkSize];
                             totalSize += junkSize;
                             buffer.ReadBytes(0, rgBytes, 0, junkSize);
                             junkArray.Add(rgBytes);
                         }
                         while ((ODBC32.SQL_NO_TOTAL == cbActual) && GetData(i, ODBC32.SQL_C.BINARY, cbBufferLen, out cbActual));
 
-                        rgBytes = new Byte[totalSize];
-                        foreach (Byte[] junk in junkArray)
+                        rgBytes = new byte[totalSize];
+                        foreach (byte[] junk in junkArray)
                         {
                             junk.CopyTo(rgBytes, cbOffset);
                             cbOffset += junk.Length;
@@ -1552,7 +1552,7 @@ namespace System.Data.Odbc
         //
         private SQLLEN GetColAttribute(int iColumn, ODBC32.SQL_DESC v3FieldId, ODBC32.SQL_COLUMN v2FieldId, ODBC32.HANDLER handler)
         {
-            Int16 cchNameLength = 0;
+            short cchNameLength = 0;
             SQLLEN numericAttribute;
             ODBC32.RetCode retcode;
 
@@ -1603,10 +1603,10 @@ namespace System.Data.Odbc
         // returns the stringvalue of the FieldIdentifier field of the column
         // or null if the string returned was empty or if the FieldIdentifier wasn't supported by the driver
         //
-        private String GetColAttributeStr(int i, ODBC32.SQL_DESC v3FieldId, ODBC32.SQL_COLUMN v2FieldId, ODBC32.HANDLER handler)
+        private string GetColAttributeStr(int i, ODBC32.SQL_DESC v3FieldId, ODBC32.SQL_COLUMN v2FieldId, ODBC32.HANDLER handler)
         {
             ODBC32.RetCode retcode;
-            Int16 cchNameLength = 0;
+            short cchNameLength = 0;
             SQLLEN numericAttribute;
             CNativeBuffer buffer = Buffer;
             buffer.WriteInt16(0, 0);
@@ -1653,9 +1653,9 @@ namespace System.Data.Odbc
         // todo: Another 3.0 only attribute that is guaranteed to fail on V2 driver.
         // need to special case this for V2 drivers.
         //
-        private String GetDescFieldStr(int i, ODBC32.SQL_DESC attribute, ODBC32.HANDLER handler)
+        private string GetDescFieldStr(int i, ODBC32.SQL_DESC attribute, ODBC32.HANDLER handler)
         {
-            Int32 numericAttribute = 0;
+            int numericAttribute = 0;
 
             // protect against dead connection, dead or canceling command.
             if ((Connection == null) || _cmdWrapper.Canceling)
@@ -1771,7 +1771,7 @@ namespace System.Data.Odbc
                 case ODBC32.RetCode.SUCCESS:
                     break;
                 case ODBC32.RetCode.SUCCESS_WITH_INFO:
-                    if ((Int32)cbActual == ODBC32.SQL_NO_TOTAL)
+                    if ((int)cbActual == ODBC32.SQL_NO_TOTAL)
                     {
                         break;
                     }
@@ -1906,7 +1906,7 @@ namespace System.Data.Odbc
         // Called by odbccommand when executed for the first time
         internal void FirstResult()
         {
-            Int16 cCols;
+            short cCols;
             SQLLEN cRowsAffected;
 
             cRowsAffected = GetRowCount();              // get rowcount of the current resultset (if any)
@@ -1937,7 +1937,7 @@ namespace System.Data.Odbc
             const int MaxConsecutiveFailure = 2000; // see WebData 72126 for why more than 1000
 
             SQLLEN cRowsAffected;
-            Int16 cColsAffected;
+            short cColsAffected;
             ODBC32.RetCode retcode, firstRetCode = ODBC32.RetCode.SUCCESS;
             bool hasMoreResults;
             bool hasColumns = false;
@@ -2074,7 +2074,7 @@ namespace System.Data.Odbc
                 metaInfos[i].scale = (byte)GetColAttribute(i, (ODBC32.SQL_DESC)ODBC32.SQL_COLUMN.SCALE, ODBC32.SQL_COLUMN.SCALE, ODBC32.HANDLER.IGNORE);
 
                 metaInfos[i].isAutoIncrement = GetColAttribute(i, ODBC32.SQL_DESC.AUTO_UNIQUE_VALUE, ODBC32.SQL_COLUMN.AUTO_INCREMENT, ODBC32.HANDLER.IGNORE) == 1;
-                metaInfos[i].isReadOnly = (GetColAttribute(i, ODBC32.SQL_DESC.UPDATABLE, ODBC32.SQL_COLUMN.UPDATABLE, ODBC32.HANDLER.IGNORE) == (Int32)ODBC32.SQL_UPDATABLE.READONLY);
+                metaInfos[i].isReadOnly = (GetColAttribute(i, ODBC32.SQL_DESC.UPDATABLE, ODBC32.SQL_COLUMN.UPDATABLE, ODBC32.HANDLER.IGNORE) == (int)ODBC32.SQL_UPDATABLE.READONLY);
 
                 nullable = (ODBC32.SQL_NULLABILITY)(int)GetColAttribute(i, ODBC32.SQL_DESC.NULLABLE, ODBC32.SQL_COLUMN.NULLABLE, ODBC32.HANDLER.IGNORE);
                 metaInfos[i].isNullable = (nullable == ODBC32.SQL_NULLABILITY.NULLABLE);
@@ -2214,24 +2214,24 @@ namespace System.Data.Odbc
 
             //Schema Columns
             DataColumnCollection columns = schematable.Columns;
-            columns.Add(new DataColumn("ColumnName", typeof(System.String)));
-            columns.Add(new DataColumn("ColumnOrdinal", typeof(System.Int32))); // UInt32
-            columns.Add(new DataColumn("ColumnSize", typeof(System.Int32))); // UInt32
-            columns.Add(new DataColumn("NumericPrecision", typeof(System.Int16))); // UInt16
-            columns.Add(new DataColumn("NumericScale", typeof(System.Int16)));
-            columns.Add(new DataColumn("DataType", typeof(System.Object)));
-            columns.Add(new DataColumn("ProviderType", typeof(System.Int32)));
-            columns.Add(new DataColumn("IsLong", typeof(System.Boolean)));
-            columns.Add(new DataColumn("AllowDBNull", typeof(System.Boolean)));
-            columns.Add(new DataColumn("IsReadOnly", typeof(System.Boolean)));
-            columns.Add(new DataColumn("IsRowVersion", typeof(System.Boolean)));
-            columns.Add(new DataColumn("IsUnique", typeof(System.Boolean)));
-            columns.Add(new DataColumn("IsKey", typeof(System.Boolean)));
-            columns.Add(new DataColumn("IsAutoIncrement", typeof(System.Boolean)));
-            columns.Add(new DataColumn("BaseSchemaName", typeof(System.String)));
-            columns.Add(new DataColumn("BaseCatalogName", typeof(System.String)));
-            columns.Add(new DataColumn("BaseTableName", typeof(System.String)));
-            columns.Add(new DataColumn("BaseColumnName", typeof(System.String)));
+            columns.Add(new DataColumn("ColumnName", typeof(string)));
+            columns.Add(new DataColumn("ColumnOrdinal", typeof(int))); // UInt32
+            columns.Add(new DataColumn("ColumnSize", typeof(int))); // UInt32
+            columns.Add(new DataColumn("NumericPrecision", typeof(short))); // UInt16
+            columns.Add(new DataColumn("NumericScale", typeof(short)));
+            columns.Add(new DataColumn("DataType", typeof(object)));
+            columns.Add(new DataColumn("ProviderType", typeof(int)));
+            columns.Add(new DataColumn("IsLong", typeof(bool)));
+            columns.Add(new DataColumn("AllowDBNull", typeof(bool)));
+            columns.Add(new DataColumn("IsReadOnly", typeof(bool)));
+            columns.Add(new DataColumn("IsRowVersion", typeof(bool)));
+            columns.Add(new DataColumn("IsUnique", typeof(bool)));
+            columns.Add(new DataColumn("IsKey", typeof(bool)));
+            columns.Add(new DataColumn("IsAutoIncrement", typeof(bool)));
+            columns.Add(new DataColumn("BaseSchemaName", typeof(string)));
+            columns.Add(new DataColumn("BaseCatalogName", typeof(string)));
+            columns.Add(new DataColumn("BaseTableName", typeof(string)));
+            columns.Add(new DataColumn("BaseColumnName", typeof(string)));
 
             // MDAC Bug 79231
             foreach (DataColumn column in columns)
@@ -2299,9 +2299,9 @@ namespace System.Data.Odbc
 
                 row[columnName] = GetName(i);        //ColumnName
                 row[columnOrdinal] = i;                 //ColumnOrdinal
-                row[columnSize] = unchecked((int)Math.Min(Math.Max(Int32.MinValue, _metadata[i].size.ToInt64()), Int32.MaxValue));
-                row[numericPrecision] = (Int16)_metadata[i].precision;
-                row[numericScale] = (Int16)_metadata[i].scale;
+                row[columnSize] = unchecked((int)Math.Min(Math.Max(int.MinValue, _metadata[i].size.ToInt64()), int.MaxValue));
+                row[numericPrecision] = (short)_metadata[i].precision;
+                row[numericScale] = (short)_metadata[i].scale;
                 row[dataType] = _metadata[i].typemap._type;          //DataType
                 row[providerType] = _metadata[i].typemap._odbcType;          // ProviderType
                 row[isLong] = _metadata[i].isLong;           // IsLong
@@ -2500,9 +2500,9 @@ namespace System.Data.Odbc
         private int RetrieveKeyInfoFromStatistics(QualifiedTableName qualifiedTableName, bool quoted)
         {
             ODBC32.RetCode retcode;
-            String columnname = String.Empty;
-            String indexname = String.Empty;
-            String currentindexname = String.Empty;
+            string columnname = string.Empty;
+            string indexname = string.Empty;
+            string currentindexname = string.Empty;
             int[] indexcolumnordinals = new int[16];
             int[] pkcolumnordinals = new int[16];
             int npkcols = 0;
@@ -2519,7 +2519,7 @@ namespace System.Data.Odbc
 
             // MDAC Bug 75928 - SQLStatisticsW damages the string passed in
             // To protect the tablename we need to pass in a copy of that string
-            String tablename1 = String.Copy(qualifiedTableName.GetTable(quoted));
+            string tablename1 = string.Copy(qualifiedTableName.GetTable(quoted));
 
             // Select only unique indexes
             retcode = KeyInfoStatementHandle.Statistics(tablename1);
@@ -2688,7 +2688,7 @@ namespace System.Data.Odbc
             return keyColumns;
         }
 
-        internal bool SameIndexColumn(String currentindexname, String indexname, int ordinal, int ncols)
+        internal bool SameIndexColumn(string currentindexname, string indexname, int ordinal, int ncols)
         {
             if (string.IsNullOrEmpty(currentindexname))
             {
@@ -2700,12 +2700,12 @@ namespace System.Data.Odbc
             return false;
         }
 
-        internal int GetOrdinalFromBaseColName(String columnname)
+        internal int GetOrdinalFromBaseColName(string columnname)
         {
             return GetOrdinalFromBaseColName(columnname, null);
         }
 
-        internal int GetOrdinalFromBaseColName(String columnname, String tablename)
+        internal int GetOrdinalFromBaseColName(string columnname, string tablename)
         {
             if (string.IsNullOrEmpty(columnname))
             {
@@ -2749,12 +2749,12 @@ namespace System.Data.Odbc
             {
                 return null;
             }
-            String localcmdtext = _cmdText;
+            string localcmdtext = _cmdText;
             if (string.IsNullOrEmpty(localcmdtext))
             { // fxcop
                 return null;
             }
-            String tablename;
+            string tablename;
             int idx;
             CStringTokenizer tokenstmt = new CStringTokenizer(localcmdtext, Connection.QuoteChar(ADP.GetSchemaTable)[0], Connection.EscapeChar(ADP.GetSchemaTable));
 

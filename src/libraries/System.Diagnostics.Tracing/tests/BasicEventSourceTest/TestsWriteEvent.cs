@@ -4,11 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Threading;
 using Xunit;
 
 #if USE_MDT_EVENTSOURCE
@@ -17,33 +12,12 @@ using Microsoft.Diagnostics.Tracing;
 using System.Diagnostics.Tracing;
 #endif
 using System.Text.RegularExpressions;
-using System.Diagnostics;
 using SdtEventSources;
 
 namespace BasicEventSourceTests
 {
-    public class TestsWriteEvent
+    public partial class TestsWriteEvent
     {
-#if USE_ETW
-        // Specifies whether the process is elevated or not.
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
-        private static bool IsProcessElevated => s_isElevated.Value;
-        private static bool IsProcessElevatedAndNotWindowsNanoServer =>
-            IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer; // ActiveIssue: https://github.com/dotnet/corefx/issues/29754
-
-        /// <summary>
-        /// Tests WriteEvent using the manifest based mechanism.   
-        /// Tests the ETW path. 
-        /// </summary>
-        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
-        public void Test_WriteEvent_Manifest_ETW()
-        {
-            using (var listener = new EtwListener())
-            {
-                Test_WriteEvent(listener, false);
-            }
-        }
-#endif // USE_ETW
         /// <summary>
         /// Tests WriteEvent using the manifest based mechanism.   
         /// Tests bTraceListener path. 
@@ -66,22 +40,10 @@ namespace BasicEventSourceTests
         [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_Manifest_EventListener_UseEvents()
         {
-            Test_WriteEvent(new EventListenerListener(true), false);
+            Listener listener = new EventListenerListener(true);
+            Test_WriteEvent(listener, false);
         }
-#if USE_ETW
-        /// <summary>
-        /// Tests WriteEvent using the self-describing mechanism.   
-        /// Tests both the ETW and TraceListener paths. 
-        /// </summary>
-        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
-        public void Test_WriteEvent_SelfDescribing_ETW()
-        {
-            using (var listener = new EtwListener())
-            {
-                Test_WriteEvent(listener, true);
-            }
-        }
-#endif
+
         /// <summary>
         /// Tests WriteEvent using the self-describing mechanism.   
         /// Tests both the ETW and TraceListener paths. 
@@ -105,7 +67,8 @@ namespace BasicEventSourceTests
         [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_SelfDescribing_EventListener_UseEvents()
         {
-            Test_WriteEvent(new EventListenerListener(true), true);
+            Listener listener = new EventListenerListener(true);
+            Test_WriteEvent(listener, true);
         }
 
         [Fact]
@@ -136,15 +99,16 @@ namespace BasicEventSourceTests
         /// <summary>
         /// Helper method for the two tests above.  
         /// </summary>
-        private void Test_WriteEvent(Listener listener, bool useSelfDescribingEvents)
+        private void Test_WriteEvent(Listener listener, bool useSelfDescribingEvents, bool isEtwListener = false)
         {
-            using (var logger = new SdtEventSources.EventSourceTest(useSelfDescribingEvents))
+            using (var logger = new EventSourceTest(useSelfDescribingEvents))
             {
                 var tests = new List<SubTest>();
 
                 /*************************************************************************/
                 tests.Add(new SubTest("WriteEvent/Basic/EventII",
-                    delegate () { logger.EventII(10, 11); },
+                    delegate ()
+                    { logger.EventII(10, 11); },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
@@ -154,7 +118,8 @@ namespace BasicEventSourceTests
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("WriteEvent/Basic/EventSS",
-                    delegate () { logger.EventSS("one", "two"); },
+                    delegate ()
+                    { logger.EventSS("one", "two"); },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
@@ -162,27 +127,6 @@ namespace BasicEventSourceTests
                         Assert.Equal(evt.PayloadValue(0, "arg1"), "one");
                         Assert.Equal(evt.PayloadValue(1, "arg2"), "two");
                     }));
-#if USE_ETW
-                /*************************************************************************/
-                if(IsProcessElevated)
-                {
-                    tests.Add(new SubTest("Write/Basic/EventWithManyTypeArgs",
-                        delegate ()
-                        {
-                            logger.EventWithManyTypeArgs("Hello", 1, 2, 3, 'a', 4, 5, 6, 7,
-                                                     (float)10.0, (double)11.0, logger.Guid);
-                        },
-                        delegate (Event evt)
-                        {
-                            Assert.Equal(logger.Name, evt.ProviderName);
-                            Assert.Equal("EventWithManyTypeArgs", evt.EventName);
-                            Assert.Equal("Hello", evt.PayloadValue(0, "msg"));
-                            Assert.Equal((float)10.0, evt.PayloadValue(9, "f"));
-                            Assert.Equal((double)11.0, evt.PayloadValue(10, "d"));
-                            Assert.Equal(logger.Guid, evt.PayloadValue(11, "guid"));
-                        }));
-                }
-#endif // USE_ETW
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/EventWith7Strings",
                     delegate ()
@@ -209,33 +153,9 @@ namespace BasicEventSourceTests
                         Assert.Equal("s0", (string)evt.PayloadValue(0, "s0"));
                         Assert.Equal("s8", (string)evt.PayloadValue(8, "s8"));
                     }));
-#if USE_ETW
                 /*************************************************************************/
-                if(IsProcessElevated)
-                {
-                    tests.Add(new SubTest("Write/Activity/EventWithXferWeirdArgs",
-                        delegate ()
-                        {
-                            var actid = Guid.NewGuid();
-                            logger.EventWithXferWeirdArgs(actid,
-                                (IntPtr)128,
-                                true,
-                                SdtEventSources.MyLongEnum.LongVal1);
-                        },
-                        delegate (Event evt)
-                        {
-                            Assert.Equal(logger.Name, evt.ProviderName);
-                
-                            // We log EventWithXferWeirdArgs in one case and 
-                            // WorkWeirdArgs/Send in the other
-                            Assert.True(evt.EventName.Contains("WeirdArgs"));
+                Test_WriteEvent_AddEtwTests(tests, logger);
 
-                            Assert.Equal("128", evt.PayloadValue(0, "iptr").ToString());
-                            Assert.Equal(true, (bool)evt.PayloadValue(1, "b"));
-                            Assert.Equal((long)SdtEventSources.MyLongEnum.LongVal1, ((IConvertible)evt.PayloadValue(2, "le")).ToInt64(null));
-                        }));
-                }
-#endif // USE_ETW
                 /*************************************************************************/
                 /*************************** ENUM TESTING *******************************/
                 /*************************************************************************/
@@ -259,7 +179,7 @@ namespace BasicEventSourceTests
                 tests.Add(new SubTest("WriteEvent/Enum/EventEnum1",
                    delegate ()
                    {
-                       logger.EventEnum1(SdtEventSources.MyColor.Blue);
+                       logger.EventEnum1(MyColor.Blue);
                    },
                    delegate (Event evt)
                    {
@@ -272,7 +192,8 @@ namespace BasicEventSourceTests
                    }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithIntIntString",
-                    delegate () { logger.EventWithIntIntString(10, 11, "test"); },
+                    delegate ()
+                    { logger.EventWithIntIntString(10, 11, "test"); },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
@@ -283,7 +204,8 @@ namespace BasicEventSourceTests
                     }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithIntLongString",
-                    delegate () { logger.EventWithIntLongString(10, (long)11, "test"); },
+                    delegate ()
+                    { logger.EventWithIntLongString(10, (long)11, "test"); },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
@@ -294,7 +216,8 @@ namespace BasicEventSourceTests
                     }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithString",
-                    delegate () { logger.EventWithString(null); },
+                    delegate ()
+                    { logger.EventWithString(null); },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
@@ -304,7 +227,8 @@ namespace BasicEventSourceTests
 
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithIntAndString",
-                    delegate () { logger.EventWithIntAndString(12, null); },
+                    delegate ()
+                    { logger.EventWithIntAndString(12, null); },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
@@ -314,7 +238,8 @@ namespace BasicEventSourceTests
                     }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithLongAndString",
-                    delegate () { logger.EventWithLongAndString(120L, null); },
+                    delegate ()
+                    { logger.EventWithLongAndString(120L, null); },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
@@ -324,7 +249,8 @@ namespace BasicEventSourceTests
                     }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithStringAndInt",
-                    delegate () { logger.EventWithStringAndInt(null, 12); },
+                    delegate ()
+                    { logger.EventWithStringAndInt(null, 12); },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
@@ -334,7 +260,8 @@ namespace BasicEventSourceTests
                     }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithStringAndIntAndInt",
-                    delegate () { logger.EventWithStringAndIntAndInt(null, 12, 13); },
+                    delegate ()
+                    { logger.EventWithStringAndIntAndInt(null, 12, 13); },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
@@ -345,7 +272,8 @@ namespace BasicEventSourceTests
                     }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithStringAndLong",
-                    delegate () { logger.EventWithStringAndLong(null, 120L); },
+                    delegate ()
+                    { logger.EventWithStringAndLong(null, 120L); },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
@@ -355,7 +283,8 @@ namespace BasicEventSourceTests
                     }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithStringAndString",
-                    delegate () { logger.EventWithStringAndString(null, null); },
+                    delegate ()
+                    { logger.EventWithStringAndString(null, null); },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
@@ -365,7 +294,8 @@ namespace BasicEventSourceTests
                     }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithStringAndStringAndString",
-                    delegate () { logger.EventWithStringAndStringAndString(null, null, null); },
+                    delegate ()
+                    { logger.EventWithStringAndStringAndString(null, null, null); },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
@@ -376,14 +306,11 @@ namespace BasicEventSourceTests
                     }));
 
                 // Self-describing ETW does not support NULL arguments.
-                if (useSelfDescribingEvents
-#if USE_ETW
-                    && !(listener is EtwListener)
-#endif // USE_ETW
-                   )
+                if (useSelfDescribingEvents && !(isEtwListener))
                 {
                     tests.Add(new SubTest("WriteEvent/Basic/EventVarArgsWithString",
-                        delegate () { logger.EventVarArgsWithString(1, 2, 12, null); },
+                        delegate ()
+                        { logger.EventVarArgsWithString(1, 2, 12, null); },
                         delegate (Event evt)
                         {
                             Assert.Equal(logger.Name, evt.ProviderName);
@@ -394,7 +321,7 @@ namespace BasicEventSourceTests
                             Assert.Equal("", evt.PayloadValue(3, null));
                         }));
                 }
-                
+
                 // Probably belongs in the user TestUsersErrors.cs.  
                 if (!useSelfDescribingEvents)
                 {
@@ -433,6 +360,8 @@ namespace BasicEventSourceTests
             }
         }
 
+        static partial void Test_WriteEvent_AddEtwTests(List<SubTest> tests, EventSourceTest logger);
+
         /**********************************************************************/
         /// <summary>
         /// Tests sending complex data (class, arrays etc) from WriteEvent 
@@ -446,21 +375,6 @@ namespace BasicEventSourceTests
                 Test_WriteEvent_ComplexData_SelfDescribing(listener);
             }
         }
-
-#if USE_ETW
-        /// <summary>
-        /// Tests sending complex data (class, arrays etc) from WriteEvent 
-        /// Tests the EventListener case
-        /// </summary>
-        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
-        public void Test_WriteEvent_ComplexData_SelfDescribing_ETW()
-        {
-            using (var listener = new EtwListener())
-            {
-                Test_WriteEvent_ComplexData_SelfDescribing(listener);
-            }
-        }
-#endif // USE_ETW
 
         private void Test_WriteEvent_ComplexData_SelfDescribing(Listener listener)
         {
@@ -536,22 +450,6 @@ namespace BasicEventSourceTests
             Test_WriteEvent_ByteArray(false, new EventListenerListener(true));
         }
 
-#if USE_ETW
-        /// <summary>
-        /// Tests sending complex data (class, arrays etc) from WriteEvent 
-        /// Uses Manifest format
-        /// Tests the EventListener case
-        /// </summary>
-        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
-        public void Test_WriteEvent_ByteArray_Manifest_ETW()
-        {
-            using (var listener = new EtwListener())
-            {
-                Test_WriteEvent_ByteArray(false, listener);
-            }
-        }
-#endif // USE_ETW
-
         /// <summary>
         /// Tests sending complex data (class, arrays etc) from WriteEvent 
         /// Uses Self-Describing format
@@ -565,22 +463,6 @@ namespace BasicEventSourceTests
                 Test_WriteEvent_ByteArray(true, listener);
             }
         }
-
-#if USE_ETW
-        /// <summary>
-        /// Tests sending complex data (class, arrays etc) from WriteEvent 
-        /// Uses Self-Describing format
-        /// Tests the EventListener case 
-        /// </summary>
-        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
-        public void Test_WriteEvent_ByteArray_SelfDescribing_ETW()
-        {
-            using (var listener = new EtwListener())
-            {
-                Test_WriteEvent_ByteArray(true, listener);
-            }
-        }
-#endif // USE_ETW
 
         private void Test_WriteEvent_ByteArray(bool useSelfDescribingEvents, Listener listener)
         {
@@ -615,7 +497,7 @@ namespace BasicEventSourceTests
                             Assert.Equal(1000, (int)evt.PayloadValue(1, "n"));
                         }
                     }));
- 
+
                 if (!useSelfDescribingEvents)
                 {
                     /*************************************************************************/
@@ -628,7 +510,7 @@ namespace BasicEventSourceTests
                         {
                             Assert.Equal(logger.Name, evt.ProviderName);
                             Assert.Equal("EventWithBytePtrArg", evt.EventName);
-                            
+
                             if (evt.IsEtw)
                             {
                                 Assert.Equal(2, evt.PayloadCount);
@@ -744,6 +626,7 @@ namespace BasicEventSourceTests
     public sealed class EventSourceTestByteArray : EventSource
     {
         public EventSourceTestByteArray(EventSourceSettings settings) : base(settings) { }
+        
         // byte[] args not supported on 4.5
         [Event(1, Level = EventLevel.Informational, Message = "Int arg after byte array: {1}")]
         public void EventWithByteArrayArg(byte[] blob, int n)
@@ -775,6 +658,7 @@ namespace BasicEventSourceTests
                 }
             }
         }
+        
         [Event(3, Level = EventLevel.Informational, Message = "long after byte array: {1}")]
         public void EventWithLongByteArray(byte[] blob, long lng)
         { WriteEvent(3, blob, lng); }

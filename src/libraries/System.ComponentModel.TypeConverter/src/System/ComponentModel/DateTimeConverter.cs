@@ -8,16 +8,15 @@ using System.Globalization;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// <para>Provides a type converter to convert <see cref='System.DateTime'/>
-    /// objects to and from various other representations.</para>
+    /// Provides a type converter to convert <see cref='System.DateTime'/>
+    /// objects to and from various other representations.
     /// </summary>
     public class DateTimeConverter : TypeConverter
     {
         /// <summary>
-        ///    <para>Gets a value indicating whether this converter can
-        ///       convert an object in the given source type to a <see cref='System.DateTime'/>
-        ///       object using the
-        ///       specified context.</para>
+        /// Gets a value indicating whether this converter can convert an
+        /// object in the given source type to a <see cref='System.DateTime'/>
+        /// object using the specified context.
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
@@ -25,28 +24,20 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///        Gets a value indicating whether this converter can convert an object
-        ///        to the given destination type using the context.
-        ///    </para>
+        /// Gets a value indicating whether this converter can convert an object
+        /// to the given destination type using the context.
         /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            if (destinationType == typeof(InstanceDescriptor))
-            {
-                return true;
-            }
-            return base.CanConvertTo(context, destinationType);
+            return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
         /// <summary>
-        /// <para>Converts the given value object to a <see cref='System.DateTime'/>
-        /// object.</para>
+        /// Converts the given value object to a <see cref='System.DateTime'/> object.
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            string text = value as string;
-            if (text != null)
+            if (value is string text)
             {
                 text = text.Trim();
                 if (text.Length == 0)
@@ -56,8 +47,7 @@ namespace System.ComponentModel
 
                 try
                 {
-                    // See if we have a culture info to parse with.  If so, then use it.
-                    //
+                    // See if we have a culture info to parse with. If so, then use it.
                     DateTimeFormatInfo formatInfo = null;
 
                     if (culture != null)
@@ -84,15 +74,13 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// <para>Converts the given value object to a <see cref='System.DateTime'/>
-        /// object
-        /// using the arguments.</para>
+        /// Converts the given value object to a <see cref='System.DateTime'/>
+        /// object using the arguments.
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == typeof(string) && value is DateTime)
+            if (destinationType == typeof(string) && value is DateTime dt)
             {
-                DateTime dt = (DateTime)value;
                 if (dt == DateTime.MinValue)
                 {
                     return string.Empty;

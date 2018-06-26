@@ -6,122 +6,122 @@ using Xunit;
 
 namespace System.Tests
 {
-    public class ConvertToBooleanTests : ConvertTestBase<Boolean>
+    public class ConvertToBooleanTests : ConvertTestBase<bool>
     {
         [Fact]
         public void FromBoolean()
         {
-            Boolean[] testValues = { true, false };
+            bool[] testValues = { true, false };
             Verify(Convert.ToBoolean, testValues, testValues);
         }
 
         [Fact]
         public void FromByte()
         {
-            Byte[] testValues = { Byte.MinValue, Byte.MaxValue, };
-            Boolean[] expectedValues = { false, true };
+            byte[] testValues = { byte.MinValue, byte.MaxValue, };
+            bool[] expectedValues = { false, true };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
 
         [Fact]
         public void FromDecimal()
         {
-            Decimal[] testValues = { Decimal.MaxValue, Decimal.MinValue, Decimal.One, Decimal.Zero, 0m, 0.0m, 1.5m, -1.5m, 500.00m };
-            Boolean[] expectedValues = { true, true, true, false, false, false, true, true, true };
+            decimal[] testValues = { decimal.MaxValue, decimal.MinValue, decimal.One, decimal.Zero, 0m, 0.0m, 1.5m, -1.5m, 500.00m };
+            bool[] expectedValues = { true, true, true, false, false, false, true, true, true };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
 
         [Fact]
         public void FromDouble()
         {
-            Double[] testValues = { Double.Epsilon, Double.MaxValue, Double.MinValue, Double.NaN, Double.NegativeInfinity, Double.PositiveInfinity, 0d, 0.0, 1.5, -1.5, 1.5e300, -1.7e-500, -1.7e300, -1.7e-320 };
-            Boolean[] expectedValues = { true, true, true, true, true, true, false, false, true, true, true, false, true, true };
+            double[] testValues = { double.Epsilon, double.MaxValue, double.MinValue, double.NaN, double.NegativeInfinity, double.PositiveInfinity, 0d, 0.0, 1.5, -1.5, 1.5e300, -1.7e-500, -1.7e300, -1.7e-320 };
+            bool[] expectedValues = { true, true, true, true, true, true, false, false, true, true, true, false, true, true };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
 
         [Fact]
         public void FromInt16()
         {
-            Int16[] testValues = { Int16.MinValue, Int16.MaxValue, 0 };
-            Boolean[] expectedValues = { true, true, false };
+            short[] testValues = { short.MinValue, short.MaxValue, 0 };
+            bool[] expectedValues = { true, true, false };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
 
         [Fact]
         public void FromInt32()
         {
-            Int32[] testValues = { Int32.MinValue, Int32.MaxValue, 0 };
-            Boolean[] expectedValues = { true, true, false };
+            int[] testValues = { int.MinValue, int.MaxValue, 0 };
+            bool[] expectedValues = { true, true, false };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
 
         [Fact]
         public void FromInt64()
         {
-            Int64[] testValues = { Int64.MinValue, Int64.MaxValue, 0 };
-            Boolean[] expectedValues = { true, true, false, };
+            long[] testValues = { long.MinValue, long.MaxValue, 0 };
+            bool[] expectedValues = { true, true, false, };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
 
         [Fact]
         public void FromString()
         {
-            String[] testValues = { null, "True", "true ", " true", " true ", " false ", " false", "false ", "False" };
-            Boolean[] expectedValues = { false, true, true, true, true, false, false, false, false };
+            string[] testValues = { null, "True", "true ", " true", " true ", " false ", " false", "false ", "False" };
+            bool[] expectedValues = { false, true, true, true, true, false, false, false, false };
             VerifyFromString(Convert.ToBoolean, Convert.ToBoolean, testValues, expectedValues);
 
-            String[] invalidValues = { "Hello" };
+            string[] invalidValues = { "Hello" };
             VerifyFromStringThrows<FormatException>(Convert.ToBoolean, Convert.ToBoolean, invalidValues);
         }
 
         [Fact]
         public void FromObject()
         {
-            Object[] testValues = { null };
-            Boolean[] expectedValues = { false };
+            object[] testValues = { null };
+            bool[] expectedValues = { false };
             VerifyFromObject(Convert.ToBoolean, Convert.ToBoolean, testValues, expectedValues);
 
-            Object[] invalidValues = { new Object(), DateTime.Now };
+            object[] invalidValues = { new object(), DateTime.Now };
             VerifyFromObjectThrows<InvalidCastException>(Convert.ToBoolean, Convert.ToBoolean, invalidValues);
         }
 
         [Fact]
         public void FromSByte()
         {
-            SByte[] testValues = { 0, SByte.MaxValue, SByte.MinValue };
-            Boolean[] expectedValues = { false, true, true };
+            sbyte[] testValues = { 0, sbyte.MaxValue, sbyte.MinValue };
+            bool[] expectedValues = { false, true, true };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
 
         [Fact]
         public void FromSingle()
         {
-            Single[] testValues = { Single.Epsilon, Single.MaxValue, Single.MinValue, Single.NaN, Single.NegativeInfinity, Single.PositiveInfinity, 0f, 0.0f, 1.5f, -1.5f, 1.5e30f, -1.7e-100f, -1.7e30f, -1.7e-40f, };
-            Boolean[] expectedValues = { true, true, true, true, true, true, false, false, true, true, true, false, true, true, };
+            float[] testValues = { float.Epsilon, float.MaxValue, float.MinValue, float.NaN, float.NegativeInfinity, float.PositiveInfinity, 0f, 0.0f, 1.5f, -1.5f, 1.5e30f, -1.7e-100f, -1.7e30f, -1.7e-40f, };
+            bool[] expectedValues = { true, true, true, true, true, true, false, false, true, true, true, false, true, true, };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
 
         [Fact]
         public void FromUInt16()
         {
-            UInt16[] testValues = { UInt16.MinValue, UInt16.MaxValue };
-            Boolean[] expectedValues = { false, true };
+            ushort[] testValues = { ushort.MinValue, ushort.MaxValue };
+            bool[] expectedValues = { false, true };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
 
         [Fact]
         public void FromUInt32()
         {
-            UInt32[] testValues = { UInt32.MinValue, UInt32.MaxValue };
-            Boolean[] expectedValues = { false, true };
+            uint[] testValues = { uint.MinValue, uint.MaxValue };
+            bool[] expectedValues = { false, true };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
 
         [Fact]
         public void FromUInt64()
         {
-            UInt64[] testValues = { UInt64.MinValue, UInt64.MaxValue };
-            Boolean[] expectedValues = { false, true };
+            ulong[] testValues = { ulong.MinValue, ulong.MaxValue };
+            bool[] expectedValues = { false, true };
             Verify(Convert.ToBoolean, testValues, expectedValues);
         }
     }

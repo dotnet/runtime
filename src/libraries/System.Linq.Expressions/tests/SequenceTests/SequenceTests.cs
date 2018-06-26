@@ -642,7 +642,7 @@ namespace System.Linq.Expressions.Tests
             public override string ToString() { return value.ToString(); }
         }
 
-        [Theory(Skip = "870811")]
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void TestAndAlso(bool useInterpreter)
         {
@@ -844,7 +844,7 @@ namespace System.Linq.Expressions.Tests
         [ActiveIssue("https://github.com/dotnet/corefx/issues/20717 - fails on x64", TargetFrameworkMonikers.UapAot)]
         public static void UnaryPlus(bool useInterpreter)
         {
-            ConstantExpression ce = Expression.Constant((UInt16)10);
+            ConstantExpression ce = Expression.Constant((ushort)10);
 
             UnaryExpression result = Expression.UnaryPlus(ce);
 
@@ -926,7 +926,7 @@ namespace System.Linq.Expressions.Tests
             Expression<Func<bool?>> e6 = Expression.Lambda<Func<bool?>>(
                 Expression.NotEqual(
                     Expression.Constant(n, typeof(int?)),
-                    Expression.Convert(Expression.Constant(null, typeof(Object)), typeof(int?)),
+                    Expression.Convert(Expression.Constant(null, typeof(object)), typeof(int?)),
                     true,
                     null),
                 null);
@@ -967,7 +967,7 @@ namespace System.Linq.Expressions.Tests
             public AnonHelperClass1(Expression<Func<decimal>> mem1) { this.mem1 = mem1; }
         }
 
-        [Theory(Skip = "870811")]
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void NewExpressionwithMemberAssignInit(bool useInterpreter)
         {
@@ -1531,7 +1531,7 @@ namespace System.Linq.Expressions.Tests
             Func<char> f3 = Expression.Lambda<Func<Char>>(Expression.Convert(Expression.Constant(-1), typeof(char))).Compile(useInterpreter);
             char c3 = f3();
             Func<int> f4 = Expression.Lambda<Func<int>>(Expression.Convert(Expression.Constant(c3), typeof(int))).Compile(useInterpreter);
-            Assert.Equal(UInt16.MaxValue, f4());
+            Assert.Equal(ushort.MaxValue, f4());
         }
 
         [Theory]
@@ -1834,7 +1834,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(4, d(3, 4));
         }
 
-        [Theory(Skip = "870811")]
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CallOnCapturedInstance(bool useInterpreter)
         {
@@ -1900,7 +1900,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(5, v.Length);
         }
 
-        [Theory(Skip = "870811")]
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void ArrayInitializedWithCapturedInstance(bool useInterpreter)
         {
@@ -2362,7 +2362,7 @@ namespace System.Linq.Expressions.Tests
         public static void ConvertSignedToUnsigned(bool useInterpreter)
         {
             Func<ulong> f = Expression.Lambda<Func<ulong>>(Expression.Convert(Expression.Constant((sbyte)-1), typeof(ulong))).Compile(useInterpreter);
-            Assert.Equal(UInt64.MaxValue, f());
+            Assert.Equal(ulong.MaxValue, f());
         }
 
         [Theory]

@@ -20,10 +20,10 @@ namespace System.DirectoryServices.AccountManagement
 
             // Parameter validation
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.PrincipalCollectionNotOneDimensional);
@@ -247,7 +247,7 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             if (principal == null)
-                throw new ArgumentNullException("principal");
+                throw new ArgumentNullException(nameof(principal));
 
             if (Contains(principal))
                 throw new PrincipalExistsException(SR.PrincipalExistsExceptionText);
@@ -291,10 +291,10 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             if (identityValue == null)
-                throw new ArgumentNullException("identityValue");
+                throw new ArgumentNullException(nameof(identityValue));
 
             Principal principal = Principal.FindByIdentity(context, identityType, identityValue);
 
@@ -370,7 +370,7 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             if (principal == null)
-                throw new ArgumentNullException("principal");
+                throw new ArgumentNullException(nameof(principal));
 
             // Ask the StoreCtx to verify that this member can be removed.  Right now, the only
             // reason it couldn't is if it's actually a member by virtue of its primaryGroupId
@@ -438,10 +438,10 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             if (identityValue == null)
-                throw new ArgumentNullException("identityValue");
+                throw new ArgumentNullException(nameof(identityValue));
 
             Principal principal = Principal.FindByIdentity(context, identityType, identityValue);
 
@@ -463,7 +463,7 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             if (principal == null)
-                throw new ArgumentNullException("principal");
+                throw new ArgumentNullException(nameof(principal));
 
             // Yes, this is potentially quite expensive.  Contains is unfortunately
             // an expensive operation to perform.
@@ -512,7 +512,7 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             if (principal == null)
-                throw new ArgumentNullException("principal");
+                throw new ArgumentNullException(nameof(principal));
 
             // If they explicitly inserted it, then we certainly contain it
             if (_insertedValuesCompleted.Contains(principal) || _insertedValuesPending.Contains(principal))
@@ -587,10 +587,10 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             if (identityValue == null)
-                throw new ArgumentNullException("identityValue");
+                throw new ArgumentNullException(nameof(identityValue));
 
             bool found = false;
 

@@ -204,7 +204,7 @@ namespace System.DirectoryServices
                     byte[] intGuid = new byte[16];
                     for (int j = 0; j < 16; j++)
                     {
-                        intGuid[j] = Convert.ToByte(new String(new char[] { guid[j * 2], guid[j * 2 + 1] }), 16);
+                        intGuid[j] = Convert.ToByte(new string(new char[] { guid[j * 2], guid[j * 2 + 1] }), 16);
                     }
                     return new Guid(intGuid);
                     // return new Guid(guid.Substring(0, 8) + "-" + guid.Substring(8, 4) + "-" + guid.Substring(12, 4) + "-" + guid.Substring(16, 4) + "-" + guid.Substring(20));
@@ -230,7 +230,7 @@ namespace System.DirectoryServices
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 _objectSecurity = value;
@@ -987,7 +987,7 @@ namespace System.DirectoryServices
 
             //Consider there shouldn't be any marshaling issues
             //by just doing: AdsObject.GetInfoEx(object[]propertyNames, 0);
-            Object[] names = new Object[propertyNames.Length];
+            object[] names = new object[propertyNames.Length];
             for (int i = 0; i < propertyNames.Length; i++)
                 names[i] = propertyNames[i];
             try
@@ -1032,7 +1032,7 @@ namespace System.DirectoryServices
                         }
 
                         // if this is "ntSecurityDescriptor" we should refresh the objectSecurity property
-                        if (String.Compare(propertyNames[i], s_securityDescriptorProperty, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Equals(propertyNames[i], s_securityDescriptorProperty, StringComparison.OrdinalIgnoreCase))
                         {
                             _objectSecurityInitialized = false;
                             _objectSecurityModified = false;

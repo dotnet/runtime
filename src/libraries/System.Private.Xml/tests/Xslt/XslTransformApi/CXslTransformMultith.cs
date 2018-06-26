@@ -79,8 +79,8 @@ namespace System.Xml.Tests
         [Theory]
         public void Variations(object param0, object param1)
         {
-            String xslFile = (String)param0;
-            String xmlFile = (String)param1;
+            string xslFile = (string)param0;
+            string xmlFile = (string)param1;
 
             Load(xslFile, xmlFile);
 

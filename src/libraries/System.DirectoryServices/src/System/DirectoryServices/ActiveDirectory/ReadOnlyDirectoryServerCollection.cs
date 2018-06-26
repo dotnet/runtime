@@ -26,7 +26,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(DirectoryServer directoryServer)
         {
             if (directoryServer == null)
-                throw new ArgumentNullException("directoryServer");
+                throw new ArgumentNullException(nameof(directoryServer));
 
             for (int i = 0; i < InnerList.Count; i++)
             {
@@ -42,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(DirectoryServer directoryServer)
         {
             if (directoryServer == null)
-                throw new ArgumentNullException("directoryServer");
+                throw new ArgumentNullException(nameof(directoryServer));
 
             for (int i = 0; i < InnerList.Count; i++)
             {

@@ -370,7 +370,7 @@ namespace System.Xml.Tests
                     w.WriteElementString("elt", uri, "text");
                     w.WriteEndElement();
                 }
-                string strExpected = String.Format("<root xmlns:pre=\"{0}\"><pre:elt>text</pre:elt></root>", uri);
+                string strExpected = string.Format("<root xmlns:pre=\"{0}\"><pre:elt>text</pre:elt></root>", uri);
                 Assert.True(utils.CompareReader(strExpected));
             }
 
@@ -545,7 +545,7 @@ namespace System.Xml.Tests
             {
                 using (XmlWriter w = utils.CreateWriter())
                 {
-                    w.WriteStartElement(String.Empty, "Root", "ns");
+                    w.WriteStartElement(string.Empty, "Root", "ns");
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareReader("<Root xmlns='ns' />"));
@@ -571,7 +571,7 @@ namespace System.Xml.Tests
             {
                 using (XmlWriter w = utils.CreateWriter())
                 {
-                    w.WriteStartElement("Root", String.Empty);
+                    w.WriteStartElement("Root", string.Empty);
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareReader("<Root />"));
@@ -599,7 +599,7 @@ namespace System.Xml.Tests
                 using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteStartElement("pre", "Root", "ns");
-                    w.WriteElementString(String.Empty, "child", "ns", "test");
+                    w.WriteElementString(string.Empty, "child", "ns", "test");
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareReader("<pre:Root xmlns:pre='ns'><child xmlns='ns'>test</child></pre:Root>"));
@@ -629,7 +629,7 @@ namespace System.Xml.Tests
                     try
                     {
                         w.WriteStartElement("pre", "Root", "ns");
-                        w.WriteElementString("pre", "child", String.Empty, "test");
+                        w.WriteElementString("pre", "child", string.Empty, "test");
                     }
                     catch (ArgumentException)
                     {
@@ -649,7 +649,7 @@ namespace System.Xml.Tests
                     try
                     {
                         w.WriteStartElement("pre", "Root", "ns");
-                        w.WriteElementString("pre", "child", String.Empty, "test");
+                        w.WriteElementString("pre", "child", string.Empty, "test");
                     }
                     catch (ArgumentException)
                     {
@@ -933,9 +933,9 @@ namespace System.Xml.Tests
                 {
                     w.WriteStartElement("Root");
                     w.WriteAttributeString(null, "a", null, "b");
-                    w.WriteAttributeString(String.Empty, "c", String.Empty, "d");
-                    w.WriteAttributeString(null, "e", String.Empty, "f");
-                    w.WriteAttributeString(String.Empty, "g", null, "h");
+                    w.WriteAttributeString(string.Empty, "c", string.Empty, "d");
+                    w.WriteAttributeString(null, "e", string.Empty, "f");
+                    w.WriteAttributeString(string.Empty, "g", null, "h");
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareReader("<Root a=\"b\" c=\"d\" e=\"f\" g=\"h\" />"));
@@ -979,7 +979,7 @@ namespace System.Xml.Tests
                 using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteStartElement("Root");
-                    w.WriteAttributeString("x", "a", String.Empty, "b");
+                    w.WriteAttributeString("x", "a", string.Empty, "b");
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareReader("<Root a=\"b\" />"));
@@ -1246,7 +1246,7 @@ namespace System.Xml.Tests
                 using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteStartElement("Root");
-                    w.WriteAttributeString(String.Empty, "attr", "ns", "value");
+                    w.WriteAttributeString(string.Empty, "attr", "ns", "value");
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareString("<Root ~a p1 a~:attr=\"value\" xmlns:~a p1 A~=\"ns\" />"));
@@ -1274,7 +1274,7 @@ namespace System.Xml.Tests
                 using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteStartElement("Root");
-                    w.WriteAttributeString("pre", "attr", String.Empty, "value");
+                    w.WriteAttributeString("pre", "attr", string.Empty, "value");
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareReader("<Root attr='value' />"));
@@ -1302,7 +1302,7 @@ namespace System.Xml.Tests
                 using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteStartElement("pre", "Root", "ns");
-                    w.WriteAttributeString(String.Empty, "child", "ns", "test");
+                    w.WriteAttributeString(string.Empty, "child", "ns", "test");
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareReader("<pre:Root pre:child='test' xmlns:pre='ns' />"));
@@ -1330,7 +1330,7 @@ namespace System.Xml.Tests
                 using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteStartElement("pre", "Root", "ns");
-                    w.WriteAttributeString("pre", "child", String.Empty, "test");
+                    w.WriteAttributeString("pre", "child", string.Empty, "test");
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareReader("<pre:Root child='test' xmlns:pre='ns' />"));
@@ -1403,7 +1403,7 @@ namespace System.Xml.Tests
                 using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteStartElement("Root");
-                    w.WriteCData(String.Empty);
+                    w.WriteCData(string.Empty);
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareReader("<Root><![CDATA[]]></Root>"));
@@ -1567,7 +1567,7 @@ namespace System.Xml.Tests
                 int padlen = buflen - xml1.Length - xml3.Length;
                 string xml2 = new string('a', padlen);
                 string xml4 = "]]></r>";
-                string expXml = String.Format("{0}{1}{2}{3}", xml1, xml2, xml3, xml4);
+                string expXml = string.Format("{0}{1}{2}{3}", xml1, xml2, xml3, xml4);
                 using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteStartElement("r");
@@ -1628,7 +1628,7 @@ namespace System.Xml.Tests
                 using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteStartElement("Root");
-                    w.WriteComment(String.Empty);
+                    w.WriteComment(string.Empty);
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareReader("<Root><!----></Root>"));
@@ -1725,7 +1725,7 @@ namespace System.Xml.Tests
                         temp = null;
                         break;
                     case "String.Empty":
-                        temp = String.Empty;
+                        temp = string.Empty;
                         break;
                     default:
                         temp = param;
@@ -2184,7 +2184,7 @@ namespace System.Xml.Tests
                 using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteStartElement("Root");
-                    w.WriteProcessingInstruction("test", String.Empty);
+                    w.WriteProcessingInstruction("test", string.Empty);
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareReader("<Root><?test?></Root>"));
@@ -2229,7 +2229,7 @@ namespace System.Xml.Tests
                     try
                     {
                         w.WriteStartElement("Root");
-                        w.WriteProcessingInstruction(String.Empty, "test");
+                        w.WriteProcessingInstruction(string.Empty, "test");
                     }
                     catch (ArgumentException e)
                     {
@@ -2420,7 +2420,7 @@ namespace System.Xml.Tests
                         if (param == "null")
                             temp = null;
                         else
-                            temp = String.Empty;
+                            temp = string.Empty;
                         w.WriteNmToken(temp);
                         w.WriteEndElement();
                     }
@@ -2513,7 +2513,7 @@ namespace System.Xml.Tests
                         if (param == "null")
                             temp = null;
                         else
-                            temp = String.Empty;
+                            temp = string.Empty;
                         w.WriteName(temp);
                         w.WriteEndElement();
                     }
@@ -2605,7 +2605,7 @@ namespace System.Xml.Tests
                         if (param == "null")
                             temp = null;
                         else
-                            temp = String.Empty;
+                            temp = string.Empty;
                         w.WriteQualifiedName(temp, "test");
                         w.WriteEndElement();
                     }
@@ -2890,7 +2890,7 @@ namespace System.Xml.Tests
                 using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteStartElement("Root");
-                    w.WriteString(String.Empty);
+                    w.WriteString(string.Empty);
                     w.WriteEndElement();
                 }
                 Assert.True(utils.CompareReader("<Root></Root>"));
@@ -3042,7 +3042,7 @@ namespace System.Xml.Tests
             public void writeString_13(XmlWriterUtils utils)
             {
                 char[] invalidXML = { '\uD800', '\uDC00', '\uD800', '\uDFFF', '\uDBFF', '\uDC00', '\uDBFF', '\uDFFF' };
-                string invXML = new String(invalidXML);
+                string invXML = new string(invalidXML);
 
                 using (XmlWriter w = utils.CreateWriter())
                 {
@@ -3059,7 +3059,7 @@ namespace System.Xml.Tests
             public void writeString_14(XmlWriterUtils utils)
             {
                 char[] invalidXML = { 'a', 'b', '\uDA34' };
-                string invXML = new String(invalidXML);
+                string invXML = new string(invalidXML);
 
                 using (XmlWriter w = utils.CreateWriter())
                 {
@@ -3085,7 +3085,7 @@ namespace System.Xml.Tests
             public void writeString_15(XmlWriterUtils utils)
             {
                 char[] invalidXML = { '\uDF20', 'b', 'c' };
-                string invXML = new String(invalidXML);
+                string invXML = new string(invalidXML);
 
                 using (XmlWriter w = utils.CreateWriter())
                 {
@@ -3111,7 +3111,7 @@ namespace System.Xml.Tests
             public void writeString_16(XmlWriterUtils utils)
             {
                 char[] invalidXML = { 'a', '\uDE40', '\uDA72', 'c' };
-                string invXML = new String(invalidXML);
+                string invXML = new string(invalidXML);
 
                 using (XmlWriter w = utils.CreateWriter())
                 {
@@ -3201,7 +3201,7 @@ namespace System.Xml.Tests
                     if (param == "null")
                         temp = null;
                     else
-                        temp = String.Empty;
+                        temp = string.Empty;
                     w.WriteStartElement("Root");
 
                     w.WriteWhitespace(temp);
@@ -3440,16 +3440,16 @@ namespace System.Xml.Tests
                 if (typeMapper == null)
                 {
                     typeMapper = new Dictionary<string, Type>();
-                    typeMapper.Add("UInt64", typeof(UInt64));
-                    typeMapper.Add("UInt32", typeof(UInt32));
-                    typeMapper.Add("UInt16", typeof(UInt16));
-                    typeMapper.Add("Int64", typeof(Int64));
-                    typeMapper.Add("Int32", typeof(Int32));
-                    typeMapper.Add("Int16", typeof(Int16));
-                    typeMapper.Add("Byte", typeof(Byte));
-                    typeMapper.Add("SByte", typeof(SByte));
-                    typeMapper.Add("Decimal", typeof(Decimal));
-                    typeMapper.Add("Single", typeof(Single));
+                    typeMapper.Add("UInt64", typeof(ulong));
+                    typeMapper.Add("UInt32", typeof(uint));
+                    typeMapper.Add("UInt16", typeof(ushort));
+                    typeMapper.Add("Int64", typeof(long));
+                    typeMapper.Add("Int32", typeof(int));
+                    typeMapper.Add("Int16", typeof(short));
+                    typeMapper.Add("Byte", typeof(byte));
+                    typeMapper.Add("SByte", typeof(sbyte));
+                    typeMapper.Add("Decimal", typeof(decimal));
+                    typeMapper.Add("Single", typeof(float));
                     typeMapper.Add("float", typeof(float));
                     typeMapper.Add("object", typeof(object));
                     typeMapper.Add("bool", typeof(bool));
@@ -3457,43 +3457,43 @@ namespace System.Xml.Tests
                     typeMapper.Add("DateTimeOffset", typeof(DateTimeOffset));
                     typeMapper.Add("ByteArray", typeof(byte[]));
                     typeMapper.Add("BoolArray", typeof(bool[]));
-                    typeMapper.Add("ObjectArray", typeof(Object[]));
-                    typeMapper.Add("DecimalArray", typeof(Decimal[]));
-                    typeMapper.Add("DoubleArray", typeof(Double[]));
+                    typeMapper.Add("ObjectArray", typeof(object[]));
+                    typeMapper.Add("DecimalArray", typeof(decimal[]));
+                    typeMapper.Add("DoubleArray", typeof(double[]));
                     typeMapper.Add("DateTimeArray", typeof(DateTime[]));
                     typeMapper.Add("DateTimeOffsetArray", typeof(DateTimeOffset[]));
-                    typeMapper.Add("Int16Array", typeof(Int16[]));
-                    typeMapper.Add("Int32Array", typeof(Int32[]));
-                    typeMapper.Add("Int64Array", typeof(Int64[]));
-                    typeMapper.Add("SByteArray", typeof(SByte[]));
-                    typeMapper.Add("SingleArray", typeof(Single[]));
+                    typeMapper.Add("Int16Array", typeof(short[]));
+                    typeMapper.Add("Int32Array", typeof(int[]));
+                    typeMapper.Add("Int64Array", typeof(long[]));
+                    typeMapper.Add("SByteArray", typeof(sbyte[]));
+                    typeMapper.Add("SingleArray", typeof(float[]));
                     typeMapper.Add("StringArray", typeof(string[]));
                     typeMapper.Add("TimeSpanArray", typeof(TimeSpan[]));
-                    typeMapper.Add("UInt16Array", typeof(UInt16[]));
-                    typeMapper.Add("UInt32Array", typeof(UInt32[]));
-                    typeMapper.Add("UInt64Array", typeof(UInt64[]));
+                    typeMapper.Add("UInt16Array", typeof(ushort[]));
+                    typeMapper.Add("UInt32Array", typeof(uint[]));
+                    typeMapper.Add("UInt64Array", typeof(ulong[]));
                     typeMapper.Add("UriArray", typeof(Uri[]));
                     typeMapper.Add("XmlQualifiedNameArray", typeof(XmlQualifiedName[]));
                     typeMapper.Add("List", typeof(List<string>));
                     typeMapper.Add("TimeSpan", typeof(TimeSpan));
-                    typeMapper.Add("Double", typeof(Double));
+                    typeMapper.Add("Double", typeof(double));
                     typeMapper.Add("Uri", typeof(Uri));
                     typeMapper.Add("XmlQualifiedName", typeof(XmlQualifiedName));
-                    typeMapper.Add("Char", typeof(Char));
+                    typeMapper.Add("Char", typeof(char));
                     typeMapper.Add("string", typeof(string));
                 }
                 if (value == null)
                 {
                     value = new Dictionary<string, object>();
-                    value.Add("UInt64", UInt64.MaxValue);
-                    value.Add("UInt32", UInt32.MaxValue);
-                    value.Add("UInt16", UInt16.MaxValue);
-                    value.Add("Int64", Int64.MaxValue);
-                    value.Add("Int32", Int32.MaxValue);
-                    value.Add("Int16", Int16.MaxValue);
-                    value.Add("Byte", Byte.MaxValue);
-                    value.Add("SByte", SByte.MaxValue);
-                    value.Add("Decimal", Decimal.MaxValue);
+                    value.Add("UInt64", ulong.MaxValue);
+                    value.Add("UInt32", uint.MaxValue);
+                    value.Add("UInt16", ushort.MaxValue);
+                    value.Add("Int64", long.MaxValue);
+                    value.Add("Int32", int.MaxValue);
+                    value.Add("Int16", short.MaxValue);
+                    value.Add("Byte", byte.MaxValue);
+                    value.Add("SByte", sbyte.MaxValue);
+                    value.Add("Decimal", decimal.MaxValue);
                     value.Add("Single", -4582.24);
                     value.Add("float", -4582.24F);
                     value.Add("object", 0);
@@ -3502,29 +3502,29 @@ namespace System.Xml.Tests
                     value.Add("DateTimeOffset", new DateTimeOffset(2002, 1, 3, 21, 59, 59, 59, TimeSpan.FromHours(0)));
                     value.Add("ByteArray", new byte[] { 0xd8, 0x7e });
                     value.Add("BoolArray", new bool[] { true, false });
-                    value.Add("ObjectArray", new Object[] { 0, 1 });
-                    value.Add("DecimalArray", new Decimal[] { 0, 1 });
-                    value.Add("DoubleArray", new Double[] { 0, 1 });
+                    value.Add("ObjectArray", new object[] { 0, 1 });
+                    value.Add("DecimalArray", new decimal[] { 0, 1 });
+                    value.Add("DoubleArray", new double[] { 0, 1 });
                     value.Add("DateTimeArray", new DateTime[] { new DateTime(2002, 12, 30), new DateTime(2, 1, 3, 23, 59, 59, 59) });
                     value.Add("DateTimeOffsetArray", new DateTimeOffset[] { new DateTimeOffset(2002, 12, 30, 0, 0, 0, TimeSpan.FromHours(-8.0)), new DateTimeOffset(2, 1, 3, 23, 59, 59, 59, TimeSpan.FromHours(0)) });
-                    value.Add("Int16Array", new Int16[] { 0, 1 });
-                    value.Add("Int32Array", new Int32[] { 0, 1 });
-                    value.Add("Int64Array", new Int64[] { 0, 1 });
-                    value.Add("SByteArray", new SByte[] { 0, 1 });
-                    value.Add("SingleArray", new Single[] { 0, 1 });
+                    value.Add("Int16Array", new short[] { 0, 1 });
+                    value.Add("Int32Array", new int[] { 0, 1 });
+                    value.Add("Int64Array", new long[] { 0, 1 });
+                    value.Add("SByteArray", new sbyte[] { 0, 1 });
+                    value.Add("SingleArray", new float[] { 0, 1 });
                     value.Add("StringArray", new string[] { "0", "1" });
                     value.Add("TimeSpanArray", new TimeSpan[] { TimeSpan.MinValue, TimeSpan.MaxValue });
-                    value.Add("UInt16Array", new UInt16[] { 0, 1 });
-                    value.Add("UInt32Array", new UInt32[] { 0, 1 });
-                    value.Add("UInt64Array", new UInt64[] { 0, 1 });
+                    value.Add("UInt16Array", new ushort[] { 0, 1 });
+                    value.Add("UInt32Array", new uint[] { 0, 1 });
+                    value.Add("UInt64Array", new ulong[] { 0, 1 });
                     value.Add("UriArray", new Uri[] { new Uri("http://wddata", UriKind.Absolute), new Uri("http://webxtest") });
                     value.Add("XmlQualifiedNameArray", new XmlQualifiedName[] { new XmlQualifiedName("a"), new XmlQualifiedName("b", null) });
                     value.Add("List", new List<Guid>[] { });
                     value.Add("TimeSpan", new TimeSpan());
-                    value.Add("Double", Double.MaxValue);
+                    value.Add("Double", double.MaxValue);
                     value.Add("Uri", "http");
                     value.Add("XmlQualifiedName", new XmlQualifiedName("a", null));
-                    value.Add("Char", Char.MaxValue);
+                    value.Add("Char", char.MaxValue);
                     value.Add("string", "123");
                 }
             }
@@ -4326,7 +4326,7 @@ namespace System.Xml.Tests
             [XmlWriterInlineData(9)]
             public void writeValue_28(XmlWriterUtils utils, int param)
             {
-                Tuple<Int32, String, Double> t = Tuple.Create(1, "Melitta", 7.5);
+                Tuple<int, string, double> t = Tuple.Create(1, "Melitta", 7.5);
 
                 using (XmlWriter w = utils.CreateWriter())
                 {
@@ -4543,8 +4543,8 @@ namespace System.Xml.Tests
                     using (XmlWriter w = utils.CreateWriter())
                     {
                         w.WriteStartElement("Root");
-                        string s = w.LookupPrefix(String.Empty);
-                        CError.Compare(s, String.Empty, "Error");
+                        string s = w.LookupPrefix(string.Empty);
+                        CError.Compare(s, string.Empty, "Error");
                     }
                     return;
                 }
@@ -4604,7 +4604,7 @@ namespace System.Xml.Tests
                         w.WriteStartElement("Root", "foo");
                         w.WriteString("content");
                         string s = w.LookupPrefix("foo");
-                        CError.Compare(s, String.Empty, "Error");
+                        CError.Compare(s, string.Empty, "Error");
                     }
                     return;
                 }
@@ -4685,7 +4685,7 @@ namespace System.Xml.Tests
                         CError.Compare(s, "x", "Error in nested element");
                         w.WriteEndElement();
                         s = w.LookupPrefix("foo");
-                        CError.Compare(s, String.Empty, "Error in root element");
+                        CError.Compare(s, string.Empty, "Error in root element");
                         w.WriteEndElement();
                     }
                     return;
@@ -5089,7 +5089,7 @@ namespace System.Xml.Tests
                 {
                     using (XmlWriter w = utils.CreateWriter())
                     {
-                        String t = "<node a=\"&'b\">\" c=\"'d\">&</node>";
+                        string t = "<node a=\"&'b\">\" c=\"'d\">&</node>";
 
                         w.WriteStartElement("Root");
                         w.WriteRaw(t);
@@ -5107,7 +5107,7 @@ namespace System.Xml.Tests
                 public void writeRaw_3(XmlWriterUtils utils)
                 {
                     XmlWriter w = utils.CreateWriter();
-                    String t = "<root><node1></node1><node2></node2></root>";
+                    string t = "<root><node1></node1><node2></node2></root>";
 
                     w.WriteRaw(t);
 
@@ -5261,7 +5261,7 @@ namespace System.Xml.Tests
                 [XmlWriterInlineData]
                 public void writeRaw_14(XmlWriterUtils utils)
                 {
-                    string lang = new String('a', 1);
+                    string lang = new string('a', 1);
                     char[] buffer = lang.ToCharArray();
 
                     using (XmlWriter w = utils.CreateWriter())
@@ -5287,7 +5287,7 @@ namespace System.Xml.Tests
                 [XmlWriterInlineData(4096)]
                 public void Base64_1(XmlWriterUtils utils, int strBase64Len)
                 {
-                    String strBase64 = String.Empty;
+                    string strBase64 = string.Empty;
                     for (int i = 0; i < strBase64Len; i++)
                     {
                         strBase64 += "A";
@@ -5316,7 +5316,7 @@ namespace System.Xml.Tests
 
                     CError.Compare(nRead, strBase64Len * 2, "Read count");
 
-                    string strRes = String.Empty;
+                    string strRes = string.Empty;
                     for (int i = 0; i < nRead; i += 2)
                     {
                         strRes += BitConverter.ToChar(buffer, i);
@@ -5731,7 +5731,7 @@ namespace System.Xml.Tests
                 [XmlWriterInlineData]
                 public void BinHex_9(XmlWriterUtils utils)
                 {
-                    String strBinHex = "abc";
+                    string strBinHex = "abc";
                     byte[] Wbase64 = new byte[2000];
                     int/*uint*/ Wbase64len = 0;
 
@@ -5754,7 +5754,7 @@ namespace System.Xml.Tests
                 [XmlWriterInlineData]
                 public void BinHex_10(XmlWriterUtils utils)
                 {
-                    String strBinHex = "abc";
+                    string strBinHex = "abc";
                     byte[] Wbase64 = new byte[2000];
                     int/*uint*/ Wbase64len = 0;
 
@@ -6119,7 +6119,7 @@ namespace System.Xml.Tests
                             w.WriteQualifiedName("foo", "bar");
                             break;
                         case "WriteValue":
-                            w.WriteValue(Int32.MaxValue);
+                            w.WriteValue(int.MaxValue);
                             break;
                         case "WriteAttributes":
                             XmlReader xr1 = ReaderHelper.Create(new StringReader("<root attr='test'/>"));
@@ -6243,8 +6243,8 @@ namespace System.Xml.Tests
                     string param = (standalone) ? "yes" : "no";
 
                     string exp = (utils.WriterType == WriterType.UTF8WriterIndent || utils.WriterType == WriterType.UnicodeWriterIndent) ?
-                        String.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\" standalone=\"{1}\"?>" + Environment.NewLine + "<a />", enc, param) :
-                        String.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\" standalone=\"{1}\"?><a />", enc, param);
+                        string.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\" standalone=\"{1}\"?>" + Environment.NewLine + "<a />", enc, param) :
+                        string.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\" standalone=\"{1}\"?><a />", enc, param);
 
                     Assert.True((utils.CompareString(exp)));
                 }
@@ -6266,8 +6266,8 @@ namespace System.Xml.Tests
 
                     string enc = (utils.WriterType == WriterType.UnicodeWriter || utils.WriterType == WriterType.UnicodeWriterIndent) ? "16" : "8";
                     string exp = (utils.WriterType == WriterType.UTF8WriterIndent || utils.WriterType == WriterType.UnicodeWriterIndent) ?
-                        String.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\"?>" + Environment.NewLine + "<a />", enc) :
-                        String.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\"?><a />", enc);
+                        string.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\"?>" + Environment.NewLine + "<a />", enc) :
+                        string.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\"?><a />", enc);
 
                     exp = (utils.WriterType == WriterType.CustomWriter) ? "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?><a />" : exp;
 

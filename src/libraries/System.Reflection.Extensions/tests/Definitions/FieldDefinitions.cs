@@ -11,15 +11,15 @@ namespace System.Reflection.Tests
         public static int Members = 35;
         public static int MembersEverything = 41;
 
-        public static String[] DeclaredFieldNames = new String[] { "SubPubfld1", "Pubfld1", "Pubfld2", "Pubfld3", "SubIntfld1", "Intfld1", "Intfld2", "Intfld3", "SubProfld1",
+        public static string[] DeclaredFieldNames = new string[] { "SubPubfld1", "Pubfld1", "Pubfld2", "Pubfld3", "SubIntfld1", "Intfld1", "Intfld2", "Intfld3", "SubProfld1",
                                                                     "Profld1", "Profld2", "Profld3", "SubProIntfld1", "ProIntfld1", "ProIntfld2", "ProIntfld3",
                                                                     "Pubfld4", "Pubfld5", "Pubfld6", "Intfld4", "Intfld5", "Intfld6", "Profld4", "Profld5",
                                                                     "Profld6", "ProIntfld4", "ProIntfld5", "ProIntfld6",
                                                                     "Members", "DeclaredFieldNames", "InheritedFieldNames",  "MembersEverything", "PublicFieldNames"};
 
-        public static String[] InheritedFieldNames = new String[] { };
+        public static string[] InheritedFieldNames = new string[] { };
 
-        public static String[] PublicFieldNames = new String[] { "SubPubfld1", "Pubfld1", "Pubfld2", "Pubfld3", "Pubfld4", "Pubfld5", "Pubfld6",
+        public static string[] PublicFieldNames = new string[] { "SubPubfld1", "Pubfld1", "Pubfld2", "Pubfld3", "Pubfld4", "Pubfld5", "Pubfld6",
                                                                  "Members", "DeclaredFieldNames", "InheritedFieldNames",  "MembersEverything", "PublicFieldNames"};
 
         public string SubPubfld1 = "";
@@ -60,19 +60,19 @@ namespace System.Reflection.Tests
         public new static int Members = 32;
         public new static int MembersEverything = 54;
 
-        public new static String[] DeclaredFieldNames = new String[] { "Pubfld1", "Pubfld2", "Pubfld3", "Intfld1", "Intfld2", "Intfld3",
+        public new static string[] DeclaredFieldNames = new string[] { "Pubfld1", "Pubfld2", "Pubfld3", "Intfld1", "Intfld2", "Intfld3",
                                                                    "Profld1", "Profld2", "Profld3", "ProIntfld1", "ProIntfld2", "ProIntfld3",
                                                                    "Pubfld4", "Pubfld5", "Pubfld6", "Intfld4", "Intfld5", "Intfld6", "Profld4", "Profld5",
                                                                    "Profld6", "ProIntfld4", "ProIntfld5", "ProIntfld6",
                                                                     "Members", "DeclaredFieldNames", "InheritedFieldNames", "NewFieldNames", "MembersEverything", "PublicFieldNames"};
 
 
-        public new static String[] InheritedFieldNames = new String[] { "SubPubfld1", "SubIntfld1", "SubProfld1", "SubProIntfld1" };
+        public new static string[] InheritedFieldNames = new string[] { "SubPubfld1", "SubIntfld1", "SubProfld1", "SubProIntfld1" };
 
-        public static String[] NewFieldNames = new String[] { "Pubfld1", "Pubfld2", "Pubfld3", "Intfld1", "Intfld2", "Intfld3",
+        public static string[] NewFieldNames = new string[] { "Pubfld1", "Pubfld2", "Pubfld3", "Intfld1", "Intfld2", "Intfld3",
                                                               "Profld1", "Profld2", "Profld3", "ProIntfld1", "ProIntfld2", "ProIntfld3"};
 
-        public new static String[] PublicFieldNames = new String[] { "Pubfld1", "Pubfld2", "Pubfld3", "Pubfld4", "Pubfld5", "Pubfld6",
+        public new static string[] PublicFieldNames = new string[] { "Pubfld1", "Pubfld2", "Pubfld3", "Pubfld4", "Pubfld5", "Pubfld6",
                                                                  "Members", "DeclaredFieldNames", "InheritedFieldNames", "NewFieldNames", "MembersEverything", "PublicFieldNames"};
         public new string Pubfld1 = "";
         public new readonly string Pubfld2 = "";

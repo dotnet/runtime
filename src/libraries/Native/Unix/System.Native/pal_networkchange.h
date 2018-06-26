@@ -5,13 +5,10 @@
 #pragma once
 
 #include "pal_compiler.h"
-
-BEGIN_EXTERN_C
-
 #include "pal_types.h"
 #include <linux/netlink.h>
 
-enum NetworkChangeKind
+typedef enum
 {
     None = -1,
     AddressAdded = 0,
@@ -19,14 +16,12 @@ enum NetworkChangeKind
     LinkAdded = 2,
     LinkRemoved = 3,
     AvailabilityChanged = 4,
-};
+} NetworkChangeKind;
 
-typedef void (*NetworkChangeEvent)(int32_t sock, enum NetworkChangeKind notificationKind);
+typedef void (*NetworkChangeEvent)(int32_t sock, NetworkChangeKind notificationKind);
 
 DLLEXPORT void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange);
 
 DLLEXPORT Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket);
 
 DLLEXPORT Error SystemNative_CloseNetworkChangeListenerSocket(int32_t socket);
-
-END_EXTERN_C

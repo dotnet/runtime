@@ -12,7 +12,7 @@ using System.Diagnostics;
 
 namespace System.Threading.Tasks.Tests
 {
-    public class AsyncTaskMethodBuilderTests
+    public partial class AsyncTaskMethodBuilderTests
     {
         // Test captured sync context with successful completion (SetResult)
         [Fact]

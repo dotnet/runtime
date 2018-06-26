@@ -18,7 +18,7 @@ namespace System.Xml
         }
 
         // Retrieves a XmlNode specified by name.
-        public virtual XmlNode GetNamedItem(String name)
+        public virtual XmlNode GetNamedItem(string name)
         {
             int offset = FindNodeOffset(name);
             if (offset >= 0)
@@ -45,7 +45,7 @@ namespace System.Xml
         }
 
         // Removes the node specified by name.
-        public virtual XmlNode RemoveNamedItem(String name)
+        public virtual XmlNode RemoveNamedItem(string name)
         {
             int offset = FindNodeOffset(name);
             if (offset >= 0)
@@ -84,7 +84,7 @@ namespace System.Xml
         //
 
         // Retrieves a node specified by LocalName and NamespaceURI.
-        public virtual XmlNode GetNamedItem(String localName, String namespaceURI)
+        public virtual XmlNode GetNamedItem(string localName, string namespaceURI)
         {
             int offset = FindNodeOffset(localName, namespaceURI);
             if (offset >= 0)
@@ -93,7 +93,7 @@ namespace System.Xml
         }
 
         // Removes a node specified by local name and namespace URI.
-        public virtual XmlNode RemoveNamedItem(String localName, String namespaceURI)
+        public virtual XmlNode RemoveNamedItem(string localName, string namespaceURI)
         {
             int offset = FindNodeOffset(localName, namespaceURI);
             if (offset >= 0)

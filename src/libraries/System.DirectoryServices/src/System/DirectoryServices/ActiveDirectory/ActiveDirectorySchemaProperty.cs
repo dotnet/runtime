@@ -46,16 +46,16 @@ namespace System.DirectoryServices.ActiveDirectory
         private bool _isSingleValuedInitialized = false;
         private bool _isInGlobalCatalog = false;
         private bool _isInGlobalCatalogInitialized = false;
-        private Nullable<Int32> _rangeLower = null;
+        private Nullable<int> _rangeLower = null;
         private bool _rangeLowerInitialized = false;
-        private Nullable<Int32> _rangeUpper = null;
+        private Nullable<int> _rangeUpper = null;
         private bool _rangeUpperInitialized = false;
         private bool _isDefunct = false;
         private SearchFlags _searchFlags = SearchFlags.None;
         private bool _searchFlagsInitialized = false;
         private ActiveDirectorySchemaProperty _linkedProperty = null;
         private bool _linkedPropertyInitialized = false;
-        private Nullable<Int32> _linkId = null;
+        private Nullable<int> _linkId = null;
         private bool _linkIdInitialized = false;
         private byte[] _schemaGuidBinaryForm = null;
 
@@ -106,12 +106,12 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
             if (context.Name != null)
@@ -119,18 +119,18 @@ namespace System.DirectoryServices.ActiveDirectory
                 // the target should be a valid forest name or a server
                 if (!((context.isRootDomain()) || (context.isADAMConfigSet()) || (context.isServer())))
                 {
-                    throw new ArgumentException(SR.NotADOrADAM, "context");
+                    throw new ArgumentException(SR.NotADOrADAM, nameof(context));
                 }
             }
 
             if (ldapDisplayName == null)
             {
-                throw new ArgumentNullException("ldapDisplayName");
+                throw new ArgumentNullException(nameof(ldapDisplayName));
             }
 
             if (ldapDisplayName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "ldapDisplayName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(ldapDisplayName));
             }
 
             _context = new DirectoryContext(context);
@@ -286,12 +286,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
             if (context.Name != null)
@@ -299,18 +299,18 @@ namespace System.DirectoryServices.ActiveDirectory
                 // the target should be a valid forest name or a server
                 if (!((context.isRootDomain()) || (context.isADAMConfigSet()) || (context.isServer())))
                 {
-                    throw new ArgumentException(SR.NotADOrADAM, "context");
+                    throw new ArgumentException(SR.NotADOrADAM, nameof(context));
                 }
             }
 
             if (ldapDisplayName == null)
             {
-                throw new ArgumentNullException("ldapDisplayName");
+                throw new ArgumentNullException(nameof(ldapDisplayName));
             }
 
             if (ldapDisplayName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "ldapDisplayName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(ldapDisplayName));
             }
 
             //  work with copy of the context
@@ -527,7 +527,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 CheckIfDisposed();
 
                 if (value != null && value.Length == 0)
-                    throw new ArgumentException(SR.EmptyStringParameter, "value");
+                    throw new ArgumentException(SR.EmptyStringParameter, nameof(value));
 
                 if (isBound)
                 {
@@ -574,7 +574,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 CheckIfDisposed();
 
                 if (value != null && value.Length == 0)
-                    throw new ArgumentException(SR.EmptyStringParameter, "value");
+                    throw new ArgumentException(SR.EmptyStringParameter, nameof(value));
 
                 if (isBound)
                 {
@@ -612,7 +612,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (value < ActiveDirectorySyntax.CaseExactString || value > ActiveDirectorySyntax.ReplicaLink)
                 {
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(ActiveDirectorySyntax));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ActiveDirectorySyntax));
                 }
 
                 if (isBound)
@@ -646,7 +646,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 CheckIfDisposed();
 
                 if (value != null && value.Length == 0)
-                    throw new ArgumentException(SR.EmptyStringParameter, "value");
+                    throw new ArgumentException(SR.EmptyStringParameter, nameof(value));
 
                 if (isBound)
                 {
@@ -856,7 +856,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public Nullable<Int32> RangeLower
+        public Nullable<int> RangeLower
         {
             get
             {
@@ -909,7 +909,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public Nullable<Int32> RangeUpper
+        public Nullable<int> RangeUpper
         {
             get
             {
@@ -1029,7 +1029,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public Nullable<Int32> LinkId
+        public Nullable<int> LinkId
         {
             get
             {
@@ -1424,7 +1424,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if ((((int)syntax) < 0) || (((int)syntax) > (s_syntaxesCount - 1)))
             {
-                throw new InvalidEnumArgumentException("syntax", (int)syntax, typeof(ActiveDirectorySyntax));
+                throw new InvalidEnumArgumentException(nameof(syntax), (int)syntax, typeof(ActiveDirectorySyntax));
             }
 
             // get the distinguished name to construct the directory entry 

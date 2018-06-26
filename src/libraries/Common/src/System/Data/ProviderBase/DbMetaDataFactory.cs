@@ -36,9 +36,9 @@ namespace System.Data.ProviderBase
 
         public DbMetaDataFactory(Stream xmlStream, string serverVersion, string normalizedServerVersion)
         {
-            ADP.CheckArgumentNull(xmlStream, "xmlStream");
-            ADP.CheckArgumentNull(serverVersion, "serverVersion");
-            ADP.CheckArgumentNull(normalizedServerVersion, "normalizedServerVersion");
+            ADP.CheckArgumentNull(xmlStream, nameof(xmlStream));
+            ADP.CheckArgumentNull(serverVersion, nameof(serverVersion));
+            ADP.CheckArgumentNull(normalizedServerVersion, nameof(normalizedServerVersion));
 
             LoadDataSetFromXml(xmlStream);
 
@@ -240,7 +240,7 @@ namespace System.Data.ProviderBase
 
             DataColumn collectionNameColumn = metaDataCollectionsTable.Columns[DbMetaDataColumnNames.CollectionName];
 
-            if ((null == collectionNameColumn) || (typeof(System.String) != collectionNameColumn.DataType))
+            if ((null == collectionNameColumn) || (typeof(string) != collectionNameColumn.DataType))
             {
                 throw ADP.InvalidXmlMissingColumn(DbMetaDataCollectionNames.MetaDataCollections, DbMetaDataColumnNames.CollectionName);
             }
@@ -509,7 +509,7 @@ namespace System.Data.ProviderBase
             _metaDataCollectionsDataSet.ReadXml(XmlStream);
         }
 
-        protected virtual DataTable PrepareCollection(string collectionName, String[] restrictions, DbConnection connection)
+        protected virtual DataTable PrepareCollection(string collectionName, string[] restrictions, DbConnection connection)
         {
             throw ADP.NotSupported();
         }
@@ -519,7 +519,7 @@ namespace System.Data.ProviderBase
             bool result = true;
             DataColumnCollection tableColumns = requestedCollectionRow.Table.Columns;
             DataColumn versionColumn;
-            Object version;
+            object version;
 
             // check the minimum version first
             versionColumn = tableColumns[_minimumVersion];

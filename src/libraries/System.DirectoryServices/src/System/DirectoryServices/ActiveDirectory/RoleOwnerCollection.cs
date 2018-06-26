@@ -25,7 +25,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (role < ActiveDirectoryRole.SchemaRole || role > ActiveDirectoryRole.InfrastructureRole)
             {
-                throw new InvalidEnumArgumentException("role", (int)role, typeof(ActiveDirectoryRole));
+                throw new InvalidEnumArgumentException(nameof(role), (int)role, typeof(ActiveDirectoryRole));
             }
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -43,7 +43,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (role < ActiveDirectoryRole.SchemaRole || role > ActiveDirectoryRole.InfrastructureRole)
             {
-                throw new InvalidEnumArgumentException("role", (int)role, typeof(ActiveDirectoryRole));
+                throw new InvalidEnumArgumentException(nameof(role), (int)role, typeof(ActiveDirectoryRole));
             }
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -83,7 +83,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (role < AdamRole.SchemaRole || role > AdamRole.NamingRole)
             {
-                throw new InvalidEnumArgumentException("role", (int)role, typeof(AdamRole));
+                throw new InvalidEnumArgumentException(nameof(role), (int)role, typeof(AdamRole));
             }
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -101,7 +101,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (role < AdamRole.SchemaRole || role > AdamRole.NamingRole)
             {
-                throw new InvalidEnumArgumentException("role", (int)role, typeof(AdamRole));
+                throw new InvalidEnumArgumentException(nameof(role), (int)role, typeof(AdamRole));
             }
 
             for (int i = 0; i < InnerList.Count; i++)

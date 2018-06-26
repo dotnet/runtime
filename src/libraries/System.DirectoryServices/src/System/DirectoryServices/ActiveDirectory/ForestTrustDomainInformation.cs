@@ -61,7 +61,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     value != ForestTrustDomainStatus.SidConflictDisabled &&
                     value != ForestTrustDomainStatus.NetBiosNameAdminDisabled &&
                     value != ForestTrustDomainStatus.NetBiosNameConflictDisabled)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(ForestTrustDomainStatus));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ForestTrustDomainStatus));
 
                 _status = value;
             }

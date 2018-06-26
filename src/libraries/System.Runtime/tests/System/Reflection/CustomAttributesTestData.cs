@@ -25,7 +25,7 @@ namespace System.Reflection.CustomAttributesTests.Data
 
     public class Util
     {
-        public static string ObjectToString(Object o)
+        public static string ObjectToString(object o)
         {
             string s = string.Empty;
             if (o != null)
@@ -270,27 +270,27 @@ namespace System.Reflection.CustomAttributesTests.Data
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
     public class ObjectAttr : Attribute
     {
-        public ObjectAttr(Object v)
+        public ObjectAttr(object v)
         {
             value = v;
             arrayValue = null;
         }
 
-        public ObjectAttr(Object v, Object[] a)
+        public ObjectAttr(object v, object[] a)
         {
             value = v;
             arrayValue = a;
         }
 
         public string name;
-        public readonly Object value;
-        public Object field;
-        public readonly Object[] arrayValue;
-        public Object[] arrayField;
-        private Object _property = 0;
-        public Object property { get { return _property; } set { _property = value; } }
-        private Object[] _arrayProperty;
-        public Object[] arrayProperty { get { return _arrayProperty; } set { _arrayProperty = value; } }
+        public readonly object value;
+        public object field;
+        public readonly object[] arrayValue;
+        public object[] arrayField;
+        private object _property = 0;
+        public object property { get { return _property; } set { _property = value; } }
+        private object[] _arrayProperty;
+        public object[] arrayProperty { get { return _arrayProperty; } set { _arrayProperty = value; } }
 
         public override string ToString()
         {
@@ -311,7 +311,7 @@ namespace System.Reflection.CustomAttributesTests.Data
         {
         }
 
-        public NullAttr(String s)
+        public NullAttr(string s)
         {
         }
 

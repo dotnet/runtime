@@ -23,9 +23,12 @@
     <Compile Include="Drawing2D\GraphicsPathIteratorTests.cs" />
     <Compile Include="Drawing2D\GraphicsPathTests.cs" />
     <Compile Include="Drawing2D\PathGradientBrushTests.cs" />
+    <Compile Include="DrawingTest.cs" />
     <Compile Include="FontTests.cs" />
     <Compile Include="FontFamilyTests.cs" />
     <Compile Include="GraphicsTests.cs" />
+    <Compile Include="Graphics_DrawBezierTests.cs" />
+    <Compile Include="Graphics_DrawLineTests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="IconTests.cs" />
     <Compile Include="ImageTests.cs" />

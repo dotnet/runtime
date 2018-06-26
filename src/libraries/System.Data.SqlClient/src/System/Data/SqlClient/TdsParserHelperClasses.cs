@@ -221,10 +221,10 @@ namespace System.Data.SqlClient
     internal class RoutingInfo
     {
         internal byte Protocol { get; private set; }
-        internal UInt16 Port { get; private set; }
+        internal ushort Port { get; private set; }
         internal string ServerName { get; private set; }
 
-        internal RoutingInfo(byte protocol, UInt16 port, string servername)
+        internal RoutingInfo(byte protocol, ushort port, string servername)
         {
             Protocol = protocol;
             Port = port;
@@ -275,7 +275,7 @@ namespace System.Data.SqlClient
         internal byte majorVersion;
         internal byte minorVersion;
         internal short buildNum;
-        internal UInt32 tdsVersion;
+        internal uint tdsVersion;
     }
 
     sealed internal class _SqlMetaData : SqlMetaDataPriv
@@ -341,7 +341,7 @@ namespace System.Data.SqlClient
         {
             get
             {
-                return type == SqlDbType.Udt && length == Int32.MaxValue;
+                return type == SqlDbType.Udt && length == int.MaxValue;
             }
         }
 

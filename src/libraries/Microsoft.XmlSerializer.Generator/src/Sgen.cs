@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 using System;
@@ -315,7 +315,7 @@ namespace Microsoft.XmlSerializer.Generator
                 if (!force)
                 {
                     if (File.Exists(codePath))
-                        throw new InvalidOperationException(SR.Format(SR.ErrSerializerExists, codePath, "force"));
+                        throw new InvalidOperationException(SR.Format(SR.ErrSerializerExists, codePath, nameof(force)));
                 }
 
                 if (Directory.Exists(codePath))
@@ -448,7 +448,7 @@ namespace Microsoft.XmlSerializer.Generator
         private void WriteHeader()
         {
             // do not localize Copyright header
-            Console.WriteLine(String.Format(CultureInfo.CurrentCulture, "[Microsoft (R) .NET Core Xml Serialization Generation Utility, Version {0}]", ThisAssembly.InformationalVersion));
+            Console.WriteLine(string.Format(CultureInfo.CurrentCulture, "[Microsoft (R) .NET Core Xml Serialization Generation Utility, Version {0}]", ThisAssembly.InformationalVersion));
             Console.WriteLine("Copyright (C) Microsoft Corporation. All rights reserved.");
         }
 
@@ -509,7 +509,7 @@ namespace Microsoft.XmlSerializer.Generator
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
             return GetTempAssemblyName(type.Assembly.GetName(), defaultNamespace);
         }

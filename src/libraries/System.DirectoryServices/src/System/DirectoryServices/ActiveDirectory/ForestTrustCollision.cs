@@ -37,7 +37,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(ForestTrustRelationshipCollision collision)
         {
             if (collision == null)
-                throw new ArgumentNullException("collision");
+                throw new ArgumentNullException(nameof(collision));
 
             return InnerList.Contains(collision);
         }
@@ -45,7 +45,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(ForestTrustRelationshipCollision collision)
         {
             if (collision == null)
-                throw new ArgumentNullException("collision");
+                throw new ArgumentNullException(nameof(collision));
 
             return InnerList.IndexOf(collision);
         }

@@ -2,21 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Diagnostics;
-using System;
-using System.Text;
 using System.Collections;
 using System.ComponentModel.Design;
-using Microsoft.Win32;
-using System.Security.Permissions;
 
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Provides properties and methods to add a license
-    ///       to a component and to manage a <see cref='System.ComponentModel.LicenseProvider'/>. This class cannot be inherited.</para>
+    /// Provides properties and methods to add a license
+    /// to a component and to manage a <see cref='System.ComponentModel.LicenseProvider'/>. This class cannot be inherited.
     /// </summary>
     public sealed class LicenseManager
     {
@@ -29,17 +24,13 @@ namespace System.ComponentModel
         private static readonly object s_internalSyncObject = new object();
 
         // not creatable...
-        //
         private LicenseManager()
         {
         }
 
-
         /// <summary>
-        ///    <para>
-        ///       Gets or sets the current <see cref='System.ComponentModel.LicenseContext'/> which specifies when the licensed object can be
-        ///       used.
-        ///    </para>
+        /// Gets or sets the current <see cref='System.ComponentModel.LicenseContext'/> which specifies when the licensed object can be
+        /// used.
         /// </summary>
         public static LicenseContext CurrentContext
         {
@@ -51,7 +42,7 @@ namespace System.ComponentModel
                     {
                         if (s_context == null)
                         {
-                            s_context = new System.ComponentModel.Design.RuntimeLicenseContext();
+                            s_context = new RuntimeLicenseContext();
                         }
                     }
                 }
@@ -72,8 +63,8 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        /// <para>Gets the <see cref='System.ComponentModel.LicenseUsageMode'/> that
-        ///    specifies when the licensed object can be used, for the <see cref='System.ComponentModel.LicenseManager.CurrentContext'/>.</para>
+        /// Gets the <see cref='System.ComponentModel.LicenseUsageMode'/> that
+        /// specifies when the licensed object can be used, for the <see cref='System.ComponentModel.LicenseManager.CurrentContext'/>.
         /// </summary>
         public static LicenseUsageMode UsageMode
         {
@@ -89,8 +80,8 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        ///     Caches the provider, both in the instance cache, and the type
-        ///     cache.
+        /// Caches the provider, both in the instance cache, and the type
+        /// cache.
         /// </summary>
         private static void CacheProvider(Type type, LicenseProvider provider)
         {
@@ -112,20 +103,19 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        ///    <para>Creates an instance of the specified type, using 
-        ///       creationContext
-        ///       as the context in which the licensed instance can be used.</para>
+        /// Creates an instance of the specified type, using 
+        /// creationContext
+        /// as the context in which the licensed instance can be used.
         /// </summary>
         public static object CreateWithContext(Type type, LicenseContext creationContext)
         {
             return CreateWithContext(type, creationContext, Array.Empty<object>());
         }
 
-
         /// <summary>
-        ///    <para>Creates an instance of the specified type with the 
-        ///       specified arguments, using creationContext as the context in which the licensed
-        ///       instance can be used.</para>
+        /// Creates an instance of the specified type with the 
+        /// specified arguments, using creationContext as the context in which the licensed
+        /// instance can be used.
         /// </summary>
         public static object CreateWithContext(Type type, LicenseContext creationContext, object[] args)
         {
@@ -140,7 +130,7 @@ namespace System.ComponentModel
                     LockContext(s_selfLock);
                     try
                     {
-                        created = SecurityUtils.SecureCreateInstance(type, args);
+                        created = Activator.CreateInstance(type, args);
                     }
                     catch (TargetInvocationException e)
                     {
@@ -159,8 +149,8 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        ///     Determines if type was actually cached to have _no_ provider,
-        ///     as opposed to not being cached.
+        /// Determines if type was actually cached to have _no_ provider,
+        /// as opposed to not being cached.
         /// </summary>
         private static bool GetCachedNoLicenseProvider(Type type)
         {
@@ -173,18 +163,18 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        ///     Retrieves a cached instance of the provider associated with the
-        ///     specified type.
+        /// Retrieves a cached instance of the provider associated with the
+        /// specified type.
         /// </summary>
         private static LicenseProvider GetCachedProvider(Type type)
         {
-            return (LicenseProvider) s_providers?[type];
+            return (LicenseProvider)s_providers?[type];
         }
 
 
         /// <summary>
-        ///     Retrieves a cached instance of the provider of the specified
-        ///     type.
+        /// Retrieves a cached instance of the provider of the specified
+        /// type.
         /// </summary>
         private static LicenseProvider GetCachedProviderInstance(Type providerType)
         {
@@ -193,13 +183,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Determines if the given type has a valid license or not.</para>
+        /// Determines if the given type has a valid license or not.
         /// </summary>
         public static bool IsLicensed(Type type)
         {
             Debug.Assert(type != null, "IsValid Type cannot ever be null");
-            License license;
-            bool value = ValidateInternal(type, null, false, out license);
+            bool value = ValidateInternal(type, null, false, out License license);
             if (license != null)
             {
                 license.Dispose();
@@ -208,15 +197,13 @@ namespace System.ComponentModel
             return value;
         }
 
-
         /// <summary>
-        ///    <para>Determines if a valid license can be granted for the specified type.</para>
+        /// Determines if a valid license can be granted for the specified type.
         /// </summary>
         public static bool IsValid(Type type)
         {
             Debug.Assert(type != null, "IsValid Type cannot ever be null");
-            License license;
-            bool value = ValidateInternal(type, null, false, out license);
+            bool value = ValidateInternal(type, null, false, out License license);
             if (license != null)
             {
                 license.Dispose();
@@ -225,20 +212,15 @@ namespace System.ComponentModel
             return value;
         }
 
-
-
         /// <summary>
-        ///    <para>Determines if a valid license can be granted for the 
-        ///       specified instance of the type. This method creates a valid <see cref='System.ComponentModel.License'/>. </para>
+        /// Determines if a valid license can be granted for the 
+        /// specified instance of the type. This method creates a valid <see cref='System.ComponentModel.License'/>. 
         /// </summary>
         public static bool IsValid(Type type, object instance, out License license)
         {
             return ValidateInternal(type, instance, false, out license);
         }
 
-
-        /// <summary>
-        /// </summary>
         public static void LockContext(object contextUser)
         {
             lock (s_internalSyncObject)
@@ -251,9 +233,6 @@ namespace System.ComponentModel
             }
         }
 
-
-        /// <summary>
-        /// </summary>
         public static void UnlockContext(object contextUser)
         {
             lock (s_internalSyncObject)
@@ -266,26 +245,24 @@ namespace System.ComponentModel
             }
         }
 
-
         /// <summary>
-        ///     Internal validation helper.
+        /// Internal validation helper.
         /// </summary>
         private static bool ValidateInternal(Type type, object instance, bool allowExceptions, out License license)
         {
-            string licenseKey;
             return ValidateInternalRecursive(CurrentContext,
                                              type,
                                              instance,
                                              allowExceptions,
                                              out license,
-                                             out licenseKey);
+                                             out string licenseKey);
         }
 
 
         /// <summary>
-        ///     Since we want to walk up the entire inheritance change, when not 
-        ///     give an instance, we need another helper method to walk up
-        ///     the chain...
+        /// Since we want to walk up the entire inheritance change, when not 
+        /// give an instance, we need another helper method to walk up
+        /// the chain...
         /// </summary>
         private static bool ValidateInternalRecursive(LicenseContext context, Type type, object instance, bool allowExceptions, out License license, out string licenseKey)
         {
@@ -293,15 +270,12 @@ namespace System.ComponentModel
             if (provider == null && !GetCachedNoLicenseProvider(type))
             {
                 // NOTE : Must look directly at the class, we want no inheritance.
-                //
-
                 LicenseProviderAttribute attr = (LicenseProviderAttribute)Attribute.GetCustomAttribute(type, typeof(LicenseProviderAttribute), false);
 
                 if (attr != null)
                 {
                     Type providerType = attr.LicenseProvider;
-                    provider = GetCachedProviderInstance(providerType) ??
-                               (LicenseProvider)SecurityUtils.SecureCreateInstance(providerType);
+                    provider = GetCachedProviderInstance(providerType) ?? (LicenseProvider)Activator.CreateInstance(providerType);
                 }
 
                 CacheProvider(type, provider);
@@ -322,7 +296,6 @@ namespace System.ComponentModel
                 {
                     // For the case where a COM client is calling "RequestLicKey", 
                     // we try to squirrel away the first found license key
-                    //
                     licenseKey = license.LicenseKey;
                 }
             }
@@ -330,7 +303,6 @@ namespace System.ComponentModel
             // When looking only at a type, we need to recurse up the inheritence
             // chain, however, we can't give out the license, since this may be
             // from more than one provider.
-            //
             if (isValid && instance == null)
             {
                 Type baseType = type.BaseType;
@@ -356,13 +328,11 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        ///    <para>Determines if a license can be granted for the specified type.</para>
+        /// Determines if a license can be granted for the specified type.
         /// </summary>
         public static void Validate(Type type)
         {
-            License lic;
-
-            if (!ValidateInternal(type, null, true, out lic))
+            if (!ValidateInternal(type, null, true, out License lic))
             {
                 throw new LicenseException(type);
             }
@@ -376,13 +346,11 @@ namespace System.ComponentModel
 
 
         /// <summary>
-        ///    <para>Determines if a license can be granted for the instance of the specified type.</para>
+        /// Determines if a license can be granted for the instance of the specified type.
         /// </summary>
         public static License Validate(Type type, object instance)
         {
-            License lic;
-
-            if (!ValidateInternal(type, instance, true, out lic))
+            if (!ValidateInternal(type, instance, true, out License lic))
             {
                 throw new LicenseException(type, instance);
             }

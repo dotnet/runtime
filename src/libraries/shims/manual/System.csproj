@@ -9,8 +9,8 @@
   <ItemGroup>
     <Compile Include="System.forwards.cs" />
     <ReferencePath
-      Include="$(RuntimePath)System.*.dll;$(RuntimePath)Microsoft.*.dll"
-      Exclude="$(RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(RuntimePath)Microsoft.DiaSymReader.Native.*.dll" />
+      Include="$(_RuntimePath)System.*.dll;$(_RuntimePath)Microsoft.*.dll"
+      Exclude="$(_RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(_RuntimePath)Microsoft.DiaSymReader.Native.*.dll" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

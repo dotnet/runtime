@@ -8,6 +8,6 @@ namespace System.Runtime.Caching.Hosting
 {
     public interface IApplicationIdentifier
     {
-        String GetApplicationId();
+        string GetApplicationId();
     }
 }

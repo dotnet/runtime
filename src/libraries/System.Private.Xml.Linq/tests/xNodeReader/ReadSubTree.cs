@@ -114,7 +114,7 @@ namespace CoreXml.Test.XLinq
 
                     XmlReader r = DataReader.ReadSubtree();
                     TestLog.Compare(r.ReadState, ReadState.Initial, "Reader state is not Initial");
-                    TestLog.Compare(r.Name, String.Empty, "Name is not empty");
+                    TestLog.Compare(r.Name, string.Empty, "Name is not empty");
                     TestLog.Compare(r.NodeType, XmlNodeType.None, "Nodetype is not empty");
                     TestLog.Compare(r.Depth, 0, "Depth is not zero");
 
@@ -130,7 +130,7 @@ namespace CoreXml.Test.XLinq
                     r.Dispose();
 
                     TestLog.Compare(r.ReadState, ReadState.Closed, "Reader state is not Initial");
-                    TestLog.Compare(r.Name, String.Empty, "Name is not empty");
+                    TestLog.Compare(r.Name, string.Empty, "Name is not empty");
                     TestLog.Compare(r.NodeType, XmlNodeType.None, "Nodetype is not empty");
 
                     DataReader.Read();
@@ -211,7 +211,7 @@ namespace CoreXml.Test.XLinq
                 public void v7()
                 {
                     XmlReader DataReader = GetReader();
-                    bool ci = Boolean.Parse(Variation.Params[0].ToString());
+                    bool ci = bool.Parse(Variation.Params[0].ToString());
                     XmlReaderSettings settings = new XmlReaderSettings();
                     settings.CloseInput = ci;
 

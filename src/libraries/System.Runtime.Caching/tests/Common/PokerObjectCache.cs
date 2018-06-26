@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
 
@@ -55,7 +55,7 @@ namespace MonoTests.Common
         public override object AddOrGetExisting(string key, object value, CacheItemPolicy policy, string regionName = null)
         {
             MethodCalled = "AddOrGetExisting (string key, object value, CacheItemPolicy policy, string regionName = null)";
-            if (String.IsNullOrEmpty(key) || value == null)
+            if (string.IsNullOrEmpty(key) || value == null)
                 return null;
 
             object item;
@@ -83,7 +83,7 @@ namespace MonoTests.Common
         public override object AddOrGetExisting(string key, object value, DateTimeOffset absoluteExpiration, string regionName = null)
         {
             MethodCalled = "AddOrGetExisting (string key, object value, DateTimeOffset absoluteExpiration, string regionName = null)";
-            if (String.IsNullOrEmpty(key) || value == null)
+            if (string.IsNullOrEmpty(key) || value == null)
                 return null;
 
             object item;

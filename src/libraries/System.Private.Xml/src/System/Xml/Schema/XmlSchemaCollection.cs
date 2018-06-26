@@ -124,7 +124,7 @@ namespace System.Xml.Schema
         }
 
         /// <include file='doc\XmlSchemaCollection.uex' path='docs/doc[@for="XmlSchemaCollection.Add4"]/*' />
-        public XmlSchema Add(String ns, XmlReader reader)
+        public XmlSchema Add(string ns, XmlReader reader)
         {
             return Add(ns, reader, _xmlResolver);
         }
@@ -135,7 +135,7 @@ namespace System.Xml.Schema
         ///       If the given schema references other namespaces, the schemas for those
         ///       other namespaces are NOT automatically loaded.</para>
         /// </devdoc>
-        public XmlSchema Add(String ns, XmlReader reader, XmlResolver resolver)
+        public XmlSchema Add(string ns, XmlReader reader, XmlResolver resolver)
         {
             if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
@@ -428,11 +428,11 @@ namespace System.Xml.Schema
 
     internal sealed class XmlSchemaCollectionNode
     {
-        private String _namespaceUri;
+        private string _namespaceUri;
         private SchemaInfo _schemaInfo;
         private XmlSchema _schema;
 
-        internal String NamespaceURI
+        internal string NamespaceURI
         {
             get { return _namespaceUri; }
             set { _namespaceUri = value; }

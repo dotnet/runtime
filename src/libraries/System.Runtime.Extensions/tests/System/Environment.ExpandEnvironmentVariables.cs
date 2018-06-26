@@ -17,7 +17,7 @@ namespace System.Tests
         [Fact]
         public void EmptyArgumentReturnsEmpty()
         {
-            Assert.Equal(String.Empty, Environment.ExpandEnvironmentVariables(String.Empty));
+            Assert.Equal(string.Empty, Environment.ExpandEnvironmentVariables(string.Empty));
         }
 
         [Fact]

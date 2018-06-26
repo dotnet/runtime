@@ -16,6 +16,7 @@ namespace System.Xml.Tests
             _output = output;
         }
 
+        [ActiveIssue(30017)]
         // All variations that are Invalid are run by Var2()
         //[Variation("15", Desc = "Exercise what would be a circular reference, a primary stylesheet that includes another, followed by the include itself", Pri = 2, Params = new object[] { "bft15a.xsl bft15b.xsl", "bft15.txt", "EnglishOnly" })]
         [InlineData("bft15a.xsl bft15b.xsl", "bft15.txt"/*, "EnglishOnly"*/)]
@@ -37,8 +38,8 @@ namespace System.Xml.Tests
             {
                 return;// TEST_SKIPPED;
             }
-            String cmdLine = param0.ToString();
-            String baselineFile = param1.ToString();
+            string cmdLine = param0.ToString();
+            string baselineFile = param1.ToString();
 
             VerifyTest(cmdLine, baselineFile, _createFromInputFile);
         }

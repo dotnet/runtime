@@ -414,7 +414,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 if (existing)
                 {
@@ -1109,26 +1109,26 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             // basic validation first
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
             // more validation for the context, if the target is not null, then it should be either forest name or server name
             if (context.Name != null)
             {
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
-                    throw new ArgumentException(SR.NotADOrADAM, "context");
+                    throw new ArgumentException(SR.NotADOrADAM, nameof(context));
             }
 
             if (siteName == null)
-                throw new ArgumentNullException("siteName");
+                throw new ArgumentNullException(nameof(siteName));
 
             if (siteName.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "siteName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
         }
 
         private void GetSubnets()
@@ -1208,9 +1208,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     string linkName = (string)PropertyManager.GetSearchResultPropertyValue(result, PropertyManager.Cn);
                     string transportName = (string)Utils.GetDNComponents(dn)[1].Value;
                     ActiveDirectoryTransportType transportType;
-                    if (String.Compare(transportName, "IP", StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Equals(transportName, "IP", StringComparison.OrdinalIgnoreCase))
                         transportType = ActiveDirectoryTransportType.Rpc;
-                    else if (String.Compare(transportName, "SMTP", StringComparison.OrdinalIgnoreCase) == 0)
+                    else if (string.Equals(transportName, "SMTP", StringComparison.OrdinalIgnoreCase))
                         transportType = ActiveDirectoryTransportType.Smtp;
                     else
                     {
@@ -1275,9 +1275,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     string cn = (string)PropertyManager.GetSearchResultPropertyValue(result, PropertyManager.Cn);
                     string transport = Utils.GetDNComponents((string)PropertyManager.GetSearchResultPropertyValue(result, PropertyManager.DistinguishedName))[1].Value;
                     ActiveDirectorySiteLink link = null;
-                    if (String.Compare(transport, "IP", StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Equals(transport, "IP", StringComparison.OrdinalIgnoreCase))
                         link = new ActiveDirectorySiteLink(context, cn, ActiveDirectoryTransportType.Rpc, true, connectionEntry);
-                    else if (String.Compare(transport, "SMTP", StringComparison.OrdinalIgnoreCase) == 0)
+                    else if (string.Equals(transport, "SMTP", StringComparison.OrdinalIgnoreCase))
                         link = new ActiveDirectorySiteLink(context, cn, ActiveDirectoryTransportType.Smtp, true, connectionEntry);
                     else
                     {

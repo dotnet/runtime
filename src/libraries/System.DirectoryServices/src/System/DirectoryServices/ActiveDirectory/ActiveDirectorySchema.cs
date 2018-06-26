@@ -89,7 +89,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             // contexttype should be Forest, DirectoryServer or ConfigurationSet
@@ -97,7 +97,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 (context.ContextType != DirectoryContextType.ConfigurationSet) &&
                 (context.ContextType != DirectoryContextType.DirectoryServer))
             {
-                throw new ArgumentException(SR.NotADOrADAM, "context");
+                throw new ArgumentException(SR.NotADOrADAM, nameof(context));
             }
 
             if ((context.Name == null) && (!context.isRootDomain()))
@@ -230,12 +230,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (commonName == null)
             {
-                throw new ArgumentNullException("commonName");
+                throw new ArgumentNullException(nameof(commonName));
             }
 
             if (commonName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "commonName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(commonName));
             }
 
             // this will bind to the schema container and load the properties of this class
@@ -267,7 +267,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // validate the type
             if (type < SchemaClassType.Type88 || type > SchemaClassType.Auxiliary)
             {
-                throw new InvalidEnumArgumentException("type", (int)type, typeof(SchemaClassType));
+                throw new InvalidEnumArgumentException(nameof(type), (int)type, typeof(SchemaClassType));
             }
 
             string filter = "(&(" + PropertyManager.ObjectCategory + "=classSchema)" +
@@ -306,12 +306,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (commonName == null)
             {
-                throw new ArgumentNullException("commonName");
+                throw new ArgumentNullException(nameof(commonName));
             }
 
             if (commonName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "commonName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(commonName));
             }
 
             // this will bind to the schema container and load the properties of this property
@@ -344,7 +344,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // check validity of type
             if ((type & (~(PropertyTypes.Indexed | PropertyTypes.InGlobalCatalog))) != 0)
             {
-                throw new ArgumentException(SR.InvalidFlags, "type");
+                throw new ArgumentException(SR.InvalidFlags, nameof(type));
             }
 
             // start the filter

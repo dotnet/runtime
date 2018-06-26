@@ -11,7 +11,6 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-   [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
    public abstract class HttpClientHandler_ResponseDrain_Test : HttpClientTestBase
     {
         protected virtual void SetResponseDrainTimeout(HttpClientHandler handler, TimeSpan time) { }
@@ -23,20 +22,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(LoopbackServer.ContentMode.BytePerChunk)]
         public async Task GetAsync_DisposeBeforeReadingToEnd_DrainsRequestsAndReusesConnection(LoopbackServer.ContentMode mode)
         {
-            if (IsWinHttpHandler)
-            {
-                if (mode == LoopbackServer.ContentMode.BytePerChunk)
-                {
-                    // WinHttpHandler's behavior with multiple chunks is inconsistent, so disable the test.
-                    return;
-                }
-            }
-            else if (IsCurlHandler)
-            {
-                // CurlHandler's behavior here is inconsistent, so disable the test.
-                return;
-            }
-
             const string simpleContent = "Hello world!";
 
             await LoopbackServer.CreateClientAndServerAsync(
@@ -104,20 +89,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(10000, 9500, LoopbackServer.ContentMode.BytePerChunk)]
         public async Task GetAsyncWithMaxConnections_DisposeBeforeReadingToEnd_DrainsRequestsAndReusesConnection(int totalSize, int readSize, LoopbackServer.ContentMode mode)
         {
-            if (IsWinHttpHandler)
-            {
-                // WinHttpHandler seems to only do a limited amount of draining, and this test starts
-                // failing if there's any measurable delay introduced in the response such that it dribbles
-                // in.  So just skip these tests.
-                return;
-            }
-
-            if (IsCurlHandler)
-            {
-                // CurlHandler drain behavior is very inconsistent, so just skip these tests.
-                return;
-            }
-
             await LoopbackServer.CreateClientAndServerAsync(
                 async url =>
                 {
@@ -174,12 +145,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1024 * 1024, 1, LoopbackServer.ContentMode.ContentLength)]
         public async Task GetAsyncLargeRequestWithMaxConnections_DisposeBeforeReadingToEnd_DrainsRequestsAndReusesConnection(int totalSize, int readSize, LoopbackServer.ContentMode mode)
         {
-            // SocketsHttpHandler will reliably drain up to 1MB; other handlers don't.
-            if (!UseSocketsHttpHandler)
-            {
-                return;
-            }
-
             await GetAsyncWithMaxConnections_DisposeBeforeReadingToEnd_DrainsRequestsAndReusesConnection(totalSize, readSize, mode);
             return;
         }
@@ -196,12 +161,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(4000000, 1000000, LoopbackServer.ContentMode.BytePerChunk)]
         public async Task GetAsyncWithMaxConnections_DisposeBeforeReadingToEnd_KillsConnection(int totalSize, int readSize, LoopbackServer.ContentMode mode)
         {
-            if (IsWinHttpHandler)
-            {
-                // [ActiveIssue(28424)]
-                return;
-            }
-
             await LoopbackServer.CreateClientAndServerAsync(
                 async url =>
                 {

@@ -16,6 +16,11 @@ namespace System.Buffers
 
         public NativeMemoryManager(int length)
         {
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
             _length = length;
             _ptr = Marshal.AllocHGlobal(length);
         }
@@ -54,8 +59,12 @@ namespace System.Buffers
 
         public override unsafe MemoryHandle Pin(int elementIndex = 0)
         {
-            if (elementIndex < 0 || elementIndex > _length)
+            // Note that this intentionally allows elementIndex == _length to
+            // support pinning zero-length instances.
+            if ((uint)elementIndex > (uint)_length)
+            {
                 throw new ArgumentOutOfRangeException(nameof(elementIndex));
+            }
 
             lock (this)
             {

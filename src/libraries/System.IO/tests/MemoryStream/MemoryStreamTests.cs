@@ -111,7 +111,7 @@ namespace System.IO.Tests
         {
             using (MemoryStream ms2 = new MemoryStream())
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => ms2.SetLength(Int64.MaxValue));
+                Assert.Throws<ArgumentOutOfRangeException>(() => ms2.SetLength(long.MaxValue));
                 Assert.Throws<ArgumentOutOfRangeException>(() => ms2.SetLength(-2));
             }
         }

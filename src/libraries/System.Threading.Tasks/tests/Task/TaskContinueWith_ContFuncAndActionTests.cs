@@ -3,13 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Diagnostics;
 
-namespace Test
+namespace System.Threading.Tasks.Tests
 {
     public class TaskContinueWith_ContFuncAndActionTests
     {

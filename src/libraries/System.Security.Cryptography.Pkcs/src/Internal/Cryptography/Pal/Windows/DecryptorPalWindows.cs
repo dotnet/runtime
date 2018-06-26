@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
+using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
-using System.Security.Cryptography.Pkcs.Asn1;
 using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal.Windows

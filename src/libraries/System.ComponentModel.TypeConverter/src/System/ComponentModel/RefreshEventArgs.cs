@@ -5,17 +5,13 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>
-    ///       Provides data for the <see cref='System.ComponentModel.TypeDescriptor.Refresh'/> event.
-    ///    </para>
+    /// Provides data for the <see cref='System.ComponentModel.TypeDescriptor.Refresh'/> event.
     /// </summary>
     public class RefreshEventArgs : EventArgs
     {
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.RefreshEventArgs'/> class with
-        ///       the component that has changed.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.RefreshEventArgs'/> class with
+        /// the component that has changed.
         /// </summary>
         public RefreshEventArgs(object componentChanged)
         {
@@ -24,10 +20,8 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.ComponentModel.RefreshEventArgs'/> class with
-        ///       the type of component that has changed.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.RefreshEventArgs'/> class with
+        /// the type of component that has changed.
         /// </summary>
         public RefreshEventArgs(Type typeChanged)
         {
@@ -35,16 +29,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>
-        ///       Gets the component that has changed its properties, events, or extenders.
-        ///    </para>
+        /// Gets the component that has changed its properties, events, or extenders.
         /// </summary>
         public object ComponentChanged { get; }
 
         /// <summary>
-        ///    <para>
-        ///       Gets the type that has changed its properties, or events.
-        ///    </para>
+        /// Gets the type that has changed its properties, or events.
         /// </summary>
         public Type TypeChanged { get; }
     }

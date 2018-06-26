@@ -261,8 +261,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetProcAddress.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetProcAddress.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Windows dependencies for Integrated Authentication for MANAGED_SNI build -->
@@ -455,7 +455,9 @@
     <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.DiagnosticSource" />
+    <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Runtime.Extensions" />
@@ -477,7 +479,6 @@
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.NameResolution" />
-    <Reference Include="System.Diagnostics.Tracing" />
   </ItemGroup>
   <ItemGroup Condition="('$(OSGroup)' != 'AnyOS' AND '$(IsUAPAssembly)' == 'true') OR '$(TargetGroup)' == 'netcoreapp'">
     <Reference Include="System.Transactions.Local" />

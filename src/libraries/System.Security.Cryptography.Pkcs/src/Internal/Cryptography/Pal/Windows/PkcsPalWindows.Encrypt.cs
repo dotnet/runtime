@@ -15,12 +15,13 @@ using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 using Microsoft.Win32.SafeHandles;
 
 using static Interop.Crypt32;
+using System.Security.Cryptography.Asn1;
 
 namespace Internal.Cryptography.Pal.Windows
 {
     internal sealed partial class PkcsPalWindows : PkcsPal
     {
-        public sealed override byte[] Encrypt(CmsRecipientCollection recipients, ContentInfo contentInfo, AlgorithmIdentifier contentEncryptionAlgorithm, X509Certificate2Collection originatorCerts, CryptographicAttributeObjectCollection unprotectedAttributes)
+        public sealed unsafe override byte[] Encrypt(CmsRecipientCollection recipients, ContentInfo contentInfo, AlgorithmIdentifier contentEncryptionAlgorithm, X509Certificate2Collection originatorCerts, CryptographicAttributeObjectCollection unprotectedAttributes)
         {
             using (SafeCryptMsgHandle hCryptMsg = EncodeHelpers.CreateCryptMsgHandleToEncode(recipients, contentInfo.ContentType, contentEncryptionAlgorithm, originatorCerts, unprotectedAttributes))
             {
@@ -40,16 +41,56 @@ namespace Internal.Cryptography.Pal.Windows
                 else
                 {
                     encodedContent = contentInfo.Content;
+
+                    if (encodedContent.Length > 0)
+                    {
+                        // Windows will throw if it encounters indefinite length encoding.
+                        // Let's reencode if that is the case
+                        ReencodeIfUsingIndefiniteLengthEncodingOnOuterStructure(ref encodedContent);
+                    }
                 }
 
                 if (encodedContent.Length > 0)
                 {
-                    if (!Interop.Crypt32.CryptMsgUpdate(hCryptMsg, encodedContent, encodedContent.Length, fFinal: true))
-                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    // Pin to avoid copy during heap compaction
+                    fixed (byte* pinnedContent = encodedContent)
+                    {
+                        try
+                        {
+                            if (!Interop.Crypt32.CryptMsgUpdate(hCryptMsg, encodedContent, encodedContent.Length, fFinal: true))
+                                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                        }
+                        finally
+                        {
+                            if (!object.ReferenceEquals(encodedContent, contentInfo.Content))
+                            {
+                                Array.Clear(encodedContent, 0, encodedContent.Length);
+                            }
+                        }
+                    }
                 }
 
                 byte[] encodedMessage = hCryptMsg.GetMsgParamAsByteArray(CryptMsgParamType.CMSG_CONTENT_PARAM);
                 return encodedMessage;
+            }
+        }
+
+        private static void ReencodeIfUsingIndefiniteLengthEncodingOnOuterStructure(ref byte[] encodedContent)
+        {
+            AsnReader reader = new AsnReader(encodedContent, AsnEncodingRules.BER);
+            Asn1Tag tag = reader.ReadTagAndLength(out int? contentsLength, out int _);
+
+            if (contentsLength != null)
+            {
+                // definite length, do nothing
+                return;
+            }
+
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
+            {
+                // Tag doesn't matter here as we won't write it into the document
+                writer.WriteOctetString(reader.PeekContentBytes().Span);
+                encodedContent = writer.Encode();
             }
         }
 

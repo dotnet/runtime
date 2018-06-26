@@ -72,7 +72,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public async Task Automatic_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()
         {
@@ -89,7 +89,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public async Task Manual_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()
         {
@@ -106,7 +106,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void Manual_SendClientCertificateWithClientAuthEKUToRemoteServer_OK()
         {
@@ -139,7 +139,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void Manual_SendClientCertificateWithServerAuthEKUToRemoteServer_Forbidden()
         {
@@ -167,7 +167,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external server")]
         [Fact]
         public void Manual_SendClientCertificateWithNoEKUToRemoteServer_OK()
         {
@@ -200,8 +200,8 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
-        [OuterLoop] // TODO: Issue #11345
+        [ActiveIssue(30056, TargetFrameworkMonikers.Uap)]
+        [OuterLoop("Uses GC and waits for finalizers")]
         [Theory]
         [InlineData(6, false)]
         [InlineData(3, true)]
@@ -279,8 +279,7 @@ namespace System.Net.Http.Functional.Tests
             }, options);
         }
 
-        [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
-        [OuterLoop] // TODO: Issue #11345
+        [ActiveIssue(30056, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData(ClientCertificateOption.Manual)]
         [InlineData(ClientCertificateOption.Automatic)]

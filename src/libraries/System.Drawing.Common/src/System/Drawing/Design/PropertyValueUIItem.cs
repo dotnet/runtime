@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*
- */
+// This file isn't built into the .csproj in corefx but is consumed by Mono.
+
 namespace System.Drawing.Design {
 
     using System.Diagnostics;
@@ -46,10 +46,10 @@ namespace System.Drawing.Design {
             this.itemImage = uiItemImage;
             this.handler = handler;
             if (itemImage == null) {
-               throw new ArgumentNullException("uiItemImage");
+               throw new ArgumentNullException(nameof(uiItemImage));
             }
             if (handler == null) {
-               throw new ArgumentNullException("handler");
+               throw new ArgumentNullException(nameof(handler));
             }
             this.tooltip = tooltip;
       }

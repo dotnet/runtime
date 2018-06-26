@@ -157,7 +157,7 @@ namespace System.Reflection.Tests
         // Class For Reflection Metadata
         public class MyClass
         {
-            public void Method1([My(2)]String str, int iValue, long lValue)
+            public void Method1([My(2)]string str, int iValue, long lValue)
             {
             }
         }

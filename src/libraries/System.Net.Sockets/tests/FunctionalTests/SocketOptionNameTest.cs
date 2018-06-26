@@ -191,6 +191,21 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        public void Ttl_Set_Succeeds(AddressFamily af)
+        {
+            using (Socket socket = new Socket(af, SocketType.Dgram, ProtocolType.Udp))
+            {
+                short newTtl = socket.Ttl;
+                // Change default ttl.
+                newTtl += (short)((newTtl < 255) ? 1 : -1);
+                socket.Ttl = newTtl;
+                Assert.Equal(newTtl, socket.Ttl);
+            }
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: dotnet/corefx #29929
         [PlatformSpecific(TestPlatforms.Windows)]

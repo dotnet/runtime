@@ -63,7 +63,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
             }
 
-            internal String FormatItem(object value)
+            internal string FormatItem(object value)
             {
                 double dblVal;
 
@@ -119,7 +119,7 @@ namespace System.Xml.Xsl.XsltOld
 
             private static string ConvertToArabic(double val, int minLength, int groupSize, string groupSeparator)
             {
-                String str;
+                string str;
 
                 if (groupSize != 0 && groupSeparator != null)
                 {
@@ -154,12 +154,12 @@ namespace System.Xml.Xsl.XsltOld
         // States:
         private const int OutputNumber = 2;
 
-        private String _level;
-        private String _countPattern;
+        private string _level;
+        private string _countPattern;
         private int _countKey = Compiler.InvalidQueryKey;
-        private String _from;
+        private string _from;
         private int _fromKey = Compiler.InvalidQueryKey;
-        private String _value;
+        private string _value;
         private int _valueKey = Compiler.InvalidQueryKey;
         private Avt _formatAvt;
         private Avt _langAvt;
@@ -168,10 +168,10 @@ namespace System.Xml.Xsl.XsltOld
         private Avt _groupingSizeAvt;
         // Compile time precalculated AVTs
         private List<FormatInfo> _formatTokens;
-        private String _lang;
-        private String _letter;
-        private String _groupingSep;
-        private String _groupingSize;
+        private string _lang;
+        private string _letter;
+        private string _groupingSep;
+        private string _groupingSize;
         private bool _forwardCompatibility;
 
         internal override bool CompileAttribute(Compiler compiler)
@@ -604,7 +604,7 @@ namespace System.Xml.Xsl.XsltOld
             padding, if necessary.
         ----------------------------------------------------------------------------
         */
-        private static void mapFormatToken(String wsToken, int startLen, int tokLen, out NumberingSequence seq, out int pminlen)
+        private static void mapFormatToken(string wsToken, int startLen, int tokLen, out NumberingSequence seq, out int pminlen)
         {
             char wch = wsToken[startLen];
             bool UseArabic = false;

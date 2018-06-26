@@ -87,7 +87,7 @@ namespace System.Runtime.Caching
 
         private SafeBitVector32 _flags;
         private OnChangedCallback _onChangedCallback;
-        private Object _onChangedState = s_NOT_SET;
+        private object _onChangedState = s_NOT_SET;
 
         // The helper routines (OnChangedHelper and DisposeHelper) are used to prevent 
         // an infinite loop, where Dispose calls OnChanged and OnChanged calls Dispose.
@@ -107,7 +107,7 @@ namespace System.Runtime.Caching
 
         // The helper routines (OnChangedHelper and DisposeHelper) are used to prevent 
         // an infinite loop, where Dispose calls OnChanged and OnChanged calls Dispose.
-        private void OnChangedHelper(Object state)
+        private void OnChangedHelper(object state)
         {
             _flags[CHANGED] = true;
 
@@ -155,7 +155,7 @@ namespace System.Runtime.Caching
         // OnChangedCallback is only invoked once, and only after NotifyOnChanged is
         // called by the cache implementer.  OnChanged is also invoked when the instance
         // is disposed, but only has an affect if the callback has not already been invoked.
-        protected void OnChanged(Object state)
+        protected void OnChanged(object state)
         {
             OnChangedHelper(state);
 
@@ -225,7 +225,7 @@ namespace System.Runtime.Caching
         {
             if (onChangedCallback == null)
             {
-                throw new ArgumentNullException("onChangedCallback");
+                throw new ArgumentNullException(nameof(onChangedCallback));
             }
 
             if (Interlocked.CompareExchange(ref _onChangedCallback, onChangedCallback, null) != null)

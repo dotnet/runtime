@@ -26,7 +26,7 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <summary>Initializes the <see cref="DataflowMessageHeader"/> with the specified attributes.</summary>
         /// <param name="id">The ID of the message. Must be unique within the originating source block. Need not be globally unique.</param>
-        public DataflowMessageHeader(Int64 id)
+        public DataflowMessageHeader(long id)
         {
             if (id == default(long)) throw new ArgumentException(SR.Argument_InvalidMessageId, nameof(id));
             Contract.EndContractBlock();
@@ -36,11 +36,11 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <summary>Gets the validity of the message.</summary>
         /// <returns>True if the ID of the message is different from 0. False if the ID of the message is 0</returns>
-        public Boolean IsValid { get { return _id != default(long); } }
+        public bool IsValid { get { return _id != default(long); } }
 
         /// <summary>Gets the ID of the message within the source.</summary>
         /// <returns>The ID contained in the <see cref="DataflowMessageHeader"/> instance.</returns>
-        public Int64 Id { get { return _id; } }
+        public long Id { get { return _id; } }
 
         // These overrides are required by the FX API Guidelines.
         // NOTE: When these overrides are present, the compiler doesn't complain about statements 

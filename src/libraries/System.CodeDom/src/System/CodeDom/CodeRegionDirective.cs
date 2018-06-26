@@ -18,8 +18,8 @@ namespace System.CodeDom
 
         public string RegionText
         {
-            get { return _regionText ?? string.Empty; }
-            set { _regionText = value; }
+            get => _regionText ?? string.Empty;
+            set => _regionText = value;
         }
 
         public CodeRegionMode RegionMode { get; set; }

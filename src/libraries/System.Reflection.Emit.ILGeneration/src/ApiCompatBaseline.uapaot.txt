@@ -1,8 +1,0 @@
-Compat issues with assembly System.Reflection.Emit.ILGeneration:
-TypesMustExist : Type 'System.Reflection.Emit.CustomAttributeBuilder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.ILGenerator' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.Label' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.LocalBuilder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.ParameterBuilder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Reflection.Emit.SignatureHelper' does not exist in the implementation but it does exist in the contract.
-Total Issues: 6

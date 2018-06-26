@@ -264,7 +264,7 @@ namespace System.Drawing.Printing
             ret += ", PrinterResolution={5}";
             ret += "]";
 
-            return String.Format(ret, this.color, this.landscape, this.margins, this.paperSize, this.paperSource, this.printerResolution);
+            return string.Format(ret, this.color, this.landscape, this.margins, this.paperSize, this.paperSource, this.printerResolution);
         }
     }
 }

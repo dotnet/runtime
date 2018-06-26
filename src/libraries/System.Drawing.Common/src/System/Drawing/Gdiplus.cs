@@ -2,21 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Internal;
-using System.Text;
 using System.Collections;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Internal;
 using System.IO;
-using System.Drawing.Internal;
-using System.Drawing.Imaging;
-using System.Drawing.Text;
-using System.Drawing.Drawing2D;
-using System.Threading;
-using System.Security;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.CompilerServices;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources", Scope = "member", Target = "System.Drawing.SafeNativeMethods+BITMAP.bmBits")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources", Scope = "member", Target = "System.Drawing.SafeNativeMethods+DIBSECTION.dshSection")]
@@ -84,11 +79,10 @@ namespace System.Drawing
                 PlatformInitialize();
 
                 StartupInput input = StartupInput.GetDefault();
-                StartupOutput output;
 
                 // GDI+ ref counts multiple calls to Startup in the same process, so calls from multiple
                 // domains are ok, just make sure to pair each w/GdiplusShutdown
-                int status = GdiplusStartup(out s_initToken, ref input, out output);
+                int status = GdiplusStartup(out s_initToken, ref input, out StartupOutput output);
                 CheckStatus(status);
 
                 Debug.Unindent();
@@ -143,7 +137,7 @@ namespace System.Drawing
 
             /// <summary>
             /// Shutsdown GDI+
-            /// </summary>            
+            /// </summary>
             private static void Shutdown()
             {
                 Debug.WriteLineIf(s_gdiPlusInitialization.TraceVerbose, "Shutdown GDI+ [" + AppDomain.CurrentDomain.FriendlyName + "]");
@@ -204,7 +198,7 @@ namespace System.Drawing
             {
             }
 
-            //----------------------------------------------------------------------------------------                                                           
+            //----------------------------------------------------------------------------------------
             // Initialization methods (GdiplusInit.h)
             //----------------------------------------------------------------------------------------
 
@@ -233,7 +227,7 @@ namespace System.Drawing
             internal static int GdipDeleteFont(HandleRef font) => Initialized ? IntGdipDeleteFont(font) : Ok;
             internal static int GdipDeleteStringFormat(HandleRef format) => Initialized ? IntGdipDeleteStringFormat(format) : Ok;
 
-            //----------------------------------------------------------------------------------------                                                           
+            //----------------------------------------------------------------------------------------
             // Status codes
             //----------------------------------------------------------------------------------------
             internal const int Ok = 0;
@@ -261,9 +255,7 @@ namespace System.Drawing
             internal static void CheckStatus(int status)
             {
                 if (status != Ok)
-                {
                     throw StatusException(status);
-                }
             }
 
             internal static Exception StatusException(int status)
@@ -323,141 +315,6 @@ namespace System.Drawing
                 }
 
                 return new ExternalException(SR.GdiplusUnknown, E_UNEXPECTED);
-            }
-
-            //----------------------------------------------------------------------------------------                                                           
-            // Helper function:  Convert GpPointF* memory block to PointF[]
-            //----------------------------------------------------------------------------------------
-            internal static PointF[] ConvertGPPOINTFArrayF(IntPtr memory, int count)
-            {
-                if (memory == IntPtr.Zero)
-                {
-                    throw new ArgumentNullException(nameof(memory));
-                }
-
-                var points = new PointF[count];
-                Type pointType = typeof(GPPOINTF);
-                int size = Marshal.SizeOf(pointType);
-
-                for (int index = 0; index < count; index++)
-                {
-                    var pt = (GPPOINTF)Marshal.PtrToStructure((IntPtr)((long)memory + index * size), pointType);
-                    points[index] = new PointF(pt.X, pt.Y);
-                }
-
-                return points;
-            }
-
-            //----------------------------------------------------------------------------------------                                                           
-            // Helper function:  Convert GpPoint* memory block to Point[]
-            //----------------------------------------------------------------------------------------
-            internal static Point[] ConvertGPPOINTArray(IntPtr memory, int count)
-            {
-                if (memory == IntPtr.Zero)
-                {
-                    throw new ArgumentNullException(nameof(memory));
-                }
-
-                var points = new Point[count];
-                Type pointType = typeof(GPPOINT);
-
-                int size = Marshal.SizeOf(pointType);
-
-                for (int index = 0; index < count; index++)
-                {
-                    var pt = (GPPOINT)Marshal.PtrToStructure((IntPtr)((long)memory + index * size), pointType);
-                    points[index] = new Point(pt.X, pt.Y);
-                }
-
-                return points;
-            }
-
-            //----------------------------------------------------------------------------------------                                                           
-            // Helper function:  Convert PointF[] to native memory block GpPointF*
-            //----------------------------------------------------------------------------------------
-            internal static IntPtr ConvertPointToMemory(PointF[] points)
-            {
-                if (points == null)
-                {
-                    throw new ArgumentNullException(nameof(points));
-                }
-
-                int size = (int)Marshal.SizeOf(typeof(GPPOINTF));
-                int count = points.Length;
-                IntPtr memory = Marshal.AllocHGlobal(checked(count * size));
-
-                for (int index = 0; index < count; index++)
-                {
-                    Marshal.StructureToPtr(new GPPOINTF(points[index]), (IntPtr)(checked((long)memory + index * size)), false);
-                }
-
-                return memory;
-            }
-
-            //----------------------------------------------------------------------------------------                                                           
-            // Helper function:  Convert Point[] to native memory block GpPoint*
-            //----------------------------------------------------------------------------------------
-            internal static IntPtr ConvertPointToMemory(Point[] points)
-            {
-                if (points == null)
-                {
-                    throw new ArgumentNullException(nameof(points));
-                }
-
-                int size = Marshal.SizeOf(typeof(GPPOINT));
-                int count = points.Length;
-                IntPtr memory = Marshal.AllocHGlobal(checked(count * size));
-
-                for (int index = 0; index < count; index++)
-                {
-                    Marshal.StructureToPtr(new GPPOINT(points[index]), (IntPtr)(checked((long)memory + index * size)), false);
-                }
-
-                return memory;
-            }
-
-            //----------------------------------------------------------------------------------------                                                           
-            // Helper function:  Convert RectangleF[] to native memory block GpRectF*
-            //----------------------------------------------------------------------------------------
-            internal static IntPtr ConvertRectangleToMemory(RectangleF[] rect)
-            {
-                if (rect == null)
-                {
-                    throw new ArgumentNullException(nameof(rect));
-                }
-
-                int size = Marshal.SizeOf(typeof(GPRECTF));
-                int count = rect.Length;
-                IntPtr memory = Marshal.AllocHGlobal(checked(count * size));
-
-                for (int index = 0; index < count; index++)
-                {
-                    Marshal.StructureToPtr(new GPRECTF(rect[index]), (IntPtr)(checked((long)memory + index * size)), false);
-                }
-
-                return memory;
-            }
-
-            //----------------------------------------------------------------------------------------                                                           
-            // Helper function:  Convert Rectangle[] to native memory block GpRect*
-            //----------------------------------------------------------------------------------------
-            internal static IntPtr ConvertRectangleToMemory(Rectangle[] rect)
-            {
-                if (rect == null)
-                {
-                    throw new ArgumentNullException(nameof(rect));
-                }
-
-                int size = (int)Marshal.SizeOf(typeof(GPRECT));
-                int count = rect.Length;
-                IntPtr memory = Marshal.AllocHGlobal(checked(count * size));
-
-                for (int index = 0; index < count; index++)
-                {
-                    Marshal.StructureToPtr(new GPRECT(rect[index]), (IntPtr)(checked((long)memory + index * size)), false);
-                }
-
-                return memory;
             }
         }
 
@@ -850,11 +707,12 @@ namespace System.Drawing
         {
             return IntGlobalAlloc(uFlags, new UIntPtr(dwBytes));
         }
-        
+
         static internal unsafe void ZeroMemory(byte* ptr, ulong length)
         {
             byte* end = ptr + length;
-            while (ptr != end) *ptr++ = 0;
+            while (ptr != end)
+                *ptr++ = 0;
         }
 
         public const int ERROR_ACCESS_DENIED = 5;

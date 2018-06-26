@@ -28,7 +28,7 @@ namespace System.DirectoryServices.AccountManagement
             get
             {
                 if (propertyName == null)
-                    throw new ArgumentNullException("propertyName");
+                    throw new ArgumentNullException(nameof(propertyName));
 
                 if (null != _pc)
                 {

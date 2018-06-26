@@ -60,20 +60,14 @@ namespace System.ComponentModel.Tests
             {
             }
 
-            public override string LicenseKey
-            {
-                get { return "YourLicenseKey"; }
-            }
+            public override string LicenseKey => "YourLicenseKey";
         }
 
         public TestLicenseProvider() : base()
         {
         }
 
-        public override License GetLicense(LicenseContext context,
-            Type type,
-            object instance,
-            bool allowExceptions)
+        public override License GetLicense(LicenseContext context, Type type, object instance, bool allowExceptions)
         {
             if (type.Name.Equals("RuntimeLicensedObject"))
             {

@@ -153,12 +153,12 @@ namespace System.Net.Sockets.Tests
         public void FileCtorEmpty_Success()
         {
             // An exception will happen on send if this file doesn't exist
-            SendPacketsElement element = new SendPacketsElement(String.Empty);
+            SendPacketsElement element = new SendPacketsElement(string.Empty);
             Assert.Null(element.Buffer);
             Assert.Equal(0, element.Offset);
             Assert.Equal(0, element.Count);
             Assert.False(element.EndOfPacket);
-            Assert.Equal(String.Empty, element.FilePath);
+            Assert.Equal(string.Empty, element.FilePath);
         }
 
         [Fact]

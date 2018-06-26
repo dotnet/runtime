@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if FEATURE_APPX
+using Internal.Resources;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -393,8 +396,8 @@ namespace System.Resources
                                 if (_resourceMap == null)
                                 {
                                     exceptionInfo = new PRIExceptionInfo();
-                                    exceptionInfo._PackageSimpleName = packageSimpleName;
-                                    exceptionInfo._ResWFile = reswFilename;
+                                    exceptionInfo.PackageSimpleName = packageSimpleName;
+                                    exceptionInfo.ResWFile = reswFilename;
                                 }
                                 else
                                 {

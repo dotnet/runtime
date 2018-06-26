@@ -20,10 +20,10 @@ namespace System.Numerics.Tests
 
             // Just basic tests
             // Large Even Number
-            VerifyIsEven((BigInteger)Int64.MaxValue + 1, true);
+            VerifyIsEven((BigInteger)long.MaxValue + 1, true);
 
             // Large Odd Number
-            VerifyIsEven((BigInteger)Int64.MaxValue + 2, false);
+            VerifyIsEven((BigInteger)long.MaxValue + 2, false);
 
             // Large Random Even Number
 
@@ -42,18 +42,18 @@ namespace System.Numerics.Tests
             }
 
             // Small Even Number
-            VerifyIsEven((BigInteger)Int16.MaxValue - 1, true);
+            VerifyIsEven((BigInteger)short.MaxValue - 1, true);
 
             // Small Odd Number
-            VerifyIsEven((BigInteger)Int16.MaxValue - 2, false);
+            VerifyIsEven((BigInteger)short.MaxValue - 2, false);
 
 
             //Negative tests
             // Large Negative Even Number
-            VerifyIsEven(((BigInteger)Int64.MaxValue + 1) * -1, true);
+            VerifyIsEven(((BigInteger)long.MaxValue + 1) * -1, true);
 
             // Large Negative Odd Number
-            VerifyIsEven(((BigInteger)Int64.MaxValue + 2) * -1, false);
+            VerifyIsEven(((BigInteger)long.MaxValue + 2) * -1, false);
             
 
             // Large Negative Random Even Number
@@ -64,10 +64,10 @@ namespace System.Numerics.Tests
             }
 
             // Small Negative Even Number
-            VerifyIsEven(((BigInteger)Int16.MaxValue - 1) * -1, true);
+            VerifyIsEven(((BigInteger)short.MaxValue - 1) * -1, true);
 
             // Small Negative Odd Number
-            VerifyIsEven(((BigInteger)Int16.MaxValue - 2) * -1, false);
+            VerifyIsEven(((BigInteger)short.MaxValue - 2) * -1, false);
 
 
             //Zero Case, 1, -1

@@ -5,19 +5,13 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>
-    ///       Defines the interface
-    ///       for extending properties to other components in a container.
-    ///    </para>
+    /// Defines the interface for extending properties to other components in a container.
     /// </summary>
     public interface IExtenderProvider
     {
         /// <summary>
-        ///    <para>
-        ///       Specifies
-        ///       whether this object can provide its extender properties to
-        ///       the specified object.
-        ///    </para>
+        /// Specifies whether this object can provide its extender properties to
+        /// the specified object.
         /// </summary>
         bool CanExtend(object extendee);
     }

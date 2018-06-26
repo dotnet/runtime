@@ -7,8 +7,8 @@ namespace System.Reflection
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple=true, Inherited=false)]
     internal sealed class AssemblyMetadataAttribute : Attribute 
     {
-        private String m_key;
-        private String m_value;
+        private string m_key;
+        private string m_value;
 		
         public AssemblyMetadataAttribute(string key, string value) 
         {

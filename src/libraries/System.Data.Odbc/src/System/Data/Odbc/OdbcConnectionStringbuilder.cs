@@ -63,7 +63,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                ADP.CheckArgumentNull(keyword, "keyword");
+                ADP.CheckArgumentNull(keyword, nameof(keyword));
                 Keywords index;
                 if (s_keywords.TryGetValue(keyword, out index))
                 {
@@ -76,7 +76,7 @@ namespace System.Data.Odbc
             }
             set
             {
-                ADP.CheckArgumentNull(keyword, "keyword");
+                ADP.CheckArgumentNull(keyword, nameof(keyword));
                 if (null != value)
                 {
                     Keywords index;
@@ -209,7 +209,7 @@ namespace System.Data.Odbc
 
         public override bool ContainsKey(string keyword)
         {
-            ADP.CheckArgumentNull(keyword, "keyword");
+            ADP.CheckArgumentNull(keyword, nameof(keyword));
             return s_keywords.ContainsKey(keyword) || base.ContainsKey(keyword);
         }
 
@@ -272,7 +272,7 @@ namespace System.Data.Odbc
 
         public override bool Remove(string keyword)
         {
-            ADP.CheckArgumentNull(keyword, "keyword");
+            ADP.CheckArgumentNull(keyword, nameof(keyword));
             if (base.Remove(keyword))
             {
                 Keywords index;
@@ -316,7 +316,7 @@ namespace System.Data.Odbc
 
         public override bool TryGetValue(string keyword, out object value)
         {
-            ADP.CheckArgumentNull(keyword, "keyword");
+            ADP.CheckArgumentNull(keyword, nameof(keyword));
             Keywords index;
             if (s_keywords.TryGetValue(keyword, out index))
             {

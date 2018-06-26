@@ -6,9 +6,7 @@ using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
-using System.Linq;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Drawing.Tests
 {
@@ -399,7 +397,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(CompositingMode.SourceOver - 1)]
         [InlineData(CompositingMode.SourceCopy + 1)]
@@ -408,7 +405,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                Assert.ThrowsAny<ArgumentException>(() => graphics.CompositingMode = compositingMode);
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.CompositingMode = compositingMode);
             }
         }
 
@@ -494,7 +491,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(CompositingQuality.Invalid - 1)]
         [InlineData(CompositingQuality.AssumeLinear + 1)]
@@ -503,7 +499,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                Assert.ThrowsAny<ArgumentException>(() => graphics.CompositingQuality = compositingQuality);
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.CompositingQuality = compositingQuality);
             }
         }
 
@@ -686,7 +682,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(InterpolationMode.Bicubic, InterpolationMode.Bicubic)]
         [InlineData(InterpolationMode.Bilinear, InterpolationMode.Bilinear)]
@@ -706,7 +701,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(InterpolationMode.Invalid - 1)]
         [InlineData(InterpolationMode.HighQualityBicubic + 1)]
@@ -715,11 +709,10 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                Assert.ThrowsAny<ArgumentException>(() => graphics.InterpolationMode = interpolationMode);
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.InterpolationMode = interpolationMode);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void InterpolationMode_SetToInvalid_ThrowsArgumentException()
         {
@@ -777,7 +770,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(-1)]
         [InlineData(0)]
@@ -843,7 +835,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(GraphicsUnit.World - 1)]
         [InlineData(GraphicsUnit.Millimeter + 1)]
@@ -852,11 +843,10 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                Assert.ThrowsAny<ArgumentException>(() => graphics.PageUnit = pageUnit);
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.PageUnit = pageUnit);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void PageUnit_SetWorld_ThrowsArgumentException()
         {
@@ -916,7 +906,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(PixelOffsetMode.Invalid - 1)]
         [InlineData(PixelOffsetMode.Half + 1)]
@@ -925,7 +914,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                Assert.ThrowsAny<ArgumentException>(() => graphics.PixelOffsetMode = pixelOffsetMode);
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.PixelOffsetMode = pixelOffsetMode);
             }
         }
 
@@ -1063,7 +1052,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(SmoothingMode.AntiAlias, SmoothingMode.AntiAlias)]
         [InlineData(SmoothingMode.Default, SmoothingMode.None)]
@@ -1080,7 +1068,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(SmoothingMode.Invalid - 1)]
         [InlineData(SmoothingMode.AntiAlias + 1)]
@@ -1089,11 +1076,10 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                Assert.ThrowsAny<ArgumentException>(() => graphics.SmoothingMode = smoothingMode);
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.SmoothingMode = smoothingMode);
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SmoothingMode_SetToInvalid_ThrowsArgumentException()
         {
@@ -1213,7 +1199,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(TextRenderingHint.SystemDefault - 1)]
         [InlineData(TextRenderingHint.ClearTypeGridFit + 1)]
@@ -1222,7 +1207,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                Assert.ThrowsAny<ArgumentException>(() => graphics.TextRenderingHint = textRenderingHint);
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.TextRenderingHint = textRenderingHint);
             }
         }
 
@@ -1288,7 +1273,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Transform_SetNull_ThrowsNullReferenceException()
         {
@@ -1451,7 +1435,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MultiplyTransform_DisposedMatrix_Nop()
         {
@@ -2290,160 +2273,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawLine_NullPen_ThrowsArgumentNullException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawLine(null, Point.Empty, Point.Empty));
-                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawLine(null, 0, 0, 0, 0));
-                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawLine(null, PointF.Empty, PointF.Empty));
-                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawLine(null, 0f, 0f, 0f, 0f));
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawLine_DisposedPen_ThrowsArgumentException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            {
-                var pen = new Pen(Color.Red);
-                pen.Dispose();
-
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, Point.Empty, Point.Empty));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, 0, 0, 0, 0));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, PointF.Empty, PointF.Empty));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, 0f, 0f, 0f, 0f));
-            }
-        }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawLine_Busy_ThrowsInvalidOperationException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            using (var pen = new Pen(Color.Red))
-            {
-                IntPtr hdc = graphics.GetHdc();
-                try
-                {
-                    Assert.Throws<InvalidOperationException>(() => graphics.DrawLine(pen, Point.Empty, Point.Empty));
-                    Assert.Throws<InvalidOperationException>(() => graphics.DrawLine(pen, 0, 0, 0, 0));
-                    Assert.Throws<InvalidOperationException>(() => graphics.DrawLine(pen, PointF.Empty, PointF.Empty));
-                    Assert.Throws<InvalidOperationException>(() => graphics.DrawLine(pen, 0f, 0f, 0f, 0f));
-                }
-                finally
-                {
-                    graphics.ReleaseHdc();
-                }
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawLine_Disposed_ThrowsArgumentException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (var pen = new Pen(Color.Red))
-            {
-                Graphics graphics = Graphics.FromImage(image);
-                graphics.Dispose();
-
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, Point.Empty, Point.Empty));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, 0, 0, 0, 0));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, PointF.Empty, PointF.Empty));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, 0f, 0f, 0f, 0f));
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawLines_NullPen_ThrowsArgumentNullException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawLines(null, new Point[2]));
-                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawLines(null, new PointF[2]));
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawLines_DisposedPen_ThrowsArgumentException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            {
-                var pen = new Pen(Color.Red);
-                pen.Dispose();
-
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLines(pen, new Point[2]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLines(pen, new PointF[2]));
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawLines_NullPoints_ThrowsArgumentNullException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            using (var pen = new Pen(Color.Red))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawLines(pen, (Point[])null));
-                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawLines(pen, (PointF[])null));
-            }
-        }
-
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
-        [InlineData(0)]
-        [InlineData(1)]
-        public void DrawLines_InvalidPointsLength_ThrowsArgumentException(int length)
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            using (var pen = new Pen(Color.Red))
-            {
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLines(pen, new Point[length]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLines(pen, new PointF[length]));
-            }
-        }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawLines_Busy_ThrowsInvalidOperationException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            using (var pen = new Pen(Color.Red))
-            {
-                IntPtr hdc = graphics.GetHdc();
-                try
-                {
-                    Assert.Throws<InvalidOperationException>(() => graphics.DrawLines(pen, new Point[2]));
-                    Assert.Throws<InvalidOperationException>(() => graphics.DrawLines(pen, new PointF[2]));
-                }
-                finally
-                {
-                    graphics.ReleaseHdc();
-                }
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawLines_Disposed_ThrowsArgumentException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (var pen = new Pen(Color.Red))
-            {
-                Graphics graphics = Graphics.FromImage(image);
-                graphics.Dispose();
-
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLines(pen, new Point[2]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLines(pen, new PointF[2]));
-            }
-        }
-
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawArc_NullPen_ThrowsArgumentNullException()
@@ -2542,159 +2371,6 @@ namespace System.Drawing.Tests
                 AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0, 0, 1, 1, 0, 90));
                 AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new RectangleF(0, 0, 1, 1), 0, 90));
                 AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0f, 0f, 1f, 1f, 0, 90));
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawBezier_NullPen_ThrowsArgumentNullException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawBezier(null, 1, 2, 3, 4, 5, 6, 7, 8));
-                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawBezier(null, Point.Empty, Point.Empty, Point.Empty, Point.Empty));
-                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawBezier(null, PointF.Empty, PointF.Empty, PointF.Empty, PointF.Empty));
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawBezier_DisposedPen_ThrowsArgumentException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            {
-                var pen = new Pen(Color.Red);
-                pen.Dispose();
-
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBezier(pen, 1, 2, 3, 4, 5, 6, 7, 8));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBezier(pen, Point.Empty, Point.Empty, Point.Empty, Point.Empty));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBezier(pen, PointF.Empty, PointF.Empty, PointF.Empty, PointF.Empty));
-            }
-        }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawBezier_Busy_ThrowsInvalidOperationException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            using (var pen = new Pen(Color.Red))
-            {
-                IntPtr hdc = graphics.GetHdc();
-                try
-                {
-                    Assert.Throws<InvalidOperationException>(() => graphics.DrawBezier(pen, 1, 2, 3, 4, 5, 6, 7, 8));
-                    Assert.Throws<InvalidOperationException>(() => graphics.DrawBezier(pen, Point.Empty, Point.Empty, Point.Empty, Point.Empty));
-                    Assert.Throws<InvalidOperationException>(() => graphics.DrawBezier(pen, PointF.Empty, PointF.Empty, PointF.Empty, PointF.Empty));
-                }
-                finally
-                {
-                    graphics.ReleaseHdc();
-                }
-            }
-        }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawBezier_Disposed_ThrowsArgumentException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (var pen = new Pen(Color.Red))
-            {
-                Graphics graphics = Graphics.FromImage(image);
-                graphics.Dispose();
-
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new Rectangle(0, 0, 1, 1), 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0, 0, 1, 1, 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new RectangleF(0, 0, 1, 1), 0, 90));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0f, 0f, 1f, 1f, 0, 90));
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawBeziers_NullPen_ThrowsArgumentNullException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawBeziers(null, new Point[2]));
-                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawBeziers(null, new PointF[2]));
-            }
-        }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawBeziers_DisposedPen_ThrowsArgumentException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            {
-                var pen = new Pen(Color.Red);
-                pen.Dispose();
-
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBeziers(pen, new Point[2]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBeziers(pen, new PointF[2]));
-            }
-        }
-
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawBeziers_NullPoints_ThrowsArgumentNullException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            using (var pen = new Pen(Color.Red))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawBeziers(pen, (Point[])null));
-                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawBeziers(pen, (PointF[])null));
-            }
-        }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawBeziers_EmptyPoints_ThrowsArgumentException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            using (var pen = new Pen(Color.Red))
-            {
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBeziers(pen, new Point[0]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBeziers(pen, new PointF[0]));
-            }
-        }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawBeziers_Busy_ThrowsInvalidOperationException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (Graphics graphics = Graphics.FromImage(image))
-            using (var pen = new Pen(Color.Red))
-            {
-                IntPtr hdc = graphics.GetHdc();
-                try
-                {
-                    Assert.Throws<InvalidOperationException>(() => graphics.DrawBeziers(pen, new Point[2]));
-                    Assert.Throws<InvalidOperationException>(() => graphics.DrawBeziers(pen, new PointF[2]));
-                }
-                finally
-                {
-                    graphics.ReleaseHdc();
-                }
-            }
-        }
-
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void DrawBeziers_Disposed_ThrowsArgumentException()
-        {
-            using (var image = new Bitmap(10, 10))
-            using (var pen = new Pen(Color.Red))
-            {
-                Graphics graphics = Graphics.FromImage(image);
-                graphics.Dispose();
-
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBeziers(pen, new Point[2]));
-                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBeziers(pen, new PointF[2]));
             }
         }
 

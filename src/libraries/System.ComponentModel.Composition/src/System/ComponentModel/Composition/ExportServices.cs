@@ -42,7 +42,7 @@ namespace System.ComponentModel.Composition
             return metadataViewType.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                                                     Type.DefaultBinder,
                                                     new Type[] { typeof(IDictionary<string, object>) },
-                                                    new ParameterModifier[0]) != null;
+                                                    Array.Empty<ParameterModifier>()) != null;
         }
 
         internal static Func<Export, object> CreateStronglyTypedLazyFactory(Type exportType, Type metadataViewType)

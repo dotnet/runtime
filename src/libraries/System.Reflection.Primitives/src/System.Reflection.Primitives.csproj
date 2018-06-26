@@ -14,15 +14,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
-    <Compile Include="System\Reflection\Emit\FlowControl.cs" />
-    <Compile Include="System\Reflection\Emit\Opcode.cs" />
-    <Compile Include="System\Reflection\Emit\OpCodes.cs" />
-    <Compile Include="System\Reflection\Emit\OpcodeType.cs" />
-    <Compile Include="System\Reflection\Emit\OperandType.cs" />
-    <Compile Include="System\Reflection\Emit\PackingSize.cs" />
-    <Compile Include="System\Reflection\Emit\StackBehaviour.cs" />
-  </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>

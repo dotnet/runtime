@@ -17,15 +17,15 @@ namespace System.Numerics
         /// <summary>
         /// The X component of the vector.
         /// </summary>
-        public Single X;
+        public float X;
         /// <summary>
         /// The Y component of the vector.
         /// </summary>
-        public Single Y;
+        public float Y;
         /// <summary>
         /// The Z component of the vector.
         /// </summary>
-        public Single Z;
+        public float Z;
 
         #region Constructors
         /// <summary>
@@ -33,7 +33,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The element to fill the vector with.</param>
         [Intrinsic]
-        public Vector3(Single value) : this(value, value, value) { }
+        public Vector3(float value) : this(value, value, value) { }
 
         /// <summary>
         /// Constructs a Vector3 from the given Vector2 and a third value.
@@ -49,7 +49,7 @@ namespace System.Numerics
         /// <param name="y">The Y component.</param>
         /// <param name="z">The Z component.</param>
         [Intrinsic]
-        public Vector3(Single x, Single y, Single z)
+        public Vector3(float x, float y, float z)
         {
             X = x;
             Y = y;
@@ -62,7 +62,7 @@ namespace System.Numerics
         /// Copies the contents of the vector into the given array.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CopyTo(Single[] array)
+        public void CopyTo(float[] array)
         {
             CopyTo(array, 0);
         }
@@ -76,7 +76,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CopyTo(Single[] array, int index)
+        public void CopyTo(float[] array, int index)
         {
             if (array == null)
             {
@@ -230,7 +230,7 @@ namespace System.Numerics
         /// <returns>The scaled vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 operator *(Vector3 left, Single right)
+        public static Vector3 operator *(Vector3 left, float right)
         {
             return left * new Vector3(right);
         }
@@ -243,7 +243,7 @@ namespace System.Numerics
         /// <returns>The scaled vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 operator *(Single left, Vector3 right)
+        public static Vector3 operator *(float left, Vector3 right)
         {
             return new Vector3(left) * right;
         }

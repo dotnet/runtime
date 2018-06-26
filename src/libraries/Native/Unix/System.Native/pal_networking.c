@@ -20,6 +20,8 @@
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
+#elif HAVE_SYS_POLL_H
+#include <sys/poll.h>
 #endif
 #include <errno.h>
 #include <netdb.h>
@@ -46,7 +48,9 @@
 #endif
 #if !HAVE_IN_PKTINFO
 #include <net/if.h>
+#if HAVE_GETIFADDRS
 #include <ifaddrs.h>
+#endif
 #endif
 
 #if HAVE_KQUEUE
@@ -139,11 +143,11 @@ c_static_assert(GetHostErrorCodes_NO_ADDRESS == NO_ADDRESS);
 c_static_assert(sizeof(uint8_t) == sizeof(char)); // We make casts from uint8_t to char so make sure it's legal
 
 // We require that IOVector have the same layout as iovec.
-c_static_assert(sizeof(struct IOVector) == sizeof(struct iovec));
-c_static_assert(sizeof_member(struct IOVector, Base) == sizeof_member(struct iovec, iov_base));
-c_static_assert(offsetof(struct IOVector, Base) == offsetof(struct iovec, iov_base));
-c_static_assert(sizeof_member(struct IOVector, Count) == sizeof_member(struct iovec, iov_len));
-c_static_assert(offsetof(struct IOVector, Count) == offsetof(struct iovec, iov_len));
+c_static_assert(sizeof(IOVector) == sizeof(struct iovec));
+c_static_assert(sizeof_member(IOVector, Base) == sizeof_member(struct iovec, iov_base));
+c_static_assert(offsetof(IOVector, Base) == offsetof(struct iovec, iov_base));
+c_static_assert(sizeof_member(IOVector, Count) == sizeof_member(struct iovec, iov_len));
+c_static_assert(offsetof(IOVector, Count) == offsetof(struct iovec, iov_len));
 
 #define Min(left,right) (((left) < (right)) ? (left) : (right))
 
@@ -213,7 +217,7 @@ static int32_t ConvertGetAddrInfoAndGetNameInfoErrorsToPal(int32_t error)
     return -1;
 }
 
-int32_t SystemNative_GetHostEntryForName(const uint8_t* address, struct HostEntry* entry)
+int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entry)
 {
     if (address == NULL || entry == NULL)
     {
@@ -256,7 +260,7 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, struct HostEntr
     return GetAddrInfoErrorFlags_EAI_SUCCESS;
 }
 
-static int32_t GetNextIPAddressFromAddrInfo(struct addrinfo** info, struct IPAddress* endPoint)
+static int32_t GetNextIPAddressFromAddrInfo(struct addrinfo** info, IPAddress* endPoint)
 {
     assert(info != NULL);
     assert(endPoint != NULL);
@@ -296,7 +300,7 @@ static int32_t GetNextIPAddressFromAddrInfo(struct addrinfo** info, struct IPAdd
     return GetAddrInfoErrorFlags_EAI_NOMORE;
 }
 
-int32_t SystemNative_GetNextIPAddress(const struct HostEntry* hostEntry, struct addrinfo** addressListHandle, struct IPAddress* endPoint)
+int32_t SystemNative_GetNextIPAddress(const HostEntry* hostEntry, struct addrinfo** addressListHandle, IPAddress* endPoint)
 {
     if (hostEntry == NULL || addressListHandle == NULL || endPoint == NULL)
     {
@@ -306,7 +310,7 @@ int32_t SystemNative_GetNextIPAddress(const struct HostEntry* hostEntry, struct 
     return GetNextIPAddressFromAddrInfo(addressListHandle, endPoint);    
 }
 
-void SystemNative_FreeHostEntry(struct HostEntry* entry)
+void SystemNative_FreeHostEntry(HostEntry* entry)
 {
     if (entry != NULL)
     {                
@@ -741,7 +745,7 @@ static int8_t IsStreamSocket(int socket)
            && type == SOCK_STREAM;
 }
 
-static void ConvertMessageHeaderToMsghdr(struct msghdr* header, const struct MessageHeader* messageHeader, int socket)
+static void ConvertMessageHeaderToMsghdr(struct msghdr* header, const MessageHeader* messageHeader, int socket)
 {
     // sendmsg/recvmsg can return EMSGSIZE when msg_iovlen is greather than IOV_MAX.
     // We avoid this for stream sockets by truncating msg_iovlen to IOV_MAX. This is ok since sendmsg is
@@ -767,7 +771,7 @@ int32_t SystemNative_GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6)
     return (isIPv4 != 0 ? CMSG_SPACE(sizeof(struct in_pktinfo)) : 0) + (isIPv6 != 0 ? CMSG_SPACE(sizeof(struct in6_pktinfo)) : 0);
 }
 
-static int32_t GetIPv4PacketInformation(struct cmsghdr* controlMessage, struct IPPacketInformation* packetInfo)
+static int32_t GetIPv4PacketInformation(struct cmsghdr* controlMessage, IPPacketInformation* packetInfo)
 {
     assert(controlMessage != NULL);
     assert(packetInfo != NULL);
@@ -782,7 +786,7 @@ static int32_t GetIPv4PacketInformation(struct cmsghdr* controlMessage, struct I
     ConvertInAddrToByteArray(&packetInfo->Address.Address[0], NUM_BYTES_IN_IPV4_ADDRESS, &pktinfo->ipi_addr);
 #if HAVE_IN_PKTINFO
     packetInfo->InterfaceIndex = (int32_t)pktinfo->ipi_ifindex;
-#else
+#elif HAVE_GETIFADDRS
     packetInfo->InterfaceIndex = 0;
 
     struct ifaddrs* addrs;
@@ -800,12 +804,15 @@ static int32_t GetIPv4PacketInformation(struct cmsghdr* controlMessage, struct I
         }
         freeifaddrs(addrs_head);
     }
+#else
+    // assume the first interface, we have no other methods
+    packetInfo->InterfaceIndex = 0;
 #endif
 
     return 1;
 }
 
-static int32_t GetIPv6PacketInformation(struct cmsghdr* controlMessage, struct IPPacketInformation* packetInfo)
+static int32_t GetIPv6PacketInformation(struct cmsghdr* controlMessage, IPPacketInformation* packetInfo)
 {
     assert(controlMessage != NULL);
     assert(packetInfo != NULL);
@@ -844,7 +851,7 @@ static struct cmsghdr* GET_CMSG_NXTHDR(struct msghdr* mhdr, struct cmsghdr* cmsg
 }
 
 int32_t
-SystemNative_TryGetIPPacketInformation(struct MessageHeader* messageHeader, int32_t isIPv4, struct IPPacketInformation* packetInfo)
+SystemNative_TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo)
 {
     if (messageHeader == NULL || packetInfo == NULL)
     {
@@ -902,7 +909,7 @@ static int8_t GetMulticastOptionName(int32_t multicastOption, int8_t isIPv6, int
     }
 }
 
-int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, struct IPv4MulticastOption* option)
+int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option)
 {
     if (option == NULL)
     {
@@ -929,7 +936,7 @@ int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
-    memset(option, 0, sizeof(struct IPv4MulticastOption));
+    memset(option, 0, sizeof(IPv4MulticastOption));
     option->MulticastAddress = opt.imr_multiaddr.s_addr;
 #if HAVE_IP_MREQN
     option->LocalAddress = opt.imr_address.s_addr;
@@ -941,7 +948,7 @@ int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     return Error_SUCCESS;
 }
 
-int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, struct IPv4MulticastOption* option)
+int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option)
 {
     if (option == NULL)
     {
@@ -976,7 +983,7 @@ int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
-int32_t SystemNative_GetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, struct IPv6MulticastOption* option)
+int32_t SystemNative_GetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option)
 {
     if (option == NULL)
     {
@@ -1004,7 +1011,7 @@ int32_t SystemNative_GetIPv6MulticastOption(intptr_t socket, int32_t multicastOp
     return Error_SUCCESS;
 }
 
-int32_t SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, struct IPv6MulticastOption* option)
+int32_t SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t multicastOption, IPv6MulticastOption* option)
 {
     if (option == NULL)
     {
@@ -1072,7 +1079,7 @@ static int32_t GetMaxLingerTime()
 }
 #endif
 
-int32_t SystemNative_GetLingerOption(intptr_t socket, struct LingerOption* option)
+int32_t SystemNative_GetLingerOption(intptr_t socket, LingerOption* option)
 {
     if (option == NULL)
     {
@@ -1089,13 +1096,13 @@ int32_t SystemNative_GetLingerOption(intptr_t socket, struct LingerOption* optio
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
-    memset(option, 0, sizeof(struct LingerOption));
+    memset(option, 0, sizeof(LingerOption));
     option->OnOff = opt.l_onoff;
     option->Seconds = opt.l_linger;
     return Error_SUCCESS;
 }
 
-int32_t SystemNative_SetLingerOption(intptr_t socket, struct LingerOption* option)
+int32_t SystemNative_SetLingerOption(intptr_t socket, LingerOption* option)
 {
     if (option == NULL)
     {
@@ -1182,7 +1189,7 @@ static int32_t ConvertSocketFlagsPlatformToPal(int platformFlags)
            ((platformFlags & MSG_CTRUNC) == 0 ? 0 : SocketFlags_MSG_CTRUNC);
 }
 
-int32_t SystemNative_ReceiveMessage(intptr_t socket, struct MessageHeader* messageHeader, int32_t flags, int64_t* received)
+int32_t SystemNative_ReceiveMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received)
 {
     if (messageHeader == NULL || received == NULL || messageHeader->SocketAddressLen < 0 ||
         messageHeader->ControlBufferLen < 0 || messageHeader->IOVectorCount < 0)
@@ -1225,7 +1232,7 @@ int32_t SystemNative_ReceiveMessage(intptr_t socket, struct MessageHeader* messa
     return SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
-int32_t SystemNative_SendMessage(intptr_t socket, struct MessageHeader* messageHeader, int32_t flags, int64_t* sent)
+int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent)
 {
     if (messageHeader == NULL || sent == NULL || messageHeader->SocketAddressLen < 0 ||
         messageHeader->ControlBufferLen < 0 || messageHeader->IOVectorCount < 0)
@@ -1638,6 +1645,9 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
                 case SocketOptionName_SO_IP_MULTICAST_TTL:
                     *optName = IPV6_MULTICAST_HOPS;
                     return true;
+                case SocketOptionName_SO_IP_TTL:
+                    *optName = IPV6_UNICAST_HOPS;
+                    return true;
 
                 default:
                     return false;
@@ -1653,6 +1663,23 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
                     return true;
 
                 // case SocketOptionName_SO_TCP_BSDURGENT:
+
+                case SocketOptionName_SO_TCP_KEEPALIVE_RETRYCOUNT:
+                    *optName = TCP_KEEPCNT;
+                    return true;
+
+                case SocketOptionName_SO_TCP_KEEPALIVE_TIME:
+                    *optName =
+                    #if HAVE_TCP_H_TCP_KEEPALIVE
+                        TCP_KEEPALIVE;
+                    #else
+                        TCP_KEEPIDLE;
+                    #endif
+                    return true;
+
+                case SocketOptionName_SO_TCP_KEEPALIVE_INTERVAL:
+                    *optName = TCP_KEEPINTVL;
+                    return true;
 
                 default:
                     return false;
@@ -1970,7 +1997,7 @@ int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available)
 
 #if HAVE_EPOLL
 
-static const size_t SocketEventBufferElementSize = sizeof(struct epoll_event) > sizeof(struct SocketEvent) ? sizeof(struct epoll_event) : sizeof(struct SocketEvent);
+static const size_t SocketEventBufferElementSize = sizeof(struct epoll_event) > sizeof(SocketEvent) ? sizeof(struct epoll_event) : sizeof(SocketEvent);
 
 static int GetSocketEvents(uint32_t events)
 {
@@ -1981,7 +2008,7 @@ static int GetSocketEvents(uint32_t events)
     return asyncEvents;
 }
 
-static uint32_t GetEPollEvents(enum SocketEvents events)
+static uint32_t GetEPollEvents(SocketEvents events)
 {
     return (((events & SocketEvents_SA_READ) != 0) ? EPOLLIN : 0) | (((events & SocketEvents_SA_WRITE) != 0) ? EPOLLOUT : 0) |
            (((events & SocketEvents_SA_READCLOSE) != 0) ? EPOLLRDHUP : 0) | (((events & SocketEvents_SA_CLOSE) != 0) ? EPOLLHUP : 0) |
@@ -2010,7 +2037,7 @@ static int32_t CloseSocketEventPortInner(int32_t port)
 }
 
 static int32_t TryChangeSocketEventRegistrationInner(
-    int32_t port, int32_t socket, enum SocketEvents currentEvents, enum SocketEvents newEvents, uintptr_t data)
+    int32_t port, int32_t socket, SocketEvents currentEvents, SocketEvents newEvents, uintptr_t data)
 {
     assert(currentEvents != newEvents);
 
@@ -2032,7 +2059,7 @@ static int32_t TryChangeSocketEventRegistrationInner(
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
-static void ConvertEventEPollToSocketAsync(struct SocketEvent* sae, struct epoll_event* epoll)
+static void ConvertEventEPollToSocketAsync(SocketEvent* sae, struct epoll_event* epoll)
 {
     assert(sae != NULL);
     assert(epoll != NULL);
@@ -2047,12 +2074,12 @@ static void ConvertEventEPollToSocketAsync(struct SocketEvent* sae, struct epoll
         events = (events & ((uint32_t)~EPOLLHUP)) | EPOLLIN | EPOLLOUT;
     }
 
-    memset(sae, 0, sizeof(struct SocketEvent));
+    memset(sae, 0, sizeof(SocketEvent));
     sae->Data = (uintptr_t)epoll->data.ptr;
     sae->Events = GetSocketEvents(events);
 }
 
-static int32_t WaitForSocketEventsInner(int32_t port, struct SocketEvent* buffer, int32_t* count)
+static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t* count)
 {
     assert(buffer != NULL);
     assert(count != NULL);
@@ -2074,7 +2101,7 @@ static int32_t WaitForSocketEventsInner(int32_t port, struct SocketEvent* buffer
     assert(numEvents != 0);
     assert(numEvents <= *count);
 
-    if (sizeof(struct epoll_event) < sizeof(struct SocketEvent))
+    if (sizeof(struct epoll_event) < sizeof(SocketEvent))
     {
         // Copy backwards to avoid overwriting earlier data.
         for (int i = numEvents - 1; i >= 0; i--)
@@ -2101,10 +2128,10 @@ static int32_t WaitForSocketEventsInner(int32_t port, struct SocketEvent* buffer
 
 #elif HAVE_KQUEUE
 
-c_static_assert(sizeof(struct SocketEvent) <= sizeof(struct kevent));
+c_static_assert(sizeof(SocketEvent) <= sizeof(struct kevent));
 static const size_t SocketEventBufferElementSize = sizeof(struct kevent);
 
-static enum SocketEvents GetSocketEvents(int16_t filter, uint16_t flags)
+static SocketEvents GetSocketEvents(int16_t filter, uint16_t flags)
 {
     int32_t events;
     switch (filter)
@@ -2140,7 +2167,7 @@ static enum SocketEvents GetSocketEvents(int16_t filter, uint16_t flags)
         events |= SocketEvents_SA_ERROR;
     }
 
-    return (enum SocketEvents)events;
+    return (SocketEvents)events;
 }
 
 static int32_t CreateSocketEventPortInner(int32_t* port)
@@ -2165,7 +2192,7 @@ static int32_t CloseSocketEventPortInner(int32_t port)
 }
 
 static int32_t TryChangeSocketEventRegistrationInner(
-    int32_t port, int32_t socket, enum SocketEvents currentEvents, enum SocketEvents newEvents, uintptr_t data)
+    int32_t port, int32_t socket, SocketEvents currentEvents, SocketEvents newEvents, uintptr_t data)
 {
 #ifdef EV_RECEIPT
     const uint16_t AddFlags = EV_ADD | EV_CLEAR | EV_RECEIPT;
@@ -2211,7 +2238,7 @@ static int32_t TryChangeSocketEventRegistrationInner(
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
-static int32_t WaitForSocketEventsInner(int32_t port, struct SocketEvent* buffer, int32_t* count)
+static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t* count)
 {
     assert(buffer != NULL);
     assert(count != NULL);
@@ -2237,7 +2264,7 @@ static int32_t WaitForSocketEventsInner(int32_t port, struct SocketEvent* buffer
     {
         // This copy is made deliberately to avoid overwriting data.
         struct kevent evt = events[i];
-        memset(&buffer[i], 0, sizeof(struct SocketEvent));
+        memset(&buffer[i], 0, sizeof(SocketEvent));
         buffer[i].Data = GetSocketEventData(evt.udata);
         buffer[i].Events = GetSocketEvents(GetKeventFilter(evt.filter), GetKeventFlags(evt.flags));
     }
@@ -2247,7 +2274,32 @@ static int32_t WaitForSocketEventsInner(int32_t port, struct SocketEvent* buffer
 }
 
 #else
-#error Asynchronous sockets require epoll or kqueue support.
+#warning epoll/kqueue not detected; building with stub socket events support
+static const size_t SocketEventBufferElementSize = sizeof(struct pollfd);
+
+static SocketEvents GetSocketEvents(int16_t filter, uint16_t flags)
+{
+    return SocketEvents_SA_NONE;
+}
+static int32_t CloseSocketEventPortInner(int32_t port)
+{
+    return Error_ENOSYS;
+}
+static int32_t CreateSocketEventPortInner(int32_t* port)
+{
+    return Error_ENOSYS;
+}
+static int32_t TryChangeSocketEventRegistrationInner(
+    int32_t port, int32_t socket, SocketEvents currentEvents, SocketEvents newEvents,
+uintptr_t data)
+{
+    return Error_ENOSYS;
+}
+static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t* count)
+{
+    return Error_ENOSYS;
+}
+
 #endif
 
 int32_t SystemNative_CreateSocketEventPort(intptr_t* port)
@@ -2268,7 +2320,7 @@ int32_t SystemNative_CloseSocketEventPort(intptr_t port)
     return CloseSocketEventPortInner(ToFileDescriptor(port));
 }
 
-int32_t SystemNative_CreateSocketEventBuffer(int32_t count, struct SocketEvent** buffer)
+int32_t SystemNative_CreateSocketEventBuffer(int32_t count, SocketEvent** buffer)
 {
     if (buffer == NULL || count < 0)
     {
@@ -2277,7 +2329,7 @@ int32_t SystemNative_CreateSocketEventBuffer(int32_t count, struct SocketEvent**
 
     size_t bufferSize;
     if (!multiply_s(SocketEventBufferElementSize, (size_t)count, &bufferSize) ||
-        (*buffer = (struct SocketEvent*)malloc(SocketEventBufferElementSize * (size_t)count)) == NULL)
+        (*buffer = (SocketEvent*)malloc(bufferSize)) == NULL)
     {
         return Error_ENOMEM;
     }
@@ -2285,7 +2337,7 @@ int32_t SystemNative_CreateSocketEventBuffer(int32_t count, struct SocketEvent**
     return Error_SUCCESS;
 }
 
-int32_t SystemNative_FreeSocketEventBuffer(struct SocketEvent* buffer)
+int32_t SystemNative_FreeSocketEventBuffer(SocketEvent* buffer)
 {
     free(buffer);
     return Error_SUCCESS;
@@ -2310,10 +2362,10 @@ SystemNative_TryChangeSocketEventRegistration(intptr_t port, intptr_t socket, in
     }
 
     return TryChangeSocketEventRegistrationInner(
-        portFd, socketFd, (enum SocketEvents)currentEvents, (enum SocketEvents)newEvents, data);
+        portFd, socketFd, (SocketEvents)currentEvents, (SocketEvents)newEvents, data);
 }
 
-int32_t SystemNative_WaitForSocketEvents(intptr_t port, struct SocketEvent* buffer, int32_t* count)
+int32_t SystemNative_WaitForSocketEvents(intptr_t port, SocketEvent* buffer, int32_t* count)
 {
     if (buffer == NULL || count == NULL || *count < 0)
     {

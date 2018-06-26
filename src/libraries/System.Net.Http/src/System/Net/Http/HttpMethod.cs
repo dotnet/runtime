@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Net.Http
@@ -20,6 +21,19 @@ namespace System.Net.Http
         private static readonly HttpMethod s_traceMethod = new HttpMethod("TRACE");
         private static readonly HttpMethod s_patchMethod = new HttpMethod("PATCH");
         private static readonly HttpMethod s_connectMethod = new HttpMethod("CONNECT");
+
+        private static readonly Dictionary<HttpMethod, HttpMethod> s_knownMethods = new Dictionary<HttpMethod, HttpMethod>(9)
+        {
+            { s_getMethod, s_getMethod },
+            { s_putMethod, s_putMethod },
+            { s_postMethod, s_postMethod },
+            { s_deleteMethod, s_deleteMethod },
+            { s_headMethod, s_headMethod },
+            { s_optionsMethod, s_optionsMethod },
+            { s_traceMethod, s_traceMethod },
+            { s_patchMethod, s_patchMethod },
+            { s_connectMethod, s_connectMethod },
+        };
 
         public static HttpMethod Get
         {
@@ -118,12 +132,7 @@ namespace System.Net.Http
         {
             if (_hashcode == 0)
             {
-                // If _method is already uppercase, _method.GetHashCode() can be
-                // used instead of _method.ToUpperInvariant().GetHashCode(),
-                // avoiding the unnecessary extra string allocation.
-                _hashcode = IsUpperAscii(_method) ?
-                    _method.GetHashCode() :
-                    _method.ToUpperInvariant().GetHashCode();
+                _hashcode = StringComparer.OrdinalIgnoreCase.GetHashCode(_method);
             }
 
             return _hashcode;
@@ -136,16 +145,9 @@ namespace System.Net.Http
 
         public static bool operator ==(HttpMethod left, HttpMethod right)
         {
-            if ((object)left == null)
-            {
-                return ((object)right == null);
-            }
-            else if ((object)right == null)
-            {
-                return ((object)left == null);
-            }
-
-            return left.Equals(right);
+            return (object)left == null || (object)right == null ?
+                ReferenceEquals(left, right) :
+                left.Equals(right);
         }
 
         public static bool operator !=(HttpMethod left, HttpMethod right)
@@ -153,18 +155,16 @@ namespace System.Net.Http
             return !(left == right);
         }
 
-        private static bool IsUpperAscii(string value)
+        /// <summary>
+        /// Returns a singleton method instance with a capitalized method name for the supplied method
+        /// if it's known; otherwise, returns the original.
+        /// </summary>
+        internal static HttpMethod Normalize(HttpMethod method)
         {
-            for (int i = 0; i < value.Length; i++)
-            {
-                char c = value[i];
-                if (!(c >= 'A' && c <= 'Z'))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            Debug.Assert(method != null);
+            return s_knownMethods.TryGetValue(method, out HttpMethod normalized) ?
+                normalized :
+                method;
         }
     }
 }

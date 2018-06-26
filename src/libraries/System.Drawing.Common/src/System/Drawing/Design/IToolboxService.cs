@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*
- */
+// This file isn't built into the .csproj in corefx but is consumed by Mono.
+
 namespace System.Drawing.Design {
 
     using System;
@@ -113,13 +113,13 @@ namespace System.Drawing.Design {
         /// <devdoc>
         ///    <para>Gets all .NET Framework tools on the specified toolbox category.</para>
         /// </devdoc>
-        ToolboxItemCollection GetToolboxItems(String category);
+        ToolboxItemCollection GetToolboxItems(string category);
 
         /// <include file='doc\IToolboxService.uex' path='docs/doc[@for="IToolboxService.GetToolboxItems3"]/*' />
         /// <devdoc>
         ///    <para>Gets all .NET Framework tools on the specified toolbox category.</para>
         /// </devdoc>
-        ToolboxItemCollection GetToolboxItems(String category, IDesignerHost host);
+        ToolboxItemCollection GetToolboxItems(string category, IDesignerHost host);
         
         /// <include file='doc\IToolboxService.uex' path='docs/doc[@for="IToolboxService.IsSupported"]/*' />
         /// <devdoc>

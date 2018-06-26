@@ -31,7 +31,6 @@ using System.Text;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-#pragma warning disable BCL0015 // CoreFxPort
 
     internal enum DS_REPL_INFO_TYPE
     {
@@ -676,7 +675,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static extern int NetApiBufferFree(IntPtr buffer);
 
         [DllImport("Advapi32.dll", EntryPoint = "LogonUserW", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern int LogonUserW(String lpszUsername, String lpszDomain, String lpszPassword, int dwLogonType, int dwLogonProvider, ref IntPtr phToken);
+        public static extern int LogonUserW(string lpszUsername, string lpszDomain, string lpszPassword, int dwLogonType, int dwLogonProvider, ref IntPtr phToken);
 
         [DllImport("Advapi32.dll", EntryPoint = "ImpersonateLoggedOnUser", SetLastError = true)]
         public static extern int ImpersonateLoggedOnUser(IntPtr hToken);

@@ -309,7 +309,7 @@ namespace System.Xml.Tests
                 DataReader.ReadContentAsBinHex(BinHex, i, 2);
                 strActbinhex = (System.BitConverter.ToChar(BinHex, i)).ToString();
                 CError.WriteLine("Actual: " + strActbinhex + " Exp: " + strTextBinHex);
-                CError.Compare(String.Compare(strActbinhex, 0, strTextBinHex, i / 2, 1), 0, "Compare All Valid Base64");
+                CError.Compare(string.Compare(strActbinhex, 0, strTextBinHex, i / 2, 1), 0, "Compare All Valid Base64");
             }
 
             return TEST_PASS;
@@ -349,7 +349,7 @@ namespace System.Xml.Tests
             CError.Compare(nRead, 8, "0");
 
             DataReader.Read();
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.Element, "ElemText", String.Empty), "1vn");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.Element, "ElemText", string.Empty), "1vn");
 
             return TEST_PASS;
         }
@@ -370,7 +370,7 @@ namespace System.Xml.Tests
 
             nRead = DataReader.ReadContentAsBinHex(buffer, 0, 19);
             CError.Compare(nRead, 18, "1");
-            CError.Compare(DataReader.VerifyNode(XmlNodeType.EndElement, "ElemNum", String.Empty), "1vn");
+            CError.Compare(DataReader.VerifyNode(XmlNodeType.EndElement, "ElemNum", string.Empty), "1vn");
 
             return TEST_PASS;
         }
@@ -741,7 +741,7 @@ namespace System.Xml.Tests
                 DataReader.ReadElementContentAsBinHex(BinHex, i, 2);
                 strActbinhex = (System.BitConverter.ToChar(BinHex, i)).ToString();
                 CError.WriteLine("Actual: " + strActbinhex + " Exp: " + strTextBinHex);
-                CError.Compare(String.Compare(strActbinhex, 0, strTextBinHex, i / 2, 1), 0, "Compare All Valid Base64");
+                CError.Compare(string.Compare(strActbinhex, 0, strTextBinHex, i / 2, 1), 0, "Compare All Valid Base64");
             }
             return TEST_PASS;
         }

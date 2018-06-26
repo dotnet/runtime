@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -71,7 +71,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         private static readonly Int16Enum[] Int16EnumValues = {Int16Enum.A, Int16Enum.B, Int16Enum.C,};
-        private static readonly Int16[] Int16Values = {0, 1, 2, short.MinValue, short.MaxValue};
+        private static readonly short[] Int16Values = {0, 1, 2, short.MinValue, short.MaxValue};
 
         private static IEnumerable<object[]> Int16EnumValueArguments() => Int16EnumValues.Select(i => new object[] { i });
 
@@ -97,7 +97,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         private static readonly UInt16Enum[] UInt16EnumValues = {UInt16Enum.A, UInt16Enum.B, UInt16Enum.C,};
-        private static readonly UInt16[] UInt16Values = {0, 1, 2, ushort.MaxValue};
+        private static readonly ushort[] UInt16Values = {0, 1, 2, ushort.MaxValue};
 
         private static IEnumerable<object[]> UInt16EnumValueArguments() => UInt16EnumValues.Select(i => new object[] { i });
 
@@ -123,7 +123,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         private static readonly Int32Enum[] Int32EnumValues = {Int32Enum.A, Int32Enum.B, Int32Enum.C,};
-        private static readonly Int32[] Int32Values = {0, 1, 2, int.MinValue, int.MaxValue};
+        private static readonly int[] Int32Values = {0, 1, 2, int.MinValue, int.MaxValue};
 
         private static IEnumerable<object[]> Int32EnumValueArguments() => Int32EnumValues.Select(i => new object[] { i });
 
@@ -149,7 +149,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         private static readonly UInt32Enum[] UInt32EnumValues = {UInt32Enum.A, UInt32Enum.B, UInt32Enum.C,};
-        private static readonly UInt32[] UInt32Values = {0, 1, 2, uint.MaxValue};
+        private static readonly uint[] UInt32Values = {0, 1, 2, uint.MaxValue};
 
         private static IEnumerable<object[]> UInt32EnumValueArguments() => UInt32EnumValues.Select(i => new object[] { i });
 
@@ -175,7 +175,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         private static readonly Int64Enum[] Int64EnumValues = {Int64Enum.A, Int64Enum.B, Int64Enum.C,};
-        private static readonly Int64[] Int64Values = {0, 1, 2, long.MinValue, long.MaxValue};
+        private static readonly long[] Int64Values = {0, 1, 2, long.MinValue, long.MaxValue};
 
         private static IEnumerable<object[]> Int64EnumValueArguments() => Int64EnumValues.Select(i => new object[] { i });
 
@@ -201,7 +201,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         private static readonly UInt64Enum[] UInt64EnumValues = {UInt64Enum.A, UInt64Enum.B, UInt64Enum.C,};
-        private static readonly UInt64[] UInt64Values = {0, 1, 2, ulong.MaxValue};
+        private static readonly ulong[] UInt64Values = {0, 1, 2, ulong.MaxValue};
 
         private static IEnumerable<object[]> UInt64EnumValueArguments() => UInt64EnumValues.Select(i => new object[] { i });
 

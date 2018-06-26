@@ -156,7 +156,7 @@ namespace System.Xml
             _currentAttrIndex = -1;
             _attributePSVINodes = new AttributePSVIInfo[InitialAttributeCount];
             _valueGetter = new XmlValueGetter(GetStringValue);
-            s_typeOfString = typeof(System.String);
+            s_typeOfString = typeof(string);
             _xmlSchemaInfo = new XmlSchemaInfo();
 
             //Add common strings to be compared to NameTable
@@ -894,7 +894,7 @@ namespace System.Xml
             }
         }
 
-        public override Decimal ReadElementContentAsDecimal()
+        public override decimal ReadElementContentAsDecimal()
         {
             if (this.NodeType != XmlNodeType.Element)
             {

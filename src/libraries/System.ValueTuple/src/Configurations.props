@@ -11,6 +11,7 @@
       $(PackageConfigurations);
       netcoreapp;
       uap-Windows_NT;
+      _netcoreapp2.0;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

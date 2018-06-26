@@ -27,8 +27,8 @@ namespace System.Linq.Tests
         public void SameResultsRepeatCallsStringQuery()
         {
             var q = from x1 in new[] { 55, 49, 9, -100, 24, 25, -1, 0 }
-                             from x2 in new[] { "!@#$%^", "C", "AAA", "", null, "Calling Twice", "SoS", String.Empty }
-                             where !String.IsNullOrEmpty(x2)
+                             from x2 in new[] { "!@#$%^", "C", "AAA", "", null, "Calling Twice", "SoS", string.Empty }
+                             where !string.IsNullOrEmpty(x2)
                              select new { a1 = x1, a2 = x2 };
 
             Assert.Equal(

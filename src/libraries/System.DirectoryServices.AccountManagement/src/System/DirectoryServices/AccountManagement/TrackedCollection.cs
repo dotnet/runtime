@@ -18,10 +18,10 @@ namespace System.DirectoryServices.AccountManagement
         {
             // Parameter validation
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.TrackedCollectionNotOneDimensional);

@@ -8,14 +8,14 @@ namespace System.Runtime.Caching
 {
     public class CacheEntryUpdateArguments
     {
-        private String _key;
+        private string _key;
         private CacheEntryRemovedReason _reason;
-        private String _regionName;
+        private string _regionName;
         private ObjectCache _source;
         private CacheItem _updatedCacheItem;
         private CacheItemPolicy _updatedCacheItemPolicy;
 
-        public String Key
+        public string Key
         {
             get { return _key; }
         }
@@ -25,7 +25,7 @@ namespace System.Runtime.Caching
             get { return _reason; }
         }
 
-        public String RegionName
+        public string RegionName
         {
             get { return _regionName; }
         }
@@ -47,15 +47,15 @@ namespace System.Runtime.Caching
             set { _updatedCacheItemPolicy = value; }
         }
 
-        public CacheEntryUpdateArguments(ObjectCache source, CacheEntryRemovedReason reason, String key, String regionName)
+        public CacheEntryUpdateArguments(ObjectCache source, CacheEntryRemovedReason reason, string key, string regionName)
         {
             if (source == null)
             {
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             }
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
             _source = source;
             _reason = reason;

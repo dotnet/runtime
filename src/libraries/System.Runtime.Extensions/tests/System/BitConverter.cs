@@ -243,7 +243,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => BitConverter.ToString(arr));
         }
 
-        private static void VerifyRoundtrip<TInput>(Func<TInput, Byte[]> getBytes, Func<Byte[], int, TInput> convertBack, TInput input, Byte[] expectedBytes)
+        private static void VerifyRoundtrip<TInput>(Func<TInput, byte[]> getBytes, Func<byte[], int, TInput> convertBack, TInput input, byte[] expectedBytes)
         {
             byte[] bytes = getBytes(input);
             Assert.Equal(expectedBytes.Length, bytes.Length);

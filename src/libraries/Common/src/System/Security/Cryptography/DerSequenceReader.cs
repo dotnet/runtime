@@ -30,6 +30,9 @@ namespace System.Security.Cryptography
 
         internal static DateTimeFormatInfo s_validityDateTimeFormatInfo;
 
+        private static System.Text.Encoding s_utf8EncodingWithExceptionFallback;
+        private static System.Text.Encoding s_latin1Encoding;
+
         private readonly byte[] _data;
         private readonly int _end;
         private int _position;
@@ -381,6 +384,38 @@ namespace System.Security.Cryptography
             _position += contentLength;
 
             return TrimTrailingNulls(ia5String);
+        }
+
+        internal string ReadT61String()
+        {
+            EatTag(DerTag.T61String);
+            int contentLength = EatLength();
+            string t61String;
+
+            // Technically the T.61 encoding (code page 20261) should be used here, but many
+            // implementations don't follow that and use different character sets. CryptoAPI
+            // on NetFX seems to interpret it as UTF-8 with fallback to ISO 8859-1. OpenSSL
+            // seems to interpret it as ISO 8859-1 with no support for UTF-8.
+            // https://github.com/dotnet/corefx/issues/27466
+
+            System.Text.Encoding utf8EncodingWithExceptionFallback = LazyInitializer.EnsureInitialized(
+                ref s_utf8EncodingWithExceptionFallback,
+                () => new UTF8Encoding(false, true));
+            System.Text.Encoding latin1Encoding = LazyInitializer.EnsureInitialized(
+                ref s_latin1Encoding,
+                () => System.Text.Encoding.GetEncoding("iso-8859-1"));
+            
+            try
+            {
+                t61String = utf8EncodingWithExceptionFallback.GetString(_data, _position, contentLength);
+            }
+            catch (DecoderFallbackException)
+            {
+                t61String = latin1Encoding.GetString(_data, _position, contentLength);
+            }
+            _position += contentLength;
+
+            return TrimTrailingNulls(t61String);
         }
 
         internal DateTime ReadX509Date()
