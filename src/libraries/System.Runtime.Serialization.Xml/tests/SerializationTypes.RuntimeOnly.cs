@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -176,7 +176,7 @@ namespace SerializationTypes
     {
         public Dictionary<MyEnum, MyEnum> WithEnums;
         public Dictionary<StructNotSerializable, StructNotSerializable> WithStructs;
-        public Dictionary<Nullable<Int16>, Nullable<Boolean>> WithNullables;
+        public Dictionary<Nullable<short>, Nullable<bool>> WithNullables;
 
         public DictionaryWithVariousKeyValueTypes() { }
 
@@ -190,10 +190,10 @@ namespace SerializationTypes
             WithStructs.Add(new StructNotSerializable() { value = 10 }, new StructNotSerializable() { value = 12 });
             WithStructs.Add(new StructNotSerializable() { value = int.MaxValue }, new StructNotSerializable() { value = int.MinValue });
 
-            WithNullables = new Dictionary<Nullable<Int16>, Nullable<Boolean>>();
-            WithNullables.Add(Int16.MinValue, true);
+            WithNullables = new Dictionary<Nullable<short>, Nullable<bool>>();
+            WithNullables.Add(short.MinValue, true);
             WithNullables.Add(0, false);
-            WithNullables.Add(Int16.MaxValue, null);
+            WithNullables.Add(short.MaxValue, null);
         }
     }
 
@@ -642,7 +642,7 @@ namespace SerializationTypes
     public class SimpleBase
     {
         [DataMember]
-        public string BaseData = String.Empty;
+        public string BaseData = string.Empty;
 
         public SimpleBase() { }
         public SimpleBase(bool init) { }
@@ -672,7 +672,7 @@ namespace SerializationTypes
     public class SimpleBaseDerived : SimpleBase
     {
         [DataMember]
-        public string DerivedData = String.Empty;
+        public string DerivedData = string.Empty;
 
         public SimpleBaseDerived() { }
         public SimpleBaseDerived(bool init) : base(init) { }
@@ -682,7 +682,7 @@ namespace SerializationTypes
     public class SimpleBaseDerived2 : SimpleBase
     {
         [DataMember]
-        public string DerivedData = String.Empty;
+        public string DerivedData = string.Empty;
 
         public SimpleBaseDerived2() { }
         public SimpleBaseDerived2(bool init) : base(init) { }
@@ -2753,7 +2753,7 @@ public class DTOResolver : DataContractResolver
 
 public class Person1
 {
-    public String Name;
+    public string Name;
     public int Age;
 }
 
@@ -3079,7 +3079,7 @@ public class ReaderWriterFactory
 public class TestData
 {
     [DataMember]
-    public String TestString;
+    public string TestString;
 }
 
 [Serializable]
@@ -3760,7 +3760,7 @@ public struct TestStruct
     public static TestStruct Parse(string value)
     {
         TestStruct result = new TestStruct();
-        result.value1 = Int32.Parse(value);
+        result.value1 = int.Parse(value);
         return result;
     }
 }
@@ -3774,8 +3774,8 @@ public class TestClass
 
     public override string ToString()
     {
-        string ints = String.Join(",", intList);
-        return String.Format("{0}{1}{2}", ints, s_memberSeparator, floatNum);
+        string ints = string.Join(",", intList);
+        return string.Format("{0}{1}{2}", ints, s_memberSeparator, floatNum);
     }
 
     public static TestClass Parse(string value)
@@ -3786,11 +3786,11 @@ public class TestClass
         List<int> ints = new List<int>();
         foreach (string number in numbers)
         {
-            ints.Add(Int32.Parse(number));
+            ints.Add(int.Parse(number));
         }
         TestClass o = new TestClass();
         o.intList = ints;
-        o.floatNum = Single.Parse(members[1]);
+        o.floatNum = float.Parse(members[1]);
         return o;
     }
 
@@ -3814,14 +3814,14 @@ public class TestClassWithKT
 public class ImplementDictionary : IDictionary
 {
     private DictionaryEntry[] _items;
-    private Int32 _itemsInUse = 0;
+    private int _itemsInUse = 0;
 
     public ImplementDictionary()
     {
         _items = new DictionaryEntry[10];
     }
 
-    public ImplementDictionary(Int32 numItems)
+    public ImplementDictionary(int numItems)
     {
         _items = new DictionaryEntry[numItems];
     }
@@ -3830,14 +3830,14 @@ public class ImplementDictionary : IDictionary
     public bool IsReadOnly { get { return false; } }
     public bool Contains(object key)
     {
-        Int32 index;
+        int index;
         return TryGetIndexOfKey(key, out index);
     }
     public bool IsFixedSize { get { return false; } }
     public void Remove(object key)
     {
         if (key == null) throw new ArgumentNullException("key");
-        Int32 index;
+        int index;
         if (TryGetIndexOfKey(key, out index))
         {
             Array.Copy(_items, index + 1, _items, index, _itemsInUse - index - 1);
@@ -3858,8 +3858,8 @@ public class ImplementDictionary : IDictionary
     {
         get
         {
-            Object[] keys = new Object[_itemsInUse];
-            for (Int32 n = 0; n < _itemsInUse; n++)
+            object[] keys = new object[_itemsInUse];
+            for (int n = 0; n < _itemsInUse; n++)
                 keys[n] = _items[n].Key;
             return keys;
         }
@@ -3868,8 +3868,8 @@ public class ImplementDictionary : IDictionary
     {
         get
         {
-            Object[] values = new Object[_itemsInUse];
-            for (Int32 n = 0; n < _itemsInUse; n++)
+            object[] values = new object[_itemsInUse];
+            for (int n = 0; n < _itemsInUse; n++)
                 values[n] = _items[n].Value;
             return values;
         }
@@ -3878,7 +3878,7 @@ public class ImplementDictionary : IDictionary
     {
         get
         {
-            Int32 index;
+            int index;
             if (TryGetIndexOfKey(key, out index))
             {
                 return _items[index].Value;
@@ -3890,7 +3890,7 @@ public class ImplementDictionary : IDictionary
         }
         set
         {
-            Int32 index;
+            int index;
             if (TryGetIndexOfKey(key, out index))
             {
                 _items[index].Value = value;
@@ -3901,7 +3901,7 @@ public class ImplementDictionary : IDictionary
             }
         }
     }
-    private Boolean TryGetIndexOfKey(Object key, out Int32 index)
+    private bool TryGetIndexOfKey(object key, out int index)
     {
         for (index = 0; index < _itemsInUse; index++)
         {
@@ -3912,7 +3912,7 @@ public class ImplementDictionary : IDictionary
     private class ImplementDictionaryEnumerator : IDictionaryEnumerator
     {
         private DictionaryEntry[] _items;
-        private Int32 _index = -1;
+        private int _index = -1;
 
         public ImplementDictionaryEnumerator(ImplementDictionary sd)
         {
@@ -3920,18 +3920,18 @@ public class ImplementDictionary : IDictionary
             Array.Copy(sd._items, 0, _items, 0, sd.Count);
         }
 
-        public Object Current { get { ValidateIndex(); return _items[_index]; } }
+        public object Current { get { ValidateIndex(); return _items[_index]; } }
 
         public DictionaryEntry Entry
         {
             get { return (DictionaryEntry)Current; }
         }
 
-        public Object Key { get { ValidateIndex(); return _items[_index].Key; } }
+        public object Key { get { ValidateIndex(); return _items[_index].Key; } }
 
-        public Object Value { get { ValidateIndex(); return _items[_index].Value; } }
+        public object Value { get { ValidateIndex(); return _items[_index].Value; } }
 
-        public Boolean MoveNext()
+        public bool MoveNext()
         {
             if (_index < _items.Length - 1) { _index++; return true; }
             return false;
@@ -4255,7 +4255,7 @@ public class NetNativeTestData
 
     public Type Type { get; set; }
 
-    public String ErrorMessage { get; set; }
+    public string ErrorMessage { get; set; }
 
     public Func<object> Instantiate
     {

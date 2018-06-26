@@ -860,7 +860,7 @@ namespace System.Runtime.Serialization
                     for (int i = 0; i < members.Count; i++)
                     {
                         ISerializableDataMember member = members[i];
-                        xmlWriter.WriteStartElement(member.Name, String.Empty);
+                        xmlWriter.WriteStartElement(member.Name, string.Empty);
                         WriteExtensionDataValue(xmlWriter, member.Value);
                         xmlWriter.WriteEndElement();
                     }

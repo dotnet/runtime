@@ -224,8 +224,8 @@ namespace System.ComponentModel.Composition.Hosting
         /// </exception>
         public DirectoryCatalog(string path, string searchPattern)
         {
-            Requires.NotNullOrEmpty(path, "path");
-            Requires.NotNullOrEmpty(searchPattern, "searchPattern");
+            Requires.NotNullOrEmpty(path, nameof(path));
+            Requires.NotNullOrEmpty(searchPattern, nameof(searchPattern));
 
             _definitionOrigin = this;
             Initialize(path, searchPattern);
@@ -267,8 +267,8 @@ namespace System.ComponentModel.Composition.Hosting
         /// </exception>
         public DirectoryCatalog(string path, string searchPattern, ICompositionElement definitionOrigin)
         {
-            Requires.NotNullOrEmpty(path, "path");
-            Requires.NotNullOrEmpty(searchPattern, "searchPattern");
+            Requires.NotNullOrEmpty(path, nameof(path));
+            Requires.NotNullOrEmpty(searchPattern, nameof(searchPattern));
             Requires.NotNull(definitionOrigin, nameof(definitionOrigin));
 
             _definitionOrigin = definitionOrigin;
@@ -316,9 +316,9 @@ namespace System.ComponentModel.Composition.Hosting
         /// </exception>
         public DirectoryCatalog(string path, string searchPattern, ReflectionContext reflectionContext)
         {
-            Requires.NotNullOrEmpty(path, "path");
-            Requires.NotNullOrEmpty(searchPattern, "searchPattern");
-            Requires.NotNull(reflectionContext, "reflectionContext");
+            Requires.NotNullOrEmpty(path, nameof(path));
+            Requires.NotNullOrEmpty(searchPattern, nameof(searchPattern));
+            Requires.NotNull(reflectionContext, nameof(reflectionContext));
 
             _reflectionContext = reflectionContext;
             _definitionOrigin = this;
@@ -370,10 +370,10 @@ namespace System.ComponentModel.Composition.Hosting
         /// </exception>
         public DirectoryCatalog(string path, string searchPattern, ReflectionContext reflectionContext, ICompositionElement definitionOrigin)
         {
-            Requires.NotNullOrEmpty(path, "path");
-            Requires.NotNullOrEmpty(searchPattern, "searchPattern");
-            Requires.NotNull(reflectionContext, "reflectionContext");
-            Requires.NotNull(definitionOrigin, "definitionOrigin");
+            Requires.NotNullOrEmpty(path, nameof(path));
+            Requires.NotNullOrEmpty(searchPattern, nameof(searchPattern));
+            Requires.NotNull(reflectionContext, nameof(reflectionContext));
+            Requires.NotNull(definitionOrigin, nameof(definitionOrigin));
 
             _reflectionContext = reflectionContext;
             _definitionOrigin = definitionOrigin;

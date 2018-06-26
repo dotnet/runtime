@@ -9,6 +9,9 @@
     <ProjectGuid>{CF73547B-07D2-4290-A14A-CA2A354F4D21}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Net\WebSockets\WebSocketCreateTest.cs">
+      <Link>Common\System\Net\WebSockets\WebSocketCreateTest.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
       <Link>Common\System\Net\Configuration.cs</Link>
     </Compile>

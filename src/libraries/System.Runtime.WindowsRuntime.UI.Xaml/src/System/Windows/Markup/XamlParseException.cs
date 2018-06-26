@@ -25,13 +25,13 @@ namespace Windows.UI.Xaml.Markup
             HResult = HResults.E_XAMLPARSEFAILED;
         }
 
-        public XamlParseException(String message)
+        public XamlParseException(string message)
             : base(message)
         {
             HResult = HResults.E_XAMLPARSEFAILED;
         }
 
-        public XamlParseException(String message, Exception innerException)
+        public XamlParseException(string message, Exception innerException)
             : base(message, innerException)
         {
             HResult = HResults.E_XAMLPARSEFAILED;

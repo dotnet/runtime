@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
         /// <exception cref="System.OverflowException">
-        /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
+        /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<byte> AsBytes<T>(Span<T> span)
@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
         /// <exception cref="System.OverflowException">
-        /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
+        /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<byte> AsBytes<T>(ReadOnlySpan<T> span)
@@ -214,6 +214,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="reference">A reference to data.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
+        /// <returns>The lifetime of the returned span will not be validated for safety by span-aware languages.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> CreateSpan<T>(ref T reference, int length) => new Span<T>(ref reference, length);
 
@@ -224,6 +225,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="reference">A reference to data.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
+        /// <returns>The lifetime of the returned span will not be validated for safety by span-aware languages.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<T> CreateReadOnlySpan<T>(ref T reference, int length) => new ReadOnlySpan<T>(ref reference, length);
     }

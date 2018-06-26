@@ -46,7 +46,6 @@ namespace System.Net.Http
         private readonly Socket _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
         private readonly Stream _stream;
         private readonly TransportContext _transportContext;
-        private readonly bool _usingProxy;
         private readonly WeakReference<HttpConnection> _weakThisRef;
 
         private HttpRequestMessage _currentRequest;
@@ -78,7 +77,6 @@ namespace System.Net.Http
             _socket = socket; // may be null in cases where we couldn't easily get the underlying socket
             _stream = stream;
             _transportContext = transportContext;
-            _usingProxy = pool.UsingProxy;
 
             _writeBuffer = new byte[InitialWriteBufferSize];
             _readBuffer = new byte[InitialReadBufferSize];
@@ -224,7 +222,7 @@ namespace System.Net.Http
 
         public TransportContext TransportContext => _transportContext;
 
-        public bool UsingProxy => _usingProxy;
+        public HttpConnectionKind Kind => _pool.Kind;
 
         private int ReadBufferSize => _readBuffer.Length;
 
@@ -299,12 +297,12 @@ namespace System.Net.Http
 
             if (_pool.HostHeaderValueBytes != null)
             {
-                Debug.Assert(!_pool.UsingProxy);
+                Debug.Assert(Kind != HttpConnectionKind.Proxy);
                 await WriteBytesAsync(_pool.HostHeaderValueBytes).ConfigureAwait(false);
             }
             else
             {
-                Debug.Assert(_pool.UsingProxy);
+                Debug.Assert(Kind == HttpConnectionKind.Proxy);
 
                 // TODO: #28863 Uri.IdnHost is missing '[', ']' characters around IPv6 address.
                 // So, we need to add them manually for now.
@@ -362,7 +360,8 @@ namespace System.Net.Http
             Debug.Assert(RemainingBuffer.Length == 0, "Unexpected data in read buffer");
 
             _currentRequest = request;
-            bool isConnectMethod = (request.Method == HttpMethod.Connect);
+            HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
+            bool hasExpectContinueHeader = request.HasHeaders && request.Headers.ExpectContinue == true;
 
             Debug.Assert(!_canRetry);
             _canRetry = true;
@@ -373,10 +372,10 @@ namespace System.Net.Http
             try
             {
                 // Write request line
-                await WriteStringAsync(request.Method.Method).ConfigureAwait(false);
+                await WriteStringAsync(normalizedMethod.Method).ConfigureAwait(false);
                 await WriteByteAsync((byte)' ').ConfigureAwait(false);
 
-                if (isConnectMethod)
+                if (ReferenceEquals(normalizedMethod, HttpMethod.Connect))
                 {
                     // RFC 7231 #section-4.3.6.
                     // Write only CONNECT foo.com:345 HTTP/1.1
@@ -388,7 +387,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    if (_usingProxy)
+                    if (Kind == HttpConnectionKind.Proxy)
                     {
                         // Proxied requests contain full URL
                         Debug.Assert(request.RequestUri.Scheme == Uri.UriSchemeHttp);
@@ -442,7 +441,7 @@ namespace System.Net.Http
                 {
                     // Write out Content-Length: 0 header to indicate no body,
                     // unless this is a method that never has a body.
-                    if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head && !isConnectMethod)
+                    if (!ReferenceEquals(normalizedMethod, HttpMethod.Get) && !ReferenceEquals(normalizedMethod, HttpMethod.Head) && !ReferenceEquals(normalizedMethod, HttpMethod.Connect))
                     {
                         await WriteBytesAsync(s_contentLength0NewlineAsciiBytes).ConfigureAwait(false);
                     }
@@ -474,7 +473,7 @@ namespace System.Net.Http
                     // Send the body if there is one.  We prefer to serialize the sending of the content before
                     // we try to receive any response, but if ExpectContinue has been set, we allow the sending
                     // to run concurrently until we receive the final status line, at which point we wait for it.
-                    if (!request.HasHeaders || request.Headers.ExpectContinue != true)
+                    if (!hasExpectContinueHeader)
                     {
                         await SendRequestContentAsync(request, CreateRequestContentStream(request), cancellationToken).ConfigureAwait(false);
                     }
@@ -530,10 +529,12 @@ namespace System.Net.Http
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionResponseContent() };
                 ParseStatusLine(await ReadNextResponseHeaderLineAsync().ConfigureAwait(false), response);
 
-                // If we sent an Expect: 100-continue header, handle the response accordingly.
-                if (allowExpect100ToContinue != null)
+                // If we sent an Expect: 100-continue header, handle the response accordingly. Note that the developer
+                // may have added an Expect: 100-continue header even if there is no Content.
+                if (hasExpectContinueHeader)
                 {
                     if ((int)response.StatusCode >= 300 &&
+                        request.Content != null &&
                         (request.Content.Headers.ContentLength == null || request.Content.Headers.ContentLength.GetValueOrDefault() > Expect100ErrorSendThreshold))
                     {
                         // For error final status codes, try to avoid sending the payload if its size is unknown or if it's known to be "big".
@@ -549,8 +550,10 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        // For any success or informational status codes (including 100 continue), send the payload.
-                        allowExpect100ToContinue.TrySetResult(true);
+                        // For any success or informational status codes (including 100 continue), or for errors when the request content
+                        // length is known to be small, send the payload (if there is one... if there isn't, Content is null and thus
+                        // allowExpect100ToContinue is also null).
+                        allowExpect100ToContinue?.TrySetResult(true);
 
                         // And if this was 100 continue, deal with the extra headers.
                         if (response.StatusCode == HttpStatusCode.Continue)
@@ -601,12 +604,12 @@ namespace System.Net.Http
 
                 // Create the response stream.
                 HttpContentStream responseStream;
-                if (request.Method == HttpMethod.Head || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
+                if (ReferenceEquals(normalizedMethod, HttpMethod.Head) || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
                 {
                     responseStream = EmptyReadStream.Instance;
                     CompleteResponse();
                 }
-                else if (isConnectMethod && response.StatusCode == HttpStatusCode.OK)
+                else if (ReferenceEquals(normalizedMethod, HttpMethod.Connect) && response.StatusCode == HttpStatusCode.OK)
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
@@ -615,6 +618,10 @@ namespace System.Net.Http
                     // We cannot use it for normal HTTP requests any more.
                     _connectionClose = true;
 
+                }
+                else if (response.StatusCode == HttpStatusCode.SwitchingProtocols)
+                {
+                    responseStream = new RawConnectionStream(this);
                 }
                 else if (response.Content.Headers.ContentLength != null)
                 {
@@ -632,10 +639,6 @@ namespace System.Net.Http
                 else if (response.Headers.TransferEncodingChunked == true)
                 {
                     responseStream = new ChunkedEncodingReadStream(this);
-                }
-                else if (response.StatusCode == HttpStatusCode.SwitchingProtocols)
-                {
-                    responseStream = new RawConnectionStream(this);
                 }
                 else
                 {
@@ -696,7 +699,7 @@ namespace System.Net.Http
 
         public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (_pool.UsingProxy && _pool.ProxyCredentials != null)
+            if (_pool.AnyProxyKind && _pool.ProxyCredentials != null)
             {
                 return AuthenticationHelper.SendWithNtProxyAuthAsync(request, _pool.ProxyUri, _pool.ProxyCredentials, this, cancellationToken);
             }
@@ -962,7 +965,6 @@ namespace System.Net.Http
             if (source.Length >= _writeBuffer.Length)
             {
                 // Large write.  No sense buffering this.  Write directly to stream.
-                // TODO #27362: CONSIDER: May want to be a bit smarter here?  Think about how large writes should work...
                 await WriteToStreamAsync(source).ConfigureAwait(false);
             }
             else

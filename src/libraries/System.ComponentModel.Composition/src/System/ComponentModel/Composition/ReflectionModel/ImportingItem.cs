@@ -94,7 +94,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             if (!ContractServices.TryCast(type, value, out result))
             {
                 throw new ComposablePartException(
-                    String.Format(CultureInfo.CurrentCulture,
+                    string.Format(CultureInfo.CurrentCulture,
                         SR.ReflectionModel_ImportNotAssignableFromExport,
                         export.ToElement().DisplayName,
                         type.FullName),

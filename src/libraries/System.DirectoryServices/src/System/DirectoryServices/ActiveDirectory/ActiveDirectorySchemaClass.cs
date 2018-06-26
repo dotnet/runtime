@@ -51,12 +51,12 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
             if (context.Name != null)
@@ -64,18 +64,18 @@ namespace System.DirectoryServices.ActiveDirectory
                 // the target should be a valid forest name or a server
                 if (!((context.isRootDomain()) || (context.isADAMConfigSet()) || (context.isServer())))
                 {
-                    throw new ArgumentException(SR.NotADOrADAM, "context");
+                    throw new ArgumentException(SR.NotADOrADAM, nameof(context));
                 }
             }
 
             if (ldapDisplayName == null)
             {
-                throw new ArgumentNullException("ldapDisplayName");
+                throw new ArgumentNullException(nameof(ldapDisplayName));
             }
 
             if (ldapDisplayName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "ldapDisplayName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(ldapDisplayName));
             }
 
             _context = new DirectoryContext(context);
@@ -231,30 +231,30 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
             if (context.Name != null)
             {
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
                 {
-                    throw new ArgumentException(SR.NotADOrADAM, "context");
+                    throw new ArgumentException(SR.NotADOrADAM, nameof(context));
                 }
             }
 
             if (ldapDisplayName == null)
             {
-                throw new ArgumentNullException("ldapDisplayName");
+                throw new ArgumentNullException(nameof(ldapDisplayName));
             }
 
             if (ldapDisplayName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "ldapDisplayName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(ldapDisplayName));
             }
 
             //  work with copy of the context
@@ -980,7 +980,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // validate the value that is being set
                 if (value < SchemaClassType.Type88 || value > SchemaClassType.Auxiliary)
                 {
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(SchemaClassType));
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(SchemaClassType));
                 }
 
                 if (isBound)
@@ -1338,7 +1338,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 string filter = "(&(" + PropertyManager.ObjectCategory + "=classSchema)" + str.ToString() + "(!(" + PropertyManager.IsDefunct + "=TRUE)))";
 
-                string[] propertiesToLoad = new String[1];
+                string[] propertiesToLoad = new string[1];
                 propertiesToLoad[0] = PropertyManager.LdapDisplayName;
 
                 ADSearcher searcher = new ADSearcher(_schemaEntry, filter, propertiesToLoad, SearchScope.OneLevel);
@@ -1416,7 +1416,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 string filter = "(&(" + PropertyManager.ObjectCategory + "=attributeSchema)" + str.ToString() + "(!(" + PropertyManager.IsDefunct + "=TRUE)))";
 
-                string[] propertiesToLoad = new String[1];
+                string[] propertiesToLoad = new string[1];
                 propertiesToLoad[0] = PropertyManager.LdapDisplayName;
 
                 ADSearcher searcher = new ADSearcher(_schemaEntry, filter, propertiesToLoad, SearchScope.OneLevel);

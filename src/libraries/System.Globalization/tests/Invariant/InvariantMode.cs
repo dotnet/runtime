@@ -704,7 +704,7 @@ namespace System.Globalization.Tests
                 if (res < 0) res = -1;
                 if (res > 0) res = 1;
                 Assert.Equal(result, res);
-                res = String.Compare(source, value, GetStringComparison(options));
+                res = string.Compare(source, value, GetStringComparison(options));
                 if (res < 0) res = -1;
                 if (res > 0) res = 1;
                 Assert.Equal(result, res);

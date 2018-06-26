@@ -12,6 +12,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Data\Common\DataColumnMappingTest.cs" />
+    <Compile Include="System\Data\Common\DataTableMappingTest.cs" />
     <Compile Include="System\Data\Common\DbCommandTests.cs" />
     <Compile Include="System\Data\Common\DbConnectionTests.cs" />
     <Compile Include="System\Data\Common\DbExceptionTests.cs" />
@@ -113,7 +114,7 @@
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">

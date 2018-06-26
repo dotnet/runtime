@@ -24,6 +24,7 @@
     <Compile Include="ExecutionContextFlowTest.cs" />
     <Compile Include="ExecutionContextFlowTest.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
     <Compile Include="IPPacketInformationTest.cs" />
+    <Compile Include="KeepAliveTest.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
     <Compile Include="LingerStateTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />

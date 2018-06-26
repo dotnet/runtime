@@ -29,11 +29,15 @@ namespace System.IO.Tests
             { $"a{Sep}", $"{AltSep}a", $"a{Sep}{AltSep}a" },
             { $"a{AltSep}", $"{AltSep}a", $"a{AltSep}{AltSep}a" },
             { "a", $"a{AltSep}", $"a{Sep}a{AltSep}" },
+            { null, null, ""},
+            { null, "a", "a"},
+            { "a", null, "a"}
         };
 
         [Theory, MemberData(nameof(TestData_JoinTwoPaths))]
         public void JoinTwoPaths(string path1, string path2, string expected)
         {
+            Assert.Equal(expected, Path.Join(path1.AsSpan(), path2.AsSpan()));
             Assert.Equal(expected, Path.Join(path1, path2));
         }
 
@@ -79,11 +83,17 @@ namespace System.IO.Tests
             { $"a{AltSep}", "a", "", $"a{AltSep}a" },
             { "", $"a{AltSep}", "a", $"a{AltSep}a" },
             { "a", "", $"{AltSep}a", $"a{AltSep}a" },
+            { null, null, null, "" },
+            { "a", null, null, "a" },
+            { null, "a", null, "a" },
+            { null, null, "a", "a" },
+            { "a", null, "a", $"a{Sep}a" }
         };
 
         [Theory, MemberData(nameof(TestData_JoinThreePaths))]
         public void JoinThreePaths(string path1, string path2, string path3, string expected)
         {
+            Assert.Equal(expected, Path.Join(path1.AsSpan(), path2.AsSpan(), path3.AsSpan()));
             Assert.Equal(expected, Path.Join(path1, path2, path3));
         }
 

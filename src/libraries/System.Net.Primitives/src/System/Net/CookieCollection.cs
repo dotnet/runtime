@@ -13,7 +13,7 @@ namespace System.Net
     // A list of cookies maintained in Sorted order. Only one cookie with matching Name/Domain/Path
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class CookieCollection : ICollection
+    public class CookieCollection : ICollection<Cookie>, IReadOnlyCollection<Cookie>, ICollection
     {
         internal enum Stamp
         {
@@ -93,6 +93,27 @@ namespace System.Net
             {
                 Add(cookie);
             }
+        }
+
+        public void Clear()
+        {
+            m_list.Clear();
+        }
+
+        public bool Contains(Cookie cookie)
+        {
+            return IndexOf(cookie) >= 0;
+        }
+
+        public bool Remove(Cookie cookie)
+        {
+            int idx = IndexOf(cookie);
+            if (idx == -1)
+            {
+                return false;
+            }
+            m_list.RemoveAt(idx);
+            return true;
         }
 
         public bool IsReadOnly
@@ -239,6 +260,14 @@ namespace System.Net
         internal void RemoveAt(int idx)
         {
             m_list.RemoveAt(idx);
+        }
+
+        IEnumerator<Cookie> IEnumerable<Cookie>.GetEnumerator()
+        {
+            foreach (Cookie cookie in m_list)
+            {
+                yield return cookie;
+            }
         }
 
         public IEnumerator GetEnumerator()

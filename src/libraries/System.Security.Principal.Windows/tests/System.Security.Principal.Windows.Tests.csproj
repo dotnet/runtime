@@ -10,8 +10,10 @@
     <Compile Include="WindowsIdentityTests.cs" />
     <Compile Include="WindowsPrincipalTests.cs" />
     <Compile Include="WellKnownSidTypeTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">
+      <Link>Common\System\Threading\ThreadTestHelpers.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

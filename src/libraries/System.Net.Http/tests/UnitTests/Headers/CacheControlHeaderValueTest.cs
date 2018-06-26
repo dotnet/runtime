@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
 namespace System.Net.Http.Tests
 {
-    public class CacheControlHeaderValueTest
+    public class CacheControlHeaderValueTest : RemoteExecutorTestBase
     {
         [Fact]
         public void Properties_SetAndGetAllProperties_SetValueReturnedInGetter()
@@ -135,6 +134,28 @@ namespace System.Net.Http.Tests
             Assert.Equal("must-revalidate, private=\"token2, token3\"", cacheControl.ToString());
             cacheControl.ProxyRevalidate = true;
             Assert.Equal("must-revalidate, proxy-revalidate, private=\"token2, token3\"", cacheControl.ToString());
+        }
+
+        [Fact]
+        public void ToString_NegativeValues_UsesMinusSignRegardlessOfCurrentCulture()
+        {
+            RemoteInvoke(() =>
+            {
+                var cacheControl = new CacheControlHeaderValue()
+                {
+                    MaxAge = new TimeSpan(0, 0, -1),
+                    MaxStale = true,
+                    MaxStaleLimit = new TimeSpan(0, 0, -2),
+                    MinFresh = new TimeSpan(0, 0, -3),
+                    SharedMaxAge = new TimeSpan(0, 0, -4)
+                };
+
+                var ci = (CultureInfo)CultureInfo.CurrentCulture.Clone();
+                ci.NumberFormat.NegativeSign = "n";
+                CultureInfo.CurrentCulture = ci;
+
+                Assert.Equal("max-age=-1, s-maxage=-4, max-stale=-2, min-fresh=-3", cacheControl.ToString());
+            }).Dispose();
         }
 
         [Fact]

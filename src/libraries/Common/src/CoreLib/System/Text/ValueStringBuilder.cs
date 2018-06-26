@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Text
 {
-    internal ref struct ValueStringBuilder
+    internal ref partial struct ValueStringBuilder
     {
         private char[] _arrayToReturnToPool;
         private Span<char> _chars;
@@ -19,6 +19,13 @@ namespace System.Text
         {
             _arrayToReturnToPool = null;
             _chars = initialBuffer;
+            _pos = 0;
+        }
+
+        public ValueStringBuilder(int initialCapacity)
+        {
+            _arrayToReturnToPool = ArrayPool<char>.Shared.Rent(initialCapacity);
+            _chars = _arrayToReturnToPool;
             _pos = 0;
         }
 

@@ -40,15 +40,15 @@ namespace System.Xml.Tests
     public class XsltApiTestCaseBase2
     {
         // Generic data for all derived test cases
-        public String szXslNS = "http://www.w3.org/1999/XSL/Transform";
+        public string szXslNS = "http://www.w3.org/1999/XSL/Transform";
 
-        public String szDefaultNS = "urn:my-object";
-        public String szEmpty = "";
-        public String szInvalid = "*?%(){}\0[]&!@#$";
-        public String szLongString = "ThisIsAVeryLongStringToBeStoredAsAVariableToDetermineHowLargeThisBufferForAVariableNameCanBeAndStillFunctionAsExpected";
-        public String szLongNS = "http://www.microsoft.com/this/is/a/very/long/namespace/uri/to/do/the/api/testing/for/xslt/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/";
-        public String[] szWhiteSpace = { "  ", "\n", "\t", "\r", "\t\n  \r\t" };
-        public String szSimple = "myArg";
+        public string szDefaultNS = "urn:my-object";
+        public string szEmpty = "";
+        public string szInvalid = "*?%(){}\0[]&!@#$";
+        public string szLongString = "ThisIsAVeryLongStringToBeStoredAsAVariableToDetermineHowLargeThisBufferForAVariableNameCanBeAndStillFunctionAsExpected";
+        public string szLongNS = "http://www.microsoft.com/this/is/a/very/long/namespace/uri/to/do/the/api/testing/for/xslt/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/";
+        public string[] szWhiteSpace = { "  ", "\n", "\t", "\r", "\t\n  \r\t" };
+        public string szSimple = "myArg";
 
         // Variables from init string
         private string _strPath;                           // Path of the data files
@@ -85,7 +85,7 @@ namespace System.Xml.Tests
             doc.Save(xslFile);
         }
 
-        public OutputType GetOutputType(String s)
+        public OutputType GetOutputType(string s)
         {
             if (s.EndsWith(",URI"))
                 return OutputType.URI;
@@ -105,7 +105,7 @@ namespace System.Xml.Tests
             return myDefaultCredResolver;
         }
 
-        public XslInputType GetXslInputType(String s)
+        public XslInputType GetXslInputType(string s)
         {
             if (s.StartsWith("READER,"))
                 return XslInputType.Reader;
@@ -117,7 +117,7 @@ namespace System.Xml.Tests
                 return XslInputType.URI;
         }
 
-        public NavType GetDocType(String s)
+        public NavType GetDocType(string s)
         {
             switch (s.ToUpper())
             {
@@ -135,7 +135,7 @@ namespace System.Xml.Tests
             }
         }
 
-        public ReaderType GetReaderType(String s)
+        public ReaderType GetReaderType(string s)
         {
             //XmlTextReader, XmlNodeReader, XmlValidatingReader, XsltReader
 
@@ -168,9 +168,9 @@ namespace System.Xml.Tests
             return;
         }
 
-        public String FullFilePath(String szFile)
+        public string FullFilePath(string szFile)
         {
-            if (szFile == null || szFile == String.Empty)
+            if (szFile == null || szFile == string.Empty)
                 return szFile;
             if (szFile.Length > 5)
             {
@@ -180,9 +180,9 @@ namespace System.Xml.Tests
             return szFile;
         }
 
-        public String FullHttpPath(String szFile)
+        public string FullHttpPath(string szFile)
         {
-            if (szFile == null || szFile == String.Empty)
+            if (szFile == null || szFile == string.Empty)
                 return szFile;
             szFile = Path.Combine(_httpPath, szFile);
             return szFile;
@@ -234,7 +234,7 @@ namespace System.Xml.Tests
         // --------------------------------------------------------------------------------------------------------------
         //  LoadXML
         //  -------------------------------------------------------------------------------------------------------------
-        public IXPathNavigable LoadXML(String strFileLocation, NavType _navType)
+        public IXPathNavigable LoadXML(string strFileLocation, NavType _navType)
         {
             switch (_navType)
             {
@@ -524,7 +524,7 @@ namespace System.Xml.Tests
             return (Transform(szXmlFile, outputType, navType, false));
         }
 
-        public int Transform(String szXmlFile, OutputType outputType, NavType navType, bool errorCase)
+        public int Transform(string szXmlFile, OutputType outputType, NavType navType, bool errorCase)
         {
             szXmlFile = FullFilePath(szXmlFile);
 
@@ -747,7 +747,7 @@ namespace System.Xml.Tests
         public bool VerifyException(Exception ex)
         {
             Type _type = ex.GetType();
-            res = String.Empty;
+            res = string.Empty;
             msg = (string)_nav.Evaluate("string(/exceptions/exception [@res = '" + res + "']/@message)");
             try
             {

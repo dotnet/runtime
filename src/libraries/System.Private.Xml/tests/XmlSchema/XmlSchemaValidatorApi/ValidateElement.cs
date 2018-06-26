@@ -28,7 +28,7 @@ namespace System.Xml.Tests
         [InlineData("name", "second")]
         [InlineData("ns", "first")]
         [InlineData("ns", "second")]
-        public void PassNull_LocalName_NamespaceUri_Invalid_First_Second_Overload(String type, String overload)
+        public void PassNull_LocalName_NamespaceUri_Invalid_First_Second_Overload(string type, string overload)
         {
             XmlSchemaValidator val = CreateValidator(CreateSchemaSetFromXml("<root />"));
             string name = "root";
@@ -59,7 +59,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("first")]
         [InlineData("second")]
-        public void PassNullXmlSchemaInfo__Valid_First_Second_Overload(String overload)
+        public void PassNullXmlSchemaInfo__Valid_First_Second_Overload(string overload)
         {
             XmlSchemaValidator val = CreateValidator(CreateSchemaSetFromXml("<root />"));
 
@@ -75,7 +75,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("first")]
         [InlineData("second")]
-        public void PassInvalidName_First_Second_Overload(String overload)
+        public void PassInvalidName_First_Second_Overload(string overload)
         {
             XmlSchemaValidator val = CreateValidator(CreateSchemaSetFromXml("<root />"));
 
@@ -106,7 +106,7 @@ namespace System.Xml.Tests
         [InlineData("ElementOnlyElement", XmlSchemaContentType.ElementOnly, "second")]
         [InlineData("EmptyElement", XmlSchemaContentType.Empty, "second")]
         [InlineData("MixedElement", XmlSchemaContentType.Mixed, "second")]
-        public void CallValidateElementAndCHeckXmlSchemaInfoFOr_Simple_Complex_Empty_Mixed_Element_First_Second_Overload(String elemType, XmlSchemaContentType schemaContentType, String overload)
+        public void CallValidateElementAndCHeckXmlSchemaInfoFOr_Simple_Complex_Empty_Mixed_Element_First_Second_Overload(string elemType, XmlSchemaContentType schemaContentType, string overload)
         {
             XmlSchemaValidator val;
             XmlSchemaSet schemas = new XmlSchemaSet();
@@ -243,7 +243,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("false")]
-        public void CallWith_Null_False_XsiNil(String xsiNil)
+        public void CallWith_Null_False_XsiNil(string xsiNil)
         {
             XmlSchemaValidator val;
             XmlSchemaInfo info = new XmlSchemaInfo();

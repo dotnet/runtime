@@ -183,10 +183,10 @@ namespace System.Management
         public void CopyTo(Array array, int index)
         {
             if (null == array)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if ((index < array.GetLowerBound(0)) || (index > array.GetUpperBound(0)))
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             // Get the names of the qualifiers
             string[] qualifierNames = null;
@@ -214,7 +214,7 @@ namespace System.Management
             }
 
             if ((index + qualifierNames.Length) > array.Length)
-                throw new ArgumentException(null, "index");
+                throw new ArgumentException(null, nameof(index));
 
             foreach (string qualifierName in qualifierNames)
                 array.SetValue(new QualifierData(parent, propertyOrMethodName, qualifierName, qualifierSetType), index++);
@@ -341,7 +341,7 @@ namespace System.Management
                 // If we got an error code back, assume there are NO qualifiers for this object/property/method
                 if(status < 0)
                 {
-                    qualifierNames = new String[]{};
+                    qualifierNames = Array.Empty<String>();
                 }
                 else
                 {
@@ -421,7 +421,7 @@ namespace System.Management
         {
             get { 
                 if (null == qualifierName)
-                    throw new ArgumentNullException("qualifierName");
+                    throw new ArgumentNullException(nameof(qualifierName));
 
                 return new QualifierData(parent, propertyOrMethodName, qualifierName, qualifierSetType); 
             }

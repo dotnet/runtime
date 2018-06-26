@@ -68,7 +68,7 @@
       <Link>Common\System\EnumTypes.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
+      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
     <Compile Include="BlockingCollectionCancellationTests.cs" />
     <Compile Include="BlockingCollectionTests.cs" />

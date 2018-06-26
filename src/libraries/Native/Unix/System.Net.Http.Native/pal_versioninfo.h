@@ -4,11 +4,12 @@
 
 #pragma once
 #include "pal_types.h"
+#include "pal_compiler.h"
 
 /**
 * Constants from curl.h for supported features
 */
-enum CurlFeatures : int32_t
+typedef enum
 {
     PAL_CURL_VERSION_IPV6 =         (1<<0),
     PAL_CURL_VERSION_KERBEROS4 =    (1<<1),
@@ -31,28 +32,28 @@ enum CurlFeatures : int32_t
     PAL_CURL_VERSION_KERBEROS5 =    (1<<18),
     PAL_CURL_VERSION_UNIX_SOCKETS = (1<<19),
     PAL_CURL_VERSION_PSL =          (1<<20),
-};
+} CurlFeatures;
 
 /*
 Gets the features supported by libcurl.
 
 Returns 1 if multiplexing is supported, otherwise 0.
 */
-extern "C" int32_t HttpNative_GetSupportedFeatures();
+DLLEXPORT int32_t HttpNative_GetSupportedFeatures(void);
 
 /*
 Gets the features supported by libcurl.
 
 Returns 1 if multiplexing is supported, otherwise 0.
 */
-extern "C" int32_t HttpNative_GetSupportsHttp2Multiplexing();
+DLLEXPORT int32_t HttpNative_GetSupportsHttp2Multiplexing(void);
 
 /*
 Gets a string description of the version in use.
 */
-extern "C" char* HttpNative_GetVersionDescription();
+DLLEXPORT char* HttpNative_GetVersionDescription(void);
 
 /*
 Gets a string description of the SSL version in use.
 */
-extern "C" char* HttpNative_GetSslVersionDescription();
+DLLEXPORT char* HttpNative_GetSslVersionDescription(void);

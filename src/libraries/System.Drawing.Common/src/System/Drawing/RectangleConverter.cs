@@ -105,7 +105,7 @@ namespace System.Drawing {
         /// </devdoc>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType) {
             if (destinationType == null) {
-                throw new ArgumentNullException("destinationType");
+                throw new ArgumentNullException(nameof(destinationType));
             }
 
             if( value is Rectangle ){
@@ -153,7 +153,7 @@ namespace System.Drawing {
         [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues) {
             if( propertyValues == null ){
-                throw new ArgumentNullException( "propertyValues" );
+                throw new ArgumentNullException( nameof(propertyValues) );
             }
 
             object x = propertyValues["X"];

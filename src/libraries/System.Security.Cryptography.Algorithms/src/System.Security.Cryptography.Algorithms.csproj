@@ -6,8 +6,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.Algorithms</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
-    <NoWarn>CA5351;$(NoWarn)</NoWarn>
+    <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
+    <NoWarn>CS3016;CA5351;$(NoWarn)</NoWarn>
     <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx' or '$(TargetGroup)' == 'net47'">true</IsPartialFacadeAssembly>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'netfx'">true</GenFacadesIgnoreMissingTypes>
@@ -20,6 +20,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+    <DefineConstants>$(DefineConstants);netcoreapp</DefineConstants>
+  </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\AesImplementation.cs" />
     <Compile Include="Internal\Cryptography\DesImplementation.cs" />
@@ -36,6 +39,15 @@
     <Compile Include="System\Security\Cryptography\AsymmetricKeyExchangeFormatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureDeformatter.cs" />
     <Compile Include="System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
+    <Compile Include="System\Security\Cryptography\Asn1\CurveAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Asn1\DSSParms.cs" />
+    <Compile Include="System\Security\Cryptography\Asn1\DsaPrivateKeyAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Asn1\ECDomainParameters.cs" />
+    <Compile Include="System\Security\Cryptography\Asn1\ECPrivateKey.cs" />
+    <Compile Include="System\Security\Cryptography\Asn1\FieldID.cs" />
+    <Compile Include="System\Security\Cryptography\Asn1\RSAPrivateKeyAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Asn1\RSAPublicKeyAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Asn1\SpecifiedECDomain.cs" />
     <Compile Include="System\Security\Cryptography\CryptoConfig.cs" />
     <Compile Include="System\Security\Cryptography\DeriveBytes.cs" />
     <Compile Include="System\Security\Cryptography\DES.cs" />
@@ -107,12 +119,70 @@
     <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoDecryptor.cs">
       <Link>Internal\Cryptography\UniversalCryptoDecryptor.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Memory\PointerMemoryManager.cs">
+      <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.cs">
+      <Link>Common\System\Security\Cryptography\Asn1V2.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.Serializer.cs">
+      <Link>Common\System\Security\Cryptography\Asn1V2.Serializer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnReader.cs">
+      <Link>Common\System\Security\Cryptography\AsnReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnWriter.cs">
+      <Link>Common\System\Security\Cryptography\AsnWriter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\KeyFormatHelper.cs">
+      <Link>Common\System\Security\Cryptography\KeyFormatHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Oids.cs">
+      <Link>Common\System\Security\Cryptography\Oids.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\PasswordBasedEncryption.cs">
+      <Link>Common\System\Security\Cryptography\PasswordBasedEncryption.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Pkcs12Kdf.cs">
+      <Link>Common\System\Security\Cryptography\Pkcs12Kdf.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RsaPaddingProcessor.cs">
       <Link>Common\System\Security\Cryptography\RsaPaddingProcessor.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\AttributeAsn.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\AttributeAsn.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\EncryptedPrivateKeyInfoAsn.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PBEParameter.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\PBEParameter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PBES2Params.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\PBES2Params.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pbkdf2Params.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2Params.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Pbkdf2SaltChoice.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\Rc2CbcParameters.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\Rc2CbcParameters.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.cs">
+      <Link>Common\System\Security\Cryptography\Asn1\SubjectPublicKeyInfoAsn.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Security\Cryptography\CngKeyLite.cs" />
+    <Compile Include="System\Security\Cryptography\CngPkcs8.cs" />
     <Compile Include="System\Security\Cryptography\DSACng.cs" />
     <Compile Include="System\Security\Cryptography\ECCngKey.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaCng.cs" />
@@ -141,11 +211,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Cng.cs">
       <Link>Common\Interop\Windows\BCrypt\Cng.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
-      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs">
+      <Link>Common\CoreLib\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
-      <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
+      <Link>Common\CoreLib\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs</Link>
@@ -260,6 +330,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Internal\Windows\kernel32\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\CngPkcs8.cs">
+      <Link>Common\System\Security\Cryptography\CngPkcs8.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DSACng.cs">
       <Link>Common\System\Security\Cryptography\DSACng.cs</Link>
@@ -549,15 +622,18 @@
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Runtime.Numerics" />

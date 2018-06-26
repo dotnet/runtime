@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
 
         public static new MD5 Create() => new Implementation();
 
-        public static new MD5 Create(String algName) => (MD5)CryptoConfig.CreateFromName(algName);
+        public static new MD5 Create(string algName) => (MD5)CryptoConfig.CreateFromName(algName);
 
         private sealed class Implementation : MD5
         {

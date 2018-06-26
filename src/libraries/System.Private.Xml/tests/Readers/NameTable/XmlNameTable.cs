@@ -32,7 +32,7 @@ namespace System.Xml.Tests
             _TestData = Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlReader");
 
             // Create global usage test files
-            string strFile = String.Empty;
+            string strFile = string.Empty;
             NameTable_TestFiles.CreateTestFile(ref strFile, EREADER_TYPE.GENERIC);
 
             return ret;
@@ -68,7 +68,7 @@ namespace System.Xml.Tests
 
         public static string WRONG_EXCEPTION = "Catching Wrong Exception";
 
-        protected static string BigStr = new String('Z', (1 << 20) - 1);
+        protected static string BigStr = new string('Z', (1 << 20) - 1);
 
         protected XmlReader DataReader;
 
@@ -369,7 +369,7 @@ namespace System.Xml.Tests
             {
                 try
                 {
-                    str = new String('Z', size);
+                    str = new string('Z', size);
                     ach = str.ToCharArray();
                 }
                 catch (OutOfMemoryException exc)
@@ -406,7 +406,7 @@ namespace System.Xml.Tests
         [Variation("Get empty string, valid offset and length = 0", Pri = 0)]
         public int Variation_12()
         {
-            string str = String.Empty;
+            string str = string.Empty;
             char[] ach = str.ToCharArray();
 
             object objActual = DataReader.NameTable.Get(ach, 0, ach.Length);
@@ -414,8 +414,8 @@ namespace System.Xml.Tests
             object objActual2 = DataReader.NameTable.Get(str);
 
             CError.Compare(objActual, objActual1, "Char with StringEmpty");
-            CError.Compare(String.Empty, objActual1, "Char with StringEmpty");
-            CError.Compare(String.Empty, objActual2, "StringEmpty");
+            CError.Compare(string.Empty, objActual1, "Char with StringEmpty");
+            CError.Compare(string.Empty, objActual2, "StringEmpty");
 
             VerifyNameTable(objActual, str, ach, 0, 0);
             return TEST_PASS;
@@ -446,7 +446,7 @@ namespace System.Xml.Tests
             char[] ach = null;
 
             object objActual = DataReader.NameTable.Add(ach, 0, 0);
-            CError.Compare(String.Empty, objActual, "Char with null");
+            CError.Compare(string.Empty, objActual, "Char with null");
             return TEST_PASS;
         }
 
@@ -495,12 +495,12 @@ namespace System.Xml.Tests
 
             CError.WriteLine("Here " + chVal.ToString());
             CError.WriteLine("Here2 " + DataReader.NameTable.Get(chVal, 0, 0));
-            if (DataReader.NameTable.Get(chVal, 0, 0) == String.Empty)
+            if (DataReader.NameTable.Get(chVal, 0, 0) == string.Empty)
                 CError.WriteLine("here");
             if (DataReader.NameTable.Get(chVal, 0, 0) == null)
                 CError.WriteLine("null");
             CError.Compare(objActual, objActual1, CurVariation.Desc);
-            VerifyNameTable(objActual, String.Empty, chVal, 0, 0);
+            VerifyNameTable(objActual, string.Empty, chVal, 0, 0);
             return TEST_PASS;
         }
 
@@ -526,7 +526,7 @@ namespace System.Xml.Tests
         {
             try
             {
-                object objActual = DataReader.NameTable.Get(chVal, 0, Int32.MaxValue);
+                object objActual = DataReader.NameTable.Get(chVal, 0, int.MaxValue);
             }
             catch (IndexOutOfRangeException exc)
             {
@@ -567,7 +567,7 @@ namespace System.Xml.Tests
         {
             try
             {
-                object objActual = DataReader.NameTable.Get(chVal, Int32.MaxValue, chVal.Length);
+                object objActual = DataReader.NameTable.Get(chVal, int.MaxValue, chVal.Length);
             }
             catch (IndexOutOfRangeException exc)
             {
@@ -782,8 +782,8 @@ namespace System.Xml.Tests
             string strTest = BigStr + "X";
 
             char[] chTest = strTest.ToCharArray();
-            Object objActual1 = nt.Add(chTest, 0, chTest.Length);
-            Object objActual2 = nt.Add(chTest, 0, chTest.Length);
+            object objActual1 = nt.Add(chTest, 0, chTest.Length);
+            object objActual2 = nt.Add(chTest, 0, chTest.Length);
 
             CError.Compare(objActual1, objActual2, "Comparing objActual1 and objActual2");
             CError.Compare(objActual1, nt.Get(chTest, 0, chTest.Length), "Comparing objActual1 and GetCharArray");
@@ -802,7 +802,7 @@ namespace System.Xml.Tests
             ReloadSource();
 
             // Add string
-            Object objAdded = DataReader.NameTable.Add(strVal);
+            object objAdded = DataReader.NameTable.Add(strVal);
 
             // Look for permutations of strings, should be null.
             for (int i = 0; i < strPerVal.Length; i++)
@@ -825,7 +825,7 @@ namespace System.Xml.Tests
             ReloadSource();
 
             // Add string
-            Object objAdded = DataReader.NameTable.Add(strVal);
+            object objAdded = DataReader.NameTable.Add(strVal);
 
             // Look for permutations of strings, should be null.
             for (int i = 0; i < strPerValCase.Length; i++)
@@ -949,7 +949,7 @@ namespace System.Xml.Tests
             ReloadSource();
 
             // Add string
-            Object objAdded = DataReader.NameTable.Add(strVal);
+            object objAdded = DataReader.NameTable.Add(strVal);
 
             // Look for permutations of strings, should be null.
             for (int i = 0; i < strPerValCase.Length; i++)
@@ -971,7 +971,7 @@ namespace System.Xml.Tests
         {
             ReloadSource();
 
-            string strEmpty = String.Empty;
+            string strEmpty = string.Empty;
 
             object objAdded = DataReader.NameTable.Add(strEmpty);
             object objAdded1 = DataReader.NameTable.Add(strEmpty.ToCharArray(), 0, strEmpty.Length);
@@ -1011,7 +1011,7 @@ namespace System.Xml.Tests
         public int Variation_20()
         {
             object objAdded = DataReader.NameTable.Add(null, 0, 0);
-            VerifyNameTable(objAdded, String.Empty, (String.Empty).ToCharArray(), 0, 0);
+            VerifyNameTable(objAdded, string.Empty, (String.Empty).ToCharArray(), 0, 0);
             return TEST_PASS;
         }
 
@@ -1070,7 +1070,7 @@ namespace System.Xml.Tests
         {
             try
             {
-                object objAdded = DataReader.NameTable.Add(chVal, 0, Int32.MaxValue);
+                object objAdded = DataReader.NameTable.Add(chVal, 0, int.MaxValue);
             }
             catch (IndexOutOfRangeException)
             {
@@ -1118,7 +1118,7 @@ namespace System.Xml.Tests
         {
             try
             {
-                object objAdded = DataReader.NameTable.Add(chVal, Int32.MaxValue, chVal.Length);
+                object objAdded = DataReader.NameTable.Add(chVal, int.MaxValue, chVal.Length);
             }
             catch (IndexOutOfRangeException)
             {

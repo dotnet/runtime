@@ -13,7 +13,7 @@ namespace System.Runtime.Caching
 {
     internal class MemoryCacheEntry : MemoryCacheKey
     {
-        private Object _value;
+        private object _value;
         private DateTime _utcCreated;
         private int _state;
         // expiration
@@ -37,7 +37,7 @@ namespace System.Runtime.Caching
             internal Tuple<MemoryCacheStore, MemoryCacheEntry> _updateSentinel; // the MemoryCacheEntry (and its associated store) of the OnUpdateSentinel for this entry, if there is one
         }
 
-        internal Object Value
+        internal object Value
         {
             get { return _value; }
         }
@@ -104,8 +104,8 @@ namespace System.Runtime.Caching
             set { _utcLastUpdateUsage = value; }
         }
 
-        internal MemoryCacheEntry(String key,
-                                  Object value,
+        internal MemoryCacheEntry(string key,
+                                  object value,
                                   DateTimeOffset absExp,
                                   TimeSpan slidingExp,
                                   CacheItemPriority priority,
@@ -115,7 +115,7 @@ namespace System.Runtime.Caching
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
             _utcCreated = DateTime.UtcNow;
             _value = value;
@@ -234,7 +234,7 @@ namespace System.Runtime.Caching
             return !_usageEntryRef.IsInvalid;
         }
 
-        private void OnDependencyChanged(Object state)
+        private void OnDependencyChanged(object state)
         {
             if (State == EntryState.AddedToCache)
             {

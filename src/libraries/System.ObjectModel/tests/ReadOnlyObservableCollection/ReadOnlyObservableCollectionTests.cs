@@ -123,14 +123,14 @@ namespace System.Collections.ObjectModel.Tests
             string[] anArray = new string[] { "one", "two", "three", "four" };
             ReadOnlyObservableCollection<string> readOnlyCol =
                 new ReadOnlyObservableCollection<string>(new ObservableCollection<string>(anArray));
-            int[] iArrInvalidValues = new Int32[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, Int32.MinValue };
+            int[] iArrInvalidValues = new int[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, int.MinValue };
             foreach (var index in iArrInvalidValues)
             {
                 string[] aCopy = new string[anArray.Length];
                 Assert.Throws<ArgumentOutOfRangeException>(() => readOnlyCol.CopyTo(aCopy, index));
             }
 
-            int[] iArrLargeValues = new Int32[] { anArray.Length, Int32.MaxValue, Int32.MaxValue / 2, Int32.MaxValue / 10 };
+            int[] iArrLargeValues = new int[] { anArray.Length, int.MaxValue, int.MaxValue / 2, int.MaxValue / 10 };
             foreach (var index in iArrLargeValues)
             {
                 string[] aCopy = new string[anArray.Length];
@@ -268,7 +268,7 @@ namespace System.Collections.ObjectModel.Tests
         public void Item_get_Tests_Negative()
         {
             // Verify get_Item with index=Int32.MinValue
-            Assert.Throws<ArgumentOutOfRangeException>(() => { T item = _collection[Int32.MinValue]; });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { T item = _collection[int.MinValue]; });
 
             // Verify that the collection was not mutated 
             VerifyReadOnlyCollection(_collection, _expectedItems);

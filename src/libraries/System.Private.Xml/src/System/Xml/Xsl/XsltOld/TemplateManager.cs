@@ -26,8 +26,8 @@ namespace System.Xml.Xsl.XsltOld
                 TemplateAction tx = (TemplateAction)x;
                 TemplateAction ty = (TemplateAction)y;
 
-                Debug.Assert(!Double.IsNaN(tx.Priority));
-                Debug.Assert(!Double.IsNaN(ty.Priority));
+                Debug.Assert(!double.IsNaN(tx.Priority));
+                Debug.Assert(!double.IsNaN(ty.Priority));
 
                 if (tx.Priority == ty.Priority)
                 {

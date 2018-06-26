@@ -88,7 +88,7 @@ namespace System.IO.Packaging
                 Debug.Assert(filter != null, "PackageRelationship filter string cannot be null");
 
                 // Look for empty string or string with just spaces
-                Debug.Assert(filter.Trim() != String.Empty,
+                Debug.Assert(filter.Trim() != string.Empty,
                     "RelationshipType filter cannot be empty string or a string with just spaces");
 
                 _enumerator = enumerator;
@@ -119,7 +119,7 @@ namespace System.IO.Packaging
             /// Gets the current object in the enumerator
             /// </summary>
             /// <value></value>
-            Object IEnumerator.Current
+            object IEnumerator.Current
             {
                 get
                 {
@@ -171,7 +171,7 @@ namespace System.IO.Packaging
                 PackageRelationship r = _enumerator.Current;
 
                 //Case-sensitive comparison
-                if (String.CompareOrdinal(r.RelationshipType, _filter) == 0)
+                if (string.CompareOrdinal(r.RelationshipType, _filter) == 0)
                     return true;
                 else
                     return false;

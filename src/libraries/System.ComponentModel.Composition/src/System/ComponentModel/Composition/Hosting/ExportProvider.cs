@@ -16,8 +16,6 @@ namespace System.ComponentModel.Composition.Hosting
     /// </summary>
     public abstract partial class ExportProvider
     {
-        private static readonly Export[] EmptyExports = new Export[] { };
-
         /// <summary>
         ///     Initializes a new instance of the <see cref="ExportProvider"/> class.
         /// </summary>
@@ -225,7 +223,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             if (exports == null)
             {
-                exports = EmptyExports;
+                exports = Array.Empty<Export>();
             }
 
             return checkResult;

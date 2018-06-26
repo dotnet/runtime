@@ -152,7 +152,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 await cws.CloseAsync(closeStatus, closeDescription, cts.Token);
                 Assert.Equal(closeStatus, cws.CloseStatus);
-                Assert.Equal(true, String.IsNullOrEmpty(cws.CloseStatusDescription));
+                Assert.Equal(true, string.IsNullOrEmpty(cws.CloseStatusDescription));
             }
         }
 

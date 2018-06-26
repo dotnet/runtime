@@ -38,6 +38,7 @@
     <Compile Include="SslStreamNetworkStreamTest.cs" />
     <Compile Include="TransportContextTest.cs" />
     <!-- NegotiateStream Tests -->
+    <Compile Include="NegotiateStreamInvalidOperationTest.cs" />
     <Compile Include="NegotiateStreamStreamToStreamTest.cs" />
     <Compile Include="ServiceNameCollectionTest.cs" />
     <Compile Include="NegotiateStreamKerberosTest.cs" />

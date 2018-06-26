@@ -71,7 +71,7 @@ namespace System.ServiceModel.Syndication
         {
             if (dataContractExtension == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("dataContractExtension");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(dataContractExtension));
             }
             if (dataContractSerializer == null)
             {
@@ -84,7 +84,7 @@ namespace System.ServiceModel.Syndication
         {
             if (xmlSerializerExtension == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("xmlSerializerExtension");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(xmlSerializerExtension));
             }
             if (serializer == null)
             {
@@ -97,7 +97,7 @@ namespace System.ServiceModel.Syndication
         {
             if (xmlReader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("xmlReader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(xmlReader));
             }
             base.Add(new SyndicationElementExtension(xmlReader));
         }
@@ -119,7 +119,7 @@ namespace System.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("serializer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(serializer));
             }
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, serializer, null);
         }
@@ -128,7 +128,7 @@ namespace System.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("serializer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(serializer));
             }
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, null, serializer);
         }
@@ -175,7 +175,7 @@ namespace System.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(item));
             }
             base.InsertItem(index, item);
             // clear the cached buffer if the operation is happening outside the constructor
@@ -199,7 +199,7 @@ namespace System.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(item));
             }
             base.SetItem(index, item);
             // clear the cached buffer if the operation is happening outside the constructor

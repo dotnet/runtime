@@ -34,7 +34,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(TrustRelationshipInformation information)
         {
             if (information == null)
-                throw new ArgumentNullException("information");
+                throw new ArgumentNullException(nameof(information));
 
             return InnerList.Contains(information);
         }
@@ -42,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(TrustRelationshipInformation information)
         {
             if (information == null)
-                throw new ArgumentNullException("information");
+                throw new ArgumentNullException(nameof(information));
 
             return InnerList.IndexOf(information);
         }

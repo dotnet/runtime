@@ -5,10 +5,10 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>
-    ///        Represents the method that will handle the <see langword='CollectionChanged '/>event
-    ///        raised when adding elements to or removing elements from a collection.
-    ///    </para>
+    /// 
+    /// Represents the method that will handle the <see langword='CollectionChanged '/>event
+    /// raised when adding elements to or removing elements from a collection.
+    /// 
     /// </summary>
     public delegate void CollectionChangeEventHandler(object sender, CollectionChangeEventArgs e);
 }

@@ -28,11 +28,14 @@ namespace System.SpanTests
                 // Although Span constrains indexes to 0..2Gb, it does not similarly constrain index * sizeof(T).
                 // Make sure that internal offset calculcations handle the >2Gb case properly.
                 //
-
                 unsafe
                 {
                     if (!AllocationHelper.TryAllocNative((IntPtr)ThreeGiB, out IntPtr memBlock))
+                    {
+                        Console.WriteLine($"Span.Overflow test {nameof(IndexOverflow)} skipped (could not alloc memory).");
                         return; // It's not implausible to believe that a 3gb allocation will fail - if so, skip this test to avoid unnecessary test flakiness.
+
+                    }
 
                     try
                     {
@@ -55,6 +58,97 @@ namespace System.SpanTests
                     finally
                     {
                         AllocationHelper.ReleaseNative(ref memBlock);
+                    }
+                }
+            }
+        }
+
+        // NOTE: SliceStartInt32Overflow test is constrained to run on Windows and MacOSX because it
+        //       causes problems on Linux due to the way deferred memory allocation works.
+        //       On Linux, the allocation can succeed even if there is not enough memory
+        //       but then the test may get killed by the OOM killer at the time the memory
+        //       is accessed which triggers the full memory allocation.
+
+        [Fact]
+        [OuterLoop()]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        public static void SliceStartInt32Overflow()
+        {
+            // If this test is run in a 32-bit process, the 3GB allocation will fail.
+            if (Unsafe.SizeOf<IntPtr>() == sizeof(long))
+            {
+                unsafe
+                {
+                    if (!AllocationHelper.TryAllocNative((IntPtr)ThreeGiB, out IntPtr memory))
+                    {
+                        Console.WriteLine($"Span.Overflow test {nameof(SliceStartInt32Overflow)} skipped (could not alloc memory).");
+                        return;
+                    }
+
+                    try
+                    {
+                        int
+                            GuidThreeGiBLimit = (int)(ThreeGiB / sizeof(Guid)),
+                            GuidTwoGiBLimit = (int)(TwoGiB / sizeof(Guid)),
+                            GuidOneGiBLimit = (int)(OneGiB / sizeof(Guid));
+
+                        Span<Guid> span = new Span<Guid>((void*)memory, GuidThreeGiBLimit);
+                        Guid guid = Guid.NewGuid();
+                        Span<Guid> slice = span.Slice(GuidTwoGiBLimit + 1);
+                        slice[0] = guid;
+                        slice = span.Slice(GuidOneGiBLimit).Slice(1).Slice(GuidOneGiBLimit);
+                        Assert.Equal(guid, slice[0]);
+                    }
+                    finally
+                    {
+                        Marshal.FreeHGlobal(memory);
+                    }
+                }
+            }
+        }
+
+        // NOTE: ReadOnlySliceStartInt32Overflow test is constrained to run on Windows and MacOSX because it
+        //       causes problems on Linux due to the way deferred memory allocation works.
+        //       On Linux, the allocation can succeed even if there is not enough memory
+        //       but then the test may get killed by the OOM killer at the time the memory
+        //       is accessed which triggers the full memory allocation.
+
+        [Fact]
+        [OuterLoop()]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        public static void ReadOnlySliceStartInt32Overflow()
+        {
+            // If this test is run in a 32-bit process, the 3GB allocation will fail.
+            if (Unsafe.SizeOf<IntPtr>() == sizeof(long))
+            {
+                unsafe
+                {
+                    if (!AllocationHelper.TryAllocNative((IntPtr)ThreeGiB, out IntPtr memory))
+                    {
+                        Console.WriteLine($"Span.Overflow test {nameof(ReadOnlySliceStartInt32Overflow)} skipped (could not alloc memory).");
+                        return;
+                    }
+
+                    try
+                    {
+                        int
+                            GuidThreeGiBLimit = (int)(ThreeGiB / sizeof(Guid)),
+                            GuidTwoGiBLimit = (int)(TwoGiB / sizeof(Guid)),
+                            GuidOneGiBLimit = (int)(OneGiB / sizeof(Guid));
+
+                        Span<Guid> mutable = new Span<Guid>((void*)memory, GuidThreeGiBLimit);
+                        ReadOnlySpan<Guid> span = new ReadOnlySpan<Guid>((void*)memory, GuidThreeGiBLimit);
+                        Guid guid = Guid.NewGuid();
+                        ReadOnlySpan<Guid> slice = span.Slice(GuidTwoGiBLimit + 1);
+                        mutable[GuidTwoGiBLimit + 1] = guid;
+                        Assert.Equal(guid, slice[0]);
+
+                        slice = span.Slice(GuidOneGiBLimit).Slice(1).Slice(GuidOneGiBLimit);
+                        Assert.Equal(guid, slice[0]);
+                    }
+                    finally
+                    {
+                        Marshal.FreeHGlobal(memory);
                     }
                 }
             }

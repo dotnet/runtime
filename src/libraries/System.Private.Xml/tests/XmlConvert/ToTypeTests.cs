@@ -232,15 +232,15 @@ namespace System.Xml.Tests
                         break;
                     case "Int16":
                         actual = XmlConvert.ToInt16((string)array0[i]);
-                        expect = (Int16)array1[i];
+                        expect = (short)array1[i];
                         break;
                     case "Int32":
                         actual = XmlConvert.ToInt32((string)array0[i]);
-                        expect = (Int32)array1[i];
+                        expect = (int)array1[i];
                         break;
                     case "Int64":
                         actual = XmlConvert.ToInt64((string)array0[i]);
-                        expect = (Int64)array1[i];
+                        expect = (long)array1[i];
                         break;
                     case "single":
                         actual = XmlConvert.ToSingle((string)array0[i]);
@@ -248,7 +248,7 @@ namespace System.Xml.Tests
                         break;
                     case "sbyte":
                         actual = XmlConvert.ToSByte((string)array0[i]);
-                        expect = (SByte)array1[i];
+                        expect = (sbyte)array1[i];
                         break;
                     case "timespan":
                         actual = XmlConvert.ToTimeSpan((string)array0[i]);
@@ -256,15 +256,15 @@ namespace System.Xml.Tests
                         break;
                     case "uint16":
                         actual = XmlConvert.ToUInt16((string)array0[i]);
-                        expect = (UInt16)array1[i];
+                        expect = (ushort)array1[i];
                         break;
                     case "uint32":
                         actual = XmlConvert.ToUInt32((string)array0[i]);
-                        expect = (UInt32)array1[i];
+                        expect = (uint)array1[i];
                         break;
                     case "uint64":
                         actual = XmlConvert.ToUInt64((string)array0[i]);
-                        expect = (UInt64)array1[i];
+                        expect = (ulong)array1[i];
                         break;
                     case "guid":
                         actual = XmlConvert.ToGuid((string)array0[i]);
@@ -312,7 +312,7 @@ namespace System.Xml.Tests
         public int ToType11()
         {
             object[] array0 = { "145896.2334", "12.3E+2", "  -458.238", "INF", "-INF", "278.62452469864978e-23", "0", "-0", "NaN" };
-            object[] array1 = { 145896.2334, (double)1230, -458.238, Double.PositiveInfinity, Double.NegativeInfinity, 278.62452469864978e-23, (double)0, (double)0, Double.NaN };
+            object[] array1 = { 145896.2334, (double)1230, -458.238, double.PositiveInfinity, double.NegativeInfinity, 278.62452469864978e-23, (double)0, (double)0, double.NaN };
 
             return TestValid(array0, array1, "double");
         }
@@ -329,7 +329,7 @@ namespace System.Xml.Tests
         public int ToType13()
         {
             object[] array0 = { "5896", " -458" };
-            object[] array1 = { (Int16)5896, (Int16)(-458) };
+            object[] array1 = { (short)5896, (short)(-458) };
 
             return TestValid(array0, array1, "Int16");
         }
@@ -362,7 +362,7 @@ namespace System.Xml.Tests
         public int ToType17()
         {
             object[] array0 = { "5896", " -458" };
-            object[] array1 = { (Int64)5896, (Int64)(-458) };
+            object[] array1 = { (long)5896, (long)(-458) };
             return TestValid(array0, array1, "Int64");
         }
 
@@ -378,7 +378,7 @@ namespace System.Xml.Tests
         public int ToType19()
         {
             object[] array0 = { "145896.2334", "12.3E+2", " -458.238", "INF", "-INF", "2.646978e-23", "0", "-0", "NaN" };
-            object[] array1 = { (float)145896.2334, (float)1230, (float)-458.238, Single.PositiveInfinity, Single.NegativeInfinity, (float)2.646978e-23, (float)0, (float)0, Single.NaN };
+            object[] array1 = { (float)145896.2334, (float)1230, (float)-458.238, float.PositiveInfinity, float.NegativeInfinity, (float)2.646978e-23, (float)0, (float)0, float.NaN };
             return TestValid(array0, array1, "single");
         }
 
@@ -401,7 +401,7 @@ namespace System.Xml.Tests
         public int ToType21()
         {
             object[] array0 = { "-1", "124", "127", "0", " -128" };
-            object[] array1 = { (SByte)(-1), (SByte)124, (SByte)127, (SByte)0, (SByte)(-128) };
+            object[] array1 = { (sbyte)(-1), (sbyte)124, (sbyte)127, (sbyte)0, (sbyte)(-128) };
             return TestValid(array0, array1, "sbyte");
         }
 
@@ -433,7 +433,7 @@ namespace System.Xml.Tests
         public int ToType25()
         {
             object[] array0 = { "5896", " 458" };
-            object[] array1 = { (UInt16)5896, (UInt16)458 };
+            object[] array1 = { (ushort)5896, (ushort)458 };
 
             return TestValid(array0, array1, "uint16");
         }
@@ -450,7 +450,7 @@ namespace System.Xml.Tests
         public int ToType27()
         {
             object[] array0 = { "5896", " 458" };
-            object[] array1 = { (UInt32)5896, (UInt32)458 };
+            object[] array1 = { (uint)5896, (uint)458 };
 
             return TestValid(array0, array1, "uint32");
         }
@@ -467,7 +467,7 @@ namespace System.Xml.Tests
         public int ToType29()
         {
             object[] array0 = { "5896", " 458" };
-            object[] array1 = { (UInt64)5896, (UInt64)458 };
+            object[] array1 = { (ulong)5896, (ulong)458 };
             return TestValid(array0, array1, "uint64");
         }
 
@@ -517,11 +517,11 @@ namespace System.Xml.Tests
         public int ToType34()
         {
             CError.Compare(XmlConvert.ToString((float)(-4582.24)), "-4582.24", "float");
-            CError.Compare(XmlConvert.ToString(Single.PositiveInfinity), "INF", "float");
-            CError.Compare(XmlConvert.ToString(Single.NegativeInfinity), "-INF", "float");
+            CError.Compare(XmlConvert.ToString(float.PositiveInfinity), "INF", "float");
+            CError.Compare(XmlConvert.ToString(float.NegativeInfinity), "-INF", "float");
             CError.Compare(XmlConvert.ToString((float)2.646978e-23), "2.646978E-23", "float");
             CError.Compare(XmlConvert.ToString((float)0), "0", "float");
-            CError.Compare(XmlConvert.ToString(Single.NaN), "NaN", "float");
+            CError.Compare(XmlConvert.ToString(float.NaN), "NaN", "float");
             CError.Compare(XmlConvert.ToString((float)-0), "0", "float");
             return TEST_PASS;
         }
@@ -531,11 +531,11 @@ namespace System.Xml.Tests
         {
             // double
             CError.Compare(XmlConvert.ToString(-4582.24), "-4582.24", "double");
-            CError.Compare(XmlConvert.ToString(Double.PositiveInfinity), "INF", "double");
-            CError.Compare(XmlConvert.ToString(Double.NegativeInfinity), "-INF", "double");
+            CError.Compare(XmlConvert.ToString(double.PositiveInfinity), "INF", "double");
+            CError.Compare(XmlConvert.ToString(double.NegativeInfinity), "-INF", "double");
             CError.Compare(XmlConvert.ToString(243.657745094698e-23), "2.43657745094698E-21", "double");
             CError.Compare(XmlConvert.ToString((double)0), "0", "double");
-            CError.Compare(XmlConvert.ToString(Double.NaN), "NaN", "double");
+            CError.Compare(XmlConvert.ToString(double.NaN), "NaN", "double");
             CError.Compare(XmlConvert.ToString((double)-0), "0", "double");
             return TEST_PASS;
         }
@@ -596,11 +596,11 @@ namespace System.Xml.Tests
         //[Variation("ToString(int16, in32, int64, uint32, uint64) - valid cases")]
         public int ToType40a()
         {
-            CError.Compare(XmlConvert.ToString(UInt64.MaxValue), "18446744073709551615", "UInt64.MaxValue");
-            CError.Compare(XmlConvert.ToString(UInt32.MaxValue), "4294967295", "UInt32.MaxValue");
-            CError.Compare(XmlConvert.ToString(Int64.MaxValue), "9223372036854775807", "Int64.MaxValue");
-            CError.Compare(XmlConvert.ToString(Int32.MaxValue), "2147483647", "Int32.MaxValue");
-            CError.Compare(XmlConvert.ToString(Int16.MaxValue), "32767", "Int16.MaxValue");
+            CError.Compare(XmlConvert.ToString(ulong.MaxValue), "18446744073709551615", "UInt64.MaxValue");
+            CError.Compare(XmlConvert.ToString(uint.MaxValue), "4294967295", "UInt32.MaxValue");
+            CError.Compare(XmlConvert.ToString(long.MaxValue), "9223372036854775807", "Int64.MaxValue");
+            CError.Compare(XmlConvert.ToString(int.MaxValue), "2147483647", "Int32.MaxValue");
+            CError.Compare(XmlConvert.ToString(short.MaxValue), "32767", "Int16.MaxValue");
             return TEST_PASS;
         }
 
@@ -629,21 +629,21 @@ namespace System.Xml.Tests
             // DateTime
             DateTime dt = new DateTime(2002, 12, 30, 23, 15, 55, 100);
             string expDateTime = (TimeZoneInfo.Local.GetUtcOffset(dt).Hours < 0) ?
-                String.Format("2002-12-30T23:15:55.1-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
-                String.Format("2002-12-30T23:15:55.1+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
+                string.Format("2002-12-30T23:15:55.1-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
+                string.Format("2002-12-30T23:15:55.1+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
             CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Local), expDateTime, "datetime1");
             dt = new DateTime(1, 1, 1, 23, 59, 59);
             dt = dt.AddTicks(9999999);
             expDateTime = (TimeZoneInfo.Local.GetUtcOffset(dt).Hours < 0) ?
-                String.Format("0001-01-01T23:59:59.9999999-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
-                String.Format("0001-01-01T23:59:59.9999999+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
+                string.Format("0001-01-01T23:59:59.9999999-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
+                string.Format("0001-01-01T23:59:59.9999999+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
             CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Local), expDateTime, "millisecs");
 
             // new 05/2002
             dt = new DateTime(2002, 12, 30, 23, 15, 55);
             expDateTime = (TimeZoneInfo.Local.GetUtcOffset(dt).Hours < 0) ?
-                String.Format("2002-12-30T23:15:55-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
-                String.Format("2002-12-30T23:15:55+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
+                string.Format("2002-12-30T23:15:55-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
+                string.Format("2002-12-30T23:15:55+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
             CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Local), expDateTime, "datetime2");
 
             // Read in Universal Time 
@@ -653,8 +653,8 @@ namespace System.Xml.Tests
             if (TimeZoneInfo.Local.GetUtcOffset(dt).Hours == -8 || TimeZoneInfo.Local.GetUtcOffset(dt).Hours == 9)
             {   // only -08:00 and 09:00 works
                 expDateTime = (TimeZoneInfo.Local.GetUtcOffset(dt).Hours < 0) ?
-                    String.Format("2002-12-30T23:15:55-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dtLocal).Hours)) :
-                    String.Format("2002-12-31T16:15:55+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dtLocal).Hours));
+                    string.Format("2002-12-30T23:15:55-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dtLocal).Hours)) :
+                    string.Format("2002-12-31T16:15:55+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dtLocal).Hours));
                 CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Local), expDateTime, "Read in Universal Time");
             }
 
@@ -664,16 +664,16 @@ namespace System.Xml.Tests
             if (TimeZoneInfo.Local.GetUtcOffset(dt).Hours == -8 || TimeZoneInfo.Local.GetUtcOffset(dt).Hours == 9)
             {   // only -08:00 and 09:00 works
                 expDateTime = (TimeZoneInfo.Local.GetUtcOffset(dt).Hours < 0) ?
-                    String.Format("2002-12-30T23:15:55-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
-                    String.Format("2002-12-31T16:15:55+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
+                    string.Format("2002-12-30T23:15:55-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
+                    string.Format("2002-12-31T16:15:55+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
                 CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Local), expDateTime, "Read in Local Time");
             }
             // Read in Unspecified Time 
             dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000", XmlDateTimeSerializationMode.RoundtripKind);
             expDateTime = (TimeZoneInfo.Local.GetUtcOffset(dt).Hours < 0) ?
-                String.Format("2002-12-31T07:15:55-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
-                String.Format("2002-12-31T07:15:55+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
+                string.Format("2002-12-31T07:15:55-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
+                string.Format("2002-12-31T07:15:55+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
             CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Local), expDateTime, "Read in UnSpecified Time");
             return TEST_PASS;
         }
@@ -685,7 +685,7 @@ namespace System.Xml.Tests
             DateTime dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000Z", XmlDateTimeSerializationMode.RoundtripKind);
             CError.Compare(dt.Kind, DateTimeKind.Utc, "Utc expected");
-            String expDateTime = "2002-12-31T07:15:55Z";
+            string expDateTime = "2002-12-31T07:15:55Z";
             CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.RoundtripKind), expDateTime, "Read in Universal Time");
 
             // Read in Local Time 
@@ -695,8 +695,8 @@ namespace System.Xml.Tests
             {
                 CError.Equals(dt.Kind, DateTimeKind.Local, "Local expected");
                 expDateTime = (TimeZoneInfo.Local.GetUtcOffset(dt).Hours < 0) ?
-                    String.Format("2002-12-30T23:15:55-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
-                    String.Format("2002-12-31T16:15:55+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
+                    string.Format("2002-12-30T23:15:55-0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours)) :
+                    string.Format("2002-12-31T16:15:55+0{0}:00", Math.Abs(TimeZoneInfo.Local.GetUtcOffset(dt).Hours));
                 CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.RoundtripKind), expDateTime, "Read in Local Time");
             }
 
@@ -716,7 +716,7 @@ namespace System.Xml.Tests
             DateTime dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55", XmlDateTimeSerializationMode.RoundtripKind);
             CError.Compare(dt.Kind, DateTimeKind.Unspecified, "Utc expected");
-            String expDateTime = "2002-12-31T07:15:55Z";
+            string expDateTime = "2002-12-31T07:15:55Z";
             CError.Compare(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Utc), expDateTime, "Read in Universal Time");
 
             // Read in Local Time 
@@ -742,7 +742,7 @@ namespace System.Xml.Tests
             DateTime dt = new DateTime();
             dt = XmlConvert.ToDateTime("2002-12-31T07:15:55.0000000Z", XmlDateTimeSerializationMode.RoundtripKind);
             CError.Equals(dt.Kind, DateTimeKind.Utc, "Utc expected");
-            String expDateTime = "2002-12-31T07:15:55";
+            string expDateTime = "2002-12-31T07:15:55";
             CError.Equals(XmlConvert.ToString(dt, XmlDateTimeSerializationMode.Unspecified), expDateTime, "Read in Universal Time");
 
             // Read in Local Time 

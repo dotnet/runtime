@@ -114,7 +114,7 @@ namespace System.Numerics.Tests
             return MyBigIntImp.GetNonZeroRandomByteArray(random, size);
         }
 
-        private static String Print(byte[] bytes)
+        private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);
         }

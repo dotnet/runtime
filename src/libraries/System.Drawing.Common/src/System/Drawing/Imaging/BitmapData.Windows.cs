@@ -81,7 +81,7 @@ namespace System.Drawing.Imaging
                     case PixelFormat.Format64bppArgb:
                         break;
                     default:
-                        throw new System.ComponentModel.InvalidEnumArgumentException("value", unchecked((int)value), typeof(PixelFormat));
+                        throw new System.ComponentModel.InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(PixelFormat));
                 }
 
 

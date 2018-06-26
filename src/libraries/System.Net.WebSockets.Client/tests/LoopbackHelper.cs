@@ -27,6 +27,7 @@ namespace System.Net.WebSockets.Client.Tests
                         string responseSecurityAcceptValue = ComputeWebSocketHandshakeSecurityAcceptValue(headerValue);
                         serverResponse =
                             "HTTP/1.1 101 Switching Protocols\r\n" +
+                            "Content-Length: 0\r\n" +
                             "Upgrade: websocket\r\n" +
                             "Connection: Upgrade\r\n" +
                             "Sec-WebSocket-Accept: " + responseSecurityAcceptValue + "\r\n\r\n";

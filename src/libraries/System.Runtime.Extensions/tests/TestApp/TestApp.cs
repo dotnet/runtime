@@ -8,12 +8,12 @@ using System.Threading;
 
 internal static class Program
 {
-    public static int Main(String[] args)
+    public static int Main(string[] args)
     {
         int sum = 5;
         for(int i = 0; args != null && i < args.Length; i++)
         {
-            sum += Int32.Parse(args[i]);
+            sum += int.Parse(args[i]);
         }
         return sum;
     }

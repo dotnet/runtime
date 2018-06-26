@@ -790,7 +790,7 @@ namespace System.Numerics
         public override string ToString()
         {
             CultureInfo ci = CultureInfo.CurrentCulture;
-            return String.Format(ci, "{{ {{M11:{0} M12:{1}}} {{M21:{2} M22:{3}}} {{M31:{4} M32:{5}}} }}",
+            return string.Format(ci, "{{ {{M11:{0} M12:{1}}} {{M21:{2} M22:{3}}} {{M31:{4} M32:{5}}} }}",
                                  M11.ToString(ci), M12.ToString(ci),
                                  M21.ToString(ci), M22.ToString(ci),
                                  M31.ToString(ci), M32.ToString(ci));

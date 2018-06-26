@@ -20,7 +20,7 @@ namespace System.Collections.Specialized
         private int count; // Do not rename (binary serialization)
         private readonly IComparer comparer; // Do not rename (binary serialization)
         [NonSerialized]
-        private Object _syncRoot;
+        private object _syncRoot;
 
         public ListDictionary()
         {
@@ -152,7 +152,7 @@ namespace System.Collections.Specialized
             {
                 if (_syncRoot == null)
                 {
-                    System.Threading.Interlocked.CompareExchange(ref _syncRoot, new Object(), null);
+                    System.Threading.Interlocked.CompareExchange(ref _syncRoot, new object(), null);
                 }
                 return _syncRoot;
             }

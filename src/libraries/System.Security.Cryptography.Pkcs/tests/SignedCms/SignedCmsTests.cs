@@ -923,5 +923,183 @@ namespace System.Security.Cryptography.Pkcs.Tests
             // Assert.NoThrow
             cms.CheckSignature(true);
         }
+
+        [Fact]
+        public static void SignerInfoCollection_Indexer_MinusOne ()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => cms.SignerInfos[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>(() => cms.SignerInfos[1]);
+        }
+
+        [Theory]
+        [InlineData(SubjectIdentifierType.IssuerAndSerialNumber)]
+        [InlineData(SubjectIdentifierType.SubjectKeyIdentifier)]
+        public static void SignEnveloped(SubjectIdentifierType signerType)
+        {
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            {
+                EnvelopedCms envelopedCms = new EnvelopedCms(new ContentInfo(new byte[] { 3 }));
+                envelopedCms.Encrypt(new CmsRecipient(signerType, cert));
+                
+                SignedCms signedCms = new SignedCms(
+                    new ContentInfo(new Oid(Oids.Pkcs7Enveloped), envelopedCms.Encode()));
+
+                signedCms.ComputeSignature(new CmsSigner(cert));
+                signedCms.CheckSignature(true);
+
+                SignerInfoCollection signers = signedCms.SignerInfos;
+                Assert.Equal(1, signers.Count);
+
+                CryptographicAttributeObjectCollection attrs = signers[0].SignedAttributes;
+                Assert.Equal(2, attrs.Count);
+
+                CryptographicAttributeObject firstAttrSet = attrs[0];
+                Assert.Equal(Oids.ContentType, firstAttrSet.Oid.Value);
+                Assert.Equal(1, firstAttrSet.Values.Count);
+                Assert.Equal(Oids.ContentType, firstAttrSet.Values[0].Oid.Value);
+                Assert.Equal("06092A864886F70D010703", firstAttrSet.Values[0].RawData.ByteArrayToHex());
+
+                CryptographicAttributeObject secondAttrSet = attrs[1];
+                Assert.Equal(Oids.MessageDigest, secondAttrSet.Oid.Value);
+                Assert.Equal(1, secondAttrSet.Values.Count);
+                Assert.Equal(Oids.MessageDigest, secondAttrSet.Values[0].Oid.Value);
+            }
+        }
+
+        [Theory]
+        [InlineData(Oids.Pkcs7Data, "0102", false)]
+        // NetFX PKCS7: The length exceeds the payload, so this fails.
+        [InlineData("0.0", "0102", true)]
+        [InlineData("0.0", "04020102", false)]
+        // NetFX PKCS7: The payload exceeds the length, so this fails.
+        [InlineData("0.0", "0402010203", true)]
+        [InlineData("0.0", "010100", false)]
+        [InlineData(Oids.Pkcs7Hashed, "010100", false)]
+        [InlineData(Oids.Pkcs7Hashed, "3000", false)]
+        public static void SignIdentifiedContent(string oidValue, string contentHex, bool netfxProblem)
+        {
+            SignedCms signedCms = new SignedCms(
+                new ContentInfo(new Oid(oidValue, "Some Friendly Name"), contentHex.HexToByteArray()));
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            {
+                try
+                {
+                    signedCms.ComputeSignature(new CmsSigner(cert));
+                }
+                catch (CryptographicException) when (netfxProblem)
+                {
+                    // When no signed or unsigned attributes are present and the signer uses
+                    // IssuerAndSerial as the identifier type, NetFx uses an older PKCS7 encoding
+                    // of the current CMS one.  The older encoding fails on these inputs because of a
+                    // difference in PKCS7 vs CMS encoding of values using types other than Pkcs7Data.
+                    return;
+                }
+
+                byte[] encoded = signedCms.Encode();
+                signedCms.Decode(encoded);
+            }
+
+            // Assert.NoThrows
+            signedCms.CheckSignature(true);
+
+            Assert.Equal(oidValue, signedCms.ContentInfo.ContentType.Value);
+            Assert.Equal(contentHex, signedCms.ContentInfo.Content.ByteArrayToHex());
+        }
+
+        [Theory]
+        [InlineData(null, "0102", Oids.Pkcs7Data)]
+        [InlineData(null, "010100", Oids.Pkcs7Data)]
+        [InlineData("potato", "010100", null)]
+        [InlineData(" 1.1", "010100", null)]
+        [InlineData("1.1 ", "010100", null)]
+        [InlineData("1 1", "010100", null)]
+        public static void SignIdentifiedContent_BadOid(string oidValueIn, string contentHex, string oidValueOut)
+        {
+            SignedCms signedCms = new SignedCms(
+                new ContentInfo(new Oid(oidValueIn, "Some Friendly Name"), contentHex.HexToByteArray()));
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            {
+                Action signAction = () => signedCms.ComputeSignature(new CmsSigner(cert));
+
+                if (oidValueOut == null)
+                {
+                    Assert.ThrowsAny<CryptographicException>(signAction);
+                    return;
+                }
+
+                signAction();
+
+                byte[] encoded = signedCms.Encode();
+                signedCms.Decode(encoded);
+            }
+
+            // Assert.NoThrows
+            signedCms.CheckSignature(true);
+
+            Assert.Equal(oidValueOut, signedCms.ContentInfo.ContentType.Value);
+            Assert.Equal(contentHex, signedCms.ContentInfo.Content.ByteArrayToHex());
+        }
+
+        [Fact]
+        public static void CheckSignedEncrypted_IssuerSerial_FromNetFx()
+        {
+            CheckSignedEncrypted(
+                SignedDocuments.SignedCmsOverEnvelopedCms_IssuerSerial_NetFx,
+                SubjectIdentifierType.IssuerAndSerialNumber);
+        }
+
+        [Fact]
+        public static void CheckSignedEncrypted_SKID_FromNetFx()
+        {
+            CheckSignedEncrypted(
+                SignedDocuments.SignedCmsOverEnvelopedCms_SKID_NetFx,
+                SubjectIdentifierType.SubjectKeyIdentifier);
+        }
+
+        [Fact]
+        public static void CheckSignedEncrypted_IssuerSerial_FromCoreFx()
+        {
+            CheckSignedEncrypted(
+                SignedDocuments.SignedCmsOverEnvelopedCms_IssuerSerial_CoreFx,
+                SubjectIdentifierType.IssuerAndSerialNumber);
+        }
+
+        [Fact]
+        public static void CheckSignedEncrypted_SKID_FromCoreFx()
+        {
+            CheckSignedEncrypted(
+                SignedDocuments.SignedCmsOverEnvelopedCms_SKID_CoreFx,
+                SubjectIdentifierType.SubjectKeyIdentifier);
+        }
+
+        private static void CheckSignedEncrypted(byte[] docBytes, SubjectIdentifierType expectedType)
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(docBytes);
+
+            Assert.Equal(Oids.Pkcs7Enveloped, signedCms.ContentInfo.ContentType.Value);
+
+            SignerInfoCollection signers = signedCms.SignerInfos;
+            Assert.Equal(1, signers.Count);
+            Assert.Equal(expectedType, signers[0].SignerIdentifier.Type);
+
+            // Assert.NotThrows
+            signedCms.CheckSignature(true);
+
+            EnvelopedCms envelopedCms = new EnvelopedCms();
+            envelopedCms.Decode(signedCms.ContentInfo.Content);
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            {
+                envelopedCms.Decrypt(new X509Certificate2Collection(cert));
+            }
+
+            Assert.Equal("42", envelopedCms.ContentInfo.Content.ByteArrayToHex());
+        }
     }
 }

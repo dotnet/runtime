@@ -122,13 +122,13 @@ namespace System.Management
         /// </summary>
         /// <param name='array'>The array to which to copy the <see cref='System.Management.PropertyDataCollection'/>. </param>
         /// <param name='index'>The index from which to start copying. </param>
-        public void CopyTo(Array array, Int32 index) 
+        public void CopyTo(Array array, int index) 
         {
             if (null == array)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
 
             if ((index < array.GetLowerBound(0)) || (index > array.GetUpperBound(0)))
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             // Get the names of the properties 
             string[] nameArray = null;
@@ -147,7 +147,7 @@ namespace System.Management
             if (status >= 0)
             {
                 if ((index + nameArray.Length) > array.Length)
-                    throw new ArgumentException(null,"index");
+                    throw new ArgumentException(null,nameof(index));
 
                 foreach (string propertyName in nameArray)
                     array.SetValue(new PropertyData(parent, propertyName), index++);
@@ -170,7 +170,7 @@ namespace System.Management
         /// </summary>
         /// <param name='propertyArray'>The destination array to contain the copied <see cref='System.Management.PropertyDataCollection'/>.</param>
         /// <param name=' index'>The index in the destination array from which to start copying.</param>
-        public void CopyTo(PropertyData[] propertyArray, Int32 index)
+        public void CopyTo(PropertyData[] propertyArray, int index)
         {
             CopyTo((Array)propertyArray, index);	
         }
@@ -342,7 +342,7 @@ namespace System.Management
         {
             get { 
                 if (null == propertyName)
-                    throw new ArgumentNullException("propertyName");
+                    throw new ArgumentNullException(nameof(propertyName));
 
                 return new PropertyData(parent, propertyName);
             }
@@ -402,10 +402,10 @@ namespace System.Management
         ///       in
         ///       a <see cref='System.Management.ManagementClass'/>.</para>
         /// </remarks>
-        public virtual void Add(string propertyName, Object propertyValue)
+        public virtual void Add(string propertyName, object propertyValue)
         {
             if (null == propertyValue)
-                throw new ArgumentNullException("propertyValue");
+                throw new ArgumentNullException(nameof(propertyValue));
 
             if (parent.GetType() == typeof(ManagementObject)) //can't add properties to instance
                 throw new InvalidOperationException();
@@ -441,10 +441,10 @@ namespace System.Management
         ///       in
         ///       a <see cref='System.Management.ManagementClass'/>.</para>
         /// </remarks>
-        public void Add(string propertyName, Object propertyValue, CimType propertyType)
+        public void Add(string propertyName, object propertyValue, CimType propertyType)
         {
             if (null == propertyName)
-                throw new ArgumentNullException("propertyName");
+                throw new ArgumentNullException(nameof(propertyName));
 
             if (parent.GetType() == typeof(ManagementObject)) //can't add properties to instance
                 throw new InvalidOperationException();

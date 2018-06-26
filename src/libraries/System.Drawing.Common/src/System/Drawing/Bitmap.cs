@@ -4,10 +4,8 @@
 
 using System.ComponentModel;
 using System.Drawing.Imaging;
-using System.Drawing.Internal;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
 
 namespace System.Drawing
 {
@@ -238,9 +236,9 @@ namespace System.Drawing
 
         public BitmapData LockBits(Rectangle rect, ImageLockMode flags, PixelFormat format, BitmapData bitmapData)
         {
-            var gprect = new GPRECT(rect);
-            int status = SafeNativeMethods.Gdip.GdipBitmapLockBits(new HandleRef(this, nativeImage), ref gprect,
-                                                    flags, format, bitmapData);
+            int status = SafeNativeMethods.Gdip.GdipBitmapLockBits(
+                new HandleRef(this, nativeImage), ref rect, flags, format, bitmapData);
+
             // libgdiplus has the wrong error code mapping for this state.
             if (status == 7)
             {

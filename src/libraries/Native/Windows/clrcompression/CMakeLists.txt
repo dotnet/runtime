@@ -23,6 +23,7 @@ if($ENV{__BuildArch} STREQUAL x86 OR $ENV{__BuildArch} STREQUAL x64)
         zlib/inffast.c
         zlib/inflate.c
         zlib/inftrees.c
+        ../../AnyOS/zlib/pal_zlib.c
 )
 elseif($ENV{__BuildArch} STREQUAL arm OR $ENV{__BuildArch} STREQUAL arm64)
     set(NATIVECOMPRESSION_SOURCES
@@ -35,6 +36,7 @@ elseif($ENV{__BuildArch} STREQUAL arm OR $ENV{__BuildArch} STREQUAL arm64)
         zlib/inftrees.c
         zlib/trees.c
         zlib/zutil.c
+        ../../AnyOS/zlib/pal_zlib.c
     )
 endif()
 
@@ -75,13 +77,6 @@ endif()
 if ($ENV{__VSVersion} STREQUAL vs2015)
     add_definitions(-DHAVE_VSNPRINTF)
 endif ()
-
-if(__LinkCustomCRT STREQUAL true)
-    set(NATIVECOMPRESSION_SOURCES
-        ${NATIVECOMPRESSION_SOURCES}
-        crt.cpp
-    )
-endif()
 
 # Include 'bin/obj' dir since it contains _version.h
 include_directories("${CMAKE_BINARY_DIR}/../../")

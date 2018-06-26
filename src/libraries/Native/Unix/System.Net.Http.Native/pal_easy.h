@@ -5,6 +5,7 @@
 #pragma once
 
 #include "pal_types.h"
+#include "pal_compiler.h"
 
 #include <curl/curl.h>
 
@@ -15,7 +16,7 @@ enum
     CurlOptionOffTBase = 30000,
 };
 
-enum PAL_CURLoption : int32_t
+typedef enum
 {
     PAL_CURLOPT_INFILESIZE = CurlOptionLongBase + 14,
     PAL_CURLOPT_SSLVERSION = CurlOptionLongBase + 32,
@@ -59,16 +60,16 @@ enum PAL_CURLoption : int32_t
 
     PAL_CURLOPT_INFILESIZE_LARGE = CurlOptionOffTBase + 115,
     PAL_CURLOPT_POSTFIELDSIZE_LARGE = CurlOptionOffTBase + 120,
-};
+} PAL_CURLoption;
 
-enum class ReadWriteFunction : int32_t
+typedef enum
 {
     Write = 0,
     Read = 1,
     Header = 2,
-};
+} ReadWriteFunction;
 
-enum PAL_CURLcode : int32_t
+typedef enum
 {
     PAL_CURLE_OK = 0,
     PAL_CURLE_UNSUPPORTED_PROTOCOL = 1,
@@ -81,7 +82,7 @@ enum PAL_CURLcode : int32_t
     PAL_CURLE_UNKNOWN_OPTION = 48,
     PAL_CURLE_RECV_ERROR = 56,
     PAL_CURLE_SEND_FAIL_REWIND = 65,
-};
+} PAL_CURLcode;
 
 enum
 {
@@ -89,15 +90,15 @@ enum
     CurlInfoLongBase = 0x200000,
 };
 
-enum PAL_CURL_HTTP_VERSION
+typedef enum
 {
     PAL_CURL_HTTP_VERSION_NONE = 0,
     PAL_CURL_HTTP_VERSION_1_0 = 1,
     PAL_CURL_HTTP_VERSION_1_1 = 2,
     PAL_CURL_HTTP_VERSION_2TLS = 4
-};
+} PAL_CURL_HTTP_VERSION;
 
-enum PAL_CURL_SSLVERSION
+typedef enum
 {
     PAL_CURL_SSLVERSION_TLSv1 = 1,
     PAL_CURL_SSLVERSION_SSLv2 = 2,
@@ -105,43 +106,43 @@ enum PAL_CURL_SSLVERSION
     PAL_CURL_SSLVERSION_TLSv1_0 = 4,
     PAL_CURL_SSLVERSION_TLSv1_1 = 5,
     PAL_CURL_SSLVERSION_TLSv1_2 = 6,
-};
+} PAL_CURL_SSLVERSION;
 
-enum PAL_CURLINFO : int32_t
+typedef enum
 {
     PAL_CURLINFO_EFFECTIVE_URL = CurlInfoStringBase + 1,
     PAL_CURLINFO_PRIVATE = CurlInfoStringBase + 21,
     PAL_CURLINFO_HTTPAUTH_AVAIL = CurlInfoLongBase + 23,
-};
+} PAL_CURLINFO;
 
-enum PAL_CURLAUTH : int64_t
+typedef enum
 {
     PAL_CURLAUTH_None = 0,
     PAL_CURLAUTH_Basic = 1 << 0,
     PAL_CURLAUTH_Digest = 1 << 1,
     PAL_CURLAUTH_Negotiate = 1 << 2,
     PAL_CURLAUTH_NTLM = 1 << 3,
-};
+} PAL_CURLAUTH;
 
-enum PAL_CURLPROXYTYPE : int32_t
+typedef enum
 {
     PAL_CURLPROXY_HTTP = 0,
-};
+} PAL_CURLPROXYTYPE;
 
-enum PAL_CURLPROTO : int32_t
+typedef enum
 {
     PAL_CURLPROTO_HTTP = (1 << 0),
     PAL_CURLPROTO_HTTPS = (1 << 1),
-};
+} PAL_CURLPROTO;
 
-enum PAL_CurlSeekResult : int32_t
+typedef enum
 {
     PAL_CURL_SEEKFUNC_OK = 0,
     PAL_CURL_SEEKFUNC_FAIL = 1,
     PAL_CURL_SEEKFUNC_CANTSEEK = 2,
-};
+} PAL_CurlSeekResult;
 
-enum PAL_CurlInfoType : int32_t 
+typedef enum
 {
     PAL_CURLINFO_TEXT = 0,
     PAL_CURLINFO_HEADER_IN = 1,
@@ -150,20 +151,21 @@ enum PAL_CurlInfoType : int32_t
     PAL_CURLINFO_DATA_OUT = 4,
     PAL_CURLINFO_SSL_DATA_IN = 5,
     PAL_CURLINFO_SSL_DATA_OUT = 6,
+} PAL_CurlInfoType;
+
+enum {
+    PAL_CURL_READFUNC_ABORT = 0x10000000,
+    PAL_CURL_READFUNC_PAUSE = 0x10000001,
+    PAL_CURL_WRITEFUNC_PAUSE = 0x10000001,
+    PAL_CURL_MAX_HTTP_HEADER = 100 * 1024
 };
-
-const uint64_t PAL_CURL_READFUNC_ABORT = 0x10000000;
-const uint64_t PAL_CURL_READFUNC_PAUSE = 0x10000001;
-const uint64_t PAL_CURL_WRITEFUNC_PAUSE = 0x10000001;
-
-const uint64_t PAL_CURL_MAX_HTTP_HEADER = 100 * 1024;
 
 /*
 Creates a new CURL instance.
 
 Returns the new CURL instance or nullptr if something went wrong.
 */
-extern "C" CURL* HttpNative_EasyCreate();
+DLLEXPORT CURL* HttpNative_EasyCreate(void);
 
 /*
 Cleans up and deletes a CURL instance.
@@ -171,42 +173,42 @@ Cleans up and deletes a CURL instance.
 No-op if handle is null.
 The given CURL pointer is invalid after this call.
 */
-extern "C" void HttpNative_EasyDestroy(CURL* handle);
+DLLEXPORT void HttpNative_EasyDestroy(CURL* handle);
 
 /*
 Shims the curl_easy_setopt function, which takes a variable number of
 arguments, but must be a long, a function pointer, an object pointer or a curl_off_t,
 depending on what option is supplied.
 */
-extern "C" int32_t HttpNative_EasySetOptionString(CURL* handle, PAL_CURLoption option, const char* value);
-extern "C" int32_t HttpNative_EasySetOptionLong(CURL* handle, PAL_CURLoption option, int64_t value);
-extern "C" int32_t HttpNative_EasySetOptionPointer(CURL* handle, PAL_CURLoption option, void* value);
+DLLEXPORT int32_t HttpNative_EasySetOptionString(CURL* handle, PAL_CURLoption option, const char* value);
+DLLEXPORT int32_t HttpNative_EasySetOptionLong(CURL* handle, PAL_CURLoption option, int64_t value);
+DLLEXPORT int32_t HttpNative_EasySetOptionPointer(CURL* handle, PAL_CURLoption option, void* value);
 
 /*
 Returns a string describing the CURLcode error code.
 */
-extern "C" const char* HttpNative_EasyGetErrorString(PAL_CURLcode code);
+DLLEXPORT const char* HttpNative_EasyGetErrorString(PAL_CURLcode code);
 
 /*
 Shims the curl_easy_setopt function, which takes a variable number of
 arguments.
 */
-extern "C" int32_t HttpNative_EasyGetInfoPointer(CURL* handle, PAL_CURLINFO info, void** value);
-extern "C" int32_t HttpNative_EasyGetInfoLong(CURL* handle, PAL_CURLINFO info, int64_t* value);
+DLLEXPORT int32_t HttpNative_EasyGetInfoPointer(CURL* handle, PAL_CURLINFO info, void** value);
+DLLEXPORT int32_t HttpNative_EasyGetInfoLong(CURL* handle, PAL_CURLINFO info, int64_t* value);
 
 /*
 Shims the curl_easy_perform function.
 
 Returns CURLE_OK (0) if everything was ok, non-zero means an error occurred.
 */
-extern "C" int32_t HttpNative_EasyPerform(CURL* handle);
+DLLEXPORT int32_t HttpNative_EasyPerform(CURL* handle);
 
 /*
 Unpauses the CURL request.
 
 Returns CURLE_OK (0) if everything was ok, non-zero means an error occurred.
 */
-extern "C" int32_t HttpNative_EasyUnpause(CURL* handle);
+DLLEXPORT int32_t HttpNative_EasyUnpause(CURL* handle);
 
 // the function pointer definition for the callback used in RegisterSeekCallback
 typedef int32_t (*SeekCallback)(void* userPointer, int64_t offset, int32_t origin);
@@ -224,7 +226,7 @@ typedef void(*DebugCallback)(CURL* curl, PAL_CurlInfoType type, char* data, uint
 The object that is returned from RegisterXXXCallback functions.
 This holds the data necessary to know what managed callback to invoke and with what args.
 */
-struct CallbackHandle;
+typedef struct CallbackHandle CallbackHandle;
 
 /*
 Registers a callback in libcurl for seeking in an input stream.
@@ -232,17 +234,17 @@ Registers a callback in libcurl for seeking in an input stream.
 This function gets called by libcurl to seek to a certain position in the input stream
 and can be used to fast forward a file in a resumed upload.
 */
-extern "C" void
+DLLEXPORT void
 HttpNative_RegisterSeekCallback(CURL* curl, SeekCallback callback, void* userPointer, CallbackHandle** callbackHandle);
 
 /*
 Registers a callback in libcurl for reading/writing input/output streams.
 */
-extern "C" void HttpNative_RegisterReadWriteCallback(CURL* curl,
-                                                     ReadWriteFunction functionType,
-                                                     ReadWriteCallback callback,
-                                                     void* userPointer,
-                                                     CallbackHandle** callbackHandle);
+DLLEXPORT void HttpNative_RegisterReadWriteCallback(CURL* curl,
+                                                    ReadWriteFunction functionType,
+                                                    ReadWriteCallback callback,
+                                                    void* userPointer,
+                                                    CallbackHandle** callbackHandle);
 
 /*
 Registers a callback in libcurl for initializing SSL connections.
@@ -253,10 +255,10 @@ to modify the behaviour of the SSL initialization.
 
 Returns a CURLcode that describes whether registering the callback was successful or not.
 */
-extern "C" int32_t HttpNative_RegisterSslCtxCallback(CURL* curl,
-                                                     SslCtxCallback callback,
-                                                     void* userPointer,
-                                                     CallbackHandle** callbackHandle);
+DLLEXPORT int32_t HttpNative_RegisterSslCtxCallback(CURL* curl,
+                                                    SslCtxCallback callback,
+                                                    void* userPointer,
+                                                    CallbackHandle** callbackHandle);
 
 /*
 Registers a callback in libcurl for outputting debug information.
@@ -265,12 +267,12 @@ This callback function gets called by libcurl each time it has debug information
 
 Returns a CURLcode that describes whether registering the callback was successful or not.
 */
-extern "C" int32_t HttpNative_RegisterDebugCallback(CURL* curl, 
-                                                    DebugCallback callback,
-                                                    void* userPointer,
-                                                    CallbackHandle** callbackHandle);
+DLLEXPORT int32_t HttpNative_RegisterDebugCallback(CURL* curl,
+                                                   DebugCallback callback,
+                                                   void* userPointer,
+                                                   CallbackHandle** callbackHandle);
 
 /*
 Frees the CallbackHandle created by a RegisterXXXCallback function.
 */
-extern "C" void HttpNative_FreeCallbackHandle(CallbackHandle* callbackHandle);
+DLLEXPORT void HttpNative_FreeCallbackHandle(CallbackHandle* callbackHandle);

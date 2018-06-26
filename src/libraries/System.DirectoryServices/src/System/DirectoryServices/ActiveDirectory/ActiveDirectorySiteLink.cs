@@ -79,7 +79,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 cachedEntry.Properties["cost"].Value = appDefaultCost;
                 cachedEntry.Properties["replInterval"].Value = appDefaultInterval;
                 if (schedule != null)
-                    cachedEntry.Properties["schedule"].Value = schedule.GetUnmanagedSchedule();
+                    cachedEntry.Properties[nameof(schedule)].Value = schedule.GetUnmanagedSchedule();
             }
             catch (COMException e)
             {
@@ -268,7 +268,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 if (value < 0)
-                    throw new ArgumentException("value");
+                    throw new ArgumentException(nameof(value));
 
                 try
                 {
@@ -309,15 +309,15 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 if (value < TimeSpan.Zero)
-                    throw new ArgumentException(SR.NoNegativeTime, "value");
+                    throw new ArgumentException(SR.NoNegativeTime, nameof(value));
 
                 double tmpVal = value.TotalMinutes;
-                if (tmpVal > Int32.MaxValue)
-                    throw new ArgumentException(SR.ReplicationIntervalExceedMax, "value");
+                if (tmpVal > int.MaxValue)
+                    throw new ArgumentException(SR.ReplicationIntervalExceedMax, nameof(value));
 
                 int totalMinutes = (int)tmpVal;
                 if (totalMinutes < tmpVal)
-                    throw new ArgumentException(SR.ReplicationIntervalInMinutes, "value");
+                    throw new ArgumentException(SR.ReplicationIntervalInMinutes, nameof(value));
 
                 try
                 {
@@ -668,26 +668,26 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             // basic validation first
             if (context == null)
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
 
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
             if ((context.Name == null) && (!context.isRootDomain()))
             {
-                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, "context");
+                throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
             // more validation for the context, if the target is not null, then it should be either forest name or server name
             if (context.Name != null)
             {
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
-                    throw new ArgumentException(SR.NotADOrADAM, "context");
+                    throw new ArgumentException(SR.NotADOrADAM, nameof(context));
             }
 
             if (siteLinkName == null)
-                throw new ArgumentNullException("siteLinkName");
+                throw new ArgumentNullException(nameof(siteLinkName));
 
             if (siteLinkName.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "siteLinkName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(siteLinkName));
 
             if (transport < ActiveDirectoryTransportType.Rpc || transport > ActiveDirectoryTransportType.Smtp)
                 throw new InvalidEnumArgumentException("value", (int)transport, typeof(ActiveDirectoryTransportType));

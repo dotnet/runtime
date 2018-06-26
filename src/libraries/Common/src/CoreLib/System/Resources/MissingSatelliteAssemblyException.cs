@@ -24,7 +24,7 @@ namespace System.Resources
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class MissingSatelliteAssemblyException : SystemException
     {
-        private String _cultureName;
+        private string _cultureName;
 
         public MissingSatelliteAssemblyException()
             : base(SR.MissingSatelliteAssembly_Default)
@@ -38,7 +38,7 @@ namespace System.Resources
             HResult = System.HResults.COR_E_MISSINGSATELLITEASSEMBLY;
         }
 
-        public MissingSatelliteAssemblyException(string message, String cultureName)
+        public MissingSatelliteAssemblyException(string message, string cultureName)
             : base(message)
         {
             HResult = System.HResults.COR_E_MISSINGSATELLITEASSEMBLY;
@@ -56,7 +56,7 @@ namespace System.Resources
         {
         }
 
-        public String CultureName
+        public string CultureName
         {
             get { return _cultureName; }
         }

@@ -95,7 +95,7 @@ namespace System
                     return false;
                 }
 
-                byte[] buffer = new byte[0];
+                byte[] buffer = Array.Empty<byte>();
                 uint bufferSize = 0;
                 try
                 {

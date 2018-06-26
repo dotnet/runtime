@@ -2,8 +2,11 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <BuildConfigurations>
+      netcoreapp;
       netstandard;
       netstandard1.1;
+      uap;
+      _netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

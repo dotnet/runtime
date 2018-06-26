@@ -17,7 +17,7 @@ namespace System.Xml
         public virtual int LineNumber { get { return 0; } }
         public virtual int LinePosition { get { return 0; } }
 
-        public static PositionInfo GetPositionInfo(Object o)
+        public static PositionInfo GetPositionInfo(object o)
         {
             IXmlLineInfo li = o as IXmlLineInfo;
             if (li != null)

@@ -9,13 +9,13 @@ namespace System.Xml.Tests
 {
     public class NormalizeTests
     {
-        public static String StripWhiteSpace(String inString)
+        public static string StripWhiteSpace(string inString)
         {
             var returnString = new StringBuilder();
 
             foreach (var c in inString)
             {
-                if (!Char.IsWhiteSpace(c))
+                if (!char.IsWhiteSpace(c))
                     returnString.Append(c);
             }
 
@@ -53,7 +53,7 @@ namespace System.Xml.Tests
         {
             var xmlDocument = new XmlDocument();
             xmlDocument.Normalize();
-            Assert.Equal(String.Empty, xmlDocument.OuterXml);
+            Assert.Equal(string.Empty, xmlDocument.OuterXml);
         }
 
         [Fact]
@@ -63,7 +63,7 @@ namespace System.Xml.Tests
             var fragment = xmlDocument.CreateDocumentFragment();
 
             fragment.Normalize();
-            Assert.Equal(String.Empty, fragment.OuterXml);
+            Assert.Equal(string.Empty, fragment.OuterXml);
         }
 
         [Fact]
@@ -76,7 +76,7 @@ namespace System.Xml.Tests
             var text2 = xmlDocument.CreateTextNode("test_test2");
 
             fragment.Normalize();
-            Assert.Equal(String.Empty, fragment.OuterXml);
+            Assert.Equal(string.Empty, fragment.OuterXml);
         }
 
         [Fact]

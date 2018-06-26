@@ -581,7 +581,7 @@ namespace System.Threading.Tasks.Dataflow
         public IDisposable LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions) { return _source.LinkTo(target, linkOptions); }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceive"]/*' />
-        public Boolean TryReceive(Predicate<TOutput> filter, out TOutput item) { return _source.TryReceive(filter, out item); }
+        public bool TryReceive(Predicate<TOutput> filter, out TOutput item) { return _source.TryReceive(filter, out item); }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceiveAll"]/*' />
         public bool TryReceiveAll(out IList<TOutput> items) { return _source.TryReceiveAll(out items); }
@@ -596,13 +596,13 @@ namespace System.Threading.Tasks.Dataflow
         public int OutputCount { get { return _source.OutputCount; } }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
-        DataflowMessageStatus ITargetBlock<TInput>.OfferMessage(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput> source, Boolean consumeToAccept)
+        DataflowMessageStatus ITargetBlock<TInput>.OfferMessage(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput> source, bool consumeToAccept)
         {
             return _target.OfferMessage(messageHeader, messageValue, source, consumeToAccept);
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ConsumeMessage"]/*' />
-        TOutput ISourceBlock<TOutput>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out Boolean messageConsumed)
+        TOutput ISourceBlock<TOutput>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out bool messageConsumed)
         {
             return _source.ConsumeMessage(messageHeader, target, out messageConsumed);
         }
@@ -670,7 +670,7 @@ namespace System.Threading.Tasks.Dataflow
             public IEnumerable<TOutput> OutputQueue { get { return _sourceDebuggingInformation.OutputQueue; } }
 
             /// <summary>Gets the number of input operations currently in flight.</summary>
-            public Int32 CurrentDegreeOfParallelism { get { return _targetDebuggingInformation.CurrentDegreeOfParallelism; } }
+            public int CurrentDegreeOfParallelism { get { return _targetDebuggingInformation.CurrentDegreeOfParallelism; } }
             /// <summary>Gets the task being used for output processing.</summary>
             public Task TaskForOutputProcessing { get { return _sourceDebuggingInformation.TaskForOutputProcessing; } }
 

@@ -382,8 +382,8 @@ namespace System.Runtime.CompilerServices
         public static void DangerousAs()
         {
             // Verify that As does not perform type checks
-            object o = new Object();
-            Assert.IsType(typeof(Object), Unsafe.As<string>(o));
+            object o = new object();
+            Assert.IsType(typeof(object), Unsafe.As<string>(o));
         }
 
         [Fact]
@@ -622,8 +622,8 @@ namespace System.Runtime.CompilerServices
 
             Assert.False(Unsafe.IsAddressGreaterThan(ref Unsafe.AsRef<byte>((void*)(1)), ref Unsafe.AsRef<byte>((void*)(-1))));
             Assert.True(Unsafe.IsAddressGreaterThan(ref Unsafe.AsRef<byte>((void*)(-1)), ref Unsafe.AsRef<byte>((void*)(1))));
-            Assert.True(Unsafe.IsAddressGreaterThan(ref Unsafe.AsRef<byte>((void*)(Int32.MinValue)), ref Unsafe.AsRef<byte>((void*)(Int32.MaxValue))));
-            Assert.False(Unsafe.IsAddressGreaterThan(ref Unsafe.AsRef<byte>((void*)(Int32.MaxValue)), ref Unsafe.AsRef<byte>((void*)(Int32.MinValue))));
+            Assert.True(Unsafe.IsAddressGreaterThan(ref Unsafe.AsRef<byte>((void*)(int.MinValue)), ref Unsafe.AsRef<byte>((void*)(int.MaxValue))));
+            Assert.False(Unsafe.IsAddressGreaterThan(ref Unsafe.AsRef<byte>((void*)(int.MaxValue)), ref Unsafe.AsRef<byte>((void*)(int.MinValue))));
             Assert.False(Unsafe.IsAddressGreaterThan(ref Unsafe.AsRef<byte>(null), ref Unsafe.AsRef<byte>(null)));
         }
 
@@ -641,8 +641,8 @@ namespace System.Runtime.CompilerServices
 
             Assert.True(Unsafe.IsAddressLessThan(ref Unsafe.AsRef<byte>((void*)(1)), ref Unsafe.AsRef<byte>((void*)(-1))));
             Assert.False(Unsafe.IsAddressLessThan(ref Unsafe.AsRef<byte>((void*)(-1)), ref Unsafe.AsRef<byte>((void*)(1))));
-            Assert.False(Unsafe.IsAddressLessThan(ref Unsafe.AsRef<byte>((void*)(Int32.MinValue)), ref Unsafe.AsRef<byte>((void*)(Int32.MaxValue))));
-            Assert.True(Unsafe.IsAddressLessThan(ref Unsafe.AsRef<byte>((void*)(Int32.MaxValue)), ref Unsafe.AsRef<byte>((void*)(Int32.MinValue))));
+            Assert.False(Unsafe.IsAddressLessThan(ref Unsafe.AsRef<byte>((void*)(int.MinValue)), ref Unsafe.AsRef<byte>((void*)(int.MaxValue))));
+            Assert.True(Unsafe.IsAddressLessThan(ref Unsafe.AsRef<byte>((void*)(int.MaxValue)), ref Unsafe.AsRef<byte>((void*)(int.MinValue))));
             Assert.False(Unsafe.IsAddressLessThan(ref Unsafe.AsRef<byte>(null), ref Unsafe.AsRef<byte>(null)));
         }
 

@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Permissions;
 
 namespace System.ComponentModel.Design.Serialization
 {
     /// <summary>
-    ///     This attribute can be placed on a class to indicate what serialization
-    ///     object should be used to serialize the class at design time.
+    /// This attribute can be placed on a class to indicate what serialization
+    /// object should be used to serialize the class at design time.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = true)]
     public sealed class DesignerSerializerAttribute : Attribute
@@ -16,7 +15,7 @@ namespace System.ComponentModel.Design.Serialization
         private string _typeId;
 
         /// <summary>
-        ///     Creates a new designer serialization attribute.
+        /// Creates a new designer serialization attribute.
         /// </summary>
         public DesignerSerializerAttribute(Type serializerType, Type baseSerializerType)
         {
@@ -25,7 +24,7 @@ namespace System.ComponentModel.Design.Serialization
         }
 
         /// <summary>
-        ///     Creates a new designer serialization attribute.
+        /// Creates a new designer serialization attribute.
         /// </summary>
         public DesignerSerializerAttribute(string serializerTypeName, Type baseSerializerType)
         {
@@ -34,7 +33,7 @@ namespace System.ComponentModel.Design.Serialization
         }
 
         /// <summary>
-        ///     Creates a new designer serialization attribute.
+        /// Creates a new designer serialization attribute.
         /// </summary>
         public DesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName)
         {
@@ -43,24 +42,21 @@ namespace System.ComponentModel.Design.Serialization
         }
 
         /// <summary>
-        ///     Retrieves the fully qualified type name of the serializer.
+        /// Retrieves the fully qualified type name of the serializer.
         /// </summary>
         public string SerializerTypeName { get; }
 
         /// <summary>
-        ///     Retrieves the fully qualified type name of the serializer base type.
+        /// Retrieves the fully qualified type name of the serializer base type.
         /// </summary>
         public string SerializerBaseTypeName { get; }
-
-        /// <internalonly/>
+        
         /// <summary>
-        ///    <para>
-        ///       This defines a unique ID for this attribute type. It is used
-        ///       by filtering algorithms to identify two attributes that are
-        ///       the same type. For most attributes, this just returns the
-        ///       Type instance for the attribute. EditorAttribute overrides
-        ///       this to include the type of the editor base type.
-        ///    </para>
+        /// This defines a unique ID for this attribute type. It is used
+        /// by filtering algorithms to identify two attributes that are
+        /// the same type. For most attributes, this just returns the
+        /// Type instance for the attribute. EditorAttribute overrides
+        /// this to include the type of the editor base type.
         /// </summary>
         public override object TypeId
         {

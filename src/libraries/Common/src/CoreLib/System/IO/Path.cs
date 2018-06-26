@@ -409,6 +409,16 @@ namespace System.IO
             return JoinInternal(path1, path2, path3);
         }
 
+        public static string Join(string path1, string path2)
+        {
+            return Join(path1.AsSpan(), path2.AsSpan());
+        }
+
+        public static string Join(string path1, string path2, string path3)
+        {
+            return Join(path1.AsSpan(), path2.AsSpan(), path3.AsSpan());
+        }
+
         public static bool TryJoin(ReadOnlySpan<char> path1, ReadOnlySpan<char> path2, Span<char> destination, out int charsWritten)
         {
             charsWritten = 0;
@@ -731,13 +741,14 @@ namespace System.IO
             // Add parent segments for segments past the common on the "from" path
             if (commonLength < relativeToLength)
             {
-                sb.Append(PathInternal.ParentDirectoryPrefix);
+                sb.Append("..");
 
-                for (int i = commonLength; i < relativeToLength; i++)
+                for (int i = commonLength + 1; i < relativeToLength; i++)
                 {
                     if (PathInternal.IsDirectorySeparator(relativeTo[i]))
                     {
-                        sb.Append(PathInternal.ParentDirectoryPrefix);
+                        sb.Append(DirectorySeparatorChar);
+                        sb.Append("..");
                     }
                 }
             }
@@ -749,11 +760,20 @@ namespace System.IO
             }
 
             // Now add the rest of the "to" path, adding back the trailing separator
-            int count = pathLength - commonLength;
+            int differenceLength = pathLength - commonLength;
             if (pathEndsInSeparator)
-                count++;
+                differenceLength++;
 
-            sb.Append(path, commonLength, count);
+            if (differenceLength > 0)
+            {
+                if (sb.Length > 0)
+                {
+                    sb.Append(DirectorySeparatorChar);
+                }
+
+                sb.Append(path, commonLength, differenceLength);
+            }
+
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 

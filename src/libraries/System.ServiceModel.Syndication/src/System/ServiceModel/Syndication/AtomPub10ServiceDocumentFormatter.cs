@@ -36,12 +36,12 @@ namespace System.ServiceModel.Syndication
         {
             if (documentTypeToCreate == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("documentTypeToCreate");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(documentTypeToCreate));
             }
             if (!typeof(ServiceDocument).IsAssignableFrom(documentTypeToCreate))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("documentTypeToCreate",
-                    SR.Format(SR.InvalidObjectTypePassed, "documentTypeToCreate", "ServiceDocument"));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(nameof(documentTypeToCreate),
+                    SR.Format(SR.InvalidObjectTypePassed, nameof(documentTypeToCreate), "ServiceDocument"));
             }
             _maxExtensionSize = int.MaxValue;
             _preserveAttributeExtensions = true;
@@ -68,7 +68,7 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
             }
             return reader.IsStartElement(App10Constants.Service, App10Constants.Namespace);
         }
@@ -84,7 +84,7 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
             }
             TraceServiceDocumentReadBegin();
             ReadDocument(reader);
@@ -96,7 +96,7 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
             }
             if (this.Document == null)
             {
@@ -111,7 +111,7 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
             }
             reader.MoveToContent();
             if (!CanRead(reader))
@@ -127,7 +127,7 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
             }
             if (this.Document == null)
             {
@@ -422,7 +422,7 @@ namespace System.ServiceModel.Syndication
 
         private static void WriteXmlLang(XmlWriter writer, string lang)
         {
-            writer.WriteAttributeString("xml", "lang", Atom10FeedFormatter.XmlNs, lang);
+            writer.WriteAttributeString("xml", nameof(lang), Atom10FeedFormatter.XmlNs, lang);
         }
 
         private ResourceCollectionInfo ReadCollection(XmlReader reader, Workspace workspace)

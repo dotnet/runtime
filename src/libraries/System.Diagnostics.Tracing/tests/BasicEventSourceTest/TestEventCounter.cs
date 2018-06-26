@@ -2,35 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 #if USE_MDT_EVENTSOURCE
 using Microsoft.Diagnostics.Tracing;
 #else
 using System.Diagnostics.Tracing;
 #endif
-#if USE_ETW
-using Microsoft.Diagnostics.Tracing.Session;
-#endif
 using Xunit;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace BasicEventSourceTests
 {
-    public class TestEventCounter
+    public partial class TestEventCounter
     {
-#if USE_ETW
-        // Specifies whether the process is elevated or not.
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
-        private static bool IsProcessElevated => s_isElevated.Value;
-#endif // USE_ETW
-
         private sealed class MyEventSource : EventSource
         {
             private EventCounter _requestCounter;
@@ -66,19 +51,6 @@ namespace BasicEventSourceTests
                 Test_Write_Metric(listener);
             }
         }
-
-#if USE_ETW
-        [ConditionalFact(nameof(IsProcessElevated))]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/27106")]
-        public void Test_Write_Metric_ETW()
-        {
-
-            using (var listener = new EtwListener())
-            {
-                Test_Write_Metric(listener);
-            }
-        }
-#endif
 
         private void Test_Write_Metric(Listener listener)
         {
@@ -256,7 +228,6 @@ namespace BasicEventSourceTests
 
 
                 /*************************************************************************/
-#if FEATURE_EVENTCOUNTER_DISPOSE
                 tests.Add(new SubTest("EventCounter: Dispose()",
                     delegate ()
                     {
@@ -278,7 +249,6 @@ namespace BasicEventSourceTests
                         ValidateSingleEventCounter(evts[3], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                         ValidateSingleEventCounter(evts[4], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                     }));
-#endif
                 /*************************************************************************/
                 EventTestHarness.RunTests(tests, listener, logger);
             }

@@ -13,13 +13,10 @@ using Microsoft.Diagnostics.Tracing;
 using System.Diagnostics.Tracing;
 #endif
 using Xunit;
-#if USE_ETW
-using Microsoft.Diagnostics.Tracing.Session;
-#endif
 
 namespace BasicEventSourceTests
 {
-    public class FuzzyTests
+    public partial class FuzzyTests
     {
         /// <summary>
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
@@ -38,20 +35,20 @@ namespace BasicEventSourceTests
                   logger.Write("WJUYBHDKQB",
                       new
                       {
-                          typeToCheck = new Boolean[] { false, false },
-                          P = new UInt32[] { 148, 17, 71 },
+                          typeToCheck = new bool[] { false, false },
+                          P = new uint[] { 148, 17, 71 },
                           W = false,
-                          Z = new Double[] { 0.268929284656853f, 0.742295096974026f },
+                          Z = new double[] { 0.268929284656853f, 0.742295096974026f },
                           A = 'A',
-                          D = new UInt32[] { 189, 130 },
+                          D = new uint[] { 189, 130 },
                           E = new
                           {
                               QB = 4,
-                              OQ = new UInt32[] { 217, 87, 57, 82 },
+                              OQ = new uint[] { 217, 87, 57, 82 },
                               WD = 99,
                               LE = new
                               {
-                                  YSE = new Byte[] { 11 },
+                                  YSE = new byte[] { 11 },
                                   PCI = 149,
                                   LNK = 138,
                                   QXH = 58778,
@@ -59,10 +56,10 @@ namespace BasicEventSourceTests
                                   ROQ = new
                                   {
                                       MMBW = 0.8394049f,
-                                      ZOZL = new Byte[] { 152 },
-                                      CVQC = new Int16[] { 15147, 1106, 24561, 3912 },
+                                      ZOZL = new byte[] { 152 },
+                                      CVQC = new short[] { 15147, 1106, 24561, 3912 },
                                       UMNP = new UIntPtr(144),
-                                      QQPE = new Decimal(0.286001046321355f),
+                                      QQPE = new decimal(0.286001046321355f),
                                       BALW = new
                                       {
                                           GXOSO = new Guid[] { new Guid("2b2c6a42-1011-8ba5-b799-d5652c22d1aa") },
@@ -71,33 +68,33 @@ namespace BasicEventSourceTests
                                               HJRKVT = new TimeSpan(321),
                                               DBFFJU = 17,
                                               KAOGPS = 923,
-                                              GGBLRC = new UInt64[] { 93, 110, 152, 92 },
+                                              GGBLRC = new ulong[] { 93, 110, 152, 92 },
                                               KHVFCF = new
                                               {
-                                                  HGWJUNM = new Int64[] { 12544, 32021, 27152 },
+                                                  HGWJUNM = new long[] { 12544, 32021, 27152 },
                                                   KLLPZZS = 250,
                                                   ZPNDOEB = new
                                                   {
-                                                      UCUBZMJE = new Double[] { 0.093586054674157f, 0.380068612927603f, 0.219240242251773f },
-                                                      GYBXWALA = new UInt64[] { 57 },
+                                                      UCUBZMJE = new double[] { 0.093586054674157f, 0.380068612927603f, 0.219240242251773f },
+                                                      GYBXWALA = new ulong[] { 57 },
                                                       RCLPECCQ = 0.339707483695684f,
                                                       IETSJOER = new
                                                       {
                                                           YCHWSOMSB = 23,
                                                           SOYKCAJLU = new UIntPtr[] { new UIntPtr(204), new UIntPtr(152), new UIntPtr(162) },
-                                                          OYEBBFINH = new Decimal(0.381492302465016f),
-                                                          BEJVKWDLA = new Boolean[] { false, false, false, false },
-                                                          HLTFIQJFS = new Decimal(0.637544767762322f),
+                                                          OYEBBFINH = new decimal(0.381492302465016f),
+                                                          BEJVKWDLA = new bool[] { false, false, false, false },
+                                                          HLTFIQJFS = new decimal(0.637544767762322f),
                                                           VTXOMKNSO = new
                                                           {
-                                                              LPYMUBHQMI = new Single[] { 0.7763445f, 0.06919894f, 0.8328319f },
+                                                              LPYMUBHQMI = new float[] { 0.7763445f, 0.06919894f, 0.8328319f },
                                                               QRSIWWSECE = new IntPtr(556),
                                                               IPXWJSYIMM = 148,
-                                                              HLHISSJNFP = new Int16[] { 29766, 20985 },
+                                                              HLHISSJNFP = new short[] { 29766, 20985 },
                                                               VEOQAJJLBZ = new
                                                               {
-                                                                  LLJUDQKBTEZ = new Byte[] { 104, 11 },
-                                                                  OJLJVJISNRA = new UInt32[] { 82, 6, 191, 174 },
+                                                                  LLJUDQKBTEZ = new byte[] { 104, 11 },
+                                                                  OJLJVJISNRA = new uint[] { 82, 6, 191, 174 },
                                                                   HHDCFLHZWZY = new
                                                                   {
                                                                       PTDEWXGPDDBR = new TimeSpan(7588),
@@ -106,7 +103,7 @@ namespace BasicEventSourceTests
                                                                       AFQFDPTQGYHE = new
                                                                       {
                                                                           QGAKGVMVKTJGK = 27,
-                                                                          NWIGJXMWDKYEA = new Int16[] { 15083, 28400 }
+                                                                          NWIGJXMWDKYEA = new short[] { 15083, 28400 }
                                                                       }
                                                                   }
                                                               }
@@ -133,60 +130,60 @@ namespace BasicEventSourceTests
                               logger.Write("CJKJMLJBBF",
                   new
                   {
-                      typeToCheck = new Byte[] { 144, 180, 220, 112 },
-                      Y = new Single[] { 0.8815918f, 0.1432135f },
-                      M = new Byte[] { 225, 152, 114, 22 },
+                      typeToCheck = new byte[] { 144, 180, 220, 112 },
+                      Y = new float[] { 0.8815918f, 0.1432135f },
+                      M = new byte[] { 225, 152, 114, 22 },
                       S = new
                       {
                           BI = new Guid[] { new Guid("7920045d-6ec8-890d-e929-1f40a64fb71e") },
-                          GW = new UInt64[] { 62, 167, 2 },
+                          GW = new ulong[] { 62, 167, 2 },
                           ND = new
                           {
-                              JRW = new UInt64[] { 203, 37, 15, 211, 188 },
+                              JRW = new ulong[] { 203, 37, 15, 211, 188 },
                               SQO = new UIntPtr(84),
-                              AMA = new UInt16[] { 59438 },
+                              AMA = new ushort[] { 59438 },
                               MFP = 'Q',
                               YIU = new
                               {
                                   ZWFM = 10944,
-                                  GQEM = new UInt64[] { 41, 76, 216 },
+                                  GQEM = new ulong[] { 41, 76, 216 },
                                   ECKU = new
                                   {
                                       KMULH = new Guid[] { new Guid("bcf30fe3-027f-98a2-b982-450093ebf0fd"), new Guid("6ffcac80-e5e7-48c3-33fe-8db84f3f08f6"), new Guid("0463ae63-4b15-2c33-3037-c39cdf1c7703") },
                                       UKBPU = 'Z',
-                                      JBNJA = new Int64[] { 8202, 23756, 10620 },
+                                      JBNJA = new long[] { 8202, 23756, 10620 },
                                       WTIKI = new
                                       {
                                           NXKHCF = new TimeSpan(31898),
                                           NJRGUW = 46159,
-                                          CRVKBW = new Boolean[] { false, false, false },
-                                          SJOEPA = new Int16[] { 2137 },
+                                          CRVKBW = new bool[] { false, false, false },
+                                          SJOEPA = new short[] { 2137 },
                                           IWSJCY = new UIntPtr[] { new UIntPtr(21), new UIntPtr(211) },
-                                          TZVSWD = new Int64[] { 16672 },
+                                          TZVSWD = new long[] { 16672 },
                                           QPRROX = new
                                           {
                                               MAJQJVK = new DateTime(19619),
-                                              GUYXEFE = new Int32[] { 173 },
-                                              ARBBIUP = new Int32[] { 8347, 10954, 12836 },
+                                              GUYXEFE = new int[] { 173 },
+                                              ARBBIUP = new int[] { 8347, 10954, 12836 },
                                               NAJLIKK = new
                                               {
                                                   RAMOOKYD = new Guid[] { new Guid("e6be9984-08a9-1aea-2a46-b1c146257008"), new Guid("39c25f4d-32f0-f537-6d20-7460fb4a79fd") },
                                                   FHFKLMJO = new
                                                   {
-                                                      GKYBVURGH = new UInt32[] { 56, 61, 66 },
+                                                      GKYBVURGH = new uint[] { 56, 61, 66 },
                                                       LNNMFRQTQ = 111,
-                                                      UXSKWZDPW = new SByte[] { 112, 25, 56 },
-                                                      EASZRTXER = new Double[] { 0.348114812443086f, 0.107543426615905f },
+                                                      UXSKWZDPW = new sbyte[] { 112, 25, 56 },
+                                                      EASZRTXER = new double[] { 0.348114812443086f, 0.107543426615905f },
                                                       QQRUSFTWQ = new
                                                       {
-                                                          YNMEDCKUGE = new Double[] { 0.0140729285842147f, 0.740236018197721f, 0.0671365298643413f },
+                                                          YNMEDCKUGE = new double[] { 0.0140729285842147f, 0.740236018197721f, 0.0671365298643413f },
                                                           RJNUGAWVLB = 21099,
                                                           GCTBHXVALW = 169,
                                                           OVOJCXMCUW = new Guid("12d5e3d4-43fe-2bb4-2b27-88a1fee864ce"),
                                                           HYZTAUMLVM = new
                                                           {
-                                                              WZRTZGKIHVS = new Int64[] { 22723 },
-                                                              LMSOPOXKELU = new Single[] { 0.3263926f },
+                                                              WZRTZGKIHVS = new long[] { 22723 },
+                                                              LMSOPOXKELU = new float[] { 0.3263926f },
                                                               CZQKFSBYOSJ = new IntPtr(18080),
                                                               SMPDPISOHNC = new
                                                               {
@@ -195,12 +192,12 @@ namespace BasicEventSourceTests
                                                                   QJVLOMJKMLTM = new UIntPtr[] { new UIntPtr(53), new UIntPtr(12), new UIntPtr(138) },
                                                                   XKEXSDBOCKUS = new
                                                                   {
-                                                                      GNLERVKNAZMWC = new Int16[] { 14879 },
-                                                                      SBDGZKLLGXIRK = new SByte[] { 114, 92, 71 },
+                                                                      GNLERVKNAZMWC = new short[] { 14879 },
+                                                                      SBDGZKLLGXIRK = new sbyte[] { 114, 92, 71 },
                                                                       KRVGWYHTYCWFX = new Guid("16ba60bb-a226-bfc3-78b0-496a1145aff2"),
                                                                       VUBEWBGNTVBAY = new
                                                                       {
-                                                                          UMTDYSBEGRFXKH = new Int32[] { 16891, 17800, 6819, 7975 },
+                                                                          UMTDYSBEGRFXKH = new int[] { 16891, 17800, 6819, 7975 },
                                                                           FNMYBOQFFFDDCL = new
                                                                           {
                                                                               UYIZLJTHFXDOCVG = 0.593175727218937f,
@@ -209,10 +206,10 @@ namespace BasicEventSourceTests
                                                                                   FKZCIUVJXIPVNLVZ = "GGVKWJLXMLMALXVDWZKT",
                                                                                   UMVGKJGNGWOSZCJW = new
                                                                                   {
-                                                                                      KHJLHNHSFYDFMHYYB = new UInt64[] { 217 },
+                                                                                      KHJLHNHSFYDFMHYYB = new ulong[] { 217 },
                                                                                       KEOSBGOMJQPTDPKRL = new TimeSpan(11322),
                                                                                       GFDALFBAZYPQFWRMG = 102,
-                                                                                      KAYUIPJJBXWGNCZZN = new UInt64[] { 218, 40, 129, 84, 165 },
+                                                                                      KAYUIPJJBXWGNCZZN = new ulong[] { 218, 40, 129, 84, 165 },
                                                                                       DMAFPOUZJXLDEZUPV = new
                                                                                       {
                                                                                           HLVLCWADDRCOFWEFCP = new UIntPtr[] { new UIntPtr(27) },
@@ -248,9 +245,9 @@ namespace BasicEventSourceTests
                               logger.Write("KYAICCKJBZ",
                   new
                   {
-                      typeToCheck = new SByte[] { 87, 80, 42 },
-                      V = new UInt32[] { 64, 220, 135, 210 },
-                      Z = new Double[] { 0.995523607356252f },
+                      typeToCheck = new sbyte[] { 87, 80, 42 },
+                      V = new uint[] { 64, 220, 135, 210 },
+                      Z = new double[] { 0.995523607356252f },
                       A = new UIntPtr[] { new UIntPtr(193), new UIntPtr(129), new UIntPtr(83), new UIntPtr(180) },
                       Y = 16830,
                       U = new
@@ -259,13 +256,13 @@ namespace BasicEventSourceTests
                           LK = new IntPtr(25433),
                           CF = new
                           {
-                              OJS = new Double[] { 0.18515396499315f },
-                              GGA = new Int32[] { 21072, 687 },
+                              OJS = new double[] { 0.18515396499315f },
+                              GGA = new int[] { 21072, 687 },
                               GZF = new
                               {
-                                  FYYV = new Char[] { 'S', 'R' },
+                                  FYYV = new char[] { 'S', 'R' },
                                   KKCR = new UIntPtr(90),
-                                  UCKP = new UInt32[] { 18 },
+                                  UCKP = new uint[] { 18 },
                                   USYI = 141,
                                   HSLD = new
                                   {
@@ -277,14 +274,14 @@ namespace BasicEventSourceTests
                                       {
                                           URFSPN = new UIntPtr(160),
                                           KANOZR = 107,
-                                          MGHNAM = new Byte[] { 28, 79, 42 },
+                                          MGHNAM = new byte[] { 28, 79, 42 },
                                           QAXHLW = new
                                           {
                                               GSXEZUR = new UIntPtr(178),
                                               RBOKRYH = new UIntPtr(140),
-                                              ULIGTUF = new UInt32[] { 114, 72, 90, 157 },
+                                              ULIGTUF = new uint[] { 114, 72, 90, 157 },
                                               ZMRRBNU = 0.754486f,
-                                              USYEHIR = new Decimal(0.232300421331218f),
+                                              USYEHIR = new decimal(0.232300421331218f),
                                               XQISTZU = 10748,
                                               XLDKTPY = new
                                               {
@@ -299,11 +296,11 @@ namespace BasicEventSourceTests
                                                       WKOWVNYRK = new
                                                       {
                                                           UZMGVMGQCF = 0.555727907249577f,
-                                                          YGZRDNZQGT = new SByte[] { 105, 113, 72 },
+                                                          YGZRDNZQGT = new sbyte[] { 105, 113, 72 },
                                                           SCNSDEGLEE = 0.668662465954508f,
                                                           MGUZUZYGFL = new
                                                           {
-                                                              LHXDJLRUNGK = new UInt16[] { 15861, 5797, 30418 },
+                                                              LHXDJLRUNGK = new ushort[] { 15861, 5797, 30418 },
                                                               TXZBHIGUMZF = new IntPtr(3657),
                                                               AVHUVAGQFVZ = 0.591231960612923f,
                                                               TJQNPMDKFWZ = new IntPtr(18308),
@@ -333,11 +330,11 @@ namespace BasicEventSourceTests
                               logger.Write("SEUGYSAHTF",
                   new
                   {
-                      typeToCheck = new Int16[] { 20307, 21397 },
-                      I = new SByte[] { 95 },
+                      typeToCheck = new short[] { 20307, 21397 },
+                      I = new sbyte[] { 95 },
                       L = new IntPtr[] { new IntPtr(19235), new IntPtr(4206) },
                       U = 'W',
-                      H = new Single[] { 0.1146578f },
+                      H = new float[] { 0.1146578f },
                       X = new
                       {
                           FG = 'R',
@@ -352,45 +349,45 @@ namespace BasicEventSourceTests
                               SNC = false,
                               YID = new
                               {
-                                  KWXZ = new Boolean[] { false },
+                                  KWXZ = new bool[] { false },
                                   TTDN = 0.664730781533164f,
-                                  ZQQL = new SByte[] { 56, 88, 36 },
+                                  ZQQL = new sbyte[] { 56, 88, 36 },
                                   JWGG = 'Z',
-                                  QBLT = new SByte[] { 110, 38, 77 },
+                                  QBLT = new sbyte[] { 110, 38, 77 },
                                   WFCW = 75,
                                   IHOV = new
                                   {
                                       VRSHR = 206,
-                                      LBGZY = new UInt64[] { 11, 120, 30 },
+                                      LBGZY = new ulong[] { 11, 120, 30 },
                                       PEBOY = new
                                       {
-                                          JZRGRO = new Int16[] { 7035, 21132, 8363 },
+                                          JZRGRO = new short[] { 7035, 21132, 8363 },
                                           ODUKOA = 6009,
-                                          MGPINI = new Boolean[] { false, false },
-                                          XHWTCX = new UInt64[] { 74 },
-                                          QMVALP = new Int16[] { 14737 },
+                                          MGPINI = new bool[] { false, false },
+                                          XHWTCX = new ulong[] { 74 },
+                                          QMVALP = new short[] { 14737 },
                                           QZXXMO = new
                                           {
                                               JFOBSVZ = new DateTime(9863),
                                               QRTHSJU = 229,
-                                              AUCEODW = new UInt16[] { 64464, 50464 },
+                                              AUCEODW = new ushort[] { 64464, 50464 },
                                               SNLCDIX = new
                                               {
                                                   QEBFKTZQ = new IntPtr[] { new IntPtr(29413), new IntPtr(17589), new IntPtr(13598), new IntPtr(15503) },
                                                   WVSHFFAL = 0.8123934f,
-                                                  BZYVSUYH = new UInt64[] { 233, 193, 154 },
-                                                  NLKCESMM = new Char[] { 'X', 'R' },
-                                                  LAEIAHLK = new Double[] { 0.0359409777614945f, 0.912958334625214f, 0.796391336618174f, 0.417881801453364f },
+                                                  BZYVSUYH = new ulong[] { 233, 193, 154 },
+                                                  NLKCESMM = new char[] { 'X', 'R' },
+                                                  LAEIAHLK = new double[] { 0.0359409777614945f, 0.912958334625214f, 0.796391336618174f, 0.417881801453364f },
                                                   CRNPPEDJ = new
                                                   {
-                                                      RYBIXVGLK = new Int16[] { 12717 },
+                                                      RYBIXVGLK = new short[] { 12717 },
                                                       TNEAVAUPV = new Guid[] { new Guid("1ee67609-12d1-94de-de11-2a83ab93be1c"), new Guid("48e7b54c-6332-31cd-c5a5-e7bb83fd9f97") },
                                                       NZBLWXVNZ = 26490,
                                                       VISDCJCOX = new
                                                       {
                                                           WIVLPMNTOJ = 32,
                                                           POIWKKOPCC = new IntPtr(19628),
-                                                          SWHSXLMGNM = new UInt32[] { 54, 46, 69, 232 }
+                                                          SWHSXLMGNM = new uint[] { 54, 46, 69, 232 }
                                                       }
                                                   }
                                               }
@@ -414,11 +411,11 @@ namespace BasicEventSourceTests
                               logger.Write("TZSTGRMMWK",
                   new
                   {
-                      typeToCheck = new UInt16[] { 40470, 43954, 43078 },
-                      Z = new Decimal(0.620294499034199f),
+                      typeToCheck = new ushort[] { 40470, 43954, 43078 },
+                      Z = new decimal(0.620294499034199f),
                       R = new Guid("069d4e29-ca35-cf11-5873-4db168ac93a7"),
-                      X = new UInt32[] { 48, 247, 28 },
-                      J = new UInt64[] { 84, 88, 170 },
+                      X = new uint[] { 48, 247, 28 },
+                      J = new ulong[] { 84, 88, 170 },
                       W = 'U',
                       L = new IntPtr(23557)
                   }
@@ -435,48 +432,48 @@ namespace BasicEventSourceTests
                               logger.Write("VGYNKZSMCF",
                   new
                   {
-                      typeToCheck = new Int32[] { 29395, 27988 },
-                      P = new UInt32[] { 91 },
+                      typeToCheck = new int[] { 29395, 27988 },
+                      P = new uint[] { 91 },
                       B = new
                       {
                           TU = false,
-                          ZL = new Byte[] { 128, 7 },
+                          ZL = new byte[] { 128, 7 },
                           PN = new Guid("b34b3912-f31b-2b0c-0ee5-6ed734ddba6c"),
                           LG = new
                           {
                               TRQ = 77,
                               FAC = new IntPtr[] { new IntPtr(32083), new IntPtr(26667), new IntPtr(15835) },
-                              RMO = new Boolean[] { false },
-                              BRB = new Boolean[] { false, false },
+                              RMO = new bool[] { false },
+                              BRB = new bool[] { false, false },
                               GVP = "NBSSETBDPOPZITUNVUUT",
                               BIB = new UIntPtr[] { new UIntPtr(112), new UIntPtr(3) },
-                              WGL = new UInt32[] { 68, 150, 165 },
+                              WGL = new uint[] { 68, 150, 165 },
                               VEN = new Guid[] { new Guid("92bd75ae-ce7f-10b5-3765-378feaab145b") },
                               TUD = new
                               {
-                                  QHYM = new UInt16[] { 33766, 12015 },
+                                  QHYM = new ushort[] { 33766, 12015 },
                                   HFKP = 182,
-                                  AOQN = new Decimal(0.201885847468807f),
-                                  RMKL = new Boolean[] { false, false, false },
+                                  AOQN = new decimal(0.201885847468807f),
+                                  RMKL = new bool[] { false, false, false },
                                   CQXD = new
                                   {
-                                      QMXMS = new UInt16[] { 11559, 14693, 48980 },
+                                      QMXMS = new ushort[] { 11559, 14693, 48980 },
                                       PYYYP = 161,
                                       VRCVP = new IntPtr(9062),
-                                      RTCQG = new Decimal(0.492955001300646f),
+                                      RTCQG = new decimal(0.492955001300646f),
                                       CHMOD = 25061,
                                       SBDBK = 30602,
                                       XBSXT = 21054,
                                       SZVHG = new
                                       {
-                                          TVDJBS = new Boolean[] { false },
-                                          RMKLCX = new UInt16[] { 57723, 57354 },
+                                          TVDJBS = new bool[] { false },
+                                          RMKLCX = new ushort[] { 57723, 57354 },
                                           YTFFYT = 207,
                                           SNGUKH = 24872,
                                           XVCORB = new
                                           {
                                               JDRLGPI = 14885,
-                                              ABBCCAU = new Int16[] { 22694, 11610, 1417, 27478 },
+                                              ABBCCAU = new short[] { 22694, 11610, 1417, 27478 },
                                               AIFAFCJ = new DateTime(29164),
                                               NHUOZXJ = new
                                               {
@@ -487,20 +484,20 @@ namespace BasicEventSourceTests
                                                       YMCESAMHQ = new Guid("d27ddae9-cce7-9f7d-54f7-991f8c928418"),
                                                       INMSCIYQG = new
                                                       {
-                                                          UKIEFZCCOK = new Single[] { 0.88895f },
+                                                          UKIEFZCCOK = new float[] { 0.88895f },
                                                           PHHCUELTJW = 11931,
-                                                          VPZQVKGHCD = new SByte[] { 29, 97 },
+                                                          VPZQVKGHCD = new sbyte[] { 29, 97 },
                                                           ZNAJEBWDTU = new UIntPtr(43),
                                                           LZNTFMLOPN = new
                                                           {
-                                                              KKDLTZPBLLF = new Int16[] { 28224, 603, 2596 },
+                                                              KKDLTZPBLLF = new short[] { 28224, 603, 2596 },
                                                               DBOIZPYBQTF = new DateTime(23795),
-                                                              MCPSNEMCQGS = new Double[] { 0.0949933985690556f, 0.508631406123113f, 0.471376011367597f },
-                                                              NRIMZYWGPDX = new UInt16[] { 23579, 5868 },
+                                                              MCPSNEMCQGS = new double[] { 0.0949933985690556f, 0.508631406123113f, 0.471376011367597f },
+                                                              NRIMZYWGPDX = new ushort[] { 23579, 5868 },
                                                               APJTJGXCDYV = 'A',
-                                                              JQENVWZCBGS = new UInt32[] { 90, 227 },
+                                                              JQENVWZCBGS = new uint[] { 90, 227 },
                                                               GZRWYSOYDXT = new IntPtr(2662),
-                                                              LKUKSNSHPGB = new Int16[] { 15418, 23013, 10500 },
+                                                              LKUKSNSHPGB = new short[] { 15418, 23013, 10500 },
                                                               BDMZIROPAYL = new
                                                               {
                                                                   GADETFSKPYKP = 225,
@@ -509,17 +506,17 @@ namespace BasicEventSourceTests
                                                                   {
                                                                       QMJRNFHVMCDJG = "HZVSROJFGXEFERZOFMZK",
                                                                       NTHBDIGQYDXNU = 0.3297728f,
-                                                                      XHEZHGZXHWTQG = new Int32[] { 20652 },
+                                                                      XHEZHGZXHWTQG = new int[] { 20652 },
                                                                       GNSIWUHHKIGTS = new
                                                                       {
-                                                                          KHUARDFCBWECNV = new Int64[] { 12429, 13839, 3334, 11106 },
-                                                                          SZMXXJULXEQZUR = new Byte[] { 216 },
+                                                                          KHUARDFCBWECNV = new long[] { 12429, 13839, 3334, 11106 },
+                                                                          SZMXXJULXEQZUR = new byte[] { 216 },
                                                                           GMABSYDYZEROFJ = new TimeSpan(27265),
                                                                           BZPGGVNXAOTZPD = new
                                                                           {
-                                                                              HEDPGIZERTWNXSS = new Int64[] { 25117, 4881, 31806 },
+                                                                              HEDPGIZERTWNXSS = new long[] { 25117, 4881, 31806 },
                                                                               EIXUBUHLZCBEFDJ = new DateTime(13283),
-                                                                              NLQCQHXIWKTXUFT = new Single[] { 0.6921039f, 0.7196177f, 0.7388009f, 0.04133932f, 0.3286523f },
+                                                                              NLQCQHXIWKTXUFT = new float[] { 0.6921039f, 0.7196177f, 0.7388009f, 0.04133932f, 0.3286523f },
                                                                               VGGNDJIVJWCNOTD = new
                                                                               {
                                                                                   BVEVPMNAZMEJNOEX = new DateTime(27149),
@@ -528,12 +525,12 @@ namespace BasicEventSourceTests
                                                                                       ZAYTSHFGAYZUGEZUR = new Guid[] { new Guid("ccd2bc8d-bbb5-63a0-336a-b08d63e4b5c1"), new Guid("c83dc34f-cf8a-5ef9-d0d6-497f22f191c4"), new Guid("dbb74de9-9a22-046c-64c5-566e576493e7"), new Guid("0331c59e-57d3-c9ea-1ab4-47befb9edc03") },
                                                                                       MMVTGFFPERWSXSFXJ = new
                                                                                       {
-                                                                                          CIAXJJLCOACLACUFPJ = new UInt32[] { 63 },
-                                                                                          MMBPCJCGWNZBLPFKDC = new UInt16[] { 28738, 25721 },
-                                                                                          QSFCEDOBNIJSSDPVZH = new Char[] { 'Z', 'M', 'O' },
+                                                                                          CIAXJJLCOACLACUFPJ = new uint[] { 63 },
+                                                                                          MMBPCJCGWNZBLPFKDC = new ushort[] { 28738, 25721 },
+                                                                                          QSFCEDOBNIJSSDPVZH = new char[] { 'Z', 'M', 'O' },
                                                                                           IVRMDKONPVLGJUOTHY = "IZVAQIRQLNJMRKVVYBZJ",
                                                                                           UATODHIHZJKWVDBVBS = new TimeSpan(31013),
-                                                                                          PBMRXDIXPVOBVIFICD = new Single[] { 0.463911f, 0.3401648f },
+                                                                                          PBMRXDIXPVOBVIFICD = new float[] { 0.463911f, 0.3401648f },
                                                                                           BGOFKPKGTTSOYSITOB = 162,
                                                                                           YKSDVJBNXTSYKDSIMH = new
                                                                                           {
@@ -570,14 +567,14 @@ namespace BasicEventSourceTests
                               logger.Write("KIXXGNPPSV",
                   new
                   {
-                      typeToCheck = new UInt32[] { 147, 184 },
+                      typeToCheck = new uint[] { 147, 184 },
                       S = 'G',
-                      O = new Boolean[] { false, false, false },
-                      F = new SByte[] { 105, 16 },
-                      A = new Boolean[] { false, false },
+                      O = new bool[] { false, false, false },
+                      F = new sbyte[] { 105, 16 },
+                      A = new bool[] { false, false },
                       H = new
                       {
-                          WN = new SByte[] { 10, 7 },
+                          WN = new sbyte[] { 10, 7 },
                           SH = new TimeSpan(10829),
                           MK = "JUAGXCEHNRNIBDPZFKHY",
                           FP = new DateTime(30607),
@@ -599,10 +596,10 @@ namespace BasicEventSourceTests
                               logger.Write("ZZMPYYMSWO",
                   new
                   {
-                      typeToCheck = new Int64[] { 30657, 17454, 29969, 21119 },
-                      X = new Int16[] { 11810, 16279, 26120 },
-                      E = new UInt16[] { 56406, 7511 },
-                      K = new Int64[] { 15497, 9818, 15265, 6621 }
+                      typeToCheck = new long[] { 30657, 17454, 29969, 21119 },
+                      X = new short[] { 11810, 16279, 26120 },
+                      E = new ushort[] { 56406, 7511 },
+                      K = new long[] { 15497, 9818, 15265, 6621 }
                   }
               );
                           },
@@ -617,22 +614,22 @@ namespace BasicEventSourceTests
                               logger.Write("XMBTXAWEQX",
                   new
                   {
-                      typeToCheck = new UInt64[] { 233, 59, 198, 173 },
-                      F = new Single[] { 0.9250653f, 0.1527098f, 0.1007128f, 0.6063406f, 0.2549662f },
+                      typeToCheck = new ulong[] { 233, 59, 198, 173 },
+                      F = new float[] { 0.9250653f, 0.1527098f, 0.1007128f, 0.6063406f, 0.2549662f },
                       I = new TimeSpan(11793),
-                      C = new Decimal(0.857221258272054f),
-                      O = new SByte[] { 123, 68, 32 },
+                      C = new decimal(0.857221258272054f),
+                      O = new sbyte[] { 123, 68, 32 },
                       S = false,
                       U = new UIntPtr[] { new UIntPtr(248), new UIntPtr(226), new UIntPtr(90), new UIntPtr(139), new UIntPtr(3) },
-                      X = new UInt16[] { 27845, 42792, 20026 },
+                      X = new ushort[] { 27845, 42792, 20026 },
                       K = new
                       {
                           EV = 111,
-                          CJ = new Single[] { 0.8725742f, 0.7231242f, 0.9686747f, 0.9467351f, 0.5980527f },
-                          VO = new Decimal(0.876706107927815f),
+                          CJ = new float[] { 0.8725742f, 0.7231242f, 0.9686747f, 0.9467351f, 0.5980527f },
+                          VO = new decimal(0.876706107927815f),
                           PZ = new
                           {
-                              UBN = new SByte[] { 107, 86, 106 },
+                              UBN = new sbyte[] { 107, 86, 106 },
                               XSC = 40815,
                               JRU = 0,
                               CMB = new
@@ -662,36 +659,36 @@ namespace BasicEventSourceTests
                               logger.Write("EWJSKUFCDM",
                   new
                   {
-                      typeToCheck = new Char[] { 'M', 'G', 'N' },
-                      C = new Byte[] { 183, 62, 138 },
+                      typeToCheck = new char[] { 'M', 'G', 'N' },
+                      C = new byte[] { 183, 62, 138 },
                       N = new IntPtr(18625),
-                      W = new SByte[] { 104, 126, 93 },
+                      W = new sbyte[] { 104, 126, 93 },
                       I = new
                       {
-                          MW = new Byte[] { 116, 201 },
+                          MW = new byte[] { 116, 201 },
                           TC = new Guid("f0a8bc35-9f45-656a-789d-38e7ce5bedf9"),
                           SQ = false,
                           KE = new
                           {
-                              FUY = new Byte[] { 140, 126, 125 },
+                              FUY = new byte[] { 140, 126, 125 },
                               ZNA = 119,
-                              GGB = new Int64[] { 26597, 25163 },
+                              GGB = new long[] { 26597, 25163 },
                               QDJ = 118,
                               QGA = new
                               {
                                   IKJP = "EYSLDHDFHAEYBXERUJOE",
-                                  XFIS = new Byte[] { 20 },
-                                  HDBM = new Single[] { 0.7934469f, 0.4888106f, 0.205552f, 0.8351575f },
+                                  XFIS = new byte[] { 20 },
+                                  HDBM = new float[] { 0.7934469f, 0.4888106f, 0.205552f, 0.8351575f },
                                   NZMV = new IntPtr(6535),
-                                  FAJT = new Decimal(0.196647235283929f),
+                                  FAJT = new decimal(0.196647235283929f),
                                   OOYL = 50841,
-                                  KUOB = new Boolean[] { false },
+                                  KUOB = new bool[] { false },
                                   XJEO = new
                                   {
                                       IZHBY = 132,
                                       VOMZO = new
                                       {
-                                          KDDJLD = new Boolean[] { false, false },
+                                          KDDJLD = new bool[] { false, false },
                                           NECOGL = new UIntPtr(9),
                                           YNLQSJ = "ORNEQWFPVICJETYGHJPQ",
                                           YSVWQB = new Guid[] { new Guid("2d7d5c2a-ce40-e08d-8a5a-83d3e6dd53a8") },
@@ -703,15 +700,15 @@ namespace BasicEventSourceTests
                                               HCOBUMH = 'O',
                                               FXIXODO = new
                                               {
-                                                  UHKMWJLD = new UInt16[] { 21530 },
+                                                  UHKMWJLD = new ushort[] { 21530 },
                                                   VAKIZKGC = "VKENOKXCMNZQWFFNDLBS",
                                                   BOEQUVNX = new IntPtr[] { new IntPtr(6273), new IntPtr(32489), new IntPtr(28577) },
                                                   YGDJXCGV = new Guid("032603a5-af19-a341-6c15-42d49512d07b"),
                                                   LWRNMSRW = new IntPtr(21112),
-                                                  RLRVTTFW = new SByte[] { 16, 81 },
+                                                  RLRVTTFW = new sbyte[] { 16, 81 },
                                                   XGUNAOXA = new
                                                   {
-                                                      KXEKEUHEW = new UInt16[] { 7332, 49220, 28804 }
+                                                      KXEKEUHEW = new ushort[] { 7332, 49220, 28804 }
                                                   }
                                               }
                                           }
@@ -734,8 +731,8 @@ namespace BasicEventSourceTests
                               logger.Write("MKBZPTUYLZ",
                   new
                   {
-                      typeToCheck = new Double[] { 0.517561089022812f, 0.768031917404398f, 0.697841727965438f },
-                      A = new UInt64[] { 7, 222, 227, 157 }
+                      typeToCheck = new double[] { 0.517561089022812f, 0.768031917404398f, 0.697841727965438f },
+                      A = new ulong[] { 7, 222, 227, 157 }
                   }
               );
                           },
@@ -750,35 +747,35 @@ namespace BasicEventSourceTests
                               logger.Write("MEVPINJRDC",
                   new
                   {
-                      typeToCheck = new Single[] { 0.8504169f, 0.7903075f },
+                      typeToCheck = new float[] { 0.8504169f, 0.7903075f },
                       B = new Guid("5e2f0c16-18c6-8d90-9eb9-0d4f2abc4d2c"),
                       A = new DateTime(25657),
                       D = new
                       {
                           RY = 214,
                           RU = 16942,
-                          EA = new Double[] { 0.121163873524016f, 0.701091565052556f, 0.466620340229301f, 0.676146067993783f, 0.986018843942331f },
+                          EA = new double[] { 0.121163873524016f, 0.701091565052556f, 0.466620340229301f, 0.676146067993783f, 0.986018843942331f },
                           TL = new
                           {
-                              BOH = new SByte[] { 0 },
+                              BOH = new sbyte[] { 0 },
                               OVX = 25054,
                               LXN = new Guid[] { new Guid("14776595-10f6-4217-7f35-ac37db49694e") },
                               KMD = new
                               {
-                                  AZHY = new Int64[] { 31925, 17938, 20945, 22306 },
-                                  LQAJ = new Double[] { 0.51103292010307f, 0.239482252970097f, 0.783272697955031f, 0.083597604224271f, 0.563169104309366f },
+                                  AZHY = new long[] { 31925, 17938, 20945, 22306 },
+                                  LQAJ = new double[] { 0.51103292010307f, 0.239482252970097f, 0.783272697955031f, 0.083597604224271f, 0.563169104309366f },
                                   IHXU = 'P',
                                   DFDD = new DateTime(6128),
                                   YFWB = new DateTime(2863),
                                   QVCS = "TTSARCJZBNWDBYBJZYPJ",
                                   PWRE = false,
-                                  UNIY = new UInt16[] { 18697, 3594 },
+                                  UNIY = new ushort[] { 18697, 3594 },
                                   PQOL = new
                                   {
                                       IXXWL = false,
                                       AKUDS = false,
-                                      PVDFW = new UInt64[] { 129, 170, 10 },
-                                      SFIIO = new Boolean[] { false, false, false }
+                                      PVDFW = new ulong[] { 129, 170, 10 },
+                                      SFIIO = new bool[] { false, false, false }
                                   }
                               }
                           }
@@ -798,7 +795,7 @@ namespace BasicEventSourceTests
                   new
                   {
                       typeToCheck = new IntPtr[] { new IntPtr(19632), new IntPtr(14358) },
-                      O = new UInt16[] { 61702 },
+                      O = new ushort[] { 61702 },
                       S = new IntPtr[] { new IntPtr(19109), new IntPtr(24986), new IntPtr(7729) },
                       K = new
                       {
@@ -814,21 +811,21 @@ namespace BasicEventSourceTests
                               DMM = 'W',
                               QRO = new
                               {
-                                  EJAL = new Decimal(0.261909847269724f),
+                                  EJAL = new decimal(0.261909847269724f),
                                   KOTW = "ZDNPYWJYKCSPSANXLJEC",
                                   PCGL = 0.5556409f,
                                   WHBW = new
                                   {
                                       CMIRS = 0.7141032f,
-                                      FGWQL = new Char[] { 'E', 'P' },
-                                      UTLKJ = new Int64[] { 27038, 5455, 4072 },
+                                      FGWQL = new char[] { 'E', 'P' },
+                                      UTLKJ = new long[] { 27038, 5455, 4072 },
                                       CYOKG = new
                                       {
                                           HFMUGD = new UIntPtr(32),
                                           NFRGTB = 13629,
                                           UZQZBA = new
                                           {
-                                              KKXSQWK = new UInt16[] { 10475, 6419, 28740 },
+                                              KKXSQWK = new ushort[] { 10475, 6419, 28740 },
                                               XNNTLQM = new UIntPtr(141),
                                               LHOUEPE = 16638,
                                               DOUGGFB = new IntPtr[] { new IntPtr(15736), new IntPtr(31929) },
@@ -836,7 +833,7 @@ namespace BasicEventSourceTests
                                               {
                                                   IGOWTEMS = 9387,
                                                   WQTCLHNG = 63,
-                                                  QGHSCHAB = new Single[] { 0.8993408f, 0.758041f },
+                                                  QGHSCHAB = new float[] { 0.8993408f, 0.758041f },
                                                   EMLVIQSD = new Guid("3c0820ba-b0a1-7ec1-cc8c-7d1173510197"),
                                                   BRQLFTPI = new
                                                   {
@@ -845,22 +842,22 @@ namespace BasicEventSourceTests
                                                       KHMLZQVMI = 191,
                                                       OPWIZPEIK = 17,
                                                       BPKJXXWPS = 19717,
-                                                      DQOAKRJKR = new Single[] { 0.21074f, 0.7595066f, 0.6031218f, 0.3303013f },
+                                                      DQOAKRJKR = new float[] { 0.21074f, 0.7595066f, 0.6031218f, 0.3303013f },
                                                       UCRWGJPSL = new
                                                       {
                                                           JBXGWAPTYQ = new Guid("313b7889-d866-d41e-f006-71027dc10138"),
-                                                          XMFUZFNZAW = new Int32[] { 17962, 14401 },
-                                                          VISAQNAADH = new SByte[] { 15, 107, 104 },
-                                                          HEJBQLAOHQ = new UInt32[] { 53 },
+                                                          XMFUZFNZAW = new int[] { 17962, 14401 },
+                                                          VISAQNAADH = new sbyte[] { 15, 107, 104 },
+                                                          HEJBQLAOHQ = new uint[] { 53 },
                                                           RMKKFMJFTK = new
                                                           {
                                                               ARXSHDTYZPK = false,
-                                                              VLIOVOOEEMI = new UInt32[] { 1, 201 },
+                                                              VLIOVOOEEMI = new uint[] { 1, 201 },
                                                               QUQYWZXDRDX = new
                                                               {
                                                                   DXVJQOVGZPOT = 0.2069851f,
                                                                   FWVNLKDADDJR = 12,
-                                                                  PRDHKKXTFNPR = new Int16[] { 25626 },
+                                                                  PRDHKKXTFNPR = new short[] { 25626 },
                                                                   NBANDMUAHDSN = new
                                                                   {
                                                                       AXSFHXHTKXLMS = "ZJIFZYXXJOGCFLYMZCLH",
@@ -869,9 +866,9 @@ namespace BasicEventSourceTests
                                                                       USAIJZFYFBKPD = "FXFBTCOBGDDXIMSJFQQS",
                                                                       FBWNMWVZLKRBG = new
                                                                       {
-                                                                          JYEWMNBVAJEKUQ = new Single[] { 0.2768211f, 0.9715442f, 0.06664746f },
+                                                                          JYEWMNBVAJEKUQ = new float[] { 0.2768211f, 0.9715442f, 0.06664746f },
                                                                           LWUJEHXCDRYTPX = 5373,
-                                                                          YPGXNDPKMFRSDS = new UInt64[] { 9 }
+                                                                          YPGXNDPKMFRSDS = new ulong[] { 9 }
                                                                       }
                                                                   }
                                                               }
@@ -905,39 +902,39 @@ namespace BasicEventSourceTests
                       V = 15965,
                       P = 14,
                       R = false,
-                      O = new Single[] { 0.2119886f, 0.3535131f, 0.2250638f },
+                      O = new float[] { 0.2119886f, 0.3535131f, 0.2250638f },
                       E = new Guid("6c8a83eb-a37d-a308-f5dd-ccc79fdab7f5"),
                       Q = new
                       {
-                          DN = new UInt32[] { 208, 161 },
-                          ZV = new Int32[] { 24675, 31489, 14806, 30491 },
-                          RS = new Single[] { 0.08375355f, 0.7213013f },
+                          DN = new uint[] { 208, 161 },
+                          ZV = new int[] { 24675, 31489, 14806, 30491 },
+                          RS = new float[] { 0.08375355f, 0.7213013f },
                           EA = new
                           {
-                              QHK = new Byte[] { 168 },
+                              QHK = new byte[] { 168 },
                               JIP = new IntPtr[] { new IntPtr(27270), new IntPtr(17277), new IntPtr(2039), new IntPtr(11694) },
                               PMV = new DateTime(870),
                               SLZ = new IntPtr[] { new IntPtr(29682), new IntPtr(9895), new IntPtr(4137), new IntPtr(10702) },
                               NUA = new
                               {
-                                  WTMX = new UInt32[] { 10, 77, 175, 250 },
+                                  WTMX = new uint[] { 10, 77, 175, 250 },
                                   LKOS = 10196,
-                                  MJDT = new UInt32[] { 26, 195, 158 },
-                                  UZJJ = new Double[] { 0.655860122132981f, 0.643569365443461f, 0.0688796327770127f },
+                                  MJDT = new uint[] { 26, 195, 158 },
+                                  UZJJ = new double[] { 0.655860122132981f, 0.643569365443461f, 0.0688796327770127f },
                                   VZXB = 0.3647781f,
-                                  DNKP = new Double[] { 0.827328642284185f, 0.121152333505988f },
+                                  DNKP = new double[] { 0.827328642284185f, 0.121152333505988f },
                                   MHKA = new
                                   {
-                                      WFXDF = new Int64[] { 8716, 29806, 28535 },
+                                      WFXDF = new long[] { 8716, 29806, 28535 },
                                       WPAOZ = new
                                       {
                                           BMJEAF = "NXXLUKSCDJUHFHZXGTTW",
-                                          PTPCJX = new Byte[] { 214, 160 },
+                                          PTPCJX = new byte[] { 214, 160 },
                                           HXOTCE = new
                                           {
                                               MFQSTVF = 0.6321332f,
-                                              NICYWLB = new UInt32[] { 51, 112 },
-                                              MPDNCTI = new Boolean[] { false, false },
+                                              NICYWLB = new uint[] { 51, 112 },
+                                              MPDNCTI = new bool[] { false, false },
                                               ICAFYIX = new Guid("1ad99188-4607-f72d-9e4c-93efad2a4ff4"),
                                               NLQEJZA = new
                                               {
@@ -946,40 +943,40 @@ namespace BasicEventSourceTests
                                                   HJUBXBNT = new Guid("c9ce72e0-8a38-a84c-98b3-ce13a0ed6c15"),
                                                   GEMNTMXN = new
                                                   {
-                                                      MFQBITOHV = new Boolean[] { false },
+                                                      MFQBITOHV = new bool[] { false },
                                                       TMGMIQBBI = 'P',
-                                                      QFJIEEAEY = new Decimal(0.788357664732429f),
+                                                      QFJIEEAEY = new decimal(0.788357664732429f),
                                                       KNYGBAMQF = new UIntPtr(88),
-                                                      DOTYAECLW = new UInt32[] { 165 },
-                                                      WAVZKKCVL = new SByte[] { 0, 30, 85, 18 },
+                                                      DOTYAECLW = new uint[] { 165 },
+                                                      WAVZKKCVL = new sbyte[] { 0, 30, 85, 18 },
                                                       UBTOBPAOR = 108,
                                                       XCUOFDVBM = new
                                                       {
                                                           ZTRQXKCPBN = false,
-                                                          ETSEMDNKIN = new UInt32[] { 242 },
-                                                          DSEWEYZJOZ = new Byte[] { 228 },
+                                                          ETSEMDNKIN = new uint[] { 242 },
+                                                          DSEWEYZJOZ = new byte[] { 228 },
                                                           DQRNKMEDYF = new Guid("a5e89b5f-6219-7a0d-c148-454d0abc5fd8"),
                                                           WBRSOBRGME = new
                                                           {
-                                                              URXTXPLDCES = new SByte[] { 126, 73, 2 },
-                                                              LAAVIBNXUDZ = new UInt16[] { 25579, 6940 },
+                                                              URXTXPLDCES = new sbyte[] { 126, 73, 2 },
+                                                              LAAVIBNXUDZ = new ushort[] { 25579, 6940 },
                                                               GUMHUXYVZPR = 17285,
-                                                              SUDTIOZUGOB = new Decimal(0.677672771586884f),
+                                                              SUDTIOZUGOB = new decimal(0.677672771586884f),
                                                               LQXXUTTHEJP = new IntPtr(21018),
-                                                              JDAMKIGTITU = new Boolean[] { false, false },
-                                                              KEMZGKLWMHY = new Byte[] { 149 },
+                                                              JDAMKIGTITU = new bool[] { false, false },
+                                                              KEMZGKLWMHY = new byte[] { 149 },
                                                               XWHNLNWJEVT = 0.899215282359726f,
                                                               TQDCXDXZIOV = new
                                                               {
                                                                   FCEMBXVCLPKK = 0.02340911f,
                                                                   HDLFISFCRVTJ = new UIntPtr[] { new UIntPtr(141), new UIntPtr(178) },
                                                                   EWOHMIIIKHHA = 253,
-                                                                  OIGRHOVTNCGC = new Boolean[] { false },
+                                                                  OIGRHOVTNCGC = new bool[] { false },
                                                                   NRIOKHHSVCZM = new
                                                                   {
                                                                       ZZTDYIBWNJOBB = new Guid("da1f577d-cc73-2e6f-dde2-9630ffede26e"),
-                                                                      IMAJIIVTZSPJC = new Decimal(0.6431795552574f),
-                                                                      DRUOWAJDYBEMD = new SByte[] { 20, 64, 2 }
+                                                                      IMAJIIVTZSPJC = new decimal(0.6431795552574f),
+                                                                      DRUOWAJDYBEMD = new sbyte[] { 20, 64, 2 }
                                                                   }
                                                               }
                                                           }
@@ -1010,70 +1007,70 @@ namespace BasicEventSourceTests
                       M = 0.8267138f,
                       I = 73,
                       D = 9084,
-                      N = new Decimal(0.713712491427414f),
+                      N = new decimal(0.713712491427414f),
                       V = new
                       {
                           HP = 49920,
-                          ZY = new Boolean[] { false, false },
+                          ZY = new bool[] { false, false },
                           XG = new IntPtr[] { new IntPtr(421), new IntPtr(16067), new IntPtr(28962) },
-                          HY = new UInt64[] { 96, 249, 104 },
+                          HY = new ulong[] { 96, 249, 104 },
                           FH = new
                           {
-                              XBV = new Int64[] { 6401, 31685 },
+                              XBV = new long[] { 6401, 31685 },
                               RER = 5967,
                               SSA = new
                               {
-                                  QJYE = new Int64[] { 18817 },
-                                  OIGQ = new SByte[] { 42, 99, 53 },
+                                  QJYE = new long[] { 18817 },
+                                  OIGQ = new sbyte[] { 42, 99, 53 },
                                   QVQS = false,
                                   AGUM = 32659,
-                                  CDUG = new Single[] { 0.08679015f, 0.151259f },
+                                  CDUG = new float[] { 0.08679015f, 0.151259f },
                                   ENJG = new
                                   {
-                                      YABLZ = new Single[] { 0.5790285f, 0.5233452f, 0.5186909f, 0.9762733f },
+                                      YABLZ = new float[] { 0.5790285f, 0.5233452f, 0.5186909f, 0.9762733f },
                                       OGDFA = new IntPtr[] { new IntPtr(8695), new IntPtr(30823) },
                                       ZTAST = new
                                       {
-                                          WWGFOC = new Double[] { 0.863843390189038f, 0.844991408216297f, 0.979969940604628f },
+                                          WWGFOC = new double[] { 0.863843390189038f, 0.844991408216297f, 0.979969940604628f },
                                           YLOXJW = 13861,
                                           BSMXBY = new Guid[] { new Guid("aa1f579c-24d6-5314-7191-bb7b9b12b1b6"), new Guid("5569e644-bf9b-216e-164b-9ce64e1c2b24"), new Guid("789b71a3-3d8e-01fe-efe6-145babf8912a") },
-                                          WCLGJO = new Int32[] { 25676 },
-                                          PKBTWX = new Decimal(0.180795220742372f),
+                                          WCLGJO = new int[] { 25676 },
+                                          PKBTWX = new decimal(0.180795220742372f),
                                           BTPVOH = 3956,
                                           KISIFW = new
                                           {
                                               VYUKRZN = 2001,
-                                              HSIZUWU = new UInt16[] { 38936, 53683 },
+                                              HSIZUWU = new ushort[] { 38936, 53683 },
                                               XWHIPGP = "TCSFOKASNSEZRWCEFNLI",
-                                              VAWVPTO = new UInt16[] { 10107, 27199 },
+                                              VAWVPTO = new ushort[] { 10107, 27199 },
                                               LGWBZDG = 8670,
-                                              ZQSNOOM = new Double[] { 0.0428187232663942f },
+                                              ZQSNOOM = new double[] { 0.0428187232663942f },
                                               OQFEBNP = new
                                               {
-                                                  FPNLCPLR = new Single[] { 0.1014032f, 0.3860993f, 0.6688904f, 0.09752574f },
+                                                  FPNLCPLR = new float[] { 0.1014032f, 0.3860993f, 0.6688904f, 0.09752574f },
                                                   ZWWEBAKQ = 0.2813657f,
                                                   IMHIHSAM = 'A',
                                                   EIMUNTDT = new
                                                   {
                                                       KFAQFQNLE = 26239,
-                                                      ULSIXDFDU = new Decimal(0.645764567258658f),
+                                                      ULSIXDFDU = new decimal(0.645764567258658f),
                                                       EEBTQKCQI = new UIntPtr(146),
                                                       GPFRHQUWO = 28241,
                                                       OMSQDWKOZ = new Guid("6ff17edb-23c9-08c0-03c1-792273a4b281"),
                                                       UVMDXXABT = new
                                                       {
-                                                          GHDFCCFWOI = new Double[] { 0.306576067724533f, 0.233773795996687f },
+                                                          GHDFCCFWOI = new double[] { 0.306576067724533f, 0.233773795996687f },
                                                           HPPAAHFGUX = 6672,
-                                                          VJFDTXVMXR = new Char[] { 'G', 'R', 'N' },
+                                                          VJFDTXVMXR = new char[] { 'G', 'R', 'N' },
                                                           MNAQOZRAFA = 4380,
-                                                          OWWTWMLJLN = new Char[] { 'A', 'Z', 'F', 'W', 'G' },
+                                                          OWWTWMLJLN = new char[] { 'A', 'Z', 'F', 'W', 'G' },
                                                           ASVKCUWQHF = 107,
                                                           GOSUFRMVVI = new
                                                           {
                                                               PWBBQKFYXZG = 7505,
-                                                              EHXKDYOIIKN = new Double[] { 0.381061800467345f, 0.782865050613352f, 0.258972210930182f },
-                                                              RDUALXRCYJA = new Int32[] { 31701 },
-                                                              KJIOFYYWQYT = new SByte[] { 37, 32, 26, 47 },
+                                                              EHXKDYOIIKN = new double[] { 0.381061800467345f, 0.782865050613352f, 0.258972210930182f },
+                                                              RDUALXRCYJA = new int[] { 31701 },
+                                                              KJIOFYYWQYT = new sbyte[] { 37, 32, 26, 47 },
                                                               WTHNQOIPOUD = new Guid("6895229c-4f0b-7c3d-aaf3-a56014f9516b"),
                                                               KYTGYXGRNEZ = 0.701357293269298f,
                                                               OJYAFAYTAXV = new
@@ -1084,7 +1081,7 @@ namespace BasicEventSourceTests
                                                                   {
                                                                       UEUAKVQFEDTRI = 170,
                                                                       MWEJZDPJFYFOU = new Guid[] { new Guid("fec63d3e-5152-8880-e3a2-7db271ee6980") },
-                                                                      FSZNORZOWWKYW = new Char[] { 'L' },
+                                                                      FSZNORZOWWKYW = new char[] { 'L' },
                                                                       SJEYZNQHQRPLU = false,
                                                                       CKTSOZJBCPMII = 100,
                                                                       ETBNGWKVMXOKI = new DateTime(19209),
@@ -1092,8 +1089,8 @@ namespace BasicEventSourceTests
                                                                       EHTBMWJHGTRPG = new
                                                                       {
                                                                           UZOBFDIIGCTPZO = new DateTime(4336),
-                                                                          OJLZSHQHJDXXVN = new Int16[] { 32162 },
-                                                                          YKTDHCYADYFAMM = new Char[] { 'Q', 'V' }
+                                                                          OJLZSHQHJDXXVN = new short[] { 32162 },
+                                                                          YKTDHCYADYFAMM = new char[] { 'Q', 'V' }
                                                                       }
                                                                   }
                                                               }
@@ -1123,29 +1120,29 @@ namespace BasicEventSourceTests
                   {
                       typeToCheck = "WMYTEZIZUWXNKVRDSJIG",
                       R = 4262,
-                      S = new Double[] { 0.0596655388640545f, 0.190778685822514f },
+                      S = new double[] { 0.0596655388640545f, 0.190778685822514f },
                       X = new
                       {
                           SZ = new IntPtr(32650),
-                          WO = new Byte[] { 100 },
-                          SI = new Single[] { 0.7200459f, 0.2501657f },
+                          WO = new byte[] { 100 },
+                          SI = new float[] { 0.7200459f, 0.2501657f },
                           WD = new
                           {
-                              IIR = new UInt16[] { 65449, 3140 },
+                              IIR = new ushort[] { 65449, 3140 },
                               FLW = new
                               {
                                   ZDLX = "HKJQTKEKDUIUXIYEIMHI",
-                                  RGOL = new UInt16[] { 65310, 33463, 3995 },
-                                  UUPS = new SByte[] { 85, 120 },
+                                  RGOL = new ushort[] { 65310, 33463, 3995 },
+                                  UUPS = new sbyte[] { 85, 120 },
                                   LRMA = 0.62267279514236f,
                                   GAAV = new
                                   {
-                                      BUMNA = new Byte[] { 195, 88, 126 },
-                                      QJUIQ = new SByte[] { 60, 101, 110, 105, 118 },
+                                      BUMNA = new byte[] { 195, 88, 126 },
+                                      QJUIQ = new sbyte[] { 60, 101, 110, 105, 118 },
                                       LABOW = new IntPtr(7027),
-                                      AWZEM = new Int16[] { 29744, 22884, 22085 },
-                                      MKMJW = new UInt32[] { 78, 102, 105, 196 },
-                                      YPFWT = new UInt32[] { 20, 181, 180 }
+                                      AWZEM = new short[] { 29744, 22884, 22085 },
+                                      MKMJW = new uint[] { 78, 102, 105, 196 },
+                                      YPFWT = new uint[] { 20, 181, 180 }
                                   }
                               }
                           }
@@ -1166,20 +1163,20 @@ namespace BasicEventSourceTests
                   {
                       typeToCheck = false,
                       D = new UIntPtr[] { new UIntPtr(249), new UIntPtr(51), new UIntPtr(168), new UIntPtr(240) },
-                      Z = new Int32[] { 23996, 23464, 22320 },
+                      Z = new int[] { 23996, 23464, 22320 },
                       T = new
                       {
                           CD = "IHEEJMBOMBBTQBJQIEGE",
-                          PZ = new Byte[] { 218, 61 },
-                          YI = new Int64[] { 24691 },
+                          PZ = new byte[] { 218, 61 },
+                          YI = new long[] { 24691 },
                           PP = 14,
                           CG = new
                           {
-                              XCZ = new Int64[] { 25246, 6446 },
+                              XCZ = new long[] { 25246, 6446 },
                               JES = "ONXNYPRHNKBVNGREITWF",
                               ZPJ = new Guid("05a49bef-7f0b-7412-0828-0a8a941d5d68"),
                               QGC = new Guid[] { new Guid("ab282266-2677-b6f7-af50-268fc88cafe5"), new Guid("18b696fe-2863-de74-0f51-68f09e5ea530"), new Guid("df2cf0c6-c814-2363-e298-41fde538eebf"), new Guid("ffbe4d57-9837-a616-4dbe-b1c7ea986d3d"), new Guid("ed821f7b-40b5-db46-9d12-6b3002df8c6d") },
-                              VCB = new Byte[] { 230, 209 }
+                              VCB = new byte[] { 230, 209 }
                           }
                       }
                   }
@@ -1197,68 +1194,68 @@ namespace BasicEventSourceTests
                   new
                   {
                       typeToCheck = 240,
-                      D = new Decimal(0.738066556275853f),
-                      K = new Double[] { 0.229902017037339f, 0.41293801107115f, 0.473091363661499f },
+                      D = new decimal(0.738066556275853f),
+                      K = new double[] { 0.229902017037339f, 0.41293801107115f, 0.473091363661499f },
                       B = false,
-                      S = new UInt16[] { 42468, 21158 },
+                      S = new ushort[] { 42468, 21158 },
                       O = 112,
                       E = new
                       {
-                          QP = new Byte[] { 167, 11 },
+                          QP = new byte[] { 167, 11 },
                           KQ = new UIntPtr[] { new UIntPtr(62), new UIntPtr(96), new UIntPtr(188) },
                           HL = new Guid[] { new Guid("0f9ea815-e8f1-f446-3734-8924c1651d28") },
-                          JG = new Single[] { 0.04892373f, 0.1359699f, 0.2531015f },
+                          JG = new float[] { 0.04892373f, 0.1359699f, 0.2531015f },
                           CY = new
                           {
-                              OIW = new Single[] { 0.6120024f, 0.8221205f, 0.2808428f },
-                              ZVM = new UInt64[] { 58, 115, 175, 218 },
+                              OIW = new float[] { 0.6120024f, 0.8221205f, 0.2808428f },
+                              ZVM = new ulong[] { 58, 115, 175, 218 },
                               DGB = new UIntPtr(95),
                               HNJ = new DateTime(32745),
                               URT = new
                               {
-                                  KGSX = new Single[] { 0.3245929f, 0.9920719f },
+                                  KGSX = new float[] { 0.3245929f, 0.9920719f },
                                   AMPA = new DateTime(21906),
                                   BCBM = 27456,
                                   DCDE = new
                                   {
-                                      JTTZV = new Int64[] { 24658 },
-                                      URCCB = new Char[] { 'F', 'J', 'X', 'G' },
+                                      JTTZV = new long[] { 24658 },
+                                      URCCB = new char[] { 'F', 'J', 'X', 'G' },
                                       BDYPR = new
                                       {
                                           QBCVFK = new IntPtr[] { new IntPtr(3843), new IntPtr(2593), new IntPtr(12594) },
-                                          QNQGCJ = new UInt16[] { 55646 },
+                                          QNQGCJ = new ushort[] { 55646 },
                                           JMAFAG = new
                                           {
-                                              ERZAUKO = new UInt32[] { 11, 190, 127, 195, 48 },
+                                              ERZAUKO = new uint[] { 11, 190, 127, 195, 48 },
                                               MOHRYUK = 7512,
                                               VDELVZX = new Guid("7843d5a5-b907-6dd3-924d-be1cb93d035d"),
                                               UMOLQVX = new
                                               {
                                                   DFJNYFQI = 0.237980773317619f,
-                                                  BMCPBJJE = new Int16[] { 20062, 5735, 10246 },
+                                                  BMCPBJJE = new short[] { 20062, 5735, 10246 },
                                                   GDBWLNFS = new
                                                   {
                                                       YAXMTUOBD = 32596,
-                                                      VHBLVMYEK = new Int64[] { 28385, 7676, 5331 },
+                                                      VHBLVMYEK = new long[] { 28385, 7676, 5331 },
                                                       MSXWCIQNR = new
                                                       {
                                                           LPFTQPSHBA = new Guid[] { new Guid("3a66afd1-95ac-d049-dd5e-c92e29156522"), new Guid("70972ebb-5f42-92cb-459f-73b9335cf4e7") },
                                                           QEYBQBYPAI = 54,
-                                                          LUVYLSNKYB = new Int64[] { 8363, 23005 },
+                                                          LUVYLSNKYB = new long[] { 8363, 23005 },
                                                           IVFTQDKAQX = new
                                                           {
-                                                              BSYASPOCKHM = new UInt32[] { 102, 49 },
+                                                              BSYASPOCKHM = new uint[] { 102, 49 },
                                                               XJPHSAQOZVT = 0.2405056f,
-                                                              FZWXSHNSCZK = new Byte[] { 220 },
-                                                              WVRXQNQKWHO = new UInt16[] { 62702 },
+                                                              FZWXSHNSCZK = new byte[] { 220 },
+                                                              WVRXQNQKWHO = new ushort[] { 62702 },
                                                               QHMTDHWUJCN = new
                                                               {
-                                                                  KTNRDUJEGUEU = new Byte[] { 6, 201 },
-                                                                  GFKIRIUKRFFI = new Decimal(0.676525380311778f),
+                                                                  KTNRDUJEGUEU = new byte[] { 6, 201 },
+                                                                  GFKIRIUKRFFI = new decimal(0.676525380311778f),
                                                                   EDMTDNXAYHCX = new
                                                                   {
                                                                       JWNLNPSYARJBL = 39247,
-                                                                      VLXLNBCRSBUNH = new UInt64[] { 193, 37 },
+                                                                      VLXLNBCRSBUNH = new ulong[] { 193, 37 },
                                                                       DFUYXXGSQPXCM = 0.657904632230245f,
                                                                       HYYPEMJQJIUWT = false,
                                                                       FRULFVQGRLOTH = new DateTime(26772),
@@ -1290,15 +1287,15 @@ namespace BasicEventSourceTests
                   new
                   {
                       typeToCheck = 41,
-                      H = new Boolean[] { false, false, false },
-                      Z = new Int64[] { 15790, 12263 },
+                      H = new bool[] { false, false, false },
+                      Z = new long[] { 15790, 12263 },
                       I = 57,
                       R = 0.2723505f,
                       C = 61611,
                       P = new
                       {
                           CH = 'B',
-                          NH = new UInt64[] { 88, 62 },
+                          NH = new ulong[] { 88, 62 },
                           PI = new IntPtr[] { new IntPtr(8424), new IntPtr(788), new IntPtr(282), new IntPtr(6940) },
                           NN = new TimeSpan(14044),
                           BJ = new TimeSpan(1834),
@@ -1306,25 +1303,25 @@ namespace BasicEventSourceTests
                           {
                               IYM = 97,
                               XVC = 73,
-                              ERL = new UInt64[] { 17, 60 },
+                              ERL = new ulong[] { 17, 60 },
                               SRZ = new
                               {
-                                  ASJE = new Double[] { 0.973957652213963f, 0.746552592025396f, 0.430610016188868f },
-                                  ZZAG = new Char[] { 'T', 'C', 'V' },
+                                  ASJE = new double[] { 0.973957652213963f, 0.746552592025396f, 0.430610016188868f },
+                                  ZZAG = new char[] { 'T', 'C', 'V' },
                                   WVNV = false,
-                                  PLXU = new Int64[] { 21852 },
+                                  PLXU = new long[] { 21852 },
                                   SJWO = new Guid[] { new Guid("e558801f-c31a-e6ef-b2cb-bf4a96d1e543") },
                                   RHIF = 116,
                                   TLQH = new DateTime(32402),
-                                  UWHP = new Char[] { 'X', 'A' },
+                                  UWHP = new char[] { 'X', 'A' },
                                   XLPC = new
                                   {
-                                      CNDXD = new Double[] { 0.0393844242391104f, 0.903604804493303f, 0.122730238420297f, 0.379496013456721f },
+                                      CNDXD = new double[] { 0.0393844242391104f, 0.903604804493303f, 0.122730238420297f, 0.379496013456721f },
                                       OKOAO = new Guid("6621804c-18e4-2f3c-9ec0-78dfb01d8ddc"),
                                       RCOBB = new Guid("b75881f5-bee2-9040-ba53-c5a8a9ee8126"),
                                       PZAIN = new
                                       {
-                                          DCAQZK = new UInt32[] { 114, 60, 155 },
+                                          DCAQZK = new uint[] { 114, 60, 155 },
                                           CVVKCS = 'Z',
                                           JTIIQP = 66,
                                           KNEVYD = new IntPtr(22043),
@@ -1332,7 +1329,7 @@ namespace BasicEventSourceTests
                                           TEPHTQ = new UIntPtr(108),
                                           OEPHAF = new
                                           {
-                                              MMIHPWK = new Decimal(0.471738442998258f),
+                                              MMIHPWK = new decimal(0.471738442998258f),
                                               YANXWFQ = new DateTime(27885),
                                               JOLALPT = new
                                               {
@@ -1340,24 +1337,24 @@ namespace BasicEventSourceTests
                                                   LYTOKIRI = 142,
                                                   AKIOTERQ = new
                                                   {
-                                                      BLWRWHMCD = new Single[] { 0.9205768f, 0.8986465f, 0.8291523f, 0.8944461f, 0.2247913f },
-                                                      WFMZEXJUE = new Int16[] { 17005, 29689, 30056, 27417 },
-                                                      DXQONYFUL = new UInt16[] { 8615, 56659, 3085, 44246 },
+                                                      BLWRWHMCD = new float[] { 0.9205768f, 0.8986465f, 0.8291523f, 0.8944461f, 0.2247913f },
+                                                      WFMZEXJUE = new short[] { 17005, 29689, 30056, 27417 },
+                                                      DXQONYFUL = new ushort[] { 8615, 56659, 3085, 44246 },
                                                       RXJTCMBHF = new
                                                       {
                                                           HZMGVYJJWU = false,
-                                                          CTUGSYEYOW = new UInt16[] { 16254, 39925 },
-                                                          NOQKVXTWXB = new UInt16[] { 3295, 5237, 60213 },
+                                                          CTUGSYEYOW = new ushort[] { 16254, 39925 },
+                                                          NOQKVXTWXB = new ushort[] { 3295, 5237, 60213 },
                                                           JTPOVYRGNT = 0.9116467f,
-                                                          ZVTDCGTCJK = new Double[] { 0.460546442056329f, 0.598205414879231f },
+                                                          ZVTDCGTCJK = new double[] { 0.460546442056329f, 0.598205414879231f },
                                                           SYBWDQABPJ = new
                                                           {
                                                               WYIPCPFWIUS = "PILGVNDMFUDGAGUEHQGD",
                                                               DQTQIABZLFV = new UIntPtr(72),
-                                                              UDXSTAPZUUN = new UInt32[] { 14, 0, 177, 109 },
+                                                              UDXSTAPZUUN = new uint[] { 14, 0, 177, 109 },
                                                               XNBNRSMBTMW = new
                                                               {
-                                                                  JTPIXNDTESLS = new SByte[] { 59, 3, 14, 62, 69 },
+                                                                  JTPIXNDTESLS = new sbyte[] { 59, 3, 14, 62, 69 },
                                                                   ZWAIVGMFDOXX = 15282,
                                                                   LWAQAJALHBHQ = new
                                                                   {
@@ -1368,15 +1365,15 @@ namespace BasicEventSourceTests
                                                                       TTECCJMDLTUZR = new
                                                                       {
                                                                           DSGYBUBZFLPAWJ = new UIntPtr[] { new UIntPtr(204), new UIntPtr(166) },
-                                                                          GPABSDFSSGNHBT = new Int32[] { 30221, 12534 },
-                                                                          KNKVHNHRGNHOBG = new Boolean[] { false, false, false, false },
-                                                                          SFNFYPLPBGINOR = new UInt32[] { 250 },
+                                                                          GPABSDFSSGNHBT = new int[] { 30221, 12534 },
+                                                                          KNKVHNHRGNHOBG = new bool[] { false, false, false, false },
+                                                                          SFNFYPLPBGINOR = new uint[] { 250 },
                                                                           LLLVSOXSHJVEVQ = 26563,
                                                                           FEOVFYQVBVUBET = new
                                                                           {
                                                                               DOIPDQVEQEIUYOT = 'N',
                                                                               PWIJCJMNVPUXUVO = 24,
-                                                                              HVFNARBNKNLABBU = new Byte[] { 135 },
+                                                                              HVFNARBNKNLABBU = new byte[] { 135 },
                                                                               MILTMZCPVFKTKMG = new Guid[] { new Guid("b83ff17d-2702-9c12-290b-4303387f219d"), new Guid("200f095f-5732-fe78-0967-abcb01d2e441"), new Guid("1ee05a4c-5f30-dab4-7aa0-2af5ae238327"), new Guid("e8bf5c8e-0440-ab1d-f05e-0a711ef78cf6"), new Guid("b0d94093-586b-d8dc-d314-b88847dae21a") },
                                                                               MMNXOFGWSWBNTOA = new
                                                                               {
@@ -1384,12 +1381,12 @@ namespace BasicEventSourceTests
                                                                                   OHNLXCFWUCBCBRKW = new Guid("01dc1a64-6e84-d056-0981-3368b8d10193"),
                                                                                   ZIVRQKAKTPBRVWXA = new
                                                                                   {
-                                                                                      ZSJALDWQATBUDUHXB = new Int64[] { 7547, 7641, 11480 },
+                                                                                      ZSJALDWQATBUDUHXB = new long[] { 7547, 7641, 11480 },
                                                                                       XWRCLNJQVCGFEARRN = new UIntPtr(3),
-                                                                                      WMFQWJFHZHDPYQRDC = new Boolean[] { false },
+                                                                                      WMFQWJFHZHDPYQRDC = new bool[] { false },
                                                                                       PYUGVYMVQCCPKDFJT = new
                                                                                       {
-                                                                                          RGUSFGKIRMIONXPRGJ = new SByte[] { 122, 69, 107, 70 },
+                                                                                          RGUSFGKIRMIONXPRGJ = new sbyte[] { 122, 69, 107, 70 },
                                                                                           KSKNPFWSTMTHXLWFNJ = 30426,
                                                                                           YDLEGCENYDULHNHNKF = 13655
                                                                                       }
@@ -1424,7 +1421,7 @@ namespace BasicEventSourceTests
                   new
                   {
                       typeToCheck = 17197,
-                      C = new Boolean[] { false },
+                      C = new bool[] { false },
                       W = 0.6688777f,
                       K = new TimeSpan(13461),
                       H = new IntPtr(1327)
@@ -1448,29 +1445,29 @@ namespace BasicEventSourceTests
                       {
                           SR = 16489,
                           DS = new IntPtr[] { new IntPtr(9161), new IntPtr(15856), new IntPtr(19730) },
-                          ZR = new Byte[] { 113, 182 },
-                          IT = new Decimal(0.503867492780028f),
+                          ZR = new byte[] { 113, 182 },
+                          IT = new decimal(0.503867492780028f),
                           PL = 11645,
                           CP = new
                           {
-                              YYD = new Byte[] { 81, 83 },
-                              DTI = new Char[] { 'S', 'K' },
+                              YYD = new byte[] { 81, 83 },
+                              DTI = new char[] { 'S', 'K' },
                               UWI = new Guid[] { new Guid("0b9ab745-c38f-ae5c-ee8b-be32c888d439"), new Guid("d5c4bd0c-c295-66ed-b3aa-5f086561b2b7"), new Guid("fdab661a-d787-844c-86d0-51ab34b91d13") },
-                              HXH = new Single[] { 0.03633814f, 0.08205427f },
+                              HXH = new float[] { 0.03633814f, 0.08205427f },
                               TQV = 199,
                               PLI = 19842,
-                              SQB = new UInt64[] { 32, 88, 130 },
+                              SQB = new ulong[] { 32, 88, 130 },
                               GZR = new
                               {
-                                  FMFI = new Int32[] { 21690, 19727 },
-                                  XNMX = new UInt16[] { 1517, 46281 },
-                                  YTDF = new Char[] { 'C', 'M', 'I', 'C', 'W' },
+                                  FMFI = new int[] { 21690, 19727 },
+                                  XNMX = new ushort[] { 1517, 46281 },
+                                  YTDF = new char[] { 'C', 'M', 'I', 'C', 'W' },
                                   LCPS = new
                                   {
-                                      LTNRE = new Int16[] { 21083, 30470, 1846 },
-                                      LIFCW = new UInt64[] { 126, 161 },
+                                      LTNRE = new short[] { 21083, 30470, 1846 },
+                                      LIFCW = new ulong[] { 126, 161 },
                                       WRFAB = new UIntPtr(241),
-                                      LYTWY = new SByte[] { 100, 94 },
+                                      LYTWY = new sbyte[] { 100, 94 },
                                       YNOPT = new
                                       {
                                           UPGMIC = 'S',
@@ -1478,7 +1475,7 @@ namespace BasicEventSourceTests
                                           FBNUBH = 23436,
                                           HWAHNU = 119,
                                           CMVPEX = new UIntPtr(30),
-                                          EXQJXZ = new SByte[] { 100 },
+                                          EXQJXZ = new sbyte[] { 100 },
                                           AHHNBZ = new
                                           {
                                               SIRPAGK = new TimeSpan(5108),
@@ -1486,16 +1483,16 @@ namespace BasicEventSourceTests
                                               {
                                                   IDWPDRFA = 0.4160521f,
                                                   HFNDKDTN = new UIntPtr(110),
-                                                  WRGSYPLN = new UInt32[] { 124, 112 },
+                                                  WRGSYPLN = new uint[] { 124, 112 },
                                                   IFUYJFJP = 177,
                                                   OSLRETMU = new Guid("1d9a5d0f-2d11-4e49-41bb-c6e749ffb73c"),
-                                                  QLWXMLQW = new UInt32[] { 110, 126 },
+                                                  QLWXMLQW = new uint[] { 110, 126 },
                                                   TMCDKBLP = new
                                                   {
                                                       TFTEWLADF = 23,
                                                       DQONAXIXL = new UIntPtr(57),
-                                                      NKQSCPIGC = new Double[] { 0.335936982341081f, 0.798803394566664f, 0.203710686510294f },
-                                                      ATXMOLXJG = new Byte[] { 218, 243, 154 },
+                                                      NKQSCPIGC = new double[] { 0.335936982341081f, 0.798803394566664f, 0.203710686510294f },
+                                                      ATXMOLXJG = new byte[] { 218, 243, 154 },
                                                       ZXDXPCMTN = new
                                                       {
                                                           DVQGUGTXNX = new Guid[] { new Guid("7f510656-4c99-2866-7925-7f05f2e31ee5") },
@@ -1510,14 +1507,14 @@ namespace BasicEventSourceTests
                                                                   HSAAQHUNFJQD = new DateTime(16012),
                                                                   HCKBREPLWVGT = new
                                                                   {
-                                                                      COCRLBZNUSKRH = new Int64[] { 25398, 18440, 5124, 16409 },
-                                                                      VVSSMHSZQAZLZ = new Decimal(0.239939377289237f),
+                                                                      COCRLBZNUSKRH = new long[] { 25398, 18440, 5124, 16409 },
+                                                                      VVSSMHSZQAZLZ = new decimal(0.239939377289237f),
                                                                       FTXFFLNYPEIGO = 16104,
                                                                       UCYXPACNHVWDA = new Guid[] { new Guid("c572c744-9be8-ae55-a5ff-f5663696df37"), new Guid("7c616885-fa34-fb81-8380-46d4df1ce0ff") },
                                                                       NOXWEXKJZGHXD = new
                                                                       {
                                                                           ODBDHYGWMBGVDG = new IntPtr[] { new IntPtr(24878), new IntPtr(3359), new IntPtr(9656), new IntPtr(29215) },
-                                                                          IMNNQUISNVJSZQ = new Double[] { 0.333982671300873f, 0.709567602588594f }
+                                                                          IMNNQUISNVJSZQ = new double[] { 0.333982671300873f, 0.709567602588594f }
                                                                       }
                                                                   }
                                                               }
@@ -1547,13 +1544,13 @@ namespace BasicEventSourceTests
                   {
                       typeToCheck = 27946,
                       R = new TimeSpan(1057),
-                      U = new Int32[] { 22906, 20859, 28666 },
+                      U = new int[] { 22906, 20859, 28666 },
                       C = 189,
-                      P = new Single[] { 0.519811f, 0.5041391f, 0.7190451f },
+                      P = new float[] { 0.519811f, 0.5041391f, 0.7190451f },
                       K = new
                       {
                           MZ = 60259,
-                          QH = new UInt64[] { 13, 24 },
+                          QH = new ulong[] { 13, 24 },
                           OK = 202,
                           PN = new IntPtr[] { new IntPtr(9374), new IntPtr(10473) },
                           ZV = new UIntPtr[] { new UIntPtr(155), new UIntPtr(14), new UIntPtr(175), new UIntPtr(107) },
@@ -1562,16 +1559,16 @@ namespace BasicEventSourceTests
                               HIN = 0.559999000076204f,
                               XWB = 0.955704208442804f,
                               FEN = 199,
-                              CHL = new Decimal(0.588603359921185f),
+                              CHL = new decimal(0.588603359921185f),
                               YCE = new
                               {
                                   HPDR = 30,
-                                  IFKN = new Char[] { 'P' },
+                                  IFKN = new char[] { 'P' },
                                   HNLV = 832,
-                                  WCKI = new Decimal(0.889976364509191f),
+                                  WCKI = new decimal(0.889976364509191f),
                                   NTCQ = new
                                   {
-                                      JDJFI = new Int32[] { 26731, 12314, 11103, 1921 },
+                                      JDJFI = new int[] { 26731, 12314, 11103, 1921 },
                                       GGNCO = new Guid("ffc16904-8ee6-e9fd-ffaf-5ad72376f7f8"),
                                       ZFMUU = new TimeSpan(12330),
                                       TOGCW = new
@@ -1582,32 +1579,32 @@ namespace BasicEventSourceTests
                                           YIRJJU = new
                                           {
                                               ZFEWJUE = false,
-                                              DNVEWPL = new UInt32[] { 111, 69 },
+                                              DNVEWPL = new uint[] { 111, 69 },
                                               ITLPLTK = "RCOIKQOSCESBNRQKZIXU",
                                               WHANWJC = new
                                               {
-                                                  KAMKVGBI = new Single[] { 0.7307441f, 0.7706692f, 0.3229384f, 0.393829f },
+                                                  KAMKVGBI = new float[] { 0.7307441f, 0.7706692f, 0.3229384f, 0.393829f },
                                                   BVEIWMXB = new
                                                   {
-                                                      AOQTDZIDW = new Decimal(0.7615850319907f),
+                                                      AOQTDZIDW = new decimal(0.7615850319907f),
                                                       QLBLOYTPC = 24143,
                                                       YCTIQWNKN = new
                                                       {
-                                                          PVIOUHJLMC = new Int32[] { 2254 },
+                                                          PVIOUHJLMC = new int[] { 2254 },
                                                           SJQUTUYSHY = new IntPtr[] { new IntPtr(11222), new IntPtr(14872), new IntPtr(26227), new IntPtr(16896) },
                                                           RQJQSHJTIA = 0.8642319f,
                                                           NQHPIDAMYE = new
                                                           {
-                                                              KJSWDTMUHXZ = new UInt16[] { 38561, 39081, 38208, 52456 },
-                                                              ZUUVVKLRONG = new Int16[] { 29050, 7863 },
-                                                              IKEXWNMGZYV = new UInt16[] { 56953, 58852, 25618 },
-                                                              HOTXDKMRPNI = new UInt32[] { 63, 46 },
+                                                              KJSWDTMUHXZ = new ushort[] { 38561, 39081, 38208, 52456 },
+                                                              ZUUVVKLRONG = new short[] { 29050, 7863 },
+                                                              IKEXWNMGZYV = new ushort[] { 56953, 58852, 25618 },
+                                                              HOTXDKMRPNI = new uint[] { 63, 46 },
                                                               OTSVEPAHEKC = new TimeSpan(31916),
                                                               PRJAVZRGCXY = new
                                                               {
-                                                                  RKWPVTXVSFYS = new Int32[] { 12618, 22709 },
+                                                                  RKWPVTXVSFYS = new int[] { 12618, 22709 },
                                                                   FDIDEQXAVVHP = 16,
-                                                                  NLLWUDTTKLLM = new Char[] { 'J', 'N', 'A' }
+                                                                  NLLWUDTTKLLM = new char[] { 'J', 'N', 'A' }
                                                               }
                                                           }
                                                       }
@@ -1634,77 +1631,77 @@ namespace BasicEventSourceTests
                   new
                   {
                       typeToCheck = 105,
-                      U = new Byte[] { 121, 90, 148, 115 },
-                      Q = new Boolean[] { false, false, false, false, false },
+                      U = new byte[] { 121, 90, 148, 115 },
+                      Q = new bool[] { false, false, false, false, false },
                       O = 217,
                       D = 28094,
                       E = false,
                       C = new
                       {
-                          KR = new Byte[] { 184 },
+                          KR = new byte[] { 184 },
                           BO = new IntPtr(10916),
                           WS = new
                           {
-                              POZ = new Char[] { 'A', 'I', 'U' },
+                              POZ = new char[] { 'A', 'I', 'U' },
                               EHV = 0.05825089f,
-                              EYD = new Boolean[] { false, false, false, false },
-                              YWY = new Int32[] { 21685 },
+                              EYD = new bool[] { false, false, false, false },
+                              YWY = new int[] { 21685 },
                               JKT = new
                               {
                                   GFRP = 180,
-                                  LEEZ = new Int32[] { 31269, 26380 },
-                                  WJKA = new Int64[] { 12806, 12324 },
+                                  LEEZ = new int[] { 31269, 26380 },
+                                  WJKA = new long[] { 12806, 12324 },
                                   HQMV = new UIntPtr(197),
                                   PQBG = new
                                   {
-                                      SPFDG = new Byte[] { 106 },
-                                      PXIFI = new Boolean[] { false },
+                                      SPFDG = new byte[] { 106 },
+                                      PXIFI = new bool[] { false },
                                       EWWBN = 25,
                                       XXDCU = new
                                       {
                                           KTLUWO = "VYGJPCEONUMXWHOSEIRE",
                                           TBJWIQ = new Guid[] { new Guid("3c79a885-fd24-416c-9679-3dbf7cfbd77a"), new Guid("c664d6ab-200a-7746-da79-e02f2bd0734f"), new Guid("0b43812b-5310-bb6a-ce54-c0faf4faaf08") },
-                                          DBIMBT = new Double[] { 0.813862412615615f, 0.16768836517245f, 0.894481414414235f },
+                                          DBIMBT = new double[] { 0.813862412615615f, 0.16768836517245f, 0.894481414414235f },
                                           ONSOSI = new TimeSpan(30187),
                                           GQADDL = new
                                           {
-                                              RDOFLUM = new UInt32[] { 226, 42 },
-                                              TPUBUHI = new Boolean[] { false },
+                                              RDOFLUM = new uint[] { 226, 42 },
+                                              TPUBUHI = new bool[] { false },
                                               AIAMXVL = new
                                               {
-                                                  BEQRPHFR = new UInt32[] { 1 },
-                                                  VINGJIUV = new UInt16[] { 3688, 44055, 13365 },
+                                                  BEQRPHFR = new uint[] { 1 },
+                                                  VINGJIUV = new ushort[] { 3688, 44055, 13365 },
                                                   YKYIZZCD = 33,
                                                   RKZTIONH = "VECPUBEVZYXDOSQHGLKC",
                                                   CRPKMSQT = new
                                                   {
                                                       ZRRCRXDUS = 30515,
                                                       COSOFLITY = 0.437890699802847f,
-                                                      NJTLGVNVH = new Single[] { 0.4743058f, 0.6826588f },
-                                                      DZZPSCQNW = new Int32[] { 14027, 16626, 25968 },
+                                                      NJTLGVNVH = new float[] { 0.4743058f, 0.6826588f },
+                                                      DZZPSCQNW = new int[] { 14027, 16626, 25968 },
                                                       DHOYAFAJX = 0.1878178f,
                                                       WESXMWZFN = new
                                                       {
                                                           IZTKSOQTGD = new UIntPtr(231),
                                                           VGMWIUHVXL = 37,
-                                                          DUWUQUORRJ = new Int32[] { 24838, 15385, 22103, 5383 },
+                                                          DUWUQUORRJ = new int[] { 24838, 15385, 22103, 5383 },
                                                           EFMPHDUKHF = new IntPtr[] { new IntPtr(27741), new IntPtr(25949), new IntPtr(11463) },
                                                           LPNEXSLNFL = 31829,
                                                           TYPIVGZMCY = 25701,
                                                           ISNTRDRYLK = new
                                                           {
                                                               JAGJTYXQISQ = new DateTime(30107),
-                                                              NLOAFXKMXLW = new UInt32[] { 186, 81, 27 },
+                                                              NLOAFXKMXLW = new uint[] { 186, 81, 27 },
                                                               RWCUQIIPPCL = new
                                                               {
                                                                   MAOLQZMQWFFG = 24,
                                                                   OZWCVNPUGUFY = new TimeSpan(2485),
-                                                                  NSYJCNEIYWYZ = new UInt64[] { 182, 252 },
+                                                                  NSYJCNEIYWYZ = new ulong[] { 182, 252 },
                                                                   ZLPNCXTITMGY = new
                                                                   {
                                                                       XGIRKAMGJMHWM = 110,
-                                                                      BZEVGGVUESVCP = new Int32[] { 24112, 31732, 1297, 21916 },
-                                                                      LCEPYAHLXNAZM = new Int32[] { 15473, 22430, 7434 },
+                                                                      BZEVGGVUESVCP = new int[] { 24112, 31732, 1297, 21916 },
+                                                                      LCEPYAHLXNAZM = new int[] { 15473, 22430, 7434 },
                                                                       BYJNHTIKRRKNN = 7361,
                                                                       KQFNWUIOPFUOH = new
                                                                       {
@@ -1742,14 +1739,14 @@ namespace BasicEventSourceTests
                       C = new
                       {
                           QY = 51,
-                          PR = new Boolean[] { false },
+                          PR = new bool[] { false },
                           YJ = 23037,
                           YA = new UIntPtr(181),
                           LB = new
                           {
                               HVX = new UIntPtr[] { new UIntPtr(104) },
-                              URQ = new UInt16[] { 44450, 65128 },
-                              UKH = new Byte[] { 177, 177, 117 },
+                              URQ = new ushort[] { 44450, 65128 },
+                              UKH = new byte[] { 177, 177, 117 },
                               BKR = new IntPtr(24548),
                               JUB = 61483,
                               OCA = new
@@ -1768,11 +1765,11 @@ namespace BasicEventSourceTests
                                           KTEVFY = new Guid[] { new Guid("d9575c4f-4b11-4726-780f-323d0d625777"), new Guid("875231e5-e82c-cb4c-0f52-1d8ce5219502"), new Guid("1f9b4034-e700-179c-40fe-6465bc5073a8") },
                                           VHZEMR = new
                                           {
-                                              YUVRLYR = new UInt64[] { 252, 7, 240 },
+                                              YUVRLYR = new ulong[] { 252, 7, 240 },
                                               EVHISFB = new Guid[] { new Guid("9c0aa810-4313-0aff-c630-6aea14a84d67"), new Guid("ca3c19cd-3131-13fe-c5b3-56e32cbdb1ed") },
-                                              FSVRPVR = new Int32[] { 10121, 27905 },
+                                              FSVRPVR = new int[] { 10121, 27905 },
                                               OQISNUD = false,
-                                              YEXTPYF = new Boolean[] { false, false }
+                                              YEXTPYF = new bool[] { false, false }
                                           }
                                       }
                                   }
@@ -1794,7 +1791,7 @@ namespace BasicEventSourceTests
                   new
                   {
                       typeToCheck = 216,
-                      Y = new Byte[] { 96, 147, 99, 27, 169 },
+                      Y = new byte[] { 96, 147, 99, 27, 169 },
                       R = new IntPtr(27613),
                       S = 555,
                       F = new IntPtr(31672),
@@ -1803,12 +1800,12 @@ namespace BasicEventSourceTests
                       {
                           ZG = 0.9405469f,
                           NK = new UIntPtr[] { new UIntPtr(50), new UIntPtr(177) },
-                          LX = new SByte[] { 4, 105, 73, 44 },
+                          LX = new sbyte[] { 4, 105, 73, 44 },
                           RN = new
                           {
                               FJQ = new UIntPtr(99),
                               REQ = "MWQYNVZRSISOGRULTEBQ",
-                              LWP = new UInt16[] { 42063, 17282, 51741 },
+                              LWP = new ushort[] { 42063, 17282, 51741 },
                               BZF = new
                               {
                                   NNED = 0,
@@ -1817,27 +1814,27 @@ namespace BasicEventSourceTests
                                   FCIB = new
                                   {
                                       DJPBN = "CPJJCNDDMXHWPQGTQXDZ",
-                                      WCCEA = new Byte[] { 131, 73 },
-                                      COQQJ = new Single[] { 0.8700023f, 0.009697844f },
+                                      WCCEA = new byte[] { 131, 73 },
+                                      COQQJ = new float[] { 0.8700023f, 0.009697844f },
                                       VHSEX = new IntPtr(8656),
                                       TUCFL = new
                                       {
                                           ATYMTM = 16177,
                                           NDOSQZ = new DateTime(16454),
-                                          OMYSHO = new Double[] { 0.770742088915194f, 0.754024858471949f },
-                                          IXOUCI = new Boolean[] { false, false, false },
-                                          PANDCW = new Int32[] { 20424, 3478, 17798, 20510 },
+                                          OMYSHO = new double[] { 0.770742088915194f, 0.754024858471949f },
+                                          IXOUCI = new bool[] { false, false, false },
+                                          PANDCW = new int[] { 20424, 3478, 17798, 20510 },
                                           RYHDEM = new
                                           {
                                               HXOZFQG = 238,
-                                              QDLOGXV = new UInt32[] { 50, 186 },
+                                              QDLOGXV = new uint[] { 50, 186 },
                                               PCPMRRR = new
                                               {
                                                   HKBJHEEW = 31409,
                                                   DDJRWHHN = new Guid("e113b463-4e45-1c6b-4f10-98c3ce077c23"),
                                                   QHUDBAOJ = 19261,
                                                   WINJWRJY = "YUZNOCPCWNBLILKZCKRZ",
-                                                  OXQRSBUY = new UInt64[] { 245, 89 },
+                                                  OXQRSBUY = new ulong[] { 245, 89 },
                                                   EESGRDHF = new
                                                   {
                                                       FEPMYFJUP = 0.3790679f,
@@ -1850,13 +1847,13 @@ namespace BasicEventSourceTests
                                                           QTRVTGVOOM = 82,
                                                           AMOWYSHFJN = new
                                                           {
-                                                              JJSJNPRDKAE = new UInt16[] { 37585, 27963, 41751, 14954 },
+                                                              JJSJNPRDKAE = new ushort[] { 37585, 27963, 41751, 14954 },
                                                               BOFFIGRLLHO = new Guid[] { new Guid("a9b7e0c7-b854-4c9f-cbc9-a7776b79141e"), new Guid("d30fc9b3-8a62-8288-1193-09e20f8b87be"), new Guid("d7372ddb-b090-da41-8bfc-55a446abfe11") },
                                                               IKQVPKCKHCJ = new
                                                               {
-                                                                  SFWKCNXKJFVK = new Byte[] { 6, 160 },
+                                                                  SFWKCNXKJFVK = new byte[] { 6, 160 },
                                                                   DWXXLVCLISUF = 229,
-                                                                  AZULVMDJGJYJ = new Int32[] { 17307, 31889 },
+                                                                  AZULVMDJGJYJ = new int[] { 17307, 31889 },
                                                                   YNACTTGGMJRO = new
                                                                   {
                                                                       QUNSIHIEIGBYS = 'A',
@@ -1864,11 +1861,11 @@ namespace BasicEventSourceTests
                                                                       KTGWJVOAQAZTS = "QYGRDWVFJFOFBTTYFDLZ",
                                                                       JEZNPXJPWPGSZ = new
                                                                       {
-                                                                          QWNFNTQFLRKYCN = new Byte[] { 66, 70, 156 },
-                                                                          HUJQIHWMFPADKH = new Int16[] { 12018, 3191, 4937 },
+                                                                          QWNFNTQFLRKYCN = new byte[] { 66, 70, 156 },
+                                                                          HUJQIHWMFPADKH = new short[] { 12018, 3191, 4937 },
                                                                           OKUNUGZVWYMPON = new
                                                                           {
-                                                                              JAOEIMJJIOQTIEQ = new Byte[] { 95, 117, 7, 145 },
+                                                                              JAOEIMJJIOQTIEQ = new byte[] { 95, 117, 7, 145 },
                                                                               IVNDPNYAVNUKUHX = 135,
                                                                               AOGZQTECFWBYUET = new
                                                                               {
@@ -1877,13 +1874,13 @@ namespace BasicEventSourceTests
                                                                                   DRZOOARAYPDKNFHV = new
                                                                                   {
                                                                                       OGCRPSQEBJIFPMOLD = 147,
-                                                                                      ZBZTTRDTXZERUFUUK = new Boolean[] { false, false },
-                                                                                      KBUNERMKLBSGDMIWN = new Char[] { 'W', 'E', 'Q' },
+                                                                                      ZBZTTRDTXZERUFUUK = new bool[] { false, false },
+                                                                                      KBUNERMKLBSGDMIWN = new char[] { 'W', 'E', 'Q' },
                                                                                       YXPXHBFRKKSUADYIX = new
                                                                                       {
                                                                                           EOUCGGRRESAFMIHMBB = 0.5015839f,
                                                                                           NLZACATGRDFEKSYMGR = 21352,
-                                                                                          FCJELYBLHYBKNUQCUB = new UInt16[] { 18880, 54860, 6026, 37501 }
+                                                                                          FCJELYBLHYBKNUQCUB = new ushort[] { 18880, 54860, 6026, 37501 }
                                                                                       }
                                                                                   }
                                                                               }
@@ -1916,10 +1913,10 @@ namespace BasicEventSourceTests
                   new
                   {
                       typeToCheck = 'M',
-                      P = new Double[] { 0.460442545106841f },
+                      P = new double[] { 0.460442545106841f },
                       D = 'E',
-                      A = new UInt32[] { 67, 36, 78 },
-                      W = new Char[] { 'I', 'G' },
+                      A = new uint[] { 67, 36, 78 },
+                      W = new char[] { 'I', 'G' },
                       H = new UIntPtr(117),
                       R = new
                       {
@@ -1927,48 +1924,48 @@ namespace BasicEventSourceTests
                           KU = 20,
                           WL = new TimeSpan(18084),
                           RZ = 147,
-                          QE = new Single[] { 0.6445301f, 0.9593939f, 0.6185194f },
-                          JU = new UInt16[] { 56151, 47367 },
+                          QE = new float[] { 0.6445301f, 0.9593939f, 0.6185194f },
+                          JU = new ushort[] { 56151, 47367 },
                           DY = new
                           {
                               KKM = 32,
                               LNK = 30745,
-                              BLN = new Int16[] { 26524, 28314 },
+                              BLN = new short[] { 26524, 28314 },
                               XBA = new Guid[] { new Guid("d07beea2-ff9f-f7df-a9ee-dce1b1bf28be") },
                               XPD = 163,
                               XYH = new DateTime(6908),
                               IKM = new IntPtr[] { new IntPtr(6356), new IntPtr(7280), new IntPtr(10740) },
                               CIS = new
                               {
-                                  IIDO = new Int16[] { 16042 },
-                                  SVPV = new Decimal(0.902215693566117f),
+                                  IIDO = new short[] { 16042 },
+                                  SVPV = new decimal(0.902215693566117f),
                                   MSEM = new
                                   {
-                                      VJWZU = new Int64[] { 30322, 19992, 8810, 4326 },
+                                      VJWZU = new long[] { 30322, 19992, 8810, 4326 },
                                       WIQZD = new Guid("e79fc3c7-eb57-f50b-eea5-7b2b28444957"),
                                       OISCP = new IntPtr[] { new IntPtr(28509), new IntPtr(12842) },
                                       ACABI = false,
-                                      RVSIX = new Char[] { 'W', 'G', 'P' },
+                                      RVSIX = new char[] { 'W', 'G', 'P' },
                                       MTOVX = new Guid("3ebc7cfc-f41e-50e3-4361-a67a334e99d7"),
                                       UYTRR = new
                                       {
-                                          JITUPO = new Single[] { 0.5914341f },
-                                          UYSDTQ = new Int32[] { 4040, 67, 17391 },
+                                          JITUPO = new float[] { 0.5914341f },
+                                          UYSDTQ = new int[] { 4040, 67, 17391 },
                                           XQGRSC = 15346,
                                           HRKHFD = new
                                           {
                                               HKRDQXB = 'L',
-                                              YKRUVRE = new Single[] { 0.9551666f, 0.6696661f },
+                                              YKRUVRE = new float[] { 0.9551666f, 0.6696661f },
                                               IBCLZQF = new
                                               {
-                                                  EPIXSADR = new Double[] { 0.63716795930507f, 0.488180534675801f, 0.0381078198729585f, 0.999525385908561f, 0.206607579815484f },
-                                                  QZGKUXMS = new Double[] { 0.60333141712627f },
-                                                  UIPNBHXC = new UInt32[] { 14, 51, 194 },
+                                                  EPIXSADR = new double[] { 0.63716795930507f, 0.488180534675801f, 0.0381078198729585f, 0.999525385908561f, 0.206607579815484f },
+                                                  QZGKUXMS = new double[] { 0.60333141712627f },
+                                                  UIPNBHXC = new uint[] { 14, 51, 194 },
                                                   RMLTLUWB = new UIntPtr(36),
                                                   ADNFNIUX = new
                                                   {
                                                       GEYHIUKHS = 229,
-                                                      FOMJUDONY = new Boolean[] { false, false }
+                                                      FOMJUDONY = new bool[] { false, false }
                                                   }
                                               }
                                           }
@@ -1992,26 +1989,26 @@ namespace BasicEventSourceTests
                   new
                   {
                       typeToCheck = 0.646068023352915f,
-                      M = new Decimal(0.853183537187606f),
+                      M = new decimal(0.853183537187606f),
                       D = new
                       {
                           ML = new UIntPtr(28),
-                          YY = new Int32[] { 19574, 14552, 23808, 7767 },
-                          VW = new SByte[] { 86, 3 },
+                          YY = new int[] { 19574, 14552, 23808, 7767 },
+                          VW = new sbyte[] { 86, 3 },
                           KI = new
                           {
-                              ZUB = new SByte[] { 39, 53, 15, 77 },
-                              WIH = new Decimal(0.425560978905093f),
+                              ZUB = new sbyte[] { 39, 53, 15, 77 },
+                              WIH = new decimal(0.425560978905093f),
                               CAB = new
                               {
                                   VVXP = 3044,
                                   IIZF = new TimeSpan(13673),
-                                  PAPB = new UInt16[] { 51465, 54938 },
+                                  PAPB = new ushort[] { 51465, 54938 },
                                   JUSE = new
                                   {
-                                      KASQC = new Byte[] { 186 },
+                                      KASQC = new byte[] { 186 },
                                       VXCOA = new TimeSpan(12884),
-                                      BUMRM = new Int16[] { 29994 },
+                                      BUMRM = new short[] { 29994 },
                                       CRGIS = new
                                       {
                                           VWZRGD = false,
@@ -2020,49 +2017,49 @@ namespace BasicEventSourceTests
                                           {
                                               IXDGBDX = new IntPtr[] { new IntPtr(17133) },
                                               LGAWGWL = new IntPtr[] { new IntPtr(11687) },
-                                              WRUTLFA = new Decimal(0.262238032772317f),
+                                              WRUTLFA = new decimal(0.262238032772317f),
                                               AGICGUQ = new
                                               {
                                                   UCWPJSIQ = 0.755853892190314f,
                                                   BNVUOQDS = new
                                                   {
                                                       LODRABHXA = false,
-                                                      ZGFMTOUDE = new Single[] { 0.5840299f },
+                                                      ZGFMTOUDE = new float[] { 0.5840299f },
                                                       VREZJEFRR = new
                                                       {
                                                           YNJCQKWNCU = 38,
-                                                          LAUIJBZWZO = new Int16[] { 29064, 21536 },
+                                                          LAUIJBZWZO = new short[] { 29064, 21536 },
                                                           IZVBXSVMVK = "ZXVDHVZFOJQPCIBWOIDL",
-                                                          CVISGBJAQJ = new UInt64[] { 245, 64, 120, 139, 14 },
+                                                          CVISGBJAQJ = new ulong[] { 245, 64, 120, 139, 14 },
                                                           EBVERVYZGR = new
                                                           {
-                                                              IKAMECMBQBO = new UInt32[] { 166, 158 },
-                                                              SHPYEBUYTRX = new Decimal(0.0225669848837736f),
+                                                              IKAMECMBQBO = new uint[] { 166, 158 },
+                                                              SHPYEBUYTRX = new decimal(0.0225669848837736f),
                                                               QVALMQKMXSU = new IntPtr(13011),
                                                               OOSFPGWHMKF = new
                                                               {
                                                                   AVEXKRIOIFVG = 20524,
                                                                   HUBUOVBXNFFO = new
                                                                   {
-                                                                      CQAPEKUKRLNCG = new UInt32[] { 23 },
+                                                                      CQAPEKUKRLNCG = new uint[] { 23 },
                                                                       BSICPMYBFRVJZ = new IntPtr(27758),
-                                                                      REDFYHQQVVELW = new Char[] { 'I', 'M' },
+                                                                      REDFYHQQVVELW = new char[] { 'I', 'M' },
                                                                       ODQMWVXDYQRYJ = 11,
-                                                                      LLTUWXCFGHKBN = new UInt64[] { 104, 125, 200 },
+                                                                      LLTUWXCFGHKBN = new ulong[] { 104, 125, 200 },
                                                                       ACUGDSTNAVUBF = new
                                                                       {
-                                                                          OGIGDGKTSBLBLY = new UInt32[] { 231 },
-                                                                          TKXNPPECKWRYSZ = new SByte[] { 20, 43 },
+                                                                          OGIGDGKTSBLBLY = new uint[] { 231 },
+                                                                          TKXNPPECKWRYSZ = new sbyte[] { 20, 43 },
                                                                           XQAYEYGVRIAJFR = 0.946589092233493f,
                                                                           IPCKDRZQEDSJSU = new TimeSpan(18649),
                                                                           JEOHIGHUDBVHPU = new
                                                                           {
-                                                                              XSCHQDXRSFRJUAF = new Int16[] { 21356 },
+                                                                              XSCHQDXRSFRJUAF = new short[] { 21356 },
                                                                               IXAADMBCIHHCWRA = new IntPtr[] { new IntPtr(9871), new IntPtr(15047), new IntPtr(6611), new IntPtr(5979), new IntPtr(9756) },
                                                                               ZHLDWFRMIQYMGPF = new Guid("34a20609-2db9-a506-93c4-b9a16555a96a"),
                                                                               YSUXPQGOVPKQIZI = new UIntPtr[] { new UIntPtr(178) },
-                                                                              GQRTMRIOUWCPBSB = new UInt16[] { 4216, 51572 },
-                                                                              TIPJKQFPBQHVZQP = new SByte[] { 123, 66 },
+                                                                              GQRTMRIOUWCPBSB = new ushort[] { 4216, 51572 },
+                                                                              TIPJKQFPBQHVZQP = new sbyte[] { 123, 66 },
                                                                               JPHDLBLIVTDYTXJ = new
                                                                               {
                                                                                   MJGAVKVZMELBBSUF = 34,
@@ -2105,7 +2102,7 @@ namespace BasicEventSourceTests
                       J = new
                       {
                           GM = 100,
-                          AX = new Boolean[] { false, false }
+                          AX = new bool[] { false, false }
                       }
                   }
               );
@@ -2125,18 +2122,18 @@ namespace BasicEventSourceTests
                       F = new TimeSpan(21567),
                       Y = new
                       {
-                          WT = new Byte[] { 88, 238, 253, 105 },
+                          WT = new byte[] { 88, 238, 253, 105 },
                           VN = 30604,
-                          RI = new Double[] { 0.969028484061839f },
+                          RI = new double[] { 0.969028484061839f },
                           IR = new
                           {
-                              SDS = new Int32[] { 3461, 30290 },
+                              SDS = new int[] { 3461, 30290 },
                               WHY = new IntPtr[] { new IntPtr(29269), new IntPtr(28772) },
                               BNG = new
                               {
                                   QPEA = new Guid("26711abf-2742-fbc5-c132-5597287eac60"),
-                                  SVXY = new UInt32[] { 74 },
-                                  PTLC = new Boolean[] { false, false, false },
+                                  SVXY = new uint[] { 74 },
+                                  PTLC = new bool[] { false, false, false },
                                   XOBH = 161,
                                   RAMN = 201,
                                   UALY = new
@@ -2150,9 +2147,9 @@ namespace BasicEventSourceTests
                                           VOPVPT = false,
                                           YDTYAJ = false,
                                           JUJUSE = false,
-                                          YTDKET = new Double[] { 0.739441244741642f, 0.999074191785918f, 0.921797857583406f, 0.444924431594519f },
-                                          WFMMMV = new SByte[] { 73, 60, 8 },
-                                          VDDVEE = new Int32[] { 20337, 6873 },
+                                          YTDKET = new double[] { 0.739441244741642f, 0.999074191785918f, 0.921797857583406f, 0.444924431594519f },
+                                          WFMMMV = new sbyte[] { 73, 60, 8 },
+                                          VDDVEE = new int[] { 20337, 6873 },
                                           XLVMIW = 31435
                                       }
                                   }
@@ -2173,41 +2170,41 @@ namespace BasicEventSourceTests
                               logger.Write("NNYXRKOFDN",
                   new
                   {
-                      typeToCheck = new Decimal(0.771234201160834f),
-                      D = new UInt32[] { 105, 202, 122 },
-                      G = new Decimal(0.160076419897413f),
-                      Z = new UInt16[] { 4093, 1900, 31931, 33041, 64090 },
+                      typeToCheck = new decimal(0.771234201160834f),
+                      D = new uint[] { 105, 202, 122 },
+                      G = new decimal(0.160076419897413f),
+                      Z = new ushort[] { 4093, 1900, 31931, 33041, 64090 },
                       P = new
                       {
-                          CZ = new Byte[] { 96, 125, 84 },
+                          CZ = new byte[] { 96, 125, 84 },
                           ZT = 0.488393806148504f,
                           VX = "UBWEMCXTCXORXLGBUDAP",
-                          EB = new Double[] { 0.845220311472761f, 0.377726074484049f },
-                          XD = new Decimal(0.230511360443435f),
-                          RF = new Char[] { 'O', 'A' },
+                          EB = new double[] { 0.845220311472761f, 0.377726074484049f },
+                          XD = new decimal(0.230511360443435f),
+                          RF = new char[] { 'O', 'A' },
                           KC = new
                           {
-                              IQN = new Single[] { 0.2724214f },
+                              IQN = new float[] { 0.2724214f },
                               MHS = 8296,
                               NRL = false,
                               XGA = new
                               {
-                                  VOFO = new SByte[] { 31, 26 },
-                                  EYLU = new Char[] { 'K', 'V', 'T', 'Q' },
-                                  EWLD = new Single[] { 0.1778682f },
-                                  NIXW = new Single[] { 0.1150481f },
-                                  HKMK = new Int32[] { 4267, 20585, 29627 },
+                                  VOFO = new sbyte[] { 31, 26 },
+                                  EYLU = new char[] { 'K', 'V', 'T', 'Q' },
+                                  EWLD = new float[] { 0.1778682f },
+                                  NIXW = new float[] { 0.1150481f },
+                                  HKMK = new int[] { 4267, 20585, 29627 },
                                   IANP = 22,
                                   CDKJ = new
                                   {
-                                      ZNWYK = new Double[] { 0.679579930696441f, 0.00625421898730761f, 0.808734144926413f, 0.392857339416098f },
+                                      ZNWYK = new double[] { 0.679579930696441f, 0.00625421898730761f, 0.808734144926413f, 0.392857339416098f },
                                       ZJTOT = 20818,
                                       RWXCR = false,
                                       UWMGA = 29390,
                                       JAFYE = new
                                       {
                                           IJAKFF = 183,
-                                          UVTHVR = new Decimal(0.554945690815777f),
+                                          UVTHVR = new decimal(0.554945690815777f),
                                           EATXGT = new
                                           {
                                               ZLDBSLQ = 67,
@@ -2220,18 +2217,18 @@ namespace BasicEventSourceTests
                                                   TEWUZMNI = "LZQCZPMEKLYQOSGLDOAG",
                                                   HXRNQSFN = new
                                                   {
-                                                      ONTQGTVHK = new SByte[] { 66, 67, 24 },
+                                                      ONTQGTVHK = new sbyte[] { 66, 67, 24 },
                                                       DEWBFXHOG = new
                                                       {
                                                           HYZRKEFNGW = new TimeSpan(13325),
-                                                          JGEDXCZSCE = new UInt64[] { 138, 189 },
+                                                          JGEDXCZSCE = new ulong[] { 138, 189 },
                                                           ECBPHSKQGH = 54959,
                                                           YWPPUEMRAN = new DateTime(24189),
-                                                          XCAFOOFUSF = new UInt32[] { 189, 68 },
+                                                          XCAFOOFUSF = new uint[] { 189, 68 },
                                                           DXYEAIJBQK = new
                                                           {
                                                               EANJYXRPKRH = 7290,
-                                                              RFBSBVBSRNM = new Decimal(0.813681333704703f),
+                                                              RFBSBVBSRNM = new decimal(0.813681333704703f),
                                                               IRSETZNYZRF = new
                                                               {
                                                                   PHCDVOURFUMU = 12121,
@@ -2240,19 +2237,19 @@ namespace BasicEventSourceTests
                                                                       NMEGROWCTSYXD = 0.0571230114703639f,
                                                                       LVWLOTDFMQQHN = 58892,
                                                                       FDBGFAOUGKOGD = new UIntPtr[] { new UIntPtr(78), new UIntPtr(201), new UIntPtr(68), new UIntPtr(140) },
-                                                                      FHDLGNBHYUIZT = new Byte[] { 47, 236 },
-                                                                      PODYSUBMOPXBQ = new Byte[] { 195, 19, 239, 43 },
+                                                                      FHDLGNBHYUIZT = new byte[] { 47, 236 },
+                                                                      PODYSUBMOPXBQ = new byte[] { 195, 19, 239, 43 },
                                                                       MAUYKJECJGEWD = false,
                                                                       AUTJVZCERUEVO = new DateTime(5962),
                                                                       MLGYHHEUQNKMU = new
                                                                       {
-                                                                          SOXXZROCHGFZKW = new UInt32[] { 183, 41, 20 },
+                                                                          SOXXZROCHGFZKW = new uint[] { 183, 41, 20 },
                                                                           OPGAUSQEEPWADV = new UIntPtr[] { new UIntPtr(226), new UIntPtr(184), new UIntPtr(203), new UIntPtr(129) },
                                                                           IMDWGVXHGEEAYX = "PPAYHAGGTMQYPCEZDJFG",
                                                                           PKZVFTXVHTVCSC = new
                                                                           {
-                                                                              ELVMCJZIZTSZUPO = new Int64[] { 16798, 22749, 18457 },
-                                                                              DULTWPIOOIONAUO = new Int32[] { 16044, 1683, 23136, 28852 }
+                                                                              ELVMCJZIZTSZUPO = new long[] { 16798, 22749, 18457 },
+                                                                              DULTWPIOOIONAUO = new int[] { 16044, 1683, 23136, 28852 }
                                                                           }
                                                                       }
                                                                   }
@@ -2282,12 +2279,12 @@ namespace BasicEventSourceTests
                   new
                   {
                       typeToCheck = new IntPtr(32103),
-                      I = new Char[] { 'G', 'T' },
+                      I = new char[] { 'G', 'T' },
                       Q = 0.5608475f,
-                      T = new Int16[] { 22323, 25076, 6683 },
+                      T = new short[] { 22323, 25076, 6683 },
                       P = new
                       {
-                          CS = new UInt16[] { 35499, 18830 },
+                          CS = new ushort[] { 35499, 18830 },
                           IY = new
                           {
                               QFW = 151,
@@ -2295,25 +2292,25 @@ namespace BasicEventSourceTests
                               NQL = 230,
                               EBX = new
                               {
-                                  HQUC = new Int64[] { 12976, 16642 },
+                                  HQUC = new long[] { 12976, 16642 },
                                   XQNN = new
                                   {
                                       MQKRZ = 39,
                                       DEARW = new
                                       {
-                                          YCOQDL = new Single[] { 0.8138473f, 0.7257694f, 0.8797836f, 0.3725139f },
+                                          YCOQDL = new float[] { 0.8138473f, 0.7257694f, 0.8797836f, 0.3725139f },
                                           EAHWCB = new
                                           {
-                                              COFSLKB = new UInt16[] { 22312, 44089 },
+                                              COFSLKB = new ushort[] { 22312, 44089 },
                                               LZPDXTG = new TimeSpan(28973),
-                                              DSRLUFC = new UInt32[] { 83, 99 },
+                                              DSRLUFC = new uint[] { 83, 99 },
                                               MJJDOQY = 29765,
                                               IFLXBLR = 146,
                                               VFEKTIY = new
                                               {
                                                   ZILDKNJF = 4171,
                                                   OIKYFIUY = 'M',
-                                                  GRFUCSHZ = new UInt32[] { 66, 128, 70, 8 },
+                                                  GRFUCSHZ = new uint[] { 66, 128, 70, 8 },
                                                   QBFPHNMO = new
                                                   {
                                                       UWFGMSDJC = new TimeSpan(15460),
@@ -2322,8 +2319,8 @@ namespace BasicEventSourceTests
                                                       {
                                                           WGEWGAENQT = new Guid[] { new Guid("11bb0bb8-356f-e16a-3763-e18278502059"), new Guid("255a75cc-b32d-9ac1-8853-ee3eebf33d2f"), new Guid("7e31286e-3427-f3c1-7093-21d3bf1be3c1"), new Guid("08de931e-d54f-17ac-f3f9-77ed454919e0") },
                                                           IMVMTWQHCG = new TimeSpan(16563),
-                                                          ZUZOQGHFHA = new Single[] { 0.2412148f, 0.5073174f, 0.1115995f },
-                                                          SFSMSSODQG = new UInt16[] { 58532, 57513, 26707, 14931, 32433 },
+                                                          ZUZOQGHFHA = new float[] { 0.2412148f, 0.5073174f, 0.1115995f },
+                                                          SFSMSSODQG = new ushort[] { 58532, 57513, 26707, 14931, 32433 },
                                                           IAJXALTAEB = new
                                                           {
                                                               GFFYANJFSHC = 0.424585855763678f,
@@ -2331,7 +2328,7 @@ namespace BasicEventSourceTests
                                                               KFVHIMQYNGU = 15,
                                                               ULNVYDGUTWW = new
                                                               {
-                                                                  IIIXNPHRLQZA = new Boolean[] { false, false, false, false },
+                                                                  IIIXNPHRLQZA = new bool[] { false, false, false, false },
                                                                   SDQQWUTRBSGV = new TimeSpan(30615)
                                                               }
                                                           }
@@ -2361,52 +2358,52 @@ namespace BasicEventSourceTests
                       typeToCheck = new UIntPtr(54),
                       Q = false,
                       X = 47,
-                      L = new Boolean[] { false, false, false, false },
-                      D = new SByte[] { 1, 38, 42 },
+                      L = new bool[] { false, false, false, false },
+                      D = new sbyte[] { 1, 38, 42 },
                       N = new
                       {
                           CD = 180,
-                          UH = new UInt32[] { 84, 87, 235, 153, 10 },
+                          UH = new uint[] { 84, 87, 235, 153, 10 },
                           BI = new
                           {
-                              DJF = new Char[] { 'N', 'C', 'F', 'F' },
-                              GKM = new Byte[] { 126, 142 },
-                              MNR = new Int16[] { 21547, 9297, 2433 },
+                              DJF = new char[] { 'N', 'C', 'F', 'F' },
+                              GKM = new byte[] { 126, 142 },
+                              MNR = new short[] { 21547, 9297, 2433 },
                               RSK = 6538,
-                              EYY = new Int64[] { 28081, 23219, 30386, 31162 },
+                              EYY = new long[] { 28081, 23219, 30386, 31162 },
                               PID = 204,
                               LLF = new
                               {
-                                  UHBP = new Byte[] { 166 },
+                                  UHBP = new byte[] { 166 },
                                   RPMI = 10,
                                   BUZP = false,
-                                  MSYL = new UInt64[] { 217 },
+                                  MSYL = new ulong[] { 217 },
                                   SVYH = 0.8612404f,
                                   IBHX = 0.5478505f,
                                   BZIR = new Guid("4ca25ff1-35f8-4260-584e-b85907f707d0"),
                                   LPOF = new
                                   {
                                       ONEBY = new Guid("eb5933b2-7ff6-515b-24ea-099f50711c69"),
-                                      VVUYA = new Int64[] { 22593, 1182, 26461 },
-                                      KVWZQ = new Byte[] { 200, 32 },
+                                      VVUYA = new long[] { 22593, 1182, 26461 },
+                                      KVWZQ = new byte[] { 200, 32 },
                                       ZEONH = new
                                       {
-                                          UTJZQC = new Double[] { 0.866660404888289f, 0.321525201351161f },
-                                          CTQNBU = new SByte[] { 40, 5, 69, 29, 104 },
+                                          UTJZQC = new double[] { 0.866660404888289f, 0.321525201351161f },
+                                          CTQNBU = new sbyte[] { 40, 5, 69, 29, 104 },
                                           ADYDSO = 0.408148484028945f,
                                           PXEJOZ = 63,
                                           OETMWD = new DateTime(26460),
                                           XOHBFM = new
                                           {
-                                              OGCAELO = new SByte[] { 38, 79 },
-                                              PKAEIXW = new UInt16[] { 9767, 27932 },
-                                              FYXAPDW = new Char[] { 'T', 'S', 'I', 'A' },
+                                              OGCAELO = new sbyte[] { 38, 79 },
+                                              PKAEIXW = new ushort[] { 9767, 27932 },
+                                              FYXAPDW = new char[] { 'T', 'S', 'I', 'A' },
                                               FEHSJDJ = new UIntPtr(48),
                                               NVCXKCP = new
                                               {
-                                                  WLCRFZSE = new Byte[] { 12, 101 },
+                                                  WLCRFZSE = new byte[] { 12, 101 },
                                                   RFMXHEDY = new IntPtr(18221),
-                                                  XBXVJQIH = new UInt16[] { 36867 },
+                                                  XBXVJQIH = new ushort[] { 36867 },
                                                   OULTRTPF = new
                                                   {
                                                       FMDVIPRSU = 245,
@@ -2426,9 +2423,9 @@ namespace BasicEventSourceTests
                                                               LDBHHRJPXIH = 0.01723471f,
                                                               USSUUGIOKLY = new
                                                               {
-                                                                  DOTSPCWZTFCV = new Int64[] { 4208 },
+                                                                  DOTSPCWZTFCV = new long[] { 4208 },
                                                                   YYGNBRSDOTAO = 101,
-                                                                  GYBRDDTXRAUM = new Double[] { 0.083259023764757f, 0.19944675927956f },
+                                                                  GYBRDDTXRAUM = new double[] { 0.083259023764757f, 0.19944675927956f },
                                                                   VSXRPBHJIWKG = new
                                                                   {
                                                                       LLEYONIOMGBEX = new TimeSpan(24364),
@@ -2436,7 +2433,7 @@ namespace BasicEventSourceTests
                                                                       {
                                                                           WPEHWSHSSLGDUO = 149,
                                                                           UNCGCCDUXUDIBE = 14222,
-                                                                          KPQWWAJRHOTMMP = new SByte[] { 48, 90, 102, 48 },
+                                                                          KPQWWAJRHOTMMP = new sbyte[] { 48, 90, 102, 48 },
                                                                           FDPLKWUNBMZXEK = 42,
                                                                           RGJZXUWTDKZOIQ = new
                                                                           {
@@ -2448,14 +2445,14 @@ namespace BasicEventSourceTests
                                                                                   JHTQEUFLJZCKVCQD = new DateTime(19671),
                                                                                   JOBOOGOBXUHFNVPG = new IntPtr[] { new IntPtr(4926) },
                                                                                   CKMAQQTRKIVRDJUB = 34900,
-                                                                                  EUTMCCXLEELHVPSH = new Boolean[] { false, false, false },
+                                                                                  EUTMCCXLEELHVPSH = new bool[] { false, false, false },
                                                                                   CIYKVXVFGGQYKMFS = new
                                                                                   {
                                                                                       CPPPIJDFMOFDMGYWI = new Guid("4c7d96dc-83ea-3c3a-5134-48c7cbd5b9ee"),
                                                                                       XTZWRWWRUGUYBCMDR = new Guid[] { new Guid("b0a50b66-6c75-56e2-4c2c-3c5b530d6eb4"), new Guid("9b7c5fbd-2681-cb0f-21b6-a03a0cfd549f") },
                                                                                       TETYGRSTZHUPAOYVJ = new
                                                                                       {
-                                                                                          QTYLMMKFUGBJTVFXHF = new UInt32[] { 174 },
+                                                                                          QTYLMMKFUGBJTVFXHF = new uint[] { 174 },
                                                                                           SEYDWJARTKDHDNXMQG = 9460,
                                                                                           TMLQJGLORTIVQPXOZI = 23534,
                                                                                           JOBVXCQHHLQZKWAFTI = new
@@ -2501,7 +2498,7 @@ namespace BasicEventSourceTests
                       typeToCheck = new Guid("fdee0960-9e05-8db9-f585-cec721a01de5"),
                       A = 0.4568011f,
                       O = "KOFWUBTGQVYIJBBEWCHG",
-                      C = new Int64[] { 18091, 4814 },
+                      C = new long[] { 18091, 4814 },
                       W = new IntPtr(5151),
                       G = 21789,
                       Z = 29203,
@@ -2515,8 +2512,8 @@ namespace BasicEventSourceTests
                               QUB = new Guid("8bd2b783-2984-4abf-4152-d3f9b2b390d4"),
                               JQR = new
                               {
-                                  RVLJ = new Byte[] { 200, 111, 117 },
-                                  EKSK = new Int16[] { 17065, 15247, 28485 },
+                                  RVLJ = new byte[] { 200, 111, 117 },
+                                  EKSK = new short[] { 17065, 15247, 28485 },
                                   XJVS = new
                                   {
                                       CIKFG = 32764,
@@ -2525,9 +2522,9 @@ namespace BasicEventSourceTests
                                           MGABQI = 48032,
                                           WQMGQD = new
                                           {
-                                              NSSLGFB = new Int64[] { 16825, 353, 20192 },
+                                              NSSLGFB = new long[] { 16825, 353, 20192 },
                                               LJTJBRC = 27526,
-                                              GECZGAQ = new Int16[] { 6849, 2416 }
+                                              GECZGAQ = new short[] { 6849, 2416 }
                                           }
                                       }
                                   }
@@ -2550,13 +2547,13 @@ namespace BasicEventSourceTests
                   {
                       typeToCheck = new TimeSpan(11130),
                       D = 7276,
-                      Y = new SByte[] { 9, 93 },
+                      Y = new sbyte[] { 9, 93 },
                       R = 0.860734415641397f,
                       U = new
                       {
-                          GE = new Single[] { 0.5344664f, 0.8434142f },
+                          GE = new float[] { 0.5344664f, 0.8434142f },
                           YW = new IntPtr(9799),
-                          GI = new Char[] { 'O', 'E', 'U', 'O' },
+                          GI = new char[] { 'O', 'E', 'U', 'O' },
                           CA = "OEXUCYDHKGOTIBHZEHSB",
                           TT = new
                           {
@@ -2566,27 +2563,27 @@ namespace BasicEventSourceTests
                               ZVT = 52,
                               XEM = new
                               {
-                                  XJHT = new Byte[] { 90 },
-                                  OANL = new Decimal(0.520461108777887f),
+                                  XJHT = new byte[] { 90 },
+                                  OANL = new decimal(0.520461108777887f),
                                   PGRI = new
                                   {
                                       JNNCZ = 0.992586f,
                                       NAQKC = 1,
                                       TQRNJ = false,
-                                      HCUGO = new Byte[] { 159, 66, 252, 71 },
+                                      HCUGO = new byte[] { 159, 66, 252, 71 },
                                       NKOBI = new DateTime(16146),
                                       QJXCM = new
                                       {
                                           OIBQDX = 2936,
-                                          LXSHWP = new UInt64[] { 40 },
+                                          LXSHWP = new ulong[] { 40 },
                                           ITTUHA = 15262,
                                           IUSKCG = new
                                           {
-                                              TLXXLGL = new Single[] { 0.7762031f, 0.8219473f },
-                                              KUBMVTL = new UInt64[] { 173, 174 },
+                                              TLXXLGL = new float[] { 0.7762031f, 0.8219473f },
+                                              KUBMVTL = new ulong[] { 173, 174 },
                                               FBEJSGH = new
                                               {
-                                                  KOVCGFAE = new Char[] { 'I', 'M' },
+                                                  KOVCGFAE = new char[] { 'I', 'M' },
                                                   YDAZRJDJ = 224,
                                                   DGOILHXF = 1394,
                                                   FQDVXVGJ = new
@@ -2596,11 +2593,11 @@ namespace BasicEventSourceTests
                                                       ZOEFHZECV = new
                                                       {
                                                           DTETCURFVI = 30450,
-                                                          UXWXVOOPMP = new Char[] { 'O', 'L', 'W' },
+                                                          UXWXVOOPMP = new char[] { 'O', 'L', 'W' },
                                                           WUKEFDYEPR = "ZWZJTXQYOYVHVOKNYFTE",
                                                           AFMRAYLTMF = new
                                                           {
-                                                              UHIKEQNFQEX = new UInt64[] { 232, 220, 184 },
+                                                              UHIKEQNFQEX = new ulong[] { 232, 220, 184 },
                                                               GBQFGMFCLTW = new
                                                               {
                                                                   PCXPODNDRZDV = new UIntPtr(133),
@@ -2608,33 +2605,33 @@ namespace BasicEventSourceTests
                                                                   ZRWPNPNPQCAK = new
                                                                   {
                                                                       ZOBDGVHYVVCDN = 41326,
-                                                                      MQGXADRHGGGIU = new Byte[] { 133, 247 },
+                                                                      MQGXADRHGGGIU = new byte[] { 133, 247 },
                                                                       YGVXKJHTLZOED = 6997,
-                                                                      COAWDAVDJWXTW = new Boolean[] { false },
+                                                                      COAWDAVDJWXTW = new bool[] { false },
                                                                       YDUCDWRCFHFWU = new Guid("57d6a279-eae4-dde0-bb73-42853d01a4dc"),
                                                                       YORNDSIYXTCDM = new
                                                                       {
                                                                           BNQKTWALJBLWLL = 5825,
-                                                                          DAEYXIBIWWPFWI = new Byte[] { 120, 167 },
-                                                                          EARRVDYXAPMGRS = new UInt64[] { 183, 15, 118 },
+                                                                          DAEYXIBIWWPFWI = new byte[] { 120, 167 },
+                                                                          EARRVDYXAPMGRS = new ulong[] { 183, 15, 118 },
                                                                           JAQBZNEEOBWZLF = false,
                                                                           KDGKDXBZCGXIWV = 60,
                                                                           PBWWSZTRWNDTHY = new
                                                                           {
-                                                                              MVCTVNLWKMYQZSP = new Double[] { 0.898203371976597f, 0.251778495149584f, 0.00988541404245673f },
-                                                                              KSKJIQALKPNQUHS = new Int32[] { 4999, 22298, 16993, 10137 },
-                                                                              CGCADSTRKYCZABA = new UInt32[] { 90, 223, 39 },
+                                                                              MVCTVNLWKMYQZSP = new double[] { 0.898203371976597f, 0.251778495149584f, 0.00988541404245673f },
+                                                                              KSKJIQALKPNQUHS = new int[] { 4999, 22298, 16993, 10137 },
+                                                                              CGCADSTRKYCZABA = new uint[] { 90, 223, 39 },
                                                                               JOOCMLTKCWIURQY = 0.9272836f,
                                                                               NPFSGZQSYSXLJOM = new Guid[] { new Guid("7897d648-4885-4b1e-f875-56fbba253e6c"), new Guid("cf530ea8-d7ae-8661-434f-6de483db4572"), new Guid("7187cc0f-5ecf-bfac-ebc8-157343ebc06d") },
                                                                               YDQRQUJPAWLXSHD = new
                                                                               {
-                                                                                  EDOLASDOXKNTVZTH = new Single[] { 0.9288588f, 0.06844223f, 0.02058957f },
-                                                                                  SVEFWVVCFDEUGKUG = new UInt64[] { 214 },
+                                                                                  EDOLASDOXKNTVZTH = new float[] { 0.9288588f, 0.06844223f, 0.02058957f },
+                                                                                  SVEFWVVCFDEUGKUG = new ulong[] { 214 },
                                                                                   BKQUOSHCBNQHOQOJ = new
                                                                                   {
                                                                                       PIAXRPEQYLSPHJBTM = 'R',
-                                                                                      SXHMYTUIMXPOGWUMF = new Single[] { 0.2762389f, 0.3306668f, 0.3118541f, 0.6606092f },
-                                                                                      LGZWDARUSMWUGWQRS = new Byte[] { 228, 188, 189 },
+                                                                                      SXHMYTUIMXPOGWUMF = new float[] { 0.2762389f, 0.3306668f, 0.3118541f, 0.6606092f },
+                                                                                      LGZWDARUSMWUGWQRS = new byte[] { 228, 188, 189 },
                                                                                       ZXVWEAWDJLOPNEYHR = 149,
                                                                                       ELHYCVPCISPFCKRJK = new
                                                                                       {
@@ -2643,7 +2640,7 @@ namespace BasicEventSourceTests
                                                                                           PYZGMZCQGLNPRMWJHY = 195,
                                                                                           ODRSNVUXRCMZMSJVBI = new Guid[] { new Guid("5c8d49ea-344f-bcea-5538-d37e8d35c25b"), new Guid("65879a0a-0edb-95ad-ca3e-748b227b85a5") },
                                                                                           JCZAQGDBVXPGEFKMGH = 93,
-                                                                                          FEZEZNDYCAIYNEBLDR = new Byte[] { 162 }
+                                                                                          FEZEZNDYCAIYNEBLDR = new byte[] { 162 }
                                                                                       }
                                                                                   }
                                                                               }
@@ -2676,21 +2673,21 @@ namespace BasicEventSourceTests
                   new
                   {
                       typeToCheck = new DateTimeOffset(30147, TimeSpan.FromHours(-8)),
-                      A = new Char[] { 'X', 'T' },
-                      D = new UInt16[] { 23656 },
+                      A = new char[] { 'X', 'T' },
+                      D = new ushort[] { 23656 },
                       P = new UIntPtr[] { new UIntPtr(162), new UIntPtr(224) },
                       R = 0.9887526f,
                       W = new
                       {
-                          CI = new Byte[] { 124 },
-                          BH = new Int16[] { 10766, 11320 },
+                          CI = new byte[] { 124 },
+                          BH = new short[] { 10766, 11320 },
                           XL = 83,
                           DK = new
                           {
-                              YAR = new SByte[] { 57, 93 },
+                              YAR = new sbyte[] { 57, 93 },
                               NGU = 4607,
-                              JIQ = new UInt64[] { 196, 7, 199 },
-                              ZWK = new UInt16[] { 34225, 2774 },
+                              JIQ = new ulong[] { 196, 7, 199 },
+                              ZWK = new ushort[] { 34225, 2774 },
                               VDB = new
                               {
                                   OFXN = new DateTime(27082),
@@ -2701,30 +2698,30 @@ namespace BasicEventSourceTests
                                       BLQWZ = new IntPtr[] { new IntPtr(21788), new IntPtr(6002), new IntPtr(5366) },
                                       XPPWQ = new
                                       {
-                                          ZWYYWN = new Int32[] { 2721, 21432 },
+                                          ZWYYWN = new int[] { 2721, 21432 },
                                           WIXCNZ = new UIntPtr(218),
                                           KWGLHI = new UIntPtr[] { new UIntPtr(229), new UIntPtr(11) },
-                                          ZWUJZL = new SByte[] { 86, 2, 55 },
+                                          ZWUJZL = new sbyte[] { 86, 2, 55 },
                                           RPEYNU = new
                                           {
                                               EVIWEDT = "BFWWQYNYOWSDTKTPMPDR",
                                               EHESQFS = 68,
-                                              ZXRIUKL = new UInt64[] { 242, 68 },
+                                              ZXRIUKL = new ulong[] { 242, 68 },
                                               LXUZDPS = new Guid[] { new Guid("738fc0d8-e2bd-0396-788b-3cf75db338cd"), new Guid("32b05ee8-22fd-6d39-ec2d-2b55a568790f"), new Guid("af3a67d9-8c59-b44c-232f-4bfc7c5ae4ba") },
                                               KDGFEKK = new
                                               {
                                                   FRGJNMXQ = 27,
                                                   MMNLTWZI = 98,
-                                                  EEOZEBHK = new Double[] { 0.533405699084236f, 0.183722000654657f, 0.847805717889129f, 0.974985818366979f, 0.53808212351896f },
+                                                  EEOZEBHK = new double[] { 0.533405699084236f, 0.183722000654657f, 0.847805717889129f, 0.974985818366979f, 0.53808212351896f },
                                                   SHYPSEXG = new Guid("e5240539-ff48-2109-efb1-d071eb1418ae"),
                                                   EPPRGZPZ = new
                                                   {
-                                                      JJGVVVANR = new Double[] { 0.146959445042051f, 0.241059295945363f },
+                                                      JJGVVVANR = new double[] { 0.146959445042051f, 0.241059295945363f },
                                                       PFBTFENYT = 4974,
                                                       SJNLPOWTF = "ICVYXFDMBTTYWYZDMLIO",
                                                       AYNWLDPEN = new
                                                       {
-                                                          NYOKYNVMBL = new Int64[] { 16342, 12878 },
+                                                          NYOKYNVMBL = new long[] { 16342, 12878 },
                                                           JNLIJLZUPC = new UIntPtr(53),
                                                           EDGISKJOBM = 'D',
                                                           CMBTKSUUCF = 58,
@@ -2747,20 +2744,15 @@ namespace BasicEventSourceTests
                     Assert.Equal("FWKFKXHDFY", evt.EventName);
                 }));
 
-#if USE_ETW
-                if(TestUtilities.IsProcessElevated)
-                {
-                    using (var listener = new EtwListener())
-                    {
-                        EventTestHarness.RunTests(tests, listener, logger);
-                    }
-                }
-#endif // USE_ETW
+                Test_Write_Fuzzy_TestEtw(tests, logger);
+
                 using (var listener = new EventListenerListener())
                 {
                     EventTestHarness.RunTests(tests, listener, logger);
                 }
             }
         }
+
+        static partial void Test_Write_Fuzzy_TestEtw(List<SubTest> tests, EventSource logger);
     }
 }

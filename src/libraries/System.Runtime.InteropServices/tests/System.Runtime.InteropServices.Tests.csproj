@@ -15,6 +15,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="System\Runtime\CompilerServices\IUnknownConstantAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ArrayWithOffsetTests.cs" />
     <Compile Include="System\Runtime\InteropServices\BestFitMappingAttributeTests.cs" />
@@ -61,9 +62,6 @@
     <Compile Include="System\Runtime\InteropServices\UnknownWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\UnmanagedFunctionPointerAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\VariantWrapperTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Compile Include="System\Runtime\InteropServices\AutomationProxyAttributeTests.cs" />

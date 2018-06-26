@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace System.Transactions.Tests
 {
-    public class AsyncTransactionScopeTests
+    public class AsyncTransactionScopeTests : IDisposable
     {
         private readonly ITestOutputHelper output;
 
@@ -28,6 +28,13 @@ namespace System.Transactions.Tests
         public AsyncTransactionScopeTests(ITestOutputHelper output)
         {
             this.output = output;
+            // Make sure we start with Transaction.Current = null.
+            Transaction.Current = null;
+        }
+
+        public void Dispose()
+        {
+            Transaction.Current = null;
         }
 
         /// <summary>

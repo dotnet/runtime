@@ -495,7 +495,7 @@ namespace System.Net.Sockets
         // Returns:
         // 
         //     An IASyncResult, representing the read.
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, Object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
         {
 #if DEBUG
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
@@ -600,7 +600,7 @@ namespace System.Net.Sockets
         // Returns:
         // 
         //     An IASyncResult, representing the write.
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, Object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
         {
 #if DEBUG
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))

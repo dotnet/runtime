@@ -4,19 +4,10 @@
 
 namespace System.ComponentModel
 {
-    /// <summary>
-    ///    <para>[To be supplied.]</para>
-    /// </summary>
     public interface ITypedList
     {
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         string GetListName(PropertyDescriptor[] listAccessors);
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         PropertyDescriptorCollection GetItemProperties(PropertyDescriptor[] listAccessors);
     }
 }

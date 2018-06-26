@@ -698,33 +698,33 @@ namespace System.Diagnostics
             }
         }
 
-        private static void SetPrivilege(string privilegeName, int attrib)
+        private static unsafe void SetPrivilege(string privilegeName, int attrib)
         {
-            SafeTokenHandle hToken = null;
-            Interop.Advapi32.LUID debugValue = new Interop.Advapi32.LUID();
-
             // this is only a "pseudo handle" to the current process - no need to close it later
             SafeProcessHandle processHandle = Interop.Kernel32.GetCurrentProcess();
 
-            // get the process token so we can adjust the privilege on it.  We DO need to
-            // close the token when we're done with it.
-            if (!Interop.Advapi32.OpenProcessToken(processHandle, Interop.Kernel32.HandleOptions.TOKEN_ADJUST_PRIVILEGES, out hToken))
-            {
-                throw new Win32Exception();
-            }
+            SafeTokenHandle hToken = null;
 
             try
             {
-                if (!Interop.Advapi32.LookupPrivilegeValue(null, privilegeName, out debugValue))
+                // get the process token so we can adjust the privilege on it.  We DO need to
+                // close the token when we're done with it.
+                if (!Interop.Advapi32.OpenProcessToken(processHandle, Interop.Kernel32.HandleOptions.TOKEN_ADJUST_PRIVILEGES, out hToken))
                 {
                     throw new Win32Exception();
                 }
 
-                Interop.Advapi32.TokenPrivileges tkp = new Interop.Advapi32.TokenPrivileges();
-                tkp.Luid = debugValue;
-                tkp.Attributes = attrib;
+                if (!Interop.Advapi32.LookupPrivilegeValue(null, privilegeName, out Interop.Advapi32.LUID luid))
+                {
+                    throw new Win32Exception();
+                }
 
-                Interop.Advapi32.AdjustTokenPrivileges(hToken, false, tkp, 0, IntPtr.Zero, IntPtr.Zero);
+                Interop.Advapi32.TOKEN_PRIVILEGE tp;
+                tp.PrivilegeCount = 1;
+                tp.Privileges.Luid = luid;
+                tp.Privileges.Attributes = (uint)attrib;
+
+                Interop.Advapi32.AdjustTokenPrivileges(hToken, false, &tp, 0, null, null);
 
                 // AdjustTokenPrivileges can return true even if it failed to
                 // set the privilege, so we need to use GetLastError
@@ -735,9 +735,6 @@ namespace System.Diagnostics
             }
             finally
             {
-#if FEATURE_TRACESWITCH
-                Debug.WriteLineIf(_processTracing.TraceVerbose, "Process - CloseHandle(processToken)");
-#endif
                 if (hToken != null)
                 {
                     hToken.Dispose();
@@ -753,15 +750,6 @@ namespace System.Diagnostics
         /// <internalonly/>
         private SafeProcessHandle GetProcessHandle(int access, bool throwIfExited)
         {
-#if FEATURE_TRACESWITCH
-            Debug.WriteLineIf(_processTracing.TraceVerbose, "GetProcessHandle(access = 0x" + access.ToString("X8", CultureInfo.InvariantCulture) + ", throwIfExited = " + throwIfExited + ")");
-#if DEBUG
-            if (_processTracing.TraceVerbose) {
-                StackFrame calledFrom = new StackTrace(true).GetFrame(0);
-                Debug.WriteLine("   called from " + calledFrom.GetFileName() + ", line " + calledFrom.GetFileLineNumber());
-            }
-#endif
-#endif
             if (_haveProcessHandle)
             {
                 if (throwIfExited)

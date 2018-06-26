@@ -3,6 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{AF3EBF3B-526A-4B51-9F3D-62B0113CD01F}</ProjectGuid>
+    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+    <NoWarn>$(NoWarn);1574;1591;1734;0419</NoWarn>
     <RootNamespace>System.ComponentModel.TypeConverter</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -13,6 +15,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="System\ComponentModelSwitches.cs" />
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
     <Compile Include="System\ComponentModel\BaseNumberConverter.cs" />
     <Compile Include="System\ComponentModel\BooleanConverter.cs" />
@@ -120,7 +123,7 @@
     <Compile Include="System\ComponentModel\BaseComponentEditor.cs" />
     <Compile Include="System\ComponentModel\Container.cs" />
     <Compile Include="System\ComponentModel\ContainerFilterService.cs" />
-    <Compile Include="System\ComponentModel\Design\InheritanceAttribute.cs" />
+    <Compile Include="System\ComponentModel\InheritanceAttribute.cs" />
     <Compile Include="System\ComponentModel\Design\InheritanceLevel.cs" />
     <Compile Include="System\ComponentModel\CultureInfoConverter.cs" />
     <Compile Include="System\ComponentModel\Design\Serialization\InstanceDescriptor.cs" />
@@ -177,29 +180,29 @@
     <Compile Include="System\ComponentModel\RunInstallerAttribute.cs" />
     <Compile Include="System\ComponentModel\SettingsBindableAttribute.cs" />
     <Compile Include="System\ComponentModel\SyntaxCheck.cs" />
-    <Compile Include="System\ComponentModel\Design\ToolboxItemAttribute.cs" />
+    <Compile Include="System\ComponentModel\ToolboxItemAttribute.cs" />
     <Compile Include="System\ComponentModel\ToolboxItemFilterAttribute.cs" />
     <Compile Include="System\ComponentModel\ToolboxItemFilterType.cs" />
     <Compile Include="System\ComponentModel\WarningException.cs" />
-    <Compile Include="System\ComponentModel\Design\ActiveDocumentEvent.cs" />
+    <Compile Include="System\ComponentModel\Design\ActiveDesignerEventArgs.cs" />
     <Compile Include="System\ComponentModel\Design\ActiveDocumentEventHandler.cs" />
     <Compile Include="System\ComponentModel\Design\IDesignerHost.cs" />
     <Compile Include="System\ComponentModel\Design\IServiceObjectContainer.cs" />
     <Compile Include="System\ComponentModel\Design\DesignerTransaction.cs" />
-    <Compile Include="System\ComponentModel\Design\DesignerTransactionCloseEvent.cs" />
+    <Compile Include="System\ComponentModel\Design\DesignerTransactionCloseEventArgs.cs" />
     <Compile Include="System\ComponentModel\Design\DesignerTransactionCloseEventHandler.cs" />
     <Compile Include="System\ComponentModel\Design\ServiceCreatorCallback.cs" />
-    <Compile Include="System\ComponentModel\Design\ComponentChangedEvent.cs" />
+    <Compile Include="System\ComponentModel\Design\ComponentChangedEventArgs.cs" />
     <Compile Include="System\ComponentModel\Design\ComponentChangedEventHandler.cs" />
-    <Compile Include="System\ComponentModel\Design\ComponentChangingEvent.cs" />
+    <Compile Include="System\ComponentModel\Design\ComponentChangingEventArgs.cs" />
     <Compile Include="System\ComponentModel\Design\ComponentChangingEventHandler.cs" />
-    <Compile Include="System\ComponentModel\Design\ComponentEvent.cs" />
+    <Compile Include="System\ComponentModel\Design\ComponentEventArgs.cs" />
     <Compile Include="System\ComponentModel\Design\ComponentEventHandler.cs" />
-    <Compile Include="System\ComponentModel\Design\ComponentRenameEvent.cs" />
+    <Compile Include="System\ComponentModel\Design\ComponentRenameEventArgs.cs" />
     <Compile Include="System\ComponentModel\Design\ComponentRenameEventHandler.cs" />
-    <Compile Include="System\ComponentModel\Design\DocumentCollection.cs" />
-    <Compile Include="System\ComponentModel\Design\DocumentEventArgs.cs" />
-    <Compile Include="System\ComponentModel\Design\DocumentEventHandler.cs" />
+    <Compile Include="System\ComponentModel\Design\DesignerCollection.cs" />
+    <Compile Include="System\ComponentModel\Design\DesignerEventArgs.cs" />
+    <Compile Include="System\ComponentModel\Design\DesignerEventHandler.cs" />
     <Compile Include="System\ComponentModel\Design\DesignerOptionService.cs" />
     <Compile Include="System\ComponentModel\Design\HelpKeywordAttribute.cs" />
     <Compile Include="System\ComponentModel\Design\HelpKeywordType.cs" />
@@ -223,7 +226,7 @@
     <Compile Include="System\ComponentModel\Design\ViewTechnology.cs" />
     <Compile Include="System\ComponentModel\Design\SelectionTypes.cs" />
     <Compile Include="System\ComponentModel\Design\IInheritanceService.cs" />
-    <Compile Include="System\ComponentModel\Design\ServiceObjectContainer.cs" />
+    <Compile Include="System\ComponentModel\Design\ServiceContainer.cs" />
     <Compile Include="System\ComponentModel\Design\StandardToolWindows.cs" />
     <Compile Include="System\ComponentModel\TypeDescriptionProviderService.cs" />
     <Compile Include="System\ComponentModel\Design\Serialization\ComponentSerializationService.cs" />
@@ -244,8 +247,6 @@
     <Compile Include="System\ComponentModel\Design\Serialization\RootDesignerSerializerAttribute.cs" />
     <Compile Include="System\ComponentModel\ComponentResourceManager.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverter.cs" />
-    <!-- Random pieces of code required to build  -->
-    <Compile Include="System\misc.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />

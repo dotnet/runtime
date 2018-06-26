@@ -5,12 +5,11 @@
 using System.Threading;
 using System.ComponentModel;
 using System.ComponentModel.Design;
-using System.Security.Permissions;
 
 namespace System.Timers
 {
     /// <summary>
-    ///    <para>Handles recurring events in an application.</para>
+    /// Handles recurring events in an application.
     /// </summary>
     [DefaultProperty("Interval"), DefaultEvent("Elapsed")]
     public partial class Timer : Component, ISupportInitialize
@@ -28,11 +27,10 @@ namespace System.Timers
         private object _cookie;
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.Timers.Timer'/> class, with the properties
-        ///    set to initial values.</para>
+        /// Initializes a new instance of the <see cref='System.Timers.Timer'/> class, with the properties
+        /// set to initial values.
         /// </summary>
-        public Timer()
-        : base()
+        public Timer() : base()
         {
             _interval = 100;
             _enabled = false;
@@ -43,15 +41,14 @@ namespace System.Timers
         }
 
         /// <summary>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Timers.Timer'/> class, setting the <see cref='System.Timers.Timer.Interval'/> property to the specified period.
-        ///    </para>
+        /// Initializes a new instance of the <see cref='System.Timers.Timer'/> class, setting the <see cref='System.Timers.Timer.Interval'/> property to the specified period.
         /// </summary>
-        public Timer(double interval)
-        : this()
+        public Timer(double interval) : this()
         {
             if (interval <= 0)
+            {
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(interval), interval));
+            }
 
             double roundedInterval = Math.Ceiling(interval);
             if (roundedInterval > int.MaxValue || roundedInterval <= 0)
@@ -63,22 +60,19 @@ namespace System.Timers
         }
 
         /// <summary>
-        /// <para>Gets or sets a value indicating whether the Timer raises the Tick event each time the specified
-        /// Interval has elapsed,
-        ///    when Enabled is set to true.</para>
+        /// Gets or sets a value indicating whether the Timer raises the Tick event each time the specified
+        /// Interval has elapsed, when Enabled is set to true.
         /// </summary>
         [TimersDescription(nameof(SR.TimerAutoReset), null), DefaultValue(true)]
         public bool AutoReset
         {
-            get
-            {
-                return _autoReset;
-            }
-
+            get => _autoReset;
             set
             {
                 if (DesignMode)
+                {
                     _autoReset = value;
+                }
                 else if (_autoReset != value)
                 {
                     _autoReset = value;
@@ -91,19 +85,14 @@ namespace System.Timers
         }
 
         /// <summary>
-        /// <para>Gets or sets a value indicating whether the <see cref='System.Timers.Timer'/>
-        /// is able
-        /// to raise events at a defined interval.</para>
+        /// Gets or sets a value indicating whether the <see cref='System.Timers.Timer'/>
+        /// is able to raise events at a defined interval.
+        /// The default value by design is false, don't change it.
         /// </summary>
-        // The default value by design is false, don't change it.
         [TimersDescription(nameof(SR.TimerEnabled), null), DefaultValue(false)]
         public bool Enabled
         {
-            get
-            {
-                return _enabled;
-            }
-
+            get => _enabled;
             set
             {
                 if (DesignMode)
@@ -112,7 +101,9 @@ namespace System.Timers
                     _enabled = value;
                 }
                 else if (_initializing)
+                {
                     _delayedEnable = value;
+                }
                 else if (_enabled != value)
                 {
                     if (!value)
@@ -156,21 +147,18 @@ namespace System.Timers
         }
 
         /// <summary>
-        ///    <para>Gets or
-        ///       sets the interval on which
-        ///       to raise events.</para>
+        /// Gets or sets the interval on which to raise events.
         /// </summary>
         [TimersDescription(nameof(SR.TimerInterval), null), DefaultValue(100d)]
         public double Interval
         {
-            get
-            {
-                return _interval;
-            }
+            get => _interval;
             set
             {
                 if (value <= 0)
+                {
                     throw new ArgumentException(SR.Format(SR.TimerInvalidInterval, value, 0));
+                }
 
                 _interval = value;
                 if (_timer != null)
@@ -182,46 +170,36 @@ namespace System.Timers
 
 
         /// <summary>
-        /// <para>Occurs when the <see cref='System.Timers.Timer.Interval'/> has
-        ///    elapsed.</para>
+        /// Occurs when the <see cref='System.Timers.Timer.Interval'/> has
+        /// elapsed.
         /// </summary>
         [TimersDescription(nameof(SR.TimerIntervalElapsed), null)]
         public event ElapsedEventHandler Elapsed
         {
-            add
-            {
-                _onIntervalElapsed += value;
-            }
-            remove
-            {
-                _onIntervalElapsed -= value;
-            }
+            add => _onIntervalElapsed += value;
+            remove => _onIntervalElapsed -= value;
         }
 
         /// <summary>
-        ///    <para>
-        ///       Sets the enable property in design mode to true by default.
-        ///    </para>
+        /// Sets the enable property in design mode to true by default.
         /// </summary>                              
-        /// <internalonly/>
         public override ISite Site
         {
-            get
-            {
-                return base.Site;
-            }
+            get => base.Site;
             set
             {
                 base.Site = value;
                 if (DesignMode)
+                {
                     _enabled = true;
+                }
             }
         }
 
 
         /// <summary>
-        ///    <para>Gets or sets the object used to marshal event-handler calls that are issued when
-        ///       an interval has elapsed.</para>
+        /// Gets or sets the object used to marshal event-handler calls that are issued when
+        /// an interval has elapsed.
         /// </summary>
         [DefaultValue(null), TimersDescription(nameof(SR.TimerSynchronizingObject), null)]
         public ISynchronizeInvoke SynchronizingObject
@@ -233,23 +211,19 @@ namespace System.Timers
                     IDesignerHost host = (IDesignerHost)GetService(typeof(IDesignerHost));
                     object baseComponent = host?.RootComponent;
                     if (baseComponent != null && baseComponent is ISynchronizeInvoke)
+                    {
                         _synchronizingObject = (ISynchronizeInvoke)baseComponent;
+                    }
                 }
 
                 return _synchronizingObject;
             }
 
-            set
-            {
-                _synchronizingObject = value;
-            }
+            set => _synchronizingObject = value;
         }
 
         /// <summary>
-        ///    <para>
-        ///       Notifies
-        ///       the object that initialization is beginning and tells it to stand by.
-        ///    </para>
+        /// Notifies the object that initialization is beginning and tells it to stand by.
         /// </summary>
         public void BeginInit()
         {
@@ -258,8 +232,8 @@ namespace System.Timers
         }
 
         /// <summary>
-        ///    <para>Disposes of the resources (other than memory) used by
-        ///       the <see cref='System.Timers.Timer'/>.</para>
+        /// Disposes of the resources (other than memory) used by
+        /// the <see cref='System.Timers.Timer'/>.
         /// </summary>
         public void Close()
         {
@@ -282,9 +256,7 @@ namespace System.Timers
         }
 
         /// <summary>
-        ///    <para>
-        ///       Notifies the object that initialization is complete.
-        ///    </para>
+        /// Notifies the object that initialization is complete.
         /// </summary>
         public void EndInit()
         {
@@ -293,17 +265,12 @@ namespace System.Timers
         }
 
         /// <summary>
-        /// <para>Starts the timing by setting <see cref='System.Timers.Timer.Enabled'/> to <see langword='true'/>.</para>
+        /// Starts the timing by setting <see cref='System.Timers.Timer.Enabled'/> to <see langword='true'/>.
         /// </summary>
-        public void Start()
-        {
-            Enabled = true;
-        }
+        public void Start() => Enabled = true;
 
         /// <summary>
-        ///    <para>
-        ///       Stops the timing by setting <see cref='System.Timers.Timer.Enabled'/> to <see langword='false'/>.
-        ///    </para>
+        /// Stops the timing by setting <see cref='System.Timers.Timer.Enabled'/> to <see langword='false'/>.
         /// </summary>
         public void Stop()
         {
@@ -343,4 +310,3 @@ namespace System.Timers
         }
     }
 }
-

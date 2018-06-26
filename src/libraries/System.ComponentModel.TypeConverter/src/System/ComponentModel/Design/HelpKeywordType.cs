@@ -5,29 +5,20 @@
 namespace System.ComponentModel.Design
 {
     /// <summary>
-    ///    <para>
-    ///       Specifies identifiers that can be
-    ///       used to indicate the type of a help keyword.
-    ///    </para>
+    /// Specifies identifiers that can be used to indicate the type of a help keyword.
     /// </summary>
     public enum HelpKeywordType
     {
         /// <summary>
-        ///    <para>
-        ///       Indicates the keyword is a word F1 was pressed to request help regarding.
-        ///    </para>
+        /// Indicates the keyword is a word F1 was pressed to request help regarding.
         /// </summary>
         F1Keyword,
         /// <summary>
-        ///    <para>
-        ///       Indicates the keyword is a general keyword.
-        ///    </para>
+        /// Indicates the keyword is a general keyword.
         /// </summary>
         GeneralKeyword,
         /// <summary>
-        ///    <para>
-        ///       Indicates the keyword is a filter keyword.
-        ///    </para>
+        /// Indicates the keyword is a filter keyword.
         /// </summary>
         FilterKeyword
     }

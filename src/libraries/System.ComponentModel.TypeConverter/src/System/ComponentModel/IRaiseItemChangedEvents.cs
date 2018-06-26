@@ -6,8 +6,6 @@ namespace System.ComponentModel
 {
     public interface IRaiseItemChangedEvents
     {
-        /// <summary>
-        /// </summary>
         bool RaisesItemChangedEvents { get; }
     }
 }

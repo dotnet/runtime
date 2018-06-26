@@ -22,7 +22,7 @@ namespace System.ComponentModel.Composition
 
         public CatalogReflectionContextAttribute(Type reflectionContextType)
         {
-            Requires.NotNull(reflectionContextType, "reflectionContextType");
+            Requires.NotNull(reflectionContextType, nameof(reflectionContextType));
 
             _reflectionContextType = reflectionContextType;
         }

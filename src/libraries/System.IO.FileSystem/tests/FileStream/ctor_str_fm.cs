@@ -22,7 +22,7 @@ namespace System.IO.Tests
         [Fact]
         public void EmptyPathThrows()
         {
-            Assert.Throws<ArgumentException>(() => CreateFileStream(String.Empty, FileMode.Open));
+            Assert.Throws<ArgumentException>(() => CreateFileStream(string.Empty, FileMode.Open));
         }
 
         [Fact]

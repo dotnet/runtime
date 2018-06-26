@@ -7,9 +7,8 @@ using System.Globalization;
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Provides a type
-    ///       converter to convert double-precision, floating point number objects to and from various
-    ///       other representations.</para>
+    /// Provides a type converter to convert double-precision, floating point number objects
+    /// to and from various other representations.
     /// </summary>
     public class DoubleConverter : BaseNumberConverter
     {
@@ -36,7 +35,7 @@ namespace System.ComponentModel
         /// </summary>
         internal override object FromString(string value, NumberFormatInfo formatInfo)
         {
-            return Double.Parse(value, NumberStyles.Float, formatInfo);
+            return double.Parse(value, NumberStyles.Float, formatInfo);
         }
 
         /// <summary>
@@ -44,8 +43,7 @@ namespace System.ComponentModel
         /// </summary>
         internal override string ToString(object value, NumberFormatInfo formatInfo)
         {
-            return ((Double)value).ToString("R", formatInfo);
+            return ((double)value).ToString("R", formatInfo);
         }
     }
 }
-

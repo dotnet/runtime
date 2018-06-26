@@ -154,7 +154,7 @@ namespace System.Drawing
             if (count > 0)
             {
                 imageData = original.imageData;
-                id = UInt16.MaxValue;
+                id = ushort.MaxValue;
 
                 for (ushort i = 0; i < count; i++)
                 {
@@ -167,7 +167,7 @@ namespace System.Drawing
                 }
 
                 // if a perfect match isn't found we look for the biggest icon *smaller* than specified
-                if (id == UInt16.MaxValue)
+                if (id == ushort.MaxValue)
                 {
                     int requested = Math.Min(size.Height, size.Width);
                     // previously best set to 1st image, as this might not be smallest changed loop to check all
@@ -192,10 +192,10 @@ namespace System.Drawing
                 }
 
                 // last one, if nothing better can be found
-                if (id == UInt16.MaxValue)
+                if (id == ushort.MaxValue)
                 {
                     int i = count;
-                    while (id == UInt16.MaxValue && i > 0)
+                    while (id == ushort.MaxValue && i > 0)
                     {
                         i--;
                         if (!iconDir.idEntries[i].ignore)
@@ -203,7 +203,7 @@ namespace System.Drawing
                     }
                 }
 
-                if (id == UInt16.MaxValue)
+                if (id == ushort.MaxValue)
                     throw new ArgumentException("Icon", "No valid icon image found");
 
                 iconSize.Height = iconDir.idEntries[id].height;
@@ -239,7 +239,7 @@ namespace System.Drawing
         public Icon(Type type, string resource)
         {
             if (resource == null)
-                throw new ArgumentException("resource");
+                throw new ArgumentException(nameof(resource));
 
             // For compatibility with the .NET Framework
             if (type == null)
@@ -296,7 +296,7 @@ namespace System.Drawing
         {
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
-            if (String.IsNullOrEmpty(filePath))
+            if (string.IsNullOrEmpty(filePath))
                 throw new ArgumentException("Null or empty path.", "path");
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("Couldn't find specified file.", filePath);
@@ -331,7 +331,7 @@ namespace System.Drawing
         public static Icon FromHandle(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
-                throw new ArgumentException("handle");
+                throw new ArgumentException(nameof(handle));
 
             return new Icon(handle);
         }
@@ -377,7 +377,7 @@ namespace System.Drawing
             writer.Write(ide.planes);
             writer.Write(ide.bitCount);
             writer.Write(ide.bytesInRes);
-            writer.Write((offset == UInt32.MaxValue) ? ide.imageOffset : offset);
+            writer.Write((offset == uint.MaxValue) ? ide.imageOffset : offset);
         }
 
         private void SaveAll(BinaryWriter writer)
@@ -389,7 +389,7 @@ namespace System.Drawing
 
             for (int i = 0; i < (int)count; i++)
             {
-                SaveIconDirEntry(writer, iconDir.idEntries[i], UInt32.MaxValue);
+                SaveIconDirEntry(writer, iconDir.idEntries[i], uint.MaxValue);
             }
 
             for (int i = 0; i < (int)count; i++)
@@ -486,7 +486,7 @@ namespace System.Drawing
 
             ide.bytesInRes = (uint)(bih.biSize + xor_size + and_size);
 
-            SaveIconDirEntry(writer, ide, UInt32.MaxValue);
+            SaveIconDirEntry(writer, ide, uint.MaxValue);
             SaveIconImage(writer, ii);
         }
 
@@ -512,7 +512,7 @@ namespace System.Drawing
         public void Save(Stream outputStream)
         {
             if (outputStream == null)
-                throw new NullReferenceException("outputStream");
+                throw new NullReferenceException(nameof(outputStream));
 
             // save every icons available
             Save(outputStream, -1, -1);
@@ -707,7 +707,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(stream));
 
             if (stream.Length == 0)
-                throw new System.ArgumentException("The argument 'stream' must be a picture that can be used as a Icon", "stream");
+                throw new System.ArgumentException("The argument 'stream' must be a picture that can be used as a Icon", nameof(stream));
 
             //read the icon header
             BinaryReader reader = new BinaryReader(stream);
@@ -715,11 +715,11 @@ namespace System.Drawing
             //iconDir = new IconDir ();
             iconDir.idReserved = reader.ReadUInt16();
             if (iconDir.idReserved != 0) //must be 0
-                throw new System.ArgumentException("Invalid Argument", "stream");
+                throw new System.ArgumentException("Invalid Argument", nameof(stream));
 
             iconDir.idType = reader.ReadUInt16();
             if (iconDir.idType != 1) //must be 1
-                throw new System.ArgumentException("Invalid Argument", "stream");
+                throw new System.ArgumentException("Invalid Argument", nameof(stream));
 
             ushort dirEntryCount = reader.ReadUInt16();
             imageData = new ImageData[dirEntryCount];
@@ -863,7 +863,7 @@ namespace System.Drawing
                 if (nread != xorSize)
                 {
                     string msg = string.Format("{0} data length expected {1}, read {2}", "XOR", xorSize, nread);
-                    throw new ArgumentException(msg, "stream");
+                    throw new ArgumentException(msg, nameof(stream));
                 }
 
                 //Determine the AND array size
@@ -874,7 +874,7 @@ namespace System.Drawing
                 if (nread != andSize)
                 {
                     string msg = string.Format("{0} data length expected {1}, read {2}", "AND", andSize, nread);
-                    throw new ArgumentException(msg, "stream");
+                    throw new ArgumentException(msg, nameof(stream));
                 }
 
                 imageData[j] = iidata;

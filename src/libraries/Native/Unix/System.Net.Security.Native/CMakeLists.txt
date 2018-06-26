@@ -1,4 +1,4 @@
-project(System.Net.Security.Native)
+project(System.Net.Security.Native C)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -24,7 +24,7 @@ else()
 endif()
 
 set(NATIVEGSS_SOURCES
-    pal_gssapi.cpp
+    pal_gssapi.c
 )
 
 add_library(System.Net.Security.Native

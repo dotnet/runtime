@@ -29,8 +29,7 @@ namespace System.ComponentModel.DataAnnotations
             }
             if (!EnumType.IsEnum)
             {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture,
-                    SR.EnumDataTypeAttribute_TypeNeedsToBeAnEnum, EnumType.FullName));
+                throw new InvalidOperationException(SR.Format(SR.EnumDataTypeAttribute_TypeNeedsToBeAnEnum, EnumType.FullName));
             }
 
             if (value == null)

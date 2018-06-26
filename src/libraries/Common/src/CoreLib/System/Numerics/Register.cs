@@ -17,155 +17,155 @@ namespace System.Numerics
         #region Internal Storage Fields
         // Internal System.Byte Fields
         [FieldOffset(0)]
-        internal Byte byte_0;
+        internal byte byte_0;
         [FieldOffset(1)]
-        internal Byte byte_1;
+        internal byte byte_1;
         [FieldOffset(2)]
-        internal Byte byte_2;
+        internal byte byte_2;
         [FieldOffset(3)]
-        internal Byte byte_3;
+        internal byte byte_3;
         [FieldOffset(4)]
-        internal Byte byte_4;
+        internal byte byte_4;
         [FieldOffset(5)]
-        internal Byte byte_5;
+        internal byte byte_5;
         [FieldOffset(6)]
-        internal Byte byte_6;
+        internal byte byte_6;
         [FieldOffset(7)]
-        internal Byte byte_7;
+        internal byte byte_7;
         [FieldOffset(8)]
-        internal Byte byte_8;
+        internal byte byte_8;
         [FieldOffset(9)]
-        internal Byte byte_9;
+        internal byte byte_9;
         [FieldOffset(10)]
-        internal Byte byte_10;
+        internal byte byte_10;
         [FieldOffset(11)]
-        internal Byte byte_11;
+        internal byte byte_11;
         [FieldOffset(12)]
-        internal Byte byte_12;
+        internal byte byte_12;
         [FieldOffset(13)]
-        internal Byte byte_13;
+        internal byte byte_13;
         [FieldOffset(14)]
-        internal Byte byte_14;
+        internal byte byte_14;
         [FieldOffset(15)]
-        internal Byte byte_15;
+        internal byte byte_15;
 
         // Internal System.SByte Fields
         [FieldOffset(0)]
-        internal SByte sbyte_0;
+        internal sbyte sbyte_0;
         [FieldOffset(1)]
-        internal SByte sbyte_1;
+        internal sbyte sbyte_1;
         [FieldOffset(2)]
-        internal SByte sbyte_2;
+        internal sbyte sbyte_2;
         [FieldOffset(3)]
-        internal SByte sbyte_3;
+        internal sbyte sbyte_3;
         [FieldOffset(4)]
-        internal SByte sbyte_4;
+        internal sbyte sbyte_4;
         [FieldOffset(5)]
-        internal SByte sbyte_5;
+        internal sbyte sbyte_5;
         [FieldOffset(6)]
-        internal SByte sbyte_6;
+        internal sbyte sbyte_6;
         [FieldOffset(7)]
-        internal SByte sbyte_7;
+        internal sbyte sbyte_7;
         [FieldOffset(8)]
-        internal SByte sbyte_8;
+        internal sbyte sbyte_8;
         [FieldOffset(9)]
-        internal SByte sbyte_9;
+        internal sbyte sbyte_9;
         [FieldOffset(10)]
-        internal SByte sbyte_10;
+        internal sbyte sbyte_10;
         [FieldOffset(11)]
-        internal SByte sbyte_11;
+        internal sbyte sbyte_11;
         [FieldOffset(12)]
-        internal SByte sbyte_12;
+        internal sbyte sbyte_12;
         [FieldOffset(13)]
-        internal SByte sbyte_13;
+        internal sbyte sbyte_13;
         [FieldOffset(14)]
-        internal SByte sbyte_14;
+        internal sbyte sbyte_14;
         [FieldOffset(15)]
-        internal SByte sbyte_15;
+        internal sbyte sbyte_15;
 
         // Internal System.UInt16 Fields
         [FieldOffset(0)]
-        internal UInt16 uint16_0;
+        internal ushort uint16_0;
         [FieldOffset(2)]
-        internal UInt16 uint16_1;
+        internal ushort uint16_1;
         [FieldOffset(4)]
-        internal UInt16 uint16_2;
+        internal ushort uint16_2;
         [FieldOffset(6)]
-        internal UInt16 uint16_3;
+        internal ushort uint16_3;
         [FieldOffset(8)]
-        internal UInt16 uint16_4;
+        internal ushort uint16_4;
         [FieldOffset(10)]
-        internal UInt16 uint16_5;
+        internal ushort uint16_5;
         [FieldOffset(12)]
-        internal UInt16 uint16_6;
+        internal ushort uint16_6;
         [FieldOffset(14)]
-        internal UInt16 uint16_7;
+        internal ushort uint16_7;
 
         // Internal System.Int16 Fields
         [FieldOffset(0)]
-        internal Int16 int16_0;
+        internal short int16_0;
         [FieldOffset(2)]
-        internal Int16 int16_1;
+        internal short int16_1;
         [FieldOffset(4)]
-        internal Int16 int16_2;
+        internal short int16_2;
         [FieldOffset(6)]
-        internal Int16 int16_3;
+        internal short int16_3;
         [FieldOffset(8)]
-        internal Int16 int16_4;
+        internal short int16_4;
         [FieldOffset(10)]
-        internal Int16 int16_5;
+        internal short int16_5;
         [FieldOffset(12)]
-        internal Int16 int16_6;
+        internal short int16_6;
         [FieldOffset(14)]
-        internal Int16 int16_7;
+        internal short int16_7;
 
         // Internal System.UInt32 Fields
         [FieldOffset(0)]
-        internal UInt32 uint32_0;
+        internal uint uint32_0;
         [FieldOffset(4)]
-        internal UInt32 uint32_1;
+        internal uint uint32_1;
         [FieldOffset(8)]
-        internal UInt32 uint32_2;
+        internal uint uint32_2;
         [FieldOffset(12)]
-        internal UInt32 uint32_3;
+        internal uint uint32_3;
 
         // Internal System.Int32 Fields
         [FieldOffset(0)]
-        internal Int32 int32_0;
+        internal int int32_0;
         [FieldOffset(4)]
-        internal Int32 int32_1;
+        internal int int32_1;
         [FieldOffset(8)]
-        internal Int32 int32_2;
+        internal int int32_2;
         [FieldOffset(12)]
-        internal Int32 int32_3;
+        internal int int32_3;
 
         // Internal System.UInt64 Fields
         [FieldOffset(0)]
-        internal UInt64 uint64_0;
+        internal ulong uint64_0;
         [FieldOffset(8)]
-        internal UInt64 uint64_1;
+        internal ulong uint64_1;
 
         // Internal System.Int64 Fields
         [FieldOffset(0)]
-        internal Int64 int64_0;
+        internal long int64_0;
         [FieldOffset(8)]
-        internal Int64 int64_1;
+        internal long int64_1;
 
         // Internal System.Single Fields
         [FieldOffset(0)]
-        internal Single single_0;
+        internal float single_0;
         [FieldOffset(4)]
-        internal Single single_1;
+        internal float single_1;
         [FieldOffset(8)]
-        internal Single single_2;
+        internal float single_2;
         [FieldOffset(12)]
-        internal Single single_3;
+        internal float single_3;
 
         // Internal System.Double Fields
         [FieldOffset(0)]
-        internal Double double_0;
+        internal double double_0;
         [FieldOffset(8)]
-        internal Double double_1;
+        internal double double_1;
 
         #endregion Internal Storage Fields
     }

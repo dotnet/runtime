@@ -56,12 +56,12 @@ namespace System.Xml.Xsl.Qil
 
         public QilName QName(string local, string uri)
         {
-            return _f.LiteralQName(local, uri, System.String.Empty);
+            return _f.LiteralQName(local, uri, string.Empty);
         }
 
         public QilName QName(string local)
         {
-            return _f.LiteralQName(local, System.String.Empty, System.String.Empty);
+            return _f.LiteralQName(local, string.Empty, string.Empty);
         }
 
         public QilNode Unknown(XmlQueryType t)

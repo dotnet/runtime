@@ -17,6 +17,7 @@ namespace System.Xml.Tests
             _output = output;
         }
 
+        [ActiveIssue(30017)]
         //[Variation("2", Desc = "Create a file that is Unicode encoded and send to xsltc.exe", Pri = 1, Params = new object[] { "@infft2.txt", "fft2.dll", "yes", "fft2", "fft2.pdb", "no", "fft2.txt" })]
         //[InlineData("@infft2.txt", "fft2.dll", "yes", "fft2", "fft2.pdb", "no", "fft2.txt")] //Skipping this, it tries to load System.dll
         //[Variation("3", Desc = "Create a file that is UTF-8 encoded and send to xsltc.exe", Pri = 1, Params = new object[] { "@infft3.txt", "fft3.dll", "yes", "fft3", "fft3.pdb", "no", "fft3.txt" })]
@@ -63,13 +64,13 @@ namespace System.Xml.Tests
             {
                 return; //TEST_SKIPPED;
             }
-            String cmdLine = ReplaceCurrentWorkingDirectory(param0.ToString());
-            String asmName = param1.ToString();
-            bool asmCreated = String.Compare(param2.ToString(), "yes", true) == 0;
-            String typeName = param3.ToString();
-            String pdbName = param4.ToString();
-            bool pdbCreated = String.Compare(param5.ToString(), "yes", true) == 0;
-            String baselineFile = param6.ToString();
+            string cmdLine = ReplaceCurrentWorkingDirectory(param0.ToString());
+            string asmName = param1.ToString();
+            bool asmCreated = string.Compare(param2.ToString(), "yes", true) == 0;
+            string typeName = param3.ToString();
+            string pdbName = param4.ToString();
+            bool pdbCreated = string.Compare(param5.ToString(), "yes", true) == 0;
+            string baselineFile = param6.ToString();
 
             VerifyTest(cmdLine, asmName, asmCreated, typeName, pdbName, pdbCreated, baselineFile, _createFromInputFile);
         }

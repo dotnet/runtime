@@ -4,16 +4,12 @@
 
 namespace System.Xml.Xsl
 {
-    using System.Reflection;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Xml.XPath;
     using System.Xml.Xsl.XsltOld;
-    using MS.Internal.Xml.XPath;
-    using MS.Internal.Xml.Cache;
-    using System.Collections.Generic;
     using System.Xml.Xsl.XsltOld.Debugger;
-    using System.Runtime.Versioning;
 
     public sealed class XslTransform
     {
@@ -242,7 +238,7 @@ namespace System.Xml.Xsl
             Transform(input.CreateNavigator(), args, output, _DocumentResolver);
         }
 
-        public void Transform(String inputfile, String outputfile, XmlResolver resolver)
+        public void Transform(string inputfile, string outputfile, XmlResolver resolver)
         {
             FileStream fs = null;
             try
@@ -261,7 +257,7 @@ namespace System.Xml.Xsl
             }
         }
 
-        public void Transform(String inputfile, String outputfile)
+        public void Transform(string inputfile, string outputfile)
         {
             Transform(inputfile, outputfile, _DocumentResolver);
         }
@@ -298,46 +294,6 @@ namespace System.Xml.Xsl
             else
             {
                 return XmlNullResolver.Singleton;
-            }
-        }
-
-        private class DebuggerAddapter : IXsltDebugger
-        {
-            private object _unknownDebugger;
-            private MethodInfo _getBltIn;
-            private MethodInfo _onCompile;
-            private MethodInfo _onExecute;
-            public DebuggerAddapter(object unknownDebugger)
-            {
-                _unknownDebugger = unknownDebugger;
-                BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
-                Type unknownType = unknownDebugger.GetType();
-                _getBltIn = unknownType.GetMethod("GetBuiltInTemplatesUri", flags);
-                _onCompile = unknownType.GetMethod("OnInstructionCompile", flags);
-                _onExecute = unknownType.GetMethod("OnInstructionExecute", flags);
-            }
-            // ------------------ IXsltDebugger ---------------
-            public string GetBuiltInTemplatesUri()
-            {
-                if (_getBltIn == null)
-                {
-                    return null;
-                }
-                return (string)_getBltIn.Invoke(_unknownDebugger, new object[] { });
-            }
-            public void OnInstructionCompile(XPathNavigator styleSheetNavigator)
-            {
-                if (_onCompile != null)
-                {
-                    _onCompile.Invoke(_unknownDebugger, new object[] { styleSheetNavigator });
-                }
-            }
-            public void OnInstructionExecute(IXsltProcessor xsltProcessor)
-            {
-                if (_onExecute != null)
-                {
-                    _onExecute.Invoke(_unknownDebugger, new object[] { xsltProcessor });
-                }
             }
         }
     }

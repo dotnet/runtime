@@ -55,7 +55,7 @@ namespace System.Globalization
 
         internal static readonly int[] HijriMonthDays = { 0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355 };
 
-        private int _hijriAdvance = Int32.MinValue;
+        private int _hijriAdvance = int.MinValue;
 
         // DateTime.MaxValue = Hijri calendar (year:9666, month: 4, day: 3).
         internal const int MaxCalendarYear = 9666;
@@ -176,7 +176,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_hijriAdvance == Int32.MinValue)
+                if (_hijriAdvance == int.MinValue)
                 {
                     // Never been set before.  Use the system value from registry.
                     _hijriAdvance = GetHijriDateAdjustment();

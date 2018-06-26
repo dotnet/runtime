@@ -17,9 +17,6 @@
     <Compile Include="ExtensionsTests.cs" />
     <Compile Include="TupleTests.cs" />
     <Compile Include="ValueTupleTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

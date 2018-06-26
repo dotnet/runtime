@@ -28,7 +28,7 @@ namespace TaskCoverage
         public static void TaskContinuation()
         {
             int taskCount = Environment.ProcessorCount;
-            int maxDOP = Int32.MaxValue;
+            int maxDOP = int.MaxValue;
             int maxNumberExecutionsPerTask = 1;
             int data = 0;
 
@@ -68,7 +68,7 @@ namespace TaskCoverage
                         {
                             int d = (int)o;
                             Interlocked.Add(ref data, d);
-                        }, j, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled, TaskScheduler.Default).Wait(Int32.MaxValue - 1, cts2.Token);
+                        }, j, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled, TaskScheduler.Default).Wait(int.MaxValue - 1, cts2.Token);
                 });
 
                 allTasks[i].Start(scheduler.ConcurrentScheduler);

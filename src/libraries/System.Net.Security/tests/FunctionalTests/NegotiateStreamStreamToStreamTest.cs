@@ -16,7 +16,12 @@ namespace System.Net.Security.Tests
     [PlatformSpecific(TestPlatforms.Windows)] // NegotiateStream only supports client-side functionality on Unix
     public abstract class NegotiateStreamStreamToStreamTest
     {
-        private readonly byte[] _sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
+        private const int PartialBytesToRead = 5;
+        private static readonly byte[] s_sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
+
+        private const int MaxWriteDataSize = 63 * 1024; // NegoState.MaxWriteDataSize
+        private static string s_longString = new string('A', MaxWriteDataSize) + 'Z';
+        private static readonly byte[] s_longMsg = Encoding.ASCII.GetBytes(s_longString);
 
         protected abstract Task AuthenticateAsClientAsync(NegotiateStream client, NetworkCredential credential, string targetName);
         protected abstract Task AuthenticateAsServerAsync(NegotiateStream server);
@@ -85,6 +90,8 @@ namespace System.Net.Security.Tests
             {
                 Assert.False(client.IsAuthenticated);
                 Assert.False(server.IsAuthenticated);
+                Assert.False(client.IsMutuallyAuthenticated);
+                Assert.False(server.IsMutuallyAuthenticated);
 
                 Task[] auth = new Task[2];
 
@@ -191,8 +198,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task NegotiateStream_StreamToStream_Successive_ClientWrite_Sync_Success()
         {
-            byte[] recvBuf = new byte[_sampleMsg.Length];
+            byte[] recvBuf = new byte[s_sampleMsg.Length];
             VirtualNetwork network = new VirtualNetwork();
+            int bytesRead = 0;
 
             using (var clientStream = new VirtualNetworkStream(network, isServer: false))
             using (var serverStream = new VirtualNetworkStream(network, isServer: true))
@@ -208,23 +216,30 @@ namespace System.Net.Security.Tests
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
-                client.Write(_sampleMsg, 0, _sampleMsg.Length);
-                server.Read(recvBuf, 0, _sampleMsg.Length);
+                client.Write(s_sampleMsg, 0, s_sampleMsg.Length);
+                server.Read(recvBuf, 0, s_sampleMsg.Length);
 
-                Assert.True(_sampleMsg.SequenceEqual(recvBuf));
+                Assert.True(s_sampleMsg.SequenceEqual(recvBuf));
 
-                client.Write(_sampleMsg, 0, _sampleMsg.Length);
-                server.Read(recvBuf, 0, _sampleMsg.Length);
+                client.Write(s_sampleMsg, 0, s_sampleMsg.Length);
 
-                Assert.True(_sampleMsg.SequenceEqual(recvBuf));
+                // Test partial sync read.
+                bytesRead = server.Read(recvBuf, 0, PartialBytesToRead);
+                Assert.Equal(PartialBytesToRead, bytesRead);
+
+                bytesRead = server.Read(recvBuf, PartialBytesToRead, s_sampleMsg.Length - PartialBytesToRead);
+                Assert.Equal(s_sampleMsg.Length - PartialBytesToRead, bytesRead);
+
+                Assert.True(s_sampleMsg.SequenceEqual(recvBuf));
             }
         }
 
         [Fact]
         public async Task NegotiateStream_StreamToStream_Successive_ClientWrite_Async_Success()
         {
-            byte[] recvBuf = new byte[_sampleMsg.Length];
+            byte[] recvBuf = new byte[s_sampleMsg.Length];
             VirtualNetwork network = new VirtualNetwork();
+            int bytesRead = 0;
 
             using (var clientStream = new VirtualNetworkStream(network, isServer: false))
             using (var serverStream = new VirtualNetworkStream(network, isServer: true))
@@ -240,18 +255,77 @@ namespace System.Net.Security.Tests
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
 
-                auth[0] = client.WriteAsync(_sampleMsg, 0, _sampleMsg.Length);
-                auth[1] = server.ReadAsync(recvBuf, 0, _sampleMsg.Length);
+                auth[0] = client.WriteAsync(s_sampleMsg, 0, s_sampleMsg.Length);
+                auth[1] = server.ReadAsync(recvBuf, 0, s_sampleMsg.Length);
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
-                Assert.True(_sampleMsg.SequenceEqual(recvBuf));
+                Assert.True(s_sampleMsg.SequenceEqual(recvBuf));
 
-                auth[0] = client.WriteAsync(_sampleMsg, 0, _sampleMsg.Length);
-                auth[1] = server.ReadAsync(recvBuf, 0, _sampleMsg.Length);
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(auth);
-                Assert.True(_sampleMsg.SequenceEqual(recvBuf));
+                await client.WriteAsync(s_sampleMsg, 0, s_sampleMsg.Length);
+
+                // Test partial async read.
+                bytesRead = await server.ReadAsync(recvBuf, 0, PartialBytesToRead);
+                Assert.Equal(PartialBytesToRead, bytesRead);
+
+                bytesRead = await server.ReadAsync(recvBuf, PartialBytesToRead, s_sampleMsg.Length - PartialBytesToRead);
+                Assert.Equal(s_sampleMsg.Length - PartialBytesToRead, bytesRead);
+
+                Assert.True(s_sampleMsg.SequenceEqual(recvBuf));
             }
         }
 
+        [Fact]
+        public async Task NegotiateStream_ReadWriteLongMsgSync_Success()
+        {
+            byte[] recvBuf = new byte[s_longMsg.Length];
+            var network = new VirtualNetwork();
+            int bytesRead = 0;
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new NegotiateStream(clientStream))
+            using (var server = new NegotiateStream(serverStream))
+            {
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, string.Empty),
+                    server.AuthenticateAsServerAsync());
+
+                client.Write(s_longMsg, 0, s_longMsg.Length);
+
+                while (bytesRead < s_longMsg.Length)
+                {
+                    bytesRead += server.Read(recvBuf, bytesRead, s_longMsg.Length - bytesRead);
+                }
+
+                Assert.True(s_longMsg.SequenceEqual(recvBuf));
+            }
+        }
+
+        [Fact]
+        public async Task NegotiateStream_ReadWriteLongMsgAsync_Success()
+        {
+            byte[] recvBuf = new byte[s_longMsg.Length];
+            var network = new VirtualNetwork();
+            int bytesRead = 0;
+
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var client = new NegotiateStream(clientStream))
+            using (var server = new NegotiateStream(serverStream))
+            {
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(CredentialCache.DefaultNetworkCredentials, string.Empty),
+                    server.AuthenticateAsServerAsync());
+
+                await client.WriteAsync(s_longMsg, 0, s_longMsg.Length);
+
+                while (bytesRead < s_longMsg.Length)
+                {
+                    bytesRead += await server.ReadAsync(recvBuf, bytesRead, s_longMsg.Length - bytesRead);
+                }
+
+                Assert.True(s_longMsg.SequenceEqual(recvBuf));
+            }
+        }
 
         [Fact]
         public void NegotiateStream_StreamToStream_Flush_Propagated()
@@ -294,6 +368,33 @@ namespace System.Net.Security.Tests
             server.AuthenticateAsServerAsync();
     }
 
+    public sealed class NegotiateStreamStreamToStreamTest_Async_TestOverloadNullBinding : NegotiateStreamStreamToStreamTest
+    {
+        protected override Task AuthenticateAsClientAsync(NegotiateStream client, NetworkCredential credential, string targetName) =>
+            client.AuthenticateAsClientAsync(credential, null, targetName);
+
+        protected override Task AuthenticateAsServerAsync(NegotiateStream server) =>
+            server.AuthenticateAsServerAsync(null);
+    }
+
+    public sealed class NegotiateStreamStreamToStreamTest_Async_TestOverloadProtectionLevel : NegotiateStreamStreamToStreamTest
+    {
+        protected override Task AuthenticateAsClientAsync(NegotiateStream client, NetworkCredential credential, string targetName) =>
+            client.AuthenticateAsClientAsync(credential, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
+
+        protected override Task AuthenticateAsServerAsync(NegotiateStream server) =>
+            server.AuthenticateAsServerAsync((NetworkCredential)CredentialCache.DefaultCredentials, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
+    }
+
+    public sealed class NegotiateStreamStreamToStreamTest_Async_TestOverloadAllParameters : NegotiateStreamStreamToStreamTest
+    {
+        protected override Task AuthenticateAsClientAsync(NegotiateStream client, NetworkCredential credential, string targetName) =>
+            client.AuthenticateAsClientAsync(credential, null, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
+
+        protected override Task AuthenticateAsServerAsync(NegotiateStream server) =>
+            server.AuthenticateAsServerAsync((NetworkCredential)CredentialCache.DefaultCredentials, null, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification);
+    }
+
     public sealed class NegotiateStreamStreamToStreamTest_BeginEnd : NegotiateStreamStreamToStreamTest
     {
         protected override Task AuthenticateAsClientAsync(NegotiateStream client, NetworkCredential credential, string targetName) =>
@@ -310,5 +411,23 @@ namespace System.Net.Security.Tests
 
         protected override Task AuthenticateAsServerAsync(NegotiateStream server) =>
             Task.Run(() => server.AuthenticateAsServer());
+    }
+
+    public sealed class NegotiateStreamStreamToStreamTest_Sync_TestOverloadNullBinding : NegotiateStreamStreamToStreamTest
+    {
+        protected override Task AuthenticateAsClientAsync(NegotiateStream client, NetworkCredential credential, string targetName) =>
+            Task.Run(() => client.AuthenticateAsClient(credential, null, targetName));
+
+        protected override Task AuthenticateAsServerAsync(NegotiateStream server) =>
+            Task.Run(() => server.AuthenticateAsServer(null));
+    }
+
+    public sealed class NegotiateStreamStreamToStreamTest_Sync_TestOverloadAllParameters : NegotiateStreamStreamToStreamTest
+    {
+        protected override Task AuthenticateAsClientAsync(NegotiateStream client, NetworkCredential credential, string targetName) =>
+            Task.Run(() => client.AuthenticateAsClient(credential, targetName, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification));
+
+        protected override Task AuthenticateAsServerAsync(NegotiateStream server) =>
+            Task.Run(() => server.AuthenticateAsServer((NetworkCredential)CredentialCache.DefaultCredentials, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification));
     }
 }

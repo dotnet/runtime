@@ -34,21 +34,21 @@ namespace System.ServiceModel.Syndication
         {
             if (inlineDocumentType == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("inlineDocumentType");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(inlineDocumentType));
             }
             if (!typeof(InlineCategoriesDocument).IsAssignableFrom(inlineDocumentType))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("inlineDocumentType",
-                    SR.Format(SR.InvalidObjectTypePassed, "inlineDocumentType", "InlineCategoriesDocument"));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(nameof(inlineDocumentType),
+                    SR.Format(SR.InvalidObjectTypePassed, nameof(inlineDocumentType), "InlineCategoriesDocument"));
             }
             if (referencedDocumentType == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("referencedDocumentType");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(referencedDocumentType));
             }
             if (!typeof(ReferencedCategoriesDocument).IsAssignableFrom(referencedDocumentType))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("referencedDocumentType",
-                    SR.Format(SR.InvalidObjectTypePassed, "referencedDocumentType", "ReferencedCategoriesDocument"));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(nameof(referencedDocumentType),
+                    SR.Format(SR.InvalidObjectTypePassed, nameof(referencedDocumentType), "ReferencedCategoriesDocument"));
             }
             _maxExtensionSize = int.MaxValue;
             _preserveAttributeExtensions = true;
@@ -85,7 +85,7 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
             }
             return reader.IsStartElement(App10Constants.Categories, App10Constants.Namespace);
         }
@@ -101,7 +101,7 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
             }
             TraceCategoriesDocumentReadBegin();
             ReadDocument(reader);
@@ -113,7 +113,7 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
             }
             if (this.Document == null)
             {
@@ -128,7 +128,7 @@ namespace System.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
             }
             if (!CanRead(reader))
             {
@@ -143,7 +143,7 @@ namespace System.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
             }
             if (this.Document == null)
             {

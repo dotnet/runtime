@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -135,7 +135,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        public Byte[] Promote()
+        public byte[] Promote()
         {
             // Operations that might be affected by multi-threaded use MUST be done inside the lock.
             //  Don't read values off of the connection outside the lock unless it doesn't really matter

@@ -10,13 +10,8 @@ using System.Threading;
 
 namespace System.Drawing
 {
-    /// <summary>
-    /// The BufferedGraphicsContext class can be used to perform standard double buffer rendering techniques.
-    /// </summary>
-    public sealed class BufferedGraphicsContext : IDisposable
+    public sealed partial class BufferedGraphicsContext : IDisposable
     {
-        private Size _maximumBuffer;
-        private Size _bufferSize;
         private Size _virtualSize;
         private Point _targetLoc;
         private IntPtr _compatDC;
@@ -31,97 +26,6 @@ namespace System.Drawing
         private const int BufferBusyPainting = 1; // The graphics buffer is busy being created/painting.
         private const int BufferBusyDisposing = 2; // The graphics buffer is busy disposing.
 
-        private static TraceSwitch s_doubleBuffering;
-
-#if DEBUG
-        private string _stackAtBusy;
-#endif
-
-        /// <summary>
-        /// Basic constructor.
-        /// </summary>
-        public BufferedGraphicsContext()
-        {
-            // By defualt, the size of our maxbuffer will be 3 x standard button size.
-            _maximumBuffer.Width = 75 * 3;
-            _maximumBuffer.Height = 32 * 3;
-
-            _bufferSize = Size.Empty;
-        }
-
-        ~BufferedGraphicsContext() => Dispose(false);
-
-        /// <summary>
-        /// Internal trace switch for debugging
-        /// </summary>
-        internal static TraceSwitch DoubleBuffering
-        {
-            get
-            {
-                if (s_doubleBuffering == null)
-                {
-                    s_doubleBuffering = new TraceSwitch("DoubleBuffering", "Output information about double buffering");
-                }
-
-                return s_doubleBuffering;
-            }
-        }
-
-        /// <summary>
-        /// Allows you to set the maximum width and height of the buffer that will be retained in memory.
-        /// You can allocate a buffer of any size, however any request for a buffer that would have a total
-        /// memory footprint larger that the maximum size will be allocated temporarily and then discarded 
-        /// with the BufferedGraphics is released.
-        /// </summary>
-        public Size MaximumBuffer
-        {
-            get => _maximumBuffer;
-            set
-            {
-                if (value.Width <= 0 || value.Height <= 0)
-                {
-                    throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, nameof(MaximumBuffer), value), nameof(value));
-                }
-
-                // If we've been asked to decrease the size of the maximum buffer,
-                // then invalidate the older & larger buffer.
-                if (value.Width * value.Height < _maximumBuffer.Width * _maximumBuffer.Height)
-                {
-                    Invalidate();
-                }
-
-                _maximumBuffer = value;
-            }
-        }
-
-        /// <summary>
-        /// Returns a BufferedGraphics that is matched for the specified target Graphics object.
-        /// </summary>
-        public BufferedGraphics Allocate(Graphics targetGraphics, Rectangle targetRectangle)
-        {
-            if (ShouldUseTempManager(targetRectangle))
-            {
-                Debug.WriteLineIf(DoubleBuffering.TraceWarning, "Too big of buffer requested (" + targetRectangle.Width + " x " + targetRectangle.Height + ") ... allocating temp buffer manager");
-                return AllocBufferInTempManager(targetGraphics, IntPtr.Zero, targetRectangle);
-            }
-
-            return AllocBuffer(targetGraphics, IntPtr.Zero, targetRectangle);
-        }
-
-        /// <summary>
-        /// Returns a BufferedGraphics that is matched for the specified target HDC object.
-        /// </summary>
-        public BufferedGraphics Allocate(IntPtr targetDC, Rectangle targetRectangle)
-        {
-            if (ShouldUseTempManager(targetRectangle))
-            {
-                Debug.WriteLineIf(DoubleBuffering.TraceWarning, "Too big of buffer requested (" + targetRectangle.Width + " x " + targetRectangle.Height + ") ... allocating temp buffer manager");
-                return AllocBufferInTempManager(null, targetDC, targetRectangle);
-            }
-
-            return AllocBuffer(null, targetDC, targetRectangle);
-        }
-
         /// <summary>
         /// Returns a BufferedGraphics that is matched for the specified target HDC object.
         /// </summary>
@@ -135,16 +39,8 @@ namespace System.Drawing
             //
             if (oldBusy != BufferFree)
             {
-                Debug.WriteLineIf(DoubleBuffering.TraceWarning, "Attempt to have two buffers for a buffer manager... allocating temp buffer manager");
                 return AllocBufferInTempManager(targetGraphics, targetDC, targetRectangle);
             }
-
-#if DEBUG
-            if (DoubleBuffering.TraceVerbose)
-            {
-                _stackAtBusy = new StackTrace().ToString();
-            }
-#endif
 
             Graphics surface;
             _targetLoc = new Point(targetRectangle.X, targetRectangle.Y);
@@ -179,33 +75,6 @@ namespace System.Drawing
 
             return _buffer;
         }
-
-        /// <summary>
-        /// Returns a BufferedGraphics that is matched for the specified target HDC object.
-        /// </summary>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope")]
-        private BufferedGraphics AllocBufferInTempManager(Graphics targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
-        {
-            BufferedGraphicsContext tempContext = null;
-            BufferedGraphics tempBuffer = null;
-
-            try
-            {
-                tempContext = new BufferedGraphicsContext();
-                tempBuffer = tempContext.AllocBuffer(targetGraphics, targetDC, targetRectangle);
-                tempBuffer.DisposeContext = true;
-            }
-            finally
-            {
-                if (tempContext != null && (tempBuffer == null || (tempBuffer != null && !tempBuffer.DisposeContext)))
-                {
-                    tempContext.Dispose();
-                }
-            }
-
-            return tempBuffer;
-        }
-
 
         /// <summary>
         /// Fills in the fields of a BITMAPINFO so that we can create a bitmap
@@ -298,20 +167,16 @@ namespace System.Drawing
                     int cColors = 1 << pbmi.bmiHeader_biBitCount;
                     if (cColors <= 256)
                     {
-                        Debug.WriteLineIf(DoubleBuffering.TraceVerbose, "8 bit or less...");
-
                         // Note: we don't support 4bpp displays.
                         uint palRet;
                         IntPtr palHalftone = IntPtr.Zero;
                         if (hpal == IntPtr.Zero)
                         {
-                            Debug.WriteLineIf(DoubleBuffering.TraceVerbose, "using halftone palette...");
                             palHalftone = Graphics.GetHalftonePalette();
                             palRet = SafeNativeMethods.GetPaletteEntries(new HandleRef(null, palHalftone), 0, cColors, aj);
                         }
                         else
                         {
-                            Debug.WriteLineIf(DoubleBuffering.TraceVerbose, "using custom palette...");
                             palRet = SafeNativeMethods.GetPaletteEntries(new HandleRef(null, hpal), 0, cColors, aj);
                         }
 
@@ -326,10 +191,6 @@ namespace System.Drawing
                             }
 
                             return true;
-                        }
-                        else
-                        {
-                            Debug.WriteLineIf(DoubleBuffering.TraceWarning, "FillColorTable: MyGetSystemPaletteEntries failed\n");
                         }
                     }
                 }
@@ -352,7 +213,6 @@ namespace System.Drawing
             // Recreate the bitmap if necessary.
             if (width > _bufferSize.Width || height > _bufferSize.Height)
             {
-                Debug.WriteLineIf(DoubleBuffering.TraceInfo, "allocating new bitmap: " + width + " x " + height);
                 int optWidth = Math.Max(width, _bufferSize.Width);
                 int optHeight = Math.Max(height, _bufferSize.Height);
 
@@ -360,7 +220,6 @@ namespace System.Drawing
                 DisposeBitmap();
                 _busy = BufferBusyPainting;
 
-                Debug.WriteLineIf(DoubleBuffering.TraceInfo, "    new size         : " + optWidth + " x " + optHeight);
                 IntPtr pvbits = IntPtr.Zero;
                 _dib = CreateCompatibleDIB(src, IntPtr.Zero, optWidth, optHeight, ref pvbits);
                 _bufferSize = new Size(optWidth, optHeight);
@@ -370,7 +229,6 @@ namespace System.Drawing
             _oldBitmap = SafeNativeMethods.SelectObject(new HandleRef(this, _compatDC), new HandleRef(this, _dib));
 
             // Create compat graphics.
-            Debug.WriteLineIf(DoubleBuffering.TraceInfo, "    Create compatGraphics");
             _compatGraphics = Graphics.FromHdcInternal(_compatDC);
             _compatGraphics.TranslateTransform(-_targetLoc.X, -_targetLoc.Y);
             _virtualSize = new Size(width, height);
@@ -451,17 +309,8 @@ namespace System.Drawing
                 if (hbmRet == IntPtr.Zero)
                 {
                     ex = new Win32Exception(Marshal.GetLastWin32Error());
-#if DEBUG
-                    DumpBitmapInfo(ref pbmi);
-#endif
                 }
 
-#if DEBUG
-                if (DoubleBuffering.TraceVerbose)
-                {
-                    DumpBitmapInfo(ref pbmi);
-                }
-#endif
                 if (ex != null)
                 {
                     throw ex;
@@ -471,12 +320,6 @@ namespace System.Drawing
             return hbmRet;
         }
 
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
         /// <summary>
         /// Disposes the DC, but leaves the bitmap alone.
         /// </summary>
@@ -484,14 +327,12 @@ namespace System.Drawing
         {
             if (_oldBitmap != IntPtr.Zero && _compatDC != IntPtr.Zero)
             {
-                Debug.WriteLineIf(DoubleBuffering.TraceVerbose, "restoring bitmap to DC");
                 SafeNativeMethods.SelectObject(new HandleRef(this, _compatDC), new HandleRef(this, _oldBitmap));
                 _oldBitmap = IntPtr.Zero;
             }
 
             if (_compatDC != IntPtr.Zero)
             {
-                Debug.WriteLineIf(DoubleBuffering.TraceVerbose, "delete compat DC");
                 UnsafeNativeMethods.DeleteDC(new HandleRef(this, _compatDC));
                 _compatDC = IntPtr.Zero;
             }
@@ -505,7 +346,6 @@ namespace System.Drawing
             if (_dib != IntPtr.Zero)
             {
                 Debug.Assert(_oldBitmap == IntPtr.Zero);
-                Debug.WriteLineIf(DoubleBuffering.TraceVerbose, "delete dib");
 
                 SafeNativeMethods.DeleteObject(new HandleRef(this, _dib));
                 _dib = IntPtr.Zero;
@@ -517,24 +357,17 @@ namespace System.Drawing
         /// </summary>
         private void Dispose(bool disposing)
         {
-            Debug.WriteLineIf(DoubleBuffering.TraceInfo, "Dispose(" + disposing + ") {");
-            Debug.Indent();
             int oldBusy = Interlocked.CompareExchange(ref _busy, BufferBusyDisposing, BufferFree);
 
             if (disposing)
             {
                 if (oldBusy == BufferBusyPainting)
                 {
-#if DEBUG
-                    Debug.WriteLineIf(DoubleBuffering.TraceInfo, "Stack at busy buffer: \n" + _stackAtBusy);
-#endif
-
                     throw new InvalidOperationException(SR.Format(SR.GraphicsBufferCurrentlyBusy));
                 }
 
                 if (_compatGraphics != null)
                 {
-                    Debug.WriteLineIf(DoubleBuffering.TraceVerbose, "Disposing compatGraphics");
                     _compatGraphics.Dispose();
                     _compatGraphics = null;
                 }
@@ -545,30 +378,15 @@ namespace System.Drawing
 
             if (_buffer != null)
             {
-                Debug.WriteLineIf(DoubleBuffering.TraceVerbose, "Disposing buffer");
                 _buffer.Dispose();
                 _buffer = null;
             }
 
             _bufferSize = Size.Empty;
             _virtualSize = Size.Empty;
-            Debug.Unindent();
-            Debug.WriteLineIf(DoubleBuffering.TraceInfo, "}");
 
             _busy = BufferFree;
         }
-
-#if DEBUG
-        [ExcludeFromCodeCoverage]
-        private void DumpBitmapInfo(ref NativeMethods.BITMAPINFO_FLAT pbmi)
-        {
-            Debug.WriteLine("biWidth --> " + pbmi.bmiHeader_biWidth);
-            Debug.WriteLine("biHeight --> " + pbmi.bmiHeader_biHeight);
-            Debug.WriteLine("biPlanes --> " + pbmi.bmiHeader_biPlanes);
-            Debug.WriteLine("biBitCount --> " + pbmi.bmiHeader_biBitCount);
-            Debug.WriteLine("");
-        }
-#endif
 
         /// <summary>
         /// Invalidates the cached graphics buffer.
@@ -612,18 +430,6 @@ namespace System.Drawing
             }
 
             _busy = BufferFree;
-        }
-
-        /// <summary>
-        /// This routine allows us to control the point were we start using throw away
-        /// managers for painting. Since the buffer manager stays around (by default)
-        /// for the life of the app, we don't want to consume too much memory
-        /// in the buffer. However, re-allocating the buffer for small things (like
-        /// buttons, labels, etc) will hit us on runtime performance.
-        /// </summary>
-        private bool ShouldUseTempManager(Rectangle targetBounds)
-        {
-            return (targetBounds.Width * targetBounds.Height) > (MaximumBuffer.Width * MaximumBuffer.Height);
         }
     }
 }

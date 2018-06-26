@@ -88,7 +88,7 @@ namespace System.ComponentModel
 
         private static string Format(string format, params string[] arguments)
         {
-            return String.Format(CultureInfo.CurrentCulture, format, arguments);
+            return string.Format(CultureInfo.CurrentCulture, format, arguments);
         }
     }
 }

@@ -304,7 +304,7 @@ namespace System.Management
                     HandleIdentifierChange(this, null);
                 }
                 else
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
             }
         }
 
@@ -337,7 +337,7 @@ namespace System.Management
                     HandleIdentifierChange(this, null);
                 }
                 else
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
             }
         }
 
@@ -371,7 +371,7 @@ namespace System.Management
                     HandleIdentifierChange(this, null);
                 }
                 else
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
             } 
         }
 
@@ -627,8 +627,8 @@ namespace System.Management
             this.isLocal = false;
 
             // determine if the server is local, and if so don't create a real stub using unsecap
-            if((0==String.Compare(eventWatcher.Scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
-                (0==String.Compare(eventWatcher.Scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
+            if((0==string.Compare(eventWatcher.Scope.Path.Server, ".", StringComparison.OrdinalIgnoreCase)) ||
+                (0==string.Compare(eventWatcher.Scope.Path.Server, System.Environment.MachineName, StringComparison.OrdinalIgnoreCase)))
             {
                 this.isLocal = true;
             }
@@ -679,7 +679,7 @@ namespace System.Management
         public void SetStatus (
             int flags, 
             int hResult, 
-            String message, 
+            string message, 
             IntPtr pErrObj)
         {
             try 

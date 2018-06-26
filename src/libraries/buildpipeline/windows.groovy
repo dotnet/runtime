@@ -50,7 +50,7 @@ simpleNode('Windows_NT','latest') {
             additionalArgs += ' -SkipTests'
         }
         if (params.TGroup != 'all') {
-            bat ".\\build-tests.cmd ${framework} -buildArch=${params.AGroup} -${params.CGroup}${additionalArgs} -- /p:RuntimeOS=win10 /p:ArchiveTests=${archiveTests}"
+            bat ".\\build-tests.cmd ${framework} -buildArch=${params.AGroup} -${params.CGroup}${additionalArgs} -- /p:RuntimeOS=win10 /p:ArchiveTests=${archiveTests} /p:EnableDumpling=true"
         }
         else {
             bat ".\\build-tests.cmd ${framework} -${params.CGroup}${additionalArgs}"

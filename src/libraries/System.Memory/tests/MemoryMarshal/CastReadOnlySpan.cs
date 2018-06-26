@@ -35,7 +35,7 @@ namespace System.SpanTests
         [Fact]
         public static unsafe void CastReadOnlySpanOverflow()
         {
-            ReadOnlySpan<TestHelpers.TestStructExplicit> span = new ReadOnlySpan<TestHelpers.TestStructExplicit>(null, Int32.MaxValue);
+            ReadOnlySpan<TestHelpers.TestStructExplicit> span = new ReadOnlySpan<TestHelpers.TestStructExplicit>(null, int.MaxValue);
 
             TestHelpers.AssertThrows<OverflowException, TestHelpers.TestStructExplicit>(span, (_span) => MemoryMarshal.Cast<TestHelpers.TestStructExplicit, byte>(_span).DontBox());
             TestHelpers.AssertThrows<OverflowException, TestHelpers.TestStructExplicit>(span, (_span) => MemoryMarshal.Cast<TestHelpers.TestStructExplicit, ulong>(_span).DontBox());

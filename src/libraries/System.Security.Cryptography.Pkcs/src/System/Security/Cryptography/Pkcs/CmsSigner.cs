@@ -14,14 +14,27 @@ namespace System.Security.Cryptography.Pkcs
     public sealed class CmsSigner
     {
         private static readonly Oid s_defaultAlgorithm = Oid.FromOidValue(Oids.Sha256, OidGroup.HashAlgorithm);
+
+        private SubjectIdentifierType _signerIdentifierType;
+
         public X509Certificate2 Certificate { get; set; }
         public AsymmetricAlgorithm PrivateKey { get; set; }
-        public X509Certificate2Collection Certificates { get; set; } = new X509Certificate2Collection();
+        public X509Certificate2Collection Certificates { get; private set; } = new X509Certificate2Collection();
         public Oid DigestAlgorithm { get; set; }
         public X509IncludeOption IncludeOption { get; set; }
-        public CryptographicAttributeObjectCollection SignedAttributes { get; set; } = new CryptographicAttributeObjectCollection();
-        public SubjectIdentifierType SignerIdentifierType { get; set; }
-        public CryptographicAttributeObjectCollection UnsignedAttributes { get; set; } = new CryptographicAttributeObjectCollection();
+        public CryptographicAttributeObjectCollection SignedAttributes { get; private set; } = new CryptographicAttributeObjectCollection();
+        public CryptographicAttributeObjectCollection UnsignedAttributes { get; private set; } = new CryptographicAttributeObjectCollection();
+
+        public SubjectIdentifierType SignerIdentifierType
+        {
+            get { return _signerIdentifierType; }
+            set
+            {
+                if (value < SubjectIdentifierType.IssuerAndSerialNumber || value > SubjectIdentifierType.NoSignature)
+                    throw new ArgumentException(SR.Format(SR.Cryptography_Cms_Invalid_Subject_Identifier_Type, value));
+                _signerIdentifierType = value;
+            }
+        }
 
         public CmsSigner()
             : this(SubjectIdentifierType.IssuerAndSerialNumber, null)
@@ -58,23 +71,23 @@ namespace System.Security.Cryptography.Pkcs
             switch (signerIdentifierType)
             {
                 case SubjectIdentifierType.Unknown:
-                    SignerIdentifierType = SubjectIdentifierType.IssuerAndSerialNumber;
+                    _signerIdentifierType = SubjectIdentifierType.IssuerAndSerialNumber;
                     IncludeOption = X509IncludeOption.ExcludeRoot;
                     break;
                 case SubjectIdentifierType.IssuerAndSerialNumber:
-                    SignerIdentifierType = signerIdentifierType;
+                    _signerIdentifierType = signerIdentifierType;
                     IncludeOption = X509IncludeOption.ExcludeRoot;
                     break;
                 case SubjectIdentifierType.SubjectKeyIdentifier:
-                    SignerIdentifierType = signerIdentifierType;
+                    _signerIdentifierType = signerIdentifierType;
                     IncludeOption = X509IncludeOption.ExcludeRoot;
                     break;
                 case SubjectIdentifierType.NoSignature:
-                    SignerIdentifierType = signerIdentifierType;
+                    _signerIdentifierType = signerIdentifierType;
                     IncludeOption = X509IncludeOption.None;
                     break;
                 default:
-                    SignerIdentifierType = SubjectIdentifierType.IssuerAndSerialNumber;
+                    _signerIdentifierType = SubjectIdentifierType.IssuerAndSerialNumber;
                     IncludeOption = X509IncludeOption.ExcludeRoot;
                     break;
             }
@@ -117,7 +130,10 @@ namespace System.Security.Cryptography.Pkcs
             SignerInfoAsn newSignerInfo = new SignerInfoAsn();
             newSignerInfo.DigestAlgorithm.Algorithm = DigestAlgorithm;
 
-            if ((SignedAttributes != null && SignedAttributes.Count > 0) || contentTypeOid == null)
+            // If the user specified attributes (not null, count > 0) we need attributes.
+            // If the content type is null we're counter-signing, and need the message digest attr.
+            // If the content type is otherwise not-data we need to record it as the content-type attr.
+            if (SignedAttributes?.Count > 0 || contentTypeOid != Oids.Pkcs7Data)
             {
                 List<AttributeAsn> signedAttrs = BuildAttributes(SignedAttributes);
 

@@ -27,7 +27,7 @@ namespace System.Net.NetworkInformation.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests un-priviledged Ping support on Unix
         public static async Task PacketSizeIsRespected(int payloadSize)
         {
-            IPAddress localAddress = await TestSettings.GetLocalIPAddress();
+            IPAddress localAddress = await TestSettings.GetLocalIPAddressAsync();
             bool ipv4 = localAddress.AddressFamily == AddressFamily.InterNetwork;
             string arguments = UnixCommandLinePing.ConstructCommandLine(payloadSize, localAddress.ToString(), ipv4);
             string utilityPath = (localAddress.AddressFamily == AddressFamily.InterNetwork)

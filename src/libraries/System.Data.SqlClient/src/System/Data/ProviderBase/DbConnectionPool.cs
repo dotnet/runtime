@@ -520,7 +520,7 @@ namespace System.Data.ProviderBase
             get { return (null != _identity && DbConnectionPoolIdentity.NoIdentity != _identity); }
         }
 
-        private void CleanupCallback(Object state)
+        private void CleanupCallback(object state)
         {
             // Called when the cleanup-timer ticks over.
 
@@ -905,7 +905,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        private void ErrorCallback(Object state)
+        private void ErrorCallback(object state)
         {
             _errorOccurred = false;
             _waitHandles.ErrorEvent.Reset();

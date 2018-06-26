@@ -17,7 +17,7 @@ namespace System.Runtime.CompilerServices
     public class RuleCache<T> where T : class
     {
         private T[] _rules = Array.Empty<T>();
-        private readonly Object _cacheLock = new Object();
+        private readonly object _cacheLock = new object();
 
         private const int MaxRules = 128;
 

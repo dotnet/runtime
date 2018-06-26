@@ -8,7 +8,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Data.forwards.cs" />
-    <ReferencePath Include="$(RuntimePath)System.*.dll;$(RuntimePath)Microsoft.*.dll" Exclude="$(RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(RuntimePath)Microsoft.DiaSymReader.Native.*.dll;$(RuntimePath)System.Data.dll" />
+    <ReferencePath Include="$(_RuntimePath)System.*.dll;$(_RuntimePath)Microsoft.*.dll" Exclude="$(_RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(_RuntimePath)Microsoft.DiaSymReader.Native.*.dll;$(_RuntimePath)System.Data.dll" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

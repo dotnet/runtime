@@ -563,7 +563,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If relationship is being targeted to a relationship part</exception>
         /// <exception cref="System.Xml.XmlException">If parameter "id" is not a valid Xsd Id</exception>
         /// <exception cref="System.Xml.XmlException">If an id is provided in the method, and its not unique</exception>
-        public PackageRelationship CreateRelationship(Uri targetUri, TargetMode targetMode, string relationshipType, String id)
+        public PackageRelationship CreateRelationship(Uri targetUri, TargetMode targetMode, string relationshipType, string id)
         {
             ThrowIfObjectDisposed();
             ThrowIfReadOnly();
@@ -582,7 +582,7 @@ namespace System.IO.Packaging
         /// <exception cref="IOException">If the package is readonly, it cannot be modified</exception>
         /// <exception cref="ArgumentNullException">If parameter "id" is null</exception>
         /// <exception cref="System.Xml.XmlException">If parameter "id" is not a valid Xsd Id</exception>
-        public void DeleteRelationship(String id)
+        public void DeleteRelationship(string id)
         {
             ThrowIfObjectDisposed();
             ThrowIfReadOnly();

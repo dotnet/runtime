@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -262,7 +262,7 @@ namespace System.Net.WebSockets
             {
                 if (callClose)
                 {
-                    _messageWebSocket.Close((ushort) closeStatus, statusDescription ?? String.Empty);
+                    _messageWebSocket.Close((ushort) closeStatus, statusDescription ?? string.Empty);
                 }
 
                 var result = await _closeWebSocketReceiveResultTcs.Task.ConfigureAwait(false);
@@ -277,7 +277,7 @@ namespace System.Net.WebSockets
             CancellationToken cancellationToken)
         {
             CheckValidState(s_validCloseOutputStates);
-            _messageWebSocket.Close((ushort)closeStatus, statusDescription ?? String.Empty);
+            _messageWebSocket.Close((ushort)closeStatus, statusDescription ?? string.Empty);
             InterlockedCheckAndUpdateCloseState(WebSocketState.CloseSent, s_validCloseOutputStates);
             return Task.CompletedTask;
         }

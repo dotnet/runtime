@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,6 +16,7 @@ namespace System.Xml.Tests
             _output = output;
         }
 
+        [ActiveIssue(30017)]
         //[Variation("4", Desc = "Basic /settings test cases, stylesheet has script, where script-", Pri = 0, Params = new object[] { "/settings:script- sft4.xsl", "sft4hack.dll", "no", "sft4", "sft4.pdb", "no", "sft4.txt" })]
         [InlineData("/settings:script- sft4.xsl", "sft4hack.dll", "no", "sft4", "sft4.pdb", "no", "sft4.txt")]
         //[Variation("6", Desc = "Basic /settings test cases, stylesheet has document(), where document-", Pri = 0, Params = new object[] { "/settings:document- sft6.xsl", "sft6hack.dll", "no", "sft6", "sft6.pdb", "no", "sft6.txt" })]
@@ -52,13 +53,13 @@ namespace System.Xml.Tests
         [ConditionalTheory(nameof(xsltcExeFound))]
         public void Var1(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
         {
-            String cmdLine = param0.ToString();
-            String asmName = param1.ToString();
-            bool asmCreated = String.Compare(param2.ToString(), "yes", true) == 0;
-            String typeName = param3.ToString();
-            String pdbName = param4.ToString();
-            bool pdbCreated = String.Compare(param5.ToString(), "yes", true) == 0;
-            String baselineFile = param6.ToString();
+            string cmdLine = param0.ToString();
+            string asmName = param1.ToString();
+            bool asmCreated = string.Compare(param2.ToString(), "yes", true) == 0;
+            string typeName = param3.ToString();
+            string pdbName = param4.ToString();
+            bool pdbCreated = string.Compare(param5.ToString(), "yes", true) == 0;
+            string baselineFile = param6.ToString();
             if (ShouldSkip(new object[] { param0, param1, param2, param3, param4, param5, param6 }))
             {
                 return; //TEST_SKIPPED;

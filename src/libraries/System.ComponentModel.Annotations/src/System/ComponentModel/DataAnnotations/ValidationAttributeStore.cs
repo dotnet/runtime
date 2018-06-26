@@ -181,9 +181,8 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (!TryGetPropertyStoreItem(propertyName, out PropertyStoreItem item))
                 {
-                    throw new ArgumentException(
-                        string.Format(CultureInfo.CurrentCulture,
-                            SR.AttributeStore_Unknown_Property, _type.Name, propertyName), nameof(propertyName));
+                    throw new ArgumentException(SR.Format(SR.AttributeStore_Unknown_Property, _type.Name, propertyName),
+                                                nameof(propertyName));
                 }
 
                 return item;

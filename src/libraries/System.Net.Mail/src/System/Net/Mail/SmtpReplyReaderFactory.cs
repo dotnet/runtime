@@ -308,7 +308,7 @@ namespace System.Net.Mail
         {
             if (caller != _currentReader || _readState == ReadState.Done)
             {
-                return new LineInfo[0];
+                return Array.Empty<LineInfo>();
             }
 
             if (_byteBuffer == null)

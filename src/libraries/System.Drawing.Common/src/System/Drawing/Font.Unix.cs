@@ -44,19 +44,14 @@ namespace System.Drawing
     [Editor ("System.Drawing.Design.FontEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
     [TypeConverter (typeof (FontConverter))]
 #endif
-    public sealed partial class Font : MarshalByRefObject, ISerializable, ICloneable, IDisposable
+    public sealed partial class Font
     {
-        private IntPtr fontObject = IntPtr.Zero;
-        private string systemFontName;
-        private string originalFontName;
-        private float _size;
-
         private const byte DefaultCharSet = 1;
         private static int CharSetOffset = -1;
 
         private void CreateFont(string familyName, float emSize, FontStyle style, GraphicsUnit unit, byte charSet, bool isVertical)
         {
-            originalFontName = familyName;
+            _originalFontName = familyName;
             FontFamily family;
             // NOTE: If family name is null, empty or invalid,
             // MS creates Microsoft Sans Serif font.
@@ -70,34 +65,12 @@ namespace System.Drawing
             }
 
             setProperties(family, emSize, style, unit, charSet, isVertical);
-            int status = SafeNativeMethods.Gdip.GdipCreateFont(family.NativeFamily, emSize, style, unit, out fontObject);
+            int status = SafeNativeMethods.Gdip.GdipCreateFont(new HandleRef(this, family.NativeFamily), emSize, style, unit, out _nativeFont);
 
             if (status == SafeNativeMethods.Gdip.FontStyleNotFound)
                 throw new ArgumentException(string.Format("Style {0} isn't supported by font {1}.", style.ToString(), familyName));
 
             SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-        ~Font()
-        {
-            Dispose();
-        }
-
-        public void Dispose()
-        {
-            if (fontObject != IntPtr.Zero)
-            {
-                int status = SafeNativeMethods.Gdip.GdipDeleteFont(fontObject);
-                fontObject = IntPtr.Zero;
-                GC.SuppressFinalize(this);
-                // check the status code (throw) at the last step
-                SafeNativeMethods.Gdip.CheckStatus(status);
-            }
-        }
-
-        internal void SetSystemFontName(string newSystemFontName)
-        {
-            systemFontName = newSystemFontName;
         }
 
         internal void unitConversion(GraphicsUnit fromUnit, GraphicsUnit toUnit, float nSrc, out float nTrg)
@@ -158,31 +131,16 @@ namespace System.Drawing
 
         void setProperties(FontFamily family, float emSize, FontStyle style, GraphicsUnit unit, byte charSet, bool isVertical)
         {
-            _name = family.Name;
             _fontFamily = family;
-            _size = emSize;
+            _fontSize = emSize;
 
             // MS throws ArgumentException, if unit is set to GraphicsUnit.Display
-            _unit = unit;
-            _style = style;
+            _fontUnit = unit;
+            _fontStyle = style;
             _gdiCharSet = charSet;
             _gdiVerticalFont = isVertical;
 
-            unitConversion(unit, GraphicsUnit.Point, emSize, out _sizeInPoints);
-
-            _bold = _italic = _strikeout = _underline = false;
-
-            if ((style & FontStyle.Bold) == FontStyle.Bold)
-                _bold = true;
-
-            if ((style & FontStyle.Italic) == FontStyle.Italic)
-                _italic = true;
-
-            if ((style & FontStyle.Strikeout) == FontStyle.Strikeout)
-                _strikeout = true;
-
-            if ((style & FontStyle.Underline) == FontStyle.Underline)
-                _underline = true;
+            unitConversion(unit, GraphicsUnit.Point, emSize, out _fontSizeInPoints);
         }
 
         public static Font FromHfont(IntPtr hfont)
@@ -238,13 +196,13 @@ namespace System.Drawing
 
         public IntPtr ToHfont()
         {
-            if (fontObject == IntPtr.Zero)
+            if (_nativeFont == IntPtr.Zero)
                 throw new ArgumentException("Object has been disposed.");
 
-            return fontObject;
+            return _nativeFont;
         }
 
-        internal Font(IntPtr newFontObject, string familyName, FontStyle style, float size)
+        internal Font(IntPtr nativeFont, string familyName, FontStyle style, float size)
         {
             FontFamily fontFamily;
 
@@ -258,7 +216,7 @@ namespace System.Drawing
             }
 
             setProperties(fontFamily, size, style, GraphicsUnit.Pixel, 0, false);
-            fontObject = newFontObject;
+            _nativeFont = nativeFont;
         }
 
         public Font(Font prototype, FontStyle newStyle)
@@ -266,7 +224,7 @@ namespace System.Drawing
             // no null checks, MS throws a NullReferenceException if original is null
             setProperties(prototype.FontFamily, prototype.Size, newStyle, prototype.Unit, prototype.GdiCharSet, prototype.GdiVerticalFont);
 
-            int status = SafeNativeMethods.Gdip.GdipCreateFont(_fontFamily.NativeFamily, Size, Style, Unit, out fontObject);
+            int status = SafeNativeMethods.Gdip.GdipCreateFont(new HandleRef(_fontFamily, _fontFamily.NativeFamily), Size, Style, Unit, out _nativeFont);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -304,11 +262,11 @@ namespace System.Drawing
                 GraphicsUnit unit, byte gdiCharSet, bool gdiVerticalFont)
         {
             if (family == null)
-                throw new ArgumentNullException("family");
+                throw new ArgumentNullException(nameof(family));
 
             int status;
             setProperties(family, emSize, style, unit, gdiCharSet, gdiVerticalFont);
-            status = SafeNativeMethods.Gdip.GdipCreateFont(family.NativeFamily, emSize, style, unit, out fontObject);
+            status = SafeNativeMethods.Gdip.GdipCreateFont(new HandleRef(this, family.NativeFamily), emSize, style, unit, out _nativeFont);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -340,227 +298,18 @@ namespace System.Drawing
         internal Font(string familyName, float emSize, string systemName)
             : this(familyName, emSize, FontStyle.Regular, GraphicsUnit.Point, DefaultCharSet, false)
         {
-            systemFontName = systemName;
+            _systemFontName = systemName;
         }
+
         public object Clone()
         {
             return new Font(this, Style);
         }
 
-        internal IntPtr NativeObject
-        {
-            get
-            {
-                return fontObject;
-            }
-        }
-
-        private bool _bold;
-
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public bool Bold
-        {
-            get
-            {
-                return _bold;
-            }
-        }
-
-        private FontFamily _fontFamily;
+        private float _fontSizeInPoints;
 
         [Browsable(false)]
-        public FontFamily FontFamily
-        {
-            get
-            {
-                return _fontFamily;
-            }
-        }
-
-        private byte _gdiCharSet;
-
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public byte GdiCharSet
-        {
-            get
-            {
-                return _gdiCharSet;
-            }
-        }
-
-        private bool _gdiVerticalFont;
-
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public bool GdiVerticalFont
-        {
-            get
-            {
-                return _gdiVerticalFont;
-            }
-        }
-
-        [Browsable(false)]
-        public int Height
-        {
-            get
-            {
-                return (int)Math.Ceiling(GetHeight());
-            }
-        }
-
-        [Browsable(false)]
-        public bool IsSystemFont
-        {
-            get
-            {
-                return !string.IsNullOrEmpty(systemFontName);
-            }
-        }
-
-        private bool _italic;
-
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public bool Italic
-        {
-            get
-            {
-                return _italic;
-            }
-        }
-
-        private string _name;
-
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-#if !NETCORE
-        [Editor ("System.Drawing.Design.FontNameEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
-        [TypeConverter (typeof (FontConverter.FontNameConverter))]
-#endif
-        public string Name
-        {
-            get
-            {
-                return _name;
-            }
-        }
-
-        public float Size
-        {
-            get
-            {
-                return _size;
-            }
-        }
-
-        private float _sizeInPoints;
-
-        [Browsable(false)]
-        public float SizeInPoints
-        {
-            get
-            {
-                return _sizeInPoints;
-            }
-        }
-
-        private bool _strikeout;
-
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public bool Strikeout
-        {
-            get
-            {
-                return _strikeout;
-            }
-        }
-
-        private FontStyle _style;
-
-        [Browsable(false)]
-        public FontStyle Style
-        {
-            get
-            {
-                return _style;
-            }
-        }
-
-        [Browsable(false)]
-        public string SystemFontName
-        {
-            get
-            {
-                return systemFontName;
-            }
-        }
-
-        [Browsable(false)]
-        public string OriginalFontName
-        {
-            get
-            {
-                return originalFontName;
-            }
-        }
-        private bool _underline;
-
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public bool Underline
-        {
-            get
-            {
-                return _underline;
-            }
-        }
-
-        private GraphicsUnit _unit;
-
-#if !NETCORE
-        [TypeConverter (typeof (FontConverter.FontUnitConverter))]
-#endif
-        public GraphicsUnit Unit
-        {
-            get
-            {
-                return _unit;
-            }
-        }
-
-        public override bool Equals(object obj)
-        {
-            Font fnt = (obj as Font);
-            if (fnt == null)
-                return false;
-
-            if (fnt.FontFamily.Equals(FontFamily) && fnt.Size == Size &&
-                fnt.Style == Style && fnt.Unit == Unit &&
-                fnt.GdiCharSet == GdiCharSet &&
-                fnt.GdiVerticalFont == GdiVerticalFont)
-                return true;
-            else
-                return false;
-        }
-
-        private int _hashCode;
-
-        public override int GetHashCode()
-        {
-            if (_hashCode == 0)
-            {
-                _hashCode = 17;
-                unchecked
-                {
-                    _hashCode = _hashCode * 23 + _name.GetHashCode();
-                    _hashCode = _hashCode * 23 + FontFamily.GetHashCode();
-                    _hashCode = _hashCode * 23 + _size.GetHashCode();
-                    _hashCode = _hashCode * 23 + _unit.GetHashCode();
-                    _hashCode = _hashCode * 23 + _style.GetHashCode();
-                    _hashCode = _hashCode * 23 + _gdiCharSet;
-                    _hashCode = _hashCode * 23 + _gdiVerticalFont.GetHashCode();
-                }
-            }
-
-            return _hashCode;
-        }
+        public float SizeInPoints => _fontSizeInPoints;
 
         public static Font FromHdc(IntPtr hdc)
         {
@@ -602,16 +351,16 @@ namespace System.Drawing
         public void ToLogFont(object logFont, Graphics graphics)
         {
             if (graphics == null)
-                throw new ArgumentNullException("graphics");
+                throw new ArgumentNullException(nameof(graphics));
 
             if (logFont == null)
             {
-                throw new AccessViolationException("logFont");
+                throw new AccessViolationException(nameof(logFont));
             }
 
             Type st = logFont.GetType();
             if (!st.GetTypeInfo().IsLayoutSequential)
-                throw new ArgumentException("logFont", "Layout must be sequential.");
+                throw new ArgumentException(nameof(logFont), "Layout must be sequential.");
 
             // note: there is no exception if 'logFont' isn't big enough
             Type lf = typeof(LOGFONT);
@@ -624,7 +373,7 @@ namespace System.Drawing
                 {
                     Marshal.StructureToPtr(logFont, copy, false);
 
-                    status = SafeNativeMethods.Gdip.GdipGetLogFont(NativeObject, graphics.NativeObject, logFont);
+                    status = SafeNativeMethods.Gdip.GdipGetLogFontW(new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), logFont);
                     if (status != SafeNativeMethods.Gdip.Ok)
                     {
                         // reset to original values
@@ -663,30 +412,6 @@ namespace System.Drawing
                 // now we can throw, if required
                 SafeNativeMethods.Gdip.CheckStatus(status);
             }
-        }
-
-        public float GetHeight(Graphics graphics)
-        {
-            if (graphics == null)
-                throw new ArgumentNullException("graphics");
-
-            float size;
-            int status = SafeNativeMethods.Gdip.GdipGetFontHeight(fontObject, graphics.NativeObject, out size);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-            return size;
-        }
-
-        public float GetHeight(float dpi)
-        {
-            float size;
-            int status = SafeNativeMethods.Gdip.GdipGetFontHeightGivenDPI(fontObject, dpi, out size);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-            return size;
-        }
-
-        public override String ToString()
-        {
-            return String.Format("[Font: Name={0}, Size={1}, Units={2}, GdiCharSet={3}, GdiVerticalFont={4}]", _name, Size, (int)_unit, _gdiCharSet, _gdiVerticalFont);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -475,8 +475,8 @@ namespace System.PrivateUri.Tests
             Assert.Equal("file:///c:/path/path%3Fquery", testUri.AbsoluteUri);
             Assert.Equal("c:/path/path%3Fquery", testUri.AbsolutePath);
             Assert.Equal(@"c:\path\path?query", testUri.LocalPath);
-            Assert.Equal(String.Empty, testUri.Query);
-            Assert.Equal(String.Empty, testUri.Fragment);
+            Assert.Equal(string.Empty, testUri.Query);
+            Assert.Equal(string.Empty, testUri.Fragment);
         }
 
         [Fact]
@@ -488,8 +488,8 @@ namespace System.PrivateUri.Tests
             Assert.Equal("file:///path/path%3Fquery", testUri.AbsoluteUri);
             Assert.Equal("/path/path%3Fquery", testUri.AbsolutePath);
             Assert.Equal("/path/path?query", testUri.LocalPath);
-            Assert.Equal(String.Empty, testUri.Query);
-            Assert.Equal(String.Empty, testUri.Fragment);
+            Assert.Equal(string.Empty, testUri.Query);
+            Assert.Equal(string.Empty, testUri.Fragment);
         }
 
         [Fact]
@@ -500,8 +500,8 @@ namespace System.PrivateUri.Tests
             Assert.Equal("file://server/share/path%3Fquery", testUri.AbsoluteUri);
             Assert.Equal("/share/path%3Fquery", testUri.AbsolutePath);
             Assert.Equal(@"\\server\share\path?query", testUri.LocalPath);
-            Assert.Equal(String.Empty, testUri.Query);
-            Assert.Equal(String.Empty, testUri.Fragment);
+            Assert.Equal(string.Empty, testUri.Query);
+            Assert.Equal(string.Empty, testUri.Fragment);
         }
 
         [Fact]
@@ -512,8 +512,8 @@ namespace System.PrivateUri.Tests
             Assert.Equal("file:///c:/path/path%23fragment%23", testUri.AbsoluteUri);
             Assert.Equal("c:/path/path%23fragment%23", testUri.AbsolutePath);
             Assert.Equal(@"c:\path\path#fragment#", testUri.LocalPath);
-            Assert.Equal(String.Empty, testUri.Query);
-            Assert.Equal(String.Empty, testUri.Fragment);
+            Assert.Equal(string.Empty, testUri.Query);
+            Assert.Equal(string.Empty, testUri.Fragment);
         }
 
         [Fact]
@@ -525,8 +525,8 @@ namespace System.PrivateUri.Tests
             Assert.Equal("file:///path/path%23fragment%23", testUri.AbsoluteUri);
             Assert.Equal("/path/path%23fragment%23", testUri.AbsolutePath);
             Assert.Equal("/path/path#fragment#", testUri.LocalPath);
-            Assert.Equal(String.Empty, testUri.Query);
-            Assert.Equal(String.Empty, testUri.Fragment);
+            Assert.Equal(string.Empty, testUri.Query);
+            Assert.Equal(string.Empty, testUri.Fragment);
         }
 
         [Fact]
@@ -537,8 +537,8 @@ namespace System.PrivateUri.Tests
             Assert.Equal("file://server/share/path%23fragment%23", testUri.AbsoluteUri);
             Assert.Equal("/share/path%23fragment%23", testUri.AbsolutePath);
             Assert.Equal(@"\\server\share\path#fragment#", testUri.LocalPath);
-            Assert.Equal(String.Empty, testUri.Query);
-            Assert.Equal(String.Empty, testUri.Fragment);
+            Assert.Equal(string.Empty, testUri.Query);
+            Assert.Equal(string.Empty, testUri.Fragment);
         }
 
         #endregion FileUri escaping

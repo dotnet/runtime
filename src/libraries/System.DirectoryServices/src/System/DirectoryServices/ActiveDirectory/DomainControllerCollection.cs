@@ -23,7 +23,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Contains(DomainController domainController)
         {
             if (domainController == null)
-                throw new ArgumentNullException("domainController");
+                throw new ArgumentNullException(nameof(domainController));
 
             for (int i = 0; i < InnerList.Count; i++)
             {
@@ -39,7 +39,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(DomainController domainController)
         {
             if (domainController == null)
-                throw new ArgumentNullException("domainController");
+                throw new ArgumentNullException(nameof(domainController));
 
             for (int i = 0; i < InnerList.Count; i++)
             {

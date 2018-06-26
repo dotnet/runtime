@@ -4,10 +4,8 @@
 
 //#define XSLT2
 
-using System.Diagnostics;
-using System.Text;
-using System.Xml.XPath;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Xml.Xsl.Xslt
 {
@@ -709,10 +707,9 @@ namespace System.Xml.Xsl.Xslt
         // to there's numbers in actual stylesheet as they ordered in 'records' array
         private int[] _xsltAttributeNumber = new int[21];
 
-        private static XsltAttribute[] s_noAttributes = new XsltAttribute[] { };
         public ContextInfo GetAttributes()
         {
-            return GetAttributes(s_noAttributes);
+            return GetAttributes(Array.Empty<XsltAttribute>());
         }
 
         public ContextInfo GetAttributes(XsltAttribute[] attributes)
@@ -1129,17 +1126,17 @@ namespace System.Xml.Xsl.Xslt
             _compiler.ReportError(BuildNameLineInfo(), res, args);
         }
 
+        public void ReportWarning(string res, params string[] args)
+        {
+            _compiler.ReportWarning(BuildNameLineInfo(), res, args);
+        }
+
         public void ReportErrorFC(string res, params string[] args)
         {
             if (!ForwardCompatibility)
             {
                 _compiler.ReportError(BuildNameLineInfo(), res, args);
             }
-        }
-
-        public void ReportWarning(string res, params string[] args)
-        {
-            _compiler.ReportWarning(BuildNameLineInfo(), res, args);
         }
 
         private void ReportNYI(string arg)

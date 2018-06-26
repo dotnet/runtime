@@ -17,7 +17,7 @@ namespace System.Xml
         }
 
         // Gets the name of the node.
-        public override String Name
+        public override string Name
         {
             get
             {
@@ -26,7 +26,7 @@ namespace System.Xml
         }
 
         // Gets the name of the current node without the namespace prefix.
-        public override String LocalName
+        public override string LocalName
         {
             get
             {
@@ -74,7 +74,7 @@ namespace System.Xml
             return OwnerDocument.CreateSignificantWhitespace(Data);
         }
 
-        public override String Value
+        public override string Value
         {
             get
             {

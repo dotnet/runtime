@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Net.Primitives.Functional.Tests
 {
-    public static class CookieCollectionTest
+    public static partial class CookieCollectionTest
     {
         //These cookies are designed to have some similar and different properties so that each is unique in the eyes of a CookieComparer object
         private static Cookie c1 = new Cookie("name1", "value");

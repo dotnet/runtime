@@ -629,7 +629,7 @@ namespace System.Xml.Xsl.XsltOld
             return (BuilderInfo)_attributeList[attrib];
         }
 
-        private bool FindAttribute(String localName, String namespaceURI, out int attrIndex)
+        private bool FindAttribute(string localName, string namespaceURI, out int attrIndex)
         {
             if (namespaceURI == null)
             {
@@ -656,7 +656,7 @@ namespace System.Xml.Xsl.XsltOld
             return false;
         }
 
-        private bool FindAttribute(String name, out int attrIndex)
+        private bool FindAttribute(string name, out int attrIndex)
         {
             if (name == null)
             {

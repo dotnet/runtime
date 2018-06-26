@@ -16,8 +16,8 @@ namespace System.ComponentModel.Tests
         {
             ConvertFrom_WithContext(new object[2, 3]
                 {
-                    { 1.1m + " ", (Decimal)1.1, null },
-                    { "+7", (Decimal)7, CultureInfo.InvariantCulture }
+                    { 1.1m + " ", (decimal)1.1, null },
+                    { "+7", (decimal)7, CultureInfo.InvariantCulture }
                 },
                 DecimalConverterTests.s_converter);
         }
@@ -34,9 +34,9 @@ namespace System.ComponentModel.Tests
         {
             ConvertTo_WithContext(new object[3, 3]
                 {
-                    {(Decimal)1.1, 1.1m.ToString(), null},
-                    {(Decimal)1.1, (Byte)1, CultureInfo.InvariantCulture},
-                    {(Decimal)1.1, (Single)1.1, null}
+                    {(decimal)1.1, 1.1m.ToString(), null},
+                    {(decimal)1.1, (byte)1, CultureInfo.InvariantCulture},
+                    {(decimal)1.1, (float)1.1, null}
                 },
                 DecimalConverterTests.s_converter);
         }

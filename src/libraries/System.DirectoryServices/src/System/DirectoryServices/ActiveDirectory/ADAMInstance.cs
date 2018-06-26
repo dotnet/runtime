@@ -42,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
             this.directoryEntryMgr = directoryEntryMgr;
 
             // initialize the transfer role owner attributes
-            _becomeRoleOwnerAttrs = new String[2];
+            _becomeRoleOwnerAttrs = new string[2];
             _becomeRoleOwnerAttrs[0] = PropertyManager.BecomeSchemaMaster;
             _becomeRoleOwnerAttrs[1] = PropertyManager.BecomeDomainMaster;
 
@@ -67,7 +67,7 @@ namespace System.DirectoryServices.ActiveDirectory
             this.directoryEntryMgr = directoryEntryMgr;
 
             // initialize the transfer role owner attributes
-            _becomeRoleOwnerAttrs = new String[2];
+            _becomeRoleOwnerAttrs = new string[2];
             _becomeRoleOwnerAttrs[0] = PropertyManager.BecomeSchemaMaster;
             _becomeRoleOwnerAttrs[1] = PropertyManager.BecomeDomainMaster;
 
@@ -116,13 +116,13 @@ namespace System.DirectoryServices.ActiveDirectory
             // check that the context is not null
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             // contexttype should be DirectoryServer
             if (context.ContextType != DirectoryContextType.DirectoryServer)
             {
-                throw new ArgumentException(SR.TargetShouldBeADAMServer, "context");
+                throw new ArgumentException(SR.TargetShouldBeADAMServer, nameof(context));
             }
 
             // target must be a server
@@ -169,23 +169,23 @@ namespace System.DirectoryServices.ActiveDirectory
             // validate parameters (partitionName validated by the call to ConfigSet)
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             // contexttype should be ConfigurationSet
             if (context.ContextType != DirectoryContextType.ConfigurationSet)
             {
-                throw new ArgumentException(SR.TargetShouldBeConfigSet, "context");
+                throw new ArgumentException(SR.TargetShouldBeConfigSet, nameof(context));
             }
 
             if (partitionName == null)
             {
-                throw new ArgumentNullException("partitionName");
+                throw new ArgumentNullException(nameof(partitionName));
             }
 
             if (partitionName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "partitionName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partitionName));
             }
 
             //  work with copy of the context
@@ -201,23 +201,23 @@ namespace System.DirectoryServices.ActiveDirectory
             // validate parameters (partitionName validated by the call to ConfigSet)
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             // contexttype should be ConfigurationSet
             if (context.ContextType != DirectoryContextType.ConfigurationSet)
             {
-                throw new ArgumentException(SR.TargetShouldBeConfigSet, "context");
+                throw new ArgumentException(SR.TargetShouldBeConfigSet, nameof(context));
             }
 
             if (partitionName == null)
             {
-                throw new ArgumentNullException("partitionName");
+                throw new ArgumentNullException(nameof(partitionName));
             }
 
             if (partitionName.Length == 0)
             {
-                throw new ArgumentException(SR.EmptyStringParameter, "partitionName");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partitionName));
             }
 
             //  work with copy of the context
@@ -242,7 +242,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (role < AdamRole.SchemaRole || role > AdamRole.NamingRole)
             {
-                throw new InvalidEnumArgumentException("role", (int)role, typeof(AdamRole));
+                throw new InvalidEnumArgumentException(nameof(role), (int)role, typeof(AdamRole));
             }
 
             // set the appropriate attribute on the root dse 
@@ -283,7 +283,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                 default:
                     {
-                        throw new InvalidEnumArgumentException("role", (int)role, typeof(AdamRole));
+                        throw new InvalidEnumArgumentException(nameof(role), (int)role, typeof(AdamRole));
                     }
             }
 
@@ -332,10 +332,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
-                throw new ArgumentNullException("partition");
+                throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partition));
 
             // get the handle
             GetADAMHandle();
@@ -366,10 +366,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
-                throw new ArgumentNullException("partition");
+                throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partition));
 
             // get the handle
             GetADAMHandle();
@@ -405,10 +405,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ObjectDisposedException(GetType().Name);
 
             if (objectPath == null)
-                throw new ArgumentNullException("objectPath");
+                throw new ArgumentNullException(nameof(objectPath));
 
             if (objectPath.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "objectPath");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(objectPath));
 
             // get the handle
             GetADAMHandle();
@@ -422,16 +422,16 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
-                throw new ArgumentNullException("partition");
+                throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partition));
 
             if (sourceServer == null)
-                throw new ArgumentNullException("sourceServer");
+                throw new ArgumentNullException(nameof(sourceServer));
 
             if (sourceServer.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "sourceServer");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(sourceServer));
 
             // get the dsHandle
             GetADAMHandle();
@@ -444,10 +444,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
-                throw new ArgumentNullException("partition");
+                throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partition));
 
             // get the dsHandle
             GetADAMHandle();
@@ -460,10 +460,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
-                throw new ArgumentNullException("partition");
+                throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
-                throw new ArgumentException(SR.EmptyStringParameter, "partition");
+                throw new ArgumentException(SR.EmptyStringParameter, nameof(partition));
 
             // get the dsHandle
             GetADAMHandle();
@@ -653,14 +653,14 @@ namespace System.DirectoryServices.ActiveDirectory
                     //
                     if (!Utils.IsValidDNFormat(value))
                     {
-                        throw new ArgumentException(SR.InvalidDNFormat, "value");
+                        throw new ArgumentException(SR.InvalidDNFormat, nameof(value));
                     }
 
                     // this value should be one of partitions currently being hosted by
                     // this adam instance
                     if (!Partitions.Contains(value))
                     {
-                        throw new ArgumentException(SR.Format(SR.ServerNotAReplica , value), "value");
+                        throw new ArgumentException(SR.Format(SR.ServerNotAReplica , value), nameof(value));
                     }
                     ntdsaEntry.Properties[PropertyManager.MsDSDefaultNamingContext].Value = value;
                 }
@@ -686,7 +686,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public override String SiteName
+        public override string SiteName
         {
             get
             {
@@ -707,7 +707,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal String SiteObjectName
+        internal string SiteObjectName
         {
             get
             {
@@ -733,7 +733,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal String ServerObjectName
+        internal string ServerObjectName
         {
             get
             {
@@ -758,7 +758,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal String NtdsaObjectName
+        internal string NtdsaObjectName
         {
             get
             {
