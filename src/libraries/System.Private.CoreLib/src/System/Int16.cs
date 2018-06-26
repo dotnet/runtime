@@ -12,9 +12,9 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Int16 : IComparable, IConvertible, IFormattable, IComparable<short>, IEquatable<short>, ISpanFormattable
+    public readonly struct Int16 : IComparable, IConvertible, IFormattable, IComparable<short>, IEquatable<short>, ISpanFormattable
     {
-        private short m_value; // Do not rename (binary serialization)
+        private readonly short m_value; // Do not rename (binary serialization)
 
         public const short MaxValue = (short)0x7FFF;
         public const short MinValue = unchecked((short)0x8000);
