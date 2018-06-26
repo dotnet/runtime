@@ -188,6 +188,10 @@ namespace System.Data.SqlClient
         {
             return ADP.Argument(SR.GetString(SR.SQL_UserInstanceFailoverNotCompatible));
         }
+        internal static Exception ParsingErrorLibraryType(ParsingErrorState state, int libraryType)
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SQL_ParsingErrorAuthLibraryType, ((int)state).ToString(CultureInfo.InvariantCulture), libraryType));
+        }       
         internal static Exception InvalidSQLServerVersionUnknown()
         {
             return ADP.DataAdapter(SR.GetString(SR.SQL_InvalidSQLServerVersionUnknown));
@@ -406,6 +410,18 @@ namespace System.Data.SqlClient
         internal static Exception ParsingError()
         {
             return ADP.InvalidOperation(SR.GetString(SR.SQL_ParsingError));
+        }
+        static internal Exception ParsingError(ParsingErrorState state)
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SQL_ParsingErrorWithState, ((int)state).ToString(CultureInfo.InvariantCulture)));
+        }
+        static internal Exception ParsingErrorValue(ParsingErrorState state, int value)
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SQL_ParsingErrorValue, ((int)state).ToString(CultureInfo.InvariantCulture), value));
+        }
+        static internal Exception ParsingErrorFeatureId(ParsingErrorState state, int featureId)
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SQL_ParsingErrorFeatureId, ((int)state).ToString(CultureInfo.InvariantCulture), featureId));
         }
         internal static Exception MoneyOverflow(string moneyValue)
         {
