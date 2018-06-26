@@ -6454,12 +6454,9 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-    FAIL_IF_MANAGED_ONLY(this);
-
-    DT_CONTEXT * pContext;
     LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x\n", threadID));
 
-    RSLockHolder lockHolder(GetProcessLock());
+    DT_CONTEXT * pContext;
 
     if (contextSize != sizeof(DT_CONTEXT))
     {
@@ -6471,21 +6468,52 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
 
     VALIDATE_POINTER_TO_OBJECT_ARRAY(context, BYTE, contextSize, true, true);
 
-#if !defined(FEATURE_INTEROP_DEBUGGING)
-    return E_NOTIMPL;
-#else
-    // Find the unmanaged thread
-    CordbUnmanagedThread *ut = GetUnmanagedThread(threadID);
-
-    if (ut == NULL)
+    if (this->IsInteropDebugging())
     {
-        LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x, thread id is invalid.\n", threadID));
+        RSLockHolder lockHolder(GetProcessLock());
 
-        return E_INVALIDARG;
+        // Find the unmanaged thread
+        CordbUnmanagedThread *ut = GetUnmanagedThread(threadID);
+
+        if (ut == NULL)
+        {
+            LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x, thread id is invalid.\n", threadID));
+
+            return E_INVALIDARG;
+        }
+
+        return ut->GetThreadContext((DT_CONTEXT*)context);
     }
+    else
+    {
+        RSLockHolder ch(GetProcess()->GetStopGoLock());
+        RSLockHolder lockHolder(GetProcessLock());
 
-    return ut->GetThreadContext((DT_CONTEXT*)context);
-#endif // FEATURE_INTEROP_DEBUGGING
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            CordbThread* thread = this->TryLookupThreadByVolatileOSId(threadID);
+            if (thread == NULL)
+            {
+                LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x, thread id is invalid.\n", threadID));
+
+                hr = E_INVALIDARG;
+            }
+            else
+            {
+                DT_CONTEXT* managedContext;
+                hr = thread->GetManagedContext(&managedContext);
+                *pContext = *managedContext;
+            }
+        }
+        EX_CATCH
+        {
+            hr = E_FAIL;
+        }
+        EX_END_CATCH(SwallowAllExceptions)
+
+        return hr;
+    }
 }
 
 // Public implementation of ICorDebugProcess::SetThreadContext.
@@ -6494,67 +6522,86 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
 HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE context[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
-    FAIL_IF_MANAGED_ONLY(this);
 
-#if !defined(FEATURE_INTEROP_DEBUGGING)
-    return E_NOTIMPL;
-#else
     HRESULT hr = S_OK;
-
-    RSLockHolder lockHolder(GetProcessLock());
-
-    CordbUnmanagedThread *ut = NULL;
-
-    if (contextSize != sizeof(DT_CONTEXT))
-    {
-        LOG((LF_CORDB, LL_INFO10000, "CP::STC: thread=0x%x, context size is invalid.\n", threadID));
-        hr = E_INVALIDARG;
-        goto Label_Done;
-    }
 
     // @todo -  could we look at the context flags and return E_INVALIDARG if they're bad?
     FAIL_IF_NEUTERED(this);
     VALIDATE_POINTER_TO_OBJECT_ARRAY(context, BYTE, contextSize, true, true);
 
-    // Find the unmanaged thread
-    ut = GetUnmanagedThread(threadID);
-
-    if (ut == NULL)
+    if (contextSize != sizeof(DT_CONTEXT))
     {
-        LOG((LF_CORDB, LL_INFO10000, "CP::STC: thread=0x%x, thread is invalid.\n", threadID));
-        hr = E_INVALIDARG;
-        goto Label_Done;
+        LOG((LF_CORDB, LL_INFO10000, "CP::STC: thread=0x%x, context size is invalid.\n", threadID));
+        return E_INVALIDARG;
     }
 
-    hr = ut->SetThreadContext((DT_CONTEXT*)context);
+    DT_CONTEXT* pContext = (DT_CONTEXT*)context;
 
-
-    // Update the register set for the leaf-unmanaged chain so that it's consistent w/ the context.
-    // We may not necessarily be synchronized, and so these frames may be stale. Even so, no harm done.
-    if (SUCCEEDED(hr))
+    if (this->IsInteropDebugging())
     {
-        // @dbgtodo stackwalk: this should all disappear with V3 stackwalker and getting rid of SetThreadContext.
+        RSLockHolder lockHolder(GetProcessLock());
+
+        CordbUnmanagedThread *ut = NULL;
+
+        // Find the unmanaged thread
+        ut = GetUnmanagedThread(threadID);
+
+        if (ut == NULL)
+        {
+            LOG((LF_CORDB, LL_INFO10000, "CP::STC: thread=0x%x, thread is invalid.\n", threadID));
+            return E_INVALIDARG;
+        }
+
+        hr = ut->SetThreadContext(pContext);
+
+        // Update the register set for the leaf-unmanaged chain so that it's consistent w/ the context.
+        // We may not necessarily be synchronized, and so these frames may be stale. Even so, no harm done.
+        if (SUCCEEDED(hr))
+        {
+            // @dbgtodo stackwalk: this should all disappear with V3 stackwalker and getting rid of SetThreadContext.
+            EX_TRY
+            {
+                // Find the managed thread.  Returns NULL if thread is not managed.
+                // If we don't have a thread prveiously cached, then there's no state to update.
+                CordbThread * pThread = TryLookupThreadByVolatileOSId(threadID);
+
+                if (pThread != NULL)
+                {
+                    // In V2, we used to update the CONTEXT of the leaf chain if the chain is an unmanaged chain.
+                    // In Arrowhead, we just force a cleanup of the stackwalk cache.  This is a more correct
+                    // thing to do anyway, since the CONTEXT being set could be anything.
+                    pThread->CleanupStack();
+                }
+            }
+            EX_CATCH_HRESULT(hr);
+        }
+    }
+    else
+    {
+        RSLockHolder ch(GetProcess()->GetStopGoLock());
+        RSLockHolder lockHolder(GetProcessLock());
+        
         EX_TRY
         {
-            // Find the managed thread.  Returns NULL if thread is not managed.
-            // If we don't have a thread prveiously cached, then there's no state to update.
-            CordbThread * pThread = TryLookupThreadByVolatileOSId(threadID);
-
-            if (pThread != NULL)
+            CordbThread* thread = this->TryLookupThreadByVolatileOSId(threadID);
+            if (thread == NULL)
             {
-                // In V2, we used to update the CONTEXT of the leaf chain if the chain is an unmanaged chain.
-                // In Arrowhead, we just force a cleanup of the stackwalk cache.  This is a more correct
-                // thing to do anyway, since the CONTEXT being set could be anything.
-                pThread->CleanupStack();
+                LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x, thread id is invalid.\n", threadID));
+
+                hr = E_INVALIDARG;
             }
+
+            hr = thread->SetManagedContext(pContext);
         }
-        EX_CATCH_HRESULT(hr);
+        EX_CATCH
+        {
+            hr = E_FAIL;
+        }
+        EX_END_CATCH(SwallowAllExceptions)
+
+        
     }
-
-Label_Done:
-    return ErrWrapper(hr);
-
-#endif // FEATURE_INTEROP_DEBUGGING
+    return hr;
 }
 
 
