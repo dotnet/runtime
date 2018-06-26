@@ -126,7 +126,7 @@ namespace R2RDump
 
                 if (_raw)
                 {
-                    DumpBytes(method.GcInfo.Offset, (uint)method.GcInfo.Size, null, false);
+                    DumpBytes(method.GcInfo.Offset, (uint)method.GcInfo.Size, null, "", false);
                 }
             }
             SkipLine();
@@ -147,8 +147,7 @@ namespace R2RDump
 
             if (_disasm)
             {
-                string disassembly = CoreDisTools.GetCodeBlock(_disassembler, rtf, _r2r.GetOffset(rtf.StartAddress), _r2r.Image);
-                _writer.Write(disassembly);
+                DumpDisasm(_disassembler, rtf, _r2r.GetOffset(rtf.StartAddress), _r2r.Image);
             }
 
             if (_raw)
@@ -168,10 +167,33 @@ namespace R2RDump
             SkipLine();
         }
 
+        internal unsafe override void DumpDisasm(IntPtr Disasm, RuntimeFunction rtf, int imageOffset, byte[] image, XmlNode parentNode = null)
+        {
+            int rtfOffset = 0;
+            int codeOffset = rtf.CodeOffset;
+            Dictionary<int, GcInfo.GcTransition> transitions = rtf.Method.GcInfo.Transitions;
+            GcSlotTable slotTable = rtf.Method.GcInfo.SlotTable;
+            while (rtfOffset < rtf.Size)
+            {
+                string instr;
+                int instrSize = CoreDisTools.GetInstruction(Disasm, rtf, imageOffset, rtfOffset, image, out instr);
+
+                _writer.Write(instr);
+                if (transitions.ContainsKey(codeOffset))
+                {
+                    _writer.WriteLine($"\t\t\t\t{transitions[codeOffset].GetSlotState(slotTable)}");
+                }
+
+                CoreDisTools.ClearOutputBuffer();
+                rtfOffset += instrSize;
+                codeOffset += instrSize;
+            }
+        }
+
         /// <summary>
         /// Prints a formatted string containing a block of bytes from the relative virtual address and size
         /// </summary>
-        internal override void DumpBytes(int rva, uint size, XmlNode parentNode = null, bool convertToOffset = true)
+        internal override void DumpBytes(int rva, uint size, XmlNode parentNode = null, string name = "Raw", bool convertToOffset = true)
         {
             int start = rva;
             if (convertToOffset)
@@ -241,7 +263,7 @@ namespace R2RDump
                     }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER:
-                    _writer.WriteLine(_r2r.CompileIdentifier);
+                    _writer.WriteLine(_r2r.CompilerIdentifier);
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS:
                     foreach (R2RImportSection importSection in _r2r.ImportSections)
