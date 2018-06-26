@@ -84,7 +84,7 @@ namespace System.Numerics.Tests
                 case "u*":
                     return new BigInteger(Multiply(bytes1, bytes1).ToArray());
                 default:
-                    throw new ArgumentException(String.Format("Invalid operation found: {0}", op));
+                    throw new ArgumentException(string.Format("Invalid operation found: {0}", op));
             }
         }
 
@@ -148,7 +148,7 @@ namespace System.Numerics.Tests
                 case "b+":
                     return new BigInteger(Add(bytes1, bytes2).ToArray());
                 default:
-                    throw new ArgumentException(String.Format("Invalid operation found: {0}", op));
+                    throw new ArgumentException(string.Format("Invalid operation found: {0}", op));
             }
         }
 
@@ -164,7 +164,7 @@ namespace System.Numerics.Tests
                     return new BigInteger(ModPow(bytes1, bytes2, bytes3).ToArray());
 
                 default:
-                    throw new ArgumentException(String.Format("Invalid operation found: {0}", op));
+                    throw new ArgumentException(string.Format("Invalid operation found: {0}", op));
             }
         }
 
@@ -877,9 +877,9 @@ namespace System.Numerics.Tests
             return mask;
         }
 
-        public static String Print(byte[] bytes)
+        public static string Print(byte[] bytes)
         {
-            String ret = "make ";
+            string ret = "make ";
 
             for (int i = 0; i < bytes.Length; i++)
             {
@@ -890,9 +890,9 @@ namespace System.Numerics.Tests
             return ret;
         }
         
-        public static String PrintFormatX(byte[] bytes)
+        public static string PrintFormatX(byte[] bytes)
         {
-            string ret = String.Empty;
+            string ret = string.Empty;
             for (int i = 0; i < bytes.Length; i++)
             {
                 ret += bytes[i].ToString("x");
@@ -900,9 +900,9 @@ namespace System.Numerics.Tests
             return ret;
         }
 
-        public static String PrintFormatX2(byte[] bytes)
+        public static string PrintFormatX2(byte[] bytes)
         {
-            string ret = String.Empty;
+            string ret = string.Empty;
             for (int i = 0; i < bytes.Length; i++)
             {
                 ret += bytes[i].ToString("x2") + " ";
@@ -947,15 +947,15 @@ namespace System.Numerics.Tests
         public static BigInteger ApproximateBigInteger(double value)
         {
             //Special case values;
-            if (Double.IsNaN(value))
+            if (double.IsNaN(value))
             {
                 return new BigInteger(-101);
             }
-            if (Double.IsNegativeInfinity(value))
+            if (double.IsNegativeInfinity(value))
             {
                 return new BigInteger(-102);
             }
-            if (Double.IsPositiveInfinity(value))
+            if (double.IsPositiveInfinity(value))
             {
                 return new BigInteger(-103);
             }

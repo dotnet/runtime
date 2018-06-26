@@ -39,7 +39,7 @@ namespace System.Net.Sockets.Tests
             TestLingerState_Success(sock, true, 0);
             TestLingerState_Success(sock, true, 120);
 
-            TestLingerState_ArgumentException(sock, true, UInt16.MaxValue + 1);
+            TestLingerState_ArgumentException(sock, true, ushort.MaxValue + 1);
         }
 
         [OuterLoop] // TODO: Issue #11345
@@ -49,9 +49,9 @@ namespace System.Net.Sockets.Tests
         {
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            TestLingerState_Success(sock, true, Int16.MaxValue);
-            TestLingerState_Success(sock, true, Int16.MaxValue + 1);
-            TestLingerState_Success(sock, true, UInt16.MaxValue);
+            TestLingerState_Success(sock, true, short.MaxValue);
+            TestLingerState_Success(sock, true, short.MaxValue + 1);
+            TestLingerState_Success(sock, true, ushort.MaxValue);
         }
 
         [OuterLoop] // TODO: Issue #11345
@@ -64,17 +64,17 @@ namespace System.Net.Sockets.Tests
 
             Assert.Throws<SocketException>(() =>
             {
-                sock.LingerState = new LingerOption(true, Int16.MaxValue);
+                sock.LingerState = new LingerOption(true, short.MaxValue);
             });
 
             Assert.Throws<SocketException>(() =>
             {
-                sock.LingerState = new LingerOption(true, Int16.MaxValue + 1);
+                sock.LingerState = new LingerOption(true, short.MaxValue + 1);
             });
 
             Assert.Throws<SocketException>(() =>
             {
-                sock.LingerState = new LingerOption(true, UInt16.MaxValue);
+                sock.LingerState = new LingerOption(true, ushort.MaxValue);
             });
         }
 

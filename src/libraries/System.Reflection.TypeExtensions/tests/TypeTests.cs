@@ -974,12 +974,12 @@ namespace System.Reflection.Tests
         internal char FirstChar { get { throw null; } }
     }
 
-    internal struct Int32Impersonator : IComparable, IFormattable, IConvertible, IComparable<Int32>, IEquatable<Int32>
+    internal struct Int32Impersonator : IComparable, IFormattable, IConvertible, IComparable<int>, IEquatable<int>
     {
         public int CompareTo(object value) { throw null; }
         public int CompareTo(int value) { throw null; }
         public override bool Equals(object obj) { throw null; }
-        public bool Equals(Int32 obj) { throw null; }
+        public bool Equals(int obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
         public string ToString(string format) { throw null; }
@@ -989,8 +989,8 @@ namespace System.Reflection.Tests
         public static int Parse(string s, NumberStyles style) { throw null; }
         public static int Parse(string s, IFormatProvider provider) { throw null; }
         public static int Parse(string s, NumberStyles style, IFormatProvider provider) { throw null; }
-        public static bool TryParse(string s, out Int32 result) { throw null; }
-        public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out Int32 result) { throw null; }
+        public static bool TryParse(string s, out int result) { throw null; }
+        public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out int result) { throw null; }
         public TypeCode GetTypeCode() { throw null; }
         bool IConvertible.ToBoolean(IFormatProvider provider) { throw null; }
         char IConvertible.ToChar(IFormatProvider provider) { throw null; }
@@ -1004,7 +1004,7 @@ namespace System.Reflection.Tests
         ulong IConvertible.ToUInt64(IFormatProvider provider) { throw null; }
         float IConvertible.ToSingle(IFormatProvider provider) { throw null; }
         double IConvertible.ToDouble(IFormatProvider provider) { throw null; }
-        Decimal IConvertible.ToDecimal(IFormatProvider provider) { throw null; }
+        decimal IConvertible.ToDecimal(IFormatProvider provider) { throw null; }
         DateTime IConvertible.ToDateTime(IFormatProvider provider) { throw null; }
         object IConvertible.ToType(Type type, IFormatProvider provider) { throw null; }
     }

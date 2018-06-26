@@ -19,7 +19,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             SYSTEM_INFO info;
             GetSystemInfo(out info);
             pageSize = (int)info.dwPageSize;
-            Assert.InRange(pageSize, 1, Int32.MaxValue);
+            Assert.InRange(pageSize, 1, int.MaxValue);
             return pageSize;
         });
 

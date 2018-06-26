@@ -22,13 +22,13 @@ namespace System.Xml.Tests
         public int v1()
         {
             CError.Compare(XmlConvert.EncodeName(null), null, " en null");
-            CError.Compare(XmlConvert.EncodeName(String.Empty), String.Empty, "en empty");
+            CError.Compare(XmlConvert.EncodeName(string.Empty), string.Empty, "en empty");
             CError.Compare(XmlConvert.EncodeLocalName(null), null, "eln null");
-            CError.Compare(XmlConvert.EncodeLocalName(String.Empty), String.Empty, "eln empty");
+            CError.Compare(XmlConvert.EncodeLocalName(string.Empty), string.Empty, "eln empty");
             CError.Compare(XmlConvert.DecodeName(null), null, " de null");
-            CError.Compare(XmlConvert.DecodeName(String.Empty), String.Empty, "de empty");
+            CError.Compare(XmlConvert.DecodeName(string.Empty), string.Empty, "de empty");
             CError.Compare(XmlConvert.EncodeNmToken(null), null, " ent null");
-            CError.Compare(XmlConvert.EncodeNmToken(String.Empty), String.Empty, "ent empty");
+            CError.Compare(XmlConvert.EncodeNmToken(string.Empty), string.Empty, "ent empty");
             return TEST_PASS;
         }
 
@@ -45,7 +45,7 @@ namespace System.Xml.Tests
         public int v3()
         {
             byte[] _dbyte = { 0x71, 0xFF };
-            String strUni = String.Empty;
+            string strUni = string.Empty;
             for (int i = 0; i < _dbyte.Length; i = i + 2)
             {
                 strUni += (BitConverter.ToChar(_dbyte, i)).ToString();

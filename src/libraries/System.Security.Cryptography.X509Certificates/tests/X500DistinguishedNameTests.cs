@@ -172,8 +172,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void EdgeCaseEmptyFormat()
         {
             X500DistinguishedName dn = new X500DistinguishedName("");
-            Assert.Equal(String.Empty, dn.Format(true));
-            Assert.Equal(String.Empty, dn.Format(false));
+            Assert.Equal(string.Empty, dn.Format(true));
+            Assert.Equal(string.Empty, dn.Format(false));
         }
 
         [Fact]

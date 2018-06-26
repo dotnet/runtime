@@ -26,7 +26,7 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new UnmanagedMemoryStream(fakeBuffer, 999, 9));
             AssertExtensions.Throws<ArgumentException>(null, () => new UnmanagedMemoryStream(fakeBuffer, 1, 100));
 
-            AssertExtensions.Throws<ArgumentException>(null, () => new UnmanagedMemoryStream(fakeBuffer, Int32.MaxValue, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => new UnmanagedMemoryStream(fakeBuffer, int.MaxValue, 1));
         }
 
         [Fact]

@@ -53,11 +53,11 @@ namespace Sytem.Threading.Tasks.Tests
                 switch (_api)
                 {
                     case API.For:
-                        result = Parallel.For(0, Int32.MaxValue, new ParallelOptions() { CancellationToken = ct }, (i) => body());
+                        result = Parallel.For(0, int.MaxValue, new ParallelOptions() { CancellationToken = ct }, (i) => body());
                         break;
 
                     case API.For64:
-                        result = Parallel.For(0, Int64.MaxValue, new ParallelOptions() { CancellationToken = ct }, (i) => body());
+                        result = Parallel.For(0, long.MaxValue, new ParallelOptions() { CancellationToken = ct }, (i) => body());
                         break;
 
                     case API.Foreach:

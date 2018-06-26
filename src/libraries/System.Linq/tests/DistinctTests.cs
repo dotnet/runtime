@@ -14,7 +14,7 @@ namespace System.Linq.Tests
         public void SameResultsRepeatCallsIntQuery()
         {
             var q = from x in new[] { 0, 9999, 0, 888, -1, 66, -1, -777, 1, 2, -12345, 66, 66, -1, -1 }
-                    where x > Int32.MinValue
+                    where x > int.MinValue
                     select x;
 
             Assert.Equal(q.Distinct(), q.Distinct());
@@ -24,7 +24,7 @@ namespace System.Linq.Tests
         public void SameResultsRepeatCallsStringQuery()
         {
             var q = from x in new[] { "!@#$%^", "C", "AAA", "Calling Twice", "SoS" }
-                    where String.IsNullOrEmpty(x)
+                    where string.IsNullOrEmpty(x)
                     select x;
 
 

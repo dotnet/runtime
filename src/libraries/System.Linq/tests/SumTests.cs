@@ -447,7 +447,7 @@ namespace System.Linq.Tests
         public void SameResultsRepeatCallsIntQuery()
         {
             var q = from x in new int?[] { 9999, 0, 888, -1, 66, null, -777, 1, 2, -12345 }
-                    where x > Int32.MinValue
+                    where x > int.MinValue
                     select x;
             Assert.Equal(q.Sum(), q.Sum());
         }
@@ -500,7 +500,7 @@ namespace System.Linq.Tests
         [Fact]
         public void OverflowInt32Negative()
         {
-            int[] source = { -Int32.MaxValue, 0, -5, -20 };
+            int[] source = { -int.MaxValue, 0, -5, -20 };
             Assert.Throws<OverflowException>(() => source.Sum());
         }
 
@@ -532,7 +532,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullableInt32NegativeOverflow()
         {
-            int?[] source = { -Int32.MaxValue, 0, -5, null, null, -20 };
+            int?[] source = { -int.MaxValue, 0, -5, null, null, -20 };
             Assert.Throws<OverflowException>(() => source.Sum());
         }
 
@@ -570,7 +570,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullableInt64NegativeOverflow()
         {
-            long[] source = { -Int64.MaxValue, 0, -5, 20, -16 };
+            long[] source = { -long.MaxValue, 0, -5, 20, -16 };
             Assert.Throws<OverflowException>(() => source.Sum());
         }
 
@@ -602,7 +602,7 @@ namespace System.Linq.Tests
         [Fact]
         public void Int64NegativeOverflow()
         {
-            long?[] source = { -Int64.MaxValue, 0, -5, -20, null, null };
+            long?[] source = { -long.MaxValue, 0, -5, -20, null, null };
             Assert.Throws<OverflowException>(() => source.Sum());
         }
 
@@ -628,14 +628,14 @@ namespace System.Linq.Tests
         [Fact]
         public void DoubleWithNaN()
         {
-            double[] source = { 20.45, 0, -10.55, Double.NaN };
+            double[] source = { 20.45, 0, -10.55, double.NaN };
             Assert.True(double.IsNaN(source.Sum()));
         }
 
         [Fact]
         public void DoubleToNegativeInfinity()
         {
-            double[] source = { -Double.MaxValue, -Double.MaxValue };
+            double[] source = { -double.MaxValue, -double.MaxValue };
             Assert.True(double.IsNegativeInfinity(source.Sum()));
         }
 
@@ -726,7 +726,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullableDecimalNegativeOverflow()
         {
-            decimal?[] source = { -Decimal.MaxValue, -Decimal.MaxValue };
+            decimal?[] source = { -decimal.MaxValue, -decimal.MaxValue };
             Assert.Throws<OverflowException>(() => source.Sum());
         }
 

@@ -14,7 +14,7 @@ namespace System.Xml.Tests
     {
         private long _defaultCharsEnt = (long)1e7;  // By default, entity resolving is limited to 10 million characters (On full .NET the default used to be zero (=unlimited) as LegacyXmlSettings was enabled)
         private long _defaultCharsDoc = 0;
-        private long _maxVal = Int64.MaxValue;
+        private long _maxVal = long.MaxValue;
         private long _bigVal = 100000;
         private string _path = Path.Combine(FilePathUtil.GetStandardPath(), @"xml10\entityexpansion\");
         private string _path2 = Path.Combine(FilePathUtil.GetStandardPath(), @"XML10\ms_xml\");

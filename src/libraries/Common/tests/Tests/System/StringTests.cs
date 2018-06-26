@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1729,16 +1729,16 @@ namespace System.Tests
             Assert.True(s.EndsWith(s, true, CultureInfo.InvariantCulture));
 
             // Different object, same string, no culture
-            Assert.True(s.EndsWith(String.Copy(s), false, null));
-            Assert.True(s.EndsWith(String.Copy(s), true, null));
+            Assert.True(s.EndsWith(string.Copy(s), false, null));
+            Assert.True(s.EndsWith(string.Copy(s), true, null));
 
             // Different object, same string, invariant culture
-            Assert.True(s.EndsWith(String.Copy(s), false, CultureInfo.InvariantCulture));
-            Assert.True(s.EndsWith(String.Copy(s), true, CultureInfo.InvariantCulture));
+            Assert.True(s.EndsWith(string.Copy(s), false, CultureInfo.InvariantCulture));
+            Assert.True(s.EndsWith(string.Copy(s), true, CultureInfo.InvariantCulture));
 
             // Different object, same string, current culture
-            Assert.True(s.EndsWith(String.Copy(s), false, CultureInfo.InvariantCulture));
-            Assert.True(s.EndsWith(String.Copy(s), true, CultureInfo.InvariantCulture));
+            Assert.True(s.EndsWith(string.Copy(s), false, CultureInfo.InvariantCulture));
+            Assert.True(s.EndsWith(string.Copy(s), true, CultureInfo.InvariantCulture));
         }
 
         [Fact]
@@ -6748,16 +6748,16 @@ namespace System.Tests
         [Fact]
         public static void CompareNegativeTest()
         {
-            AssertExtensions.Throws<ArgumentNullException>("culture", () => String.Compare("a", "b", false, null));
+            AssertExtensions.Throws<ArgumentNullException>("culture", () => string.Compare("a", "b", false, null));
 
-            AssertExtensions.Throws<ArgumentException>("options", () => String.Compare("a", "b", CultureInfo.InvariantCulture, (CompareOptions) 7891));
-            AssertExtensions.Throws<ArgumentNullException>("culture", () => String.Compare("a", "b", null, CompareOptions.None));
+            AssertExtensions.Throws<ArgumentException>("options", () => string.Compare("a", "b", CultureInfo.InvariantCulture, (CompareOptions) 7891));
+            AssertExtensions.Throws<ArgumentNullException>("culture", () => string.Compare("a", "b", null, CompareOptions.None));
 
-            AssertExtensions.Throws<ArgumentNullException>("culture", () => String.Compare("a", 0, "b", 0, 1, false, null));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length1", () => String.Compare("a", 10,"b", 0, 1, false, CultureInfo.InvariantCulture));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length2", () => String.Compare("a", 1, "b", 10,1, false, CultureInfo.InvariantCulture));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset1", () => String.Compare("a",-1, "b", 1 ,1, false, CultureInfo.InvariantCulture));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset2", () => String.Compare("a", 1, "b",-1 ,1, false, CultureInfo.InvariantCulture));
+            AssertExtensions.Throws<ArgumentNullException>("culture", () => string.Compare("a", 0, "b", 0, 1, false, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length1", () => string.Compare("a", 10,"b", 0, 1, false, CultureInfo.InvariantCulture));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length2", () => string.Compare("a", 1, "b", 10,1, false, CultureInfo.InvariantCulture));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset1", () => string.Compare("a",-1, "b", 1 ,1, false, CultureInfo.InvariantCulture));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset2", () => string.Compare("a", 1, "b",-1 ,1, false, CultureInfo.InvariantCulture));
         }
 
         [Theory]
@@ -6811,23 +6811,23 @@ namespace System.Tests
             byte[] encodedBytes = Encoding.Default.GetBytes(s);
             fixed (byte* pBytes = encodedBytes)
             {
-                Assert.Equal(s, new String((sbyte*)pBytes));
-                Assert.Equal(s, new String((sbyte*)pBytes, 0, encodedBytes.Length));
-                Assert.Equal(s, new String((sbyte*)pBytes, 0, encodedBytes.Length, Encoding.Default));
+                Assert.Equal(s, new string((sbyte*)pBytes));
+                Assert.Equal(s, new string((sbyte*)pBytes, 0, encodedBytes.Length));
+                Assert.Equal(s, new string((sbyte*)pBytes, 0, encodedBytes.Length, Encoding.Default));
             }
 
             s = "This is some string \u0393\u0627\u3400\u0440\u1100";
             encodedBytes = Encoding.UTF8.GetBytes(s);
             fixed (byte* pBytes = encodedBytes)
             {
-                Assert.Equal(s, new String((sbyte*)pBytes, 0, encodedBytes.Length, Encoding.UTF8));
+                Assert.Equal(s, new string((sbyte*)pBytes, 0, encodedBytes.Length, Encoding.UTF8));
             }
 
             fixed (byte* pBytes = new byte[1] { 0 })
             {
-                Assert.Equal(string.Empty, new String((sbyte*)pBytes));
-                Assert.Equal(string.Empty, new String((sbyte*)pBytes, 0, 0));
-                Assert.Equal(string.Empty, new String((sbyte*)pBytes, 0, 0, Encoding.UTF8));
+                Assert.Equal(string.Empty, new string((sbyte*)pBytes));
+                Assert.Equal(string.Empty, new string((sbyte*)pBytes, 0, 0));
+                Assert.Equal(string.Empty, new string((sbyte*)pBytes, 0, 0, Encoding.UTF8));
             }
         }
 
@@ -7141,8 +7141,8 @@ namespace System.Tests
 
             fixed (byte* pBytes = invalidUTF8Bytes)
             {
-                Assert.Equal("AB\ufffdCD", new String((sbyte*)pBytes));
-                Assert.Equal("B\ufffdC", new String((sbyte*)pBytes, 1, 3));
+                Assert.Equal("AB\ufffdCD", new string((sbyte*)pBytes));
+                Assert.Equal("B\ufffdC", new string((sbyte*)pBytes, 1, 3));
             }
         }
 
@@ -7150,35 +7150,35 @@ namespace System.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static unsafe void Ctor_SByte_InvalidArguments()
         {
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new String ((sbyte*) null, 0, 1, Encoding.Default));
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new String ((sbyte*) null, 1, 1, Encoding.Default));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new string ((sbyte*) null, 0, 1, Encoding.Default));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new string ((sbyte*) null, 1, 1, Encoding.Default));
 
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new String ((sbyte*) null, 0, 1, null));
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new String ((sbyte*) null, 1, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new string ((sbyte*) null, 0, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new string ((sbyte*) null, 1, 1, null));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => new String((sbyte*)null, -1, 0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => new String((sbyte*)null, -1, 0, Encoding.UTF8));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => new String((sbyte*)null, 0, -1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => new String((sbyte*)null, 0, -1, Encoding.UTF8));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => new String(UIntPtr.Size == 4 ? (sbyte*)uint.MaxValue : (sbyte*)ulong.MaxValue, 42, 0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => new String(UIntPtr.Size == 4 ? (sbyte*)uint.MaxValue : (sbyte*)ulong.MaxValue, 42, 0, Encoding.UTF8));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => new string((sbyte*)null, -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => new string((sbyte*)null, -1, 0, Encoding.UTF8));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => new string((sbyte*)null, 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => new string((sbyte*)null, 0, -1, Encoding.UTF8));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => new string(UIntPtr.Size == 4 ? (sbyte*)uint.MaxValue : (sbyte*)ulong.MaxValue, 42, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => new string(UIntPtr.Size == 4 ? (sbyte*)uint.MaxValue : (sbyte*)ulong.MaxValue, 42, 0, Encoding.UTF8));
         }
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static unsafe void Ctor_SByte_NullPointer_ReturnsEmptyString()
         {
-            Assert.Equal(string.Empty, new String((sbyte*) null));
+            Assert.Equal(string.Empty, new string((sbyte*) null));
 
-            Assert.Equal(string.Empty, new String((char*) null, 0, 0));
+            Assert.Equal(string.Empty, new string((char*) null, 0, 0));
 
-            Assert.Equal(string.Empty, new String((sbyte*) null, 0, 0));
+            Assert.Equal(string.Empty, new string((sbyte*) null, 0, 0));
 
-            Assert.Equal(string.Empty, new String((sbyte*) null, 0, 0, Encoding.Default));
-            Assert.Equal(string.Empty, new String((sbyte*) null, 1, 0, Encoding.Default));
+            Assert.Equal(string.Empty, new string((sbyte*) null, 0, 0, Encoding.Default));
+            Assert.Equal(string.Empty, new string((sbyte*) null, 1, 0, Encoding.Default));
 
-            Assert.Equal(string.Empty, new String((sbyte*) null, 0, 0, null));
-            Assert.Equal(string.Empty, new String((sbyte*) null, 1, 0, null));
+            Assert.Equal(string.Empty, new string((sbyte*) null, 0, 0, null));
+            Assert.Equal(string.Empty, new string((sbyte*) null, 1, 0, null));
         }
 
         [Fact]
@@ -7199,34 +7199,34 @@ namespace System.Tests
             string s = "some string to clone";
             string cloned = (string) s.Clone();
             Assert.Equal(s, cloned);
-            Assert.True(Object.ReferenceEquals(s, cloned), "cloned object should return same instance of the string");
+            Assert.True(object.ReferenceEquals(s, cloned), "cloned object should return same instance of the string");
         }
 
         [Fact]
         public static unsafe void CopyTest()
         {
-            AssertExtensions.Throws<ArgumentNullException>("str", () => String.Copy(null));
+            AssertExtensions.Throws<ArgumentNullException>("str", () => string.Copy(null));
 
             string s = "some string to copy";
-            string copy = String.Copy(s);
+            string copy = string.Copy(s);
             Assert.Equal(s, copy);
-            Assert.False(Object.ReferenceEquals(s, copy), "copy should return new instance of the string");
+            Assert.False(object.ReferenceEquals(s, copy), "copy should return new instance of the string");
         }
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, ".NetNative limits interning of literals to the empty string.")]
         public static unsafe void InternTest()
         {
-            AssertExtensions.Throws<ArgumentNullException>("str", () => String.Intern(null));
-            AssertExtensions.Throws<ArgumentNullException>("str", () => String.IsInterned(null));
+            AssertExtensions.Throws<ArgumentNullException>("str", () => string.Intern(null));
+            AssertExtensions.Throws<ArgumentNullException>("str", () => string.IsInterned(null));
 
-            String s1 = "MyTest";
-            String s2 = new StringBuilder().Append("My").Append("Test").ToString(); 
-            String s3 = String.Intern(s2);
+            string s1 = "MyTest";
+            string s2 = new StringBuilder().Append("My").Append("Test").ToString(); 
+            string s3 = string.Intern(s2);
 
             Assert.Equal(s1, s2);
-            Assert.False(Object.ReferenceEquals(s1, s2), "Created string from StringBuilder should have different reference than the literal string");
-            Assert.True(Object.ReferenceEquals(s1, s3), "Created intern string should have same reference as the literal string");
+            Assert.False(object.ReferenceEquals(s1, s2), "Created string from StringBuilder should have different reference than the literal string");
+            Assert.True(object.ReferenceEquals(s1, s3), "Created intern string should have same reference as the literal string");
 
             Assert.True(String.IsInterned(s1).Equals(s1), "Expected to the literal string interned");
             Assert.True(String.IsInterned(s2).Equals(s1), "Expected to the interned string to be in the string pool now");
@@ -7255,7 +7255,7 @@ namespace System.Tests
             // U+0301  COMBINING ACUTE ACCENT
             // U+0327  COMBINING CEDILLA
             // U+00BE  VULGAR FRACTION THREE QUARTERS            
-            string s = new String( new char[] {'\u0063', '\u0301', '\u0327', '\u00BE'});
+            string s = new string( new char[] {'\u0063', '\u0301', '\u0327', '\u00BE'});
 
             Assert.False(s.IsNormalized(), "String should be not normalized when checking with the default which same as FormC");
             Assert.False(s.IsNormalized(NormalizationForm.FormC), "String should be not normalized when checking with FormC");

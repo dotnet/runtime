@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -113,7 +113,7 @@ namespace SerializationTestTypes
     {
         public CharClass()
         {
-            c = default(Char);
+            c = default(char);
             c1 = char.MaxValue;
             c2 = char.MinValue;
             c3 = 'c';
@@ -140,64 +140,64 @@ namespace SerializationTestTypes
         public AllTypes()
         {
             a = false;
-            b = Byte.MaxValue;
-            c = Byte.MinValue;
-            e = Decimal.MaxValue;
-            f = Decimal.MinusOne;
-            g = Decimal.MinValue;
-            h = Decimal.One;
-            i = Decimal.Zero;
-            j = default(Decimal);
-            k = default(Double);
-            l = Double.Epsilon;
-            m = Double.MaxValue;
-            n = Double.MinValue;
-            o = Double.NaN;
-            p = Double.NegativeInfinity;
-            q = Double.PositiveInfinity;
-            r = default(Single);
-            s = Single.Epsilon;
-            t = Single.MinValue;
-            u = Single.MaxValue;
-            v = Single.NaN;
-            w = Single.NegativeInfinity;
-            x = Single.PositiveInfinity;
-            y = default(Int32);
-            z = Int32.MaxValue;
-            z1 = Int32.MinValue;
-            z2 = default(Int64);
-            z3 = Int64.MaxValue;
-            z4 = Int64.MinValue;
-            z5 = new Object();
-            z6 = default(SByte);
-            z7 = SByte.MaxValue;
-            z8 = SByte.MinValue;
-            z9 = default(Int16);
-            z91 = Int16.MaxValue;
-            z92 = Int16.MinValue;
+            b = byte.MaxValue;
+            c = byte.MinValue;
+            e = decimal.MaxValue;
+            f = decimal.MinusOne;
+            g = decimal.MinValue;
+            h = decimal.One;
+            i = decimal.Zero;
+            j = default(decimal);
+            k = default(double);
+            l = double.Epsilon;
+            m = double.MaxValue;
+            n = double.MinValue;
+            o = double.NaN;
+            p = double.NegativeInfinity;
+            q = double.PositiveInfinity;
+            r = default(float);
+            s = float.Epsilon;
+            t = float.MinValue;
+            u = float.MaxValue;
+            v = float.NaN;
+            w = float.NegativeInfinity;
+            x = float.PositiveInfinity;
+            y = default(int);
+            z = int.MaxValue;
+            z1 = int.MinValue;
+            z2 = default(long);
+            z3 = long.MaxValue;
+            z4 = long.MinValue;
+            z5 = new object();
+            z6 = default(sbyte);
+            z7 = sbyte.MaxValue;
+            z8 = sbyte.MinValue;
+            z9 = default(short);
+            z91 = short.MaxValue;
+            z92 = short.MinValue;
             z93 = "abc";
-            z94 = default(UInt16);
-            z95 = UInt16.MaxValue;
-            z96 = UInt16.MinValue;
-            z97 = default(UInt32);
-            z98 = UInt32.MaxValue;
-            z99 = UInt32.MinValue;
-            z990 = default(UInt64);
-            z991 = UInt64.MaxValue;
-            z992 = UInt64.MinValue;
+            z94 = default(ushort);
+            z95 = ushort.MaxValue;
+            z96 = ushort.MinValue;
+            z97 = default(uint);
+            z98 = uint.MaxValue;
+            z99 = uint.MinValue;
+            z990 = default(ulong);
+            z991 = ulong.MaxValue;
+            z992 = ulong.MinValue;
         }
 
         [DataMember]
-        public Boolean a;
+        public bool a;
 
         [DataMember]
-        public Byte b;
+        public byte b;
 
         [DataMember]
-        public Byte c;
+        public byte c;
 
         [DataMember]
-        public Char d = Char.MaxValue;
+        public char d = char.MaxValue;
 
         [DataMember]
         public DateTime f5 = new DateTime();
@@ -206,136 +206,136 @@ namespace SerializationTestTypes
         public Guid guidData = new Guid("5642b5d2-87c3-a724-2390-997062f3f7a2");
 
         [DataMember]
-        public String strData;
+        public string strData;
 
         [DataMember]
-        public Decimal e;
+        public decimal e;
 
         [DataMember]
-        public Decimal f;
+        public decimal f;
 
         [DataMember]
-        public Decimal g;
+        public decimal g;
 
         [DataMember]
-        public Decimal h;
+        public decimal h;
 
         [DataMember]
-        public Decimal i;
+        public decimal i;
 
         [DataMember]
-        public Decimal j;
+        public decimal j;
 
         [DataMember]
-        public Double k;
+        public double k;
 
         [DataMember]
-        public Double l;
+        public double l;
 
         [DataMember]
-        public Double m;
+        public double m;
 
         [DataMember]
-        public Double n;
+        public double n;
 
         [DataMember]
-        public Double o;
+        public double o;
 
         [DataMember]
-        public Double p;
+        public double p;
 
         [DataMember]
-        public Double q;
+        public double q;
 
         [DataMember]
-        public Single r;
+        public float r;
 
         [DataMember]
-        public Single s;
+        public float s;
 
         [DataMember]
-        public Single t;
+        public float t;
 
         [DataMember]
-        public Single u;
+        public float u;
 
         [DataMember]
-        public Single v;
+        public float v;
 
         [DataMember]
-        public Single w;
+        public float w;
 
         [DataMember]
-        public Single x;
+        public float x;
 
         [DataMember]
-        public Int32 y;
+        public int y;
 
         [DataMember]
-        public Int32 z;
+        public int z;
 
         [DataMember]
-        public Int32 z1;
+        public int z1;
 
         [DataMember]
-        public Int64 z2;
+        public long z2;
 
         [DataMember]
-        public Int64 z3;
+        public long z3;
 
         [DataMember]
-        public Int64 z4;
+        public long z4;
 
         [DataMember]
-        public Object z5;
+        public object z5;
 
         [DataMember]
-        public SByte z6;
+        public sbyte z6;
 
         [DataMember]
-        public SByte z7;
+        public sbyte z7;
 
         [DataMember]
-        public SByte z8;
+        public sbyte z8;
 
         [DataMember]
-        public Int16 z9;
+        public short z9;
 
         [DataMember]
-        public Int16 z91;
+        public short z91;
 
         [DataMember]
-        public Int16 z92;
+        public short z92;
 
         [DataMember]
-        public String z93;
+        public string z93;
 
         [DataMember]
-        public UInt16 z94;
+        public ushort z94;
 
         [DataMember]
-        public UInt16 z95;
+        public ushort z95;
 
         [DataMember]
-        public UInt16 z96;
+        public ushort z96;
 
         [DataMember]
-        public UInt32 z97;
+        public uint z97;
 
         [DataMember]
-        public UInt32 z98;
+        public uint z98;
 
         [DataMember]
-        public UInt32 z99;
+        public uint z99;
 
         [DataMember]
-        public UInt64 z990;
+        public ulong z990;
 
         [DataMember]
-        public UInt64 z991;
+        public ulong z991;
 
         [DataMember]
-        public UInt64 z992;
+        public ulong z992;
 
         [DataMember]
         [IgnoreMember]
@@ -386,64 +386,64 @@ namespace SerializationTestTypes
         public AllTypes2()
         {
             a = false;
-            b = Byte.MaxValue;
-            c = Byte.MinValue;
-            e = Decimal.MaxValue;
-            f = Decimal.MinusOne;
-            g = Decimal.MinValue;
-            h = Decimal.One;
-            i = Decimal.Zero;
-            j = default(Decimal);
-            k = default(Double);
-            l = Double.Epsilon;
-            m = Double.MaxValue;
-            n = Double.MinValue;
-            o = Double.NaN;
-            p = Double.NegativeInfinity;
-            q = Double.PositiveInfinity;
-            r = default(Single);
-            s = Single.Epsilon;
-            t = Single.MinValue;
-            u = Single.MaxValue;
-            v = Single.NaN;
-            w = Single.NegativeInfinity;
-            x = Single.PositiveInfinity;
-            y = default(Int32);
-            z = Int32.MaxValue;
-            z1 = Int32.MinValue;
-            z2 = default(Int64);
-            z3 = Int64.MaxValue;
-            z4 = Int64.MinValue;
-            z5 = new Object();
-            z6 = default(SByte);
-            z7 = SByte.MaxValue;
-            z8 = SByte.MinValue;
-            z9 = default(Int16);
-            z91 = Int16.MaxValue;
-            z92 = Int16.MinValue;
+            b = byte.MaxValue;
+            c = byte.MinValue;
+            e = decimal.MaxValue;
+            f = decimal.MinusOne;
+            g = decimal.MinValue;
+            h = decimal.One;
+            i = decimal.Zero;
+            j = default(decimal);
+            k = default(double);
+            l = double.Epsilon;
+            m = double.MaxValue;
+            n = double.MinValue;
+            o = double.NaN;
+            p = double.NegativeInfinity;
+            q = double.PositiveInfinity;
+            r = default(float);
+            s = float.Epsilon;
+            t = float.MinValue;
+            u = float.MaxValue;
+            v = float.NaN;
+            w = float.NegativeInfinity;
+            x = float.PositiveInfinity;
+            y = default(int);
+            z = int.MaxValue;
+            z1 = int.MinValue;
+            z2 = default(long);
+            z3 = long.MaxValue;
+            z4 = long.MinValue;
+            z5 = new object();
+            z6 = default(sbyte);
+            z7 = sbyte.MaxValue;
+            z8 = sbyte.MinValue;
+            z9 = default(short);
+            z91 = short.MaxValue;
+            z92 = short.MinValue;
             z93 = "abc";
-            z94 = default(UInt16);
-            z95 = UInt16.MaxValue;
-            z96 = UInt16.MinValue;
-            z97 = default(UInt32);
-            z98 = UInt32.MaxValue;
-            z99 = UInt32.MinValue;
-            z990 = default(UInt64);
-            z991 = UInt64.MaxValue;
-            z992 = UInt64.MinValue;
+            z94 = default(ushort);
+            z95 = ushort.MaxValue;
+            z96 = ushort.MinValue;
+            z97 = default(uint);
+            z98 = uint.MaxValue;
+            z99 = uint.MinValue;
+            z990 = default(ulong);
+            z991 = ulong.MaxValue;
+            z992 = ulong.MinValue;
         }
 
         [DataMember]
-        public Boolean a;
+        public bool a;
 
         [DataMember]
-        public Byte b;
+        public byte b;
 
         [DataMember]
-        public Byte c;
+        public byte c;
 
         [DataMember]
-        public Char d = Char.MaxValue;
+        public char d = char.MaxValue;
 
         [DataMember]
         public DateTime f5 = new DateTime();
@@ -452,136 +452,136 @@ namespace SerializationTestTypes
         public Guid guidData = new Guid("cac76333-577f-7e1f-0389-789b0d97f395");
 
         [DataMember]
-        public String strData;
+        public string strData;
 
         [DataMember]
-        public Decimal e;
+        public decimal e;
 
         [DataMember]
-        public Decimal f;
+        public decimal f;
 
         [DataMember]
-        public Decimal g;
+        public decimal g;
 
         [DataMember]
-        public Decimal h;
+        public decimal h;
 
         [DataMember]
-        public Decimal i;
+        public decimal i;
 
         [DataMember]
-        public Decimal j;
+        public decimal j;
 
         [DataMember]
-        public Double k;
+        public double k;
 
         [DataMember]
-        public Double l;
+        public double l;
 
         [DataMember]
-        public Double m;
+        public double m;
 
         [DataMember]
-        public Double n;
+        public double n;
 
         [DataMember]
-        public Double o;
+        public double o;
 
         [DataMember]
-        public Double p;
+        public double p;
 
         [DataMember]
-        public Double q;
+        public double q;
 
         [DataMember]
-        public Single r;
+        public float r;
 
         [DataMember]
-        public Single s;
+        public float s;
 
         [DataMember]
-        public Single t;
+        public float t;
 
         [DataMember]
-        public Single u;
+        public float u;
 
         [DataMember]
-        public Single v;
+        public float v;
 
         [DataMember]
-        public Single w;
+        public float w;
 
         [DataMember]
-        public Single x;
+        public float x;
 
         [DataMember]
-        public Int32 y;
+        public int y;
 
         [DataMember]
-        public Int32 z;
+        public int z;
 
         [DataMember]
-        public Int32 z1;
+        public int z1;
 
         [DataMember]
-        public Int64 z2;
+        public long z2;
 
         [DataMember]
-        public Int64 z3;
+        public long z3;
 
         [DataMember]
-        public Int64 z4;
+        public long z4;
 
         [DataMember]
-        public Object z5;
+        public object z5;
 
         [DataMember]
-        public SByte z6;
+        public sbyte z6;
 
         [DataMember]
-        public SByte z7;
+        public sbyte z7;
 
         [DataMember]
-        public SByte z8;
+        public sbyte z8;
 
         [DataMember]
-        public Int16 z9;
+        public short z9;
 
         [DataMember]
-        public Int16 z91;
+        public short z91;
 
         [DataMember]
-        public Int16 z92;
+        public short z92;
 
         [DataMember]
-        public String z93;
+        public string z93;
 
         [DataMember]
-        public UInt16 z94;
+        public ushort z94;
 
         [DataMember]
-        public UInt16 z95;
+        public ushort z95;
 
         [DataMember]
-        public UInt16 z96;
+        public ushort z96;
 
         [DataMember]
-        public UInt32 z97;
+        public uint z97;
 
         [DataMember]
-        public UInt32 z98;
+        public uint z98;
 
         [DataMember]
-        public UInt32 z99;
+        public uint z99;
 
         [DataMember]
-        public UInt64 z990;
+        public ulong z990;
 
         [DataMember]
-        public UInt64 z991;
+        public ulong z991;
 
         [DataMember]
-        public UInt64 z992;
+        public ulong z992;
 
         [DataMember]
         [IgnoreMember]
@@ -804,7 +804,7 @@ namespace SerializationTestTypes
     {
         int A { set; get; }
 
-        String B { set; get; }
+        string B { set; get; }
     }
 
     [DataContract]
@@ -1019,7 +1019,7 @@ namespace SerializationTestTypes
     public class BoxedPrim
     {
         [DataMember]
-        public object p = new Boolean();
+        public object p = new bool();
 
         [DataMember]
         public object p2 = new VT(10);

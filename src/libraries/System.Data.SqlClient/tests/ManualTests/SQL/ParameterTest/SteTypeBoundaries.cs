@@ -38,11 +38,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             // BigInt
             SteSimplePermutationGenerator type = new SteSimplePermutationGenerator();
             type.Add(SteAttributeKey.SqlDbType, SqlDbType.BigInt);
-            type.Add(SteAttributeKey.Value, (Int64)0);
-            type.Add(SteAttributeKey.Value, Int64.MaxValue);
-            type.Add(SteAttributeKey.Value, Int64.MinValue);
-            type.Add(SteAttributeKey.Value, new SqlInt64(Int64.MaxValue));
-            type.Add(SteAttributeKey.Value, new SqlInt64(Int64.MinValue));
+            type.Add(SteAttributeKey.Value, (long)0);
+            type.Add(SteAttributeKey.Value, long.MaxValue);
+            type.Add(SteAttributeKey.Value, long.MinValue);
+            type.Add(SteAttributeKey.Value, new SqlInt64(long.MaxValue));
+            type.Add(SteAttributeKey.Value, new SqlInt64(long.MinValue));
             type.Add(SteAttributeKey.Value, null);
             type.Add(SteAttributeKey.Value, DBNull.Value);
             list.Add(new SteSimpleTypeBoundaries(type));
@@ -70,7 +70,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             type.Add(SteAttributeKey.Offset, 0);
             type.Add(SteAttributeKey.Offset, 10);
             type.Add(SteAttributeKey.Offset, 8000);
-            type.Add(SteAttributeKey.Offset, Int32.MaxValue);
+            type.Add(SteAttributeKey.Offset, int.MaxValue);
             type.Add(SteAttributeKey.Length, 0);
             type.Add(SteAttributeKey.Length, 40);
             type.Add(SteAttributeKey.Length, 8000);
@@ -81,8 +81,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             // Byte
             type = new SteSimplePermutationGenerator();
             type.Add(SteAttributeKey.SqlDbType, SqlDbType.TinyInt);
-            type.Add(SteAttributeKey.Value, Byte.MaxValue);
-            type.Add(SteAttributeKey.Value, Byte.MinValue);
+            type.Add(SteAttributeKey.Value, byte.MaxValue);
+            type.Add(SteAttributeKey.Value, byte.MinValue);
             type.Add(SteAttributeKey.Value, null);
             type.Add(SteAttributeKey.Value, DBNull.Value);
             list.Add(new SteSimpleTypeBoundaries(type));
@@ -147,8 +147,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             type.Add(SteAttributeKey.Precision, (byte)38);
             type.Add(SteAttributeKey.Scale, (byte)0);
             type.Add(SteAttributeKey.Scale, (byte)10);
-            type.Add(SteAttributeKey.Value, (Decimal)0);
-            type.Add(SteAttributeKey.Value, Decimal.MaxValue / 10000000000);
+            type.Add(SteAttributeKey.Value, (decimal)0);
+            type.Add(SteAttributeKey.Value, decimal.MaxValue / 10000000000);
             type.Add(SteAttributeKey.Value, new SqlDecimal(0));
             type.Add(SteAttributeKey.Value, ((SqlDecimal)1234567890123456.789012345678M) * 100); // Bigger than a Decimal
             type.Add(SteAttributeKey.Value, null);
@@ -158,11 +158,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             // Float
             type = new SteSimplePermutationGenerator();
             type.Add(SteAttributeKey.SqlDbType, SqlDbType.Float);
-            type.Add(SteAttributeKey.Value, (Double)0);
-            type.Add(SteAttributeKey.Value, Double.MaxValue);
-            type.Add(SteAttributeKey.Value, Double.MinValue);
-            type.Add(SteAttributeKey.Value, new SqlDouble(Double.MaxValue));
-            type.Add(SteAttributeKey.Value, new SqlDouble(Double.MinValue));
+            type.Add(SteAttributeKey.Value, (double)0);
+            type.Add(SteAttributeKey.Value, double.MaxValue);
+            type.Add(SteAttributeKey.Value, double.MinValue);
+            type.Add(SteAttributeKey.Value, new SqlDouble(double.MaxValue));
+            type.Add(SteAttributeKey.Value, new SqlDouble(double.MinValue));
             type.Add(SteAttributeKey.Value, null);
             type.Add(SteAttributeKey.Value, DBNull.Value);
             list.Add(new SteSimpleTypeBoundaries(type));
@@ -170,11 +170,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             // Int
             type = new SteSimplePermutationGenerator();
             type.Add(SteAttributeKey.SqlDbType, SqlDbType.Int);
-            type.Add(SteAttributeKey.Value, (Int32)0);
-            type.Add(SteAttributeKey.Value, Int32.MaxValue);
-            type.Add(SteAttributeKey.Value, Int32.MinValue);
-            type.Add(SteAttributeKey.Value, new SqlInt32(Int32.MaxValue));
-            type.Add(SteAttributeKey.Value, new SqlInt32(Int32.MinValue));
+            type.Add(SteAttributeKey.Value, (int)0);
+            type.Add(SteAttributeKey.Value, int.MaxValue);
+            type.Add(SteAttributeKey.Value, int.MinValue);
+            type.Add(SteAttributeKey.Value, new SqlInt32(int.MaxValue));
+            type.Add(SteAttributeKey.Value, new SqlInt32(int.MinValue));
             type.Add(SteAttributeKey.Value, null);
             type.Add(SteAttributeKey.Value, DBNull.Value);
             list.Add(new SteSimpleTypeBoundaries(type));
@@ -183,13 +183,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             type = new SteSimplePermutationGenerator();
             type.Add(SteAttributeKey.SqlDbType, SqlDbType.Money);
             type.Add(SteAttributeKey.SqlDbType, SqlDbType.SmallMoney);
-            type.Add(SteAttributeKey.Value, (Decimal)0);
-            type.Add(SteAttributeKey.Value, (Decimal)unchecked(((long)0x8000000000000000L) / 10000));
-            type.Add(SteAttributeKey.Value, (Decimal)0x7FFFFFFFFFFFFFFFL / 10000);
-            type.Add(SteAttributeKey.Value, new Decimal(-214748.3648)); // smallmoney min
-            type.Add(SteAttributeKey.Value, new Decimal(214748.3647)); // smallmoney max
-            type.Add(SteAttributeKey.Value, new SqlMoney(((Decimal)Int32.MaxValue) / 10000));
-            type.Add(SteAttributeKey.Value, new SqlMoney(((Decimal)Int32.MinValue) / 10000));
+            type.Add(SteAttributeKey.Value, (decimal)0);
+            type.Add(SteAttributeKey.Value, (decimal)unchecked(((long)0x8000000000000000L) / 10000));
+            type.Add(SteAttributeKey.Value, (decimal)0x7FFFFFFFFFFFFFFFL / 10000);
+            type.Add(SteAttributeKey.Value, new decimal(-214748.3648)); // smallmoney min
+            type.Add(SteAttributeKey.Value, new decimal(214748.3647)); // smallmoney max
+            type.Add(SteAttributeKey.Value, new SqlMoney(((decimal)int.MaxValue) / 10000));
+            type.Add(SteAttributeKey.Value, new SqlMoney(((decimal)int.MinValue) / 10000));
             type.Add(SteAttributeKey.Value, null);
             type.Add(SteAttributeKey.Value, DBNull.Value);
             list.Add(new SteSimpleTypeBoundaries(type));
@@ -197,11 +197,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             // Real
             type = new SteSimplePermutationGenerator();
             type.Add(SteAttributeKey.SqlDbType, SqlDbType.Real);
-            type.Add(SteAttributeKey.Value, (Single)0);
-            type.Add(SteAttributeKey.Value, Single.MaxValue);
-            type.Add(SteAttributeKey.Value, Single.MinValue);
-            type.Add(SteAttributeKey.Value, new SqlSingle(Single.MaxValue));
-            type.Add(SteAttributeKey.Value, new SqlSingle(Single.MinValue));
+            type.Add(SteAttributeKey.Value, (float)0);
+            type.Add(SteAttributeKey.Value, float.MaxValue);
+            type.Add(SteAttributeKey.Value, float.MinValue);
+            type.Add(SteAttributeKey.Value, new SqlSingle(float.MaxValue));
+            type.Add(SteAttributeKey.Value, new SqlSingle(float.MinValue));
             type.Add(SteAttributeKey.Value, null);
             type.Add(SteAttributeKey.Value, DBNull.Value);
             list.Add(new SteSimpleTypeBoundaries(type));
@@ -209,11 +209,11 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             // SmallInt
             type = new SteSimplePermutationGenerator();
             type.Add(SteAttributeKey.SqlDbType, SqlDbType.SmallInt);
-            type.Add(SteAttributeKey.Value, (Int16)0);
-            type.Add(SteAttributeKey.Value, Int16.MaxValue);
-            type.Add(SteAttributeKey.Value, Int16.MinValue);
-            type.Add(SteAttributeKey.Value, new SqlInt16(Int16.MaxValue));
-            type.Add(SteAttributeKey.Value, new SqlInt16(Int16.MinValue));
+            type.Add(SteAttributeKey.Value, (short)0);
+            type.Add(SteAttributeKey.Value, short.MaxValue);
+            type.Add(SteAttributeKey.Value, short.MinValue);
+            type.Add(SteAttributeKey.Value, new SqlInt16(short.MaxValue));
+            type.Add(SteAttributeKey.Value, new SqlInt16(short.MinValue));
             type.Add(SteAttributeKey.Value, null);
             type.Add(SteAttributeKey.Value, DBNull.Value);
             list.Add(new SteSimpleTypeBoundaries(type));

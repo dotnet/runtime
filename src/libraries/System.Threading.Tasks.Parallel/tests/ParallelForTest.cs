@@ -790,10 +790,10 @@ namespace System.Threading.Tasks.Tests
 
             if (_results[i] < minLimit || _results[i] > maxLimit)
             {
-                Assert.False(double.MinValue == _results[i], String.Format("results[{0}] has been revisited", i));
+                Assert.False(double.MinValue == _results[i], string.Format("results[{0}] has been revisited", i));
                 
                 Assert.True(_parameters.StateOption == ActionWithState.Stop && 0 == _results[i],
-                    String.Format("Incorrect results[{0}]. Expected result to lie between {1} and {2} but got {3})", i, minLimit, maxLimit, _results[i]));
+                    string.Format("Incorrect results[{0}]. Expected result to lie between {1} and {2} but got {3})", i, minLimit, maxLimit, _results[i]));
             }
         }
 
@@ -835,7 +835,7 @@ namespace System.Threading.Tasks.Tests
             if (api == API.For64)
             {
                 // StartIndexBase.Int64 was set to -1 since Enum can't take a Int64.MaxValue. Fixing this below.
-                long indexBase64 = (startIndexBase == StartIndexBase.Int64) ? Int64.MaxValue : (long)startIndexBase;
+                long indexBase64 = (startIndexBase == StartIndexBase.Int64) ? long.MaxValue : (long)startIndexBase;
                 StartIndex64 = indexBase64 + StartIndexOffset;
             }
             else
@@ -967,8 +967,8 @@ namespace System.Threading.Tasks.Tests
     public enum StartIndexBase
     {
         Zero = 0,
-        Int16 = System.Int16.MaxValue,
-        Int32 = System.Int32.MaxValue,
+        Int16 = short.MaxValue,
+        Int32 = int.MaxValue,
         Int64 = -1,     // Enum can't take a Int64.MaxValue
     }
 
