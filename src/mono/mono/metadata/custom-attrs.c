@@ -778,27 +778,31 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	void *params_buf [32];
 	void **params = NULL;
 	MonoMethodSignature *sig;
+	MonoClassField *field = NULL;
+	char *name = NULL;
+	void *pparams [1] = { NULL };
+	MonoType *prop_type = NULL;
+	void *val = NULL;
 
 	error_init (error);
 
 	mono_class_init (method->klass);
 
 	if (!mono_verifier_verify_cattr_content (image, method, data, len, error))
-		return NULL;
+		goto fail;
 
 	if (len == 0) {
 		attr = mono_object_new_checked (mono_domain_get (), method->klass, error);
-		if (!mono_error_ok (error)) return NULL;
+		goto_if_nok (error, fail);
 
 		mono_runtime_invoke_checked (method, attr, NULL, error);
-		if (!mono_error_ok (error))
-			return NULL;
+		goto_if_nok (error, fail);
 
-		return attr;
+		goto exit;
 	}
 
 	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
-		return NULL;
+		goto fail;
 
 	/*g_print ("got attr %s\n", method->klass->name);*/
 
@@ -820,12 +824,12 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 
 	named = p;
 	attr = mono_object_new_checked (mono_domain_get (), method->klass, error);
-	if (!mono_error_ok (error)) goto fail;
+	goto_if_nok (error, fail);
 
 	MonoObject *exc = NULL;
 	mono_runtime_try_invoke (method, attr, params, &exc, error);
-	if (!mono_error_ok (error))
-		goto fail;
+	goto_if_nok (error, fail);
+
 	if (exc) {
 		mono_error_set_exception_instance (error, (MonoException*)exc);
 		goto fail;
@@ -845,7 +849,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	}
 	for (j = 0; j < num_named; j++) {
 		guint32 name_len;
-		char *name, named_type, data_type;
+		char named_type, data_type;
 		if (!bcheck_blob (named, 1, data_end, error))
 			goto fail;
 		named_type = *named++;
@@ -878,44 +882,27 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 		name [name_len] = 0;
 		named += name_len;
 		if (named_type == CATTR_TYPE_FIELD) {
-			MonoClassField *field;
-			void *val;
-
 			/* how this fail is a blackbox */
 			field = mono_class_get_field_from_name (mono_object_class (attr), name);
 			if (!field) {
 				mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Could not find a field with name %s", name);
-				g_free (name);
 				goto fail;
 			}
 
 			val = load_cattr_value (image, field->type, named, data_end, &named, error);
-			if (!is_ok (error)) {
-				g_free (name);
-				if (!type_is_reference (field->type))
-					g_free (val);
-				goto fail;
-			}
+			goto_if_nok (error, fail);
 
 			mono_field_set_value (attr, field, val);
-			if (!type_is_reference (field->type))
-				g_free (val);
 		} else if (named_type == CATTR_TYPE_PROPERTY) {
 			MonoProperty *prop;
-			void *pparams [1];
-			MonoType *prop_type;
-
 			prop = mono_class_get_property_from_name (mono_object_class (attr), name);
-
 			if (!prop) {
 				mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Could not find a property with name %s", name);
-				g_free (name);
 				goto fail;
 			}
 
 			if (!prop->set) {
 				mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Could not find the setter for %s", name);
-				g_free (name);
 				goto fail;
 			}
 
@@ -924,36 +911,28 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 			     mono_method_signature (prop->set)->params [mono_method_signature (prop->set)->param_count - 1];
 
 			pparams [0] = load_cattr_value (image, prop_type, named, data_end, &named, error);
-			if (!is_ok (error)) {
-				g_free (name);
-				if (!type_is_reference (prop_type))
-					g_free (pparams [0]);
-				goto fail;
-			}
-
+			goto_if_nok (error, fail);
 
 			mono_property_set_value_checked (prop, attr, pparams, error);
-			if (!type_is_reference (prop_type))
-				g_free (pparams [0]);
-			if (!is_ok (error)) {
-				g_free (name);
-				goto fail;
-			}
+			goto_if_nok (error, fail);
 		}
-		g_free (name);
 	}
 
-	free_param_data (method->signature, params);
-	if (params != params_buf)
-		mono_gc_free_fixed (params);
-
-	return attr;
-
+	goto exit;
 fail:
-	free_param_data (method->signature, params);
-	if (params != params_buf)
-		mono_gc_free_fixed (params);
-	return NULL;
+	attr = NULL;
+exit:
+	if (field && !type_is_reference (field->type))
+		g_free (val);
+	g_free (name);
+	if (prop_type && !type_is_reference (prop_type))
+		g_free (pparams [0]);
+	if (params) {
+		free_param_data (method->signature, params);
+		if (params != params_buf)
+			mono_gc_free_fixed (params);
+	}
+	return attr;
 }
 	
 /*
