@@ -29,7 +29,7 @@ namespace System.Reflection.Tests
                 RuntimeReflectionExtensions.GetRuntimeProperties(null);
             });
 
-            List<String> properties = new List<String>();
+            List<string> properties = new List<string>();
 
             foreach (TypeInfo type in types)
             {
@@ -37,8 +37,8 @@ namespace System.Reflection.Tests
                     continue;
 
                 properties.Clear();
-                properties.AddRange((IEnumerable<String>)type.GetDeclaredField("DeclaredPropertyNames").GetValue(null));
-                properties.AddRange((IEnumerable<String>)type.GetDeclaredField("InheritedPropertyNames").GetValue(null));
+                properties.AddRange((IEnumerable<string>)type.GetDeclaredField("DeclaredPropertyNames").GetValue(null));
+                properties.AddRange((IEnumerable<string>)type.GetDeclaredField("InheritedPropertyNames").GetValue(null));
 
                 Assert.All(type.AsType().GetRuntimeProperties(), p => Assert.True(properties.Remove(p.Name)));
                 Assert.Empty(properties);
@@ -55,7 +55,7 @@ namespace System.Reflection.Tests
                 RuntimeReflectionExtensions.GetRuntimeEvents(null);
             });
 
-            List<String> events = new List<String>();
+            List<string> events = new List<string>();
 
             foreach (TypeInfo type in types)
             {
@@ -66,8 +66,8 @@ namespace System.Reflection.Tests
                     continue;
 
                 events.Clear();
-                events.AddRange((IEnumerable<String>)type.GetDeclaredField("DeclaredEvents").GetValue(null));
-                events.AddRange((IEnumerable<String>)type.GetDeclaredField("InheritedEvents").GetValue(null));
+                events.AddRange((IEnumerable<string>)type.GetDeclaredField("DeclaredEvents").GetValue(null));
+                events.AddRange((IEnumerable<string>)type.GetDeclaredField("InheritedEvents").GetValue(null));
 
                 Assert.All(type.AsType().GetRuntimeEvents(), e => Assert.True(events.Remove(e.Name)));
                 Assert.Empty(events);

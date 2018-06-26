@@ -20,7 +20,7 @@ namespace CoreXml.Test.XLinq
                 private bool VerifyInvalidReadValue(int iBufferSize, int iIndex, int iCount, Type exceptionType)
                 {
                     bool bPassed = false;
-                    Char[] buffer = new Char[iBufferSize];
+                    char[] buffer = new char[iBufferSize];
 
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_NAME);
@@ -268,7 +268,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation("ReadValue with buffer = element content / 2", Priority = 0)]
                 public void TestReadValue1()
                 {
-                    Char[] buffer = new Char[5];
+                    char[] buffer = new char[5];
 
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_NAME);
@@ -297,7 +297,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation("ReadValue entire value in one call", Priority = 0)]
                 public void TestReadValue2()
                 {
-                    Char[] buffer = new Char[10];
+                    char[] buffer = new char[10];
 
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_NAME);
@@ -322,7 +322,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation("ReadValue bit by bit", Priority = 0)]
                 public void TestReadValue3()
                 {
-                    Char[] buffer = new Char[10];
+                    char[] buffer = new char[10];
 
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_NAME);
@@ -354,7 +354,7 @@ namespace CoreXml.Test.XLinq
                 public void TestReadValue4()
                 {
                     int size = 8192;
-                    Char[] buffer = new Char[size];
+                    char[] buffer = new char[size];
 
                     string val = new string('x', size);
 
@@ -387,7 +387,7 @@ namespace CoreXml.Test.XLinq
                 public void TestReadValue5()
                 {
                     int size = 8192;
-                    Char[] buffer = new Char[size];
+                    char[] buffer = new char[size];
                     string val = new string('x', size);
                     try
                     {
@@ -425,7 +425,7 @@ namespace CoreXml.Test.XLinq
                 public void TestReadValue6()
                 {
                     string strExpected = ST_IGNORE_ENTITIES;
-                    Char[] buffer = new Char[strExpected.Length];
+                    char[] buffer = new char[strExpected.Length];
 
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_ENTTEST_NAME);
@@ -446,7 +446,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(DataReader.ReadValueChunk(buffer, 0, strExpected.Length), strExpected.Length, "ReadValue1");
                     TestLog.Compare(new string(buffer), strExpected, "Str1");
                     TestLog.Compare(DataReader.ReadValueChunk(buffer, 0, 1), 0, "ReadValue2");
-                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Element, "ENTITY2", String.Empty), "Verify");
+                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Element, "ENTITY2", string.Empty), "Verify");
                 }
 
                 //[Variation("ReadValue with count > buffer size")]
@@ -651,13 +651,13 @@ namespace CoreXml.Test.XLinq
                     int nChars = DataReader.ReadValueChunk(buffer, 0, 2);
                     TestLog.Compare(nChars, 2, "Read 2");
                     DataReader.Read();
-                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.EndElement, "ROOT", String.Empty), "1vn");
+                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.EndElement, "ROOT", string.Empty), "1vn");
                 }
 
                 //[Variation("Test error after successful ReadValue")]
                 public void TestReadChar19()
                 {
-                    Char[] buffer = new Char[9];
+                    char[] buffer = new char[9];
                     try
                     {
                         XmlReader DataReader = GetReaderStr("<root>somevalue</root></root>");
@@ -694,7 +694,7 @@ namespace CoreXml.Test.XLinq
                 public void TestReadChar21()
                 {
                     string somechar = new string('x', 5000);
-                    string strxml = String.Format("<ROOT>a" + somechar + "{0}c</ROOT>", Convert.ToChar(0));
+                    string strxml = string.Format("<ROOT>a" + somechar + "{0}c</ROOT>", Convert.ToChar(0));
                     try
                     {
                         XmlReader DataReader = GetReaderStr(strxml);

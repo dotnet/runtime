@@ -22,13 +22,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void ConstructorBenchmark_Byte()
         {
-            Byte[] arrValues = GenerateRandomValuesForVector<Byte>();
-            var spanValues = new Span<Byte>(arrValues);
+            byte[] arrValues = GenerateRandomValuesForVector<byte>();
+            var spanValues = new Span<byte>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    Construct<Byte>(spanValues);
+                    Construct<byte>(spanValues);
                 }
             }
         }
@@ -36,13 +36,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void ConstructorBenchmark_SByte()
         {
-            SByte[] arrValues = GenerateRandomValuesForVector<SByte>();
-            var spanValues = new Span<SByte>(arrValues);
+            sbyte[] arrValues = GenerateRandomValuesForVector<sbyte>();
+            var spanValues = new Span<sbyte>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    Construct<SByte>(spanValues);
+                    Construct<sbyte>(spanValues);
                 }
             }
         }
@@ -50,13 +50,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void ConstructorBenchmark_UInt16()
         {
-            UInt16[] arrValues = GenerateRandomValuesForVector<UInt16>();
-            var spanValues = new Span<UInt16>(arrValues);
+            ushort[] arrValues = GenerateRandomValuesForVector<ushort>();
+            var spanValues = new Span<ushort>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    Construct<UInt16>(spanValues);
+                    Construct<ushort>(spanValues);
                 }
             }
         }
@@ -64,13 +64,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void ConstructorBenchmark_Int16()
         {
-            Int16[] arrValues = GenerateRandomValuesForVector<Int16>();
-            var spanValues = new Span<Int16>(arrValues);
+            short[] arrValues = GenerateRandomValuesForVector<short>();
+            var spanValues = new Span<short>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    Construct<Int16>(spanValues);
+                    Construct<short>(spanValues);
                 }
             }
         }
@@ -78,13 +78,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void ConstructorBenchmark_UInt32()
         {
-            UInt32[] arrValues = GenerateRandomValuesForVector<UInt32>();
-            var spanValues = new Span<UInt32>(arrValues);
+            uint[] arrValues = GenerateRandomValuesForVector<uint>();
+            var spanValues = new Span<uint>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    Construct<UInt32>(spanValues);
+                    Construct<uint>(spanValues);
                 }
             }
         }
@@ -92,13 +92,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void ConstructorBenchmark_Int32()
         {
-            Int32[] arrValues = GenerateRandomValuesForVector<Int32>();
-            var spanValues = new Span<Int32>(arrValues);
+            int[] arrValues = GenerateRandomValuesForVector<int>();
+            var spanValues = new Span<int>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    Construct<Int32>(spanValues);
+                    Construct<int>(spanValues);
                 }
             }
         }
@@ -106,13 +106,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void ConstructorBenchmark_UInt64()
         {
-            UInt64[] arrValues = GenerateRandomValuesForVector<UInt64>();
-            var spanValues = new Span<UInt64>(arrValues);
+            ulong[] arrValues = GenerateRandomValuesForVector<ulong>();
+            var spanValues = new Span<ulong>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    Construct<UInt64>(spanValues);
+                    Construct<ulong>(spanValues);
                 }
             }
         }
@@ -120,13 +120,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void ConstructorBenchmark_Int64()
         {
-            Int64[] arrValues = GenerateRandomValuesForVector<Int64>();
-            var spanValues = new Span<Int64>(arrValues);
+            long[] arrValues = GenerateRandomValuesForVector<long>();
+            var spanValues = new Span<long>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    Construct<Int64>(spanValues);
+                    Construct<long>(spanValues);
                 }
             }
         }
@@ -134,13 +134,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void ConstructorBenchmark_Single()
         {
-            Single[] arrValues = GenerateRandomValuesForVector<Single>();
-            var spanValues = new Span<Single>(arrValues);
+            float[] arrValues = GenerateRandomValuesForVector<float>();
+            var spanValues = new Span<float>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    Construct<Single>(spanValues);
+                    Construct<float>(spanValues);
                 }
             }
         }
@@ -148,13 +148,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void ConstructorBenchmark_Double()
         {
-            Double[] arrValues = GenerateRandomValuesForVector<Double>();
-            var spanValues = new Span<Double>(arrValues);
+            double[] arrValues = GenerateRandomValuesForVector<double>();
+            var spanValues = new Span<double>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    Construct<Double>(spanValues);
+                    Construct<double>(spanValues);
                 }
             }
         }
@@ -171,13 +171,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void SpanCastBenchmark_Byte()
         {
-            Byte[] arrValues = GenerateRandomValuesForVector<Byte>();
-            var spanValues = new ReadOnlySpan<Byte>(arrValues);
+            byte[] arrValues = GenerateRandomValuesForVector<byte>();
+            var spanValues = new ReadOnlySpan<byte>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    SpanCast<Byte>(spanValues);
+                    SpanCast<byte>(spanValues);
                 }
             }
         }
@@ -185,13 +185,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void SpanCastBenchmark_SByte()
         {
-            SByte[] arrValues = GenerateRandomValuesForVector<SByte>();
-            var spanValues = new ReadOnlySpan<SByte>(arrValues);
+            sbyte[] arrValues = GenerateRandomValuesForVector<sbyte>();
+            var spanValues = new ReadOnlySpan<sbyte>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    SpanCast<SByte>(spanValues);
+                    SpanCast<sbyte>(spanValues);
                 }
             }
         }
@@ -199,13 +199,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void SpanCastBenchmark_UInt16()
         {
-            UInt16[] arrValues = GenerateRandomValuesForVector<UInt16>();
-            var spanValues = new ReadOnlySpan<UInt16>(arrValues);
+            ushort[] arrValues = GenerateRandomValuesForVector<ushort>();
+            var spanValues = new ReadOnlySpan<ushort>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    SpanCast<UInt16>(spanValues);
+                    SpanCast<ushort>(spanValues);
                 }
             }
         }
@@ -213,13 +213,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void SpanCastBenchmark_Int16()
         {
-            Int16[] arrValues = GenerateRandomValuesForVector<Int16>();
-            var spanValues = new ReadOnlySpan<Int16>(arrValues);
+            short[] arrValues = GenerateRandomValuesForVector<short>();
+            var spanValues = new ReadOnlySpan<short>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    SpanCast<Int16>(spanValues);
+                    SpanCast<short>(spanValues);
                 }
             }
         }
@@ -227,13 +227,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void SpanCastBenchmark_UInt32()
         {
-            UInt32[] arrValues = GenerateRandomValuesForVector<UInt32>();
-            var spanValues = new ReadOnlySpan<UInt32>(arrValues);
+            uint[] arrValues = GenerateRandomValuesForVector<uint>();
+            var spanValues = new ReadOnlySpan<uint>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    SpanCast<UInt32>(spanValues);
+                    SpanCast<uint>(spanValues);
                 }
             }
         }
@@ -241,13 +241,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void SpanCastBenchmark_Int32()
         {
-            Int32[] arrValues = GenerateRandomValuesForVector<Int32>();
-            var spanValues = new ReadOnlySpan<Int32>(arrValues);
+            int[] arrValues = GenerateRandomValuesForVector<int>();
+            var spanValues = new ReadOnlySpan<int>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    SpanCast<Int32>(spanValues);
+                    SpanCast<int>(spanValues);
                 }
             }
         }
@@ -255,13 +255,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void SpanCastBenchmark_UInt64()
         {
-            UInt64[] arrValues = GenerateRandomValuesForVector<UInt64>();
-            var spanValues = new ReadOnlySpan<UInt64>(arrValues);
+            ulong[] arrValues = GenerateRandomValuesForVector<ulong>();
+            var spanValues = new ReadOnlySpan<ulong>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    SpanCast<UInt64>(spanValues);
+                    SpanCast<ulong>(spanValues);
                 }
             }
         }
@@ -269,13 +269,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void SpanCastBenchmark_Int64()
         {
-            Int64[] arrValues = GenerateRandomValuesForVector<Int64>();
-            var spanValues = new ReadOnlySpan<Int64>(arrValues);
+            long[] arrValues = GenerateRandomValuesForVector<long>();
+            var spanValues = new ReadOnlySpan<long>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    SpanCast<Int64>(spanValues);
+                    SpanCast<long>(spanValues);
                 }
             }
         }
@@ -283,13 +283,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void SpanCastBenchmark_Single()
         {
-            Single[] arrValues = GenerateRandomValuesForVector<Single>();
-            var spanValues = new ReadOnlySpan<Single>(arrValues);
+            float[] arrValues = GenerateRandomValuesForVector<float>();
+            var spanValues = new ReadOnlySpan<float>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    SpanCast<Single>(spanValues);
+                    SpanCast<float>(spanValues);
                 }
             }
         }
@@ -297,13 +297,13 @@ namespace System.Numerics.Tests
         [Benchmark(InnerIterationCount = DefaultInnerIterationsCount)]
         public static void SpanCastBenchmark_Double()
         {
-            Double[] arrValues = GenerateRandomValuesForVector<Double>();
-            var spanValues = new ReadOnlySpan<Double>(arrValues);
+            double[] arrValues = GenerateRandomValuesForVector<double>();
+            var spanValues = new ReadOnlySpan<double>(arrValues);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    SpanCast<Double>(spanValues);
+                    SpanCast<double>(spanValues);
                 }
             }
         }
@@ -327,7 +327,7 @@ namespace System.Numerics.Tests
 
         internal static int GetMinValue<T>() where T : struct
         {
-            if (typeof(T) == typeof(Int64) || typeof(T) == typeof(Single) || typeof(T) == typeof(Double) || typeof(T) == typeof(UInt32) || typeof(T) == typeof(UInt64))
+            if (typeof(T) == typeof(long) || typeof(T) == typeof(float) || typeof(T) == typeof(double) || typeof(T) == typeof(uint) || typeof(T) == typeof(ulong))
             {
                 return int.MinValue;
             }
@@ -339,7 +339,7 @@ namespace System.Numerics.Tests
 
         internal static int GetMaxValue<T>() where T : struct
         {
-            if (typeof(T) == typeof(Int64) || typeof(T) == typeof(Single) || typeof(T) == typeof(Double) || typeof(T) == typeof(UInt32) || typeof(T) == typeof(UInt64))
+            if (typeof(T) == typeof(long) || typeof(T) == typeof(float) || typeof(T) == typeof(double) || typeof(T) == typeof(uint) || typeof(T) == typeof(ulong))
             {
                 return int.MaxValue;
             }

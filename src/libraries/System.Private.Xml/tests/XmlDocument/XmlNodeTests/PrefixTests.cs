@@ -17,9 +17,9 @@ namespace System.Xml.Tests
             xmlDocument.LoadXml(xml);
 
             foreach (XmlNode node in xmlDocument.DocumentElement.ChildNodes)
-                Assert.Equal(String.Empty, node.Prefix);
+                Assert.Equal(string.Empty, node.Prefix);
 
-            Assert.Equal(String.Empty, xmlDocument.CreateDocumentFragment().Prefix);
+            Assert.Equal(string.Empty, xmlDocument.CreateDocumentFragment().Prefix);
         }
 
         [Fact]
@@ -41,7 +41,7 @@ namespace System.Xml.Tests
                     case XmlNodeType.CDATA:
                     case XmlNodeType.ProcessingInstruction:
                         node.Prefix = "Prefix" + i++;
-                        Assert.Equal(String.Empty, node.Prefix);
+                        Assert.Equal(string.Empty, node.Prefix);
                         break;
                     default:
                         var newPrefix = "Prefix" + i++;

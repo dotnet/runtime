@@ -81,7 +81,7 @@ namespace System.Linq.Tests
         [Fact]
         public void DoubleMinimumRepeated()
         {
-            double[] source = { -5.5, Double.NegativeInfinity, 9.9, Double.NegativeInfinity };
+            double[] source = { -5.5, double.NegativeInfinity, 9.9, double.NegativeInfinity };
             Assert.True(double.IsNegativeInfinity(source.AsQueryable().Min()));
         }
 

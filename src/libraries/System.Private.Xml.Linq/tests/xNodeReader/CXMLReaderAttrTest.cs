@@ -406,7 +406,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "EMPTY1");
-                    TestLog.Compare(DataReader[String.Empty], null, "Should have returned null");
+                    TestLog.Compare(DataReader[string.Empty], null, "Should have returned null");
                 }
 
                 //[Variation("This[String.Empty,String.Empty]")]
@@ -414,7 +414,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "EMPTY1");
-                    TestLog.Compare(DataReader[String.Empty, String.Empty], null, "Should have returned null");
+                    TestLog.Compare(DataReader[string.Empty, string.Empty], null, "Should have returned null");
                 }
 
                 //[Variation("This[QName] Verify with GetAttribute(Name, NamespaceURI)", Priority = 0)]
@@ -459,8 +459,8 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "EMPTY1");
-                    TestLog.Compare(DataReader.MoveToAttribute(String.Empty), false, "Should have returned false");
-                    TestLog.Compare(DataReader.Value, String.Empty, "Compare MoveToAttribute with String.Empty");
+                    TestLog.Compare(DataReader.MoveToAttribute(string.Empty), false, "Should have returned false");
+                    TestLog.Compare(DataReader.Value, string.Empty, "Compare MoveToAttribute with String.Empty");
                 }
 
                 //[Variation("MoveToAttribute(String.Empty,String.Empty)")]
@@ -468,8 +468,8 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "EMPTY1");
-                    TestLog.Compare(DataReader.MoveToAttribute(String.Empty, String.Empty), false, "Compare the call to MoveToAttribute");
-                    TestLog.Compare(DataReader.Value, String.Empty, "Compare MoveToAttribute(strName)");
+                    TestLog.Compare(DataReader.MoveToAttribute(string.Empty, string.Empty), false, "Compare the call to MoveToAttribute");
+                    TestLog.Compare(DataReader.Value, string.Empty, "Compare MoveToAttribute(strName)");
                 }
             }
 
@@ -633,7 +633,7 @@ namespace CoreXml.Test.XLinq
                         strName = strAttr + (i - 1);
                         if (DataReader.GetAttribute(strName) == DataReader[strName, strNamespace])
                         {
-                            if (DataReader[strName, strNamespace] == String.Empty)
+                            if (DataReader[strName, strNamespace] == string.Empty)
                                 throw new TestException(TestResult.Failed, Variation.Desc);
                         }
                     }
@@ -693,7 +693,7 @@ namespace CoreXml.Test.XLinq
                     {
                         strName = strAttr + i;
                         TestLog.Compare(DataReader.MoveToAttribute(strName, null), false, "Ordinal (" + i + "): Incorrect move");
-                        TestLog.Compare(DataReader.Value, String.Empty, "Ordinal (" + i + "): DataReader.Value should be empty string");
+                        TestLog.Compare(DataReader.Value, string.Empty, "Ordinal (" + i + "): DataReader.Value should be empty string");
                     }
                 }
 
@@ -707,7 +707,7 @@ namespace CoreXml.Test.XLinq
                     {
                         strName = strAttr + (i - 1);
                         TestLog.Compare(DataReader.MoveToAttribute(strName, null), false, "Incorrect move");
-                        TestLog.Compare(DataReader.Value, String.Empty, "Ordinal (" + i + "): DataReader.Value should be empty string");
+                        TestLog.Compare(DataReader.Value, string.Empty, "Ordinal (" + i + "): DataReader.Value should be empty string");
                     }
                 }
 
@@ -745,7 +745,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "ACT1");
-                    TestLog.Compare(DataReader.GetAttribute(String.Empty), null, "Should have returned null");
+                    TestLog.Compare(DataReader.GetAttribute(string.Empty), null, "Should have returned null");
                 }
 
                 //[Variation("GetAttribute(String.Empty,String.Empty)")]
@@ -753,7 +753,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "ACT0");
-                    TestLog.Compare(DataReader.GetAttribute(String.Empty, String.Empty), null, "Compare GetAttribute(strName) and this[strName]");
+                    TestLog.Compare(DataReader.GetAttribute(string.Empty, string.Empty), null, "Compare GetAttribute(strName) and this[strName]");
                 }
             }
 
@@ -1368,8 +1368,8 @@ namespace CoreXml.Test.XLinq
 
                 void TestUriChar(char ch)
                 {
-                    string filename = String.Format("f{0}.dtd", ch);
-                    string strxml = String.Format("<!DOCTYPE ROOT SYSTEM '{0}' []><ROOT></ROOT>", filename);
+                    string filename = string.Format("f{0}.dtd", ch);
+                    string strxml = string.Format("<!DOCTYPE ROOT SYSTEM '{0}' []><ROOT></ROOT>", filename);
 
                     XmlReader r = GetReaderStr(strxml);
 
@@ -1402,7 +1402,7 @@ namespace CoreXml.Test.XLinq
 
                     TestLog.Compare(DataReader.LocalName, "xmlns", "ln");
                     TestLog.Compare(DataReader.Name, "xmlns", "n");
-                    TestLog.Compare(DataReader.Prefix, String.Empty, "p");
+                    TestLog.Compare(DataReader.Prefix, string.Empty, "p");
                     TestLog.Compare(DataReader.Value, "14", "v");
                 }
 
@@ -1438,7 +1438,7 @@ namespace CoreXml.Test.XLinq
 
                     TestLog.Compare(DataReader.LocalName, "xmlns", "ln");
                     TestLog.Compare(DataReader.Name, "xmlns", "n");
-                    TestLog.Compare(DataReader.Prefix, String.Empty, "p");
+                    TestLog.Compare(DataReader.Prefix, string.Empty, "p");
                     TestLog.Compare(DataReader.Value, "14", "v");
 
                     DataReader.MoveToElement();
@@ -1446,7 +1446,7 @@ namespace CoreXml.Test.XLinq
 
                     TestLog.Compare(DataReader.LocalName, "xmlns", "ln");
                     TestLog.Compare(DataReader.Name, "xmlns", "n");
-                    TestLog.Compare(DataReader.Prefix, String.Empty, "p");
+                    TestLog.Compare(DataReader.Prefix, string.Empty, "p");
                     TestLog.Compare(DataReader.Value, "14", "v");
 
                     DataReader.MoveToElement();
@@ -1454,7 +1454,7 @@ namespace CoreXml.Test.XLinq
 
                     TestLog.Compare(DataReader.LocalName, "xmlns", "ln");
                     TestLog.Compare(DataReader.Name, "xmlns", "n");
-                    TestLog.Compare(DataReader.Prefix, String.Empty, "p");
+                    TestLog.Compare(DataReader.Prefix, string.Empty, "p");
                     TestLog.Compare(DataReader.Value, "14", "v");
 
                     DataReader.MoveToElement();
@@ -1509,7 +1509,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(DataReader.NamespaceURI, "14", "nue");
 
                     DataReader.MoveToAttribute("Attr0");
-                    TestLog.Compare(DataReader.NamespaceURI, String.Empty, "nu");
+                    TestLog.Compare(DataReader.NamespaceURI, string.Empty, "nu");
 
                     DataReader.MoveToAttribute("xmlns");
                     TestLog.Compare(DataReader.NamespaceURI, _strXmlns, "nu");

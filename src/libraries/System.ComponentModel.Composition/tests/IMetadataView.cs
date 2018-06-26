@@ -14,8 +14,8 @@ namespace System.ComponentModel.Composition
 
     public interface ITrans_MetadataViewWithDefaultedInt64
     {
-        [DefaultValue(Int64.MaxValue)]
-        Int64 MyInt64 { get; }
+        [DefaultValue(long.MaxValue)]
+        long MyInt64 { get; }
     }
 
     public interface ITrans_MetadataViewWithTypeMismatchDefaultValue
@@ -49,6 +49,6 @@ namespace System.ComponentModel.Composition
 
     public interface ITrans_HasInt64
     {
-        Int32 Value { get; }
+        int Value { get; }
     }
 }

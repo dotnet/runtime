@@ -111,32 +111,32 @@ namespace CoreXml.Test.XLinq
                 public void GetXmlReaderName()
                 {
                     XmlReader DataReader = ReloadSource();
-                    TestLog.Compare(DataReader.Name, String.Empty, Variation.Desc);
-                    TestLog.Compare(DataReader.Name, String.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.Name, string.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.Name, string.Empty, Variation.Desc);
                 }
 
                 //[Variation("LocalName")]
                 public void GetXmlReaderLocalName()
                 {
                     XmlReader DataReader = ReloadSource();
-                    TestLog.Compare(DataReader.LocalName, String.Empty, Variation.Desc);
-                    TestLog.Compare(DataReader.LocalName, String.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.LocalName, string.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.LocalName, string.Empty, Variation.Desc);
                 }
 
                 //[Variation("NamespaceURI")]
                 public void Namespace()
                 {
                     XmlReader DataReader = ReloadSource();
-                    TestLog.Compare(DataReader.NamespaceURI, String.Empty, Variation.Desc);
-                    TestLog.Compare(DataReader.NamespaceURI, String.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.NamespaceURI, string.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.NamespaceURI, string.Empty, Variation.Desc);
                 }
 
                 //[Variation("Prefix")]
                 public void Prefix()
                 {
                     XmlReader DataReader = ReloadSource();
-                    TestLog.Compare(DataReader.Prefix, String.Empty, Variation.Desc);
-                    TestLog.Compare(DataReader.Prefix, String.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.Prefix, string.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.Prefix, string.Empty, Variation.Desc);
                 }
 
                 //[Variation("HasValue")]
@@ -151,8 +151,8 @@ namespace CoreXml.Test.XLinq
                 public void GetXmlReaderValue()
                 {
                     XmlReader DataReader = ReloadSource();
-                    TestLog.Compare(DataReader.Value, String.Empty, Variation.Desc);
-                    TestLog.Compare(DataReader.Value, String.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.Value, string.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.Value, string.Empty, Variation.Desc);
                 }
 
                 //[Variation("Depth")]
@@ -167,8 +167,8 @@ namespace CoreXml.Test.XLinq
                 public void GetBaseURI()
                 {
                     XmlReader DataReader = ReloadSource();
-                    TestLog.Compare(DataReader.BaseURI, String.Empty, Variation.Desc);
-                    TestLog.Compare(DataReader.BaseURI, String.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.BaseURI, string.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.BaseURI, string.Empty, Variation.Desc);
                 }
 
                 //[Variation("IsEmptyElement")]
@@ -199,8 +199,8 @@ namespace CoreXml.Test.XLinq
                 public void GetXmlLang()
                 {
                     XmlReader DataReader = ReloadSource();
-                    TestLog.Compare(DataReader.XmlLang, String.Empty, Variation.Desc);
-                    TestLog.Compare(DataReader.XmlLang, String.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.XmlLang, string.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.XmlLang, string.Empty, Variation.Desc);
                 }
 
                 //[Variation("AttributeCount")]
@@ -230,7 +230,7 @@ namespace CoreXml.Test.XLinq
                 public void GetAttributeEmptyName()
                 {
                     XmlReader DataReader = ReloadSource();
-                    TestLog.Compare(DataReader.GetAttribute(String.Empty), null, "Compare the GetAttribute");
+                    TestLog.Compare(DataReader.GetAttribute(string.Empty), null, "Compare the GetAttribute");
                 }
 
                 //[Variation("GetAttribute(name,ns)")]
@@ -244,7 +244,7 @@ namespace CoreXml.Test.XLinq
                 public void GetAttributeEmptyNameNamespace()
                 {
                     XmlReader DataReader = ReloadSource();
-                    TestLog.Compare(DataReader.GetAttribute(String.Empty, String.Empty), null, "Compare the GetAttribute");
+                    TestLog.Compare(DataReader.GetAttribute(string.Empty, string.Empty), null, "Compare the GetAttribute");
                 }
 
                 //[Variation("GetAttribute(i)")]
@@ -390,7 +390,7 @@ namespace CoreXml.Test.XLinq
                     XmlNodeType nt = DataReader.NodeType;
                     string name = DataReader.Name;
                     string value = DataReader.Value;
-                    TestLog.Compare(DataReader.ReadInnerXml(), String.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.ReadInnerXml(), string.Empty, Variation.Desc);
                     TestLog.Compare(VerifyNode(DataReader, nt, name, value), "vn");
                 }
 
@@ -401,7 +401,7 @@ namespace CoreXml.Test.XLinq
                     XmlNodeType nt = DataReader.NodeType;
                     string name = DataReader.Name;
                     string value = DataReader.Value;
-                    TestLog.Compare(DataReader.ReadOuterXml(), String.Empty, Variation.Desc);
+                    TestLog.Compare(DataReader.ReadOuterXml(), string.Empty, Variation.Desc);
                     TestLog.Compare(VerifyNode(DataReader, nt, name, value), "vn");
                 }
 
@@ -430,7 +430,7 @@ namespace CoreXml.Test.XLinq
                 public void TestIsStartElementName2()
                 {
                     XmlReader DataReader = ReloadSource();
-                    TestLog.Compare(DataReader.IsStartElement(String.Empty), false, Variation.Desc);
+                    TestLog.Compare(DataReader.IsStartElement(string.Empty), false, Variation.Desc);
                 }
 
                 //[Variation("IsStartElement(name, ns)")]
@@ -444,7 +444,7 @@ namespace CoreXml.Test.XLinq
                 public void TestIsStartElementNameNs2()
                 {
                     XmlReader DataReader = ReloadSource();
-                    TestLog.Compare(DataReader.IsStartElement(String.Empty, String.Empty), false, Variation.Desc);
+                    TestLog.Compare(DataReader.IsStartElement(string.Empty, string.Empty), false, Variation.Desc);
                 }
 
                 //[Variation("ReadStartElement")]
@@ -475,7 +475,7 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = ReloadSource();
                     try
                     {
-                        DataReader.ReadStartElement(String.Empty);
+                        DataReader.ReadStartElement(string.Empty);
                     }
                     catch (XmlException)
                     {
@@ -505,7 +505,7 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = ReloadSource();
                     try
                     {
-                        DataReader.ReadStartElement(String.Empty, String.Empty);
+                        DataReader.ReadStartElement(string.Empty, string.Empty);
                     }
                     catch (XmlException)
                     {
@@ -533,7 +533,7 @@ namespace CoreXml.Test.XLinq
                 public void LookupNamespace()
                 {
                     XmlReader DataReader = ReloadSource();
-                    string[] astr = { "a", "Foo", String.Empty, "Foo1", "Foo_S" };
+                    string[] astr = { "a", "Foo", string.Empty, "Foo1", "Foo_S" };
 
                     for (int i = 0; i < astr.Length; i++)
                     {

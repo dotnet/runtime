@@ -286,7 +286,7 @@ namespace System.Xml.Tests
         public void GetParam12()
         {
             m_xsltArg = new XsltArgumentList();
-            String obj = "0.00";
+            string obj = "0.00";
 
             // string
             m_xsltArg.AddParam("myArg1", szEmpty, obj);
@@ -314,7 +314,7 @@ namespace System.Xml.Tests
             if (i.GetType() != j.GetType())
                 Assert.True(false);
 
-            Boolean bF = (1 == 0);
+            bool bF = (1 == 0);
             m_xsltArg.AddParam("myArg3", szEmpty, bF);
             retObj = m_xsltArg.GetParam("myArg3", szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", bF.ToString(), retObj);
@@ -325,7 +325,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            Boolean bT = (1 == 1);
+            bool bT = (1 == 1);
             m_xsltArg.AddParam("myArg4", szEmpty, bT);
             retObj = m_xsltArg.GetParam("myArg4", szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", bT.ToString(), retObj);
@@ -378,7 +378,7 @@ namespace System.Xml.Tests
             int i = 1;
             m_xsltArg = new XsltArgumentList();
 
-            foreach (String str in szWhiteSpace)
+            foreach (string str in szWhiteSpace)
             {
                 m_xsltArg.AddParam("myArg" + i, szEmpty, "Test" + str);
                 retObj = m_xsltArg.GetParam("myArg" + i, szEmpty);
@@ -390,7 +390,7 @@ namespace System.Xml.Tests
                 i++;
             }
 
-            foreach (String str in szWhiteSpace)
+            foreach (string str in szWhiteSpace)
             {
                 m_xsltArg.AddParam("myArg" + i, szEmpty, "Test"); // dont add whitespace to name here since addparam would throw
                 retObj = m_xsltArg.GetParam("myArg" + str, szEmpty);
@@ -1121,7 +1121,7 @@ namespace System.Xml.Tests
 		6.No Value Specified</result>";
 
             m_xsltArg = new XsltArgumentList();
-            String obj = "Test";
+            string obj = "Test";
 
             for (int i = 0; i < 200; i++)
             {
@@ -1197,7 +1197,7 @@ namespace System.Xml.Tests
             int errCount = 0;
             m_xsltArg = new XsltArgumentList();
 
-            foreach (String str in szWhiteSpace)
+            foreach (string str in szWhiteSpace)
             {
                 try
                 {
@@ -1211,7 +1211,7 @@ namespace System.Xml.Tests
                 i++;
             }
 
-            foreach (String str in szWhiteSpace)
+            foreach (string str in szWhiteSpace)
             {
                 try
                 {
@@ -1267,7 +1267,7 @@ namespace System.Xml.Tests
 		6.Test6</result>";
 
             m_xsltArg = new XsltArgumentList();
-            String obj = "Test";
+            string obj = "Test";
 
             for (int i = 1; i < 7; i++)
             {
@@ -1311,7 +1311,7 @@ namespace System.Xml.Tests
 		6.No Value Specified</result>";
 
             m_xsltArg = new XsltArgumentList();
-            String obj = "Test";
+            string obj = "Test";
 
             for (int i = 0; i < 300; i++)
             {
@@ -2319,7 +2319,7 @@ namespace System.Xml.Tests
 		String  Argument: System.String</result>";
 
             m_xsltArg = new XsltArgumentList();
-            String obj = "0.00";
+            string obj = "0.00";
 
             // string
             m_xsltArg.AddExtensionObject("myArg1", obj);
@@ -2348,7 +2348,7 @@ namespace System.Xml.Tests
             if (i != (int)retObj)
                 Assert.True(false);
 
-            Boolean bF = (1 == 0);
+            bool bF = (1 == 0);
 
             m_xsltArg.AddExtensionObject("myArg3", bF);
             retObj = m_xsltArg.GetExtensionObject("myArg3");
@@ -2360,7 +2360,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            Boolean bT = (1 == 1);
+            bool bT = (1 == 1);
 
             m_xsltArg.AddExtensionObject("myArg4", bT);
             retObj = m_xsltArg.GetExtensionObject("myArg4");
@@ -2577,7 +2577,7 @@ namespace System.Xml.Tests
             int i = 1;
             m_xsltArg = new XsltArgumentList();
 
-            foreach (String str in szWhiteSpace)
+            foreach (string str in szWhiteSpace)
             {
                 MyObject obj = new MyObject(i, _output);
                 m_xsltArg.AddExtensionObject(szDefaultNS + str, obj);
@@ -3591,7 +3591,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            String obj = "0.00";
+            string obj = "0.00";
 
             // string
             m_xsltArg.AddParam("myArg1", szEmpty, obj);
@@ -3615,7 +3615,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            Boolean bF = (1 == 0);
+            bool bF = (1 == 0);
             m_xsltArg.AddParam("myArg4", szEmpty, bF);
             m_xsltArg.RemoveParam("myArg4", szEmpty);
             retObj = m_xsltArg.GetParam("myArg4", szEmpty);
@@ -3625,7 +3625,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            Boolean bT = (1 == 1);
+            bool bT = (1 == 1);
             m_xsltArg.AddParam("myArg5", szEmpty, bT);
             m_xsltArg.RemoveParam("myArg5", szEmpty);
             retObj = m_xsltArg.GetParam("myArg5", szEmpty);
@@ -3635,7 +3635,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            m_xsltArg.AddParam("myArg2", szEmpty, (Int16)i);
+            m_xsltArg.AddParam("myArg2", szEmpty, (short)i);
             m_xsltArg.RemoveParam("myArg2", szEmpty);
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj != null)
@@ -3644,7 +3644,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            m_xsltArg.AddParam("myArg2", szEmpty, (UInt16)i);
+            m_xsltArg.AddParam("myArg2", szEmpty, (ushort)i);
             m_xsltArg.RemoveParam("myArg2", szEmpty);
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj != null)
@@ -3653,7 +3653,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            m_xsltArg.AddParam("myArg2", szEmpty, (Int32)i);
+            m_xsltArg.AddParam("myArg2", szEmpty, (int)i);
             m_xsltArg.RemoveParam("myArg2", szEmpty);
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj != null)
@@ -3662,7 +3662,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            m_xsltArg.AddParam("myArg2", szEmpty, (UInt32)i);
+            m_xsltArg.AddParam("myArg2", szEmpty, (uint)i);
             m_xsltArg.RemoveParam("myArg2", szEmpty);
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj != null)
@@ -3671,7 +3671,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            m_xsltArg.AddParam("myArg2", szEmpty, (Int64)i);
+            m_xsltArg.AddParam("myArg2", szEmpty, (long)i);
             m_xsltArg.RemoveParam("myArg2", szEmpty);
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj != null)
@@ -3680,7 +3680,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            m_xsltArg.AddParam("myArg2", szEmpty, (UInt64)i);
+            m_xsltArg.AddParam("myArg2", szEmpty, (ulong)i);
             m_xsltArg.RemoveParam("myArg2", szEmpty);
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj != null)
@@ -3689,7 +3689,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            m_xsltArg.AddParam("myArg2", szEmpty, (Single)i);
+            m_xsltArg.AddParam("myArg2", szEmpty, (float)i);
             m_xsltArg.RemoveParam("myArg2", szEmpty);
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj != null)
@@ -3698,7 +3698,7 @@ namespace System.Xml.Tests
                 Assert.True(false);
             }
 
-            m_xsltArg.AddParam("myArg2", szEmpty, (Decimal)i);
+            m_xsltArg.AddParam("myArg2", szEmpty, (decimal)i);
             m_xsltArg.RemoveParam("myArg2", szEmpty);
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj != null)
@@ -3768,7 +3768,7 @@ namespace System.Xml.Tests
             int i = 1;
             m_xsltArg = new XsltArgumentList();
 
-            foreach (String str in szWhiteSpace)
+            foreach (string str in szWhiteSpace)
             {
                 m_xsltArg.AddParam("myArg" + i, szEmpty, "Test" + str);
                 m_xsltArg.RemoveParam("myArg" + i, szEmpty);
@@ -3782,7 +3782,7 @@ namespace System.Xml.Tests
             }
 
             i = 1;
-            foreach (String str in szWhiteSpace)
+            foreach (string str in szWhiteSpace)
             {
                 m_xsltArg.AddParam("myArg" + i, szEmpty, "Test"); // dont add whitespace to name here since addparam would throw
                 m_xsltArg.RemoveParam("myArg" + str, szEmpty);
@@ -4089,7 +4089,7 @@ namespace System.Xml.Tests
             int i = 1;
             m_xsltArg = new XsltArgumentList();
 
-            foreach (String str in szWhiteSpace)
+            foreach (string str in szWhiteSpace)
             {
                 MyObject obj = new MyObject(i, _output);
 
@@ -4301,7 +4301,7 @@ namespace System.Xml.Tests
 		6.No Value Specified</result>";
 
             m_xsltArg = new XsltArgumentList();
-            String obj = "Test";
+            string obj = "Test";
 
             for (int i = 0; i < 200; i++)
             {

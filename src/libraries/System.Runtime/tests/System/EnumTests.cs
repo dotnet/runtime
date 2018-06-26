@@ -396,8 +396,8 @@ namespace System.Tests
             yield return new object[] { typeof(ByteEnum), "None", false };
             yield return new object[] { typeof(ByteEnum), ByteEnum.One, true };
             yield return new object[] { typeof(ByteEnum), (ByteEnum)99, false };
-            yield return new object[] { typeof(ByteEnum), (Byte)1, true };
-            yield return new object[] { typeof(ByteEnum), (Byte)99, false };
+            yield return new object[] { typeof(ByteEnum), (byte)1, true };
+            yield return new object[] { typeof(ByteEnum), (byte)99, false };
 
             // Int16
             yield return new object[] { typeof(Int16Enum), "One", true };

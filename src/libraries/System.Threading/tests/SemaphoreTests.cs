@@ -97,7 +97,7 @@ namespace System.Threading.Tests
         [Fact]
         public void CanWaitWithoutBlockingForReleasedCount()
         {
-            using (Semaphore s = new Semaphore(0, Int32.MaxValue))
+            using (Semaphore s = new Semaphore(0, int.MaxValue))
             {
                 for (int counts = 1; counts < 5; counts++)
                 {
@@ -149,7 +149,7 @@ namespace System.Threading.Tests
         [Fact]
         public void AnonymousProducerConsumer()
         {
-            using (Semaphore s = new Semaphore(0, Int32.MaxValue))
+            using (Semaphore s = new Semaphore(0, int.MaxValue))
             {
                 const int NumItems = 5;
                 Task.WaitAll(
@@ -244,7 +244,7 @@ namespace System.Threading.Tests
         public void OpenExisting_SameAsOriginal_Windows(string name)
         {
             bool createdNew;
-            using (Semaphore s1 = new Semaphore(0, Int32.MaxValue, name, out createdNew))
+            using (Semaphore s1 = new Semaphore(0, int.MaxValue, name, out createdNew))
             {
                 Assert.True(createdNew);
 

@@ -845,7 +845,7 @@ namespace XLinqTests
             return xmlReaders;
         }
 
-        private void LoadTextReader(Object doc, string uri, string expectedXml)
+        private void LoadTextReader(object doc, string uri, string expectedXml)
         {
             if (doc is XDocument)
             {
@@ -893,7 +893,7 @@ namespace XLinqTests
             }
         }
 
-        private void LoadURI(Object doc, string uri, string expectedXml)
+        private void LoadURI(object doc, string uri, string expectedXml)
         {
             if (doc is XDocument)
             {
@@ -929,7 +929,7 @@ namespace XLinqTests
             }
         }
 
-        private void LoadXmlReader(Object doc, string expectedXml)
+        private void LoadXmlReader(object doc, string expectedXml)
         {
             List<XmlReader> xmlReaders = CreateXmlReaders(expectedXml);
             foreach (XmlReader xmlReader in xmlReaders)
@@ -955,7 +955,7 @@ namespace XLinqTests
             }
         }
 
-        private void Parse(Object doc, string expectedXml)
+        private void Parse(object doc, string expectedXml)
         {
             if (doc is XDocument)
             {

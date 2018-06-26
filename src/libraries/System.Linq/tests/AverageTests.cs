@@ -322,7 +322,7 @@ namespace System.Linq.Tests
             yield return new object[] { new double[] { double.MaxValue }, double.MaxValue };
             yield return new object[] { new double[] { 0.0, 0.0, 0.0, 0.0, 0.0 }, 0 };
             yield return new object[] { new double[] { 5.5, -10, 15.5, 40.5, 28.5 }, 16 };
-            yield return new object[] { new double[] { 5.58, Double.NaN, 30, 4.55, 19.38 }, double.NaN };
+            yield return new object[] { new double[] { 5.58, double.NaN, 30, 4.55, 19.38 }, double.NaN };
         }
 
         [Theory]

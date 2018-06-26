@@ -317,7 +317,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             Assert.Null(signedXml.SignatureLength);
             Assert.Equal(SignedXml.XmlDsigDSAUrl, signedXml.SignatureMethod);
-            Assert.InRange(signedXml.SignatureValue.Length, low: 40, high: Int32.MaxValue);
+            Assert.InRange(signedXml.SignatureValue.Length, low: 40, high: int.MaxValue);
             Assert.Null(signedXml.SigningKeyName);
 
             // Get the XML representation of the signature.
@@ -1436,7 +1436,7 @@ namespace System.Security.Cryptography.Xml.Tests
   <Object Id=""object"">some other text</Object>
 </Signature>
 ";
-            SignedXml sign = GetSignedXml(String.Format(xml, bits));
+            SignedXml sign = GetSignedXml(string.Format(xml, bits));
             // only multiple of 8 bits are supported
             sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("secret")));
         }

@@ -63,52 +63,52 @@ namespace Microsoft.Internal
         [Fact]
         public void PrimitiveTypes()
         {
-            this.TestSuccessfulValueGeneration(Char.MinValue);
-            this.TestSuccessfulValueGeneration(Char.MaxValue);
-            this.TestSuccessfulValueGeneration((Char)42);
+            this.TestSuccessfulValueGeneration(char.MinValue);
+            this.TestSuccessfulValueGeneration(char.MaxValue);
+            this.TestSuccessfulValueGeneration((char)42);
 
             this.TestSuccessfulValueGeneration(true);
             this.TestSuccessfulValueGeneration(false);
 
-            this.TestSuccessfulValueGeneration(Byte.MinValue);
-            this.TestSuccessfulValueGeneration(Byte.MaxValue);
-            this.TestSuccessfulValueGeneration((Byte)42);
+            this.TestSuccessfulValueGeneration(byte.MinValue);
+            this.TestSuccessfulValueGeneration(byte.MaxValue);
+            this.TestSuccessfulValueGeneration((byte)42);
 
-            this.TestSuccessfulValueGeneration(SByte.MinValue);
-            this.TestSuccessfulValueGeneration(SByte.MaxValue);
-            this.TestSuccessfulValueGeneration((SByte)42);
+            this.TestSuccessfulValueGeneration(sbyte.MinValue);
+            this.TestSuccessfulValueGeneration(sbyte.MaxValue);
+            this.TestSuccessfulValueGeneration((sbyte)42);
 
-            this.TestSuccessfulValueGeneration(Int16.MinValue);
-            this.TestSuccessfulValueGeneration(Int16.MaxValue);
-            this.TestSuccessfulValueGeneration((Int16)42);
+            this.TestSuccessfulValueGeneration(short.MinValue);
+            this.TestSuccessfulValueGeneration(short.MaxValue);
+            this.TestSuccessfulValueGeneration((short)42);
 
-            this.TestSuccessfulValueGeneration(UInt16.MinValue);
-            this.TestSuccessfulValueGeneration(UInt16.MaxValue);
-            this.TestSuccessfulValueGeneration((UInt16)42);
+            this.TestSuccessfulValueGeneration(ushort.MinValue);
+            this.TestSuccessfulValueGeneration(ushort.MaxValue);
+            this.TestSuccessfulValueGeneration((ushort)42);
 
-            this.TestSuccessfulValueGeneration(Int32.MinValue);
-            this.TestSuccessfulValueGeneration(Int32.MaxValue);
-            this.TestSuccessfulValueGeneration((Int32)42);
+            this.TestSuccessfulValueGeneration(int.MinValue);
+            this.TestSuccessfulValueGeneration(int.MaxValue);
+            this.TestSuccessfulValueGeneration((int)42);
 
-            this.TestSuccessfulValueGeneration(UInt32.MinValue);
-            this.TestSuccessfulValueGeneration(UInt32.MaxValue);
-            this.TestSuccessfulValueGeneration((UInt32)42);
+            this.TestSuccessfulValueGeneration(uint.MinValue);
+            this.TestSuccessfulValueGeneration(uint.MaxValue);
+            this.TestSuccessfulValueGeneration((uint)42);
 
-            this.TestSuccessfulValueGeneration(Int64.MinValue);
-            this.TestSuccessfulValueGeneration(Int64.MaxValue);
-            this.TestSuccessfulValueGeneration((Int64)42);
+            this.TestSuccessfulValueGeneration(long.MinValue);
+            this.TestSuccessfulValueGeneration(long.MaxValue);
+            this.TestSuccessfulValueGeneration((long)42);
 
-            this.TestSuccessfulValueGeneration(UInt64.MinValue);
-            this.TestSuccessfulValueGeneration(UInt64.MaxValue);
-            this.TestSuccessfulValueGeneration((UInt64)42);
+            this.TestSuccessfulValueGeneration(ulong.MinValue);
+            this.TestSuccessfulValueGeneration(ulong.MaxValue);
+            this.TestSuccessfulValueGeneration((ulong)42);
 
-            this.TestSuccessfulValueGeneration(Single.MinValue);
-            this.TestSuccessfulValueGeneration(Single.MaxValue);
-            this.TestSuccessfulValueGeneration((Single)42.42);
+            this.TestSuccessfulValueGeneration(float.MinValue);
+            this.TestSuccessfulValueGeneration(float.MaxValue);
+            this.TestSuccessfulValueGeneration((float)42.42);
 
-            this.TestSuccessfulValueGeneration(Double.MinValue);
-            this.TestSuccessfulValueGeneration(Double.MaxValue);
-            this.TestSuccessfulValueGeneration((Double)42.42);
+            this.TestSuccessfulValueGeneration(double.MinValue);
+            this.TestSuccessfulValueGeneration(double.MaxValue);
+            this.TestSuccessfulValueGeneration((double)42.42);
         }
 
         [Fact]

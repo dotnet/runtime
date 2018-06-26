@@ -19,15 +19,15 @@ namespace System.Xml.Tests
     public class XsltcTestCaseBase : CTestCase
     {
         // Generic data for all derived test cases
-        public String szDefaultNS = "urn:my-object";
+        public string szDefaultNS = "urn:my-object";
 
-        public String szEmpty = "";
-        public String szInvalid = "*?%(){}[]&!@#$";
-        public String szLongNS = "http://www.microsoft.com/this/is/a/very/long/namespace/uri/to/do/the/api/testing/for/xslt/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/";
-        public String szLongString = "ThisIsAVeryLongStringToBeStoredAsAVariableToDetermineHowLargeThisBufferForAVariableNameCanBeAndStillFunctionAsExpected";
-        public String szSimple = "myArg";
-        public String[] szWhiteSpace = { "  ", "\n", "\t", "\r", "\t\n  \r\t" };
-        public String szXslNS = "http://www.w3.org/1999/XSL/Transform";
+        public string szEmpty = "";
+        public string szInvalid = "*?%(){}[]&!@#$";
+        public string szLongNS = "http://www.microsoft.com/this/is/a/very/long/namespace/uri/to/do/the/api/testing/for/xslt/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/";
+        public string szLongString = "ThisIsAVeryLongStringToBeStoredAsAVariableToDetermineHowLargeThisBufferForAVariableNameCanBeAndStillFunctionAsExpected";
+        public string szSimple = "myArg";
+        public string[] szWhiteSpace = { "  ", "\n", "\t", "\r", "\t\n  \r\t" };
+        public string szXslNS = "http://www.w3.org/1999/XSL/Transform";
 
         // Other global variables
         protected bool _createFromInputFile = false; // This is intiialized from a parameter passed from LTM as a dimension, that dictates whether the variation is to be created using an input file.
@@ -130,29 +130,29 @@ namespace System.Xml.Tests
             return varParams != null && varParams.Any(o => o.ToString() == "EnglishOnly");
         }
 
-        protected void VerifyTest(String cmdLine, String baselineFile, bool loadFromFile)
+        protected void VerifyTest(string cmdLine, string baselineFile, bool loadFromFile)
         {
-            VerifyTest(cmdLine, String.Empty, false, String.Empty, baselineFile, loadFromFile);
+            VerifyTest(cmdLine, string.Empty, false, string.Empty, baselineFile, loadFromFile);
         }
 
-        protected void VerifyTest(String cmdLine, String asmName, bool asmCreated, String typeName, String baselineFile, bool loadFromFile)
+        protected void VerifyTest(string cmdLine, string asmName, bool asmCreated, string typeName, string baselineFile, bool loadFromFile)
         {
-            VerifyTest(cmdLine, asmName, asmCreated, typeName, String.Empty, false, baselineFile, loadFromFile);
+            VerifyTest(cmdLine, asmName, asmCreated, typeName, string.Empty, false, baselineFile, loadFromFile);
         }
 
-        protected void VerifyTest(String cmdLine, String asmName, bool asmCreated, String typeName, String pdbName, bool pdbCreated, String baselineFile, bool loadFromFile)
+        protected void VerifyTest(string cmdLine, string asmName, bool asmCreated, string typeName, string pdbName, bool pdbCreated, string baselineFile, bool loadFromFile)
         {
             VerifyTest(cmdLine, asmName, asmCreated, typeName, pdbName, pdbCreated, baselineFile, true, loadFromFile);
         }
 
-        protected void VerifyTest(String cmdLine, String asmName, bool asmCreated, String typeName, String pdbName, bool pdbCreated, String baselineFile, bool runAssemblyVerification, bool loadFromFile)
+        protected void VerifyTest(string cmdLine, string asmName, bool asmCreated, string typeName, string pdbName, bool pdbCreated, string baselineFile, bool runAssemblyVerification, bool loadFromFile)
         {
             string targetDirectory = XsltcModule.TargetDirectory;
 
             string output = asmCreated ? TryCreatePersistedTransformAssembly(cmdLine, _createFromInputFile, true, targetDirectory) : TryCreatePersistedTransformAssembly(cmdLine, _createFromInputFile, false, targetDirectory);
 
             //verify assembly file existence
-            if (asmName != null && String.CompareOrdinal(String.Empty, asmName) != 0)
+            if (asmName != null && string.CompareOrdinal(string.Empty, asmName) != 0)
             {
                 if (File.Exists(GetPath(asmName)) != asmCreated)
                 {
@@ -161,7 +161,7 @@ namespace System.Xml.Tests
             }
 
             //verify pdb existence
-            if (pdbName != null && String.CompareOrdinal(String.Empty, pdbName) != 0)
+            if (pdbName != null && string.CompareOrdinal(string.Empty, pdbName) != 0)
             {
                 if (File.Exists(GetPath(pdbName)) != pdbCreated)
                 {
@@ -169,7 +169,7 @@ namespace System.Xml.Tests
                 }
             }
 
-            if (asmCreated && !String.IsNullOrEmpty(typeName))
+            if (asmCreated && !string.IsNullOrEmpty(typeName))
             {
                 if (!LoadPersistedTransformAssembly(GetPath(asmName), typeName, baselineFile, pdbCreated))
                 {

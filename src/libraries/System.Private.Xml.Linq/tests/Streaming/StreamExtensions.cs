@@ -91,7 +91,7 @@ namespace System.Xml.Linq
         public void ReadElementUntil(XElement source, XName match)
         {
             if (_reader.ReadState != ReadState.Interactive) throw new InvalidOperationException("The reader state should be Interactive.");
-            if (source.Name != XNamespace.Get(_reader.NamespaceURI).GetName(_reader.LocalName)) throw new InvalidOperationException(String.Format("The reader should be on an element with the name '{0}'.", source.Name));
+            if (source.Name != XNamespace.Get(_reader.NamespaceURI).GetName(_reader.LocalName)) throw new InvalidOperationException(string.Format("The reader should be on an element with the name '{0}'.", source.Name));
             if (_reader.MoveToFirstAttribute())
             {
                 do
@@ -176,7 +176,7 @@ namespace System.Xml.Linq
                     case XmlNodeType.EndEntity:
                         break;
                     default:
-                        throw new InvalidOperationException(String.Format("The reader should not be on a node of type '{0}'.", _reader.NodeType));
+                        throw new InvalidOperationException(string.Format("The reader should not be on a node of type '{0}'.", _reader.NodeType));
                 }
             } while (_reader.Read());
             return false;
@@ -226,7 +226,7 @@ namespace System.Xml.Linq
             {
                 if (streamNames[i] == null) throw new ArgumentNullException("streamNames[" + i + "]");
             }
-            if (reader.MoveToContent() != XmlNodeType.Element) throw new InvalidOperationException(String.Format("The reader should be on a node of type '{0}'.", XmlNodeType.Element));
+            if (reader.MoveToContent() != XmlNodeType.Element) throw new InvalidOperationException(string.Format("The reader should be on a node of type '{0}'.", XmlNodeType.Element));
             XElement source = new XElement(rootName);
             StreamLoader loader = new StreamLoader(reader, streamNames);
             XName streamName = streamNames.Length > 0 ? streamNames[0] : null;

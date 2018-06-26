@@ -69,7 +69,7 @@ namespace System.Xml.Tests
         [InlineData("Default")]
         [InlineData("Fixed")]
         [InlineData("FixedRequired")]
-        public void CallOnElementWith_Required_Optional_Default_Fixed_FixedRequired_AttributesAfterValidateElement(String attrType)
+        public void CallOnElementWith_Required_Optional_Default_Fixed_FixedRequired_AttributesAfterValidateElement(string attrType)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_ATTRIBUTES);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -91,7 +91,7 @@ namespace System.Xml.Tests
         [InlineData("Fixed", "after")]
         [InlineData("FixedRequired", "before")]
         [InlineData("FixedRequired", "after")]
-        public void Call_Before_After_GetUnspecifiedDefaultAttributeWhenJust_Required_Optional_Fixed_FixedRequired_AttributesAreLeft(String attrType, String callOrder)
+        public void Call_Before_After_GetUnspecifiedDefaultAttributeWhenJust_Required_Optional_Fixed_FixedRequired_AttributesAreLeft(string attrType, string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_ATTRIBUTES);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -113,7 +113,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
-        public void Call_Before_After_GetUnspecifiedDefaultAttributesWhenJustDefaultAttributesAreLeft(String callOrder)
+        public void Call_Before_After_GetUnspecifiedDefaultAttributesWhenJustDefaultAttributesAreLeft(string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_ATTRIBUTES);
             XmlSchemaInfo info = new XmlSchemaInfo();
