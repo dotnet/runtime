@@ -618,6 +618,9 @@ dump_native_stacktrace (const char *signal, void *ctx)
 	}
 	g_free (names);
 
+	mono_runtime_printf_err ("\nFlight recorder output:\n");
+	mono_log_dump_recorder ();
+
 	/* Try to get more meaningful information using gdb */
 	char *debugger_log = mono_debugger_state_str ();
 	if (debugger_log) {

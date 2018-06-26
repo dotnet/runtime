@@ -140,6 +140,13 @@ mono_trace_set_mask (MonoTraceMask mask)
 	mono_internal_current_mask = mask;
 }
 
+gboolean mono_log_flight_recorder = TRUE;
+void
+mono_trace_set_use_recorder (gboolean use)
+{
+	mono_log_flight_recorder = use;
+}
+
 /**
  * mono_trace_set_logdest:
  * \param dest Destination for logging
@@ -165,7 +172,13 @@ mono_trace_set_logdest_string (const char *dest)
 	logger.closer = mono_log_close_asl;
 	logger.dest   = (char*) dest;
 #else
-	if ((dest == NULL) || (strcmp("syslog", dest) != 0)) {
+	gboolean no_dest = (dest == NULL) || (strcmp("syslog", dest) != 0);
+	if (no_dest && mono_log_flight_recorder) {
+		logger.opener = mono_log_open_recorder;
+		logger.writer = mono_log_write_recorder;
+		logger.closer = mono_log_close_recorder;
+		logger.dest   = (char *) dest;
+	} else if (no_dest) {
 		logger.opener = mono_log_open_logfile;
 		logger.writer = mono_log_write_logfile;
 		logger.closer = mono_log_close_logfile;
@@ -177,6 +190,7 @@ mono_trace_set_logdest_string (const char *dest)
 		logger.dest   = (char *) dest;
 	}
 #endif
+
 	mono_trace_set_log_handler_internal(&logger, NULL);
 }
 

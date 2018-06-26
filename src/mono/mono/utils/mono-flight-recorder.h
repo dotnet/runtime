@@ -12,18 +12,23 @@
 #define __MONO_FLIGHT_RECORDER__
 
 #include <glib.h>
+#include <mono/utils/mono-coop-mutex.h>
 
 typedef struct {
 	long counter; // The number of messages allocated thus far, acts like a global, monotonic clock
-	char payload [MONO_ZERO_LEN_ARRAY]; // We have a variably-sized payload
-} FlightRecorderItem;
+} MonoFlightRecorderHeader;
+
+typedef struct {
+	MonoFlightRecorderHeader header;
+	gpointer payload [MONO_ZERO_LEN_ARRAY]; // We have a variably-sized payload
+} MonoFlightRecorderItem;
 
 typedef struct {
 	intptr_t cursor; // Signed, for sentinel value of -1
 	size_t max_count; // Maximum number of items in logger
 	size_t payload_size; // Size of data reserved for logging message
 	MonoCoopMutex mutex; // Not owned exclusively by us, used by api consumers too
-	FlightRecorderItem *items; // The data of the history
+	MonoFlightRecorderItem *items [MONO_ZERO_LEN_ARRAY]; // The data of the history
 } MonoFlightRecorder;
 
 MonoCoopMutex *
@@ -38,12 +43,12 @@ mono_flight_recorder_free (MonoFlightRecorder *recorder);
 void
 mono_flight_recorder_append (MonoFlightRecorder *recorder, gpointer payload);
 
-
 // Used to traverse the ring buffer in order of oldest to newest message
 
 typedef struct {
 	intptr_t lowest_index;
 	intptr_t highest_index;
+	MonoFlightRecorder *recorder;
 } MonoFlightRecorderIter;
 
 // Mutex has to be held when called
@@ -56,7 +61,6 @@ mono_flight_recorder_iter_destroy (MonoFlightRecorderIter *iter);
 
 // Mutex has to be held when called
 gboolean
-mono_flight_recorder_iter_next (MonoFlightRecorder *recorder, MonoFlightRecorderIter *iter, gpointer **payload);
-
+mono_flight_recorder_iter_next (MonoFlightRecorderIter *iter, MonoFlightRecorderHeader *header, gpointer *payload);
 
 #endif

@@ -1966,6 +1966,9 @@ mono_main (int argc, char* argv[])
 			}
 			count = atoi (argv [++i]);
 			action = DO_BENCH;
+		} else if (strcmp (argv [i], "--flight-recorder") == 0) {
+			// Remember to use MONO_LOG_LEVEL to set a high enough logging level
+			mono_trace_set_use_recorder (TRUE);
 		} else if (strcmp (argv [i], "--trace") == 0) {
 			trace_options = (char*)"";
 		} else if (strncmp (argv [i], "--trace=", 8) == 0) {

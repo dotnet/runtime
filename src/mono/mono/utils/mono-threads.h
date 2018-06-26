@@ -14,6 +14,8 @@
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-linked-list-set.h>
+#include <mono/utils/lock-free-alloc.h>
+#include <mono/utils/lock-free-queue.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/os-event.h>
@@ -363,12 +365,19 @@ mono_thread_info_set_tid (THREAD_INFO_TYPE *info, MonoNativeThreadId tid)
 	((MonoThreadInfo*) info)->node.key = (uintptr_t) MONO_NATIVE_THREAD_ID_TO_UINT (tid);
 }
 
+
 /*
  * @thread_info_size is sizeof (GcThreadInfo), a struct the GC defines to make it possible to have
  * a single block with info from both camps. 
  */
 void
 mono_thread_info_init (size_t thread_info_size);
+
+/*
+ * Wait for the above mono_thread_info_init to be called
+ */
+void
+mono_thread_info_wait_inited (void);
 
 void
 mono_thread_info_callbacks_init (MonoThreadInfoCallbacks *callbacks);
@@ -709,5 +718,41 @@ void mono_threads_join_unlock (void);
 typedef void (*background_job_cb)(void);
 void mono_threads_schedule_background_job (background_job_cb cb);
 #endif
+
+typedef struct {
+	void (*early_init) (gpointer *state_ptr);
+	void (*init) (gpointer *state_ptr);
+	void (*command) (gpointer state_ptr, gpointer message_ptr, gboolean at_shutdown);
+	void (*cleanup) (gpointer state_ptr);
+} MonoUtilityThreadCallbacks;
+
+typedef struct {
+	MonoNativeThreadId thread_id;
+
+	MonoLockFreeQueue work_queue;
+	MonoSemType work_queue_sem;
+	gboolean run_thread;
+
+	MonoLockFreeAllocator message_allocator;
+	MonoLockFreeAllocSizeClass message_size_class;
+
+	size_t message_block_size;
+	size_t payload_size;
+
+	gpointer state_ptr;
+	MonoUtilityThreadCallbacks callbacks;
+} MonoUtilityThread;
+
+MonoUtilityThread *
+mono_utility_thread_launch (size_t payload_size, MonoUtilityThreadCallbacks *callbacks, MonoMemAccountType accountType);
+
+void
+mono_utility_thread_send (MonoUtilityThread *thread, gpointer message);
+
+gboolean
+mono_utility_thread_send_sync (MonoUtilityThread *thread, gpointer message);
+
+void
+mono_utility_thread_stop (MonoUtilityThread *thread);
 
 #endif /* __MONO_THREADS_H__ */
