@@ -1222,23 +1222,28 @@ mono_create_corlib_exception_0 (guint32 token)
 }
 
 MonoException *
-mono_create_corlib_exception_1 (guint32 token, MonoString *arg)
+mono_create_corlib_exception_1 (guint32 token, MonoString *arg_raw)
 {
+	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
-	MonoException *ret = mono_exception_from_token_two_strings_checked (
-		mono_defaults.corlib, token, arg, NULL, error);
+	MONO_HANDLE_DCL (MonoString, arg);
+	MonoExceptionHandle ret = mono_exception_from_token_two_strings_checked (
+		mono_defaults.corlib, token, arg, NULL_HANDLE_STRING, error);
 	mono_error_set_pending_exception (error);
-	return ret;
+	HANDLE_FUNCTION_RETURN_OBJ (ret);
 }
 
 MonoException *
-mono_create_corlib_exception_2 (guint32 token, MonoString *arg1, MonoString *arg2)
+mono_create_corlib_exception_2 (guint32 token, MonoString *arg1_raw, MonoString *arg2_raw)
 {
+	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
-	MonoException *ret = mono_exception_from_token_two_strings_checked (
+	MONO_HANDLE_DCL (MonoString, arg1);
+	MONO_HANDLE_DCL (MonoString, arg2);
+	MonoExceptionHandle ret = mono_exception_from_token_two_strings_checked (
 		mono_defaults.corlib, token, arg1, arg2, error);
 	mono_error_set_pending_exception (error);
-	return ret;
+	HANDLE_FUNCTION_RETURN_OBJ (ret);
 }
 
 MonoObject*

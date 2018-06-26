@@ -198,7 +198,7 @@ static void self_suspend_internal (void);
 static gboolean
 mono_thread_set_interruption_requested_flags (MonoInternalThread *thread, gboolean sync);
 
-MONO_COLD static void
+MONO_COLD void
 mono_set_pending_exception_handle (MonoExceptionHandle exc);
 
 static MonoException*
@@ -5029,7 +5029,7 @@ mono_runtime_set_pending_exception (MonoException *exc, mono_bool overwrite)
  *   Set the pending exception of the current thread to EXC.
  * The exception will be thrown when execution returns to managed code.
  */
-MONO_COLD static void
+MONO_COLD void
 mono_set_pending_exception_handle (MonoExceptionHandle exc)
 {
 	MonoThread *thread = mono_thread_current ();
@@ -6042,8 +6042,6 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 				count--;
 			}
 			if (count == 0) {
-				MonoBoolean timeout_abort_success;
-
 				// After timeout
 				// Thread may have been in lock or something, may have died
 				// Either way, didn't respond. Rather than failing, we have to

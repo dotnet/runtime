@@ -301,6 +301,14 @@ mono_type_initialization_cleanup (void)
 	free_main_args ();
 }
 
+static MonoException*
+mono_get_exception_type_initialization_checked (const gchar *type_name, MonoException* inner_raw, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	MONO_HANDLE_DCL (MonoException, inner);
+	HANDLE_FUNCTION_RETURN_OBJ (mono_get_exception_type_initialization_handle (type_name, inner, error));
+}
+
 /**
  * get_type_init_exception_for_vtable:
  *
@@ -3109,7 +3117,7 @@ mono_runtime_invoke_checked (MonoMethod *method, void *obj, void **params, MonoE
 	return do_runtime_invoke (method, obj, params, NULL, error);
 }
 
-static MonoObjectHandle
+MonoObjectHandle
 mono_runtime_invoke_handle (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error)
 {
 	return MONO_HANDLE_NEW (MonoObject, mono_runtime_invoke_checked (method, MONO_HANDLE_RAW (obj), params, error));
@@ -3454,6 +3462,14 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 	mono_error_assert_ok (error);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
+}
+
+MonoObjectHandle
+mono_static_field_get_value_handle (MonoDomain *domain, MonoClassField *field, MonoError *error)
+// FIXMEcoop invert
+{
+	HANDLE_FUNCTION_ENTER ();
+	HANDLE_FUNCTION_RETURN_REF (MonoObject, MONO_HANDLE_NEW (MonoObject, mono_field_get_value_object_checked (domain, field, NULL, error)));
 }
 
 /**
@@ -5481,7 +5497,7 @@ mono_object_new_handle (MonoDomain *domain, MonoClass *klass, MonoError *error)
  *   Same as mono_object_new, but the returned object will be pinned.
  * For SGEN, these objects will only be freed at appdomain unload.
  */
-static MonoObjectHandle
+MonoObjectHandle
 mono_object_new_pinned_handle (MonoDomain *domain, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
@@ -6258,6 +6274,12 @@ mono_string_empty (MonoDomain *domain)
 	g_assert (domain);
 	g_assert (domain->empty_string);
 	return domain->empty_string;
+}
+
+MonoStringHandle
+mono_string_empty_handle (MonoDomain *domain)
+{
+	return MONO_HANDLE_NEW (MonoString, mono_string_empty (domain));
 }
 
 /**

@@ -21,32 +21,34 @@
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-coop-mutex.h"
 
-/* Use this as MONO_CHECK_ARG_NULL (arg,expr,) in functions returning void */
-#define MONO_CHECK_ARG(arg, expr, retval)		G_STMT_START{		  \
-		if (G_UNLIKELY (!(expr)))							  \
-       {								  \
-		MonoException *ex;					  \
-		char *msg = g_strdup_printf ("assertion `%s' failed",	  \
-		#expr);							  \
-		if (arg) {} /* check if the name exists */		  \
-		ex = mono_get_exception_argument (#arg, msg);		  \
-		g_free (msg);						  \
-		mono_set_pending_exception (ex);					  \
-		return retval;										  \
-       };				}G_STMT_END
+/* Use this as MONO_CHECK_ARG (arg,expr,) in functions returning void */
+#define MONO_CHECK_ARG(arg, expr, retval) do {				\
+	if (G_UNLIKELY (!(expr)))					\
+	{								\
+		char *msg = g_strdup_printf ("assertion `%s' failed",	\
+		#expr);							\
+		if (arg) {} /* check if the name exists */		\
+		ERROR_DECL (error);					\
+		mono_error_set_argument (error, #arg, msg);		\
+		mono_error_set_pending_exception (error);		\
+		g_free (msg);						\
+		return retval;						\
+	} 								\
+} while (0)
 
 /* Use this as MONO_CHECK_ARG_NULL (arg,) in functions returning void */
-#define MONO_CHECK_ARG_NULL(arg, retval)	    G_STMT_START{		  \
-		if (G_UNLIKELY (arg == NULL))						  \
-       {								  \
-		MonoException *ex;					  \
-		if (arg) {} /* check if the name exists */		  \
-		ex = mono_get_exception_argument_null (#arg);		  \
-		mono_set_pending_exception (ex);					  \
-		return retval;										  \
-       };				}G_STMT_END
+#define MONO_CHECK_ARG_NULL(arg, retval) do { 			\
+	if (G_UNLIKELY (arg == NULL))				\
+	{							\
+		if (arg) {} /* check if the name exists */	\
+		ERROR_DECL (error);				\
+		mono_error_set_argument_null (error, #arg, "");	\
+		mono_error_set_pending_exception (error);	\
+		return retval;					\
+	}							\
+} while (0)
 
-/* Use this as MONO_ARG_NULL (arg,) in functions returning void */
+/* Use this as MONO_CHECK_NULL (arg,) in functions returning void */
 #define MONO_CHECK_NULL(arg, retval) do { 			\
 	if (G_UNLIKELY (arg == NULL))				\
 	{							\
@@ -1643,8 +1645,9 @@ mono_nullable_box (gpointer buf, MonoClass *klass, MonoError *error);
 MonoObjectHandle
 mono_nullable_box_handle (gpointer buf, MonoClass *klass, MonoError *error);
 
+// A code size optimization (source and object) equivalent to MONO_HANDLE_NEW (MonoObject, NULL);
 MonoObjectHandle
-mono_new_null (void); // A code size optimization (source and object).
+mono_new_null (void);
 
 #ifdef MONO_SMALL_CONFIG
 #define MONO_IMT_SIZE 9
@@ -1755,6 +1758,9 @@ mono_class_free_ref_info (MonoClass *klass);
 MonoObject *
 mono_object_new_pinned (MonoDomain *domain, MonoClass *klass, MonoError *error);
 
+MonoObjectHandle
+mono_object_new_pinned_handle (MonoDomain *domain, MonoClass *klass, MonoError *error);
+
 MonoObject *
 mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error);
 
@@ -1785,6 +1791,9 @@ mono_vtable_get_static_field_data (MonoVTable *vt);
 
 MonoObject *
 mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, MonoObject *obj, MonoError *error);
+
+MonoObjectHandle
+mono_static_field_get_value_handle (MonoDomain *domain, MonoClassField *field, MonoError *error);
 
 gboolean
 mono_property_set_value_checked (MonoProperty *prop, void *obj, void **params, MonoError *error);
@@ -1902,6 +1911,9 @@ mono_runtime_try_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 MonoObject*
 mono_runtime_invoke_checked (MonoMethod *method, void *obj, void **params, MonoError *error);
 
+MonoObjectHandle
+mono_runtime_invoke_handle (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error);
+
 MonoObject*
 mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			       MonoObject **exc, MonoError *error);
@@ -2003,5 +2015,8 @@ mono_gc_wbarrier_object_copy_handle (MonoObjectHandle obj, MonoObjectHandle src)
 
 MonoMethod*
 mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is_proxy, MonoError *error);
+
+MonoStringHandle
+mono_string_empty_handle (MonoDomain *domain);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

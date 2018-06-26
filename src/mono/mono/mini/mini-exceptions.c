@@ -2109,6 +2109,15 @@ interp_exit_finally_abort_blocks (MonoJitInfo *ji, int start_clause, int end_cla
 	}
 }
 
+static MonoException *
+mono_get_exception_runtime_wrapped_checked (MonoObject *wrapped_exception_raw, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	MONO_HANDLE_DCL (MonoObject, wrapped_exception);
+	MonoExceptionHandle ret = mono_get_exception_runtime_wrapped_handle (wrapped_exception, error);
+	HANDLE_FUNCTION_RETURN_OBJ (ret);
+}
+
 /**
  * mono_handle_exception_internal:
  * \param ctx saved processor state
