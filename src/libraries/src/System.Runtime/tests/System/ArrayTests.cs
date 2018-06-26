@@ -3195,6 +3195,8 @@ namespace System.Tests
 
             yield return new object[] { new int[0], new int[0], 0, 0, null, new int[0], new int[0] };
             yield return new object[] { refArray, null, 0, 6, null, sortedRefArray, null }; // Null items
+
+            yield return new object[] { new int[] { 3, 2, 1, 4 }, new int[] { 5, 6, 7 }, 1, 2, null, new int[] { 3, 1, 2, 4 }, new int[] { 5, 7, 6 } }; // Different lengths
         }
 
         public static IEnumerable<object[]> Sort_Array_Array_Generic_TestData()
