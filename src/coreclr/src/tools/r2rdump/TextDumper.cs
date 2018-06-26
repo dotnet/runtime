@@ -161,7 +161,7 @@ namespace R2RDump
                 _writer.Write(rtf.UnwindInfo);
                 if (_raw)
                 {
-                    DumpBytes(rtf.UnwindRVA, (uint)((UnwindInfo)rtf.UnwindInfo).Size);
+                    DumpBytes(rtf.UnwindRVA, (uint)((Amd64.UnwindInfo)rtf.UnwindInfo).Size);
                 }
             }
             SkipLine();

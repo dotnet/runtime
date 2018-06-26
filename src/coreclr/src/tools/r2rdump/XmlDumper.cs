@@ -171,7 +171,7 @@ namespace R2RDump
 
                 if (_raw)
                 {
-                    DumpBytes(rtf.UnwindRVA, (uint)((UnwindInfo)rtf.UnwindInfo).Size, unwindNode);
+                    DumpBytes(rtf.UnwindRVA, (uint)((Amd64.UnwindInfo)rtf.UnwindInfo).Size, unwindNode);
                 }
             }
         }
