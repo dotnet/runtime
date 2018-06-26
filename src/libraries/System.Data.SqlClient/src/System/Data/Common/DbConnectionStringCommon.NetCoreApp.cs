@@ -78,7 +78,6 @@ namespace System.Data.Common
                 // We could use Enum.TryParse<PoolBlockingPeriod> here, but it accepts value combinations like
                 // "ReadOnly, ReadWrite" which are unwelcome here
                 // Also, Enum.TryParse is 100x slower than plain StringComparer.OrdinalIgnoreCase.Equals method.
-
                 if (TryConvertToPoolBlockingPeriod(sValue, out result))
                 {
                     return result;
