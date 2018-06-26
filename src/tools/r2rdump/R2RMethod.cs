@@ -12,6 +12,11 @@ using System.Text;
 
 namespace R2RDump
 {
+    interface BaseUnwindInfo
+    {
+
+    }
+
     class RuntimeFunction
     {
         /// <summary>
@@ -45,9 +50,9 @@ namespace R2RDump
         /// </summary>
         public R2RMethod Method { get; }
 
-        public UnwindInfo UnwindInfo { get; }
+        public BaseUnwindInfo UnwindInfo { get; }
 
-        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, int codeOffset, R2RMethod method, UnwindInfo unwindInfo, GcInfo gcInfo)
+        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, int codeOffset, R2RMethod method, BaseUnwindInfo unwindInfo, GcInfo gcInfo)
         {
             Id = id;
             StartAddress = startRva;
