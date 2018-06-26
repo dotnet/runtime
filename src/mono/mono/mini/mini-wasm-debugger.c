@@ -56,6 +56,12 @@ jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 	mono_de_add_pending_breakpoints (method, jinfo);
 }
 
+static void
+appdomain_load (MonoProfiler *prof, MonoDomain *domain)
+{
+	mono_de_domain_add (domain);
+}
+
 /* Frame state handling */
 static GPtrArray *frames;
 
@@ -203,7 +209,7 @@ static void*
 create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, MonoJitInfo *ji, EventKind kind)
 {
 	printf ("ss_reqs %d bp_reqs %d\n", ss_reqs->len, bp_reqs->len);
-	if ((ss_reqs && ss_reqs->len) || (bp_reqs && bp_reqs->len > 0)) {
+	if ((ss_reqs && ss_reqs->len) || (bp_reqs && bp_reqs->len)) {
 		BpEvents *evts = g_new0 (BpEvents, 1); //just a non-null value to make sure we can raise it on process_breakpoint_events
 		evts->is_ss = (ss_reqs && ss_reqs->len);
 		return evts;
@@ -241,15 +247,16 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 	int dummy = 0;
 	ss_req->start_sp = ss_req->last_sp = &dummy;
 	compute_frames ();
+	memset (ss_args, 0, sizeof (*ss_args));
 
-	//BIG WTF, should not happen
+	//BIG WTF, should not happen maybe should assert?
 	if (frames->len == 0) {
-		DEBUG_PRINTF (1, "SINGLE STEPPING FOUND NO FRAMES WUT?!?!");
+		DEBUG_PRINTF (1, "SINGLE STEPPING FOUND NO FRAMES");
 		return DBG_NOT_SUSPENDED;
 	}
 
 	DbgEngineStackFrame *frame = g_ptr_array_index (frames, 0);
-	ss_req->start_method = frame->method;
+	ss_req->start_method = ss_args->method = frame->method;
 	gboolean found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &ss_args->info, &ss_args->sp);
 	if (!found_sp)
 		no_seq_points_found (frame->method, frame->native_offset);
@@ -296,7 +303,6 @@ mono_wasm_debugger_init (void)
 	mono_de_init (&cbs);
 	mono_de_set_log_level (1, stdout);
 
-	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 	mini_get_debug_options ()->gen_sdb_seq_points = TRUE;
 	mini_get_debug_options ()->mdb_optimizations = TRUE;
 	mono_disable_optimizations (MONO_OPT_LINEARS);
@@ -304,12 +310,14 @@ mono_wasm_debugger_init (void)
 
 	MonoProfilerHandle prof = mono_profiler_create (NULL);
 	mono_profiler_set_jit_done_callback (prof, jit_done);
+	//FIXME support multiple appdomains
+	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 }
 
 MONO_API void
 mono_wasm_enable_debugging (void)
 {
-	DEBUG_PRINTF (1, "DEBUGGING ENABLED");
+	DEBUG_PRINTF (1, "DEBUGGING ENABLED\n");
 	debugger_enabled = TRUE;
 }
 
@@ -463,7 +471,7 @@ mono_wasm_current_bp_id (void)
 
 
 	GPtrArray *bp_reqs = g_ptr_array_new ();
-	mono_de_collect_breakpoints_by_sp (&sp, ji, bp_reqs, NULL);
+	mono_de_collect_breakpoints_by_sp (&sp, ji, NULL, bp_reqs);
 
 	if (bp_reqs->len == 0) {
 		DEBUG_PRINTF (1, "BP NOT FOUND for method %s JI %p il_offset %d\n", method->name, ji, sp.il_offset);
@@ -638,4 +646,12 @@ mono_wasm_get_var_info (int scope, int pos)
 	data.variable = pos;
 
 	mono_walk_stack_with_ctx (describe_variable, NULL, MONO_UNWIND_NONE, &data);
+}
+
+
+// Functions required by debugger-state-machine.
+gsize
+mono_debugger_tls_thread_id (DebuggerTlsData *debuggerTlsData)
+{
+	return 1;
 }
