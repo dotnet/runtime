@@ -77,7 +77,7 @@ namespace System.Reflection.Tests
 
             AssertExtensions.Throws<ArgumentException>(null, () =>
             {
-                CustomAttributeExtensions.GetCustomAttributes(thisAsm, typeof(String));
+                CustomAttributeExtensions.GetCustomAttributes(thisAsm, typeof(string));
             });
 
             attribute = CustomAttributeExtensions.GetCustomAttribute<MyAttribute_Single>(thisAsm);
@@ -116,23 +116,23 @@ namespace System.Reflection.Tests
 
     public class MyAttributeBase : Attribute
     {
-        private String _name;
-        public MyAttributeBase(String name)
+        private string _name;
+        public MyAttributeBase(string name)
         {
             _name = name;
         }
-        public override String ToString() { return this.GetType().ToString() + " " + _name; }
+        public override string ToString() { return this.GetType().ToString() + " " + _name; }
     }
 
     [AttributeUsage(AttributeTargets.All, AllowMultiple = false)]
     public class MyAttribute_Single : MyAttributeBase
     {
-        public MyAttribute_Single(String name) : base(name) { }
+        public MyAttribute_Single(string name) : base(name) { }
     }
 
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
     public class MyAttribute_AllowMultiple : MyAttributeBase
     {
-        public MyAttribute_AllowMultiple(String name) : base(name) { }
+        public MyAttribute_AllowMultiple(string name) : base(name) { }
     }
 }

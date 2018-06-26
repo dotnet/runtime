@@ -130,13 +130,13 @@ namespace OLEDB.Test.ModuleCore
         public static void Write(string text, params object[] args)
         {
             //Delegate
-            Write(String.Format(text, args));
+            Write(string.Format(text, args));
         }
 
         public static void WriteLine(string text, params object[] args)
         {
             //Delegate
-            WriteLine(String.Format(text, args));
+            WriteLine(string.Format(text, args));
         }
 
         public static void Write(char[] value)
@@ -373,7 +373,7 @@ namespace OLEDB.Test.ModuleCore
             return false;
         }
 
-        private static String FixupXml(String value)
+        private static string FixupXml(string value)
         {
             bool escapeXmlStuff = false;
             if (value == null) return null;

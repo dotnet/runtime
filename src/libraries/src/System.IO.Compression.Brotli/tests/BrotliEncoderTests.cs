@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -38,7 +38,7 @@ namespace System.IO.Compression.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>("length", () => BrotliEncoder.GetMaxCompressedLength(-1));
             Assert.Throws<ArgumentOutOfRangeException>("length", () => BrotliEncoder.GetMaxCompressedLength(2147483133));
-            Assert.InRange(BrotliEncoder.GetMaxCompressedLength(2147483132), 0, Int32.MaxValue);
+            Assert.InRange(BrotliEncoder.GetMaxCompressedLength(2147483132), 0, int.MaxValue);
             Assert.Equal(1, BrotliEncoder.GetMaxCompressedLength(0));
         }
 

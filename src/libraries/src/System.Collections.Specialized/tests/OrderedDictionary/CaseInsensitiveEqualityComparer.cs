@@ -14,10 +14,10 @@ namespace System.Collections.Specialized.Tests
             if (x == y) return true;
             if (x == null || y == null) return false;
 
-            String sa = x as String;
+            string sa = x as string;
             if (sa != null)
             {
-                String sb = y as String;
+                string sb = y as string;
                 if (sb != null)
                 {
                     return sa.Equals(sb, StringComparison.CurrentCultureIgnoreCase);

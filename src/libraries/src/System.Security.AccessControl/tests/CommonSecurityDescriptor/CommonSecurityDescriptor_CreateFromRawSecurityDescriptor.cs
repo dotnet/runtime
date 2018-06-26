@@ -55,7 +55,7 @@ namespace System.Security.AccessControl.Tests
             Assert.True((isContainer == commonSecurityDescriptor.IsContainer) && (isDS == commonSecurityDescriptor.IsDS));
 
             string resultSddlForm = commonSecurityDescriptor.GetSddlForm(AccessControlSections.All);
-            Assert.True(String.Compare(verifierSddl, resultSddlForm, StringComparison.CurrentCultureIgnoreCase) == 0);
+            Assert.True(string.Compare(verifierSddl, resultSddlForm, StringComparison.CurrentCultureIgnoreCase) == 0);
         }
     }
 }

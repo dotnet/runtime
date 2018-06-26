@@ -558,7 +558,7 @@ namespace System.Xml.Tests
         {
             ReloadSource();
             DataReader.PositionOnElement("EMPTY1");
-            CError.Compare(DataReader[String.Empty], null, "Compare this[String.Empty] with null");
+            CError.Compare(DataReader[string.Empty], null, "Compare this[String.Empty] with null");
             return TEST_PASS;
         }
 
@@ -567,7 +567,7 @@ namespace System.Xml.Tests
         {
             ReloadSource();
             DataReader.PositionOnElement("EMPTY1");
-            CError.Compare(DataReader[String.Empty, String.Empty], null, "Compare GetAttribute(strName) and this[strName]");
+            CError.Compare(DataReader[string.Empty, string.Empty], null, "Compare GetAttribute(strName) and this[strName]");
             return TEST_PASS;
         }
 
@@ -621,8 +621,8 @@ namespace System.Xml.Tests
         {
             ReloadSource();
             DataReader.PositionOnElement("EMPTY1");
-            CError.Compare(DataReader.MoveToAttribute(String.Empty), false, "Compare the call to MoveToAttribute");
-            CError.Compare(DataReader.Value, String.Empty, "Compare MoveToAttribute with String.Empty");
+            CError.Compare(DataReader.MoveToAttribute(string.Empty), false, "Compare the call to MoveToAttribute");
+            CError.Compare(DataReader.Value, string.Empty, "Compare MoveToAttribute with String.Empty");
             return TEST_PASS;
         }
 
@@ -631,8 +631,8 @@ namespace System.Xml.Tests
         {
             ReloadSource();
             DataReader.PositionOnElement("EMPTY1");
-            CError.Compare(DataReader.MoveToAttribute(String.Empty, String.Empty), false, "Compare the call to MoveToAttribute");
-            CError.Compare(DataReader.Value, String.Empty, "Compare MoveToAttribute(strName)");
+            CError.Compare(DataReader.MoveToAttribute(string.Empty, string.Empty), false, "Compare the call to MoveToAttribute");
+            CError.Compare(DataReader.Value, string.Empty, "Compare MoveToAttribute(strName)");
             return TEST_PASS;
         }
     }
@@ -861,7 +861,7 @@ namespace System.Xml.Tests
                 strName = strAttr + (i - 1);
                 if (DataReader.GetAttribute(strName, null) == DataReader[strName, strNamespace])
                 {
-                    if (DataReader[strName, strNamespace] == String.Empty)
+                    if (DataReader[strName, strNamespace] == string.Empty)
                         throw new CTestException(CTestBase.TEST_FAIL, CurVariation.Desc);
                 }
             }
@@ -988,7 +988,7 @@ namespace System.Xml.Tests
         {
             ReloadSource();
             DataReader.PositionOnElement("ACT1");
-            CError.Compare(DataReader.GetAttribute(String.Empty), null, "Compare GetAttribute(strName) and this[strName]");
+            CError.Compare(DataReader.GetAttribute(string.Empty), null, "Compare GetAttribute(strName) and this[strName]");
             return TEST_PASS;
         }
 
@@ -997,7 +997,7 @@ namespace System.Xml.Tests
         {
             ReloadSource();
             DataReader.PositionOnElement("ACT0");
-            CError.Compare(DataReader.GetAttribute(String.Empty, String.Empty), null, "Compare GetAttribute(strName) and this[strName]");
+            CError.Compare(DataReader.GetAttribute(string.Empty, string.Empty), null, "Compare GetAttribute(strName) and this[strName]");
             return TEST_PASS;
         }
     }
@@ -1926,7 +1926,7 @@ namespace System.Xml.Tests
             // Name & Namespace access
             for (int i = s_attrCount - 1; i >= 0; i--)
             {
-                CError.Compare(DataReader.MoveToAttribute(s_attrNames[i], String.Empty), true, "MTA");
+                CError.Compare(DataReader.MoveToAttribute(s_attrNames[i], string.Empty), true, "MTA");
                 CheckAttribute(i);
             }
 
@@ -1978,7 +1978,7 @@ namespace System.Xml.Tests
                 CError.Compare(DataReader.GetAttribute(s_attrNames[i], null), s_attrValues[i], "GA name & namespace");
 
                 // Name & Namespace access
-                CError.Compare(DataReader.GetAttribute(s_attrNames[i], String.Empty), s_attrValues[i], "GA name & namespace");
+                CError.Compare(DataReader.GetAttribute(s_attrNames[i], string.Empty), s_attrValues[i], "GA name & namespace");
             }
 
             // reader on middle attribute
@@ -1996,7 +1996,7 @@ namespace System.Xml.Tests
                 CError.Compare(DataReader.GetAttribute(s_attrNames[i], null), s_attrValues[i], "GA name & namespace");
 
                 // Name & Namespace access
-                CError.Compare(DataReader.GetAttribute(s_attrNames[i], String.Empty), s_attrValues[i], "GA name & namespace");
+                CError.Compare(DataReader.GetAttribute(s_attrNames[i], string.Empty), s_attrValues[i], "GA name & namespace");
             }
 
             return TEST_PASS;
@@ -2061,7 +2061,7 @@ namespace System.Xml.Tests
                 CError.Compare(DataReader[s_attrNames[i], null], s_attrValues[i], "[] name & namespace");
 
                 // Name & Namespace access
-                CError.Compare(DataReader[s_attrNames[i], String.Empty], s_attrValues[i], "[] name & namespace");
+                CError.Compare(DataReader[s_attrNames[i], string.Empty], s_attrValues[i], "[] name & namespace");
             }
 
             // reader on middle attribute
@@ -2079,7 +2079,7 @@ namespace System.Xml.Tests
                 CError.Compare(DataReader[s_attrNames[i], null], s_attrValues[i], "[] name & namespace");
 
                 // Name & Namespace access
-                CError.Compare(DataReader[s_attrNames[i], String.Empty], s_attrValues[i], "[] name & namespace");
+                CError.Compare(DataReader[s_attrNames[i], string.Empty], s_attrValues[i], "[] name & namespace");
             }
 
             return TEST_PASS;
@@ -2134,7 +2134,7 @@ namespace System.Xml.Tests
 
                 // Ordinal access
                 CError.Compare(DataReader.ReadAttributeValue(), true, "RAV");
-                CError.Compare(DataReader.VerifyNode(XmlNodeType.Text, String.Empty, s_attrValues[i]), true, "Attribute");
+                CError.Compare(DataReader.VerifyNode(XmlNodeType.Text, string.Empty, s_attrValues[i]), true, "Attribute");
                 CError.Compare(DataReader.ReadAttributeValue(), false, "RAV");
             }
 
@@ -2156,8 +2156,8 @@ namespace System.Xml.Tests
 
                 // Ordinal access
                 CError.Compare(DataReader.LocalName, s_attrNames[i], "LN");
-                CError.Compare(DataReader.Prefix, String.Empty, "P");
-                CError.Compare(DataReader.NamespaceURI, String.Empty, "NU");
+                CError.Compare(DataReader.Prefix, string.Empty, "P");
+                CError.Compare(DataReader.NamespaceURI, string.Empty, "NU");
             }
 
             return TEST_PASS;
@@ -2214,7 +2214,7 @@ namespace System.Xml.Tests
 
             CError.Compare(DataReader.LocalName, "xmlns", "ln");
             CError.Compare(DataReader.Name, "xmlns", "n");
-            CError.Compare(DataReader.Prefix, String.Empty, "p");
+            CError.Compare(DataReader.Prefix, string.Empty, "p");
             CError.Compare(DataReader.Value, "14", "v");
 
             return TEST_PASS;
@@ -2261,7 +2261,7 @@ namespace System.Xml.Tests
 
             CError.Compare(DataReader.LocalName, "xmlns", "ln");
             CError.Compare(DataReader.Name, "xmlns", "n");
-            CError.Compare(DataReader.Prefix, String.Empty, "p");
+            CError.Compare(DataReader.Prefix, string.Empty, "p");
             CError.Compare(DataReader.Value, "14", "v");
 
             DataReader.MoveToElement();
@@ -2269,7 +2269,7 @@ namespace System.Xml.Tests
 
             CError.Compare(DataReader.LocalName, "xmlns", "ln");
             CError.Compare(DataReader.Name, "xmlns", "n");
-            CError.Compare(DataReader.Prefix, String.Empty, "p");
+            CError.Compare(DataReader.Prefix, string.Empty, "p");
             CError.Compare(DataReader.Value, "14", "v");
 
             DataReader.MoveToElement();
@@ -2277,7 +2277,7 @@ namespace System.Xml.Tests
 
             CError.Compare(DataReader.LocalName, "xmlns", "ln");
             CError.Compare(DataReader.Name, "xmlns", "n");
-            CError.Compare(DataReader.Prefix, String.Empty, "p");
+            CError.Compare(DataReader.Prefix, string.Empty, "p");
             CError.Compare(DataReader.Value, "14", "v");
 
             DataReader.MoveToElement();
@@ -2352,7 +2352,7 @@ namespace System.Xml.Tests
             CError.Compare(DataReader.NamespaceURI, "14", "nue");
 
             DataReader.MoveToAttribute("Attr0");
-            CError.Compare(DataReader.NamespaceURI, String.Empty, "nu");
+            CError.Compare(DataReader.NamespaceURI, string.Empty, "nu");
 
             DataReader.MoveToAttribute("xmlns");
             CError.Compare(DataReader.NamespaceURI, _strXmlns, "nu");

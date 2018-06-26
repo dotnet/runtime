@@ -221,13 +221,13 @@ namespace System.Tests
                         (byte)102,
                         (sbyte)-101,
                         (short)-103,
-                        (UInt16)104,
+                        (ushort)104,
                         (int)-105,
-                        (UInt32)106,
+                        (uint)106,
                         (long)-107,
-                        (UInt64)108,
-                        (Single)109.1,
-                        (Double)111.12
+                        (ulong)108,
+                        (float)109.1,
+                        (double)111.12
                     }
                     ));
         }
@@ -246,13 +246,13 @@ namespace System.Tests
                         Type.Missing,
                         (sbyte)-101,
                         Type.Missing,
-                        (UInt16)104,
+                        (ushort)104,
                         Type.Missing,
-                        (UInt32)106,
+                        (uint)106,
                         Type.Missing,
-                        (UInt64)108,
+                        (ulong)108,
                         Type.Missing,
-                        (Double)111.12
+                        (double)111.12
                     }
                     ));
         }
@@ -485,14 +485,14 @@ namespace System.Tests
             char character = 'c',
             byte unsignedbyte = 2,
             sbyte signedbyte = -1,
-            Int16 int16 = -3,
-            UInt16 uint16 = 4,
-            Int32 int32 = -5,
-            UInt32 uint32 = 6,
-            Int64 int64 = -7,
-            UInt64 uint64 = 8,
-            Single single = (Single)9.1,
-            Double dbl = 11.12);
+            short int16 = -3,
+            ushort uint16 = 4,
+            int int32 = -5,
+            uint uint32 = 6,
+            long int64 = -7,
+            ulong uint64 = 8,
+            float single = (float)9.1,
+            double dbl = 11.12);
 
         private static string AllPrimitivesMethod(
             bool boolean,
@@ -500,14 +500,14 @@ namespace System.Tests
             char character,
             byte unsignedbyte,
             sbyte signedbyte,
-            Int16 int16,
-            UInt16 uint16,
-            Int32 int32,
-            UInt32 uint32,
-            Int64 int64,
-            UInt64 uint64,
-            Single single,
-            Double dbl)
+            short int16,
+            ushort uint16,
+            int int32,
+            uint uint32,
+            long int64,
+            ulong uint64,
+            float single,
+            double dbl)
         {
             return FormattableString.Invariant($"{boolean}, {str}, {character}, {unsignedbyte}, {signedbyte}, {int16}, {uint16}, {int32}, {uint32}, {int64}, {uint64}, {single}, {dbl}");
         }

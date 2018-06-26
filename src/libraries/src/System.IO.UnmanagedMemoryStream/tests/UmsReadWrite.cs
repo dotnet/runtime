@@ -30,7 +30,7 @@ namespace System.IO.Tests
                 Assert.Throws<ArgumentNullException>(() => stream.WriteAsync(null, 0, 7).GetAwaiter().GetResult());
 
                 //case#4: call Read with start<0, ArgumentOutOfRangeException should be thrown.
-                Assert.Throws<ArgumentOutOfRangeException>(() => stream.Read(new byte[] { }, SByte.MinValue, 9));
+                Assert.Throws<ArgumentOutOfRangeException>(() => stream.Read(new byte[] { }, sbyte.MinValue, 9));
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.ReadAsync(new byte[] { }, SByte.MinValue, 9).GetAwaiter().GetResult());
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Write(new byte[] { }, -1, 6));
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.WriteAsync(new byte[] { }, -1, 6).GetAwaiter().GetResult());

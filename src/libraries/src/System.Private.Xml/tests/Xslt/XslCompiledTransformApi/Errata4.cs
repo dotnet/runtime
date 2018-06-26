@@ -224,7 +224,7 @@ namespace System.Xml.Tests
 
                     try
                     {
-                        using (XmlReader r = XmlReader.Create(new StringReader(String.Format(createElementsXsltInline, name)))) transf.Load(r);
+                        using (XmlReader r = XmlReader.Create(new StringReader(string.Format(createElementsXsltInline, name)))) transf.Load(r);
                         Assert.True(isValidChar);
                     }
                     catch (Exception)

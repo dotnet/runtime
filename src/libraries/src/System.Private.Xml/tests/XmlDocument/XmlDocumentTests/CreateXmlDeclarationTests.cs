@@ -76,7 +76,7 @@ namespace System.Xml.Tests
 
             var decl = xmlDocument.CreateXmlDeclaration("1.0", null, "yes");
 
-            Assert.Equal(decl.Encoding, String.Empty);
+            Assert.Equal(decl.Encoding, string.Empty);
         }
     }
 }

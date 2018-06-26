@@ -12,11 +12,11 @@ namespace System.Xml.Tests
         public static void CreateCDataTest1()
         {
             var xmlDocument = new XmlDocument();
-            var cdata = xmlDocument.CreateCDataSection(String.Empty);
+            var cdata = xmlDocument.CreateCDataSection(string.Empty);
 
             Assert.Equal("<![CDATA[]]>", cdata.OuterXml);
-            Assert.Equal(String.Empty, cdata.InnerXml);
-            Assert.Equal(String.Empty, cdata.InnerText);
+            Assert.Equal(string.Empty, cdata.InnerXml);
+            Assert.Equal(string.Empty, cdata.InnerText);
             Assert.Equal(XmlNodeType.CDATA, cdata.NodeType);
         }
 
@@ -27,7 +27,7 @@ namespace System.Xml.Tests
             var cdata = xmlDocument.CreateCDataSection("test data");
 
             Assert.Equal("<![CDATA[test data]]>", cdata.OuterXml);
-            Assert.Equal(String.Empty, cdata.InnerXml);
+            Assert.Equal(string.Empty, cdata.InnerXml);
             Assert.Equal("test data", cdata.InnerText);
             Assert.Equal(XmlNodeType.CDATA, cdata.NodeType);
         }
@@ -39,7 +39,7 @@ namespace System.Xml.Tests
             var cdata = xmlDocument.CreateCDataSection("]]>");
 
             AssertExtensions.Throws<ArgumentException>(null, () => { var test = cdata.OuterXml; });
-            Assert.Equal(String.Empty, cdata.InnerXml);
+            Assert.Equal(string.Empty, cdata.InnerXml);
             Assert.Equal("]]>", cdata.InnerText);
             Assert.Equal(XmlNodeType.CDATA, cdata.NodeType);
         }
@@ -51,7 +51,7 @@ namespace System.Xml.Tests
             var cdata = xmlDocument.CreateCDataSection("=\"&<> : ;; @#$%^&*()\"~\"' ");
 
             Assert.Equal("<![CDATA[=\"&<> : ;; @#$%^&*()\"~\"' ]]>", cdata.OuterXml);
-            Assert.Equal(String.Empty, cdata.InnerXml);
+            Assert.Equal(string.Empty, cdata.InnerXml);
             Assert.Equal("=\"&<> : ;; @#$%^&*()\"~\"' ", cdata.InnerText);
             Assert.Equal(XmlNodeType.CDATA, cdata.NodeType);
         }
@@ -64,7 +64,7 @@ namespace System.Xml.Tests
             var cdata = xmlDocument.CreateCDataSection(text);
 
             Assert.Equal("<![CDATA[" + text + "]]>", cdata.OuterXml);
-            Assert.Equal(String.Empty, cdata.InnerXml);
+            Assert.Equal(string.Empty, cdata.InnerXml);
             Assert.Equal(text, cdata.InnerText);
             Assert.Equal(XmlNodeType.CDATA, cdata.NodeType);
         }

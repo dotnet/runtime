@@ -288,7 +288,7 @@ namespace CoreXml.Test.XLinq
                     {
                         DataReader.ReadContentAsBinHex(BinHex, i, 2);
                         strActbinhex = (System.BitConverter.ToChar(BinHex, i)).ToString();
-                        TestLog.Compare(String.Compare(strActbinhex, 0, strTextBinHex, i / 2, 1), 0, "Compare All Valid Base64");
+                        TestLog.Compare(string.Compare(strActbinhex, 0, strTextBinHex, i / 2, 1), 0, "Compare All Valid Base64");
                     }
                 }
 
@@ -351,7 +351,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(nRead, 8, "0");
 
                     DataReader.Read();
-                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Element, "ElemText", String.Empty), "1vn");
+                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Element, "ElemText", string.Empty), "1vn");
                 }
 
                 //[Variation("Current node on multiple calls")]
@@ -370,7 +370,7 @@ namespace CoreXml.Test.XLinq
 
                     nRead = DataReader.ReadContentAsBinHex(buffer, 0, 19);
                     TestLog.Compare(nRead, 18, "1");
-                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.EndElement, "ElemNum", String.Empty), "1vn");
+                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.EndElement, "ElemNum", string.Empty), "1vn");
                 }
 
                 //[Variation("ReadBinHex with whitespace")]
@@ -735,7 +735,7 @@ namespace CoreXml.Test.XLinq
                     {
                         DataReader.ReadElementContentAsBinHex(BinHex, i, 2);
                         strActbinhex = (System.BitConverter.ToChar(BinHex, i)).ToString();
-                        TestLog.Compare(String.Compare(strActbinhex, 0, strTextBinHex, i / 2, 1), 0, "Compare All Valid Base64");
+                        TestLog.Compare(string.Compare(strActbinhex, 0, strTextBinHex, i / 2, 1), 0, "Compare All Valid Base64");
                     }
                 }
 

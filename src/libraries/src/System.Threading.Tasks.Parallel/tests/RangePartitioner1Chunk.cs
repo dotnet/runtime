@@ -406,7 +406,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        Object System.Collections.IEnumerator.Current
+        object System.Collections.IEnumerator.Current
         {
             get
             {

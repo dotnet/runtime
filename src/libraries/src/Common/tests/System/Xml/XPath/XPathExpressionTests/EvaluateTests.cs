@@ -102,7 +102,7 @@ namespace XPathTests.XPathExpressionTests
         [Fact]
         public static void Variation_5()
         {
-            EvaluateTestsErrors(String.Empty, "Xp_NodeSetExpected");
+            EvaluateTestsErrors(string.Empty, "Xp_NodeSetExpected");
         }
 
         /// <summary>
@@ -195,7 +195,7 @@ namespace XPathTests.XPathExpressionTests
             var navigator = Utils.CreateNavigator(xml);
 
             navigator.Select("/DocumentElement/child::*");
-            Assert.Throws<XPathException>(() => navigator.Select(String.Empty));
+            Assert.Throws<XPathException>(() => navigator.Select(string.Empty));
         }
     }
 

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -31,7 +31,7 @@ namespace System.PrivateUri.Tests
             string authority = "//username:password@hostname:8080/p1/p2/p3/p4/file1?AQuery#TheFragment";
             Uri resolved = new Uri(_fullBaseUri, authority);
 
-            String expectedResult = _fullBaseUri.Scheme + ":" + authority;
+            string expectedResult = _fullBaseUri.Scheme + ":" + authority;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -41,7 +41,7 @@ namespace System.PrivateUri.Tests
             string fullPath = "/p1/p2/p3/p4/file1?AQuery#TheFragment";
             Uri resolved = new Uri(_fullBaseUri, fullPath);
 
-            String expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + fullPath;
+            string expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + fullPath;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -51,7 +51,7 @@ namespace System.PrivateUri.Tests
             string queryAndFragment = "?AQuery#TheFragment";
             Uri resolved = new Uri(_fullBaseUri, queryAndFragment);
 
-            String expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Path) + queryAndFragment;
+            string expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Path) + queryAndFragment;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -61,7 +61,7 @@ namespace System.PrivateUri.Tests
             string query = "?AQuery";
             Uri resolved = new Uri(_fullBaseUri, query);
 
-            String expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Path) + query;
+            string expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Path) + query;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -71,7 +71,7 @@ namespace System.PrivateUri.Tests
             string fragment = "#TheFragment";
             Uri resolved = new Uri(_fullBaseUri, fragment);
 
-            String expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Query) + fragment;
+            string expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Query) + fragment;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -83,8 +83,8 @@ namespace System.PrivateUri.Tests
             string partialPath = "p1/p2/p3/p4/file1?AQuery#TheFragment";
             Uri resolved = new Uri(_fullBaseUri, partialPath);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -94,8 +94,8 @@ namespace System.PrivateUri.Tests
             string partialPath = "p1";
             Uri resolved = new Uri(_fullBaseUri, partialPath);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -105,8 +105,8 @@ namespace System.PrivateUri.Tests
             string partialPath = "p1/";
             Uri resolved = new Uri(_fullBaseUri, partialPath);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -125,7 +125,7 @@ namespace System.PrivateUri.Tests
             string partialPath = "scheme:p1";
             Uri resolved = new Uri(_fullBaseUri, partialPath);
 
-            String expectedResult = partialPath;
+            string expectedResult = partialPath;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -135,7 +135,7 @@ namespace System.PrivateUri.Tests
             string basicUri = "gd:a";
             Uri resolved = new Uri(_fullBaseUri, basicUri);
 
-            String expectedResult = basicUri;
+            string expectedResult = basicUri;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -158,8 +158,8 @@ namespace System.PrivateUri.Tests
             string partialPath = "p1/p2/p3/p4/file1?AQuery#TheFragment";
             Uri resolved = new Uri(_fullBaseUri, compressable + partialPath);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -170,9 +170,9 @@ namespace System.PrivateUri.Tests
             string partialPath = "p1/p2/p3/p4/file1?AQuery#TheFragment";
             Uri resolved = new Uri(_fullBaseUri, compressable + partialPath);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
             baseUri = baseUri.Substring(0, baseUri.LastIndexOf("/"));
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -183,10 +183,10 @@ namespace System.PrivateUri.Tests
             string partialPath = "p1/p2/p3/p4/file1?AQuery#TheFragment";
             Uri resolved = new Uri(_fullBaseUri, compressable + partialPath);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
             baseUri = baseUri.Substring(0, baseUri.LastIndexOf("/"));
             baseUri = baseUri.Substring(0, baseUri.LastIndexOf("/"));
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -197,8 +197,8 @@ namespace System.PrivateUri.Tests
             string partialPath = "p1/p2/p3/p4/file1?AQuery#TheFragment";
             Uri resolved = new Uri(_fullBaseUri, compressable + partialPath);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Authority);
-            String expectedResult = baseUri + "/" + partialPath;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Authority);
+            string expectedResult = baseUri + "/" + partialPath;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -209,8 +209,8 @@ namespace System.PrivateUri.Tests
             string partialPath = "p1/p2/p3/p4/file1?AQuery#TheFragment";
             Uri resolved = new Uri(_fullBaseUri, compressable + partialPath);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Authority);
-            String expectedResult = baseUri + "/" + partialPath;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Authority);
+            string expectedResult = baseUri + "/" + partialPath;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -221,8 +221,8 @@ namespace System.PrivateUri.Tests
             string partialPath = "p1/p2/p3/p4/";
             Uri resolved = new Uri(_fullBaseUri, partialPath + compressable);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -233,8 +233,8 @@ namespace System.PrivateUri.Tests
             string partialPath = "p1/p2/p3/p4/";
             Uri resolved = new Uri(_fullBaseUri, partialPath + compressable);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + partialPath;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -244,8 +244,8 @@ namespace System.PrivateUri.Tests
             string compressable = ".";
             Uri resolved = new Uri(_fullBaseUri, compressable);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1);
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1);
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -255,7 +255,7 @@ namespace System.PrivateUri.Tests
             string compressable = "/.";
             Uri resolved = new Uri(_fullBaseUri, compressable);
 
-            String expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + "/";
+            string expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + "/";
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -265,7 +265,7 @@ namespace System.PrivateUri.Tests
             string compressable = "/./file";
             Uri resolved = new Uri(_fullBaseUri, compressable);
 
-            String expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + "/file";
+            string expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + "/file";
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -275,7 +275,7 @@ namespace System.PrivateUri.Tests
             string compressable = "/../file";
             Uri resolved = new Uri(_fullBaseUri, compressable);
 
-            String expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + "/file";
+            string expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + "/file";
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -285,8 +285,8 @@ namespace System.PrivateUri.Tests
             string nonCompressable = "f.";
             Uri resolved = new Uri(_fullBaseUri, nonCompressable);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -296,8 +296,8 @@ namespace System.PrivateUri.Tests
             string nonCompressable = ".f";
             Uri resolved = new Uri(_fullBaseUri, nonCompressable);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -307,8 +307,8 @@ namespace System.PrivateUri.Tests
             string nonCompressable = "f..";
             Uri resolved = new Uri(_fullBaseUri, nonCompressable);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -318,8 +318,8 @@ namespace System.PrivateUri.Tests
             string nonCompressable = "..f";
             Uri resolved = new Uri(_fullBaseUri, nonCompressable);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -329,8 +329,8 @@ namespace System.PrivateUri.Tests
             string nonCompressable = "...";
             Uri resolved = new Uri(_fullBaseUri, nonCompressable);
 
-            String baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
-            String expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
+            string baseUri = _fullBaseUri.GetLeftPart(UriPartial.Path);
+            string expectedResult = baseUri.Substring(0, baseUri.LastIndexOf("/") + 1) + nonCompressable;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -340,7 +340,7 @@ namespace System.PrivateUri.Tests
             string nonCompressable = "/f./";
             Uri resolved = new Uri(_fullBaseUri, nonCompressable);
 
-            String expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + nonCompressable;
+            string expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + nonCompressable;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -350,7 +350,7 @@ namespace System.PrivateUri.Tests
             string nonCompressable = "/.f/";
             Uri resolved = new Uri(_fullBaseUri, nonCompressable);
 
-            String expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + nonCompressable;
+            string expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + nonCompressable;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -360,7 +360,7 @@ namespace System.PrivateUri.Tests
             string nonCompressable = "/f../";
             Uri resolved = new Uri(_fullBaseUri, nonCompressable);
 
-            String expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + nonCompressable;
+            string expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + nonCompressable;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -370,7 +370,7 @@ namespace System.PrivateUri.Tests
             string nonCompressable = "/..f/";
             Uri resolved = new Uri(_fullBaseUri, nonCompressable);
 
-            String expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + nonCompressable;
+            string expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + nonCompressable;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -380,7 +380,7 @@ namespace System.PrivateUri.Tests
             string nonCompressable = "/.../";
             Uri resolved = new Uri(_fullBaseUri, nonCompressable);
 
-            String expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + nonCompressable;
+            string expectedResult = _fullBaseUri.GetLeftPart(UriPartial.Authority) + nonCompressable;
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
@@ -394,7 +394,7 @@ namespace System.PrivateUri.Tests
             Uri compareUri = new Uri("http://user:psw@host:9090/path1/path2/path3/fileA?AQuery#AFragment");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
 
-            String expectedResult = "?AQuery#AFragment"; // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment,UriFormat.Unescaped);
+            string expectedResult = "?AQuery#AFragment"; // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment,UriFormat.Unescaped);
             Assert.Equal(expectedResult, relative.ToString());
         }
 
@@ -406,7 +406,7 @@ namespace System.PrivateUri.Tests
             Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
 
 
-            String expectedResult = "./" + "?AQuery#AFragment"; // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
+            string expectedResult = "./" + "?AQuery#AFragment"; // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
             Assert.Equal(expectedResult, relative.ToString());
             Assert.Equal(compareUri, reassembled);
         }
@@ -418,7 +418,7 @@ namespace System.PrivateUri.Tests
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
             Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
 
-            String expectedResult = "./";
+            string expectedResult = "./";
             Assert.Equal(expectedResult, relative.ToString());
             Assert.Equal(compareUri, reassembled);
         }
@@ -430,7 +430,7 @@ namespace System.PrivateUri.Tests
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
             Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
 
-            String expectedResult = "Path4/fileb" + "?AQuery#AFragment"; // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
+            string expectedResult = "Path4/fileb" + "?AQuery#AFragment"; // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
             Assert.Equal(expectedResult, relative.ToString());
             Assert.Equal(compareUri, reassembled);
         }
@@ -442,7 +442,7 @@ namespace System.PrivateUri.Tests
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
             Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
 
-            String expectedResult = "../" + "?AQuery#AFragment";  // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
+            string expectedResult = "../" + "?AQuery#AFragment";  // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
             Assert.Equal(expectedResult, relative.ToString());
             Assert.Equal(compareUri, reassembled);
         }
@@ -454,7 +454,7 @@ namespace System.PrivateUri.Tests
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
             Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
 
-            String expectedResult = "../../" + "?AQuery#AFragment";  // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
+            string expectedResult = "../../" + "?AQuery#AFragment";  // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
             Assert.Equal(expectedResult, relative.ToString());
             Assert.Equal(compareUri, reassembled);
         }
@@ -466,7 +466,7 @@ namespace System.PrivateUri.Tests
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
             Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
 
-            String expectedResult = "../../../" + "?AQuery#AFragment";  // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
+            string expectedResult = "../../../" + "?AQuery#AFragment";  // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
             Assert.Equal(expectedResult, relative.ToString());
             Assert.Equal(compareUri, reassembled);
         }

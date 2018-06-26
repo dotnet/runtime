@@ -46,7 +46,7 @@ namespace System.Xml.Tests
     ////////////////////////////////////////////////////////////////
     public class CDataReader
     {
-        private const String ST_XML = "xml";
+        private const string ST_XML = "xml";
 
         public const int STATUS_PASSED = 1;
         public const int STATUS_FAILED = 0;
@@ -370,7 +370,7 @@ namespace System.Xml.Tests
             return x;
         }
 
-        public bool IsStartElement(String name)
+        public bool IsStartElement(string name)
         {
             ResetWrappingReader();
             bool x = Internal.IsStartElement(name);
@@ -378,7 +378,7 @@ namespace System.Xml.Tests
             return x;
         }
 
-        public bool IsStartElement(String name, String ns)
+        public bool IsStartElement(string name, string ns)
         {
             ResetWrappingReader();
             bool x = Internal.IsStartElement(name, ns);
@@ -393,14 +393,14 @@ namespace System.Xml.Tests
             CheckWrappingReader();
         }
 
-        public void ReadStartElement(String name)
+        public void ReadStartElement(string name)
         {
             ResetWrappingReader();
             Internal.ReadStartElement(name);
             CheckWrappingReader();
         }
 
-        public void ReadStartElement(String name, String ns)
+        public void ReadStartElement(string name, string ns)
         {
             ResetWrappingReader();
             Internal.ReadStartElement(name, ns);
@@ -425,7 +425,7 @@ namespace System.Xml.Tests
             }
         }
 
-        public string LookupNamespace(String prefix)
+        public string LookupNamespace(string prefix)
         {
             ResetWrappingReader();
             string s = Internal.LookupNamespace(prefix);
@@ -523,7 +523,7 @@ namespace System.Xml.Tests
             return x;
         }
 
-        public virtual Boolean ReadElementContentAsBoolean()
+        public virtual bool ReadElementContentAsBoolean()
         {
             ResetWrappingReader();
             bool x = Internal.ReadElementContentAsBoolean();
@@ -531,7 +531,7 @@ namespace System.Xml.Tests
             return x;
         }
 
-        public virtual Double ReadElementContentAsDouble()
+        public virtual double ReadElementContentAsDouble()
         {
             ResetWrappingReader();
             double x = Internal.ReadElementContentAsDouble();
@@ -571,7 +571,7 @@ namespace System.Xml.Tests
             return x;
         }
 
-        public virtual String ReadElementContentAsString()
+        public virtual string ReadElementContentAsString()
         {
             ResetWrappingReader();
             string x = Internal.ReadElementContentAsString();
@@ -604,7 +604,7 @@ namespace System.Xml.Tests
             return x;
         }
 
-        public virtual Boolean ReadElementContentAsBoolean(string localName, string namespaceUri)
+        public virtual bool ReadElementContentAsBoolean(string localName, string namespaceUri)
         {
             ResetWrappingReader();
             bool x = Internal.ReadElementContentAsBoolean(localName, namespaceUri);
@@ -612,7 +612,7 @@ namespace System.Xml.Tests
             return x;
         }
 
-        public virtual Double ReadElementContentAsDouble(string localName, string namespaceUri)
+        public virtual double ReadElementContentAsDouble(string localName, string namespaceUri)
         {
             ResetWrappingReader();
             double x = Internal.ReadElementContentAsDouble(localName, namespaceUri);
@@ -652,7 +652,7 @@ namespace System.Xml.Tests
             return x;
         }
 
-        public virtual String ReadElementContentAsString(string localName, string namespaceUri)
+        public virtual string ReadElementContentAsString(string localName, string namespaceUri)
         {
             ResetWrappingReader();
             string x = Internal.ReadElementContentAsString(localName, namespaceUri);
@@ -670,7 +670,7 @@ namespace System.Xml.Tests
             return x;
         }
 
-        public virtual Boolean ReadContentAsBoolean()
+        public virtual bool ReadContentAsBoolean()
         {
             ResetWrappingReader();
             bool x = Internal.ReadContentAsBoolean();
@@ -686,10 +686,10 @@ namespace System.Xml.Tests
             return x;
         }
 
-        public virtual Double ReadContentAsDouble()
+        public virtual double ReadContentAsDouble()
         {
             ResetWrappingReader();
-            Double x = Internal.ReadContentAsDouble();
+            double x = Internal.ReadContentAsDouble();
             CheckWrappingReader();
             return x;
         }
@@ -710,7 +710,7 @@ namespace System.Xml.Tests
             return x;
         }
 
-        public virtual String ReadContentAsString()
+        public virtual string ReadContentAsString()
         {
             ResetWrappingReader();
             string x = Internal.ReadContentAsString();
@@ -911,9 +911,9 @@ namespace System.Xml.Tests
             CError.WriteLine();
         }
 
-        private void DumpChars(String strActValue)
+        private void DumpChars(string strActValue)
         {
-            Byte c;
+            byte c;
             int i;
 
             for (i = 0; i < strActValue.Length; i++)
@@ -938,7 +938,7 @@ namespace System.Xml.Tests
 
                 if (NodeType == XmlNodeType.ProcessingInstruction && NodeType == XmlNodeType.XmlDeclaration)
                 {
-                    if (String.Compare(Name, 0, ST_XML, 0, 3) != 0)
+                    if (string.Compare(Name, 0, ST_XML, 0, 3) != 0)
                         return STATUS_PASSED;
                 }
 
@@ -961,7 +961,7 @@ namespace System.Xml.Tests
         ///////////////////////////////////////
         // PositionOnElement
         ///////////////////////////////////////
-        public void PositionOnElement(String strElementName)
+        public void PositionOnElement(string strElementName)
         {
             CError.WriteLine("Seeking Element : " + strElementName);
 
@@ -999,7 +999,7 @@ namespace System.Xml.Tests
                 }
                 if (nodeType == XmlNodeType.ProcessingInstruction && NodeType == XmlNodeType.XmlDeclaration)
                 {
-                    if (String.Compare(Name, 0, ST_XML, 0, 3) != 0)
+                    if (string.Compare(Name, 0, ST_XML, 0, 3) != 0)
                         return;
                 }
                 if (NodeType == XmlNodeType.Element && nodeType == XmlNodeType.Attribute)
@@ -1019,7 +1019,7 @@ namespace System.Xml.Tests
         ///////////////////////
         // VerifyNode
         ///////////////////////
-        public bool VerifyNode(XmlNodeType eExpNodeType, String strExpName, String strExpValue)
+        public bool VerifyNode(XmlNodeType eExpNodeType, string strExpName, string strExpValue)
         {
             bool bPassed = true;
 
@@ -1058,7 +1058,7 @@ namespace System.Xml.Tests
         ///////////////////////
         // CompareNode
         ///////////////////////
-        public void CompareNode(XmlNodeType eExpNodeType, String strExpName, String strExpValue)
+        public void CompareNode(XmlNodeType eExpNodeType, string strExpName, string strExpValue)
         {
             bool bNode = VerifyNode(eExpNodeType, strExpName, strExpValue);
             CError.Compare(bNode, "VerifyNode failed");

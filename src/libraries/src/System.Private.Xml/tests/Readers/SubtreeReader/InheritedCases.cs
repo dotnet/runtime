@@ -14,7 +14,7 @@ namespace System.Xml.Tests
         public override int Init(object objParam)
         {
             int ret = base.Init(objParam);
-            string strFile = String.Empty;
+            string strFile = string.Empty;
 
             TestFiles.CreateTestFile(ref strFile, EREADER_TYPE.GENERIC);
             TestFiles.CreateTestFile(ref strFile, EREADER_TYPE.XSLT_COPY);

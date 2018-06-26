@@ -445,7 +445,7 @@ namespace System.Runtime.InteropServices
         [Fact]
         public static void StringToCoTaskMemAuto()
         {
-            String s = null;
+            string s = null;
 
             // passing null string should return 0
             Assert.Equal(0, (long)Marshal.StringToCoTaskMemAuto(s));        
@@ -461,7 +461,7 @@ namespace System.Runtime.InteropServices
             }
 
             // make sure if we convert back to string we get the same value
-            String s2 = Marshal.PtrToStringAuto(ptr);
+            string s2 = Marshal.PtrToStringAuto(ptr);
             Assert.Equal(s, s2);
 
             // free the native memory
@@ -471,7 +471,7 @@ namespace System.Runtime.InteropServices
         [Fact]
         public static void StringToHGlobalAuto()
         {
-            String s = null;
+            string s = null;
 
             // passing null string should return 0
             Assert.Equal(0, (long)Marshal.StringToHGlobalAuto(s));        
@@ -487,7 +487,7 @@ namespace System.Runtime.InteropServices
             }
             
             // make sure if we convert back to string we get the same value
-            String s2 = Marshal.PtrToStringAuto(ptr);
+            string s2 = Marshal.PtrToStringAuto(ptr);
             Assert.Equal(s, s2);
 
             // free the native memory

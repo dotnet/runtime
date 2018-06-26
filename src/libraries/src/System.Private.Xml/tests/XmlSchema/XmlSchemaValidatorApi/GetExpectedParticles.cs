@@ -23,7 +23,7 @@ namespace System.Xml.Tests
         [InlineData("ctor")]
         [InlineData("init")]
         [InlineData("end")]
-        public void CallAfter_Constructor_Initialize_EndValidation(String after)
+        public void CallAfter_Constructor_Initialize_EndValidation(string after)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
 
@@ -48,7 +48,7 @@ namespace System.Xml.Tests
         [InlineData("elem")]
         [InlineData("attrib")]
         [InlineData("endof")]
-        public void CallAfterValidate_Element_Attribute_EndOfAttributes_ForSequence(String after)
+        public void CallAfterValidate_Element_Attribute_EndOfAttributes_ForSequence(string after)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -74,7 +74,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("inside")]
         [InlineData("end")]
-        public void CallForSequence_Between_After_ValidationAllSeqElements(String callOn)
+        public void CallForSequence_Between_After_ValidationAllSeqElements(string callOn)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -111,7 +111,7 @@ namespace System.Xml.Tests
         [InlineData("elem")]
         [InlineData("attrib")]
         [InlineData("endof")]
-        public void CallAfterValidate_Element_Attribute_EndOfAttributes_ForChoice(String after)
+        public void CallAfterValidate_Element_Attribute_EndOfAttributes_ForChoice(string after)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -137,7 +137,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("elem1")]
         [InlineData("elem2")]
-        public void CallForChoiceAfterValidating_1_2_ChoiceElement(String elemAfter)
+        public void CallForChoiceAfterValidating_1_2_ChoiceElement(string elemAfter)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -162,7 +162,7 @@ namespace System.Xml.Tests
         [InlineData("elem")]
         [InlineData("attrib")]
         [InlineData("endof")]
-        public void CallAfterValidate_Element_Attribute_EndOfAttributes_ForAll(String after)
+        public void CallAfterValidate_Element_Attribute_EndOfAttributes_ForAll(string after)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -293,7 +293,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
-        public void CallForSequence_Before_After_ValidatingWildcard(String callOrder)
+        public void CallForSequence_Before_After_ValidatingWildcard(string callOrder)
         {
             XmlSchemaValidator val;
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -330,7 +330,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
-        public void CallForChoice_Before_After_ValidatingWildcard(String callOrder)
+        public void CallForChoice_Before_After_ValidatingWildcard(string callOrder)
         {
             XmlSchemaValidator val;
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -383,7 +383,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
-        public void CallForSequenceWithChoiceGroup_Before_After_ValidatingGroupMembers(String callOrder)
+        public void CallForSequenceWithChoiceGroup_Before_After_ValidatingGroupMembers(string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -413,7 +413,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
-        public void CallForChoiceWithSequenceGroup_Before_After_ValidatingGroupMembers(String callOrder)
+        public void CallForChoiceWithSequenceGroup_Before_After_ValidatingGroupMembers(string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -443,7 +443,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
-        public void CallForExtendedSequence_Before_After_ValidatingSeqOrAllBaseElements(String callOrder)
+        public void CallForExtendedSequence_Before_After_ValidatingSeqOrAllBaseElements(string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -476,7 +476,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("before")]
         [InlineData("after")]
-        public void CallForExtendedChoice_Before_After_ValidatingBaseChoiceElement(String callOrder)
+        public void CallForExtendedChoice_Before_After_ValidatingBaseChoiceElement(string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
             XmlSchemaInfo info = new XmlSchemaInfo();
@@ -511,7 +511,7 @@ namespace System.Xml.Tests
         [InlineData("Choice", "after" )]
         [InlineData("All", "before")]
         [InlineData("All", "after")]
-        public void CallForRestricted_Sequence_Choice_All__Before_After_ValidatingSeqElements(String restrType, String callOrder)
+        public void CallForRestricted_Sequence_Choice_All__Before_After_ValidatingSeqElements(string restrType, string callOrder)
         {
             XmlSchemaValidator val = CreateValidator(XSDFILE_GET_EXPECTED_PARTICLES);
             XmlSchemaInfo info = new XmlSchemaInfo();

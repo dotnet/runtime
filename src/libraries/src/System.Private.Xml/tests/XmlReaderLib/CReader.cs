@@ -64,7 +64,7 @@ namespace System.Xml.Tests
 
 
         public override XmlNodeType NodeType { get { this.IsCalled = true; return _wrappedreader.NodeType; } }
-        public override String Name { get { this.IsCalled = true; return _wrappedreader.Name; } }
+        public override string Name { get { this.IsCalled = true; return _wrappedreader.Name; } }
         public override string LocalName { get { this.IsCalled = true; return _wrappedreader.LocalName; } }
         public override string NamespaceURI { get { this.IsCalled = true; return _wrappedreader.NamespaceURI; } }
         public override string Prefix { get { this.IsCalled = true; return _wrappedreader.Prefix; } }
@@ -91,10 +91,10 @@ namespace System.Xml.Tests
         public override object ReadContentAs(System.Type returnType, IXmlNamespaceResolver namespaceResolver)
         { this.IsCalled = true; return _wrappedreader.ReadContentAs(returnType, namespaceResolver); }
 
-        public override System.Object ReadElementContentAsObject()
+        public override object ReadElementContentAsObject()
         { this.IsCalled = true; return _wrappedreader.ReadElementContentAsObject(); }
 
-        public override System.Object ReadElementContentAsObject(string localName, string namespaceURI)
+        public override object ReadElementContentAsObject(string localName, string namespaceURI)
         { this.IsCalled = true; return _wrappedreader.ReadElementContentAsObject(localName, NamespaceURI); }
         public override bool ReadElementContentAsBoolean()
         { this.IsCalled = true; return _wrappedreader.ReadElementContentAsBoolean(); }
@@ -130,7 +130,7 @@ namespace System.Xml.Tests
         { this.IsCalled = true; return _wrappedreader.ReadElementContentAs(returnType, namespaceResolver, localName, namespaceURI); }
 
         public override bool CanReadValueChunk { get { this.IsCalled = true; return _wrappedreader.CanReadValueChunk; } }
-        public override int ReadValueChunk(Char[] buffer, int startIndex, int count)
+        public override int ReadValueChunk(char[] buffer, int startIndex, int count)
         { this.IsCalled = true; return _wrappedreader.ReadValueChunk(buffer, startIndex, count); }
 
         public override bool CanReadBinaryContent { get { this.IsCalled = true; return _wrappedreader.CanReadBinaryContent; } }

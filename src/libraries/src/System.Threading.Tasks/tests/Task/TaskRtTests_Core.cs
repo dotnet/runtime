@@ -1343,17 +1343,17 @@ namespace System.Threading.Tasks.Tests
             int nSecondHalfCount = nTaskCount - nFirstHalfCount;
 
             //CancellationTokenSource ctsForSleepAndAckCancelAction = null; // this needs to be allocated every time sleepAndAckCancelAction is about to be used
-            Action<object> emptyAction = delegate (Object o) { };
-            Action<object> sleepAction = delegate (Object o) { for (int i = 0; i < 200; i++) { } };
-            Action<object> longAction = delegate (Object o) { for (int i = 0; i < 400; i++) { } };
+            Action<object> emptyAction = delegate (object o) { };
+            Action<object> sleepAction = delegate (object o) { for (int i = 0; i < 200; i++) { } };
+            Action<object> longAction = delegate (object o) { for (int i = 0; i < 400; i++) { } };
 
-            Action<object> sleepAndAckCancelAction = delegate (Object o)
+            Action<object> sleepAndAckCancelAction = delegate (object o)
             {
                 CancellationToken ct = (CancellationToken)o;
                 if (!ct.IsCancellationRequested) ct.WaitHandle.WaitOne();
                 throw new OperationCanceledException(ct);   // acknowledge
             };
-            Action<object> exceptionThrowAction = delegate (Object o) { throw new Exception(excpMsg); };
+            Action<object> exceptionThrowAction = delegate (object o) { throw new Exception(excpMsg); };
 
             Exception e = null;
 

@@ -197,7 +197,7 @@ namespace System.Threading.Tests
 
             private void Method()
             {
-                _foo = new Object();
+                _foo = new object();
                 _wFoo = new WeakReference(_foo);
 
                 new ThreadLocal<object>() { Value = _foo }.Dispose();

@@ -1118,12 +1118,12 @@ namespace System.Numerics.Tests
         public void Vector2AbsTest()
         {
             Vector2 v1 = new Vector2(-2.5f, 2.0f);
-            Vector2 v3 = Vector2.Abs(new Vector2(0.0f, Single.NegativeInfinity));
+            Vector2 v3 = Vector2.Abs(new Vector2(0.0f, float.NegativeInfinity));
             Vector2 v = Vector2.Abs(v1);
             Assert.Equal(2.5f, v.X);
             Assert.Equal(2.0f, v.Y);
             Assert.Equal(0.0f, v3.X);
-            Assert.Equal(Single.PositiveInfinity, v3.Y);
+            Assert.Equal(float.PositiveInfinity, v3.Y);
         }
 
         [Fact]
@@ -1133,7 +1133,7 @@ namespace System.Numerics.Tests
             Vector2 v2 = new Vector2(5.5f, 4.5f);
             Assert.Equal(2, (int)Vector2.SquareRoot(v2).X);
             Assert.Equal(2, (int)Vector2.SquareRoot(v2).Y);
-            Assert.Equal(Single.NaN, Vector2.SquareRoot(v1).X);
+            Assert.Equal(float.NaN, Vector2.SquareRoot(v1).X);
         }
 
         // A test to make sure these types are blittable directly into GPU buffer memory layouts
