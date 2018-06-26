@@ -13,7 +13,7 @@ using System.Xml.Serialization;
 
 namespace R2RDump
 {
-    interface BaseUnwindInfo
+    public interface BaseUnwindInfo
     {
 
     }
