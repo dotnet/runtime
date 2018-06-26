@@ -3017,15 +3017,15 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         reabort = thread->m_StateNC & Thread::TSNC_DebuggerReAbort;
         SENDIPCEVENT_END;
 
-        CONTEXT c;
-        c.ContextFlags = CONTEXT_DEBUG_REGISTERS;
-        thread->GetThreadContext(&c);
+        // CONTEXT c;
+        // c.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+        // thread->GetThreadContext(&c);
 
-        context->Dr7 = c.Dr7;
-        context->Dr0 = c.Dr0;
-        context->Dr1 = c.Dr1;
-        context->Dr2 = c.Dr2;
-        context->Dr3 = c.Dr3;
+        // context->Dr7 = c.Dr7;
+        // context->Dr0 = c.Dr0;
+        // context->Dr1 = c.Dr1;
+        // context->Dr2 = c.Dr2;
+        // context->Dr3 = c.Dr3;
 
         if (!atSafePlace)
             g_pDebugger->DecThreadsAtUnsafePlaces();
