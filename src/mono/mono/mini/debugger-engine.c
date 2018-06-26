@@ -1547,6 +1547,8 @@ mono_de_init (DebuggerEngineCallbacks *cbs)
 
 	domains_init ();
 	breakpoints_init ();
+
+	mono_debugger_log_init ();
 }
 
 void
