@@ -526,9 +526,11 @@ mono_de_collect_breakpoints_by_sp (SeqPoint *sp, MonoJitInfo *ji, GPtrArray *ss_
 			BreakpointInstance *inst = (BreakpointInstance *)g_ptr_array_index (bp->children, j);
 			if (inst->ji == ji && inst->il_offset == sp->il_offset && inst->native_offset == sp->native_offset) {
 				if (bp->req->event_kind == EVENT_KIND_STEP) {
-					g_ptr_array_add (ss_reqs, bp->req);
+					if (ss_reqs)
+						g_ptr_array_add (ss_reqs, bp->req);
 				} else {
-					g_ptr_array_add (bp_reqs, bp->req);
+					if (bp_reqs)
+						g_ptr_array_add (bp_reqs, bp->req);
 				}
 			}
 		}
