@@ -12,9 +12,9 @@ namespace System
     [Serializable]
     [CLSCompliant(false)]    [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct SByte : IComparable, IConvertible, IFormattable, IComparable<sbyte>, IEquatable<sbyte>, ISpanFormattable
+    public readonly struct SByte : IComparable, IConvertible, IFormattable, IComparable<sbyte>, IEquatable<sbyte>, ISpanFormattable
     {
-        private sbyte m_value; // Do not rename (binary serialization)
+        private readonly sbyte m_value; // Do not rename (binary serialization)
 
         // The maximum value that a Byte may represent: 127.
         public const sbyte MaxValue = (sbyte)0x7F;
