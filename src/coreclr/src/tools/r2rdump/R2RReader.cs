@@ -79,9 +79,9 @@ namespace R2RDump
         public IList<string> AvailableTypes { get; }
 
         /// <summary>
-        /// The compile identifier string from READYTORUN_SECTION_COMPILER_IDENTIFIER
+        /// The compiler identifier string from READYTORUN_SECTION_COMPILER_IDENTIFIER
         /// </summary>
-        public string CompileIdentifier { get; }
+        public string CompilerIdentifier { get; }
 
         public IList<R2RImportSection> ImportSections { get; }
 
@@ -142,7 +142,7 @@ namespace R2RDump
                     AvailableTypes = new List<string>();
                     ParseAvailableTypes();
 
-                    CompileIdentifier = ParseCompilerIdentifier();
+                    CompilerIdentifier = ParseCompilerIdentifier();
 
                     ImportSections = new List<R2RImportSection>();
                     ParseImportSections();

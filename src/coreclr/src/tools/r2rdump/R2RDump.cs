@@ -34,7 +34,8 @@ namespace R2RDump
         abstract internal void DumpAllMethods();
         abstract internal void DumpMethod(R2RMethod method, XmlNode parentNode = null);
         abstract internal void DumpRuntimeFunction(RuntimeFunction rtf, XmlNode parentNode = null);
-        abstract internal void DumpBytes(int rva, uint size, XmlNode parentNode = null, bool convertToOffset = true);
+        abstract internal unsafe void DumpDisasm(IntPtr Disasm, RuntimeFunction rtf, int imageOffset, byte[] image, XmlNode parentNode = null);
+        abstract internal void DumpBytes(int rva, uint size, XmlNode parentNode = null, string name = "Raw", bool convertToOffset = true);
         abstract internal void DumpSectionContents(R2RSection section, XmlNode parentNode = null);
         abstract internal XmlNode DumpQueryCount(string q, string title, int count);
     }
