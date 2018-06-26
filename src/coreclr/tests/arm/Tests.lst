@@ -94724,3 +94724,19 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
+[GitHub_18235_1.cmd_11901]
+RelativePath=JIT\Regression\JitBlue\GitHub_18235\GitHub_18235_1\GitHub_18235_1.cmd
+WorkingDir=JIT\Regression\JitBlue\GitHub_18235\GitHub_18235_1
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
+
+[GitHub_18235_2.cmd_11902]
+RelativePath=JIT\Regression\JitBlue\GitHub_18235\GitHub_18235_2\GitHub_18235_2.cmd
+WorkingDir=JIT\Regression\JitBlue\GitHub_18235\GitHub_18235_2
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
+
