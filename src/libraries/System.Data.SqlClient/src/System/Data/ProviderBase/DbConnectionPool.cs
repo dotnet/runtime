@@ -8,7 +8,6 @@
 
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -720,12 +719,9 @@ namespace System.Data.ProviderBase
                 {
                     throw;
                 }
-#if netcoreapp
-                if (!IsBlockingPeriodEnabled())
-                {
-                    throw;
-                }
-#endif
+
+                CheckPoolBlockingPeriod(e);
+
                 newObj = null; // set to null, so we do not return bad new object
                 // Failed to create instance
                 _resError = e;
@@ -763,6 +759,9 @@ namespace System.Data.ProviderBase
             }
             return newObj;
         }
+
+        //This method is implemented in DbConnectionPool.NetCoreApp 
+        partial void CheckPoolBlockingPeriod(Exception e);
 
         private void DeactivateObject(DbConnectionInternal obj)
         {
