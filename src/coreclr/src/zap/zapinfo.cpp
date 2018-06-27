@@ -2574,7 +2574,7 @@ void ZapInfo::recordRelocation(void *location, void *target,
         break;
 
     case IMAGE_REL_BASED_PTR:
-        *(UNALIGNED TADDR *)location = (TADDR)targetOffset;
+        *(UNALIGNED TARGET_POINTER_TYPE *)location = (TARGET_POINTER_TYPE)targetOffset;
         break;
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
