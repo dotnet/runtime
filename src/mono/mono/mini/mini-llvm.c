@@ -1010,6 +1010,18 @@ simd_op_to_llvm_type (int opcode)
 #endif
 }
 
+static void
+set_preserveall_cc (LLVMValueRef func)
+{
+	/*
+	 * xcode10 doesn't seem to support preserveall on watchos, it fails with:
+	 * fatal error: error in backend: Unsupported calling convention
+	 */
+#ifndef TARGET_WATCHOS
+	mono_llvm_set_preserveall_cc (func);
+#endif
+}
+
 /*
  * get_bb:
  *
@@ -2641,7 +2653,7 @@ emit_init_icall_wrapper (MonoLLVMModule *module, const char *name, const char *i
 	}
 	LLVMSetLinkage (func, LLVMInternalLinkage);
 	mono_llvm_add_func_attr (func, LLVM_ATTR_NO_INLINE);
-	mono_llvm_set_preserveall_cc (func);
+	set_preserveall_cc (func);
 	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
 	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
