@@ -89,6 +89,7 @@ namespace Mono.Linker {
 
 				I18nAssemblies assemblies = I18nAssemblies.All;
 				var custom_steps = new List<string> ();
+				var excluded_features = new HashSet<string> ();
 				bool dumpDependencies = false;
 
 				bool resolver = false;
@@ -136,7 +137,7 @@ namespace Mono.Linker {
 							context.KeepUsedAttributeTypesOnly = bool.Parse (GetParam ());
 							continue;
 						}
-						
+
 						if (token == "--strip-security") {
 							if (bool.Parse (GetParam ()))
 								p.AddStepBefore (typeof (MarkStep), new RemoveSecurityStep ());
@@ -145,6 +146,13 @@ namespace Mono.Linker {
 
 						if (token == "--strip-resources") {
 							context.StripResources = bool.Parse (GetParam ());
+							continue;
+						}
+
+						if (token == "--exclude-feature") {
+							var name = GetParam ();
+							if (!excluded_features.Contains (name))
+								excluded_features.Add (name);
 							continue;
 						}
 
@@ -162,11 +170,10 @@ namespace Mono.Linker {
 					}
 
 					switch (token [1]) {
-					case 'd': {
+					case 'd':
 						DirectoryInfo info = new DirectoryInfo (GetParam ());
 						context.Resolver.AddSearchDirectory (info.FullName);
-						break;
-					}
+							break;
 					case 'o':
 						context.OutputDirectory = GetParam ();
 						break;
@@ -219,9 +226,9 @@ namespace Mono.Linker {
 							p.RemoveStep (typeof (RegenerateGuidStep));
 						break;
 					case 'z':
-							if (!bool.Parse (GetParam ()))
-								p.RemoveStep (typeof (BlacklistStep));
-							break;
+						if (!bool.Parse (GetParam ()))
+							p.RemoveStep (typeof (BlacklistStep));
+						break;
 					case 'v':
 						context.KeepMembersForDebugger = bool.Parse (GetParam ());
 						break;
@@ -244,6 +251,12 @@ namespace Mono.Linker {
 
 				if (_needAddBypassNGenStep) {
 					p.AddStepAfter (typeof (SweepStep), new AddBypassNGenStep ());
+				}
+
+				if (excluded_features.Count > 0) {
+					var excluded = new string [excluded_features.Count];
+					excluded_features.CopyTo (excluded);
+					context.ExcludedFeatures = excluded;
 				}
 
 				try {
@@ -375,6 +388,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("   --used-attrs-only   Attributes on types, methods, etc will be removed if the attribute type is not used");
 			Console.WriteLine ("   --strip-security    In linked assemblies, attributes on assemblies, types, and methods related to security will be removed");
 			Console.WriteLine ("   --strip-resources   Remove link xml resources that were processed (true or false), default to true");
+			Console.WriteLine ("   --exclude-feature   Any code which has feature-name dependency will be removed");
 			Console.WriteLine ("   -out                Specify the output directory, default to `output'");
 			Console.WriteLine ("   -c                  Action on the core assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to skip");
 			Console.WriteLine ("   -u                  Action on the user assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to link");

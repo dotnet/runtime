@@ -154,6 +154,11 @@ namespace Mono.Linker.Steps {
 		{
 			while (iterator.MoveNext ()) {
 				XPathNavigator nav = iterator.Current;
+
+				var feature = GetAttribute (nav, "feature");
+				if (Context.IsFeatureExcluded (feature))
+					continue;
+
 				string fullname = GetFullName (nav);
 
 				if (IsTypePattern (fullname)) {
