@@ -11,13 +11,13 @@ using System.Diagnostics;
 
 namespace System.Data.SqlClient
 {
-    internal sealed class SqlConnectionString : DbConnectionOptions
+    internal sealed partial class SqlConnectionString : DbConnectionOptions
     {
         // instances of this class are intended to be immutable, i.e readonly
         // used by pooling classes so it is much easier to verify correctness
         // when not worried about the class being modified during execution
 
-        internal static class DEFAULT
+        internal static partial class DEFAULT
         {
             internal const ApplicationIntent ApplicationIntent = DbConnectionStringDefaults.ApplicationIntent;
             internal const string Application_Name = TdsEnums.SQL_PROVIDER_NAME;
@@ -56,6 +56,7 @@ namespace System.Data.SqlClient
             internal const string Application_Name = "application name";
             internal const string AsynchronousProcessing = "asynchronous processing";
             internal const string AttachDBFilename = "attachdbfilename";
+            internal const string PoolBlockingPeriod = "poolblockingperiod";
             internal const string Connect_Timeout = "connect timeout";
             internal const string Connection_Reset = "connection reset";
             internal const string Context_Connection = "context connection";
@@ -217,6 +218,9 @@ namespace System.Data.SqlClient
             }
 
             _integratedSecurity = ConvertValueToIntegratedSecurity();
+#if netcoreapp
+            _poolBlockingPeriod = ConvertValueToPoolBlockingPeriod();
+#endif
             _encrypt = ConvertValueToBoolean(KEY.Encrypt, DEFAULT.Encrypt);
             _enlist = ConvertValueToBoolean(KEY.Enlist, DEFAULT.Enlist);
             _mars = ConvertValueToBoolean(KEY.MARS, DEFAULT.MARS);
@@ -413,6 +417,9 @@ namespace System.Data.SqlClient
             _userInstance = userInstance;
             _connectTimeout = connectionOptions._connectTimeout;
             _loadBalanceTimeout = connectionOptions._loadBalanceTimeout;
+#if netcoreapp
+            _poolBlockingPeriod = connectionOptions._poolBlockingPeriod;
+#endif
             _maxPoolSize = connectionOptions._maxPoolSize;
             _minPoolSize = connectionOptions._minPoolSize;
             _multiSubnetFailover = connectionOptions._multiSubnetFailover;
@@ -441,7 +448,6 @@ namespace System.Data.SqlClient
         // We always initialize in Async mode so that both synchronous and asynchronous methods
         // will work.  In the future we can deprecate the keyword entirely.
         internal bool Asynchronous { get { return true; } }
-
         // SQLPT 41700: Ignore ResetConnection=False, always reset the connection for security
         internal bool ConnectionReset { get { return true; } }
         //        internal bool EnableUdtDownload { get { return _enableUdtDownload;} }
@@ -495,6 +501,7 @@ namespace System.Data.SqlClient
                     { KEY.Application_Name, KEY.Application_Name },
                     { KEY.AsynchronousProcessing, KEY.AsynchronousProcessing },
                     { KEY.AttachDBFilename, KEY.AttachDBFilename },
+                    { KEY.PoolBlockingPeriod, KEY.PoolBlockingPeriod},
                     { KEY.Connect_Timeout, KEY.Connect_Timeout },
                     { KEY.Connection_Reset, KEY.Connection_Reset },
                     { KEY.Context_Connection, KEY.Context_Connection },
@@ -604,6 +611,7 @@ namespace System.Data.SqlClient
             }
             // ArgumentException and other types are raised as is (no wrapping)
         }
+
         internal void ThrowUnsupportedIfKeywordSet(string keyword)
         {
             if (ContainsKey(keyword))
