@@ -141,7 +141,6 @@ class Tests
 	}
 
 	[Category ("DYNCALL")]
-	[Category ("!FULLAOT-AMD64")]
 	static int test_0_arm64_dyncall_hfa_double () {
 		double arg1 = 1.0f;
 		// HFA with double members
@@ -155,7 +154,6 @@ class Tests
 	}
 
 	[Category ("DYNCALL")]
-	[Category ("!FULLAOT-AMD64")]
 	static int test_0_arm64_dyncall_hfa_float () {
 		double arg1 = 1.0f;
 		var s = new Struct2 ();
@@ -169,7 +167,6 @@ class Tests
 
 	[Category ("DYNCALL")]
 	[Category ("GSHAREDVT")]
-	[Category ("!FULLAOT-AMD64")]
 	static int test_0_arm64_dyncall_gsharedvt_out_hfa_double () {
 		/* gsharedvt out trampoline with double hfa argument */
 		double arg1 = 1.0f;
@@ -189,7 +186,6 @@ class Tests
 
 	[Category ("DYNCALL")]
 	[Category ("GSHAREDVT")]
-	[Category ("!FULLAOT-AMD64")]
 	static int test_0_arm64_dyncall_gsharedvt_out_hfa_float () {
 		/* gsharedvt out trampoline with double hfa argument */
 		double arg1 = 1.0f;
@@ -256,7 +252,6 @@ class Tests
 
 	[Category ("DYNCALL")]
 	[Category ("GSHAREDVT")]
-	[Category ("!FULLAOT-AMD64")]
 	static int test_0_arm64_dyncall_vtypebyref_ret () {
 		var s = new VTypeByRefStruct () { o1 = 1, o2 = 2, o3 = 3 };
 		Type t = typeof (Foo5<>).MakeGenericType (new Type [] { typeof (VTypeByRefStruct) });
@@ -271,6 +266,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("!FULLAOT-AMD64")]
 	static int test_42_arm64_dyncall_vtypebyval () {
 		var method = typeof (Foo5<string>).GetMethod ("vtype_by_val").MakeGenericMethod (new Type [] { typeof (int), typeof (long?), typeof (long?), typeof (long?), typeof (long?) });
 		long res = (long)method.Invoke (null, new object [] { 1, 2L, 3L, 4L, 42L });
@@ -325,7 +321,6 @@ class Tests
 	}
 
 	[Category ("DYNCALL")]
-	[Category ("!FULLAOT-AMD64")]
 	public static int test_0_dyncall_nullable () {
 		int? v;
 
@@ -475,7 +470,6 @@ class Tests
 	}
 
 	[Category ("DYNCALL")]
-	[Category ("!FULLAOT-AMD64")]
 	[Category ("!WASM")] //Interp fails	
 	public static int test_0_large_nullable_invoke () {
 		var s = new LargeStruct () { a = 1, b = 2, c = 3, d = 4 };
