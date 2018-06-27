@@ -3,6 +3,7 @@ Testing with CoreFX
 
 It may be valuable to use CoreFX tests to validate your changes to CoreCLR or mscorlib.
 
+## Building CoreFX against CoreCLR
 **NOTE:** The `BUILDTOOLS_OVERRIDE_RUNTIME` property no longer works.
 
 To run CoreFX tests with an updated System.Private.Corelib.dll, [use these instructions](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md#testing-with-private-coreclr-bits).
@@ -27,3 +28,74 @@ Use the following instructions to test a change to the dotnet/coreclr repo using
 
 [run-corefx-tests.py](https://github.com/dotnet/coreclr/blob/master/tests/scripts/run-corefx-tests.py) will clone dotnet/corefx and run steps 2-4 above automatically.  It is primarily intended to be run by the dotnet/coreclr CI system, but it might provide a useful reference or shortcut for individuals running the tests locally.
 
+## Using the built CoreCLR testhost 
+**These instructions are currently Windows only.**
+
+Instead of copying CoreCLR binaries you can also test your changes with an existing CoreFX build or CoreCLR's CI assemblies
+
+### Locally-built CoreFX 
+Once you have finished steps 1, 2. and 4. above execute the following instructions to test your local CLR changes with the built-CoreFX changes.
+
+1. From `<coreclr_root>` run `build-test.cmd <arch> <build_type> skipmanaged` to generate the test host.
+2. Navigate to `<corefx_root>\bin\tests\` and then the test you would like to run
+3. Run
+
+```cmd
+<coreclr_root>\bin\<os>.<arch>.<build_type>\testhost\dotnet.exe <corefx_root>\bin\tests\<testname>\xunit.console.netcore.exe <testname>.dll
+```
+followed by any extra command-line arguments.
+
+For example to run .NET Core Windows tests from System.Collections.Tests with an x64 Release build of CoreCLR.
+```
+pushd C:\corefx\bin\tests\System.Collections.Tests
+C:\coreclr\bin\tests\Windows_NT.x64.Release\testhost\dotnet.exe .\xunit.console.netcore.exe .\System.Collections.Tests.dll -notrait category=nonnetcoretests -notrait category=nonwindowstests
+```
+
+### CI Script
+CoreCLR has an alternative way to run CoreFX tests, built for PR CI jobs. To run tests against pre-built binaries you can execute the following from the CoreCLR repo root:
+
+1. `.\build.cmd <arch> <build_type>`
+2. `.\build-test.cmd <arch> <build_type> skipmanaged` - generates the test host
+3. `.\tests\runtest.cmd <arch> <build_type> corefxtests|corefxtestsall` - runs CoreFX tests
+
+CoreFXTests - runs all tests defined in TopN.Windows.CoreFX.issues.json or the test list specified with the argument `CoreFXTestList`
+CoreFXTestsAll - runs all tests available in the test list found at the URL in `.\coreclr\tests\CoreFX\CoreFXTestListURL.txt`.
+
+### Helix Testing
+To use Helix-built binaries, substitute the URL in `.\coreclr\tests\CoreFX\CoreFXTestListURL.txt` with one acquired from a Helix test run and run the commands above.
+
+### Test List Format
+The tests defined in TopN.Windows.CoreFX.issues.json or the test list specified with the argument `CoreFXTestList` should conform to the following format -
+```json
+    {
+        "name": "<Fully Qualified Assembly Name>", //e.g. System.Collections.Concurrent.Tests
+        "enabled": true|false, // Defines whether a test assembly should be run. If set to false any tests with the same name will not be run even if corefxtestsall is specified
+        "exclusions": {
+            "namespaces": // Can be null
+              [
+                {
+                    "name": "System.Collections.Concurrent.Tests", // All test methods under this namespace will be skipped
+                    "reason": "<Reason for exclusion>" // This should be a link to the GitHub issue describing the problem
+                }
+              ]
+            "classes": // Can be null
+            [
+                {
+                    "name": "System.Collections.Concurrent.Tests.ConcurrentDictionaryTests", // All test methods in this class will be skipped
+                    "reason": "<Reason for exclusion>"
+                }
+            ]
+            "methods": // Can be null
+            [
+                {
+                    "name": "System.Collections.Concurrent.Tests.ConcurrentDictionaryTests.TestAddNullValue_IDictionary_ReferenceType_null",
+                    "reason": "<Reason for exclusion>"
+                },
+                {
+                    "name": "System.Collections.Concurrent.Tests.ConcurrentDictionaryTests.TestAddNullValue_IDictionary_ValueType_null_add",
+                    "reason": "<Reason for exclusion>"
+                }
+            ]
+        }
+    }
+```
