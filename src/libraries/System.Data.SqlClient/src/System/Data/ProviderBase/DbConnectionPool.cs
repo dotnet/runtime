@@ -16,7 +16,7 @@ using System.Transactions;
 
 namespace System.Data.ProviderBase
 {
-    sealed internal class DbConnectionPool
+    sealed internal partial class DbConnectionPool
     {
         private enum State
         {
@@ -719,6 +719,9 @@ namespace System.Data.ProviderBase
                 {
                     throw;
                 }
+
+                CheckPoolBlockingPeriod(e);
+
                 newObj = null; // set to null, so we do not return bad new object
                 // Failed to create instance
                 _resError = e;
@@ -756,6 +759,9 @@ namespace System.Data.ProviderBase
             }
             return newObj;
         }
+
+        //This method is implemented in DbConnectionPool.NetCoreApp 
+        partial void CheckPoolBlockingPeriod(Exception e);
 
         private void DeactivateObject(DbConnectionInternal obj)
         {
