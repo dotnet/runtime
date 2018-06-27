@@ -46,6 +46,9 @@ set processedArgs=
 set __unprocessedBuildArgs=
 set __RunArgs=
 set __BuildAgainstPackagesArg=
+set __SkipRestorePackages=
+set __SkipManaged=
+set __SkipNative=
 set __RuntimeId=
 set __ZipTests=
 set __TargetsWindows=1
@@ -74,8 +77,11 @@ if /i "%1" == "release"               (set __BuildType=Release&set processedArgs
 if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skipnative"            (set __SkipNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "buildtesthostonly"     (set __SkipNative=1&set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"           (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "buildagainstpackages"  (set __ZipTests=1&set __BuildAgainstPackagesArg=-BuildTestsAgainstPackages&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skiprestorepackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "ziptests"              (set __ZipTests=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen"              (set __DoCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
@@ -160,6 +166,8 @@ REM ============================================================================
 call "%__TestDir%\setup-stress-dependencies.cmd" /arch %__BuildArch% /outputdir %__BinDir%
 @if defined _echo @echo on
 
+if defined __SkipNative goto skipnative
+
 REM =========================================================================================
 REM ===
 REM === Native test build section
@@ -224,8 +232,7 @@ if errorlevel 1 (
 :skipnative
 
 set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
-
-if not defined __BuildAgainstPackagesArg goto SkipRestoreProduct
+if "%__SkipRestorePackages%" == 1 goto SkipRestoreProduct
 REM =========================================================================================
 REM ===
 REM === Restore product binaries from packages
@@ -245,6 +252,7 @@ set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 
 call "%__ProjectDir%\run.cmd" build -Project=%__ProjectDir%\tests\build.proj -BatchRestorePackages -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %__unprocessedBuildArgs%
 
+if not defined __BuildAgainstPackagesArg goto SkipRestoreProduct
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
 set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
 set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
@@ -263,7 +271,7 @@ echo %__MsgPrefix% Restored CoreCLR product from packages
 
 :SkipRestoreProduct
 
-if defined __SkipManaged exit /b 0
+if defined __SkipManaged goto SkipManagedBuild
 
 REM =========================================================================================
 REM ===
@@ -316,6 +324,7 @@ for /l %%G in (1, 1, %__BuildLoopCount%) do (
     set __AppendToLog=true
 )
 
+:SkipManagedBuild
 REM Prepare the Test Drop
 REM Cleans any NI from the last run
 powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
@@ -343,6 +352,54 @@ if defined __BuildAgainstPackagesArg (
     for /R %__PackagesDir%\TestNativeBins\%__RuntimeId%\%__BuildType% %%f in (*.dylib) do copy %%f %CORE_ROOT_STAGE%
   )
 )
+
+REM =========================================================================================
+REM ===
+REM === Create the test overlay
+REM ===
+REM =========================================================================================
+echo %__MsgPrefix%Creating test overlay...
+
+set __BuildLogRootName=Tests_Overlay_Managed
+set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
+set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
+set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
+set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
+set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
+set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
+
+call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\runtest.proj -testOverlay -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %RuntimeIdArg% %__unprocessedBuildArgs%
+if errorlevel 1 (
+    echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
+    echo     %__BuildLog%
+    echo     %__BuildWrn%
+    echo     %__BuildErr%
+    exit /b 1
+)
+
+xcopy /s /y "%CORE_ROOT_STAGE%" "%CORE_ROOT%"
+
+REM Create the test host necessary for running CoreFX tests 
+REM The test host includes a dotnet executable, system libraries and CoreCLR assemblies found in CoreRoot
+
+set __BuildLogRootName=Tests_CoreFX_Testhost
+set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
+set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
+set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
+set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
+set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
+set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
+
+call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\runtest.proj -testHost -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %RuntimeIdArg% %__unprocessedBuildArgs%
+if errorlevel 1 (
+    echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
+    echo     %__BuildLog%
+    echo     %__BuildWrn%
+    echo     %__BuildErr%
+    exit /b 1
+)
+
+if defined __SkipManaged goto SkipBuildingWrappers
 
 echo %__MsgPrefix%Creating test wrappers...
 
@@ -372,27 +429,7 @@ if errorlevel 1 (
     echo Xunit Wrapper build failed
     exit /b 1
 )
-
-echo %__MsgPrefix%Creating test overlay...
-
-set __BuildLogRootName=Tests_Overlay_Managed
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
-set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
-set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
-set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
-
-call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\runtest.proj -testOverlay -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %RuntimeIdArg% %__unprocessedBuildArgs%
-if errorlevel 1 (
-    echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
-    echo     %__BuildLog%
-    echo     %__BuildWrn%
-    echo     %__BuildErr%
-    exit /b 1
-)
-
-xcopy /s /y "%CORE_ROOT_STAGE%" "%CORE_ROOT%"
+:SkipBuildingWrappers
 
 set __CrossgenArg = ""
 if defined __DoCrossgen (

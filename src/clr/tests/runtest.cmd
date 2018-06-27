@@ -41,6 +41,7 @@ set __DoCrossgen=
 set __CrossgenAltJit=
 set __PerfTests=
 set __CoreFXTests=
+set __CoreFXTestsRunAllAvailable=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -79,7 +80,9 @@ if /i "%1" == "jitdisasm"             (set __JitDisasm=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"        (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "PerfTests"             (set __PerfTests=true&shift&goto Arg_Loop)
-if /i "%1" == "CoreFXTests"           (exit /b 0)
+if /i "%1" == "CoreFXTests"           (set __CoreFXTests=true&shift&goto Arg_Loop)
+if /i "%1" == "CoreFXTestsAll"        (set __CoreFXTests=true&set __CoreFXTestsRunAllAvailable=true&shift&goto Arg_Loop)
+if /i "%1" == "CoreFXTestList"        (set __CoreFXTests=true&set __CoreFXTestList=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"      (set RunCrossGen=true&shift&goto Arg_Loop)
 if /i "%1" == "link"                  (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "tieredcompilation"     (set COMPLUS_TieredCompilation=1&shift&goto Arg_Loop)
@@ -107,7 +110,15 @@ shift
 :: Done with argument processing. Check argument values for validity.
 
 if defined __TestEnv (if not exist %__TestEnv% echo %__MsgPrefix%Error: Test Environment script %__TestEnv% not found && exit /b 1)
-if "%__PerfTests%"=="true" (if defined __GenerateLayoutOnly echo %__MsgPrefix%Error: Don't specify both "PerfTests" and "GenerateLayoutOnly" && exit /b 1)
+if "%__PerfTests%"=="true" (if defined __GenerateLayoutOnly  echo %__MsgPrefix%Error: Don't specify both "PerfTests" and "GenerateLayoutOnly" && exit /b 1)
+if "%__CoreFXTests%"=="true" (if defined __GenerateLayoutOnly  echo %__MsgPrefix%Error: Don't specify both "CoreFXTests" and "GenerateLayoutOnly" && exit /b 1)
+
+if defined __CoreFXTestList (
+    if not exist "%__CoreFXTestList%" (
+        echo %__MsgPrefix%Error: Couldn't find CoreFX Test List "%__CoreFXTestList%".
+        exit /b 1
+    )
+)
 
 :: Set the remaining variables based upon the determined configuration
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
@@ -203,6 +214,8 @@ if not exist %CORE_ROOT%\coreclr.dll (
     exit /b 1
 )
 
+if "%__CoreFXTests%"=="true" goto RunCoreFXTests
+
 if "%__PerfTests%"=="true" goto RunPerfTests
 
 REM =========================================================================================
@@ -285,7 +298,63 @@ if errorlevel 1 (
    echo %__MsgPrefix%Test Run failed. Refer to the following:  
    echo     Html report: %__TestRunHtmlLog%  
 )  
+goto TestsDone
 
+REM =========================================================================================
+REM ===
+REM === Run CoreFX tests
+REM ===
+REM =========================================================================================
+:RunCoreFXTests
+set _CoreFXTestHost=%XunitTestBinBase%\testhost
+set _toolsDir=%__ProjectDir%\..\Tools
+set _dotnet=%_toolsDir%\dotnetcli\dotnet.exe
+
+set _RootCoreFXTestPath=%__TestWorkingDir%\CoreFX
+set _CoreFXTestUtilitiesOutputPath=%_RootCoreFXTestPath%\CoreFXTestUtilities
+set _CoreFXTestBinariesPath=%_RootCoreFXTestPath%\tests_downloaded
+set _CoreFXLogsDir=%__LogsDir%\CoreFX\%__BuildOS%.%__BuildArch%.%__BuildType%
+if not exist "%_CoreFXLogsDir%"  (mkdir "%_CoreFXLogsDir%")
+
+set _CoreFXTestSetupUtilityName=CoreFX.TestUtils.TestFileSetup
+set _CoreFXTestSetupUtility=%__ProjectFilesDir%\src\Common\CoreFX\TestFileSetup\%_CoreFXTestSetupUtilityName%.csproj
+
+call :ResolveDependencies
+if errorlevel 1 exit /b 1
+
+if defined __GenerateTestHostOnly (
+    exit /b 0
+)
+
+if not exist %_CoreFXTestHost%\dotnet.exe echo CoreFX test host not found, please run runtest.cmd again && exit /b 1
+
+set /p _CoreFXTestRemoteURL=< "%__ProjectFilesDir%\CoreFX\CoreFXTestListURL.txt"
+if not defined __CoreFXTestList ( set __CoreFXTestList=%__ProjectFilesDir%\CoreFX\TopN.CoreFX.x64.Windows.issues.json )
+
+
+set _CoreFXTestExecutable=xunit.console.netcore.exe
+set _CoreFXTestExecutableArgs= --notrait category=nonnetcoreapptests --notrait category=nonwindowstests  --notrait category=failing --notrait category=IgnoreForCI --notrait category=OuterLoop --notrait Benchmark=true
+
+REM Set the log file name to something Jenkins can understand
+set _CoreFX_TestLogFileName=testResults.xml
+set _CoreFX_TestRunScriptName=CoreCLR_RunTest.cmd
+if "%__CoreFXTestsRunAllAvailable%" == "true" ( 
+    set _CoreFX_RunCommand=--runAllTests
+) else ( 
+    set _CoreFX_RunCommand=--runSpecifiedTests
+)
+
+
+echo Downloading and Running CoreFX Test Binaries
+echo %__MsgPrefix%call "%_dotnet%" "%_CoreFXTestUtilitiesOutputPath%\%_CoreFXTestSetupUtilityName%.dll" --clean --outputDirectory "%_CoreFXTestBinariesPath%" --testListJsonPath "%__CoreFXTestList%" --testUrl "!_CoreFXTestRemoteURL!" %_CoreFX_RunCommand% --dotnetPath "%_CoreFXTestHost%\dotnet.exe" --executable %_CoreFXTestExecutable% --logPath %_CoreFXLogsDir%  %_CoreFXTestExecutableArgs% 
+call "%_dotnet%" "%_CoreFXTestUtilitiesOutputPath%\%_CoreFXTestSetupUtilityName%.dll" --clean --outputDirectory "%_CoreFXTestBinariesPath%" --testListJsonPath "%__CoreFXTestList%" --testUrl "!_CoreFXTestRemoteURL!" %_CoreFX_RunCommand% --dotnetPath "%_CoreFXTestHost%\dotnet.exe" --executable %_CoreFXTestExecutable% --log %_CoreFXLogsDir% %_CoreFXTestExecutableArgs% 
+if errorlevel 1 (
+      echo %__MsgPrefix%Running CoreFX tests finished with Failures
+      echo %__MsgPrefix%Check %_CoreFXLogsDir% for test run logs
+      exit /b 1
+)
+
+)
 goto TestsDone
 
 REM =========================================================================================
@@ -472,6 +541,39 @@ if errorlevel 1 (
     exit /b 1
 )
 echo %__MsgPrefix%Created the runtime layout with all dependencies in %CORE_ROOT%
+
+if "%__CoreFXTests%"=="true" goto ResolveCoreFXDependencies
+
+exit /b 0
+
+REM =========================================================================================
+REM ===
+REM === Generate the "testhost" directory for running CoreFX tests; download dependencies.
+REM ===
+REM =========================================================================================
+
+:ResolveCoreFXDependencies
+set __BuildLogRootName=Tests_GenerateTestHost
+echo %__MsgPrefix%Building CoreFX Test Host
+call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GenerateTestHost=true 
+if errorlevel 1 (
+    echo %__MsgPrefix%Test Host Dependency Resolution Failed
+    exit /b 1
+)
+echo %__MsgPrefix%Created the Test Host layout with all dependencies in %_CoreFXTestHost%
+
+REM Publish and call the CoreFX test helper projects - should this be integrated into runtest.proj?
+REM Build Helper project
+echo "%_dotnet%" msbuild /t:Restore "%_CoreFXTestSetupUtility%"
+call "%_dotnet%" msbuild /t:Restore "%_CoreFXTestSetupUtility%"
+if errorlevel 1 (
+      exit /b 1
+)
+echo "%_dotnet%" msbuild "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:OutputPath=%_CoreFXTestUtilitiesOutputPath%" "%_CoreFXTestSetupUtility%"
+call "%_dotnet%" msbuild "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:OutputPath=%_CoreFXTestUtilitiesOutputPath%" "%_CoreFXTestSetupUtility%"
+if errorlevel 1 (
+      exit /b 1
+)
 
 exit /b 0
 
