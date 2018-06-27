@@ -226,7 +226,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // 64-bit constants make the IL unusually large that makes the inliner to reject the method
         public override int GetHashCode()
         {
-            var bits = BitConverter.DoubleToInt64Bits(m_value);
+            var bits = Unsafe.As<double, long>(ref Unsafe.AsRef(in m_value));
 
             // Optimized check for IsNan() || IsZero()
             if (((bits - 1) & 0x7FFFFFFFFFFFFFFF) >= 0x7FF0000000000000)
