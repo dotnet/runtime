@@ -211,7 +211,7 @@ function cross_build_corefx_with_docker {
             __dockerImage=" tizendotnet/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180426002255-tizen-rootfs-5.0m1"
             __skipRootFS=1
             __dockerEnvironmentVariables+=" -e ROOTFS_DIR=/crossrootfs/armel.tizen.build"
-            __runtimeOS="tizen.4.0.0"
+            __runtimeOS="tizen.5.0.0"
         ;;
         *)
             echo "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch"
