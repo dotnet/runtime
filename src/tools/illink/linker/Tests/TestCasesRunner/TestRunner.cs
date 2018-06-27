@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Threading.Tasks;
 using Mono.Cecil;
 using Mono.Linker.Tests.TestCases;
 using NUnit.Framework;
@@ -37,7 +38,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		private ManagedCompilationResult Compile (TestCaseSandbox sandbox, TestCaseMetadaProvider metadataProvider)
 		{
-			var compiler = _factory.CreateCompiler (sandbox, metadataProvider);
+			var inputCompiler = _factory.CreateCompiler (sandbox, metadataProvider);
+			var expectationsCompiler = _factory.CreateCompiler (sandbox, metadataProvider);
 			var sourceFiles = sandbox.SourceFiles.Select(s => s.ToString()).ToArray();
 
 			var assemblyName = metadataProvider.GetAssemblyName ();
@@ -46,11 +48,15 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var mainAssemblyReferences = metadataProvider.GetReferencedAssemblies(sandbox.InputDirectory).ToArray ();
 			var resources = sandbox.ResourceFiles.ToArray ();
 			var additionalArguments = metadataProvider.GetSetupCompilerArguments ().ToArray ();
-			var inputAssemblyPath = compiler.CompileTestIn (sandbox.InputDirectory, assemblyName, sourceFiles, commonReferences, mainAssemblyReferences, null, resources, additionalArguments);
+			
+			var expectationsCommonReferences = metadataProvider.GetCommonReferencedAssemblies (sandbox.ExpectationsDirectory).ToArray ();
+			var expectationsMainAssemblyReferences = metadataProvider.GetReferencedAssemblies (sandbox.ExpectationsDirectory).ToArray ();
 
-			commonReferences = metadataProvider.GetCommonReferencedAssemblies(sandbox.ExpectationsDirectory).ToArray ();
-			mainAssemblyReferences = metadataProvider.GetReferencedAssemblies(sandbox.ExpectationsDirectory).ToArray ();
-			var expectationsAssemblyPath = compiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName, sourceFiles,  commonReferences, mainAssemblyReferences, new [] { "INCLUDE_EXPECTATIONS" }, resources, additionalArguments);
+			var inputTask = Task.Run(() => inputCompiler.CompileTestIn (sandbox.InputDirectory, assemblyName, sourceFiles, commonReferences, mainAssemblyReferences, null, resources, additionalArguments));
+			var expectationsTask = Task.Run(() => expectationsCompiler.CompileTestIn (sandbox.ExpectationsDirectory, assemblyName, sourceFiles, expectationsCommonReferences, expectationsMainAssemblyReferences, new[] {"INCLUDE_EXPECTATIONS"}, resources, additionalArguments));
+
+			var inputAssemblyPath = inputTask.Result;
+			var expectationsAssemblyPath = expectationsTask.Result;
 			return new ManagedCompilationResult (inputAssemblyPath, expectationsAssemblyPath);
 		}
 
