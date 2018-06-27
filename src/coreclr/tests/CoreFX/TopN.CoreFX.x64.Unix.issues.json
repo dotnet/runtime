@@ -1,0 +1,48 @@
+// The expected format of this file can be found at https://github.com/dotnet/coreclr/blob/master/Documentation/building/testing-with-corefx.md
+[
+    {
+        "name": "System.Collections.Tests",
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Collections.Tests.SortedList_Generic_Tests_string_string.ICollection_Generic_Remove_DefaultValueContainedInCollection",
+                    "reason": "Exclusion Sample"
+                }
+            ]
+        }
+    },
+    {
+        "name": "System.Runtime.Extensions.Tests",
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": []
+        }
+    },
+    {
+        "name": "System.Runtime.Tests",
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": []
+        }
+    },
+    {
+        "name": "System.Threading.Tasks.Tests",
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": []
+        }
+    },
+    {
+        "name": "System.Threading.Tests",
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": []
+        }
+    }
+]
