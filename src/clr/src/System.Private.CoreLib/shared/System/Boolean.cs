@@ -19,12 +19,12 @@ namespace System
 {
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Boolean : IComparable, IConvertible, IComparable<bool>, IEquatable<bool>
+    public readonly struct Boolean : IComparable, IConvertible, IComparable<bool>, IEquatable<bool>
     {
         //
         // Member Variables
         //
-        private bool m_value; // Do not rename (binary serialization)
+        private readonly bool m_value; // Do not rename (binary serialization)
 
         // The true value.
         //
