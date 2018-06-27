@@ -2500,6 +2500,8 @@ dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
 		case ArgValuetypeInReg:
+		case ArgValuetypeAddrInIReg:
+		case ArgValuetypeAddrOnStack:
 		case ArgOnStack:
 			break;
 		default:
@@ -2640,8 +2642,11 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		ArgInfo *ainfo = &dinfo->cinfo->args [pindex + sig->hasthis];
 		int slot;
 
-		if (ainfo->storage == ArgOnStack) {
+		if (ainfo->storage == ArgOnStack || ainfo->storage == ArgValuetypeAddrOnStack) {
 			slot = PARAM_REGS + (ainfo->offset / sizeof (mgreg_t));
+		} else if (ainfo->storage == ArgValuetypeAddrInIReg) {
+			g_assert (ainfo->pair_storage [0] == ArgInIReg && ainfo->pair_storage [1] == ArgNone);
+			slot = general_param_reg_to_index [ainfo->pair_regs [0]];
 		} else if (ainfo->storage == ArgInFloatSSEReg || ainfo->storage == ArgInDoubleSSEReg) {
 			slot = float_param_reg_to_index [ainfo->reg];
 		} else {
@@ -2752,6 +2757,12 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 						break;
 					}
 				}
+				break;
+			case ArgValuetypeAddrInIReg:
+			case ArgValuetypeAddrOnStack:
+				// In DYNCALL use case value types are already copied when included in parameter array.
+				// Currently no need to make an extra temporary value type on stack for this use case.
+				p->regs [slot] = (mgreg_t)arg;
 				break;
 			case ArgOnStack:
 				for (i = 0; i < ainfo->arg_size / 8; ++i)
