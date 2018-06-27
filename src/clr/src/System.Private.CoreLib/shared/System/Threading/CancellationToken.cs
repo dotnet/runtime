@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -29,13 +30,13 @@ namespace System.Threading
     [DebuggerDisplay("IsCancellationRequested = {IsCancellationRequested}")]
     public readonly struct CancellationToken
     {
-        private readonly static Action<object> s_actionToActionObjShunt = obj => ((Action)obj)();
-
         // The backing TokenSource.  
         // if null, it implicitly represents the same thing as new CancellationToken(false).
         // When required, it will be instantiated to reflect this.
         private readonly CancellationTokenSource _source;
         //!! warning. If more fields are added, the assumptions in CreateLinkedToken may no longer be valid
+
+        private readonly static Action<object> s_actionToActionObjShunt = obj => ((Action)obj)();
 
         /// <summary>
         /// Returns an empty CancellationToken value.
@@ -136,7 +137,7 @@ namespace System.Threading
             Register(
                 s_actionToActionObjShunt,
                 callback ?? throw new ArgumentNullException(nameof(callback)),
-                useSyncContext: false,
+                useSynchronizationContext: false,
                 useExecutionContext: true);
 
         /// <summary>
@@ -189,7 +190,7 @@ namespace System.Threading
         /// be used to unregister the callback.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         public CancellationTokenRegistration Register(Action<object> callback, object state) =>
-            Register(callback, state, useSyncContext: false, useExecutionContext: true);
+            Register(callback, state, useSynchronizationContext: false, useExecutionContext: true);
 
         /// <summary>
         /// Registers a delegate that will be called when this 
@@ -222,19 +223,43 @@ namespace System.Threading
         // helper for internal registration needs that don't require an EC capture (e.g. creating linked token sources, or registering unstarted TPL tasks)
         // has a handy signature, and skips capturing execution context.
         internal CancellationTokenRegistration InternalRegisterWithoutEC(Action<object> callback, object state) =>
-            Register(callback, state, useSyncContext: false, useExecutionContext: false);
+            Register(callback, state, useSynchronizationContext: false, useExecutionContext: false);
 
-        // the real work..
-        private CancellationTokenRegistration Register(Action<object> callback, object state, bool useSyncContext, bool useExecutionContext)
+        /// <summary>
+        /// Registers a delegate that will be called when this 
+        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// If this token is already in the canceled state, the
+        /// delegate will be run immediately and synchronously. Any exception the delegate generates will be
+        /// propagated out of this method call.
+        /// </para>
+        /// </remarks>
+        /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
+        /// <param name="state">The state to pass to the <paramref name="callback"/> when the delegate is invoked.  This may be null.</param>
+        /// <param name="useSynchronizationContext">A Boolean value that indicates whether to capture
+        /// the current <see cref="T:System.Threading.SynchronizationContext">SynchronizationContext</see> and use it
+        /// when invoking the <paramref name="callback"/>.</param>
+        /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
+        /// be used to unregister the callback.</returns>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
+        /// <exception cref="T:System.ObjectDisposedException">The associated <see
+        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
+#if CORECLR
+        private
+#else
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public
+#endif
+        CancellationTokenRegistration Register(Action<object> callback, object state, bool useSynchronizationContext, bool useExecutionContext)
         {
             if (callback == null)
-            {
                 throw new ArgumentNullException(nameof(callback));
-            }
 
             CancellationTokenSource source = _source;
             return source != null ?
-                source.InternalRegister(callback, state, useSyncContext ? SynchronizationContext.Current : null, useExecutionContext ? ExecutionContext.Capture() : null) :
+                source.InternalRegister(callback, state, useSynchronizationContext ? SynchronizationContext.Current : null, useExecutionContext ? ExecutionContext.Capture() : null) :
                 default; // Nothing to do for tokens than can never reach the canceled state. Give back a dummy registration.
         }
 
@@ -305,9 +330,7 @@ namespace System.Threading
         public void ThrowIfCancellationRequested()
         {
             if (IsCancellationRequested)
-            {
                 ThrowOperationCanceledException();
-            }
         }
 
         // Throws an OCE; separated out to enable better inlining of ThrowIfCancellationRequested

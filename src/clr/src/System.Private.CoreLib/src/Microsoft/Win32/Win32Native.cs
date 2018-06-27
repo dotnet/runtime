@@ -276,8 +276,6 @@ namespace Microsoft.Win32
         internal static extern uint SysStringByteLen(IntPtr bstr);
 
 #endif
-        [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool CloseHandle(IntPtr handle);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         internal static extern unsafe int WriteFile(SafeFileHandle handle, byte* bytes, int numBytesToWrite, out int numBytesWritten, IntPtr mustBeZero);
