@@ -418,16 +418,27 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount                    = cmpXchgNode->gtOpComparand->isContained() ? 2 : 3;
             assert(dstCount == 1);
 
-            buildInternalIntRegisterDefForNode(tree);
+            if (!compiler->compSupports(InstructionSet_Atomics))
+            {
+                // For ARMv8 exclusives requires a single internal register
+                buildInternalIntRegisterDefForNode(tree);
+            }
 
             // For ARMv8 exclusives the lifetime of the addr and data must be extended because
             // it may be used used multiple during retries
+
+            // For ARMv8.1 atomic cas the lifetime of the addr and data must be extended to prevent
+            // them being reused as the target register which must be destroyed early
+
             RefPosition* locationUse = BuildUse(tree->gtCmpXchg.gtOpLocation);
             setDelayFree(locationUse);
             RefPosition* valueUse = BuildUse(tree->gtCmpXchg.gtOpValue);
             setDelayFree(valueUse);
-            if (!cmpXchgNode->gtOpComparand->isContained())
+            if (!cmpXchgNode->gtOpComparand->isContained() && !compiler->compSupports(InstructionSet_Atomics))
             {
+                // For ARMv8 exclusives the lifetime of the comparand must be extended because
+                // it may be used used multiple during retries
+
                 RefPosition* comparandUse = BuildUse(tree->gtCmpXchg.gtOpComparand);
                 setDelayFree(comparandUse);
             }
@@ -446,34 +457,37 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == (tree->TypeGet() == TYP_VOID) ? 0 : 1);
             srcCount = tree->gtGetOp2()->isContained() ? 1 : 2;
 
-            // GT_XCHG requires a single internal regiester; the others require two.
-            buildInternalIntRegisterDefForNode(tree);
-            if (tree->OperGet() != GT_XCHG)
+            if (!compiler->compSupports(InstructionSet_Atomics))
             {
+                // GT_XCHG requires a single internal register; the others require two.
                 buildInternalIntRegisterDefForNode(tree);
-            }
-
-            // For ARMv8 exclusives the lifetime of the addr and data must be extended because
-            // it may be used used multiple during retries
-            assert(!tree->gtGetOp1()->isContained());
-            RefPosition* op1Use = BuildUse(tree->gtGetOp1());
-            RefPosition* op2Use = nullptr;
-            if (!tree->gtGetOp2()->isContained())
-            {
-                op2Use = BuildUse(tree->gtGetOp2());
-            }
-
-            // Internals may not collide with target
-            if (dstCount == 1)
-            {
-                setDelayFree(op1Use);
-                if (op2Use != nullptr)
+                if (tree->OperGet() != GT_XCHG)
                 {
-                    setDelayFree(op2Use);
+                    buildInternalIntRegisterDefForNode(tree);
                 }
-                setInternalRegsDelayFree = true;
+
+                // For ARMv8 exclusives the lifetime of the addr and data must be extended because
+                // it may be used used multiple during retries
+                assert(!tree->gtGetOp1()->isContained());
+                RefPosition* op1Use = BuildUse(tree->gtGetOp1());
+                RefPosition* op2Use = nullptr;
+                if (!tree->gtGetOp2()->isContained())
+                {
+                    op2Use = BuildUse(tree->gtGetOp2());
+                }
+
+                // Internals may not collide with target
+                if (dstCount == 1)
+                {
+                    setDelayFree(op1Use);
+                    if (op2Use != nullptr)
+                    {
+                        setDelayFree(op2Use);
+                    }
+                    setInternalRegsDelayFree = true;
+                }
+                buildInternalRegisterUses();
             }
-            buildInternalRegisterUses();
             if (dstCount == 1)
             {
                 BuildDef(tree);
