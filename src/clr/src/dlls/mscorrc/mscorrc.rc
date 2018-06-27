@@ -416,14 +416,6 @@ BEGIN
     CLDB_E_INTERNALERROR                    "Internal error 0x%08x."
     META_E_INVALID_TOKEN_TYPE               "A token passed to a metadata function has the wrong type."
     
-    META_E_METHOD_COUNTS                    "Differing number of methods in duplicated types (%s): (0x%08x)." 
-    META_E_FIELD_COUNTS                     "Differing number of fields in duplicated types (%s): (0x%08x)." 
-    META_E_PARAM_COUNTS                     "Differing number of parameters in duplicated method (types: %s; methods: %s): (0x%08x)."
-    META_E_GENERICPARAM_INCONSISTENT        "Inconsistent Generic information in duplicated types or methods (%s): (0x%08x)." 
-    META_E_EVENT_COUNTS                     "Differing number of events in duplicated types (%s): (0x%08x)." 
-    META_E_PROPERTY_COUNTS                  "Differing number of properties in duplicated types (%s): (0x%08x)." 
-    META_E_TYPEDEF_MISSING                  "A TypeRef exists which should, but does not, have a corresponding TypeDef: (%s): (0x%08x)." 
-    
     META_E_CA_INVALID_TARGET                "The custom attribute is not valid for the target object's type."
     META_E_CA_INVALID_ARGTYPE               "Unexpected property found in custom attribute value."
     META_E_CA_INVALID_BLOB                  "Unable to process the custom attribute value - it may be corrupt or incorrect."
@@ -439,7 +431,6 @@ BEGIN
     META_E_CA_NEGATIVE_CONSTSIZE            "Constant size cannot be negative."
     META_E_CA_FIXEDSTR_SIZE_REQUIRED        "SizeConst is required for a fixed string."
     META_E_CA_CUSTMARSH_TYPE_REQUIRED       "A MarshalType or MarshalTypeRef setting is required for a custom marshaler."
-    META_E_MISMATCHED_VISIBLITY             "Duplicate managed types have different visibilities."
     META_E_CA_BAD_FRIENDS_ARGS              "[%1] InternalsVisibleTo declarations cannot have a version, culture, public key token, or processor architecture specified."
     META_E_CA_FRIENDS_SN_REQUIRED           "[%1] Strong-name signed assemblies must specify a public key in their InternalsVisibleTo declarations."
     
@@ -450,8 +441,6 @@ BEGIN
     VLDTR_E_BLOB_INVALID                    "Error (Structural): Table=0x%08x, Col=0x%08x, Row=0x%08x, has an invalid BLOB offset."
 
     VLDTR_E_TD_ENCLNOTNESTED                "Error: TypeDef is not marked Nested but has an enclosing type."
-    VLDTR_E_IFACE_METHNOTIMPLTHISMOD        "Warning: Class does not implement interface method in this module (class:0x%08x; interface:0x%08x; method:0x%08x)."
-    VLDTR_E_IFACE_METHMULTIMPL              "Error: Multiple implementation of interface method (class:0x%08x; interface:0x%08x; method:0x%08x)."
     VLDTR_E_MR_BADCALLINGCONV               "Error: MemberRef signature has invalid calling convention=0x%08x."
     VLDTR_E_SIGNULL                         "Error: Signature has zero size."
     VLDTR_E_MD_BADCALLINGCONV               "Error: Signature has invalid calling convention=0x%08x."
@@ -469,7 +458,6 @@ BEGIN
     VLDTR_E_SIG_MISSNLBND                   "Error: Signature missing count of lower bounds of array at byte=0x%08x."
     VLDTR_E_SIG_MISSLBND                    "Error: Signature missing lower bound of array at byte=0x%08x."
     VLDTR_E_SIG_BADELTYPE                   "Error: Signature has invalid ELEMENT_TYPE_* (element type: 0x%08x; offset: 0x%08x)."
-    VLDTR_E_SIG_MISSVASIZE                  "Error: Signature missing size for VALUEARRAY at byte=0x%08x."
     VLDTR_E_SIG_SENTINMETHODDEF             "Error: ELEMENT_TYPE_SENTINEL is only allowed in MemberRef signatures."
     VLDTR_E_SIG_SENTMUSTVARARG              "Error: Signature containing ELEMENT_TYPE_SENTINEL must be VARARG."
     VLDTR_E_SIG_MULTSENTINELS               "Error: Multiple ELEMENT_TYPE_SENTINEL in signature."
@@ -478,43 +466,8 @@ BEGIN
     VLDTR_E_SIG_BADVOID                     "Error: Illegal use of type 'void' in signature."
     VLDTR_E_FMD_PINVOKENOTSTATIC            "Error: PInvoke item (field,method) must be Static."
     //@GENERICS
-    VLDTR_E_GP_NAMENULL                     "Error: GenericParam has no name."
-    VLDTR_E_GP_OWNERNIL                     "Warning: GenericParam has nil owner."
-    VLDTR_E_GP_DUPNAME                      "Error: GenericParam has a duplicate based on owner and name, token=0x%08x."
-    VLDTR_E_GP_DUPNUMBER                    "Error: GenericParam has a duplicate based on owner and number, token=0x%08x."
-    VLDTR_E_GP_NONSEQ_BY_OWNER              "Error: GenericParam is out of sequence by owner."
-    VLDTR_E_GP_NONSEQ_BY_NUMBER             "Error: GenericParam is out of sequence by number." 
-    VLDTR_E_GP_UNEXPECTED_OWNER_FOR_VARIANT_VAR "Error: GenericParam is co-or-contra variant but its owner, token (0x%08x), is not an interface or delegate."
     VLDTR_E_GP_ILLEGAL_VARIANT_MVAR         "Error: GenericParam is a method type parameter and must be non-variant, not co-or-contra variant."
-    VLDTR_E_GP_ILLEGAL_VARIANCE_FLAGS       "Error: GenericParam has invalid variance value in flags (0x%08x)."
-    VLDTR_E_GP_REFANDVALUETYPE              "Error: GenericParam has inconsistent special constraints ReferenceTypeConstraint and ValueTypeConstraint in flags (0x%08x)."
-    VLDTR_E_GPC_OWNERNIL                    "Error: GenericParamConstraint has nil owner."
-    VLDTR_E_GPC_DUP                         "Error: GenericParamConstraint has a duplicate based on owner and constraint, token=0x%08x."
-    VLDTR_E_GPC_NONCONTIGUOUS               "Error: GenericParamConstraint is non-contiguous with preceding constraints for same owner, token=0x%08x."
-    VLDTR_E_MS_METHODNIL                    "Error: MethodSpec has nil method."
-    VLDTR_E_MS_DUP                          "Error: MethodSpec has a duplicate based on method and instantiation, token=0x%08x."
-    VLDTR_E_MS_BADCALLINGCONV               "Error: MethodSpec signature has invalid calling convention=0x%08x."
-    VLDTR_E_MS_MISSARITY                    "Error: MethodSpec signature is missing arity at byte=0x%08x."
-    VLDTR_E_MS_MISSARG                      "Error: MethodSpec signature is missing type argument # %d."
-    VLDTR_E_MS_ARITYMISMATCH                "Error: MethodSpec has generic method of arity %d but instantiation of different arity %d."
-    VLDTR_E_MS_METHODNOTGENERIC             "Error: MethodSpec method is not generic."
-    VLDTR_E_SIG_MISSARITY                   "Error: Signature missing arity of instantiated generic type at byte=0x%08x."
-    VLDTR_E_SIG_ARITYMISMATCH               "Error: Signature has generic type of arity %d instantiated at different arity %d at byte=0x%08x."
-    VLDTR_E_EP_GENERIC_METHOD               "Error: Entry point in CLR header is the token for a generic method."
-    VLDTR_E_SIG_ARITYZERO                   "Error: Signature has generic type instantiated at arity 0 at byte=0x%08x."
-    VLDTR_E_MS_ARITYZERO                    "Error: MethodSpec signature has arity 0 at byte=0x%08x."
-    VLDTR_E_EP_GENERIC_TYPE                 "Error: Entry point in CLR header is the token for a method in a generic type."
-    VLDTR_E_MI_DECLNOTGENERIC               "Error: MethodImpl overrides non-generic method (token=0x%08x) with generic method."
-    VLDTR_E_MI_IMPLNOTGENERIC               "Error: MethodImpl overrides generic method (token=0x%08x) with non-generic method."
-    VLDTR_E_MI_ARITYMISMATCH                "Error: MethodImpl overrides generic method (token=0x%08x) of arity %d with generic method of arity %d."
-    VLDTR_E_TD_EXTBADTYPESPEC               "Error: TypeDef extends a TypeSpec (0x%08x) that is not an instantiated type."
-    VLDTR_E_SIG_BYREFINST                   "Error: Signature has type instantiated at ByRef at offset 0x%08x."
-    VLDTR_E_MS_BYREFINST                    "Error: MethodSpec has type instantiated at ByRef at offset 0x%08x."
-    VLDTR_E_TS_EMPTY                        "Error: TypeSpec has empty signature."
-    VLDTR_E_TS_HASSENTINALS                 "Error: TypeSpec has signature containing one or more sentinels."
-    VLDTR_E_TD_GENERICHASEXPLAYOUT          "Error: TypeDef is generic but has explicit layout."
-    VLDTR_E_SIG_BADTOKTYPE                  "Error: Signature has token following ELEMENT_TYPE_CLASS (_VALUETYPE) that is not a TypeDef or TypeRef (token: 0x%08x; offset: 0x%08x)."
-
+    
     COR_E_APPDOMAINUNLOADED                 "Error: Attempt to access unloaded AppDomain."
     COR_E_MISSINGMETHOD                     "Error: Missing method '%2' from class '%1'."
     COR_E_FIXUPSINEXE                       "Cannot load executable '%1' because it contains extra relocations or has relocations stripped."
@@ -535,7 +488,6 @@ BEGIN
     FUSION_E_APP_DOMAIN_LOCKED              "The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest."
     FUSION_E_CONFIGURATION_ERROR            "The requested assembly name was neither found in the GAC nor in the manifest or the manifest's specified location is wrong."
     FUSION_E_MANIFEST_PARSE_ERROR           "Unexpected error while parsing the specified manifest."
-    FUSION_E_INVALID_ASSEMBLY_REFERENCE     "The given assembly name is invalid because a processor architecture is specified."
     IDS_EE_HASH_VAL_FAILED                  "Hash validation failed for file or assembly '%1'."
     CORSEC_E_MISSING_STRONGNAME             "Assembly '%1' is missing the required strong name."
     CORSEC_E_INVALID_PUBLICKEY              "The public key for assembly '%1' was invalid."
@@ -571,17 +523,6 @@ BEGIN
     CORDBG_E_ENC_CANT_ADD_FIELD_TO_VALUE_OR_LAYOUT_CLASS "Field cannot be added to a value or layout type."
     CORDBG_E_ENC_JIT_CANT_UPDATE            "JIT unable to update internal structures."
     END
-
-// These strings belong to the type library importer and exporter.
-STRINGTABLE DISCARDABLE
-BEGIN
-    TLBX_E_INVALID_NAMESPACE                "Type library has an invalid namespace and cannot be imported (library: '%ls'; namespace: '%ls')."
-    TLBX_I_GENERIC_BASE_TYPE                "Type library exporter encountered a type that derives from a generic class and is not marked as [ClassInterface(ClassInterfaceType.None)]. Class interfaces cannot be exposed for such types. Consider marking the type with [ClassInterface(ClassInterfaceType.None)] and exposing an explicit interface as the default interface to COM using the ComDefaultInterface attribute."
-    TLBX_E_NO_CRITICALHANDLE_ARRAYS         "Type '%hs' contains arrays of CriticalHandles, which cannot be exported to a type library."
-    TLBX_W_BAD_SAFEARRAYFIELD_NO_ELEMENTVT  "System.Array fields without a SafeArraySubType cannot be used from COM. For legacy reasons, they are exported as SAFEARRAYs of VARIANTs. However, at runtime, they are not marshaled as such."
-    TLBX_W_LAYOUTCLASS_AS_INTERFACE         "Type library exporter encountered a reference type with layout marked as [MarshalAs(UnmanagedType.Interface)] in a signature. The reference type was instead treated as if it were marked with [MarshalAs(UnmanagedType.IUnknown)]."
-    TLBX_E_EVENT_WITH_NEWENUM               "Type library importer encountered a source interface on coclass '%ls' with a NewEnum member.  This is not supported."
-END
 
 // These strings are generated from within the EE.
 STRINGTABLE DISCARDABLE 
@@ -1066,56 +1007,12 @@ END
 // Verifier error messages
 STRINGTABLE DISCARDABLE 
 BEGIN
-    VER_E_LOC_BYNAME        "[local variable '%s']"
-    
     VER_E_FIELD_SIG         "[field sig]"
 
-    VER_E_OPEN_DLGT_PROT_ACC "Protected method access through an open instance delegate is not verifiable."
-        
     //@GENERICSVER: new generics related error messages
-    VER_E_VALCLASS_OBJREF_VAR          "Value type, ObjRef type or variable type expected."
-    VER_E_STACK_P_VALCLASS_OBJREF_VAR  "Expected address of value type, ObjRef type or variable type on the stack."
-    VER_E_SIG_VAR_PARAM            "Unrecognized type parameter of enclosing class."
-    VER_E_SIG_MVAR_PARAM           "Unrecognized type parameter of enclosing method."
-    VER_E_SIG_VAR_ARG              "Unrecognized type argument of referenced class instantiation."
-    VER_E_SIG_MVAR_ARG             "Unrecognized type argument of referenced method instantiation."
-    VER_E_SIG_GENERICINST          "Cannot resolve generic type."
-    VER_E_SIG_METHOD_INST          "Method instantiation contains non boxable type arguments."
-    VER_E_SIG_METHOD_PARENT_INST   "Method parent instantiation contains non boxable type arguments."
-    VER_E_SIG_FIELD_PARENT_INST    "Field parent instantiation contains non boxable type arguments."
-    VER_E_CALLCONV_NOT_GENERICINST "Unrecognized calling convention for an instantiated generic method."
-    VER_E_TOKEN_BAD_METHOD_SPEC    "Unrecognized generic method in method instantiation."
-        VER_E_BAD_READONLY_PREFIX      "Missing ldelema or call following readonly prefix."
-    VER_E_BAD_CONSTRAINED_PREFIX   "Missing callvirt following constrained prefix."
-
     VER_E_CIRCULAR_VAR_CONSTRAINTS "Method parent has circular class type parameter constraints."
     VER_E_CIRCULAR_MVAR_CONSTRAINTS "Method has circular method type parameter constraints."
 
-    VER_E_UNSATISFIED_METHOD_INST          "Method instantiation has unsatisfied method type parameter constraints."
-    VER_E_UNSATISFIED_METHOD_PARENT_INST   "Method parent instantiation has unsatisfied class type parameter constraints."
-    VER_E_UNSATISFIED_FIELD_PARENT_INST    "Field parent instantiation has unsatisfied class type parameter constraints."
-    VER_E_UNSATISFIED_BOX_OPERAND          "Type operand of box instruction has unsatisfied class type parameter constraints."
-    VER_E_CONSTRAINED_CALL_WITH_NON_BYREF_THIS "The 'this' argument to a constrained call must have ByRef type."
-    VER_E_CONSTRAINED_OF_NON_VARIABLE_TYPE "The operand to a constrained prefix instruction must be a type parameter."
-    VER_E_READONLY_UNEXPECTED_CALLEE       "The readonly prefix may only be applied to calls to array methods returning ByRefs."
-    VER_E_READONLY_ILLEGAL_WRITE            "Illegal write to readonly ByRef."
-    VER_E_READONLY_IN_MKREFANY              "A readonly ByRef cannot be used with mkrefany."
-    VER_E_UNALIGNED_ALIGNMENT      "Alignment specified for 'unaligned' prefix must be 1, 2, or 4."
-    VER_E_TAILCALL_INSIDE_EH       "The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block."
-    VER_E_BACKWARD_BRANCH          "Stack height at all points must be determinable in a single forward scan of IL."
-    VER_E_CALL_TO_VTYPE_BASE       "Call to base type of valuetype."
-    VER_E_NEWOBJ_OF_ABSTRACT_CLASS "Cannot construct an instance of abstract class."
-    VER_E_UNMANAGED_POINTER        "Unmanaged pointers are not a verifiable type."
-    VER_E_LDFTN_NON_FINAL_VIRTUAL  "Cannot LDFTN a non-final virtual method for delegate creation if target object is potentially not the same type as the method class."
-    VER_E_FIELD_OVERLAP      "Accessing type with overlapping fields."
-    VER_E_THIS_MISMATCH      "The 'this' parameter to the call must be the calling method's 'this' parameter."
-    VER_E_STACK_I_I4         "Expected I4 on the stack."
-END
-
-// Security error messages
-STRINGTABLE DISCARDABLE 
-BEGIN
-        SN_E_PUBLICKEY_MISMATCH         "Key pair does not match public key from assembly '%1'."
 END
 
 // General prompt strings.
