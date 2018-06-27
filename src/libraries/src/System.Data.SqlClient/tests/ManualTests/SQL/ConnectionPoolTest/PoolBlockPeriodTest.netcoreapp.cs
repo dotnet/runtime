@@ -12,6 +12,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static readonly string _sampleAzureEndpoint = "nonexistance.database.windows.net";
         private static readonly string _policyKeyword = "PoolBlockingPeriod";
         private const int connectionTimeout = 15;
+        private const int compareMargin = 2;
 
         [Theory]
         [InlineData("Azure with Default Policy must Disable blocking (.database.windows.net)", new object[] { "nonexistance.database.windows.net" })]
@@ -96,7 +97,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             {
                 case PoolBlockingPeriod.Auto:
                 case PoolBlockingPeriod.AlwaysBlock:
-                    Assert.InRange(secondErrorTimeInSecs, 0, firstErrorTimeInSecs);
+                    Assert.InRange(secondErrorTimeInSecs, 0, firstErrorTimeInSecs + compareMargin);
                     break;
                 case PoolBlockingPeriod.NeverBlock:
                     Assert.InRange(secondErrorTimeInSecs, 1, 2*connectionTimeout);
@@ -111,7 +112,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             switch (policy)
             {
                 case PoolBlockingPeriod.AlwaysBlock:
-                    Assert.InRange(secondErrorTimeInSecs, 0, firstErrorTimeInSecs);
+                    Assert.InRange(secondErrorTimeInSecs, 0, firstErrorTimeInSecs + compareMargin);
                     break;
                 case PoolBlockingPeriod.Auto:
                 case PoolBlockingPeriod.NeverBlock:
