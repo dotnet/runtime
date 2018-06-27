@@ -217,7 +217,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            var bits = BitConverter.SingleToInt32Bits(m_value);
+            var bits = Unsafe.As<float, int>(ref Unsafe.AsRef(in m_value));
 
             // Optimized check for IsNan() || IsZero()
             if (((bits - 1) & 0x7FFFFFFF) >= 0x7F800000)
