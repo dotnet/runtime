@@ -427,7 +427,7 @@ collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, g
 #define MONO_WIN64_VALUE_TYPE_FITS_REG(arg_size) (arg_size <= SIZEOF_REGISTER && (arg_size == 1 || arg_size == 2 || arg_size == 4 || arg_size == 8))
 
 static gboolean
-allocate_register_for_valuetype_win64 (ArgInfo *arg_info, ArgumentClass arg_class, guint32 arg_size, AMD64_Reg_No int_regs [], int int_reg_count, AMD64_XMM_Reg_No float_regs [], int float_reg_count, guint32 *current_int_reg, guint32 *current_float_reg)
+allocate_register_for_valuetype_win64 (ArgInfo *arg_info, ArgumentClass arg_class, guint32 arg_size, const AMD64_Reg_No int_regs [], int int_reg_count, const AMD64_XMM_Reg_No float_regs [], int float_reg_count, guint32 *current_int_reg, guint32 *current_float_reg)
 {
 	gboolean result = FALSE;
 
@@ -2600,15 +2600,19 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 {
 	ArchDynCallInfo *dinfo = (ArchDynCallInfo*)info;
 	DynCallArgs *p = (DynCallArgs*)buf;
-	int arg_index, greg, freg, i, pindex;
+	int arg_index, greg, i, pindex;
 	MonoMethodSignature *sig = dinfo->sig;
 	int buffer_offset = 0;
-	static int param_reg_to_index [16];
+	static int general_param_reg_to_index[MONO_MAX_IREGS];
+	static int float_param_reg_to_index[MONO_MAX_FREGS];
+
 	static gboolean param_reg_to_index_inited;
 
 	if (!param_reg_to_index_inited) {
 		for (i = 0; i < PARAM_REGS; ++i)
-			param_reg_to_index [param_regs [i]] = i;
+			general_param_reg_to_index [param_regs[i]] = i;
+		for (i = 0; i < FLOAT_PARAM_REGS; ++i)
+			float_param_reg_to_index [float_param_regs[i]] = i;
 		mono_memory_barrier ();
 		param_reg_to_index_inited = 1;
 	}
@@ -2619,7 +2623,6 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 
 	arg_index = 0;
 	greg = 0;
-	freg = 0;
 	pindex = 0;
 
 	if (sig->hasthis || dinfo->cinfo->vret_arg_index == 1) {
@@ -2639,13 +2642,14 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 
 		if (ainfo->storage == ArgOnStack) {
 			slot = PARAM_REGS + (ainfo->offset / sizeof (mgreg_t));
+		} else if (ainfo->storage == ArgInFloatSSEReg || ainfo->storage == ArgInDoubleSSEReg) {
+			slot = float_param_reg_to_index [ainfo->reg];
 		} else {
-			slot = param_reg_to_index [ainfo->reg];
+			slot = general_param_reg_to_index [ainfo->reg];
 		}
 
 		if (t->byref) {
 			p->regs [slot] = PTR_TO_GREG(*(arg));
-			greg ++;
 			continue;
 		}
 
@@ -2689,12 +2693,12 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 
 			*(float*)&d = *(float*)(arg);
 			p->has_fp = 1;
-			p->fregs [freg ++] = d;
+			p->fregs [slot] = d;
 			break;
 		}
 		case MONO_TYPE_R8:
 			p->has_fp = 1;
-			p->fregs [freg ++] = *(double*)(arg);
+			p->fregs [slot] = *(double*)(arg);
 			break;
 		case MONO_TYPE_GENERICINST:
 		    if (MONO_TYPE_IS_REFERENCE (t)) {
@@ -2727,12 +2731,21 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 					case ArgNone:
 						break;
 					case ArgInIReg:
-						slot = param_reg_to_index [ainfo->pair_regs [i]];
+						slot = general_param_reg_to_index [ainfo->pair_regs [i]];
 						p->regs [slot] = ((mgreg_t*)(arg))[i];
 						break;
+					case ArgInFloatSSEReg: {
+						double d;
+						p->has_fp = 1;
+						slot = float_param_reg_to_index [ainfo->pair_regs [i]];
+						*(float*)&d = ((float*)(arg))[i];
+						p->fregs [slot] = d;
+						break;
+					}
 					case ArgInDoubleSSEReg:
 						p->has_fp = 1;
-						p->fregs [ainfo->pair_regs [i]] = ((double*)(arg))[i];
+						slot = float_param_reg_to_index [ainfo->pair_regs [i]];
+						p->fregs [slot] = ((double*)(arg))[i];
 						break;
 					default:
 						g_assert_not_reached ();

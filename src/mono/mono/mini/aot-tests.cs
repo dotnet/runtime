@@ -57,6 +57,13 @@ class Tests
 		public static T Get_T2 (double d, int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8, T t) {
 			return t;
 		}
+		public static T Get_T3 (double d, int i, T t) {
+			return t;
+		}
+		public static T Get_T4 (int i, double d, T t)
+		{
+			return t;
+		}
 	}
 
 	class Foo3<T> {
@@ -81,6 +88,54 @@ class Tests
 		float s = 2.0f;
 		var res = (float)typeof (Foo<float>).GetMethod ("Get_T").Invoke (null, new object [] { arg1, s });
 		if (res != 2.0f)
+			return 1;
+		return 0;
+	}
+
+	[Category ("DYNCALL")]
+	static int test_0_amd64_dyncall_double_int_double ()
+	{
+		double arg1 = 1.0f;
+		int arg2 = 1;
+		double s = 2.0f;
+		var res = (double)typeof (Foo2<double>).GetMethod ("Get_T3").Invoke (null, new object [] { arg1, arg2, s });
+		if (res != 2.0f)
+			return 1;
+		return 0;
+	}
+
+	[Category ("DYNCALL")]
+	static int test_0_amd64_dyncall_double_int_float ()
+	{
+		double arg1 = 1.0f;
+		int arg2 = 1;
+		float s = 2.0f;
+		var res = (float)typeof (Foo2<float>).GetMethod ("Get_T3").Invoke (null, new object [] { arg1, arg2, s });
+		if (res != 2.0f)
+			return 1;
+		return 0;
+	}
+
+	[Category ("DYNCALL")]
+	static int test_0_amd64_dyncall_int_double_int ()
+	{
+		int arg1 = 1;
+		double arg2 = 1.0f;
+		int s = 2;
+		var res = (int)typeof (Foo2<int>).GetMethod ("Get_T4").Invoke (null, new object [] { arg1, arg2, s });
+		if (res != 2)
+			return 1;
+		return 0;
+	}
+
+	[Category ("DYNCALL")]
+	static int test_0_amd64_dyncall_int_double_ref ()
+	{
+		int arg1 = 1;
+		double arg2 = 1.0f;
+		object s = new object ();
+		var res = (object)typeof (Foo2<object>).GetMethod ("Get_T4").Invoke (null, new object [] { arg1, arg2, s });
+		if (res != s)
 			return 1;
 		return 0;
 	}
