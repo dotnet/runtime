@@ -13,7 +13,9 @@ working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 unprocessedBuildArgs=
 
 # Parse arguments
-if [ $# == 0 ]; then
+# Assume the default '-p' argument if the only arguments specified are specified after double dash.
+# Only position parameters can be specified after the double dash.
+if [ $# == 0 ] || [ $1 == '--' ]; then
     buildArgs="-p"
 fi
 
