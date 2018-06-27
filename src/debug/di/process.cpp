@@ -6475,6 +6475,7 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
 
     if (this->IsInteropDebugging())
     {
+#ifdef FEATURE_INTEROP_DEBUGGING
         RSLockHolder lockHolder(GetProcessLock());
 
         // Find the unmanaged thread
@@ -6488,6 +6489,9 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
         }
 
         return ut->GetThreadContext((DT_CONTEXT*)context);
+#else
+        return E_NOTIMPL;
+#endif
     }
     else
     {
@@ -6551,6 +6555,7 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
 
     if (this->IsInteropDebugging())
     {
+#ifdef FEATURE_INTEROP_DEBUGGING
         RSLockHolder lockHolder(GetProcessLock());
 
         CordbUnmanagedThread *ut = NULL;
@@ -6587,6 +6592,9 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
             }
             EX_CATCH_HRESULT(hr);
         }
+#else
+        return E_NOTIMPL;
+#endif
     }
     else
     {
