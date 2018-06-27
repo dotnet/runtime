@@ -92,24 +92,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return token;
         }
 
-        // Get the delegate associated with an event registration token if it exists.  Additionally,
-        // remove the registration from the table at the same time.  If the token is not registered,
-        // Extract returns null and does not modify the table.
-        // [System.Runtime.CompilerServices.FriendAccessAllowed]
-        internal T ExtractHandler(EventRegistrationToken token)
-        {
-            T handler = null;
-            lock (m_tokens)
-            {
-                if (m_tokens.TryGetValue(token, out handler))
-                {
-                    RemoveEventHandlerNoLock(token);
-                }
-            }
-
-            return handler;
-        }
-
         // Generate a token that may be used for a particular event handler.  We will frequently be called
         // upon to look up a token value given only a delegate to start from.  Therefore, we want to make
         // an initial token value that is easily determined using only the delegate instance itself.  Although
@@ -167,6 +149,23 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             ulong tokenValue = ((ulong)(uint)typeof(T).MetadataToken << 32) | handlerHashCode;
             return new EventRegistrationToken(tokenValue);
+        }
+
+        // Remove the event handler from the table and 
+        // Get the delegate associated with an event registration token if it exists
+        // If the event registration token is not registered, returns false
+        public bool RemoveEventHandler(EventRegistrationToken token, out T handler)
+        {
+            lock (m_tokens)
+            {
+                if (m_tokens.TryGetValue(token, out handler))
+                {
+                    RemoveEventHandlerNoLock(token);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public void RemoveEventHandler(EventRegistrationToken token)
