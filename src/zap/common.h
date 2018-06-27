@@ -27,6 +27,12 @@
 #endif
 #endif // !_TARGET_X86_ || FEATURE_PAL
 
+#ifdef _TARGET_64BIT_
+typedef unsigned __int64 TARGET_POINTER_TYPE;
+#else
+typedef unsigned int TARGET_POINTER_TYPE;
+#endif
+
 #include "utilcode.h"
 #include "corjit.h"
 #include "jithost.h"
