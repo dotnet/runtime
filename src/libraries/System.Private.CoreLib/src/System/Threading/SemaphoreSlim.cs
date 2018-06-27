@@ -2,24 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-//
-//
-//
-// A lightweight semahore class that contains the basic semaphore functions plus some useful functions like interrupt
-// and wait handle exposing to allow waiting on multiple semaphores.
-//
-// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Security;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-
-// The class will be part of the current System.Threading namespace
 
 namespace System.Threading
 {
@@ -77,7 +65,7 @@ namespace System.Threading
         private TaskNode m_asyncTail;
 
         // A pre-completed task with Result==true
-        private readonly static Task<bool> s_trueTask =
+        private static readonly Task<bool> s_trueTask =
             new Task<bool>(false, true, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
         // A pre-completed task with Result==false
         private readonly static Task<bool> s_falseTask =
@@ -97,8 +85,9 @@ namespace System.Threading
                 bool setSuccessfully = TrySetResult(true);
                 Debug.Assert(setSuccessfully, "Should have been able to complete task");
             }
-
-            void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae) { /* nop */ }
+#if CORECLR
+            void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae) { /* nop */ } 
+#endif
         }
         #endregion
 
@@ -238,7 +227,7 @@ namespace System.Threading
         /// otherwise, false.</returns>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.int.MaxValue"/>.</exception>
+        /// than <see cref="System.Int32.MaxValue"/>.</exception>
         public bool Wait(TimeSpan timeout)
         {
             // Validate the timeout
@@ -267,7 +256,7 @@ namespace System.Threading
         /// otherwise, false.</returns>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
-        /// than <see cref="System.int.MaxValue"/>.</exception>
+        /// than <see cref="System.Int32.MaxValue"/>.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
@@ -348,8 +337,8 @@ namespace System.Threading
             try
             {
                 // Perf: first spin wait for the count to be positive.
-                //       This additional amount of spinwaiting in addition
-                //       to Monitor.Enter()’s spinwaiting has shown measurable perf gains in test scenarios.
+                // This additional amount of spinwaiting in addition
+                // to Monitor.Enter()’s spinwaiting has shown measurable perf gains in test scenarios.
                 if (m_currentCount == 0)
                 {
                     // Monitor.Enter followed by Monitor.Wait is much more expensive than waiting on an event as it involves another
@@ -369,7 +358,6 @@ namespace System.Threading
                         }
                     }
                 }
-
                 // entering the lock and incrementing waiters must not suffer a thread-abort, else we cannot
                 // clean up m_waitCount correctly, which may lead to deadlock due to non-woken waiters.
                 try { }
@@ -487,7 +475,6 @@ namespace System.Threading
                         return false;
                     }
                 }
-
                 // ** the actual wait **
                 bool waitSuccessful = Monitor.Wait(m_lockObj, remainingWaitMilliseconds);
 
@@ -578,7 +565,7 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException">
         /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents 
-        /// an infinite time-out -or- timeout is greater than <see cref="System.int.MaxValue"/>.
+        /// an infinite time-out -or- timeout is greater than <see cref="System.Int32.MaxValue"/>.
         /// </exception>
         public Task<bool> WaitAsync(TimeSpan timeout)
         {
@@ -599,7 +586,7 @@ namespace System.Threading
         /// </returns>
         /// <exception cref="T:System.ArgumentOutOfRangeException">
         /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents 
-        /// an infinite time-out -or- timeout is greater than <see cref="System.int.MaxValue"/>.
+        /// an infinite time-out -or- timeout is greater than <see cref="System.Int32.MaxValue"/>.
         /// </exception>
         public Task<bool> WaitAsync(TimeSpan timeout, CancellationToken cancellationToken)
         {
@@ -920,7 +907,7 @@ namespace System.Threading
             {
                 if (m_waitHandle != null)
                 {
-                    m_waitHandle.Close();
+                    m_waitHandle.Dispose();
                     m_waitHandle = null;
                 }
                 m_lockObj = null;
@@ -928,8 +915,6 @@ namespace System.Threading
                 m_asyncTail = null;
             }
         }
-
-
 
         /// <summary>
         /// Private helper method to wake up waiters when a cancellationToken gets canceled.
@@ -956,7 +941,6 @@ namespace System.Threading
                 throw new ObjectDisposedException(null, SR.SemaphoreSlim_Disposed);
             }
         }
-
         #endregion
     }
 }
