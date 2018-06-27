@@ -20,6 +20,7 @@
       <DisabledProjects Include="Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj" Condition="('$(BuildTestsAgainstPackages)' == 'true') Or ('$(BuildOS)' != 'Windows_NT')" />
       <DisabledProjects Include="Common\test_runtime\test_runtime.csproj" />
       <DisabledProjects Include="Common\test_dependencies\test_dependencies.csproj" />
+      <DisabledProjects Include="Common\CoreFX\TestFileSetup\CoreFX.TestUtils.TestFileSetup.csproj" />      
       <DisabledProjects Include="Common\build_against_pkg_dependencies\build_against_pkg_dependencies.csproj" />
       <DisabledProjects Include="Common\targeting_pack_ref\targeting_pack_ref.csproj" />
       <DisabledProjects Include="Common\external\external.csproj" />

@@ -336,6 +336,12 @@
       "values": [],
       "defaultValue": ""
     },
+    "CreateTestHost": {
+      "description": "Place test dependencies in the /bin/testhost folder to be used to run CoreFX tests",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
     "Verbosity": {
       "description": "Sets build verbosity.",
       "valueType": "passThrough",
@@ -502,6 +508,12 @@
           "description": "Runs test overlay target.",
           "settings": {
             "CreateTestOverlay": "default"
+          }
+        },
+        "testHost": {
+          "description": "Runs test host target, which creates a dotnet executable from the built CoreCLR repo to run pre-built CoreFX test assemblies",
+          "settings": {
+            "CreateTestHost": "default"
           }
         },
         "priority": {
