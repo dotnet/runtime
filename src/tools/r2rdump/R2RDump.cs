@@ -6,14 +6,46 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.IO;
+using System.Text;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace R2RDump
 {
+    abstract class Dumper
+    {
+        internal R2RReader _r2r;
+        internal bool _raw;
+        internal bool _header;
+        internal bool _disasm;
+        internal IntPtr _disassembler;
+        internal bool _unwind;
+        internal bool _gc;
+        internal bool _sectionContents;
+        internal TextWriter _writer;
+
+        abstract internal void Begin();
+        abstract internal void End();
+        abstract internal void WriteDivider(string title);
+        abstract internal void WriteSubDivider();
+        abstract internal void SkipLine();
+        abstract internal void DumpHeader(bool dumpSections);
+        abstract internal void DumpSection(R2RSection section, XmlNode parentNode = null);
+        abstract internal void DumpAllMethods();
+        abstract internal void DumpMethod(R2RMethod method, XmlNode parentNode = null);
+        abstract internal void DumpRuntimeFunction(RuntimeFunction rtf, XmlNode parentNode = null);
+        abstract internal unsafe void DumpDisasm(IntPtr Disasm, RuntimeFunction rtf, int imageOffset, byte[] image, XmlNode parentNode = null);
+        abstract internal void DumpBytes(int rva, uint size, XmlNode parentNode = null, string name = "Raw", bool convertToOffset = true);
+        abstract internal void DumpSectionContents(R2RSection section, XmlNode parentNode = null);
+        abstract internal XmlNode DumpQueryCount(string q, string title, int count);
+    }
+
     class R2RDump
     {
         private bool _help;
         private IReadOnlyList<string> _inputFilenames = Array.Empty<string>();
         private string _outputFilename = null;
+        private bool _xml;
         private bool _raw;
         private bool _header;
         private bool _disasm;
@@ -28,6 +60,7 @@ namespace R2RDump
         private bool _sectionContents;
         private TextWriter _writer;
         private Dictionary<R2RSection.SectionType, bool> _selectedSections = new Dictionary<R2RSection.SectionType, bool>();
+        private Dumper _dumper;
 
         private R2RDump()
         {
@@ -45,6 +78,7 @@ namespace R2RDump
                 syntax.DefineOption("h|help", ref _help, "Help message for R2RDump");
                 syntax.DefineOptionList("i|in", ref _inputFilenames, "Input file(s) to dump. Expects them to by ReadyToRun images");
                 syntax.DefineOption("o|out", ref _outputFilename, "Output file path. Dumps everything to the specified file except help message and exception messages");
+                syntax.DefineOption("x|xml", ref _xml, "Output in XML format");
                 syntax.DefineOption("raw", ref _raw, "Dump the raw bytes of each section or runtime function");
                 syntax.DefineOption("header", ref _header, "Dump R2R header");
                 syntax.DefineOption("d|disasm", ref _disasm, "Show disassembly of methods or runtime functions");
@@ -101,221 +135,6 @@ namespace R2RDump
             Console.WriteLine($"Warning: {warning}");
         }
 
-        private void WriteDivider(string title)
-        {
-            int len = 61 - title.Length - 2;
-            _writer.WriteLine(new String('=', len/2) + " " + title + " " + new String('=', (int)Math.Ceiling(len/2.0)));
-            _writer.WriteLine();
-        }
-
-        private void WriteSubDivider()
-        {
-            _writer.WriteLine("_______________________________________________");
-            _writer.WriteLine();
-        }
-
-        /// <summary>
-        /// Dumps the R2RHeader and all the sections in the header
-        /// </summary>
-        private void DumpHeader(R2RReader r2r, bool dumpSections)
-        {
-            _writer.WriteLine(r2r.R2RHeader.ToString());
-            if (_raw)
-            {
-                DumpBytes(r2r, r2r.R2RHeader.RelativeVirtualAddress, (uint)r2r.R2RHeader.Size);
-            }
-            _writer.WriteLine();
-            if (dumpSections)
-            {
-                WriteDivider("R2R Sections");
-                _writer.WriteLine($"{r2r.R2RHeader.Sections.Count} sections");
-                _writer.WriteLine();
-                foreach (R2RSection section in r2r.R2RHeader.Sections.Values)
-                {
-                    DumpSection(r2r, section);
-                }
-            }
-            _writer.WriteLine();
-        }
-
-        /// <summary>
-        /// Dumps one R2RSection
-        /// </summary>
-        private void DumpSection(R2RReader r2r, R2RSection section)
-        {
-            WriteSubDivider();
-            _writer.WriteLine(section.ToString());
-            if (_raw)
-            {
-                DumpBytes(r2r, section.RelativeVirtualAddress, (uint)section.Size);
-                _writer.WriteLine();
-            }
-            if (_sectionContents)
-            {
-                DumpSectionContents(r2r, section);
-                _writer.WriteLine();
-            }
-        }
-
-        /// <summary>
-        /// Dumps one R2RMethod. 
-        /// </summary>
-        private void DumpMethod(R2RReader r2r, R2RMethod method)
-        {
-            WriteSubDivider();
-            _writer.WriteLine(method.ToString());
-            if (_gc)
-            {
-                _writer.WriteLine("GcInfo:");
-                _writer.Write(method.GcInfo);
-                if (_raw)
-                {
-                    DumpBytes(r2r, method.GcInfo.Offset, (uint)method.GcInfo.Size, false);
-                }
-            }
-            _writer.WriteLine();
-
-            foreach (RuntimeFunction runtimeFunction in method.RuntimeFunctions)
-            {
-                DumpRuntimeFunction(r2r, runtimeFunction);
-            }
-        }
-
-        /// <summary>
-        /// Dumps one runtime function. 
-        /// </summary>
-        private void DumpRuntimeFunction(R2RReader r2r, RuntimeFunction rtf)
-        {
-            _writer.Write($"{rtf}");
-            if (_disasm)
-            {
-                _writer.Write(CoreDisTools.GetCodeBlock(_disassembler, rtf, r2r.GetOffset(rtf.StartAddress), r2r.Image));
-            }
-
-            if (_raw)
-            {
-                _writer.WriteLine("Raw Bytes:");
-                DumpBytes(r2r, rtf.StartAddress, (uint)rtf.Size);
-            }
-            if (_unwind)
-            {
-                _writer.WriteLine("UnwindInfo:");
-                _writer.Write(rtf.UnwindInfo);
-                if (_raw)
-                {
-                    DumpBytes(r2r, rtf.UnwindRVA, (uint)((Amd64.UnwindInfo)rtf.UnwindInfo).Size);
-                }
-            }
-            _writer.WriteLine();
-        }
-
-        /// <summary>
-        /// Prints a formatted string containing a block of bytes from the relative virtual address and size
-        /// </summary>
-        public void DumpBytes(R2RReader r2r, int rva, uint size, bool convertToOffset = true)
-        {
-            int start = rva;
-            if (convertToOffset)
-                start = r2r.GetOffset(rva);
-            if (start > r2r.Image.Length || start + size > r2r.Image.Length)
-            {
-                throw new IndexOutOfRangeException();
-            }
-            _writer.Write("    ");
-            if (rva % 16 != 0)
-            {
-                int floor = rva / 16 * 16;
-                _writer.Write($"{floor:X8}:");
-                _writer.Write(new String(' ', (rva - floor) * 3));
-            }
-            for (uint i = 0; i < size; i++)
-            {
-                if ((rva + i) % 16 == 0)
-                {
-                    _writer.Write($"{rva + i:X8}:");
-                }
-                _writer.Write($" {r2r.Image[start + i]:X2}");
-                if ((rva + i) % 16 == 15 && i != size - 1)
-                {
-                    _writer.WriteLine();
-                    _writer.Write("    ");
-                }
-            }
-            _writer.WriteLine();
-        }
-
-        private void DumpSectionContents(R2RReader r2r, R2RSection section)
-        {
-            switch (section.Type)
-            {
-                case R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES:
-                    uint availableTypesSectionOffset = (uint)r2r.GetOffset(section.RelativeVirtualAddress);
-                    NativeParser availableTypesParser = new NativeParser(r2r.Image, availableTypesSectionOffset);
-                    NativeHashtable availableTypes = new NativeHashtable(r2r.Image, availableTypesParser, (uint)(availableTypesSectionOffset + section.Size));
-                    _writer.WriteLine(availableTypes.ToString());
-
-                    foreach (string name in r2r.AvailableTypes)
-                    {
-                        _writer.WriteLine(name);
-                    }
-                    break;
-                case R2RSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS:
-                    NativeArray methodEntryPoints = new NativeArray(r2r.Image, (uint)r2r.GetOffset(section.RelativeVirtualAddress));
-                    _writer.Write(methodEntryPoints.ToString());
-                    break;
-                case R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS:
-                    uint instanceSectionOffset = (uint)r2r.GetOffset(section.RelativeVirtualAddress);
-                    NativeParser instanceParser = new NativeParser(r2r.Image, instanceSectionOffset);
-                    NativeHashtable instMethodEntryPoints = new NativeHashtable(r2r.Image, instanceParser, (uint)(instanceSectionOffset + section.Size));
-                    _writer.Write(instMethodEntryPoints.ToString());
-                    break;
-                case R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS:
-                    int rtfOffset = r2r.GetOffset(section.RelativeVirtualAddress);
-                    int rtfEndOffset = rtfOffset + section.Size;
-                    int rtfIndex = 0;
-                    while (rtfOffset < rtfEndOffset)
-                    {
-                        uint rva = NativeReader.ReadUInt32(r2r.Image, ref rtfOffset);
-                        _writer.WriteLine($"{rtfIndex}: 0x{rva:X8}");
-                        rtfIndex++;
-                    }
-                    break;
-                case R2RSection.SectionType.READYTORUN_SECTION_COMPILER_IDENTIFIER:
-                    _writer.WriteLine(r2r.CompileIdentifier);
-                    break;
-                case R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS:
-                    foreach (R2RImportSection importSection in r2r.ImportSections)
-                    {
-                        _writer.Write(importSection.ToString());
-                        if (_raw && importSection.Entries.Count != 0)
-                        {
-                            if (importSection.SectionRVA != 0)
-                            {
-                                _writer.WriteLine("Section Bytes:");
-                                DumpBytes(r2r, importSection.SectionRVA, (uint)importSection.SectionSize);
-                            }
-                            if (importSection.SignatureRVA != 0)
-                            {
-                                _writer.WriteLine("Signature Bytes:");
-                                DumpBytes(r2r, importSection.SignatureRVA, (uint)importSection.Entries.Count * sizeof(int));
-                            }
-                            if (importSection.AuxiliaryDataRVA != 0)
-                            {
-                                _writer.WriteLine("AuxiliaryData Bytes:");
-                                DumpBytes(r2r, importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size);
-                            }
-                        }
-                        foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
-                        {
-                            _writer.WriteLine();
-                            _writer.WriteLine(entry.ToString());
-                        }
-                        _writer.WriteLine();
-                    }
-                    break;
-            }
-        }
-
         // <summary>
         /// For each query in the list of queries, search for all methods matching the query by name, signature or id
         /// </summary>
@@ -327,17 +146,15 @@ namespace R2RDump
         {
             if (queries.Count > 0)
             {
-                WriteDivider(title);
+                _dumper.WriteDivider(title);
             }
             foreach (string q in queries)
             {
                 IList<R2RMethod> res = FindMethod(r2r, q, exact);
-
-                _writer.WriteLine(res.Count + " result(s) for \"" + q + "\"");
-                _writer.WriteLine();
+                XmlNode queryNode = _dumper.DumpQueryCount(q, "Methods", res.Count);
                 foreach (R2RMethod method in res)
                 {
-                    DumpMethod(r2r, method);
+                    _dumper.DumpMethod(method, queryNode);
                 }
             }
         }
@@ -351,17 +168,15 @@ namespace R2RDump
         {
             if (queries.Count > 0)
             {
-                WriteDivider("R2R Section");
+                _dumper.WriteDivider("R2R Section");
             }
             foreach (string q in queries)
             {
                 IList<R2RSection> res = FindSection(r2r, q);
-
-                _writer.WriteLine(res.Count + " result(s) for \"" + q + "\"");
-                _writer.WriteLine();
+                XmlNode queryNode = _dumper.DumpQueryCount(q, "Sections", res.Count);
                 foreach (R2RSection section in res)
                 {
-                    DumpSection(r2r, section);
+                    _dumper.DumpSection(section, queryNode);
                 }
             }
         }
@@ -376,7 +191,7 @@ namespace R2RDump
         {
             if (queries.Count > 0)
             {
-                WriteDivider("Runtime Functions");
+                _dumper.WriteDivider("Runtime Functions");
             }
             foreach (int q in queries)
             {
@@ -387,8 +202,8 @@ namespace R2RDump
                     WriteWarning("Unable to find by id " + q);
                     continue;
                 }
-                _writer.WriteLine(rtf.Method.SignatureString);
-                DumpRuntimeFunction(r2r, rtf);
+                XmlNode queryNode = _dumper.DumpQueryCount(q.ToString(), "Runtime Function", 1);
+                _dumper.DumpRuntimeFunction(rtf, queryNode);
             }
         }
 
@@ -398,32 +213,24 @@ namespace R2RDump
         /// <param name="r2r">The structure containing the info of the ReadyToRun image</param>
         public void Dump(R2RReader r2r)
         {
-            _writer.WriteLine($"Filename: {r2r.Filename}");
-            _writer.WriteLine($"Machine: {r2r.Machine}");
-            _writer.WriteLine($"ImageBase: 0x{r2r.ImageBase:X8}");
-            _writer.WriteLine();
+
+            _dumper.Begin();
 
             if (_queries.Count == 0 && _keywords.Count == 0 && _runtimeFunctions.Count == 0 && _sections.Count == 0) //dump all sections and methods
             {
-                WriteDivider("R2R Header");
-                DumpHeader(r2r, true);
+                _dumper.WriteDivider("R2R Header");
+                _dumper.DumpHeader(true);
                 
                 if (!_header)
                 {
-                    WriteDivider("R2R Methods");
-                    _writer.WriteLine($"{r2r.R2RMethods.Count} methods");
-                    _writer.WriteLine();
-                    foreach (R2RMethod method in r2r.R2RMethods)
-                    {
-                        DumpMethod(r2r, method);
-                    }
+                    _dumper.DumpAllMethods();
                 }
             }
             else //dump queried sections/methods/runtimeFunctions
             {
                 if (_header)
                 {
-                    DumpHeader(r2r, false);
+                    _dumper.DumpHeader(false);
                 }
 
                 QuerySection(r2r, _sections);
@@ -432,8 +239,7 @@ namespace R2RDump
                 QueryMethod(r2r, "R2R Methods by Keyword", _keywords, false);
             }
 
-            _writer.WriteLine("=============================================================");
-            _writer.WriteLine();
+            _dumper.End();
         }
 
         /// <summary>
@@ -545,15 +351,6 @@ namespace R2RDump
         private int Run(string[] args)
         {
             ArgumentSyntax syntax = ParseCommandLine(args);
-            
-            if (_help)
-            {
-                _writer.WriteLine(syntax.GetHelpText());
-                return 0;
-            }
-
-            if (_inputFilenames.Count == 0)
-                throw new ArgumentException("Input filename must be specified (--in <file>)");
 
             // open output stream
             if (_outputFilename != null)
@@ -565,14 +362,33 @@ namespace R2RDump
                 _writer = Console.Out;
             }
 
+            if (_help)
+            {
+                _writer.WriteLine(syntax.GetHelpText());
+                return 0;
+            }
+
+            if (_inputFilenames.Count == 0)
+                throw new ArgumentException("Input filename must be specified (--in <file>)");
+
             try
             {
                 foreach (string filename in _inputFilenames)
                 {
                     R2RReader r2r = new R2RReader(filename);
+
                     if (_disasm)
                     {
                         _disassembler = CoreDisTools.GetDisasm(r2r.Machine);
+                    }
+
+                    if (_xml)
+                    {
+                        _dumper = new XmlDumper(r2r, _writer, _raw, _header, _disasm, _disassembler, _unwind, _gc, _sectionContents);
+                    }
+                    else
+                    {
+                        _dumper = new TextDumper(r2r, _writer, _raw, _header, _disasm, _disassembler, _unwind, _gc, _sectionContents);
                     }
 
                     Dump(r2r);
