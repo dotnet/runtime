@@ -2220,13 +2220,12 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         if (doCoreFxTesting) {
                             if (scenario == 'corefx_innerloop') {
                                 // Create CORE_ROOT and testhost
-                                buildCommands += "build-test.cmd ${lowerConfiguration} ${arch} skipmanaged"                                
-                                buildCommands += "tests\\runtest.cmd ${runtestArguments} CoreFXTests"
+                                buildCommands += "build-test.cmd ${lowerConfiguration} ${arch} buildtesthostonly"                                
+                                buildCommands += "tests\\runtest.cmd ${runtestArguments} CoreFXTestsAll"
                                 
-                                // CI will report missing logs as a test failure - disable until https://github.com/dotnet/coreclr/pull/18365 is merged
-                                // // Archive and process (only) the test results
-                                // Utilities.addArchival(newJob, "bin/Logs/**/testResults.xml")
-                                // Utilities.addXUnitDotNETResults(newJob, "bin/Logs/**/testResults.xml")
+                                // Archive and process (only) the test results
+                                Utilities.addArchival(newJob, "bin/Logs/**/testResults.xml")
+                                Utilities.addXUnitDotNETResults(newJob, "bin/Logs/**/testResults.xml")
                             }
                             else {
                               def workspaceRelativeFxRoot = "_/fx"
