@@ -76,21 +76,6 @@
 	<Comment> Attempt to define an object that already exists in valid scenerios. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x1311de">
-	<SymbolicName>TLBX_W_BAD_SAFEARRAYFIELD_NO_ELEMENTVT</SymbolicName>
-	<Comment> TypeLib export: System.Array SAFEARRAY field without a SafeArraySubType. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x1311df">
-	<SymbolicName>TLBX_W_LAYOUTCLASS_AS_INTERFACE</SymbolicName>
-	<Comment> TypeLib export: Class with layout parameter of field marked with UnmanagedType.Interface </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x1311e0">
-	<SymbolicName>TLBX_I_GENERIC_BASE_TYPE</SymbolicName>
-	<Comment> TypeLib export: type deriving from a generic type. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x13130b">
 	<SymbolicName>CORDBG_S_BAD_START_SEQUENCE_POINT</SymbolicName>
 	<Comment> Attempt to SetIP not at a sequence point sequence point. </Comment>
@@ -175,18 +160,6 @@
 	<Comment> The assembly is built by a runtime newer than the currently loaded runtime, and cannot be loaded. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x8013101c">
-	<SymbolicName>COR_E_CANNOT_SET_POLICY</SymbolicName>
-	<Message>"Cannot set security policy under MultiDomain after non-GAC assemblies have been loaded in appdomain."</Message>
-	<Comment> Unable to set app domain security policy after non-GAC domain neutral assemblies are loaded </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013101d">
-	<SymbolicName>COR_E_CANNOT_SPECIFY_EVIDENCE</SymbolicName>
-	<Message>"Cannot specify assembly evidence under MultiDomain after non-GAC assemblies with default evidence have been loaded in appdomain."</Message>
-	<Comment> Unable to use assembly evidence after non-GAC domain neutral assemblies are loaded </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x8013101e">
 	<SymbolicName>COR_E_MULTIMODULEASSEMBLIESDIALLOWED</SymbolicName>
 	<Message>"The module cannot be loaded because only single file assemblies are supported."</Message>
@@ -199,12 +172,6 @@
 	<Comment> Host detects deadlock on a blocking operation </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131021">
-	<SymbolicName>HOST_E_INTERRUPTED</SymbolicName>
-	<Message>"Host interrupted a wait."</Message>
-	<Comment> Host interrupts a wait, similar to APC </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131022">
 	<SymbolicName>HOST_E_INVALIDOPERATION</SymbolicName>
 	<Message>"Invalid operation."</Message>
@@ -215,24 +182,6 @@
 	<SymbolicName>HOST_E_CLRNOTAVAILABLE</SymbolicName>
 	<Message>"CLR has been disabled due to unrecoverable error."</Message>
 	<Comment> CLR has been disabled due to unrecoverable error </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131024">
-	<SymbolicName>HOST_E_TIMEOUT</SymbolicName>
-	<Message>"A wait has timed out."</Message>
-	<Comment> A wait times out </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131025">
-	<SymbolicName>HOST_E_NOT_OWNER</SymbolicName>
-	<Message>"The leave operation has been attempted on a synchronization primitive that is not owned by the current thread."</Message>
-	<Comment> </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131026">
-	<SymbolicName>HOST_E_ABANDONED</SymbolicName>
-	<Message>"An event has been abandoned."</Message>
-	<Comment> An event is abandoned </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131027">
@@ -257,12 +206,6 @@
 	<SymbolicName>HOST_E_EXITPROCESS_OUTOFMEMORY</SymbolicName>
 	<Message>"Process exited due to OutOfMemory escalation."</Message>
 	<Comment> ExitProcess due to OutOfMemory escalation </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013102b">
-	<SymbolicName>HOST_E_EXITPROCESS_STACKOVERFLOW</SymbolicName>
-	<Message>"Process exited due to StackOverflow escalation."</Message>
-	<Comment> ExitProcess due to StackOverflow escalation </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131039">
@@ -313,12 +256,6 @@
 	<Comment> HTTP download of assemblies has been disabled for this appdomain. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x8013104A">
-	<SymbolicName>CLR_E_APP_CONFIG_NOT_ALLOWED_IN_APPX_PROCESS</SymbolicName>
-	<Message>"Application configuration file not allowed in AppX process."</Message>
-	<Comment> Application configuration file not allowed in AppX process. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131050">
 	<SymbolicName>FUSION_E_HOST_GAC_ASM_MISMATCH</SymbolicName>
 	<Message>"Assembly in host store has a different signature than assembly in GAC."</Message>
@@ -353,18 +290,6 @@
 	<SymbolicName>FUSION_E_MANIFEST_PARSE_ERROR</SymbolicName>
 	<Message>"Unexpected error while parsing the specified manifest."</Message>
 	<Comment> Unexpected error while parsing the specified manifest </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131056">
-	<SymbolicName>FUSION_E_INVALID_ASSEMBLY_REFERENCE</SymbolicName>
-	<Message>"The given assembly name is invalid because a processor architecture is specified."</Message>
-	<Comment> The given assembly name is invalid because a processor architecture is specified </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131057">
-	<SymbolicName>COR_E_ASSEMBLY_NOT_EXPECTED</SymbolicName>
-	<Message>"The module was expected to not contain an assembly manifest."</Message>
-	<Comment> The module was expected to not contain an assembly manifest.</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131058">
@@ -469,12 +394,6 @@
 	<Comment> Merge: Inconsistency in meta data import scope </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x8013118c">
-	<SymbolicName>TLBX_E_NO_CRITICALHANDLE_ARRAYS</SymbolicName>
-	<Message>"TypeLib export: Detected array of CriticalHandles."</Message>
-	<Comment> TypeLib export: detected array of CriticalHandles </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131192">
 	<SymbolicName>META_E_BAD_SIGNATURE</SymbolicName>
 	<Message>"Bad binary signature."</Message>
@@ -509,36 +428,6 @@
 	<SymbolicName>META_E_MUST_CALL_UNMARKALL</SymbolicName>
 	<Message>"Must call UnmarkAll first before marking."</Message>
 	<Comment> Must call UnmarkAll first before marking. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013119c">
-	<SymbolicName>META_E_GENERICPARAM_INCONSISTENT</SymbolicName>
-	<Message>"Merge: duplicated types or methods have inconsistent GenericParams."</Message>
-	<Comment> Merge: duplicated types/methods have inconsistent GenericParams </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013119d">
-	<SymbolicName>META_E_EVENT_COUNTS</SymbolicName>
-	<Message>"Merge: different event counts in import and emit scopes."</Message>
-	<Comment> Merge: different event counts in import and emit scopes. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013119e">
-	<SymbolicName>META_E_PROPERTY_COUNTS</SymbolicName>
-	<Message>"Merge: different property counts in import and emit scopes."</Message>
-	<Comment> Merge: different property counts in import and emit scopes. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013119f">
-	<SymbolicName>META_E_TYPEDEF_MISSING</SymbolicName>
-	<Message>"Merge: An input scope has a TypeRef which does not have a matching TypeDef."</Message>
-	<Comment> Merge: An input scope has a TypeRef which should but doesn't have a matching TypeDef. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311ad">
-	<SymbolicName>TLBX_E_INVALID_NAMESPACE</SymbolicName>
-	<Message>"TypeLib import: an imported typelib has an invalid namespace name."</Message>
-	<Comment> TypeLib import: an imported typelib has an invalid namespace name. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x801311c0">
@@ -635,34 +524,6 @@
 	<SymbolicName>META_E_NOT_IN_ENC_MODE</SymbolicName>
 	<Message>"SaveDelta was called without being in EnC mode."</Message>
 	<Comment> SaveDelta was called without being in EnC mode </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311d6">
-	<SymbolicName>META_E_METHOD_COUNTS</SymbolicName>
-	<Message>"Merge: different method counts in import and emit scopes."</Message>
-	<Comment> Merge: different method counts in import and emit scopes. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311d7">
-	<SymbolicName>META_E_FIELD_COUNTS</SymbolicName>
-	<Message>"Merge: different field counts in import and emit scopes."</Message>
-	<Comment> Merge: different field counts in import and emit scopes. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311d8">
-	<SymbolicName>META_E_PARAM_COUNTS</SymbolicName>
-	<Message>"Merge: different parameter counts in import and emit scopes."</Message>
-	<Comment> Merge: different param counts in import and emit scopes. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311e2">
-	<SymbolicName>TLBX_E_EVENT_WITH_NEWENUM</SymbolicName>
-	<Comment> TypeLib import: source interface with NewEnum member. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x801311e4">
-	<SymbolicName>META_E_MISMATCHED_VISIBLITY</SymbolicName>
-	<Comment> Merge - Match found for type/method/etc but differs in visiblity  </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x801311e5">
@@ -800,12 +661,6 @@
 	<SymbolicName>VLDTR_E_SIG_BADELTYPE</SymbolicName>
 	<Message>"Signature has bad element type."</Message>
 	<Comment> Signature has bad element type. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131248">
-	<SymbolicName>VLDTR_E_SIG_MISSVASIZE</SymbolicName>
-	<Message>"Signature has value array missing size."</Message>
-	<Comment> Signature has value array missing size. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131256">
@@ -1411,18 +1266,6 @@
 	<Comment> Assembly already loaded without additional security evidence. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131413">
-	<SymbolicName>CORSEC_E_CRYPTOAPI_CALL_FAILED</SymbolicName>
-	<Message>"StrongName APIs not supported on system."</Message>
-	<Comment> StrongName APIs not supported on system </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131414">
-	<SymbolicName>CORSEC_E_NO_SUITABLE_CSP</SymbolicName>
-	<Message>"StrongName APIs could not locate a matching CSP."</Message>
-	<Comment> StrongName APIs couldn't locate a matching CSP </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131416">
 	<SymbolicName>CORSEC_E_POLICY_EXCEPTION</SymbolicName>
 	<Message>"PolicyException thrown."</Message>
@@ -1475,24 +1318,6 @@
 	<SymbolicName>CORSEC_E_SIGNATURE_MISMATCH</SymbolicName>
 	<Message>"Signature size mismatch."</Message>
 	<Comment> Signature size mismatch </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131421">
-	<SymbolicName>SN_E_PUBLICKEY_MISMATCH</SymbolicName>
-	<Message>"Public key of assembly did not match signing public key."</Message>
-	<Comment> Public key of assembly did not match signing public key </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131422">
-	<SymbolicName>CORSEC_E_INVALID_SIGNATUREKEY</SymbolicName>
-	<Message>"Invalid signature public key specified in AssemblySignatureKeyAttribute."</Message>
-	<Comment> Invalid signature key (or invalid key format) specified in the assembly's attribute </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131423">
-	<SymbolicName>CORSEC_E_INVALID_COUNTERSIGNATURE</SymbolicName>
-	<Message>"Invalid countersignature specified in AssemblySignatureKeyAttribute."</Message>
-	<Comment> Invalid signature (or invalid signature format) specified in the assembly's attribute </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131430">
@@ -1835,13 +1660,6 @@
   <Comment>Fail to access a CCW because the corresponding managed object is already collected.</Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131545">
-  <SymbolicName>COR_E_MAXMETHODSIZE</SymbolicName>
-  <Message>"A method in this assembly is greater than the maximum allowed method size."</Message>
-  <Comment>This is Apollo only.</Comment>
-</HRESULT>
-
-
 <HRESULT NumericValue="0x80131577">
 	<SymbolicName>COR_E_KEYNOTFOUND</SymbolicName>
 	<Message>"The given key was not present in the dictionary."</Message>
@@ -1937,93 +1755,9 @@
 	<Message>"A runtime has already been bound for legacy activation policy use."</Message>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131705">
-  <SymbolicName>CLR_E_SHIM_SHUTDOWNINPROGRESS</SymbolicName>
-  <Message>"The operation is invalid because the process may be shutting down."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013180c">
-	<SymbolicName>VER_E_LOC_BYNAME</SymbolicName>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131815">
 	<SymbolicName>VER_E_FIELD_SIG</SymbolicName>
 	<Message>"[field sig]"</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131816">
-    <SymbolicName>VER_E_OPEN_DLGT_PROT_ACC</SymbolicName>
-    <Message>"Protected method access through an open instance delegate is not verifiable."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318c0">
-	<SymbolicName>VER_E_VALCLASS_OBJREF_VAR</SymbolicName>
-	<Message>"Value type, ObjRef type or variable type expected."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318c1">
-	<SymbolicName>VER_E_STACK_P_VALCLASS_OBJREF_VAR</SymbolicName>
-	<Message>"Expected address of value type, ObjRef type or variable type on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318c2">
-	<SymbolicName>VER_E_SIG_VAR_PARAM</SymbolicName>
-	<Message>"Unrecognized type parameter of enclosing class."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318c3">
-	<SymbolicName>VER_E_SIG_MVAR_PARAM</SymbolicName>
-	<Message>"Unrecognized type parameter of enclosing method."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318c4">
-	<SymbolicName>VER_E_SIG_VAR_ARG</SymbolicName>
-	<Message>"Unrecognized type argument of referenced class instantiation."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318c5">
-	<SymbolicName>VER_E_SIG_MVAR_ARG</SymbolicName>
-	<Message>"Unrecognized type argument of referenced method instantiation."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318c6">
-	<SymbolicName>VER_E_SIG_GENERICINST</SymbolicName>
-	<Message>"Cannot resolve generic type."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318c7">
-	<SymbolicName>VER_E_SIG_METHOD_INST</SymbolicName>
-	<Message>"Method instantiation contains non boxable type arguments."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318c8">
-	<SymbolicName>VER_E_SIG_METHOD_PARENT_INST</SymbolicName>
-	<Message>"Method parent instantiation contains non boxable type arguments."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318c9">
-	<SymbolicName>VER_E_SIG_FIELD_PARENT_INST</SymbolicName>
-	<Message>"Field parent instantiation contains non boxable type arguments."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318ca">
-	<SymbolicName>VER_E_CALLCONV_NOT_GENERICINST</SymbolicName>
-	<Message>"Unrecognized calling convention for an instantiated generic method."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318cb">
-	<SymbolicName>VER_E_TOKEN_BAD_METHOD_SPEC</SymbolicName>
-	<Message>"Unrecognized generic method in method instantiation."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318cc">
-	<SymbolicName>VER_E_BAD_READONLY_PREFIX</SymbolicName>
-	<Message>"Missing ldelema or call following readonly. prefix."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318cd">
-	<SymbolicName>VER_E_BAD_CONSTRAINED_PREFIX</SymbolicName>
-	<Message>"Missing callvirt following constrained. prefix."</Message>
 </HRESULT>
 
 <HRESULT NumericValue="0x801318ce">
@@ -2036,106 +1770,6 @@
 	<Message>"Method has circular method type parameter constraints."</Message>
 </HRESULT>
 
-<HRESULT NumericValue="0x801318d0">
-	<SymbolicName>VER_E_UNSATISFIED_METHOD_INST</SymbolicName>
-	<Message>"Method instantiation has unsatisfied method type parameter constraints."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318d1">
-	<SymbolicName>VER_E_UNSATISFIED_METHOD_PARENT_INST</SymbolicName>
-	<Message>"Method parent instantiation has unsatisfied class type parameter constraints."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318d2">
-	<SymbolicName>VER_E_UNSATISFIED_FIELD_PARENT_INST</SymbolicName>
-	<Message>"Field parent instantiation has unsatisfied class type parameter constraints."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318d3">
-	<SymbolicName>VER_E_UNSATISFIED_BOX_OPERAND</SymbolicName>
-	<Message>"Type operand of box instruction has unsatisfied class type parameter constraints."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318d4">
-	<SymbolicName>VER_E_CONSTRAINED_CALL_WITH_NON_BYREF_THIS</SymbolicName>
-	<Message>"The 'this' argument to a constrained call must have ByRef type."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318d5">
-	<SymbolicName>VER_E_CONSTRAINED_OF_NON_VARIABLE_TYPE</SymbolicName>
-	<Message>"The operand to a constrained prefix instruction must be a type parameter."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318d6">
-	<SymbolicName>VER_E_READONLY_UNEXPECTED_CALLEE</SymbolicName>
-	<Message>"The readonly prefix may only be applied to calls to array methods returning ByRefs."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318d7">
-	<SymbolicName>VER_E_READONLY_ILLEGAL_WRITE</SymbolicName>
-	<Message>"Illegal write to readonly ByRef."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318d8">
-	<SymbolicName>VER_E_READONLY_IN_MKREFANY</SymbolicName>
-	<Message>"A readonly ByRef cannot be used with mkrefany."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318d9">
-	<SymbolicName>VER_E_UNALIGNED_ALIGNMENT</SymbolicName>
-	<Message>"Alignment specified for 'unaligned' prefix must be 1, 2, or 4."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318da">
-	<SymbolicName>VER_E_TAILCALL_INSIDE_EH</SymbolicName>
-	<Message>"The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318db">
-	<SymbolicName>VER_E_BACKWARD_BRANCH</SymbolicName>
-	<Message>"Stack height at all points must be determinable in a single forward scan of IL."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318dc">
-	<SymbolicName>VER_E_CALL_TO_VTYPE_BASE</SymbolicName>
-	<Message>"Call to base type of valuetype."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318dd">
-	<SymbolicName>VER_E_NEWOBJ_OF_ABSTRACT_CLASS</SymbolicName>
-	<Message>"Cannot construct an instance of abstract class."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318de">
-	<SymbolicName>VER_E_UNMANAGED_POINTER</SymbolicName>
-        <Message>"Unmanaged pointers are not a verifiable type."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318df">
-	<SymbolicName>VER_E_LDFTN_NON_FINAL_VIRTUAL</SymbolicName>
-	<Message>"Cannot LDFTN a non-final virtual method."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318e0">
-	<SymbolicName>VER_E_FIELD_OVERLAP</SymbolicName>
-	<Message>"Accessing type with overlapping fields."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318e1">
-	<SymbolicName>VER_E_THIS_MISMATCH</SymbolicName>
-	<Message>"The 'this' parameter to the call must be the calling method's 'this' parameter."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318e2">
-	<SymbolicName>VER_E_STACK_I_I4</SymbolicName>
-	<Message>"Expected I4 on the stack."</Message>
-</HRESULT>
-
-<HRESULT NumericValue="0x801318f6">
-	<SymbolicName>VER_E_INITIALIZE_ARRAY_MISSING_TOKEN</SymbolicName>
-	<Message>"Ldtoken instruction required before call to System.Runtime.CompilerServices.InitializeArray."</Message>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131920">
 	<SymbolicName>COR_E_Data</SymbolicName>
 </HRESULT>
@@ -2146,232 +1780,10 @@
 	<Comment> Illegal "void" in signature </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131b25">
-	<SymbolicName>VLDTR_E_IFACE_METHMULTIMPL</SymbolicName>
-	<Message>"Multiple implementation of method."</Message>
-	<Comment> Multiple implementation of method </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b26">
-	<SymbolicName>VLDTR_E_GP_NAMENULL</SymbolicName>
-	<Message>"GenericParam name is NULL."</Message>
-	<Comment> GenericParam name is NULL </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b27">
-	<SymbolicName>VLDTR_E_GP_OWNERNIL</SymbolicName>
-	<Message>"GenericParam has nil owner."</Message>
-	<Comment> GenericParam has nil owner. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b28">
-	<SymbolicName>VLDTR_E_GP_DUPNAME</SymbolicName>
-	<Message>"GenericParam has duplicate by owner and name."</Message>
-	<Comment> GenericParam has duplicate by owner and name. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b29">
-	<SymbolicName>VLDTR_E_GP_DUPNUMBER</SymbolicName>
-	<Message>"GenericParam has duplicate by owner and number."</Message>
-	<Comment> GenericParam has duplicate by owner and number. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b2a">
-	<SymbolicName>VLDTR_E_GP_NONSEQ_BY_OWNER</SymbolicName>
-	<Message>"GenericParam is non sequential by owner."</Message>
-	<Comment> GenericParam is non sequential by owner </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b2b">
-	<SymbolicName>VLDTR_E_GP_NONSEQ_BY_NUMBER</SymbolicName>
-	<Message>"GenericParam is non sequential by number."</Message>
-	<Comment> GenericParam is non sequential by number </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b2c">
-	<SymbolicName>VLDTR_E_GP_UNEXPECTED_OWNER_FOR_VARIANT_VAR</SymbolicName>
-	<Message>"GenericParam has variance but its owner is not an interface or delegate."</Message>
-	<Comment> GenericParam has variance but its owner is not an interface or delegate </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131b2d">
 	<SymbolicName>VLDTR_E_GP_ILLEGAL_VARIANT_MVAR</SymbolicName>
 	<Message>"GenericParam is a method type parameter and must be non-variant."</Message>
 	<Comment> GenericParam is a method type parameter and must be non-variant </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b2e">
-	<SymbolicName>VLDTR_E_GP_ILLEGAL_VARIANCE_FLAGS</SymbolicName>
-	<Message>"GenericParam has illegal value for variance flags."</Message>
-	<Comment> GenericParam has illegal value for variance flags </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b2f">
-	<SymbolicName>VLDTR_E_GP_REFANDVALUETYPE</SymbolicName>
-	<Message>"GenericParam has incompatible special constraints reference type and valuetype."</Message>
-	<Comment> GenericParam has incompatible special constraints reference type and valuetype </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b30">
-	<SymbolicName>VLDTR_E_GPC_OWNERNIL</SymbolicName>
-	<Message>"GenericParamConstraint has nil owner."</Message>
-	<Comment> GenericParamConstraint has nil owner </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b31">
-	<SymbolicName>VLDTR_E_GPC_DUP</SymbolicName>
-	<Message>"GenericParamConstraint has duplicate by owner and constraint."</Message>
-	<Comment> GenericParamConstraint has duplicate by owner and constraint </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b32">
-	<SymbolicName>VLDTR_E_GPC_NONCONTIGUOUS</SymbolicName>
-	<Message>"GenericParamConstraint is non-contiguous with preceeding constraints for same owner."</Message>
-	<Comment> GenericParamConstraint is non-contiguous with preceeding constraints for same owner </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b33">
-	<SymbolicName>VLDTR_E_MS_METHODNIL</SymbolicName>
-	<Message>"MethodSpec has nil method."</Message>
-	<Comment> MethodSpec has nil method </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b34">
-	<SymbolicName>VLDTR_E_MS_DUP</SymbolicName>
-	<Message>"MethodSpec has duplicate based on method and instantiation."</Message>
-	<Comment> MethodSpec has duplicate based own method and instantiation </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b35">
-	<SymbolicName>VLDTR_E_MS_BADCALLINGCONV</SymbolicName>
-	<Message>"MethodSpec signature has invalid calling convention."</Message>
-	<Comment> MethodSpec signature has invalid calling convention </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b36">
-	<SymbolicName>VLDTR_E_MS_MISSARITY</SymbolicName>
-	<Message>"MethodSpec signature is missing arity specification."</Message>
-	<Comment> MethodSpec signature is missing arity specification </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b37">
-	<SymbolicName>VLDTR_E_MS_MISSARG</SymbolicName>
-	<Message>"MethodSpec signature is missing type argument."</Message>
-	<Comment> MethodSpec signature is missing type argument </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b38">
-	<SymbolicName>VLDTR_E_MS_ARITYMISMATCH</SymbolicName>
-	<Message>"MethodSpec arity of generic method and instantiation do not match."</Message>
-	<Comment> MethodSpec arity of generic method and instantiation do not match </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b39">
-	<SymbolicName>VLDTR_E_MS_METHODNOTGENERIC</SymbolicName>
-	<Message>"MethodSpec method is not generic."</Message>
-	<Comment> MethodSpec method is not generic </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b3a">
-	<SymbolicName>VLDTR_E_SIG_MISSARITY</SymbolicName>
-	<Message>"Signature missing arity of instantiated generic type."</Message>
-	<Comment> Signature missing arity of instantiated generic type </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b3b">
-	<SymbolicName>VLDTR_E_SIG_ARITYMISMATCH</SymbolicName>
-	<Message>"Signature has generic type of arity instantiated at different arity."</Message>
-	<Comment> Signature has generic type of arity instantiated at different arity </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b40">
-	<SymbolicName>VLDTR_E_EP_GENERIC_METHOD</SymbolicName>
-	<Message>"Entry point in CLR header is the token for a generic method."</Message>
-	<Comment> Entry point in CLR header is the token for a generic method </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b43">
-	<SymbolicName>VLDTR_E_SIG_ARITYZERO</SymbolicName>
-	<Message>"Signature has generic type instantiated at arity 0."</Message>
-	<Comment> Signature has generic type instantiated at arity 0 </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b44">
-	<SymbolicName>VLDTR_E_MS_ARITYZERO</SymbolicName>
-	<Message>"MethodSpec signature has arity 0."</Message>
-	<Comment> MethodSpec signature has arity 0 </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b46">
-	<SymbolicName>VLDTR_E_EP_GENERIC_TYPE</SymbolicName>
-	<Message>"Entry point in CLR header is the token for a method in a generic type."</Message>
-	<Comment> Entry point in CLR header is the token for a method in a generic type </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b47">
-	<SymbolicName>VLDTR_E_MI_DECLNOTGENERIC</SymbolicName>
-	<Message>"MethodImpl overrides non-generic method with generic method."</Message>
-	<Comment> MethodImpl overrides non-generic method with generic method </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b48">
-	<SymbolicName>VLDTR_E_MI_IMPLNOTGENERIC</SymbolicName>
-	<Message>"MethodImpl overrides non-generic method with generic method."</Message>
-	<Comment> MethodImpl overrides non-generic method with generic method </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b49">
-	<SymbolicName>VLDTR_E_MI_ARITYMISMATCH</SymbolicName>
-	<Message>"MethodImpl overrides generic method of arity n with generic method of arity m."</Message>
-	<Comment> MethodImpl overrides generic method of arity n with generic method of arity m </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b4a">
-	<SymbolicName>VLDTR_E_TD_EXTBADTYPESPEC</SymbolicName>
-	<Message>"TypeDef extends a TypeSpec that is not an instantiated type."</Message>
-	<Comment> TypeDef extends a TypeSpec that is not an instantiated type </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b4b">
-	<SymbolicName>VLDTR_E_SIG_BYREFINST</SymbolicName>
-	<Message>"Signature has type instantiated at ByRef at offset i."</Message>
-	<Comment> Signature has type instantiated at byref at offset i </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b4c">
-	<SymbolicName>VLDTR_E_MS_BYREFINST</SymbolicName>
-	<Message>"Signature has type instantiated at ByRef at offset i."</Message>
-	<Comment> Signature has type instantiated at byref at offset i </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b4d">
-	<SymbolicName>VLDTR_E_TS_EMPTY</SymbolicName>
-	<Message>"TypeSpec has empty signature."</Message>
-	<Comment> TypeSpec has empty signature </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b4e">
-	<SymbolicName>VLDTR_E_TS_HASSENTINALS</SymbolicName>
-	<Message>"TypeSpec has signature containing one or more sentinels."</Message>
-	<Comment> TypeSpec has signature containing one or more sentinals </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b4f">
-	<SymbolicName>VLDTR_E_TD_GENERICHASEXPLAYOUT</SymbolicName>
-	<Message>"TypeDef is generic but has explicit layout."</Message>
-	<Comment> TypeDef is generic but has explicit layout </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b50">
-	<SymbolicName>VLDTR_E_SIG_BADTOKTYPE</SymbolicName>
-	<Message>"Signature has token following ELEMENT_TYPE_CLASS (_VALUETYPE) that is not a TypeDef or TypeRef."</Message>
-	<Comment> Signature has token following ELEMENT_TYPE_CLASS (_VALUETYPE) that is not a TypeDef or TypeRef </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131b51">
-	<SymbolicName>VLDTR_E_IFACE_METHNOTIMPLTHISMOD</SymbolicName>
-	<Message>"Warning: Class does not implement interface method in this module."</Message>
-	<Comment> Warn:Class doesn't implement interface method in this module </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131c00">
@@ -2390,12 +1802,6 @@
 	<SymbolicName>CORDBG_E_NONINTERCEPTABLE_EXCEPTION</SymbolicName>
 	<Message>"Cannot intercept this exception."</Message>
 	<Comment> Cant intercept this exception. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131c03">
-	<SymbolicName>CORDBG_E_CANT_UNWIND_ABOVE_CALLBACK</SymbolicName>
-	<Message>"When intercepting an exception, cannot intercept above the current frame."</Message>
-	<Comment> When intercepting an exception, cannot intercept above the current frame. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131c04">
@@ -2440,34 +1846,16 @@
 	<Comment> Method was not JITed in EnC mode </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131c0b">
-	<SymbolicName>CORDBG_E_ENC_NESTED_HANLDERS</SymbolicName>
-	<Message>"Frame cannot be updated due to change in max nesting of handlers."</Message>
-	<Comment> Frame cant be updated due to change in max nesting of handlers </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131c0c">
 	<SymbolicName>CORDBG_E_ENC_IN_FUNCLET</SymbolicName>
 	<Message>"Method is in a callable handler/filter. Cannot increase stack."</Message>
 	<Comment> Method is in a callable handler/filter. Cant grow stack </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131c0d">
-	<SymbolicName>CORDBG_E_ENC_LOCALLOC</SymbolicName>
-	<Message>"Frame cannot be updated due to localloc."</Message>
-	<Comment> Frame cant be updated due to localloc </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131c0e">
 	<SymbolicName>CORDBG_E_ENC_EDIT_NOT_SUPPORTED</SymbolicName>
 	<Message>"Attempt to perform unsupported edit."</Message>
 	<Comment> Attempt to perform unsupported edit </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131c0f">
-	<SymbolicName>CORDBG_E_FEABORT_DELAYED_UNTIL_THREAD_RESUMED</SymbolicName>
-	<Message>"Attempt to func eval abort on a suspended thread."</Message>
-	<Comment> Attempt to func eval abort on a suspended thread. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131c10">
@@ -2572,12 +1960,6 @@
 	<Comment> The operation failed because the thread is in optimized code. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131c27">
-	<SymbolicName>CORDBG_E_MINIDUMP_UNSUPPORTED</SymbolicName>
-	<Message>"The information requested is not supported by minidumps."</Message>
-	<Comment> </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131c28">
 	<SymbolicName>CORDBG_E_APPDOMAIN_MISMATCH</SymbolicName>
 	<Message>"A supplied object or type belongs to the wrong AppDomain."</Message>
@@ -2669,42 +2051,6 @@
   <Comment>A debug component is not installed</Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131c3d">
-  <SymbolicName>CORDBG_E_REMOTE_MISMATCHED_CERTS</SymbolicName>
-  <Message>"Connection authentication failed due to mismatched certificates."</Message>
-  <Comment>Connection authentication failed due to mismatched certificates</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131c3e">
-  <SymbolicName>CORDBG_E_REMOTE_NETWORK_FAILURE</SymbolicName>
-  <Message>"Connection failed due to a miscellaneous network error."</Message>
-  <Comment>Connection failed due to a miscellaneous network error</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131c3f">
-  <SymbolicName>CORDBG_E_REMOTE_NO_LISTENER</SymbolicName>
-  <Message>"Connection failed due to no endpoint at remote machine (no proxy configured?)."</Message>
-  <Comment>Connection failed due to no endpoint at remote machine (no proxy configured?)</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131c40">
-  <SymbolicName>CORDBG_E_REMOTE_UNKNOWN_TARGET</SymbolicName>
-  <Message>"Connection failed due to inability to locate remote machine."</Message>
-  <Comment>Connection failed due to inability to locate remote machine</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131c41">
-  <SymbolicName>CORDBG_E_REMOTE_INVALID_CONFIG</SymbolicName>
-  <Message>"Local debugger configuration was missing or invalid."</Message>
-  <Comment>Local debugger configuration was missing or invalid</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131c42">
-  <SymbolicName>CORDBG_E_REMOTE_MISMATCHED_PROTOCOLS</SymbolicName>
-  <Message>"Connection failed due to protocol version mismatch between local and remote components."</Message>
-  <Comment>Connection failed due to protocol version mismatch between local and remote components</Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131c43">
     <SymbolicName>CORDBG_E_LIBRARY_PROVIDER_ERROR</SymbolicName>
     <Message>"The ICLRDebuggingLibraryProvider callback returned an error or did not provide a valid handle."</Message>
@@ -2789,52 +2135,10 @@
   <Comment>Failure when calling a data target method.</Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131c62">
-  <SymbolicName>CORDBG_E_CODE_HAS_NO_METADATA</SymbolicName>
-  <Message>"Couldn't find metadata for the given executable code."</Message>
-  <Comment>Couldn't find metadata for the given executable code.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131c63">
-  <SymbolicName>CORDBG_E_CODE_UNRECOGNIZED</SymbolicName>
-  <Message>"Given executable code is not managed."</Message>
-  <Comment>Given executable code is not managed.</Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131c64">
   <SymbolicName>CORDBG_E_NO_IMAGE_AVAILABLE</SymbolicName>
   <Message>"Couldn't find a native image."</Message>
   <Comment>Couldn't find a native image.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131c65">
-  <SymbolicName>CORDBG_E_TYPE_NOT_FOUND</SymbolicName>
-  <Message>"The type doesn't exist in the given module."</Message>
-  <Comment>The type doesn't exist in the given module.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131c66">
-  <SymbolicName>CORDBG_E_VTABLE_HAS_NO_METADATA</SymbolicName>
-  <Message>"Couldn't find metadata for the given vtable."</Message>
-  <Comment>Couldn't find metadata for the given vtable.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131c67">
-  <SymbolicName>CORDBG_E_NO_GENERIC_INFO</SymbolicName>
-  <Message>"Couldn't find any generics information."</Message>
-  <Comment>Couldn't find any generics information.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131d00">
-	<SymbolicName>PEFMT_E_NO_CONTENTS</SymbolicName>
-	<Message>"File is empty."</Message>
-	<Comment> File is empty </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131d01">
-	<SymbolicName>PEFMT_E_NO_NTHEADERS</SymbolicName>
-	<Message>"File has no NT headers."</Message>
-	<Comment> File has no NT headers </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131d02">
@@ -2843,136 +2147,16 @@
 	<Comment> File is PE32+ </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131d03">
-	<SymbolicName>PEFMT_E_NO_CORHEADER</SymbolicName>
-	<Message>"File has no COR header."</Message>
-	<Comment> File has no COR header </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131d04">
-	<SymbolicName>PEFMT_E_NOT_ILONLY</SymbolicName>
-	<Message>"Flag IL_ONLY not set."</Message>
-	<Comment> Flag IL_ONLY not set </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131d05">
-	<SymbolicName>PEFMT_E_IMPORT_DLLS</SymbolicName>
-	<Message>"Bad import DLLs."</Message>
-	<Comment> Bad import DLLs </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131d06">
-	<SymbolicName>PEFMT_E_EXE_NOENTRYPOINT</SymbolicName>
-	<Message>"EXE file has no mgd entry point."</Message>
-	<Comment> EXE file has no mgd entry point </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131d07">
-	<SymbolicName>PEFMT_E_BASE_RELOCS</SymbolicName>
-	<Message>"Bad base relocations."</Message>
-	<Comment> Bad base relocations </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131d08">
-	<SymbolicName>PEFMT_E_ENTRYPOINT</SymbolicName>
-	<Message>"Bad managed entry point."</Message>
-	<Comment> Bad managed entry point </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131d09">
-	<SymbolicName>PEFMT_E_ZERO_SIZEOFCODE</SymbolicName>
-	<Message>"OptHeader.SizeOfCode is set to zero."</Message>
-	<Comment> OptHeader.SizeOfCode==0 </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131d0a">
-	<SymbolicName>PEFMT_E_BAD_CORHEADER</SymbolicName>
-	<Message>"File has invalid COR header."</Message>
-	<Comment> File has invalid COR header </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131d0b">
 	<SymbolicName>PEFMT_E_32BIT</SymbolicName>
 	<Message>"File is PE32"</Message>
 	<Comment> File is PE32 </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131e00">
-	<SymbolicName>CLR_OPTSVC_E_CONTROLLER_INTERRUPT</SymbolicName>
-	<Message>"The operation was interrupted by the CLR Optimization Service controller."</Message>
-	<Comment> Service controller interrupted work </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131f00">
-	<SymbolicName>NGEN_FAILED_GET_DEPENDENCIES</SymbolicName>
-	<Message>"Failed to get dependencies for assembly."</Message>
-	<Comment> Service manager failed to get ICorSvcDependencies interface </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131f01">
-	<SymbolicName>NGEN_FAILED_NATIVE_IMAGE_DELETE</SymbolicName>
-	<Message>"Failed to delete native image."</Message>
-	<Comment> Failed to delete native image </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131f02">
-	<SymbolicName>NGEN_E_TOO_MANY_INTERFACES</SymbolicName>
-	<Message>"Module contains too many interfaces to successfully compile all methods."</Message>
-	<Comment> Module contains too many interfaces to successfully compile all methods. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131f03">
-	<SymbolicName>NGEN_E_OLDER_RUNTIME</SymbolicName>
-	<Message>"Requested runtime does not support side-by-side NGen."</Message>
-	<Comment> Requested runtime does not support side-by-side NGen. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131f04">
-	<SymbolicName>NGEN_E_WORKER_UNEXPECTED_EXIT</SymbolicName>
-	<Message>"Worker exited unexpectedly during startup"</Message>
-	<Comment>An NGen worker process exited before it could be reached via DCOM.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131f05">
-	<SymbolicName>NGEN_E_WORKER_UNEXPECTED_SYNC</SymbolicName>
-	<Message>"Failed to synchronize with worker during startup"</Message>
-	<Comment>Synchronizing with an NGen worker process returned an unexpected result.</Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131f06">
 	<SymbolicName>NGEN_E_SYS_ASM_NI_MISSING</SymbolicName>
 	<Message>"NGen cannot proceed because Mscorlib.dll does not have a native image"</Message>
 	<Comment>Compiling any assembly other than mscorlib in the absence of mscorlib.ni.dll is not allowed.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131f07">
-	<SymbolicName>NGEN_E_EXE_MACHINE_TYPE_MISMATCH</SymbolicName>
-	<Message>"The image file is not compatible with the version of Ngen you're running.  Use 32bit Ngen for 32bit assemblies, and 64bit Ngen for 64bit assemblies."</Message>
-	<Comment>The image file is not compatible with the version of Ngen you're running.  Use 32bit Ngen for 32bit assemblies, and 64bit Ngen for 64bit assemblies.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131f08">
-	<SymbolicName>NGEN_E_ASSEMBLY_EXCLUSION_FILE_PARSE_ERROR</SymbolicName>
-	<Message>"There was an error parsing the NGen assembly exclusion Xml file."</Message>
-	<Comment>There was an error parsing the NGen assembly exclusion Xml file.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131f09">
-	<SymbolicName>NGEN_E_HARDBOUND_DEPENDENCY_MISSING</SymbolicName>
-	<Message>"A hardbound dependent native image is missing."</Message>
-	<Comment>A hardbound dependent native image is missing.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131f0a">
-	<SymbolicName>NGEN_E_NOT_RUNNING_IN_EXPECTED_PACKAGE</SymbolicName>
-	<Message>"NGen is not running in expected package."</Message>
-	<Comment>NGen is not running in expected package.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131f0b">
-	<SymbolicName>NGEN_E_FILE_NOT_ASSEMBLY</SymbolicName>
-	<Message>"The image being compiled is not a .NET assembly"</Message>
-	<Comment>The image being compiled is not a .NET assembly</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131fff">
