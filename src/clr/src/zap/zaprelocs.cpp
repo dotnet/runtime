@@ -48,7 +48,7 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
         // Misaligned relocs disable ASLR on ARM. We should never ever emit them.
         _ASSERTE(IS_ALIGNED(rva, TARGET_POINTER_SIZE));
 #endif
-        *(UNALIGNED TADDR *)pLocation = pActualTarget;
+        *(UNALIGNED TARGET_POINTER_TYPE *)pLocation = (TARGET_POINTER_TYPE)pActualTarget;
         break;
 
     case IMAGE_REL_BASED_RELPTR:
@@ -92,7 +92,7 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
             // description of IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL
             const UINT32 offsetCorrection = 12;
 
-            UINT32 imm32 = pActualTarget - (pSite + offsetCorrection);
+            UINT32 imm32 = UINT32(pActualTarget - (pSite + offsetCorrection));
 
             PutThumb2Mov32((UINT16 *)pLocation, imm32);
 
@@ -122,7 +122,7 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
         }
         // IMAGE_REL_BASED_THUMB_BRANCH24 does not need base reloc entry
         return;
-#endif
+#endif // defined(_TARGET_ARM_)
 #if defined(_TARGET_ARM64_)
     case IMAGE_REL_ARM64_BRANCH26:
         {
