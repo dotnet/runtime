@@ -984,7 +984,8 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_pEventChannel(NULL),
     m_fAssertOnTargetInconsistency(false),
     m_runtimeOffsetsInitialized(false),
-    m_writableMetadataUpdateMode(LegacyCompatPolicy)
+    m_writableMetadataUpdateMode(LegacyCompatPolicy),
+    m_isBlockedOnGarbageCollectionEvent(false)
 {
     _ASSERTE((m_id == 0) == (pShim == NULL));
 
@@ -3644,6 +3645,8 @@ HRESULT CordbProcess::Continue(BOOL fIsOutOfBand)
 {
     PUBLIC_API_ENTRY(this);
 
+    this->m_isBlockedOnGarbageCollectionEvent = false;
+
     if (m_pShim == NULL) // This API is moved off to the shim
     {
         // bias towards failing with CORDBG_E_NUETERED.
@@ -4911,6 +4914,7 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_BEFORE_GARBAGE_COLLECTION:
         {
             {
+                this->m_isBlockedOnGarbageCollectionEvent = true;
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
                 pCallback4->BeforeGarbageCollection(static_cast<ICorDebugProcess*>(this));
             }
@@ -4920,6 +4924,7 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_AFTER_GARBAGE_COLLECTION:
         {
             {
+                this->m_isBlockedOnGarbageCollectionEvent = true;
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
                 pCallback4->AfterGarbageCollection(static_cast<ICorDebugProcess*>(this));
             }
@@ -6501,9 +6506,16 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
             }
             else
             {
-                DT_CONTEXT* managedContext;
-                hr = thread->GetManagedContext(&managedContext);
-                *pContext = *managedContext;
+                if (this->m_isBlockedOnGarbageCollectionEvent)
+                {
+                    hr = this->GetDataTarget()->GetThreadContext(threadID, CONTEXT_FULL, contextSize, context);
+                }
+                else
+                {
+                    DT_CONTEXT* managedContext;
+                    hr = thread->GetManagedContext(&managedContext);
+                    *pContext = *managedContext;
+                }
             }
         }
         EX_CATCH
@@ -6591,7 +6603,14 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
                 hr = E_INVALIDARG;
             }
 
-            hr = thread->SetManagedContext(pContext);
+            if (this->m_isBlockedOnGarbageCollectionEvent)
+            {
+                hr = this->m_pMutableDataTarget->SetThreadContext(threadID, contextSize, context);
+            }
+            else
+            {
+                hr = thread->SetManagedContext(pContext);
+            }
         }
         EX_CATCH
         {
