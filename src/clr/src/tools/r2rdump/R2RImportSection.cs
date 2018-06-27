@@ -9,7 +9,7 @@ using System.Text;
 
 namespace R2RDump
 {
-    struct R2RImportSection
+    public struct R2RImportSection
     {
         public enum CorCompileImportType
         {
@@ -24,6 +24,7 @@ namespace R2RDump
 
         public enum CorCompileImportFlags
         {
+            CORCOMPILE_IMPORT_FLAGS_UNKNOWN = 0x0000,
             CORCOMPILE_IMPORT_FLAGS_EAGER = 0x0001,   // Section at module load time.
             CORCOMPILE_IMPORT_FLAGS_CODE = 0x0002,   // Section contains code.
             CORCOMPILE_IMPORT_FLAGS_PCODE = 0x0004,   // Section contains pointers to code.
@@ -31,9 +32,9 @@ namespace R2RDump
 
         public struct ImportSectionEntry
         {
-            public long Section { get; }
-            public uint SignatureRVA { get; }
-            public uint Signature { get; }
+            public long Section { get; set; }
+            public uint SignatureRVA { get; set; }
+            public uint Signature { get; set; }
             public ImportSectionEntry(long section, uint signatureRVA, uint signature)
             {
                 Section = section;
@@ -54,35 +55,35 @@ namespace R2RDump
         /// <summary>
         /// Section containing values to be fixed up
         /// </summary>
-        public int SectionRVA { get; }
-        public int SectionSize { get; }
+        public int SectionRVA { get; set; }
+        public int SectionSize { get; set; }
 
         /// <summary>
         /// One or more of ImportSectionFlags
         /// </summary>
-        public CorCompileImportFlags Flags { get; }
+        public CorCompileImportFlags Flags { get; set; }
 
         /// <summary>
         /// One of ImportSectionType
         /// </summary>
-        public CorCompileImportType Type { get; }
+        public CorCompileImportType Type { get; set; }
 
         /// <summary>
         /// 
         /// </summary>
-        public byte EntrySize { get; }
+        public byte EntrySize { get; set; }
 
         /// <summary>
         /// RVA of optional signature descriptors
         /// </summary>
-        public int SignatureRVA { get; }
-        public List<ImportSectionEntry> Entries { get; }
+        public int SignatureRVA { get; set; }
+        public List<ImportSectionEntry> Entries { get; set; }
 
         /// <summary>
         /// RVA of optional auxiliary data (typically GC info)
         /// </summary>
-        public int AuxiliaryDataRVA { get; }
-        public GcInfo AuxiliaryData { get; }
+        public int AuxiliaryDataRVA { get; set; }
+        public GcInfo AuxiliaryData { get; set; }
 
         public R2RImportSection(byte[] image, int rva, int size, CorCompileImportFlags flags, byte type, byte entrySize, int signatureRVA, List<ImportSectionEntry> entries, int auxDataRVA, int auxDataOffset, Machine machine, ushort majorVersion)
         {

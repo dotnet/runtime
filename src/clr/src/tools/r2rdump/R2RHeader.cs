@@ -8,7 +8,7 @@ using System.Text;
 
 namespace R2RDump
 {
-    class R2RHeader
+    public class R2RHeader
     {
         [Flags]
         public enum ReadyToRunFlag
@@ -26,35 +26,37 @@ namespace R2RDump
         /// <summary>
         /// RVA to the begining of the ReadyToRun header
         /// </summary>
-        public int RelativeVirtualAddress { get; }
+        public int RelativeVirtualAddress { get; set; }
 
         /// <summary>
         /// Size of the ReadyToRun header
         /// </summary>
-        public int Size { get; }
+        public int Size { get; set; }
 
         /// <summary>
         /// Signature of the header in string and hex formats
         /// </summary>
-        public string SignatureString { get; }
-        public uint Signature { get; }
+        public string SignatureString { get; set; }
+        public uint Signature { get; set; }
 
         /// <summary>
         /// The ReadyToRun version
         /// </summary>
-        public ushort MajorVersion { get; }
-        public ushort MinorVersion { get; }
+        public ushort MajorVersion { get; set; }
+        public ushort MinorVersion { get; set; }
 
         /// <summary>
         /// Flags in the header
         /// eg. PLATFORM_NEUTRAL_SOURCE, SKIP_TYPE_VALIDATION
         /// </summary>
-        public uint Flags { get; }
+        public uint Flags { get; set; }
 
         /// <summary>
         /// The ReadyToRun section RVAs and sizes
         /// </summary>
-        public Dictionary<R2RSection.SectionType, R2RSection> Sections { get; }
+        public IDictionary<R2RSection.SectionType, R2RSection> Sections { get; }
+
+        public R2RHeader() { }
 
         /// <summary>
         /// Initializes the fields of the R2RHeader
@@ -68,9 +70,9 @@ namespace R2RDump
             RelativeVirtualAddress = rva;
             int startOffset = curOffset;
 
-            byte[] signature = new byte[sizeof(uint)];
-            Array.Copy(image, curOffset, signature, 0, sizeof(uint));
-            SignatureString = System.Text.Encoding.UTF8.GetString(signature);
+            byte[] signature = new byte[sizeof(uint) - 1]; // -1 removes the null character at the end of the cstring
+            Array.Copy(image, curOffset, signature, 0, sizeof(uint) - 1);
+            SignatureString = Encoding.UTF8.GetString(signature);
             Signature = NativeReader.ReadUInt32(image, ref curOffset);
             if (Signature != READYTORUN_SIGNATURE)
             {
