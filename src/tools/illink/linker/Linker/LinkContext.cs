@@ -135,13 +135,15 @@ namespace Mono.Linker {
 			set { _symbolWriterProvider = value; }
 		}
 
-		public bool LogMessages { get; set; } = false;
+		public bool LogMessages { get; set; }
 
 		public ILogger Logger { get; set; } = new ConsoleLogger ();
 
 		public MarkingHelpers MarkingHelpers { get; private set; }
 
 		public Tracer Tracer { get; private set; }
+
+		public string[] ExcludedFeatures { get; set; }
 
 		public LinkContext (Pipeline pipeline)
 			: this (pipeline, new AssemblyResolver ())
@@ -351,6 +353,11 @@ namespace Mono.Linker {
 		public void Dispose ()
 		{
 			_resolver.Dispose ();
+		}
+
+		public bool IsFeatureExcluded (string featureName)
+		{
+			return ExcludedFeatures != null && Array.IndexOf (ExcludedFeatures, featureName) >= 0;
 		}
 
 		public void LogMessage (string message, params object[] values)

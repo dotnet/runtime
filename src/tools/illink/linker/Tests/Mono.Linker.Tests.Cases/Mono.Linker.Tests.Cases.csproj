@@ -338,6 +338,7 @@
     <Compile Include="Symbols\ReferenceWithMdb.cs" />
     <Compile Include="Symbols\ReferenceWithMdbAndSymbolLinkingEnabled.cs" />
     <Compile Include="Advanced\PreserveDependencyMethod.cs" />
+    <Compile Include="LinkXml\FeatureExcludedSimpleType.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />
@@ -377,6 +378,7 @@
     <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
     <Content Include="LinkXml\PreserveBackingFieldWhenPropertyIsKept.xml" />
     <Content Include="TypeForwarding\TypeForwarderOnlyAssemblyCanBePreservedViaLinkXml.xml" />
+    <Content Include="LinkXml\FeatureExcludedSimpleType.xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">
