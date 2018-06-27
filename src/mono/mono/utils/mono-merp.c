@@ -99,6 +99,8 @@ typedef struct {
 	const char systemModel [100];
 	const char *systemManufacturer;
 
+	const char *eventType;
+
 	MonoStackHash hashes;
 } MERPStruct;
 
@@ -225,6 +227,7 @@ mono_encode_merp_params (MERPStruct *merp)
 	g_string_append_printf (output, "LanguageID: 0x%x\n", merp->uiLidArg);
 	g_string_append_printf (output, "SystemManufacturer: %s\n", merp->systemManufacturer);
 	g_string_append_printf (output, "SystemModel: %s\n", merp->systemModel);
+	g_string_append_printf (output, "EventType: %s\n", merp->eventType);
 
 	return g_string_free (output, FALSE);
 }
@@ -266,7 +269,7 @@ mono_merp_send (const char *merpFile, const char *crashLog, const char *werXml)
 	write_file (crashLog, crashLogPath);
 	g_free (crashLogPath);
 
-	char *werXmlPath = g_strdup_printf ("%s/Library/Group Containers/UBF8T346G9.ms/WERInternalMetadata.txt", home);
+	char *werXmlPath = g_strdup_printf ("%s/Library/Group Containers/UBF8T346G9.ms/CustomLogsMetadata.xml", home);
 	write_file (werXml, werXmlPath);
 	g_free (werXmlPath);
 
@@ -338,6 +341,8 @@ mono_init_merp (const intptr_t crashed_pid, const char *signal, MonoStackHash *h
 	// FIXME: THis is apple-only for now
 	merp->systemManufacturer = "apple";
 	get_apple_model ((char *) merp->systemModel, sizeof (merp->systemModel));
+
+	merp->eventType = "MonoAppCrash";
 
 	merp->hashes = *hashes;
 }
@@ -415,6 +420,10 @@ mono_merp_fingerprint_payload (const char *non_param_data, const MERPStruct *mer
 	mono_json_writer_object_key(&writer, "SystemModel:");
 	mono_json_writer_printf (&writer, "\"%s\"\n", merp->systemModel);
 
+	mono_json_writer_indent (&writer);
+	mono_json_writer_object_key(&writer, "EventType:");
+	mono_json_writer_printf (&writer, "\"%s\"\n", merp->eventType);
+
 	// End of payload
 	mono_json_writer_indent (&writer);
 	mono_json_writer_object_end (&writer);
@@ -444,7 +453,7 @@ mono_wer_template (MERPStruct *merp)
 	g_string_append_printf (output, "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n");
 	g_string_append_printf (output, "<WERReportMetadata>\n");
 	g_string_append_printf (output, "<ProblemSignatures>\n");
-	g_string_append_printf (output, "<EventType>MonoAppCrash</EventType>\n");
+	g_string_append_printf (output, "<EventType>%s</EventType>\n", merp->eventType);
 
 	int i=0;
 
