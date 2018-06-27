@@ -13,7 +13,7 @@ using System.Reflection;
 
 namespace System.Data.Common
 {
-    internal static class DbConnectionStringBuilderUtil
+    internal static partial class DbConnectionStringBuilderUtil
     {
         internal static bool ConvertToBoolean(object value)
         {
@@ -306,6 +306,7 @@ namespace System.Data.Common
         internal const string MaxPoolSize = "Max Pool Size";
         internal const string Pooling = "Pooling";
         internal const string MinPoolSize = "Min Pool Size";
+        internal const string PoolBlockingPeriod = "PoolBlockingPeriod";
     }
 
     internal static class DbConnectionStringSynonyms
