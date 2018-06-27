@@ -90,7 +90,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_CMPXCHG:
             case GT_LOCKADD:
             case GT_XADD:
-                return emitter::emitIns_valid_imm_for_add(immVal, size);
+                return comp->compSupports(InstructionSet_Atomics) ? false
+                                                                  : emitter::emitIns_valid_imm_for_add(immVal, size);
 #elif defined(_TARGET_ARM_)
                 return emitter::emitIns_valid_imm_for_add(immVal, flags);
 #endif
