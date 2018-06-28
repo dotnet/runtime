@@ -1,23 +1,23 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Numerics.Tests", "tests\System.Runtime.Numerics.Tests.csproj", "{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Numerics.Tests", "tests\System.Runtime.Numerics.Tests.csproj", "{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B} = {D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Numerics.Performance.Tests", "tests\Performance\System.Runtime.Numerics.Performance.Tests.csproj", "{3842BE38-1A99-41B2-81B5-186E64077B95}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Numerics.Performance.Tests", "tests\Performance\System.Runtime.Numerics.Performance.Tests.csproj", "{3842BE38-1A99-41B2-81B5-186E64077B95}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B} = {D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Numerics", "src\System.Runtime.Numerics.csproj", "{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Numerics", "src\System.Runtime.Numerics.csproj", "{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F} = {7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Numerics", "ref\System.Runtime.Numerics.csproj", "{7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Numerics", "ref\System.Runtime.Numerics.csproj", "{7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -56,5 +56,8 @@ Global
 		{3842BE38-1A99-41B2-81B5-186E64077B95} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0CD1D1F8-4171-43E2-9ABF-75B20AD94549}
 	EndGlobalSection
 EndGlobal

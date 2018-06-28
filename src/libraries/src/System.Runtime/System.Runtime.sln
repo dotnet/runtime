@@ -1,48 +1,48 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Tests", "tests\System.Runtime.Tests.csproj", "{B1BF7CE0-CAB5-4FA2-A39C-450B05D5DB1C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Tests", "tests\System.Runtime.Tests.csproj", "{B1BF7CE0-CAB5-4FA2-A39C-450B05D5DB1C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ForwardedTypesAssembly", "tests\ForwardedTypesAssembly\ForwardedTypesAssembly.csproj", "{3A3DE9F8-6295-4B68-BAAB-406F1CA0CD9C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ForwardedTypesAssembly", "tests\ForwardedTypesAssembly\ForwardedTypesAssembly.csproj", "{3A3DE9F8-6295-4B68-BAAB-406F1CA0CD9C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Performance.Tests", "tests\Performance\System.Runtime.Performance.Tests.csproj", "{E9560F70-79F5-453A-B518-0292CFE4A6AD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Performance.Tests", "tests\Performance\System.Runtime.Performance.Tests.csproj", "{E9560F70-79F5-453A-B518-0292CFE4A6AD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestAssembly", "tests\TestAssembly\TestAssembly.csproj", "{2EF7D710-A7BD-4BB3-8EF6-3F0298CD4986}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestAssembly", "tests\TestAssembly\TestAssembly.csproj", "{2EF7D710-A7BD-4BB3-8EF6-3F0298CD4986}"
 	ProjectSection(ProjectDependencies) = postProject
 		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestLoadAssembly", "tests\TestLoadAssembly\TestLoadAssembly.csproj", "{71DE1A1F-F8E2-452A-9D54-0385F6099DD3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestLoadAssembly", "tests\TestLoadAssembly\TestLoadAssembly.csproj", "{71DE1A1F-F8E2-452A-9D54-0385F6099DD3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TestModule", "tests\TestModule\System.Reflection.TestModule.ilproj", "{3B7489C4-65DB-4E69-BE01-F6234133400C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.TestModule", "tests\TestModule\System.Reflection.TestModule.ilproj", "{3B7489C4-65DB-4E69-BE01-F6234133400C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnloadableAssembly", "tests\UnloadableAssembly\UnloadableAssembly.csproj", "{CA43AAD6-59A6-4BEB-AC9E-52DC9FD04B8B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnloadableAssembly", "tests\UnloadableAssembly\UnloadableAssembly.csproj", "{CA43AAD6-59A6-4BEB-AC9E-52DC9FD04B8B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime", "src\System.Runtime.csproj", "{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime", "src\System.Runtime.csproj", "{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}"
 	ProjectSection(ProjectDependencies) = postProject
 		{ADBCF120-3454-4A3C-9D1D-AC4293E795D6} = {ADBCF120-3454-4A3C-9D1D-AC4293E795D6}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime", "ref\System.Runtime.csproj", "{ADBCF120-3454-4A3C-9D1D-AC4293E795D6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime", "ref\System.Runtime.csproj", "{ADBCF120-3454-4A3C-9D1D-AC4293E795D6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -106,5 +106,8 @@ Global
 		{CA43AAD6-59A6-4BEB-AC9E-52DC9FD04B8B} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{ADBCF120-3454-4A3C-9D1D-AC4293E795D6} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FBD1A5A2-A6F0-444D-9D7D-86D77604F1F5}
 	EndGlobalSection
 EndGlobal

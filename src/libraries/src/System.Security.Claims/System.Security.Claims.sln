@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Claims.Tests", "tests\System.Security.Claims.Tests.csproj", "{BE8B728D-86C1-406F-8F5F-6656EC486B01}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Claims.Tests", "tests\System.Security.Claims.Tests.csproj", "{BE8B728D-86C1-406F-8F5F-6656EC486B01}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A70BEC0D-5A1C-4DA0-8A0F-69F3BF565D52} = {A70BEC0D-5A1C-4DA0-8A0F-69F3BF565D52}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Claims", "src\System.Security.Claims.csproj", "{A70BEC0D-5A1C-4DA0-8A0F-69F3BF565D52}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Claims", "src\System.Security.Claims.csproj", "{A70BEC0D-5A1C-4DA0-8A0F-69F3BF565D52}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4372807C-BD21-476F-BCE2-3D192AC0B96C} = {4372807C-BD21-476F-BCE2-3D192AC0B96C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Claims", "ref\System.Security.Claims.csproj", "{4372807C-BD21-476F-BCE2-3D192AC0B96C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Claims", "ref\System.Security.Claims.csproj", "{4372807C-BD21-476F-BCE2-3D192AC0B96C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{BE8B728D-86C1-406F-8F5F-6656EC486B01} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{A70BEC0D-5A1C-4DA0-8A0F-69F3BF565D52} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{4372807C-BD21-476F-BCE2-3D192AC0B96C} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2951ABBC-F548-4A88-A600-8469ABF1E135}
 	EndGlobalSection
 EndGlobal

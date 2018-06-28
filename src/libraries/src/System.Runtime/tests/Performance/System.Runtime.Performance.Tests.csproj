@@ -4,9 +4,8 @@
     <NoWarn>1718</NoWarn>
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{E9560F70-79F5-453A-B518-0292CFE4A6AD}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Perf.Array.cs" />
     <Compile Include="Perf.Boolean.cs" />

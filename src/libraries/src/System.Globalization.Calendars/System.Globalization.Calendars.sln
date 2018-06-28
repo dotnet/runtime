@@ -1,18 +1,23 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Globalization.Calendars.Tests", "tests\System.Globalization.Calendars.Tests.csproj", "{66BE33BB-790D-4D0C-9336-E073001CBD15}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.Calendars.Tests", "tests\System.Globalization.Calendars.Tests.csproj", "{66BE33BB-790D-4D0C-9336-E073001CBD15}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7126BEDB-0903-454A-8A2B-8BE1CBDF8F2E} = {7126BEDB-0903-454A-8A2B-8BE1CBDF8F2E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Globalization.Calendars", "src\System.Globalization.Calendars.csproj", "{7126BEDB-0903-454A-8A2B-8BE1CBDF8F2E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.CalendarsWithConfigSwitch.Tests", "tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj", "{77BE33BB-790D-4D0C-9336-E073001CBD15}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7126BEDB-0903-454A-8A2B-8BE1CBDF8F2E} = {7126BEDB-0903-454A-8A2B-8BE1CBDF8F2E}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.Calendars", "src\System.Globalization.Calendars.csproj", "{7126BEDB-0903-454A-8A2B-8BE1CBDF8F2E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2BD6A51E-A2FE-4024-A21F-E1D7A24E7647} = {2BD6A51E-A2FE-4024-A21F-E1D7A24E7647}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Globalization.Calendars", "ref\System.Globalization.Calendars.csproj", "{2BD6A51E-A2FE-4024-A21F-E1D7A24E7647}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.Calendars", "ref\System.Globalization.Calendars.csproj", "{2BD6A51E-A2FE-4024-A21F-E1D7A24E7647}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -26,10 +31,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{66BE33BB-790D-4D0C-9336-E073001CBD15}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{66BE33BB-790D-4D0C-9336-E073001CBD15}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{66BE33BB-790D-4D0C-9336-E073001CBD15}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{66BE33BB-790D-4D0C-9336-E073001CBD15}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{66BE33BB-790D-4D0C-9336-E073001CBD15}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{66BE33BB-790D-4D0C-9336-E073001CBD15}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{66BE33BB-790D-4D0C-9336-E073001CBD15}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{66BE33BB-790D-4D0C-9336-E073001CBD15}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{77BE33BB-790D-4D0C-9336-E073001CBD15}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{77BE33BB-790D-4D0C-9336-E073001CBD15}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{77BE33BB-790D-4D0C-9336-E073001CBD15}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{77BE33BB-790D-4D0C-9336-E073001CBD15}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{7126BEDB-0903-454A-8A2B-8BE1CBDF8F2E}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
 		{7126BEDB-0903-454A-8A2B-8BE1CBDF8F2E}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{7126BEDB-0903-454A-8A2B-8BE1CBDF8F2E}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
@@ -44,7 +53,11 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{66BE33BB-790D-4D0C-9336-E073001CBD15} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{77BE33BB-790D-4D0C-9336-E073001CBD15} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{7126BEDB-0903-454A-8A2B-8BE1CBDF8F2E} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{2BD6A51E-A2FE-4024-A21F-E1D7A24E7647} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CDE7C5B0-CDF5-4CD4-AF93-57472C5D4554}
 	EndGlobalSection
 EndGlobal

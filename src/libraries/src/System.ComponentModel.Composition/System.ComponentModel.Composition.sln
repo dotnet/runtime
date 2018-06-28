@@ -1,23 +1,23 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ComponentModel.Composition.Tests", "tests\System.ComponentModel.Composition.Tests.csproj", "{59F4682D-C41D-45A7-9798-16C75525BB1D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ComponentModel.Composition.Tests", "tests\System.ComponentModel.Composition.Tests.csproj", "{59F4682D-C41D-45A7-9798-16C75525BB1D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2D694AC8-A12F-4622-9405-74E20EC40C3A} = {2D694AC8-A12F-4622-9405-74E20EC40C3A}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ComponentModel.Composition.Noop.Assembly", "tests\System.ComponentModel.Composition.Noop.Assembly\System.ComponentModel.Composition.Noop.Assembly.csproj", "{396D6EBF-60BD-4DAF-8783-FB403E070A56}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ComponentModel.Composition.Noop.Assembly", "tests\System.ComponentModel.Composition.Noop.Assembly\System.ComponentModel.Composition.Noop.Assembly.csproj", "{396D6EBF-60BD-4DAF-8783-FB403E070A56}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2D694AC8-A12F-4622-9405-74E20EC40C3A} = {2D694AC8-A12F-4622-9405-74E20EC40C3A}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ComponentModel.Composition", "src\System.ComponentModel.Composition.csproj", "{2D694AC8-A12F-4622-9405-74E20EC40C3A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ComponentModel.Composition", "src\System.ComponentModel.Composition.csproj", "{2D694AC8-A12F-4622-9405-74E20EC40C3A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{DD3B8052-CE03-4159-8311-1CE1382C51B0} = {DD3B8052-CE03-4159-8311-1CE1382C51B0}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ComponentModel.Composition", "ref\System.ComponentModel.Composition.csproj", "{DD3B8052-CE03-4159-8311-1CE1382C51B0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ComponentModel.Composition", "ref\System.ComponentModel.Composition.csproj", "{DD3B8052-CE03-4159-8311-1CE1382C51B0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -56,5 +56,8 @@ Global
 		{396D6EBF-60BD-4DAF-8783-FB403E070A56} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{2D694AC8-A12F-4622-9405-74E20EC40C3A} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{DD3B8052-CE03-4159-8311-1CE1382C51B0} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {23D18863-A768-4D64-8969-2FA1F82AFA7F}
 	EndGlobalSection
 EndGlobal

@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.DiagnosticSource.Tests", "tests\System.Diagnostics.DiagnosticSource.Tests.csproj", "{A7922FA3-306A-41B9-B8DC-CC4DBE685A85}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.DiagnosticSource.Tests", "tests\System.Diagnostics.DiagnosticSource.Tests.csproj", "{A7922FA3-306A-41B9-B8DC-CC4DBE685A85}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F24D3391-2928-4E83-AADE-B34423498750} = {F24D3391-2928-4E83-AADE-B34423498750}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.DiagnosticSource", "src\System.Diagnostics.DiagnosticSource.csproj", "{F24D3391-2928-4E83-AADE-B34423498750}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.DiagnosticSource", "src\System.Diagnostics.DiagnosticSource.csproj", "{F24D3391-2928-4E83-AADE-B34423498750}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3DF9A5D5-3D4B-4378-9B55-CFA6AC0114D9} = {3DF9A5D5-3D4B-4378-9B55-CFA6AC0114D9}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.DiagnosticSource", "ref\System.Diagnostics.DiagnosticSource.csproj", "{3DF9A5D5-3D4B-4378-9B55-CFA6AC0114D9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.DiagnosticSource", "ref\System.Diagnostics.DiagnosticSource.csproj", "{3DF9A5D5-3D4B-4378-9B55-CFA6AC0114D9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{A7922FA3-306A-41B9-B8DC-CC4DBE685A85} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{F24D3391-2928-4E83-AADE-B34423498750} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{3DF9A5D5-3D4B-4378-9B55-CFA6AC0114D9} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7779716F-2D3C-47B6-9C48-009BD2F70523}
 	EndGlobalSection
 EndGlobal

@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{69FC7EB5-64FD-4464-88B1-B8ADD3870640}</ProjectGuid>
+    <Configurations>uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Windows\UI\Xaml\CornerRadiusTests.cs" />
     <Compile Include="Windows\UI\Xaml\DurationTests.cs" />

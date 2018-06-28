@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.AccountManagement.Tests", "tests\System.DirectoryServices.AccountManagement.Tests.csproj", "{B0EE498E-4BD8-4A39-89EB-7F2FC880B61F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.DirectoryServices.AccountManagement.Tests", "tests\System.DirectoryServices.AccountManagement.Tests.csproj", "{B0EE498E-4BD8-4A39-89EB-7F2FC880B61F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{879C23DC-D828-4DFB-8E92-ABBC11B71035} = {879C23DC-D828-4DFB-8E92-ABBC11B71035}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.AccountManagement", "src\System.DirectoryServices.AccountManagement.csproj", "{879C23DC-D828-4DFB-8E92-ABBC11B71035}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.DirectoryServices.AccountManagement", "src\System.DirectoryServices.AccountManagement.csproj", "{879C23DC-D828-4DFB-8E92-ABBC11B71035}"
 	ProjectSection(ProjectDependencies) = postProject
 		{404455B6-466C-4F78-9DCC-C37DCC0B75DA} = {404455B6-466C-4F78-9DCC-C37DCC0B75DA}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.AccountManagement", "ref\System.DirectoryServices.AccountManagement.csproj", "{404455B6-466C-4F78-9DCC-C37DCC0B75DA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.DirectoryServices.AccountManagement", "ref\System.DirectoryServices.AccountManagement.csproj", "{404455B6-466C-4F78-9DCC-C37DCC0B75DA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{B0EE498E-4BD8-4A39-89EB-7F2FC880B61F} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{879C23DC-D828-4DFB-8E92-ABBC11B71035} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{404455B6-466C-4F78-9DCC-C37DCC0B75DA} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6D2C151C-899E-483D-9E18-F1E22EB5425C}
 	EndGlobalSection
 EndGlobal

@@ -23,6 +23,14 @@
     </ItemGroup>
   </Target>
 
+  <PropertyGroup>
+    <!--
+    Hack workaround to skip the GenerateCompiledExpressionsTempFile target in
+    Microsoft.WorkflowBuildExtensions.targets target that always runs in VS
+    -->
+    <GenerateCompiledExpressionsTempFilePathForEditing></GenerateCompiledExpressionsTempFilePathForEditing>
+  </PropertyGroup>
+  
   <!--
   Hack workaround for not restoring each project. Instead, we turn off all the targets
   that require a `project.assets.json`, since ours will be empty anyway.

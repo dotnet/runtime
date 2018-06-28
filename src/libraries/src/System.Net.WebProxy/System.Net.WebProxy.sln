@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebProxy.Tests", "tests\System.Net.WebProxy.Tests.csproj", "{0DB204CE-1CB8-4CC2-A2E3-43DA93DC898B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebProxy.Tests", "tests\System.Net.WebProxy.Tests.csproj", "{0DB204CE-1CB8-4CC2-A2E3-43DA93DC898B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{6C18AD20-E20F-4652-83E3-D24E4670530D} = {6C18AD20-E20F-4652-83E3-D24E4670530D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebProxy", "src\System.Net.WebProxy.csproj", "{6C18AD20-E20F-4652-83E3-D24E4670530D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebProxy", "src\System.Net.WebProxy.csproj", "{6C18AD20-E20F-4652-83E3-D24E4670530D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B7B008FB-2C9F-4111-887C-E3FEC284FE3C} = {B7B008FB-2C9F-4111-887C-E3FEC284FE3C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebProxy", "ref\System.Net.WebProxy.csproj", "{B7B008FB-2C9F-4111-887C-E3FEC284FE3C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebProxy", "ref\System.Net.WebProxy.csproj", "{B7B008FB-2C9F-4111-887C-E3FEC284FE3C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{0DB204CE-1CB8-4CC2-A2E3-43DA93DC898B} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{6C18AD20-E20F-4652-83E3-D24E4670530D} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{B7B008FB-2C9F-4111-887C-E3FEC284FE3C} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5040A311-873C-4028-AC88-72EB1FCCCB83}
 	EndGlobalSection
 EndGlobal

@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Watcher.Tests", "tests\System.IO.FileSystem.Watcher.Tests.csproj", "{20411A66-C7A4-4941-8FA2-66308365FD22}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Watcher.Tests", "tests\System.IO.FileSystem.Watcher.Tests.csproj", "{20411A66-C7A4-4941-8FA2-66308365FD22}"
 	ProjectSection(ProjectDependencies) = postProject
 		{77E702D9-C6D8-4CE4-9941-D3056C3CCBED} = {77E702D9-C6D8-4CE4-9941-D3056C3CCBED}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Watcher", "src\System.IO.FileSystem.Watcher.csproj", "{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Watcher", "src\System.IO.FileSystem.Watcher.csproj", "{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}"
 	ProjectSection(ProjectDependencies) = postProject
 		{34E2C0E2-6C09-427D-BB75-702B3388CFC5} = {34E2C0E2-6C09-427D-BB75-702B3388CFC5}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.Watcher", "ref\System.IO.FileSystem.Watcher.csproj", "{34E2C0E2-6C09-427D-BB75-702B3388CFC5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Watcher", "ref\System.IO.FileSystem.Watcher.csproj", "{34E2C0E2-6C09-427D-BB75-702B3388CFC5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -26,10 +26,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{20411A66-C7A4-4941-8FA2-66308365FD22}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
-		{20411A66-C7A4-4941-8FA2-66308365FD22}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
-		{20411A66-C7A4-4941-8FA2-66308365FD22}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
-		{20411A66-C7A4-4941-8FA2-66308365FD22}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
+		{20411A66-C7A4-4941-8FA2-66308365FD22}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{20411A66-C7A4-4941-8FA2-66308365FD22}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{20411A66-C7A4-4941-8FA2-66308365FD22}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{20411A66-C7A4-4941-8FA2-66308365FD22}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
 		{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
 		{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
@@ -46,5 +46,8 @@ Global
 		{20411A66-C7A4-4941-8FA2-66308365FD22} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{77E702D9-C6D8-4CE4-9941-D3056C3CCBED} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{34E2C0E2-6C09-427D-BB75-702B3388CFC5} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7F6EB125-D870-43DA-9A82-6792C1031754}
 	EndGlobalSection
 EndGlobal

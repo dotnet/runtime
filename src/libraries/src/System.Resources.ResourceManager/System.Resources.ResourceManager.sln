@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.ResourceManager.Tests", "tests\System.Resources.ResourceManager.Tests.csproj", "{1D51A16C-B6D8-4E8F-98DE-21AD9A7062A1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Resources.ResourceManager.Tests", "tests\System.Resources.ResourceManager.Tests.csproj", "{1D51A16C-B6D8-4E8F-98DE-21AD9A7062A1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3E7810B2-2802-4867-B223-30427F3F2D5B} = {3E7810B2-2802-4867-B223-30427F3F2D5B}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.ResourceManager", "src\System.Resources.ResourceManager.csproj", "{3E7810B2-2802-4867-B223-30427F3F2D5B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Resources.ResourceManager", "src\System.Resources.ResourceManager.csproj", "{3E7810B2-2802-4867-B223-30427F3F2D5B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{97CFE337-C57E-4B2E-B495-65B917E1282E} = {97CFE337-C57E-4B2E-B495-65B917E1282E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.ResourceManager", "ref\System.Resources.ResourceManager.csproj", "{97CFE337-C57E-4B2E-B495-65B917E1282E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Resources.ResourceManager", "ref\System.Resources.ResourceManager.csproj", "{97CFE337-C57E-4B2E-B495-65B917E1282E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{1D51A16C-B6D8-4E8F-98DE-21AD9A7062A1} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{3E7810B2-2802-4867-B223-30427F3F2D5B} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{97CFE337-C57E-4B2E-B495-65B917E1282E} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BEA182FA-BE6A-494A-AE4F-320BB016A4ED}
 	EndGlobalSection
 EndGlobal

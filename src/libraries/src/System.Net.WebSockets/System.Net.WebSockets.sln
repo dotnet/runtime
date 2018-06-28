@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets.Tests", "tests\System.Net.WebSockets.Tests.csproj", "{0887C5AD-1BE1-4898-94CD-FE2104E04A4A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets.Tests", "tests\System.Net.WebSockets.Tests.csproj", "{0887C5AD-1BE1-4898-94CD-FE2104E04A4A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1} = {B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets", "src\System.Net.WebSockets.csproj", "{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets", "src\System.Net.WebSockets.csproj", "{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A2F08695-A550-4AA2-806D-E5E7D86D8F25} = {A2F08695-A550-4AA2-806D-E5E7D86D8F25}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebSockets", "ref\System.Net.WebSockets.csproj", "{A2F08695-A550-4AA2-806D-E5E7D86D8F25}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebSockets", "ref\System.Net.WebSockets.csproj", "{A2F08695-A550-4AA2-806D-E5E7D86D8F25}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{0887C5AD-1BE1-4898-94CD-FE2104E04A4A} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{A2F08695-A550-4AA2-806D-E5E7D86D8F25} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {07264E78-33B3-44EB-A0C4-74722F839494}
 	EndGlobalSection
 EndGlobal

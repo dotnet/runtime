@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Overlapped.Tests", "tests\System.Threading.Overlapped.Tests.csproj", "{861A3318-35AD-46ac-8257-8D5D2479BAD9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Overlapped.Tests", "tests\System.Threading.Overlapped.Tests.csproj", "{861A3318-35AD-46ac-8257-8D5D2479BAD9}"
 	ProjectSection(ProjectDependencies) = postProject
 		{6A07CCB8-3E59-47e7-B3DD-DB1F6FC501D5} = {6A07CCB8-3E59-47e7-B3DD-DB1F6FC501D5}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Overlapped", "src\System.Threading.Overlapped.csproj", "{6A07CCB8-3E59-47e7-B3DD-DB1F6FC501D5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Overlapped", "src\System.Threading.Overlapped.csproj", "{6A07CCB8-3E59-47e7-B3DD-DB1F6FC501D5}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F71467DF-30C1-44A0-A15A-163CB5DB4E6E} = {F71467DF-30C1-44A0-A15A-163CB5DB4E6E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Overlapped", "ref\System.Threading.Overlapped.csproj", "{F71467DF-30C1-44A0-A15A-163CB5DB4E6E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Overlapped", "ref\System.Threading.Overlapped.csproj", "{F71467DF-30C1-44A0-A15A-163CB5DB4E6E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{861A3318-35AD-46ac-8257-8D5D2479BAD9} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{6A07CCB8-3E59-47e7-B3DD-DB1F6FC501D5} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{F71467DF-30C1-44A0-A15A-163CB5DB4E6E} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C2895025-ABF3-4388-8869-3EE0FE0E02B6}
 	EndGlobalSection
 EndGlobal

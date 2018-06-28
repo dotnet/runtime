@@ -4,9 +4,8 @@
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{E66FFA55-0975-4F0D-8A18-24B2687FEDEA}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CustomAssemblyAttributes.cs" />
     <Compile Include="Perf_Graphics_DrawBeziers.cs" />

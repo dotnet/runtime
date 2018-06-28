@@ -8,14 +8,11 @@
          published for a specific framework/runtime by a referencing project. -->
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
     <NoWarn>3021</NoWarn>
+    <Configurations>netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\IMonitorLoader\IMonitorLoader.csproj" />
   </ItemGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <Compile Include="MemApi.Unix.cs" />
   </ItemGroup>

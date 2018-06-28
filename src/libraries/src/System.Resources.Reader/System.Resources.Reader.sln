@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.Reader.Tests", "tests\System.Resources.Reader.Tests.csproj", "{8D7202E8-084A-4C20-AB93-3BF70D2E0651}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Resources.Reader.Tests", "tests\System.Resources.Reader.Tests.csproj", "{8D7202E8-084A-4C20-AB93-3BF70D2E0651}"
 	ProjectSection(ProjectDependencies) = postProject
 		{5C13260D-C55D-46AF-9DCB-1B015D48E2E4} = {5C13260D-C55D-46AF-9DCB-1B015D48E2E4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.Reader", "src\System.Resources.Reader.csproj", "{5C13260D-C55D-46AF-9DCB-1B015D48E2E4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Resources.Reader", "src\System.Resources.Reader.csproj", "{5C13260D-C55D-46AF-9DCB-1B015D48E2E4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{99A66A70-7055-48FC-9BE1-36ED2B392E0D} = {99A66A70-7055-48FC-9BE1-36ED2B392E0D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Resources.Reader", "ref\System.Resources.Reader.csproj", "{99A66A70-7055-48FC-9BE1-36ED2B392E0D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Resources.Reader", "ref\System.Resources.Reader.csproj", "{99A66A70-7055-48FC-9BE1-36ED2B392E0D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{8D7202E8-084A-4C20-AB93-3BF70D2E0651} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{5C13260D-C55D-46AF-9DCB-1B015D48E2E4} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{99A66A70-7055-48FC-9BE1-36ED2B392E0D} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C8AC6D31-F003-429B-A606-3F8B96C82DEE}
 	EndGlobalSection
 EndGlobal

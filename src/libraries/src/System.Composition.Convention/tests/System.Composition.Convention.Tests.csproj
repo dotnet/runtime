@@ -3,9 +3,8 @@
     <ProjectGuid>{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}</ProjectGuid>
     <RootNamespace>ConventionsUnitTests</RootNamespace>
     <AssemblyName>System.Composition.Convention.Tests</AssemblyName>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="..\..\System.Composition\tests\Util\AssertX.cs">
       <Link>Util\AssertX.cs</Link>

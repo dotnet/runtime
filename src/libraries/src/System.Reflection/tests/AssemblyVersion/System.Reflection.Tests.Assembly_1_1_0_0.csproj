@@ -2,9 +2,8 @@
   <PropertyGroup>
     <ProjectGuid>{E28C7916-1BCE-434A-B045-9F755A00A7C4}</ProjectGuid>
     <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Program_1_1_0_0.cs" />
     <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs">

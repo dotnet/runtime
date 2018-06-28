@@ -2,9 +2,8 @@
   <PropertyGroup>
     <ProjectGuid>{3A3DE9F8-6295-4B68-BAAB-406F1CA0CD9C}</ProjectGuid>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="ForwardedTypesAssembly.cs" />
   </ItemGroup>

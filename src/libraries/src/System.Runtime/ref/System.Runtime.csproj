@@ -7,11 +7,8 @@
     <NoWarn>$(NoWarn);0809;0618</NoWarn>
     <!-- Default interfaces are not officially supported in netcoreapp yet -->
     <DefineConstants Condition="'$(IsPrerelease)' == 'true' and '$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_DEFAULT_INTERFACES</DefineConstants>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Runtime.cs" />
     <Compile Include="System.Runtime.Manual.cs" />

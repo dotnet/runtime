@@ -2,9 +2,8 @@
   <PropertyGroup>
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{7F4B8C48-8692-4885-BF84-FEB7EA82E34B}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="Perf.Regex.Cache.cs" />

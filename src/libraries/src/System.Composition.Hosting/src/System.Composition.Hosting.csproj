@@ -2,14 +2,13 @@
   <PropertyGroup>
     <ProjectGuid>{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}</ProjectGuid>
     <AssemblyName>System.Composition.Hosting</AssemblyName>
-    <RootNamespace></RootNamespace> <!-- CommonStrings needs RootNamespace to be empty -->
+    <RootNamespace>
+    </RootNamespace>
+    <!-- CommonStrings needs RootNamespace to be empty -->
     <BlockReflectionAttribute>false</BlockReflectionAttribute>
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
+    <Configurations>netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Release|AnyCPU'" />
   <ItemGroup>
     <ProjectReference Include="..\..\System.Composition.Runtime\src\System.Composition.Runtime.csproj">
       <Project>{2711dfd2-8541-4628-bc53-eb784a14cdcf}</Project>

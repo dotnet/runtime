@@ -4,9 +4,8 @@
     <ProjectGuid>{10D52320-17B7-476E-BBD2-A1064DD38CBF}</ProjectGuid>
     <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
     <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <!-- XPath.XDocument navigator -->
     <Compile Include="CreateNavigatorComparer.cs" />
