@@ -5238,7 +5238,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
             if (varDsc->lvType == TYP_STRUCT && varDsc->lvOtherArgReg >= MAX_REG_ARG && varDsc->lvOtherArgReg != REG_NA)
             {
                 // This is a split struct. It will account for an extra (8 bytes)
-                // of allignment.
+                // of alignment.
                 varDsc->lvStkOffs += TARGET_POINTER_SIZE;
                 argOffs += TARGET_POINTER_SIZE;
             }

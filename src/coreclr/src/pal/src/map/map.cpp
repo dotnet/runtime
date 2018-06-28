@@ -1661,7 +1661,7 @@ static INT MAPFileMapToMmapFlags( DWORD flags )
     else if ( FILE_MAP_WRITE == flags )
     {
         TRACE( "FILE_MAP_WRITE\n" );
-        /* The limitation of x86 archetecture
+        /* The limitation of x86 architecture
         means you cant have writable but not readable
         page. In Windows maps of FILE_MAP_WRITE can still be
         read from. */

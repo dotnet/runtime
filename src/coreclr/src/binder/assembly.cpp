@@ -20,7 +20,7 @@ namespace BINDER_SPACE
 {
     namespace
     {
-        BOOL IsPlatformArchicture(PEKIND kArchitecture)
+        BOOL IsPlatformArchitecture(PEKIND kArchitecture)
         {
             return ((kArchitecture != peMSIL) && (kArchitecture != peNone));
         }
@@ -279,7 +279,7 @@ Exit:
     /* static */
     BOOL Assembly::IsValidArchitecture(PEKIND kArchitecture)
     {
-        if (!IsPlatformArchicture(kArchitecture))
+        if (!IsPlatformArchitecture(kArchitecture))
             return TRUE;
 
         return (kArchitecture == GetSystemArchitecture());
