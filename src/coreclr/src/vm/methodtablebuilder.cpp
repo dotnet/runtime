@@ -7451,7 +7451,7 @@ MethodTableBuilder::PlaceInterfaceMethods()
                 else
                 {
                     // Iterate through the methods on the interface, and if they have a slot which was filled in
-                    // on an equivalent interface inherited from the parent fill in the approrpriate slot.
+                    // on an equivalent interface inherited from the parent fill in the appropriate slot.
                     // This code path is only used when there is an implicit implementation of an interface
                     // that was not implemented on a parent type, but there was an equivalent interface implemented
                     // on a parent type.
