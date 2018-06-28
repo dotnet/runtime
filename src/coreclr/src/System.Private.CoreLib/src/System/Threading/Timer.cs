@@ -440,13 +440,16 @@ namespace System.Threading
         private volatile WaitHandle m_notifyWhenNoCallbacksRunning;
 
 
-        internal TimerQueueTimer(TimerCallback timerCallback, object state, uint dueTime, uint period)
+        internal TimerQueueTimer(TimerCallback timerCallback, object state, uint dueTime, uint period, bool flowExecutionContext)
         {
             m_timerCallback = timerCallback;
             m_state = state;
             m_dueTime = Timeout.UnsignedInfinite;
             m_period = Timeout.UnsignedInfinite;
-            m_executionContext = ExecutionContext.Capture();
+            if (flowExecutionContext)
+            {
+                m_executionContext = ExecutionContext.Capture();
+            }
             m_associatedTimerQueue = TimerQueue.Instances[RuntimeThread.GetCurrentProcessorId() % TimerQueue.Instances.Length];
 
             //
@@ -677,14 +680,23 @@ namespace System.Threading
         public Timer(TimerCallback callback,
                      object state,
                      int dueTime,
-                     int period)
+                     int period) :
+                     this(callback, state, dueTime, period, flowExecutionContext: true)
+        {
+        }
+
+        internal Timer(TimerCallback callback,
+                       object state,
+                       int dueTime,
+                       int period,
+                       bool flowExecutionContext)
         {
             if (dueTime < -1)
                 throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (period < -1)
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
-            TimerSetup(callback, state, (uint)dueTime, (uint)period);
+            TimerSetup(callback, state, (uint)dueTime, (uint)period, flowExecutionContext);
         }
 
         public Timer(TimerCallback callback,
@@ -745,12 +757,13 @@ namespace System.Threading
         private void TimerSetup(TimerCallback callback,
                                 object state,
                                 uint dueTime,
-                                uint period)
+                                uint period,
+                                bool flowExecutionContext = true)
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(TimerCallback));
 
-            m_timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period));
+            m_timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period, flowExecutionContext));
         }
 
         public bool Change(int dueTime, int period)

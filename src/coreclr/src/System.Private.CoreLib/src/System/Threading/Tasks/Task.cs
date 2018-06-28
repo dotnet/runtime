@@ -5419,7 +5419,7 @@ namespace System.Threading.Tasks
             // ... and create our timer and make sure that it stays rooted.
             if (millisecondsDelay != Timeout.Infinite) // no need to create the timer if it's an infinite timeout
             {
-                promise.Timer = new TimerQueueTimer(state => ((DelayPromise)state).Complete(), promise, (uint)millisecondsDelay, Timeout.UnsignedInfinite);
+                promise.Timer = new TimerQueueTimer(state => ((DelayPromise)state).Complete(), promise, (uint)millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
             }
 
             // Return the timer proxy task

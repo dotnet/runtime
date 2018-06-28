@@ -205,7 +205,7 @@ namespace System.Threading
         private void InitializeWithTimer(int millisecondsDelay)
         {
             _state = NotCanceledState;
-            _timer = new Timer(s_timerCallback, this, millisecondsDelay, -1);
+            _timer = new Timer(s_timerCallback, this, millisecondsDelay, -1, flowExecutionContext: false);
         }
 
         /// <summary>Communicates a request for cancellation.</summary>
@@ -345,7 +345,7 @@ namespace System.Threading
                 // Initially set to "never go off" because we don't want to take a
                 // chance on a timer "losing" the initialization and then
                 // cancelling the token before it (the timer) can be disposed.
-                Timer newTimer = new Timer(s_timerCallback, this, -1, -1);
+                Timer newTimer = new Timer(s_timerCallback, this, -1, -1, flowExecutionContext: false);
                 if (Interlocked.CompareExchange(ref _timer, newTimer, null) != null)
                 {
                     // We did not initialize the timer.  Dispose the new timer.
