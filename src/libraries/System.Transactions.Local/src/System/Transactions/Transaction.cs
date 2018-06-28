@@ -1162,7 +1162,7 @@ namespace System.Transactions
     //  For async flow scenarios, we should not allow flowing of transaction across app domains. To prevent transaction from flowing across
     //  AppDomain/Remoting boundaries, we are using ConditionalWeakTable to hold the actual ambient transaction and store only a object reference 
     //  in CallContext. When TransactionScope is used to invoke a call across AppDomain/Remoting boundaries, only the object reference will be sent   
-    //  across and not the actaul ambient transaction which is stashed away in the ConditionalWeakTable. 
+    //  across and not the actual ambient transaction which is stashed away in the ConditionalWeakTable. 
     //
     internal static class CallContextCurrentData
     {

@@ -480,7 +480,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 ds.SizeLimit = 2;   // so we can efficiently check for duplicates
 
-                // If we are searching for AuthPrincpal or Principal in the end we will construct the acutal type
+                // If we are searching for AuthPrincpal or Principal in the end we will construct the actual type
                 // i.e. if the objects objectClass is User we will construct a UserPrincipal even though they searched for Principal.FindByIdentity
                 // At this time we don't know the actual object type so we have to ask AD for all the attributes of the derived types so they are there
                 // when we go to load the principal.

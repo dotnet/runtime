@@ -506,7 +506,7 @@ namespace System.Management
         
 
         
-        //Constructor that specifies flags as individual values - we need to set the flags acordingly !
+        //Constructor that specifies flags as individual values - we need to set the flags accordingly !
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.EnumerationOptions'/> class to be used for queries or enumerations, 
         ///    allowing the user to specify values for the different options.</para>
