@@ -207,6 +207,13 @@ namespace System.ComponentModel
         public override int GetHashCode() { throw null; }
     }
 }
+namespace System.Reflection
+{
+    public interface ICustomTypeProvider
+    {
+        Type GetCustomType();
+    }
+}
 namespace System.Windows.Input
 {
     public partial interface ICommand
