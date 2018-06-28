@@ -166,6 +166,58 @@ class Tests
 	}
 
 	[Category ("DYNCALL")]
+	static int test_0_amd64_dyncall_use_stack_float ()
+	{
+		float s = 10.0f;
+		var res = (float)typeof (Foo2<float>).GetMethod ("Get_T2").Invoke (null, new object [] { 1.0f, 2, 3, 4, 5, 6, 7, 8, 9, s });
+		if (res != s)
+			return 1;
+		return 0;
+	}
+
+	[Category ("DYNCALL")]
+	static int test_0_amd64_dyncall_use_stack_double ()
+	{
+		double s = 10.0f;
+		var res = (double)typeof (Foo2<double>).GetMethod ("Get_T2").Invoke (null, new object [] { 1.0f, 2, 3, 4, 5, 6, 7, 8, 9, s });
+		if (res != s)
+			return 1;
+		return 0;
+	}
+
+	[Category ("DYNCALL")]
+	static int test_0_amd64_dyncall_use_stack_int ()
+	{
+		int s = 10;
+		var res = (int)typeof (Foo2<int>).GetMethod ("Get_T2").Invoke (null, new object [] { 1.0f, 2, 3, 4, 5, 6, 7, 8, 9, s });
+		if (res != s)
+			return 1;
+		return 0;
+	}
+
+	[Category ("DYNCALL")]
+	static int test_0_amd64_dyncall_use_stack_ref ()
+	{
+		object s = new object ();
+		var res = (object)typeof (Foo2<object>).GetMethod ("Get_T2").Invoke (null, new object [] { 1.0f, 2, 3, 4, 5, 6, 7, 8, 9, s });
+		if (res != s)
+			return 1;
+		return 0;
+	}
+
+	[Category ("DYNCALL")]
+	static int test_0_amd64_dyncall_use_stack_struct ()
+	{
+		Struct1 s = new Struct1 ();
+		s.a = 10.0f;
+		s.b = 11.0f;
+		var res = (Struct1)typeof (Foo2<Struct1>).GetMethod ("Get_T2").Invoke (null, new object [] { 1.0f, 2, 3, 4, 5, 6, 7, 8, 9, s });
+		if (res.a != s.a || res.b != s.b)
+			return 1;
+		return 0;
+	}
+
+	[Category ("DYNCALL")]
 	[Category ("GSHAREDVT")]
 	static int test_0_arm64_dyncall_gsharedvt_out_hfa_double () {
 		/* gsharedvt out trampoline with double hfa argument */
@@ -266,7 +318,8 @@ class Tests
 		return 0;
 	}
 
-	[Category ("!FULLAOT-AMD64")]
+	[Category ("DYNCALL")]
+	[Category ("GSHAREDVT")]
 	static int test_42_arm64_dyncall_vtypebyval () {
 		var method = typeof (Foo5<string>).GetMethod ("vtype_by_val").MakeGenericMethod (new Type [] { typeof (int), typeof (long?), typeof (long?), typeof (long?), typeof (long?) });
 		long res = (long)method.Invoke (null, new object [] { 1, 2L, 3L, 4L, 42L });

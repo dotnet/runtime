@@ -2544,7 +2544,8 @@ mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
 		ArgInfo *ainfo = &cinfo->args [i];
 		switch (ainfo->storage) {
 		case ArgOnStack:
-			info->nstack_args = MAX (info->nstack_args, ainfo->offset + (ainfo->arg_size / 8));
+		case ArgValuetypeAddrOnStack:
+			info->nstack_args = MAX (info->nstack_args, (ainfo->offset / sizeof (mgreg_t)) + (ainfo->arg_size / sizeof (mgreg_t)));
 			break;
 		default:
 			break;
@@ -2695,15 +2696,23 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			break;
 		case MONO_TYPE_R4: {
 			double d;
-
 			*(float*)&d = *(float*)(arg);
-			p->has_fp = 1;
-			p->fregs [slot] = d;
+
+			if (ainfo->storage == ArgOnStack) {
+				*(double *)(p->regs + slot) = d;
+			} else {
+				p->has_fp = 1;
+				p->fregs [slot] = d;
+			}
 			break;
 		}
 		case MONO_TYPE_R8:
-			p->has_fp = 1;
-			p->fregs [slot] = *(double*)(arg);
+			if (ainfo->storage == ArgOnStack) {
+				*(double *)(p->regs + slot) = *(double*)(arg);
+			} else {
+				p->has_fp = 1;
+				p->fregs [slot] = *(double*)(arg);
+			}
 			break;
 		case MONO_TYPE_GENERICINST:
 		    if (MONO_TYPE_IS_REFERENCE (t)) {
