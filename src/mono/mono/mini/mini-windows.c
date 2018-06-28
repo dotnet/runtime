@@ -245,7 +245,7 @@ mono_runtime_cleanup_handlers (void)
 #endif
 }
 
-
+#if G_HAVE_API_SUPPORT (HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
 /* mono_chain_signal:
  *
  *   Call the original signal handler for the signal given by the arguments, which
@@ -259,6 +259,20 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	jit_tls->mono_win_chained_exception_needs_run = TRUE;
 	return TRUE;
 }
+
+void
+mono_dump_native_crash_info (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+{
+	//TBD
+}
+
+void
+mono_post_native_crash_handler (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining)
+{
+	if (!crash_chaining)
+		abort ();
+}
+#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 static MMRESULT	g_timer_event = 0;

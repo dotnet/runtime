@@ -3005,54 +3005,11 @@ mono_crash_dump (const char *jsonFile)
 	return;
 }
 
-static gboolean handle_crash_loop = FALSE;
-
-/*
- * mono_handle_native_crash:
- *
- *   Handle a native crash (e.g. SIGSEGV) while in native code by
- *   printing diagnostic information and aborting.
- */
-void
-mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+#if !defined(HOST_WIN32)
+static void
+dump_native_stacktrace (const char *signal, void *ctx)
 {
-#ifdef MONO_ARCH_USE_SIGACTION
-	struct sigaction sa;
-#endif
-	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
-
-	if (handle_crash_loop)
-		return;
-
-	if (mini_get_debug_options ()->suspend_on_native_crash) {
-		mono_runtime_printf_err ("Received %s, suspending...", signal);
-#ifdef HOST_WIN32
-		while (1)
-			;
-#else
-		while (1) {
-			sleep (1);
-		}
-#endif
-	}
-
-	/* prevent infinite loops in crash handling */
-	handle_crash_loop = TRUE;
-
-	/* !jit_tls means the thread was not registered with the runtime */
-	if (jit_tls && mono_thread_internal_current ()) {
-		mono_runtime_printf_err ("Stacktrace:\n");
-
-		/* FIXME: Is MONO_UNWIND_LOOKUP_IL_OFFSET correct here? */
-		mono_walk_stack (print_stack_frame_to_stderr, MONO_UNWIND_LOOKUP_IL_OFFSET, NULL);
-	}
-
-	print_process_map ();
-
-	dump_memory_around_ip (ctx);
-
 #ifdef HAVE_BACKTRACE_SYMBOLS
- {
 	void *array [256];
 	char **names;
 	int i, size;
@@ -3061,7 +3018,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 
 	size = backtrace (array, 256);
 	names = backtrace_symbols (array, size);
-	for (i =0; i < size; ++i) {
+	for (i = 0; i < size; ++i) {
 		mono_runtime_printf_err ("\t%s", names [i]);
 	}
 	g_free (names);
@@ -3167,7 +3124,6 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 		waitpid (pid, &status, 0);
 	}
 #endif
- }
 #else
 #ifdef HOST_ANDROID
 	/* set DUMPABLE for this process so debuggerd can attach with ptrace(2), see:
@@ -3179,6 +3135,73 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 	mono_runtime_printf_err ("\nNo native Android stacktrace (see debuggerd output).\n");
 #endif
 #endif
+}
+void
+mono_dump_native_crash_info (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+{
+	print_process_map ();
+
+	dump_memory_around_ip (ctx);
+
+	dump_native_stacktrace (signal, ctx);
+}
+
+static void
+mono_post_native_crash_handler (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining)
+{
+	if (!crash_chaining) {
+		/*Android abort is a fluke, it doesn't abort, it triggers another segv. */
+#if defined (HOST_ANDROID)
+		exit (-1);
+#else
+		abort ();
+#endif
+	}
+}
+#else
+extern void
+mono_dump_native_crash_info (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info);
+
+extern void
+mono_post_native_crash_handler (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining);
+#endif /* !HOST_WIN32 */
+
+static gboolean handle_crash_loop = FALSE;
+
+/*
+ * mono_handle_native_crash:
+ *
+ *   Handle a native crash (e.g. SIGSEGV) while in native code by
+ *   printing diagnostic information and aborting.
+ */
+void
+mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+{
+	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
+
+	if (handle_crash_loop)
+		return;
+
+	if (mini_get_debug_options ()->suspend_on_native_crash) {
+		mono_runtime_printf_err ("Received %s, suspending...", signal);
+		while (1) {
+			// Sleep for 1 second.
+			g_usleep (1000 * 1000);
+		}
+	}
+
+	/* prevent infinite loops in crash handling */
+	handle_crash_loop = TRUE;
+
+	/* !jit_tls means the thread was not registered with the runtime */
+	if (jit_tls && mono_thread_internal_current ()) {
+		mono_runtime_printf_err ("Stacktrace:\n");
+
+		/* FIXME: Is MONO_UNWIND_LOOKUP_IL_OFFSET correct here? */
+		mono_walk_stack (print_stack_frame_to_stderr, MONO_UNWIND_LOOKUP_IL_OFFSET, NULL);
+	}
+
+	mono_dump_native_crash_info (signal, ctx, info);
 
 	/*
 	 * A SIGSEGV indicates something went very wrong so we can no longer depend
@@ -3195,6 +3218,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 			signal);
 
 #ifdef MONO_ARCH_USE_SIGACTION
+	struct sigaction sa;
 	sa.sa_handler = SIG_DFL;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
@@ -3207,14 +3231,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 	g_assert (sigaction (SIGILL, &sa, NULL) != -1);
 #endif
 
-	if (!mono_do_crash_chaining) {
-		/*Android abort is a fluke, it doesn't abort, it triggers another segv. */
-#if defined (HOST_ANDROID)
-		exit (-1);
-#else
-		abort ();
-#endif
-	}
+	mono_post_native_crash_handler (signal, ctx, info, mono_do_crash_chaining);
 }
 
 #else
