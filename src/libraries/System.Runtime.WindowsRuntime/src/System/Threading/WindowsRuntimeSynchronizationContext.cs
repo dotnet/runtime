@@ -20,7 +20,6 @@ using Windows.UI.Core;
 namespace System.Threading
 {
 #if FEATURE_APPX
-
     [WindowsRuntimeImport]
     [Guid("DFA2DC9C-1A2D-4917-98F2-939AF1D6E0C8")]
     public delegate void DispatcherQueueHandler();
@@ -168,38 +167,19 @@ namespace System.Threading
 
             private static readonly ContextCallback s_contextCallback = new ContextCallback(InvokeInContext);
 
-            private delegate void DelEtwFireThreadTransferSendObj(object id, int kind, string info, bool multiDequeues);
-            private delegate void DelEtwFireThreadTransferObj(object id, int kind, string info);
-            private static DelEtwFireThreadTransferSendObj s_EtwFireThreadTransferSendObj;
-            private static DelEtwFireThreadTransferObj s_EtwFireThreadTransferReceiveObj;
-            private static DelEtwFireThreadTransferObj s_EtwFireThreadTransferReceiveHandledObj;
-            private static volatile bool s_TriedGetEtwDelegates;
-
             public Invoker(SendOrPostCallback callback, object state)
             {
                 _executionContext = ExecutionContext.Capture();
                 _callback = callback;
                 _state = state;
-
-                if (FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
-                    EtwFireThreadTransferSendObj(this);
             }
 
             public void Invoke()
             {
-                if (FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
-                    EtwFireThreadTransferReceiveObj(this);
-
                 if (_executionContext == null)
                     InvokeCore();
                 else
                     ExecutionContext.Run(_executionContext, s_contextCallback, this);
-
-                // If there was an ETW event that fired at the top of the winrt event handling loop, ETW listeners could
-                // use it as a marker of completion of the previous request. Since such an event does not exist we need to
-                // fire the "done handling off-thread request" event in order to enable correct work item assignment.
-                if (FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
-                    EtwFireThreadTransferReceiveHandledObj(this);
             }
 
             private static void InvokeInContext(object thisObj)
@@ -231,50 +211,6 @@ namespace System.Threading
                     }
                 }
             }
-
-            #region ETW Activity-tracing support
-            private static void InitEtwMethods()
-            {
-                Type fest = typeof(FrameworkEventSource);
-                var mi1 = fest.GetMethod("ThreadTransferSendObj", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-                var mi2 = fest.GetMethod("ThreadTransferReceiveObj", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-                var mi3 = fest.GetMethod("ThreadTransferReceiveHandledObj", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-                if (mi1 != null && mi2 != null && mi3 != null)
-                {
-                    s_EtwFireThreadTransferSendObj = (DelEtwFireThreadTransferSendObj)mi1.CreateDelegate(typeof(DelEtwFireThreadTransferSendObj),
-                                                                        FrameworkEventSource.Log);
-                    s_EtwFireThreadTransferReceiveObj = (DelEtwFireThreadTransferObj)mi2.CreateDelegate(typeof(DelEtwFireThreadTransferObj),
-                                                                           FrameworkEventSource.Log);
-                    s_EtwFireThreadTransferReceiveHandledObj = (DelEtwFireThreadTransferObj)mi3.CreateDelegate(typeof(DelEtwFireThreadTransferObj),
-                                                                           FrameworkEventSource.Log);
-                }
-                s_TriedGetEtwDelegates = true;
-            }
-
-            private static void EtwFireThreadTransferSendObj(object id)
-            {
-                if (!s_TriedGetEtwDelegates)
-                    InitEtwMethods();
-                if (s_EtwFireThreadTransferSendObj != null)
-                    s_EtwFireThreadTransferSendObj(id, 3, string.Empty, false);
-            }
-
-            private static void EtwFireThreadTransferReceiveObj(object id)
-            {
-                if (!s_TriedGetEtwDelegates)
-                    InitEtwMethods();
-                if (s_EtwFireThreadTransferReceiveObj != null)
-                    s_EtwFireThreadTransferReceiveObj(id, 3, string.Empty);
-            }
-
-            private static void EtwFireThreadTransferReceiveHandledObj(object id)
-            {
-                if (!s_TriedGetEtwDelegates)
-                    InitEtwMethods();
-                if (s_EtwFireThreadTransferReceiveHandledObj != null)
-                    s_EtwFireThreadTransferReceiveHandledObj(id, 3, string.Empty);
-            }
-            #endregion ETW Activity-tracing support
         }
 
         #endregion class WinRTSynchronizationContext.Invoker
