@@ -101,6 +101,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         const string WinRTNotifyCollectionChangedEventArgsName = "Windows.UI.Xaml.Interop.NotifyCollectionChangedEventArgs";
 
+        // IBindableVector Guid
+        static Guid IID_IBindableVector = new Guid("393de7de-6fd0-4c0d-bb71-47244a113e93");
+
         static INotifyCollectionChangedEventArgsFactory s_EventArgsFactory;
 
         // Extracts properties from a managed NotifyCollectionChangedEventArgs and passes them to
@@ -116,9 +119,22 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             try
             {
                 if (managedArgs.NewItems != null)
-                    newItemsIP = Marshal.GetComInterfaceForObject(managedArgs.NewItems, typeof(IBindableVector));
+                {
+                    IntPtr unkPtr = Marshal.GetIUnknownForObject(managedArgs.NewItems);
+                    int hr = Marshal.QueryInterface(unkPtr, ref IID_IBindableVector, out newItemsIP);
+                    Marshal.Release(unkPtr);
+                    if (hr < 0)
+                        throw Marshal.GetExceptionForHR(hr);
+
+                }
                 if (managedArgs.OldItems != null)
-                    oldItemsIP = Marshal.GetComInterfaceForObject(managedArgs.OldItems, typeof(IBindableVector));
+                {
+                    IntPtr unkPtr = Marshal.GetIUnknownForObject(managedArgs.OldItems);
+                    int hr = Marshal.QueryInterface(unkPtr, ref IID_IBindableVector, out oldItemsIP);
+                    Marshal.Release(unkPtr);
+                    if (hr < 0)
+                        throw Marshal.GetExceptionForHR(hr);
+                }
 
                 return CreateNativeNCCEventArgsInstanceHelper((int)managedArgs.Action, newItemsIP, oldItemsIP, managedArgs.NewStartingIndex, managedArgs.OldStartingIndex);
             }
