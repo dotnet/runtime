@@ -122,7 +122,7 @@
       <RuntimeLibrary>$(MONO_C_RUNTIME)</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Mswsock.lib;ws2_32.lib;ole32.lib;oleaut32.lib;psapi.lib;version.lib;advapi32.lib;winmm.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>bcrypt.lib;Mswsock.lib;ws2_32.lib;ole32.lib;oleaut32.lib;psapi.lib;version.lib;advapi32.lib;winmm.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(MONO_BUILD_DIR_PREFIX)$(Platform)/lib/$(Configuration)</AdditionalLibraryDirectories>
     </Link>
     <Lib>

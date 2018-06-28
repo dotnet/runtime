@@ -430,9 +430,6 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-rand.h">
       <Filter>Header Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-rand-windows-internals.h">
-      <Filter>Header Files$(MonoUtilsFilterSubFolder)\common</Filter>
-    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\memfuncs.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClCompile>

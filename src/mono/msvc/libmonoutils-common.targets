@@ -183,7 +183,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-rand.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-rand-windows.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-rand.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-rand-windows-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\memfuncs.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\memfuncs.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\parse.c" />

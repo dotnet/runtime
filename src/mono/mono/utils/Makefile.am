@@ -179,7 +179,6 @@ monoutils_sources = \
 	mono-rand.c	\
 	mono-rand-windows.c	\
 	mono-rand.h \
-	mono-rand-windows-internals.h \
 	memfuncs.c \
 	memfuncs.h \
 	parse.c \
