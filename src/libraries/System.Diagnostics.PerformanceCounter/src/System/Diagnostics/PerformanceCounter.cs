@@ -12,7 +12,7 @@ namespace System.Diagnostics
     /// <summary>
     ///     Performance Counter component.
     ///     This class provides support for NT Performance counters.
-    ///     It handles both the existing counters (accesible by Perf Registry Interface)
+    ///     It handles both the existing counters (accessible by Perf Registry Interface)
     ///     and user defined (extensible) counters.
     ///     This class is a part of a larger framework, that includes the perf dll object and
     ///     perf service.
