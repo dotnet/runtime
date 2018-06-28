@@ -1691,6 +1691,8 @@ public:
     GenTree* impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass);
 #endif // FEATURE_MULTIREG_RET
 
+    GenTree* impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass);
+
 #ifdef ARM_SOFTFP
     bool isSingleFloat32Struct(CORINFO_CLASS_HANDLE hClass);
 #endif // ARM_SOFTFP
@@ -4223,6 +4225,9 @@ public:
     {
         SPK_Unknown,       // Invalid value, never returned
         SPK_PrimitiveType, // The struct is passed/returned using a primitive type.
+        SPK_EnclosingType, // Like SPK_Primitive type, but used for return types that
+                           //  require a primitive type temp that is larger than the struct size.
+                           //  Currently used for structs of size 3, 5, 6, or 7 bytes.
         SPK_ByValue,       // The struct is passed/returned by value (using the ABI rules)
                            //  for ARM64 and UNIX_X64 in multiple registers. (when all of the
                            //   parameters registers are used, then the stack will be used)

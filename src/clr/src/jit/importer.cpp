@@ -8464,8 +8464,24 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     {
         if (retRegCount == 1)
         {
-            // struct returned in a single register
-            call->gtReturnType = retTypeDesc->GetReturnRegType(0);
+            // See if the struct size is smaller than the return
+            // type size...
+            if (retTypeDesc->IsEnclosingType())
+            {
+                // If we know for sure this call will remain a call,
+                // retype and return value via a suitable temp.
+                if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
+                {
+                    call->gtReturnType = retTypeDesc->GetReturnRegType(0);
+                    return impAssignSmallStructTypeToVar(call, retClsHnd);
+                }
+            }
+            else
+            {
+                // Return type is same size as struct, so we can
+                // simply retype the call.
+                call->gtReturnType = retTypeDesc->GetReturnRegType(0);
+            }
         }
         else
         {
@@ -8507,7 +8523,25 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     else
     {
         assert(returnType != TYP_UNKNOWN);
-        call->gtReturnType = returnType;
+
+        // See if the struct size is smaller than the return
+        // type size...
+        if (howToReturnStruct == SPK_EnclosingType)
+        {
+            // If we know for sure this call will remain a call,
+            // retype and return value via a suitable temp.
+            if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
+            {
+                call->gtReturnType = returnType;
+                return impAssignSmallStructTypeToVar(call, retClsHnd);
+            }
+        }
+        else
+        {
+            // Return type is same size as struct, so we can
+            // simply retype the call.
+            call->gtReturnType = returnType;
+        }
 
         // ToDo: Refactor this common code sequence into its own method as it is used 4+ times
         if ((returnType == TYP_LONG) && (compLongUsed == false))
@@ -8554,6 +8588,9 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
 {
     assert(varTypeIsStruct(info.compRetType));
     assert(info.compRetBuffArg == BAD_VAR_NUM);
+
+    JITDUMP("\nimpFixupStructReturnType: retyping\n");
+    DISPTREE(op);
 
 #if defined(_TARGET_XARCH_)
 
@@ -8725,9 +8762,7 @@ REDO_RETURN_NODE:
         }
         else
         {
-            assert(info.compRetNativeType == op->gtCall.gtReturnType);
-
-            // Don't change the gtType of the node just yet, it will get changed later.
+            // Don't change the gtType of the call just yet, it will get changed later.
             return op;
         }
     }
@@ -8749,6 +8784,9 @@ REDO_RETURN_NODE:
     }
 
     op->gtType = info.compRetNativeType;
+
+    JITDUMP("\nimpFixupStructReturnType: result of retyping is\n");
+    DISPTREE(op);
 
     return op;
 }
@@ -15647,7 +15685,45 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* src, CORINFO
 }
 #endif // _TARGET_ARM_
 
+//------------------------------------------------------------------------
+// impAssignSmallStructTypeToVar: ensure calls that return small structs whose
+//    sizes are not supported integral type sizes return values to temps.
+//
+// Arguments:
+//     op -- call returning a small struct in a register
+//     hClass -- class handle for struct
+//
+// Returns:
+//     Tree with reference to struct local to use as call return value.
+//
+// Remarks:
+//     The call will be spilled into a preceding statement.
+//     Currently handles struct returns for 3, 5, 6, and 7 byte structs.
+
+GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass)
+{
+    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for small struct return."));
+    impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
+    GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
+
+    // TODO-1stClassStructs: Handle constant propagation and CSE-ing of small struct returns.
+    ret->gtFlags |= GTF_DONT_CSE;
+
+    return ret;
+}
+
 #if FEATURE_MULTIREG_RET
+//------------------------------------------------------------------------
+// impAssignMultiRegTypeToVar: ensure calls that return structs in multiple
+//    registers return values to suitable temps.
+//
+// Arguments:
+//     op -- call returning a struct in a registers
+//     hClass -- class handle for struct
+//
+// Returns:
+//     Tree with reference to struct local to use as call return value.
+
 GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass)
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return."));

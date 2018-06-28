@@ -141,7 +141,8 @@ void Compiler::lvaInitTypeRef()
         Compiler::structPassingKind howToReturnStruct;
         var_types                   returnType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
 
-        if (howToReturnStruct == SPK_PrimitiveType)
+        // We can safely widen the return type for enclosed structs.
+        if ((howToReturnStruct == SPK_PrimitiveType) || (howToReturnStruct == SPK_EnclosingType))
         {
             assert(returnType != TYP_UNKNOWN);
             assert(!varTypeIsStruct(returnType));
