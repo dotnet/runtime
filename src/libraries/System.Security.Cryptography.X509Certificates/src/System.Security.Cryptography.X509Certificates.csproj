@@ -375,6 +375,7 @@
       <Link>Common\System\Security\Cryptography\SecKeyPair.cs</Link>
     </Compile>
     <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\CertificateData.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.cs" />
