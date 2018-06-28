@@ -2618,6 +2618,8 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			float_param_reg_to_index [float_param_regs[i]] = i;
 		mono_memory_barrier ();
 		param_reg_to_index_inited = 1;
+	} else {
+		mono_memory_barrier ();
 	}
 
 	p->res = 0;
