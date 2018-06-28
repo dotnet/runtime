@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Timer.Tests", "tests\System.Threading.Timer.Tests.csproj", "{ac20a28f-fda8-45e8-8728-058ead16e44c}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Timer.Tests", "tests\System.Threading.Timer.Tests.csproj", "{ac20a28f-fda8-45e8-8728-058ead16e44c}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0F8B87B4-0E61-4DC6-9E90-CD4863025272} = {0F8B87B4-0E61-4DC6-9E90-CD4863025272}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Timer", "src\System.Threading.Timer.csproj", "{0F8B87B4-0E61-4DC6-9E90-CD4863025272}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Timer", "src\System.Threading.Timer.csproj", "{0F8B87B4-0E61-4DC6-9E90-CD4863025272}"
 	ProjectSection(ProjectDependencies) = postProject
 		{DC78B562-4F74-49C2-9766-3B65CD610CCC} = {DC78B562-4F74-49C2-9766-3B65CD610CCC}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Timer", "ref\System.Threading.Timer.csproj", "{DC78B562-4F74-49C2-9766-3B65CD610CCC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Timer", "ref\System.Threading.Timer.csproj", "{DC78B562-4F74-49C2-9766-3B65CD610CCC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{ac20a28f-fda8-45e8-8728-058ead16e44c} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{0F8B87B4-0E61-4DC6-9E90-CD4863025272} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{DC78B562-4F74-49C2-9766-3B65CD610CCC} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9B7377AE-E32F-4B15-8585-4DAC3767E023}
 	EndGlobalSection
 EndGlobal

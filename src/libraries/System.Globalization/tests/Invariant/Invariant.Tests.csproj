@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{9A8926D9-1D4C-4069-8965-A626F6CA8C29}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup>
     <!-- 
         We are overriding the .json config file to include "System.Globalization.Invariant": true 

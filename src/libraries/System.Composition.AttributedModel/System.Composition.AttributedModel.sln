@@ -1,13 +1,13 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Composition.AttributeModel.Tests", "tests\System.Composition.AttributeModel.Tests.csproj", "{853BB14F-8A5B-42B4-A053-21DE1AEBB335}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Composition.AttributeModel.Tests", "tests\System.Composition.AttributeModel.Tests.csproj", "{853BB14F-8A5B-42B4-A053-21DE1AEBB335}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C6257381-C624-494A-A9D9-5586E60856EA} = {C6257381-C624-494A-A9D9-5586E60856EA}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Composition.AttributedModel", "src\System.Composition.AttributedModel.csproj", "{C6257381-C624-494A-A9D9-5586E60856EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Composition.AttributedModel", "src\System.Composition.AttributedModel.csproj", "{C6257381-C624-494A-A9D9-5586E60856EA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -34,5 +34,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{853BB14F-8A5B-42B4-A053-21DE1AEBB335} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{C6257381-C624-494A-A9D9-5586E60856EA} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A24B6C69-2D91-4420-83CF-EDBE20728CFA}
 	EndGlobalSection
 EndGlobal

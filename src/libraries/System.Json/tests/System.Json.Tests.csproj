@@ -2,9 +2,8 @@
   <PropertyGroup>
     <ProjectGuid>{DC683D60-34EC-4D85-B6E0-E97FDB37A583}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="JsonArrayTests.cs" />
     <Compile Include="JsonObjectTests.cs" />

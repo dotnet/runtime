@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.Common.Tests", "tests\System.Data.Common.Tests.csproj", "{B473F77D-4168-4123-932A-E88020B768FA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.Common.Tests", "tests\System.Data.Common.Tests.csproj", "{B473F77D-4168-4123-932A-E88020B768FA}"
 	ProjectSection(ProjectDependencies) = postProject
 		{29EF8D53-8E84-4E49-B90F-5950A2FE7D54} = {29EF8D53-8E84-4E49-B90F-5950A2FE7D54}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.Common", "src\System.Data.Common.csproj", "{29EF8D53-8E84-4E49-B90F-5950A2FE7D54}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.Common", "src\System.Data.Common.csproj", "{29EF8D53-8E84-4E49-B90F-5950A2FE7D54}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D2DB0D6F-F65E-4174-B31E-27DC03137118} = {D2DB0D6F-F65E-4174-B31E-27DC03137118}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.Common", "ref\System.Data.Common.csproj", "{D2DB0D6F-F65E-4174-B31E-27DC03137118}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.Common", "ref\System.Data.Common.csproj", "{D2DB0D6F-F65E-4174-B31E-27DC03137118}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{B473F77D-4168-4123-932A-E88020B768FA} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{29EF8D53-8E84-4E49-B90F-5950A2FE7D54} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{D2DB0D6F-F65E-4174-B31E-27DC03137118} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {51E2A4D2-7B34-4DC2-977E-557E9A3D42B6}
 	EndGlobalSection
 EndGlobal

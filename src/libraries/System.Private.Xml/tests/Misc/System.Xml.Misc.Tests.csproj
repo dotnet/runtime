@@ -2,9 +2,8 @@
   <PropertyGroup>
     <ProjectGuid>{A30BBA60-647C-4565-A42F-BE60B2CA2E8E}</ProjectGuid>
     <RootNamespace>XmlMiscTests</RootNamespace>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="RandomizedHashing.cs" />
     <Compile Include="..\..\src\System\Xml\Core\SecureStringHasher.cs" />

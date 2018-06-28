@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Tests", "tests\System.IO.Tests.csproj", "{492EC54D-D2C4-4B3F-AC1F-646B3F7EBB02}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Tests", "tests\System.IO.Tests.csproj", "{492EC54D-D2C4-4B3F-AC1F-646B3F7EBB02}"
 	ProjectSection(ProjectDependencies) = postProject
 		{07390899-C8F6-4e83-A3A9-6867B8CB46A0} = {07390899-C8F6-4e83-A3A9-6867B8CB46A0}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO", "src\System.IO.csproj", "{07390899-C8F6-4e83-A3A9-6867B8CB46A0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO", "src\System.IO.csproj", "{07390899-C8F6-4e83-A3A9-6867B8CB46A0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{88883C57-83BE-4E93-A363-4CFC716F248F} = {88883C57-83BE-4E93-A363-4CFC716F248F}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO", "ref\System.IO.csproj", "{88883C57-83BE-4E93-A363-4CFC716F248F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO", "ref\System.IO.csproj", "{88883C57-83BE-4E93-A363-4CFC716F248F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{492EC54D-D2C4-4B3F-AC1F-646B3F7EBB02} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{07390899-C8F6-4e83-A3A9-6867B8CB46A0} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{88883C57-83BE-4E93-A363-4CFC716F248F} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {ED5ABD98-B7AD-47BA-90FC-CA49687645ED}
 	EndGlobalSection
 EndGlobal

@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{BE8B728D-86C1-406F-8F5F-6656EC486B01}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="ClaimsIdentityTests.cs" />
     <Compile Include="GenericIdentityTests.cs" />

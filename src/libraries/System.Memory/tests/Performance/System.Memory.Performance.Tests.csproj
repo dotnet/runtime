@@ -3,9 +3,8 @@
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{18482C55-6B57-41E8-BBC4-383B9E2C7AA2}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Perf.Base64EncodeDecode.cs" />
     <Compile Include="Perf.Memory.Slice.cs" />

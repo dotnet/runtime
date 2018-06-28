@@ -4,13 +4,8 @@
     <AssemblyName>System.Security.Cryptography.Csp</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn Condition="'$(TargetsUnix)' == 'true'">CS0809</NoWarn>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Security\Cryptography\AesCryptoServiceProvider.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Shared.cs" />
@@ -29,7 +24,7 @@
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
   </ItemGroup>
-    <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.Unix.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.Unix.cs" />

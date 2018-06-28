@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Immutable.Tests", "tests\System.Collections.Immutable.Tests.csproj", "{95DFC527-4DC1-495E-97D7-E94EE1F7140D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.Immutable.Tests", "tests\System.Collections.Immutable.Tests.csproj", "{95DFC527-4DC1-495E-97D7-E94EE1F7140D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{1DD0FF15-6234-4BD6-850A-317F05479554} = {1DD0FF15-6234-4BD6-850A-317F05479554}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Immutable", "src\System.Collections.Immutable.csproj", "{1DD0FF15-6234-4BD6-850A-317F05479554}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.Immutable", "src\System.Collections.Immutable.csproj", "{1DD0FF15-6234-4BD6-850A-317F05479554}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C7EFF4EE-70DC-453B-B817-4AF67921AB03} = {C7EFF4EE-70DC-453B-B817-4AF67921AB03}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Immutable", "ref\System.Collections.Immutable.csproj", "{C7EFF4EE-70DC-453B-B817-4AF67921AB03}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.Immutable", "ref\System.Collections.Immutable.csproj", "{C7EFF4EE-70DC-453B-B817-4AF67921AB03}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{95DFC527-4DC1-495E-97D7-E94EE1F7140D} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{1DD0FF15-6234-4BD6-850A-317F05479554} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{C7EFF4EE-70DC-453B-B817-4AF67921AB03} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1DE2A735-672B-42B4-BD77-CE7B1976CC52}
 	EndGlobalSection
 EndGlobal

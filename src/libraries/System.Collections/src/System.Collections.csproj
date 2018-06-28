@@ -4,15 +4,8 @@
     <AssemblyName>System.Collections</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
@@ -21,7 +14,7 @@
   <ItemGroup>
     <Compile Include="System\Collections\BitArray.cs" />
     <Compile Include="System\Collections\Generic\BitHelper.cs" />
-    <Compile Include="System\Collections\Generic\CollectionExtensions.cs" />    
+    <Compile Include="System\Collections\Generic\CollectionExtensions.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Collections\Generic\ICollectionDebugView.cs">
       <Link>Common\System\Collections\Generic\ICollectionDebugView.cs</Link>
     </Compile>

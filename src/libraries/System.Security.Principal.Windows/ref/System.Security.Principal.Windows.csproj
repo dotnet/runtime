@@ -5,11 +5,8 @@
     <!-- Must match version supported by frameworks which support 4.1.* inbox.
          Can be removed when API is added and this assembly is versioned to 4.2.* -->
     <AssemblyVersion Condition="'$(TargetsNetFx)' != 'true'">4.1.1.0</AssemblyVersion>
+    <Configurations>netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <SuppressPackageTargetFrameworkCompatibility Include="$(UAPvNextTFM)" />
     <Compile Include="System.Security.Principal.Windows.cs" />

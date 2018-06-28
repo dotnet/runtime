@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.Tests", "tests\System.DirectoryServices.Tests.csproj", "{DDE3838B-0EEA-4D9A-A120-9D72CB33F250}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.DirectoryServices.Tests", "tests\System.DirectoryServices.Tests.csproj", "{DDE3838B-0EEA-4D9A-A120-9D72CB33F250}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28} = {EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices", "src\System.DirectoryServices.csproj", "{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.DirectoryServices", "src\System.DirectoryServices.csproj", "{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CBCDA53B-4C01-4267-B08C-413205FE4D8D} = {CBCDA53B-4C01-4267-B08C-413205FE4D8D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices", "ref\System.DirectoryServices.csproj", "{CBCDA53B-4C01-4267-B08C-413205FE4D8D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.DirectoryServices", "ref\System.DirectoryServices.csproj", "{CBCDA53B-4C01-4267-B08C-413205FE4D8D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{DDE3838B-0EEA-4D9A-A120-9D72CB33F250} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{CBCDA53B-4C01-4267-B08C-413205FE4D8D} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {88FABF55-3145-4BBD-908F-BDB2AEB4742B}
 	EndGlobalSection
 EndGlobal

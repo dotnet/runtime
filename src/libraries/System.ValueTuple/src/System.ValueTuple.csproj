@@ -7,26 +7,15 @@
     <RunApiCompat Condition="'$(TargetGroup)' != 'netcoreapp' AND '$(TargetGroup)' != 'uap'">false</RunApiCompat>
     <!-- We've explicitly authored a reference facade so we do not need to use the desktop implementation as ref -->
     <PackageDesktopAsRef>false</PackageDesktopAsRef>
+    <Configurations>net47-Debug;net47-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard1.0-Debug;netstandard1.0-Release;portable_net40+sl4+win8+wp8-Debug;portable_net40+sl4+win8+wp8-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net47-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net47-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'portable_net40+sl4+win8+wp8-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'portable_net40+sl4+win8+wp8-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup>
     <RootNamespace>System</RootNamespace>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\TupleElementNamesAttribute.cs">
-      <Link>System\Runtime\CompilerServices\TupleElementNamesAttribute.cs</Link>      
+      <Link>System\Runtime\CompilerServices\TupleElementNamesAttribute.cs</Link>
     </Compile>
     <Compile Include="System\ValueTuple\TupleExtensions.cs" />
     <Compile Include="System\ValueTuple\ValueTuple.cs" />

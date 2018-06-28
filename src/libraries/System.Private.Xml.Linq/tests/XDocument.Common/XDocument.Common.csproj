@@ -3,9 +3,8 @@
     <ProjectGuid>{52666206-B6C9-49FA-A1D7-D0A0C68807B0}</ProjectGuid>
     <AssemblyName>XDocument.Common</AssemblyName>
     <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="BridgeHelpers.cs" />
     <Compile Include="CXmlCache.cs" />

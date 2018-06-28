@@ -4,11 +4,8 @@
     <RootNamespace>System.Text.Encodings.Web</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+    <Configurations>netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Text\Encodings\Web\AllowedCharactersBitmap.cs" />
     <Compile Include="System\Text\Encodings\Web\BufferInternal.cs" />

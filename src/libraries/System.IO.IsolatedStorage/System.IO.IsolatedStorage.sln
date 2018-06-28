@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.IsolatedStorage.Tests", "tests\System.IO.IsolatedStorage.Tests.csproj", "{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.IsolatedStorage.Tests", "tests\System.IO.IsolatedStorage.Tests.csproj", "{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FAF5D1E4-BA43-4663-8429-C069066D75CB} = {FAF5D1E4-BA43-4663-8429-C069066D75CB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.IsolatedStorage", "src\System.IO.IsolatedStorage.csproj", "{FAF5D1E4-BA43-4663-8429-C069066D75CB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.IsolatedStorage", "src\System.IO.IsolatedStorage.csproj", "{FAF5D1E4-BA43-4663-8429-C069066D75CB}"
 	ProjectSection(ProjectDependencies) = postProject
 		{750200D5-661A-42AA-9E1F-2A151F5AEE74} = {750200D5-661A-42AA-9E1F-2A151F5AEE74}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.IsolatedStorage", "ref\System.IO.IsolatedStorage.csproj", "{750200D5-661A-42AA-9E1F-2A151F5AEE74}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.IsolatedStorage", "ref\System.IO.IsolatedStorage.csproj", "{750200D5-661A-42AA-9E1F-2A151F5AEE74}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{BF4F9507-8FBD-45EA-81C9-3ED89C052C91} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{FAF5D1E4-BA43-4663-8429-C069066D75CB} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{750200D5-661A-42AA-9E1F-2A151F5AEE74} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B771C8B1-8D0C-4DF8-95F5-9CFD75660C47}
 	EndGlobalSection
 EndGlobal

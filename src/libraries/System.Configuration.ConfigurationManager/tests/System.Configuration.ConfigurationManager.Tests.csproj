@@ -4,10 +4,9 @@
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
     <!-- XUnit AppDomains BaseDirectory path doesn't contain a trailing slash, which impacts our tests. -->
     <XUnitNoAppdomain>true</XUnitNoAppdomain>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
       <Link>Common\System\IO\TempDirectory.cs</Link>

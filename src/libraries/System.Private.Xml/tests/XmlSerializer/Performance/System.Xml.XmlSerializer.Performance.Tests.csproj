@@ -3,11 +3,8 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{9891F9AC-9A0A-47DF-8D96-92B21AFC3B93}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />

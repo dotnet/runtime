@@ -1,8 +1,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Numerics.Vectors.WindowsRuntime", "src\System.Numerics.Vectors.WindowsRuntime.csproj", "{25FD0CB0-D3A8-4258-9408-30E69EEB0FF3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Vectors.WindowsRuntime", "src\System.Numerics.Vectors.WindowsRuntime.csproj", "{25FD0CB0-D3A8-4258-9408-30E69EEB0FF3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject
@@ -22,5 +22,8 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{25FD0CB0-D3A8-4258-9408-30E69EEB0FF3} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {69B12AEC-ADA2-42EC-82FB-F6B73F36B8B1}
 	EndGlobalSection
 EndGlobal

@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.OpenSsl.Tests", "tests\System.Security.Cryptography.OpenSsl.Tests.csproj", "{E1DAF7B9-BECB-4D25-AABB-C9E0BC73C690}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.OpenSsl.Tests", "tests\System.Security.Cryptography.OpenSsl.Tests.csproj", "{E1DAF7B9-BECB-4D25-AABB-C9E0BC73C690}"
 	ProjectSection(ProjectDependencies) = postProject
 		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4} = {78452F3E-BA91-47E7-BB0F-02E8A5C116C4}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.OpenSsl", "src\System.Security.Cryptography.OpenSsl.csproj", "{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.OpenSsl", "src\System.Security.Cryptography.OpenSsl.csproj", "{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8DEA82EF-2214-4295-8CC1-9FFB9B18838F} = {8DEA82EF-2214-4295-8CC1-9FFB9B18838F}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.OpenSsl", "ref\System.Security.Cryptography.OpenSsl.csproj", "{8DEA82EF-2214-4295-8CC1-9FFB9B18838F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.OpenSsl", "ref\System.Security.Cryptography.OpenSsl.csproj", "{8DEA82EF-2214-4295-8CC1-9FFB9B18838F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{E1DAF7B9-BECB-4D25-AABB-C9E0BC73C690} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{78452F3E-BA91-47E7-BB0F-02E8A5C116C4} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{8DEA82EF-2214-4295-8CC1-9FFB9B18838F} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {43A2E052-7F63-42D1-B22E-47C2A06358F4}
 	EndGlobalSection
 EndGlobal

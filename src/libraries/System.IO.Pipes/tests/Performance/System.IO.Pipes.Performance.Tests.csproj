@@ -3,9 +3,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{7A8B72D7-FACD-4E96-8390-F2D2FE269687}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <!-- Compiled Source Files -->
   <ItemGroup>
     <Compile Include="Perf.AnonymousPipeStream.cs" />

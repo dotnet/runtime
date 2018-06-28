@@ -3,11 +3,8 @@
     <ProjectGuid>{13CE5E71-D373-4EA6-B3CB-166FF089A42A}</ProjectGuid>
     <SkipIncludeNewtonsoftJson>true</SkipIncludeNewtonsoftJson>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="BinaryFormatterTestData.cs" />
     <Compile Include="BinaryFormatterTests.cs" />

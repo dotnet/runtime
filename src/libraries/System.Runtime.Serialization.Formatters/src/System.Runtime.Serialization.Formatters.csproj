@@ -3,13 +3,8 @@
     <ProjectGuid>{CF80D24A-787A-43DB-B9E7-10BCA02D10EA}</ProjectGuid>
     <AssemblyName>System.Runtime.Serialization.Formatters</AssemblyName>
     <RootNamespace>System.Runtime.Serialization.Formatters</RootNamespace>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />
     <Compile Include="System\Runtime\Serialization\DeserializationEventHandler.cs" />

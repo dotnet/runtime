@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.InteropServices.Tests", "tests\System.Runtime.InteropServices.Tests.csproj", "{A824F4CD-935B-4496-A1B2-C3664936DA7B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.Tests", "tests\System.Runtime.InteropServices.Tests.csproj", "{A824F4CD-935B-4496-A1B2-C3664936DA7B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE} = {EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.InteropServices", "src\System.Runtime.InteropServices.csproj", "{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices", "src\System.Runtime.InteropServices.csproj", "{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B17014F1-D902-417F-89B0-271204695831} = {B17014F1-D902-417F-89B0-271204695831}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.InteropServices", "ref\System.Runtime.InteropServices.csproj", "{B17014F1-D902-417F-89B0-271204695831}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices", "ref\System.Runtime.InteropServices.csproj", "{B17014F1-D902-417F-89B0-271204695831}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{A824F4CD-935B-4496-A1B2-C3664936DA7B} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{EC6AA4D9-B3E8-4CCA-8AB1-8BBFD89266AE} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{B17014F1-D902-417F-89B0-271204695831} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2FB12250-C235-4F6A-A3F2-8AB12B8AC4AE}
 	EndGlobalSection
 EndGlobal

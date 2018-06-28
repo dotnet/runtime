@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{8A7370E5-BF89-4BCF-ACCD-BA298869055B}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <Import Project="$(CommonTestPath)\Tests.props" />
   <PropertyGroup>
     <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Perf.XmlDocument.cs" />
     <Compile Include="Perf.XmlNode.cs" />

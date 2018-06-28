@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.WindowsRuntime.Tests", "tests\System.Runtime.WindowsRuntime.Tests.csproj", "{C4854B44-ABFE-4BB5-8F89-F35FE6201338}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.WindowsRuntime.Tests", "tests\System.Runtime.WindowsRuntime.Tests.csproj", "{C4854B44-ABFE-4BB5-8F89-F35FE6201338}"
 	ProjectSection(ProjectDependencies) = postProject
 		{844A2A0B-4169-49C3-B367-AFDC4894E487} = {844A2A0B-4169-49C3-B367-AFDC4894E487}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.WindowsRuntime", "src\System.Runtime.WindowsRuntime.csproj", "{844A2A0B-4169-49C3-B367-AFDC4894E487}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.WindowsRuntime", "src\System.Runtime.WindowsRuntime.csproj", "{844A2A0B-4169-49C3-B367-AFDC4894E487}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA} = {FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.WindowsRuntime", "ref\System.Runtime.WindowsRuntime.csproj", "{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.WindowsRuntime", "ref\System.Runtime.WindowsRuntime.csproj", "{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -30,14 +30,14 @@ Global
 		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.Debug|Any CPU.Build.0 = uap-Windows_NT-Debug|Any CPU
 		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.Release|Any CPU.ActiveCfg = uap-Windows_NT-Release|Any CPU
 		{C4854B44-ABFE-4BB5-8F89-F35FE6201338}.Release|Any CPU.Build.0 = uap-Windows_NT-Release|Any CPU
-		{844A2A0B-4169-49C3-B367-AFDC4894E487}.Debug|Any CPU.ActiveCfg = uap-Windows_NT-Debug|Any CPU
-		{844A2A0B-4169-49C3-B367-AFDC4894E487}.Debug|Any CPU.Build.0 = uap-Windows_NT-Debug|Any CPU
-		{844A2A0B-4169-49C3-B367-AFDC4894E487}.Release|Any CPU.ActiveCfg = uap-Windows_NT-Release|Any CPU
-		{844A2A0B-4169-49C3-B367-AFDC4894E487}.Release|Any CPU.Build.0 = uap-Windows_NT-Release|Any CPU
-		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.Debug|Any CPU.ActiveCfg = uap-Debug|Any CPU
-		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.Debug|Any CPU.Build.0 = uap-Debug|Any CPU
-		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.Release|Any CPU.ActiveCfg = uap-Release|Any CPU
-		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.Release|Any CPU.Build.0 = uap-Release|Any CPU
+		{844A2A0B-4169-49C3-B367-AFDC4894E487}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{844A2A0B-4169-49C3-B367-AFDC4894E487}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{844A2A0B-4169-49C3-B367-AFDC4894E487}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{844A2A0B-4169-49C3-B367-AFDC4894E487}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -46,5 +46,8 @@ Global
 		{C4854B44-ABFE-4BB5-8F89-F35FE6201338} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{844A2A0B-4169-49C3-B367-AFDC4894E487} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {61FA1A49-D9AA-4129-AFD5-9951C32B2CF5}
 	EndGlobalSection
 EndGlobal

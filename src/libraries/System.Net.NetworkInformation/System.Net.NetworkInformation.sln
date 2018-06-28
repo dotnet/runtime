@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NetworkInformation.Functional.Tests", "tests\FunctionalTests\System.Net.NetworkInformation.Functional.Tests.csproj", "{DCBB8805-4658-44BF-B5E8-B6714EC8936B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.NetworkInformation.Functional.Tests", "tests\FunctionalTests\System.Net.NetworkInformation.Functional.Tests.csproj", "{DCBB8805-4658-44BF-B5E8-B6714EC8936B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3CA89D6C-F8D1-4813-9775-F8D249686E31} = {3CA89D6C-F8D1-4813-9775-F8D249686E31}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NetworkInformation", "src\System.Net.NetworkInformation.csproj", "{3CA89D6C-F8D1-4813-9775-F8D249686E31}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.NetworkInformation", "src\System.Net.NetworkInformation.csproj", "{3CA89D6C-F8D1-4813-9775-F8D249686E31}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B897C3BE-7162-44BB-8B81-7A2464C082A7} = {B897C3BE-7162-44BB-8B81-7A2464C082A7}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NetworkInformation", "ref\System.Net.NetworkInformation.csproj", "{B897C3BE-7162-44BB-8B81-7A2464C082A7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.NetworkInformation", "ref\System.Net.NetworkInformation.csproj", "{B897C3BE-7162-44BB-8B81-7A2464C082A7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{DCBB8805-4658-44BF-B5E8-B6714EC8936B} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{3CA89D6C-F8D1-4813-9775-F8D249686E31} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{B897C3BE-7162-44BB-8B81-7A2464C082A7} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F01C6CC9-5EDE-4C1F-8F65-2E03FF520A30}
 	EndGlobalSection
 EndGlobal

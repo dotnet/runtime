@@ -4,11 +4,8 @@
     <AssemblyName>System.Dynamic.Runtime</AssemblyName>
     <RootNamespace>System.Dynamic.Runtime</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Runtime" />

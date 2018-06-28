@@ -2,18 +2,13 @@
   <PropertyGroup>
     <ProjectGuid>{2D694AC8-A12F-4622-9405-74E20EC40C3A}</ProjectGuid>
     <AssemblyName>System.ComponentModel.Composition</AssemblyName>
-    <RootNamespace></RootNamespace> <!-- CommonStrings needs RootNamespace to be empty -->
+    <RootNamespace>
+    </RootNamespace>
+    <!-- CommonStrings needs RootNamespace to be empty -->
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.0-Debug;netcoreapp2.0-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="TypeForwards.cs" />
   </ItemGroup>
