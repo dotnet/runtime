@@ -1019,7 +1019,7 @@ def static getDockerImageName(def architecture, def os, def isBuild) {
                 return "microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180404203310"
             }
             else if (os == 'Tizen') {
-                return "gbalykov/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180426002255-tizen-rootfs-4.0m2"
+                return "tizendotnet/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180426002255-tizen-rootfs-5.0m1"
             }
         }
         else if (architecture == 'arm') {
