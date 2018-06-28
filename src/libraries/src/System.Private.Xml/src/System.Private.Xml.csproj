@@ -52,6 +52,7 @@
     <Compile Include="System\Xml\MTNameTable.cs" />
     <Compile Include="System\Xml\NameTable.cs" />
     <Compile Include="System\Xml\Ref.cs" />
+    <Compile Include="System\Xml\Serialization\XmlSerializationEventSource.cs" />
     <Compile Include="System\Xml\ValidateNames.cs" />
     <Compile Include="System\Xml\XmlCharType.cs" />
     <Compile Include="System\Xml\XmlComplianceUtil.cs" />
@@ -520,6 +521,7 @@
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.TraceSource" />
+    <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
