@@ -10,11 +10,15 @@ namespace System.Net.Http
 {
     internal partial class HttpConnection : IDisposable
     {
-        private sealed class RawConnectionStream : HttpContentDuplexStream
+        private sealed class RawConnectionStream : HttpContentStream
         {
             public RawConnectionStream(HttpConnection connection) : base(connection)
             {
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this);
             }
+
+            public sealed override bool CanRead => true;
+            public sealed override bool CanWrite => true;
 
             public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {

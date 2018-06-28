@@ -57,6 +57,7 @@
     <Compile Include="System\Net\Http\NetEventSource.Http.cs" />
     <Compile Include="System\Net\Http\ReadOnlyMemoryContent.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ArrayBuffer.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\BaseAsyncStream.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -149,7 +150,6 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionPoolManager.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionResponseContent.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionSettings.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentDuplexStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentWriteStream.cs" />
