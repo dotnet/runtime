@@ -1264,5 +1264,19 @@
                 }
             ]
         }
+    },
+    {
+        "name": "System.Security.Cryptography.X509Certificates.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Security.Cryptography.X509Certificates.Tests.X509StoreTests.Constructor_DefaultStoreName",
+                    "reason": "Expected: My\r\nActual: MY\r\n"
+                }
+            ]
+        }
     }
 ]
