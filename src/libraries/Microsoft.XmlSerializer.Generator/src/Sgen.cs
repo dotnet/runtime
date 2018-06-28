@@ -390,7 +390,7 @@ namespace Microsoft.XmlSerializer.Generator
             return arg.Equals(formal, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        public bool ShortNameArgumentMatch(string arg, string shortName)
+        private bool ShortNameArgumentMatch(string arg, string shortName)
         {
             // Short name format, eg: -a 
             if (arg.Length < 2 || arg[0] != '-')
