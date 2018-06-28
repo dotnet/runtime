@@ -208,17 +208,11 @@ namespace System.Runtime.Intrinsics.X86
     public static class Aes 
     {
         public static bool IsSupported { get { throw null; } }
-        public static Vector128<sbyte> Decrypt(Vector128<sbyte> value, Vector128<sbyte> roundKey) { throw null; }
         public static Vector128<byte> Decrypt(Vector128<byte> value, Vector128<byte> roundKey) { throw null; }
-        public static Vector128<sbyte> DecryptLast(Vector128<sbyte> value, Vector128<sbyte> roundKey) { throw null; }
         public static Vector128<byte> DecryptLast(Vector128<byte> value, Vector128<byte> roundKey) { throw null; }
-        public static Vector128<sbyte> Encrypt(Vector128<sbyte> value, Vector128<sbyte> roundKey) { throw null; }
         public static Vector128<byte> Encrypt(Vector128<byte> value, Vector128<byte> roundKey) { throw null; }
-        public static Vector128<sbyte> EncryptLast(Vector128<sbyte> value, Vector128<sbyte> roundKey) { throw null; }
         public static Vector128<byte> EncryptLast(Vector128<byte> value, Vector128<byte> roundKey) { throw null; }
-        public static Vector128<sbyte> InvisibleMixColumn(Vector128<sbyte> value) { throw null; }
-        public static Vector128<byte> InvisibleMixColumn(Vector128<byte> value) { throw null; }
-        public static Vector128<sbyte> KeygenAssist(Vector128<sbyte> value, byte control) { throw null; }
+        public static Vector128<byte> InverseMixColumns(Vector128<byte> value) { throw null; }
         public static Vector128<byte> KeygenAssist(Vector128<byte> value, byte control) { throw null; }
     }
     public static class Avx
@@ -1593,6 +1587,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<short> MultiplyAddAdjacent(Vector128<byte> left, Vector128<sbyte> right) { throw null; }
         public static Vector128<short> MultiplyHighRoundScale(Vector128<short> left, Vector128<short> right) { throw null; }
         public static Vector128<sbyte> Shuffle(Vector128<sbyte> value, Vector128<sbyte> mask) { throw null; }
+        public static Vector128<byte> Shuffle(Vector128<byte> value, Vector128<byte> mask) { throw null; }
         public static Vector128<sbyte> Sign(Vector128<sbyte> left, Vector128<sbyte> right) { throw null; }
         public static Vector128<short> Sign(Vector128<short> left, Vector128<short> right) { throw null; }
         public static Vector128<int> Sign(Vector128<int> left, Vector128<int> right) { throw null; }
