@@ -978,18 +978,9 @@ namespace System.Drawing
             private static FunctionWrapper<GdipDeleteFontFamily_delegate> GdipDeleteFontFamily_ptr;
             internal static int IntGdipDeleteFontFamily(HandleRef fontFamily) => GdipDeleteFontFamily_ptr.Delegate(fontFamily);
 
-            private delegate int GdipGetFamilyName_delegate(HandleRef family, IntPtr name, int language);
+            private delegate int GdipGetFamilyName_delegate(HandleRef family, char* name, int language);
             private static FunctionWrapper<GdipGetFamilyName_delegate> GdipGetFamilyName_ptr;
-            internal static int GdipGetFamilyName(HandleRef family, IntPtr name, int language) => GdipGetFamilyName_ptr.Delegate(family, name, language);
-            internal static unsafe int GdipGetFamilyName(HandleRef family, StringBuilder nameBuilder, int language)
-            {
-                const int LF_FACESIZE = 32;
-                char* namePtr = stackalloc char[LF_FACESIZE];
-                int ret = GdipGetFamilyName(family, (IntPtr)namePtr, language);
-                string name = Marshal.PtrToStringUni((IntPtr)namePtr);
-                nameBuilder.Append(name);
-                return ret;
-            }
+            internal static int GdipGetFamilyName(HandleRef family, char* name, int language) => GdipGetFamilyName_ptr.Delegate(family, name, language);
 
             private delegate int GdipIsStyleAvailable_delegate(HandleRef family, FontStyle style, out int isStyleAvailable);
             private static FunctionWrapper<GdipIsStyleAvailable_delegate> GdipIsStyleAvailable_ptr;
