@@ -22324,33 +22324,113 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         }
     }
 
-#if FEATURE_MULTIREG_RET
-
-    // Did we record a struct return class handle above?
+    // If an inline was rejected and the call returns a struct, we may
+    // have deferred some work when importing call for cases where the
+    // struct is returned in register(s).
     //
+    // See the bail-out clauses in impFixupCallStructReturn for inline
+    // candidates.
+    //
+    // Do the deferred work now.
     if (retClsHnd != NO_CLASS_HANDLE)
     {
-        // Is this a type that is returned in multiple registers?
-        // if so we need to force into into a form we accept.
-        // i.e. LclVar = call()
-        //
-        if (comp->IsMultiRegReturnedType(retClsHnd))
+        structPassingKind howToReturnStruct;
+        var_types         returnType = comp->getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+        GenTree*          parent     = data->parent;
+
+        switch (howToReturnStruct)
         {
-            GenTree* parent = data->parent;
-            // See assert below, we only look one level above for an asg parent.
-            if (parent->gtOper == GT_ASG)
+
+#if FEATURE_MULTIREG_RET
+
+            // Is this a type that is returned in multiple registers
+            // or a via a primitve type that is larger than the struct type?
+            // if so we need to force into into a form we accept.
+            // i.e. LclVar = call()
+            case SPK_ByValue:
+            case SPK_ByValueAsHfa:
             {
-                // Either lhs is a call V05 = call(); or lhs is addr, and asg becomes a copyBlk.
-                comp->fgAttachStructInlineeToAsg(parent, tree, retClsHnd);
+                // See assert below, we only look one level above for an asg parent.
+                if (parent->gtOper == GT_ASG)
+                {
+                    // Either lhs is a call V05 = call(); or lhs is addr, and asg becomes a copyBlk.
+                    comp->fgAttachStructInlineeToAsg(parent, tree, retClsHnd);
+                }
+                else
+                {
+                    // Just assign the inlinee to a variable to keep it simple.
+                    tree->ReplaceWith(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
+                }
             }
-            else
+            break;
+
+#endif // FEATURE_MULTIREG_RET
+
+            case SPK_EnclosingType:
             {
-                // Just assign the inlinee to a variable to keep it simple.
-                tree->ReplaceWith(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
+                // For enclosing type returns, we must return the call value to a temp since
+                // the return type is larger than the struct type.
+                if (!tree->IsCall())
+                {
+                    break;
+                }
+
+                GenTreeCall* call = tree->AsCall();
+
+                assert(call->gtReturnType == TYP_STRUCT);
+
+                if (call->gtReturnType != TYP_STRUCT)
+                {
+                    break;
+                }
+
+                JITDUMP("\nCall returns small struct via enclosing type, retyping. Before:\n");
+                DISPTREE(call);
+
+                // Create new struct typed temp for return value
+                const unsigned tmpNum =
+                    comp->lvaGrabTemp(true DEBUGARG("small struct return temp for rejected inline"));
+                comp->lvaSetStruct(tmpNum, retClsHnd, false);
+                GenTree* assign = comp->gtNewTempAssign(tmpNum, call);
+
+                // Modify assign tree and call return types to the primitive return type
+                call->gtReturnType = returnType;
+                call->gtType       = returnType;
+                assign->gtType     = returnType;
+
+                // Modify the temp reference in the assign as a primitive reference via GT_LCL_FLD
+                GenTree* tempAsPrimitive = assign->gtOp.gtOp1;
+                assert(tempAsPrimitive->gtOper == GT_LCL_VAR);
+                tempAsPrimitive->gtType = returnType;
+                tempAsPrimitive->ChangeOper(GT_LCL_FLD);
+
+                // Return temp as value of call tree via comma
+                GenTree* tempAsStruct = comp->gtNewLclvNode(tmpNum, TYP_STRUCT);
+                GenTree* comma        = comp->gtNewOperNode(GT_COMMA, TYP_STRUCT, assign, tempAsStruct);
+                parent->ReplaceOperand(pTree, comma);
+
+                JITDUMP("\nAfter:\n");
+                DISPTREE(comma);
             }
+            break;
+
+            case SPK_PrimitiveType:
+                // We should have already retyped the call as a primitive type
+                // when we first imported the call
+                break;
+
+            case SPK_ByReference:
+                // We should have already added the return buffer
+                // when we first imported the call
+                break;
+
+            default:
+                noway_assert(!"Unexpected struct passing kind");
+                break;
         }
     }
 
+#if FEATURE_MULTIREG_RET
 #if defined(DEBUG)
 
     // Make sure we don't have a tree like so: V05 = (, , , retExpr);
