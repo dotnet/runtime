@@ -25,7 +25,7 @@ namespace System.Drawing
         private static int s_idCount = 0;
         private int _id;
 #endif
-        
+
         [SuppressMessage("Microsoft.Security", "CA2106:SecureAsserts")]
         private void SetNativeFamily(IntPtr family)
         {
@@ -185,15 +185,12 @@ namespace System.Drawing
         /// <summary>
         /// Returns the name of this <see cref='FontFamily'/> in the specified language.
         /// </summary>
-        public string GetName(int language)
+        public unsafe string GetName(int language)
         {
-            // LF_FACESIZE is 32
-            var name = new StringBuilder(32);
-
+            char* name = stackalloc char[32]; // LF_FACESIZE is 32
             int status = SafeNativeMethods.Gdip.GdipGetFamilyName(new HandleRef(this, NativeFamily), name, language);
             SafeNativeMethods.Gdip.CheckStatus(status);
-
-            return name.ToString();
+            return Marshal.PtrToStringUni((IntPtr)name);
         }
 
         /// <summary>
