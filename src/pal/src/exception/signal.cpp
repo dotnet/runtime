@@ -199,6 +199,10 @@ Return :
 void FreeSignalAlternateStack()
 {
     stack_t ss, oss;
+    // The man page for sigaltstack says that when the ss.ss_flags is set to SS_DISABLE,
+    // all other ss fields are ignored. However, MUSL implementation checks that the 
+    // ss_size is >= MINSIGSTKSZ even in this case.
+    ss.ss_size = MINSIGSTKSZ;
     ss.ss_flags = SS_DISABLE;
     int st = sigaltstack(&ss, &oss);
     if ((st == 0) && (oss.ss_flags != SS_DISABLE))
