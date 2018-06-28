@@ -17679,6 +17679,10 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
 
     switch (howToReturnStruct)
     {
+        case Compiler::SPK_EnclosingType:
+            m_isEnclosingType = true;
+            __fallthrough;
+
         case Compiler::SPK_PrimitiveType:
         {
             assert(returnType != TYP_UNKNOWN);

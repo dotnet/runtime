@@ -1004,37 +1004,57 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     assert(structSize > 0);
 
 #ifdef UNIX_AMD64_ABI
-
     // An 8-byte struct may need to be returned in a floating point register
     // So we always consult the struct "Classifier" routine
     //
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
     eeGetSystemVAmd64PassStructInRegisterDescriptor(clsHnd, &structDesc);
 
-    // If we have one eightByteCount then we can set 'useType' based on that
     if (structDesc.eightByteCount == 1)
     {
-        // Set 'useType' to the type of the first eightbyte item
-        useType = GetEightByteType(structDesc, 0);
-        assert(structDesc.passedInRegisters == true);
+        assert(structSize <= sizeof(double));
+
+        if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeSSE)
+        {
+            // If this is returned as a floating type, use that.
+            // Otherwise, leave as TYP_UNKONWN and we'll sort things out below.
+            useType           = GetEightByteType(structDesc, 0);
+            howToReturnStruct = SPK_PrimitiveType;
+        }
     }
 
-#else // not UNIX_AMD64
+#endif // UNIX_AMD64_ABI
 
+    // Check for cases where a small struct is returned in a register
+    // via a primitive type.
+    //
     // The largest primitive type is 8 bytes (TYP_DOUBLE)
     // so we can skip calling getPrimitiveTypeForStruct when we
     // have a struct that is larger than that.
-    //
-    if (structSize <= sizeof(double))
+    if ((useType == TYP_UNKNOWN) && (structSize <= sizeof(double)))
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
         //
-        // The ABI for struct returns in varArg methods, is same as the normal case, so pass false for isVararg
+        // The ABI for struct returns in varArg methods, is same as the normal case,
+        // so pass false for isVararg
         useType = getPrimitiveTypeForStruct(structSize, clsHnd, /*isVararg=*/false);
-    }
 
-#endif // UNIX_AMD64_ABI
+        if (useType != TYP_UNKNOWN)
+        {
+            if (structSize == genTypeSize(useType))
+            {
+                // Currently: 1, 2, 4, or 8 byte structs
+                howToReturnStruct = SPK_PrimitiveType;
+            }
+            else
+            {
+                // Currently: 3, 5, 6, or 7 byte structs
+                assert(structSize < genTypeSize(useType));
+                howToReturnStruct = SPK_EnclosingType;
+            }
+        }
+    }
 
 #ifdef _TARGET_64BIT_
     // Note this handles an odd case when FEATURE_MULTIREG_RET is disabled and HFAs are enabled
@@ -1048,16 +1068,16 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     //
     if ((FEATURE_MULTIREG_RET == 0) && (useType == TYP_UNKNOWN) && (structSize == (2 * sizeof(float))) && IsHfa(clsHnd))
     {
-        useType = TYP_I_IMPL;
+        useType           = TYP_I_IMPL;
+        howToReturnStruct = SPK_PrimitiveType;
     }
 #endif
 
     // Did we change this struct type into a simple "primitive" type?
-    //
     if (useType != TYP_UNKNOWN)
     {
-        // Yes, we should use the "primitive" type in 'useType'
-        howToReturnStruct = SPK_PrimitiveType;
+        // If so, we should have already set howToReturnStruct, too.
+        assert(howToReturnStruct != SPK_Unknown);
     }
     else // We can't replace the struct with a "primitive" type
     {
