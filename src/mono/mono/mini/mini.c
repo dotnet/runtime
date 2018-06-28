@@ -2393,6 +2393,14 @@ static void mono_bb_ordering (MonoCompile *cfg)
 	cfg->max_block_num = cfg->num_bblocks;
 
 	df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
+
+#if defined(__GNUC__) && __GNUC__ == 7 && defined(__x86_64__)
+	/* workaround for an AMD specific issue that only happens on GCC 7 so far,
+	 * for more information see https://github.com/mono/mono/issues/9298 */
+	mono_memory_barrier ();
+#endif
+	g_assertf (cfg->num_bblocks >= dfn, "cfg->num_bblocks=%d, dfn=%d\n", cfg->num_bblocks, dfn);
+
 	if (cfg->num_bblocks != dfn + 1) {
 		MonoBasicBlock *bb;
 
