@@ -3,13 +3,10 @@
     <ProjectGuid>{B4B5E15C-E6B9-48EA-94C2-F067484D4D3E}</ProjectGuid>
     <RootNamespace>System.Composition</RootNamespace>
     <AssemblyName>System.Composition.TypedParts</AssemblyName>
-    <DefineConstants  Condition="'$(TargetGroup)' == 'netstandard1.0'">$(DefineConstants);netstandard10</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.0'">$(DefineConstants);netstandard10</DefineConstants>
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
+    <Configurations>netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Release|AnyCPU'" />
   <PropertyGroup>
     <ExternallyShipping>true</ExternallyShipping>
   </PropertyGroup>

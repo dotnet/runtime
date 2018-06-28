@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.SecureString.Tests", "tests\System.Security.SecureString.Tests.csproj", "{69609238-62C7-479D-A8CE-709F41101D3C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.SecureString.Tests", "tests\System.Security.SecureString.Tests.csproj", "{69609238-62C7-479D-A8CE-709F41101D3C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A958BBDD-3238-4E58-AB7F-390AB6D88233} = {A958BBDD-3238-4E58-AB7F-390AB6D88233}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.SecureString", "src\System.Security.SecureString.csproj", "{A958BBDD-3238-4E58-AB7F-390AB6D88233}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.SecureString", "src\System.Security.SecureString.csproj", "{A958BBDD-3238-4E58-AB7F-390AB6D88233}"
 	ProjectSection(ProjectDependencies) = postProject
 		{899EC05D-7861-447F-9216-67F8547516DD} = {899EC05D-7861-447F-9216-67F8547516DD}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.SecureString", "ref\System.Security.SecureString.csproj", "{899EC05D-7861-447F-9216-67F8547516DD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.SecureString", "ref\System.Security.SecureString.csproj", "{899EC05D-7861-447F-9216-67F8547516DD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{69609238-62C7-479D-A8CE-709F41101D3C} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{A958BBDD-3238-4E58-AB7F-390AB6D88233} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{899EC05D-7861-447F-9216-67F8547516DD} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A82FA455-C185-437E-AD3C-266E2D79428B}
 	EndGlobalSection
 EndGlobal

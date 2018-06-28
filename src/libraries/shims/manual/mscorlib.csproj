@@ -1,13 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{CEAE2042-461E-490A-974C-AD7FBD4E294E}</ProjectGuid>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="mscorlib.forwards.cs" />
-    <ReferencePath
-      Include="$(_RuntimePath)System.*.dll;$(_RuntimePath)Microsoft.*.dll"
-      Exclude="$(_RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(_RuntimePath)Microsoft.DiaSymReader.Native.*.dll" />
+    <ReferencePath Include="$(_RuntimePath)System.*.dll;$(_RuntimePath)Microsoft.*.dll" Exclude="$(_RuntimePath)Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(_RuntimePath)Microsoft.DiaSymReader.Native.*.dll" />
   </ItemGroup>
 </Project>

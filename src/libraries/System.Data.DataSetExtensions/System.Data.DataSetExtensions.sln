@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.DataSetExtensions.Tests", "tests\System.Data.DataSetExtensions.Tests.csproj", "{2B38992F-9979-485F-B104-38C476D0B706}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.DataSetExtensions.Tests", "tests\System.Data.DataSetExtensions.Tests.csproj", "{2B38992F-9979-485F-B104-38C476D0B706}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C7CB4B69-2A11-4A20-A21E-5C954855AE5A} = {C7CB4B69-2A11-4A20-A21E-5C954855AE5A}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.DataSetExtensions", "src\System.Data.DataSetExtensions.csproj", "{C7CB4B69-2A11-4A20-A21E-5C954855AE5A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.DataSetExtensions", "src\System.Data.DataSetExtensions.csproj", "{C7CB4B69-2A11-4A20-A21E-5C954855AE5A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{50A5A8BC-C6A9-4000-8B52-667BEE00459D} = {50A5A8BC-C6A9-4000-8B52-667BEE00459D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Data.DataSetExtensions", "ref\System.Data.DataSetExtensions.csproj", "{50A5A8BC-C6A9-4000-8B52-667BEE00459D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.DataSetExtensions", "ref\System.Data.DataSetExtensions.csproj", "{50A5A8BC-C6A9-4000-8B52-667BEE00459D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{2B38992F-9979-485F-B104-38C476D0B706} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{C7CB4B69-2A11-4A20-A21E-5C954855AE5A} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{50A5A8BC-C6A9-4000-8B52-667BEE00459D} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {63C824F4-CE81-403D-BA02-4D3AE20B3A9E}
 	EndGlobalSection
 EndGlobal

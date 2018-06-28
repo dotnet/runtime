@@ -1,28 +1,28 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NameResolution.Functional.Tests", "tests\FunctionalTests\System.Net.NameResolution.Functional.Tests.csproj", "{4FE5ECEE-ACC5-4558-A946-573426599B73}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.NameResolution.Functional.Tests", "tests\FunctionalTests\System.Net.NameResolution.Functional.Tests.csproj", "{4FE5ECEE-ACC5-4558-A946-573426599B73}"
 	ProjectSection(ProjectDependencies) = postProject
 		{1714448C-211E-48C1-8B7E-4EE667D336A1} = {1714448C-211E-48C1-8B7E-4EE667D336A1}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NameResolution.Pal.Tests", "tests\PalTests\System.Net.NameResolution.Pal.Tests.csproj", "{F6D1C093-081D-46DE-B5A8-516533375FDD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.NameResolution.Pal.Tests", "tests\PalTests\System.Net.NameResolution.Pal.Tests.csproj", "{F6D1C093-081D-46DE-B5A8-516533375FDD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{1714448C-211E-48C1-8B7E-4EE667D336A1} = {1714448C-211E-48C1-8B7E-4EE667D336A1}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NameResolution.Unit.Tests", "tests\UnitTests\System.Net.NameResolution.Unit.Tests.csproj", "{239347DB-D566-48C9-9551-28AB3AD12EC3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.NameResolution.Unit.Tests", "tests\UnitTests\System.Net.NameResolution.Unit.Tests.csproj", "{239347DB-D566-48C9-9551-28AB3AD12EC3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{1714448C-211E-48C1-8B7E-4EE667D336A1} = {1714448C-211E-48C1-8B7E-4EE667D336A1}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NameResolution", "src\System.Net.NameResolution.csproj", "{1714448C-211E-48C1-8B7E-4EE667D336A1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.NameResolution", "src\System.Net.NameResolution.csproj", "{1714448C-211E-48C1-8B7E-4EE667D336A1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{324DF6B2-4234-47FF-A2C7-A739F19E8F17} = {324DF6B2-4234-47FF-A2C7-A739F19E8F17}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.NameResolution", "ref\System.Net.NameResolution.csproj", "{324DF6B2-4234-47FF-A2C7-A739F19E8F17}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.NameResolution", "ref\System.Net.NameResolution.csproj", "{324DF6B2-4234-47FF-A2C7-A739F19E8F17}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -66,5 +66,8 @@ Global
 		{239347DB-D566-48C9-9551-28AB3AD12EC3} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{1714448C-211E-48C1-8B7E-4EE667D336A1} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{324DF6B2-4234-47FF-A2C7-A739F19E8F17} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A110D3B4-0478-4145-9931-FC130D4E7211}
 	EndGlobalSection
 EndGlobal

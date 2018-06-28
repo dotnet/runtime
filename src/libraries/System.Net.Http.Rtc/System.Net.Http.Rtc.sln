@@ -1,13 +1,13 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.Rtc", "src\System.Net.Http.Rtc.csproj", "{06A88496-DE20-4EDF-B694-C4B2FE38D5DC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Http.Rtc", "src\System.Net.Http.Rtc.csproj", "{06A88496-DE20-4EDF-B694-C4B2FE38D5DC}"
 	ProjectSection(ProjectDependencies) = postProject
 		{45F02E74-C3B5-4751-8938-CBCEFE10FB93} = {45F02E74-C3B5-4751-8938-CBCEFE10FB93}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.Rtc", "ref\System.Net.Http.Rtc.csproj", "{45F02E74-C3B5-4751-8938-CBCEFE10FB93}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Http.Rtc", "ref\System.Net.Http.Rtc.csproj", "{45F02E74-C3B5-4751-8938-CBCEFE10FB93}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject
@@ -34,5 +34,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{06A88496-DE20-4EDF-B694-C4B2FE38D5DC} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{45F02E74-C3B5-4751-8938-CBCEFE10FB93} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {79584A84-9826-4735-A424-A360B71BB45B}
 	EndGlobalSection
 EndGlobal

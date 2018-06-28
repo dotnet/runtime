@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Queryable.Tests", "tests\System.Linq.Queryable.Tests.csproj", "{7B88D79B-B799-4116-A7D0-AED572540CD4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Linq.Queryable.Tests", "tests\System.Linq.Queryable.Tests.csproj", "{7B88D79B-B799-4116-A7D0-AED572540CD4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{BE12B753-C130-4B68-86E3-877F1AEE52C0} = {BE12B753-C130-4B68-86E3-877F1AEE52C0}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Queryable", "src\System.Linq.Queryable.csproj", "{BE12B753-C130-4B68-86E3-877F1AEE52C0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Linq.Queryable", "src\System.Linq.Queryable.csproj", "{BE12B753-C130-4B68-86E3-877F1AEE52C0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{61C35AD0-AC18-44C4-A63C-BBCE2C75C0BB} = {61C35AD0-AC18-44C4-A63C-BBCE2C75C0BB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Queryable", "ref\System.Linq.Queryable.csproj", "{61C35AD0-AC18-44C4-A63C-BBCE2C75C0BB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Linq.Queryable", "ref\System.Linq.Queryable.csproj", "{61C35AD0-AC18-44C4-A63C-BBCE2C75C0BB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{7B88D79B-B799-4116-A7D0-AED572540CD4} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{BE12B753-C130-4B68-86E3-877F1AEE52C0} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{61C35AD0-AC18-44C4-A63C-BBCE2C75C0BB} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {78DFDD37-5C9A-4B27-933B-72BED51D7743}
 	EndGlobalSection
 EndGlobal

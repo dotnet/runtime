@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebClient.Tests", "tests\System.Net.WebClient.Tests.csproj", "{D2348221-084D-4076-91BF-C24D28E7D386}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebClient.Tests", "tests\System.Net.WebClient.Tests.csproj", "{D2348221-084D-4076-91BF-C24D28E7D386}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA25218A-0470-44CC-BDF0-3E74D5848BD8} = {EA25218A-0470-44CC-BDF0-3E74D5848BD8}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebClient", "src\System.Net.WebClient.csproj", "{EA25218A-0470-44CC-BDF0-3E74D5848BD8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebClient", "src\System.Net.WebClient.csproj", "{EA25218A-0470-44CC-BDF0-3E74D5848BD8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{03D6021D-CB0B-43BD-83A5-7FDEDB39AE45} = {03D6021D-CB0B-43BD-83A5-7FDEDB39AE45}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.WebClient", "ref\System.Net.WebClient.csproj", "{03D6021D-CB0B-43BD-83A5-7FDEDB39AE45}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.WebClient", "ref\System.Net.WebClient.csproj", "{03D6021D-CB0B-43BD-83A5-7FDEDB39AE45}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{D2348221-084D-4076-91BF-C24D28E7D386} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{EA25218A-0470-44CC-BDF0-3E74D5848BD8} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{03D6021D-CB0B-43BD-83A5-7FDEDB39AE45} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5B937922-D833-49BA-8532-EF076BE10482}
 	EndGlobalSection
 EndGlobal

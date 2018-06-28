@@ -4,11 +4,8 @@
     <RootNamespace>Microsoft.SqlServer.TDS.Servers</RootNamespace>
     <AssemblyName>Microsoft.SqlServer.TDS.Servers</AssemblyName>
     <ClsCompliant>false</ClsCompliant>
+    <Configurations>netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="ApplicationIntentFilterType.cs" />
     <Compile Include="AuthenticatingTDSServer.cs" />

@@ -2,11 +2,8 @@
   <PropertyGroup>
     <ProjectGuid>{7E0E1B11-FF70-461E-99F7-C0AF252C0C60}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <!--Windows only files -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' And '$(TargetsWindows)' == 'true'">
     <Compile Include="BasicEventSourceTest\Harness\EtwListener.cs" />

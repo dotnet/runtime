@@ -1,23 +1,23 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory.Tests", "tests\System.Memory.Tests.csproj", "{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Memory.Tests", "tests\System.Memory.Tests.csproj", "{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4BBC8F69-D03E-4432-AA8A-D458FA5B235A} = {4BBC8F69-D03E-4432-AA8A-D458FA5B235A}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory.Performance.Tests", "tests\Performance\System.Memory.Performance.Tests.csproj", "{18482C55-6B57-41E8-BBC4-383B9E2C7AA2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Memory.Performance.Tests", "tests\Performance\System.Memory.Performance.Tests.csproj", "{18482C55-6B57-41E8-BBC4-383B9E2C7AA2}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4BBC8F69-D03E-4432-AA8A-D458FA5B235A} = {4BBC8F69-D03E-4432-AA8A-D458FA5B235A}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory", "src\System.Memory.csproj", "{4BBC8F69-D03E-4432-AA8A-D458FA5B235A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Memory", "src\System.Memory.csproj", "{4BBC8F69-D03E-4432-AA8A-D458FA5B235A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E883935B-D8FD-4FC9-A189-9D9E7F7EF550} = {E883935B-D8FD-4FC9-A189-9D9E7F7EF550}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory", "ref\System.Memory.csproj", "{E883935B-D8FD-4FC9-A189-9D9E7F7EF550}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Memory", "ref\System.Memory.csproj", "{E883935B-D8FD-4FC9-A189-9D9E7F7EF550}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -56,5 +56,8 @@ Global
 		{18482C55-6B57-41E8-BBC4-383B9E2C7AA2} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{4BBC8F69-D03E-4432-AA8A-D458FA5B235A} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{E883935B-D8FD-4FC9-A189-9D9E7F7EF550} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7196F6AB-8F22-4E4D-B6D1-3C2CFF86229C}
 	EndGlobalSection
 EndGlobal

@@ -11,9 +11,8 @@
      -->
     <NoWarn>$(NoWarn);1698</NoWarn>
     <ProjectGuid>{FDDA3E4A-B182-4CD1-B624-EBD72D8A05DA}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Runtime.WindowsRuntime.cs" />
     <Compile Include="System.Runtime.WindowsRuntime.Manual.cs" />

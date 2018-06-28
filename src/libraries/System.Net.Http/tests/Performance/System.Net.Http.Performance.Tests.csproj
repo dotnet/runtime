@@ -2,9 +2,8 @@
   <PropertyGroup>
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{981FC867-9071-444D-9388-BC5826609F76}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="Perf.SocketsHttpHandler.cs" />

@@ -3,9 +3,8 @@
     <AssemblyName>System.IO.Compression.Performance.Tests</AssemblyName>
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{13C0F956-FB7B-4882-A411-39B8E22463D2}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CompressionStreamPerfTests.Deflate.cs" />
     <Compile Include="CompressionStreamPerfTests.Gzip.cs" />

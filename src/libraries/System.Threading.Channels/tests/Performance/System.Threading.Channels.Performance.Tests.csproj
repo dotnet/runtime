@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <ProjectGuid>{11ABE2F8-4FB9-48AC-91AA-D04503059550}</ProjectGuid>
+    <ProjectGuid>{856BC941-58C3-4568-AAF2-238349DFA53E}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="Perf.Channel.cs" />

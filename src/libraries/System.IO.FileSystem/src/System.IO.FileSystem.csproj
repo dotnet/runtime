@@ -6,16 +6,11 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <UWPCompatible Condition="'$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'uapaot'">true</UWPCompatible>
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <NoWarn>$(NoWarn);414</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\IO\Enumeration\FileSystemEntry.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerable.cs" />
@@ -114,7 +109,7 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FILE_TIME.cs">
       <Link>Common\Interop\Windows\Interop.FILE_TIME.cs</Link>
-    </Compile>        
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs">
       <Link>Common\Interop\Windows\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs</Link>
     </Compile>

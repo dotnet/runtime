@@ -4,9 +4,8 @@
     <ShouldWriteSigningRequired>false</ShouldWriteSigningRequired>
     <AllowReferenceFromRuntime>true</AllowReferenceFromRuntime>
     <RuntimeProjectFile>$(ProjectDir)\external\test-runtime\XUnit.Runtime.depproj</RuntimeProjectFile>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CoreFx.Private.TestUtilities.cs" />
     <ReferenceFromRuntime Include="xunit.core" />

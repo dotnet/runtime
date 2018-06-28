@@ -1,13 +1,13 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlDocument", "src\System.Xml.XmlDocument.csproj", "{EC0F9F33-3D4E-470A-90E6-AE9D005F023A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XmlDocument", "src\System.Xml.XmlDocument.csproj", "{EC0F9F33-3D4E-470A-90E6-AE9D005F023A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{DFF03D7C-82DF-4E4C-A722-2EFFD844DA7E} = {DFF03D7C-82DF-4E4C-A722-2EFFD844DA7E}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlDocument", "ref\System.Xml.XmlDocument.csproj", "{DFF03D7C-82DF-4E4C-A722-2EFFD844DA7E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XmlDocument", "ref\System.Xml.XmlDocument.csproj", "{DFF03D7C-82DF-4E4C-A722-2EFFD844DA7E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject
@@ -34,5 +34,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{EC0F9F33-3D4E-470A-90E6-AE9D005F023A} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{DFF03D7C-82DF-4E4C-A722-2EFFD844DA7E} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6A00ACB9-4345-4301-9AEE-A34D09CB1E42}
 	EndGlobalSection
 EndGlobal

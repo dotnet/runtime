@@ -1,23 +1,23 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TypeExtensions.Tests", "tests\System.Reflection.TypeExtensions.Tests.csproj", "{EC8FFAA7-CA1E-4631-A375-D54B1FC764F6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.TypeExtensions.Tests", "tests\System.Reflection.TypeExtensions.Tests.csproj", "{EC8FFAA7-CA1E-4631-A375-D54B1FC764F6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB} = {A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TypeExtensions.CoreCLR.Tests", "tests\CoreCLR\System.Reflection.TypeExtensions.CoreCLR.Tests.csproj", "{BED9F8D5-7420-404E-9EAD-D9148C16EAC1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.TypeExtensions.CoreCLR.Tests", "tests\CoreCLR\System.Reflection.TypeExtensions.CoreCLR.Tests.csproj", "{BED9F8D5-7420-404E-9EAD-D9148C16EAC1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB} = {A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TypeExtensions", "src\System.Reflection.TypeExtensions.csproj", "{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.TypeExtensions", "src\System.Reflection.TypeExtensions.csproj", "{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C303A051-8D54-4460-8BFD-DE10F0473BDB} = {C303A051-8D54-4460-8BFD-DE10F0473BDB}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.TypeExtensions", "ref\System.Reflection.TypeExtensions.csproj", "{C303A051-8D54-4460-8BFD-DE10F0473BDB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.TypeExtensions", "ref\System.Reflection.TypeExtensions.csproj", "{C303A051-8D54-4460-8BFD-DE10F0473BDB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -56,5 +56,8 @@ Global
 		{BED9F8D5-7420-404E-9EAD-D9148C16EAC1} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{C303A051-8D54-4460-8BFD-DE10F0473BDB} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C367E4AF-ACA6-400F-B583-0F1191136A63}
 	EndGlobalSection
 EndGlobal

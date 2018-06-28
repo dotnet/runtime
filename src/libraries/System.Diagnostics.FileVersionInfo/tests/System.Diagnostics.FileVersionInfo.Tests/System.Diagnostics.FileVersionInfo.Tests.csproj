@@ -2,11 +2,8 @@
   <PropertyGroup>
     <AssemblyName>System.Diagnostics.FileVersionInfo.Tests</AssemblyName>
     <ProjectGuid>{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}</ProjectGuid>
+    <Configurations>netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <!-- Checked in test binaries for FileVersionInfoTest -->
     <Content Include="NativeConsoleApp.exe">
@@ -44,8 +41,7 @@
       <Name>System.Diagnostics.FileVersionInfo.TestAssembly</Name>
     </ProjectReference>
   </ItemGroup>
-  <Target Name="MangleTestAssemblyExtension"
-          AfterTargets="PrepareForRun">
+  <Target Name="MangleTestAssemblyExtension" AfterTargets="PrepareForRun">
     <!-- Copy TestAssembly to file without .dll extension so that ILC preserves it as a data file rather than feeding it to the output executable. -->
     <Copy SourceFiles="$(TestPath)\System.Diagnostics.FileVersionInfo.TestAssembly.dll" DestinationFiles="$(TestPath)\System.Diagnostics.FileVersionInfo.TestAssembly.ildll" />
   </Target>

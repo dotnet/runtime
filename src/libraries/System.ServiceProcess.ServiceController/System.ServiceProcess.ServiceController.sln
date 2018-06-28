@@ -1,23 +1,23 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceProcess.ServiceController.TestService", "tests\System.ServiceProcess.ServiceController.TestService\System.ServiceProcess.ServiceController.TestService.csproj", "{E62B874D-1A0D-41BC-8CFC-9E09D0860A77}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ServiceProcess.ServiceController.TestService", "tests\System.ServiceProcess.ServiceController.TestService\System.ServiceProcess.ServiceController.TestService.csproj", "{E62B874D-1A0D-41BC-8CFC-9E09D0860A77}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05} = {F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceProcess.ServiceController.Tests", "tests\System.ServiceProcess.ServiceController.Tests.csproj", "{F7D9984B-02EB-4573-84EF-00FFFBFB872C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ServiceProcess.ServiceController.Tests", "tests\System.ServiceProcess.ServiceController.Tests.csproj", "{F7D9984B-02EB-4573-84EF-00FFFBFB872C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05} = {F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceProcess.ServiceController", "src\System.ServiceProcess.ServiceController.csproj", "{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ServiceProcess.ServiceController", "src\System.ServiceProcess.ServiceController.csproj", "{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8479566D-6FA5-4241-9D66-524BEC4C19BD} = {8479566D-6FA5-4241-9D66-524BEC4C19BD}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceProcess.ServiceController", "ref\System.ServiceProcess.ServiceController.csproj", "{8479566D-6FA5-4241-9D66-524BEC4C19BD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ServiceProcess.ServiceController", "ref\System.ServiceProcess.ServiceController.csproj", "{8479566D-6FA5-4241-9D66-524BEC4C19BD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -56,5 +56,8 @@ Global
 		{F7D9984B-02EB-4573-84EF-00FFFBFB872C} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{8479566D-6FA5-4241-9D66-524BEC4C19BD} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {96C35373-65D3-413A-9FF3-2FE941E10CB1}
 	EndGlobalSection
 EndGlobal

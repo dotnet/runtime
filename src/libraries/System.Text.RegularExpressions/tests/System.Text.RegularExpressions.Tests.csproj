@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{94B106C2-D574-4392-80AB-3EE308A078DF}</ProjectGuid>
     <AppDesignerFolder>Properties</AppDesignerFolder>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Temporary property to diagnose hanging test
@@ -9,12 +10,6 @@
     <XunitMaxThreads>1</XunitMaxThreads>
     -->
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CaptureCollectionTests.cs" />
     <Compile Include="GroupCollectionTests.cs" />

@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.PerformanceCounter.Tests", "tests\System.Diagnostics.PerformanceCounter.Tests.csproj", "{296074B7-1CC9-497E-8C1E-FC5C985C75C6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.PerformanceCounter.Tests", "tests\System.Diagnostics.PerformanceCounter.Tests.csproj", "{296074B7-1CC9-497E-8C1E-FC5C985C75C6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9758106C-5D4E-475D-B5E7-B7ABC46B1DDA} = {9758106C-5D4E-475D-B5E7-B7ABC46B1DDA}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.PerformanceCounter", "src\System.Diagnostics.PerformanceCounter.csproj", "{9758106C-5D4E-475D-B5E7-B7ABC46B1DDA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.PerformanceCounter", "src\System.Diagnostics.PerformanceCounter.csproj", "{9758106C-5D4E-475D-B5E7-B7ABC46B1DDA}"
 	ProjectSection(ProjectDependencies) = postProject
 		{5BDC8641-E3EE-47B5-BE7B-2D2275402412} = {5BDC8641-E3EE-47B5-BE7B-2D2275402412}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.PerformanceCounter", "ref\System.Diagnostics.PerformanceCounter.csproj", "{5BDC8641-E3EE-47B5-BE7B-2D2275402412}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.PerformanceCounter", "ref\System.Diagnostics.PerformanceCounter.csproj", "{5BDC8641-E3EE-47B5-BE7B-2D2275402412}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -46,5 +46,8 @@ Global
 		{296074B7-1CC9-497E-8C1E-FC5C985C75C6} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{9758106C-5D4E-475D-B5E7-B7ABC46B1DDA} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{5BDC8641-E3EE-47B5-BE7B-2D2275402412} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E55827A2-8680-4A49-858D-70A4E41D2B9F}
 	EndGlobalSection
 EndGlobal

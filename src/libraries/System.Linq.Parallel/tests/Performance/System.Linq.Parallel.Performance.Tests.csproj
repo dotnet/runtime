@@ -3,9 +3,8 @@
   <PropertyGroup>
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{11ABE2F8-4FB9-48AC-91AA-D04503059550}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">

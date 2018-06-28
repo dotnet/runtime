@@ -1,38 +1,38 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo.Tests", "tests\System.Diagnostics.FileVersionInfo.Tests\System.Diagnostics.FileVersionInfo.Tests.csproj", "{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.FileVersionInfo.Tests", "tests\System.Diagnostics.FileVersionInfo.Tests\System.Diagnostics.FileVersionInfo.Tests.csproj", "{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}"
 	ProjectSection(ProjectDependencies) = postProject
 		{00EDA5FD-E802-40D3-92D5-56C27612D36D} = {00EDA5FD-E802-40D3-92D5-56C27612D36D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NativeConsoleApp", "tests\NativeConsoleApp\NativeConsoleApp.vcxproj", "{3002560A-5097-4A65-B562-93E335E64163}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NativeConsoleApp", "tests\NativeConsoleApp\NativeConsoleApp.vcxproj", "{3002560A-5097-4A65-B562-93E335E64163}"
 	ProjectSection(ProjectDependencies) = postProject
 		{00EDA5FD-E802-40D3-92D5-56C27612D36D} = {00EDA5FD-E802-40D3-92D5-56C27612D36D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NativeLibrary", "tests\NativeLibrary\NativeLibrary.vcxproj", "{32C9BB6C-46F4-43D8-B89E-3A1AFA70F38B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NativeLibrary", "tests\NativeLibrary\NativeLibrary.vcxproj", "{32C9BB6C-46F4-43D8-B89E-3A1AFA70F38B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{00EDA5FD-E802-40D3-92D5-56C27612D36D} = {00EDA5FD-E802-40D3-92D5-56C27612D36D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecondNativeLibrary", "tests\SecondNativeLibrary\SecondNativeLibrary.vcxproj", "{925D347C-697C-4777-8995-62426C6866F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SecondNativeLibrary", "tests\SecondNativeLibrary\SecondNativeLibrary.vcxproj", "{925D347C-697C-4777-8995-62426C6866F2}"
 	ProjectSection(ProjectDependencies) = postProject
 		{00EDA5FD-E802-40D3-92D5-56C27612D36D} = {00EDA5FD-E802-40D3-92D5-56C27612D36D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo.TestAssembly", "tests\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj", "{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.FileVersionInfo.TestAssembly", "tests\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj", "{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{00EDA5FD-E802-40D3-92D5-56C27612D36D} = {00EDA5FD-E802-40D3-92D5-56C27612D36D}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo", "src\System.Diagnostics.FileVersionInfo.csproj", "{00EDA5FD-E802-40D3-92D5-56C27612D36D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.FileVersionInfo", "src\System.Diagnostics.FileVersionInfo.csproj", "{00EDA5FD-E802-40D3-92D5-56C27612D36D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F815A563-B6B8-49F3-9E90-1A134033B864} = {F815A563-B6B8-49F3-9E90-1A134033B864}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo", "ref\System.Diagnostics.FileVersionInfo.csproj", "{F815A563-B6B8-49F3-9E90-1A134033B864}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.FileVersionInfo", "ref\System.Diagnostics.FileVersionInfo.csproj", "{F815A563-B6B8-49F3-9E90-1A134033B864}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -86,5 +86,8 @@ Global
 		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{00EDA5FD-E802-40D3-92D5-56C27612D36D} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{F815A563-B6B8-49F3-9E90-1A134033B864} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A1E658C8-446E-42A1-BD77-7FD02C2CD549}
 	EndGlobalSection
 EndGlobal
