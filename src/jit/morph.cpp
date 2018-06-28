@@ -4626,7 +4626,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
         {
             assert(arg->OperGet() == GT_LCL_VAR);
 
-            // We need to construct a `GT_OBJ` node for the argmuent,
+            // We need to construct a `GT_OBJ` node for the argument,
             // so we need to get the address of the lclVar.
             lcl = arg->AsLclVarCommon();
         }

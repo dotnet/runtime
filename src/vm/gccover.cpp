@@ -913,7 +913,7 @@ bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 sto
 // We cannot insert GCStress instruction at this call
 // For arm64 & arm (R2R) call to jithelpers happens via a stub.
 // For other architectures call does not happen via stub.
-// For other architecures we can get the target directly by calling getTargetOfCall().
+// For other architectures we can get the target directly by calling getTargetOfCall().
 // This is not the case for arm64/arm so need to decode the stub
 // instruction to find the actual jithelper target. 
 // For other architecture we detect call to JIT_RareDisableHelper 

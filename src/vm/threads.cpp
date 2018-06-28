@@ -6777,7 +6777,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
         //
         // -plus we might need some more for debugger EH dispatch, Watson, etc...
         // -also need to take into account that we can lose up to 1 page of the guard region
-        // -additionally, we need to provide some region to hosts to allow for lock aquisition in a hosted scenario
+        // -additionally, we need to provide some region to hosts to allow for lock acquisition in a hosted scenario
         //
         EXTRA_PAGES = 3;
         INDEBUG(EXTRA_PAGES += 1);
