@@ -51,7 +51,7 @@ if [ ! -d $TMPDIR ]; then
 	mkdir -p $TMPDIR 
 fi
 
-TIZEN_URL=http://download.tizen.org/snapshots/tizen
+TIZEN_URL=http://download.tizen.org/releases/milestone/tizen
 BUILD_XML=build.xml
 REPOMD_XML=repomd.xml
 PRIMARY_XML=primary.xml
@@ -154,8 +154,8 @@ fetch_tizen_pkgs()
 	done
 }
 
-Inform "Initialize arm 4.0-base"
-fetch_tizen_pkgs_init arm 4.0-base
+Inform "Initialize arm base"
+fetch_tizen_pkgs_init standard base
 Inform "fetch common packages"
 fetch_tizen_pkgs armv7l gcc glibc glibc-devel libicu libicu-devel
 fetch_tizen_pkgs noarch linux-glibc-devel
@@ -164,8 +164,8 @@ fetch_tizen_pkgs armv7l lldb lldb-devel libgcc libstdc++ libstdc++-devel libunwi
 Inform "fetch corefx packages"
 fetch_tizen_pkgs armv7l libcom_err libcom_err-devel zlib zlib-devel libopenssl libopenssl-devel krb5 krb5-devel libcurl libcurl-devel
 
-Inform "Initialize standard 4.0-unified"
-fetch_tizen_pkgs_init standard 4.0-unified
+Inform "Initialize standard unified"
+fetch_tizen_pkgs_init standard unified
 Inform "fetch corefx packages"
 fetch_tizen_pkgs armv7l gssdp gssdp-devel
 
