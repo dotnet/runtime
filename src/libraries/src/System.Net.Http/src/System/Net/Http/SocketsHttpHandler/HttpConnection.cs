@@ -1530,9 +1530,12 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_authconnectionfailure);
             }
 
-            HttpContentReadStream responseStream = (HttpContentReadStream)await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            HttpContentReadStream responseStream = stream as HttpContentReadStream;
 
-            if (responseStream.NeedsDrain)
+            Debug.Assert(responseStream != null || stream is EmptyReadStream);
+
+            if (responseStream != null && responseStream.NeedsDrain)
             {
                 Debug.Assert(response.RequestMessage == _currentRequest);
 
