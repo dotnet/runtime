@@ -2254,8 +2254,9 @@ namespace System.Data.SqlClient
                             {
                                 return false;
                             }
+                            // UTF8 collation
                             if ((env.newCollation.info & TdsEnums.UTF8_IN_TDSCOLLATION) == TdsEnums.UTF8_IN_TDSCOLLATION)
-                            { // UTF8 collation
+                            {
                                 _defaultEncoding = Encoding.UTF8;
                                 _defaultCollation = env.newCollation;
                                 _defaultLCID = env.newCollation.LCID;
@@ -3225,8 +3226,9 @@ namespace System.Data.SqlClient
                 {
                     return false;
                 }
+                // UTF8 collation
                 if ((rec.collation.info & TdsEnums.UTF8_IN_TDSCOLLATION) == TdsEnums.UTF8_IN_TDSCOLLATION)
-                { // UTF8 collation
+                {
                     rec.encoding = Encoding.UTF8;
                 }
                 else
@@ -3741,8 +3743,9 @@ namespace System.Data.SqlClient
                 {
                     return false;
                 }
+                // UTF8 collation
                 if ((col.collation.info & TdsEnums.UTF8_IN_TDSCOLLATION) == TdsEnums.UTF8_IN_TDSCOLLATION)
-                { // UTF8 collation
+                {
                     col.encoding = Encoding.UTF8;
                 }
                 else
@@ -5998,7 +6001,7 @@ namespace System.Data.SqlClient
         }
         internal int WriteUTF8SupportFeatureRequest(bool write /* if false just calculates the length */)
         {
-            int len = 5; // 1byte = featureID, 4bytes = featureData length
+            int len = 5; // 1byte = featureID, 4bytes = featureData length, sizeof(DWORD)
 
             if (write)
             {
@@ -6143,9 +6146,10 @@ namespace System.Data.SqlClient
                 {
                     length += WriteGlobalTransactionsFeatureRequest(false);
                 }
-                 if ((requestedFeatures & TdsEnums.FeatureExtension.UTF8Support) != 0) {
-                        length += WriteUTF8SupportFeatureRequest(false);
-                    }
+                if ((requestedFeatures & TdsEnums.FeatureExtension.UTF8Support) != 0)
+                {
+                    length += WriteUTF8SupportFeatureRequest(false);
+                }
                 length++; // for terminator
             }
 

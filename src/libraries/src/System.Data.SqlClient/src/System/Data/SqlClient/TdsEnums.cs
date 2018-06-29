@@ -209,7 +209,7 @@ namespace System.Data.SqlClient
         {
             None = 0,
             SessionRecovery = 1,
-            GlobalTransactions = 8,
+            GlobalTransactions = 16,
             UTF8Support = 512,
         }
         public const uint UTF8_IN_TDSCOLLATION = 0x4000000;
