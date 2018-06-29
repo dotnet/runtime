@@ -759,5 +759,22 @@ namespace System.Text.RegularExpressions.Tests
                 return SuccessExitCode;
             }).Dispose();
         }
+
+        [Fact]
+        public void Synchronized_NullGroup_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => Group.Synchronized(null));
+        }
+
+        [Theory]
+        [InlineData(@"(cat)([\v]*)(dog)", "cat\v\v\vdog")]
+        [InlineData("abc", "def")] // no match
+        public void Synchronized_ValidGroup_Success(string pattern, string input)
+        {
+            Match match = Regex.Match(input, pattern);
+
+            Group synchronizedGroup = Group.Synchronized(match.Groups[0]);
+            Assert.NotNull(synchronizedGroup);
+        }
     }
 }
