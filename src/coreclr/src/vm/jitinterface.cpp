@@ -8756,8 +8756,9 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
     _ASSERTE(method->GetSlot() < method->GetMethodTable()->GetNumVirtuals());
 
     *pOffsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(method->GetSlot()) * sizeof(MethodTable::VTableIndir_t);
-    *pOffsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(method->GetSlot()) * sizeof(PCODE);
+    *pOffsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(method->GetSlot()) * sizeof(MethodTable::VTableIndir2_t);
     *isRelative = MethodTable::VTableIndir_t::isRelative ? 1 : 0;
+    _ASSERTE(MethodTable::VTableIndir_t::isRelative == MethodTable::VTableIndir2_t::isRelative);
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
@@ -9135,8 +9136,17 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
 
         _ASSERTE((accessFlags & CORINFO_ACCESS_THIS) || !ftn->IsRemotingInterceptedViaVirtualDispatch());
 
-        ret = ftn->GetAddrOfSlot();
-        accessType = IAT_PVALUE;
+        ret = (void *)ftn->GetAddrOfSlot();
+
+        if (MethodTable::VTableIndir2_t::isRelative
+            && ftn->IsVtableSlot())
+        {
+            accessType = IAT_RELPVALUE;
+        }
+        else
+        {
+            accessType = IAT_PVALUE;
+        }
     }
 
 

@@ -111,7 +111,7 @@ struct InterfaceInfo_t
 #endif
 
     // Method table of the interface
-#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
     RelativeFixupPointer<PTR_MethodTable> m_pMethodTable;
 #else
     FixupPointer<PTR_MethodTable> m_pMethodTable;
@@ -1542,13 +1542,18 @@ public:
         WRAPPER_NO_CONTRACT;
         STATIC_CONTRACT_SO_TOLERANT;
         CONSISTENCY_CHECK(slotNumber < GetNumVtableSlots());
-        PTR_PCODE pSlot = GetSlotPtrRaw(slotNumber);
-        if (IsZapped() && slotNumber >= GetNumVirtuals())
+
+        TADDR pSlot = GetSlotPtrRaw(slotNumber);
+        if (slotNumber < GetNumVirtuals())
+        {
+            return VTableIndir2_t::GetValueMaybeNullAtPtr(pSlot);
+        }
+        else if (IsZapped() && slotNumber >= GetNumVirtuals())
         {
             // Non-virtual slots in NGened images are relative pointers
-            return RelativePointer<PCODE>::GetValueAtPtr(dac_cast<TADDR>(pSlot));
+            return RelativePointer<PCODE>::GetValueAtPtr(pSlot);
         }
-        return *pSlot;
+        return *dac_cast<PTR_PCODE>(pSlot);
     }
 
     // Special-case for when we know that the slot number corresponds
@@ -1562,10 +1567,11 @@ public:
 
         DWORD index = GetIndexOfVtableIndirection(slotNum);
         TADDR base = dac_cast<TADDR>(&(GetVtableIndirections()[index]));
-        return *(VTableIndir_t::GetValueMaybeNullAtPtr(base) + GetIndexAfterVtableIndirection(slotNum));
+        DPTR(VTableIndir2_t) baseAfterInd = VTableIndir_t::GetValueMaybeNullAtPtr(base) + GetIndexAfterVtableIndirection(slotNum);
+        return VTableIndir2_t::GetValueMaybeNullAtPtr(dac_cast<TADDR>(baseAfterInd));
     }
 
-    PTR_PCODE GetSlotPtrRaw(UINT32 slotNum)
+    TADDR GetSlotPtrRaw(UINT32 slotNum)
     {
         WRAPPER_NO_CONTRACT;
         STATIC_CONTRACT_SO_TOLERANT;
@@ -1576,25 +1582,26 @@ public:
             // Virtual slots live in chunks pointed to by vtable indirections
             DWORD index = GetIndexOfVtableIndirection(slotNum);
             TADDR base = dac_cast<TADDR>(&(GetVtableIndirections()[index]));
-            return VTableIndir_t::GetValueMaybeNullAtPtr(base) + GetIndexAfterVtableIndirection(slotNum);
+            DPTR(VTableIndir2_t) baseAfterInd = VTableIndir_t::GetValueMaybeNullAtPtr(base) + GetIndexAfterVtableIndirection(slotNum);
+            return dac_cast<TADDR>(baseAfterInd);
         }
         else if (HasSingleNonVirtualSlot())
         {
             // Non-virtual slots < GetNumVtableSlots live in a single chunk pointed to by an optional member,
             // except when there is only one in which case it lives in the optional member itself
             _ASSERTE(slotNum == GetNumVirtuals());
-            return dac_cast<PTR_PCODE>(GetNonVirtualSlotsPtr());
+            return GetNonVirtualSlotsPtr();
         }
         else
         {
             // Non-virtual slots < GetNumVtableSlots live in a single chunk pointed to by an optional member
             _ASSERTE(HasNonVirtualSlotsArray());
             g_IBCLogger.LogMethodTableNonVirtualSlotsAccess(this);
-            return GetNonVirtualSlotsArray() + (slotNum - GetNumVirtuals());
+            return dac_cast<TADDR>(GetNonVirtualSlotsArray() + (slotNum - GetNumVirtuals()));
         }
     }
 
-    PTR_PCODE GetSlotPtr(UINT32 slotNum)
+    TADDR GetSlotPtr(UINT32 slotNum)
     {
         WRAPPER_NO_CONTRACT;
         STATIC_CONTRACT_SO_TOLERANT;
@@ -1660,10 +1667,12 @@ public:
     #define VTABLE_SLOTS_PER_CHUNK 8
     #define VTABLE_SLOTS_PER_CHUNK_LOG2 3
 
-#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
-    typedef RelativePointer<PTR_PCODE> VTableIndir_t;
+#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
+    typedef RelativePointer<PCODE> VTableIndir2_t;
+    typedef RelativePointer<DPTR(VTableIndir2_t)> VTableIndir_t;
 #else
-    typedef PlainPointer<PTR_PCODE> VTableIndir_t;
+    typedef PlainPointer<PCODE> VTableIndir2_t;
+    typedef PlainPointer<DPTR(VTableIndir2_t)> VTableIndir_t;
 #endif
 
     static DWORD GetIndexOfVtableIndirection(DWORD slotNum);
@@ -1692,10 +1701,10 @@ public:
         BOOL Finished();
         DWORD GetIndex();
         DWORD GetOffsetFromMethodTable();
-        PTR_PCODE GetIndirectionSlot();
+        DPTR(VTableIndir2_t) GetIndirectionSlot();
 
 #ifndef DACCESS_COMPILE
-        void SetIndirectionSlot(PTR_PCODE pChunk);
+        void SetIndirectionSlot(DPTR(VTableIndir2_t) pChunk);
 #endif
 
         DWORD GetStartSlot();
@@ -2173,7 +2182,7 @@ public:
     // THE METHOD TABLE PARENT (SUPERCLASS/BASE CLASS)
     //
 
-#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
 #define PARENT_MT_FIXUP_OFFSET (-FIXUP_POINTER_INDIRECTION)
     typedef RelativeFixupPointer<PTR_MethodTable> ParentMT_t;
 #else
@@ -2205,7 +2214,7 @@ public:
     inline static PTR_VOID GetParentMethodTableOrIndirection(PTR_VOID pMT)
     {
         WRAPPER_NO_CONTRACT;
-#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
         PTR_MethodTable pMethodTable = dac_cast<PTR_MethodTable>(pMT);
         PTR_MethodTable pParentMT = ReadPointerMaybeNull((MethodTable*) pMethodTable, &MethodTable::m_pParentMethodTable);
         return dac_cast<PTR_VOID>(pParentMT);
@@ -3111,7 +3120,7 @@ public:
     // must have a dictionary entry. On the other hand, for instantiations shared with Dict<string,double> the opposite holds.
     //
 
-#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
     typedef RelativePointer<PTR_Dictionary> PerInstInfoElem_t;
     typedef RelativePointer<DPTR(PerInstInfoElem_t)> PerInstInfo_t;
 #else
@@ -4182,7 +4191,7 @@ private:
 
     RelativePointer<PTR_Module> m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
     
-#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
     RelativePointer<PTR_MethodTableWriteableData> m_pWriteableData;
 #else
     PlainPointer<PTR_MethodTableWriteableData> m_pWriteableData;
@@ -4198,7 +4207,7 @@ private:
     static const TADDR UNION_MASK = 3; 
 
     union {
-#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
         RelativePointer<DPTR(EEClass)> m_pEEClass;
         RelativePointer<TADDR> m_pCanonMT;
 #else
@@ -4233,7 +4242,7 @@ private:
     public:
     union
     {
-#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+#if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
         RelativePointer<PTR_InterfaceInfo>   m_pInterfaceMap;
 #else
         PlainPointer<PTR_InterfaceInfo>   m_pInterfaceMap;

@@ -374,7 +374,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // If none, we need to allocate space for the slots
     if (!canShareVtableChunks)
     {
-        cbMT += numVirtuals * sizeof(PCODE);
+        cbMT += numVirtuals * sizeof(MethodTable::VTableIndir2_t);
     }
 
     // Canonical methodtable has an array of non virtual slots pointed to by the optional member
@@ -537,7 +537,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             else 
             {
                 // Use the locally allocated chunk
-                it.SetIndirectionSlot((PTR_PCODE)(pMemory+cbArrayClass+offsetOfUnsharedVtableChunks));
+                it.SetIndirectionSlot((MethodTable::VTableIndir2_t *)(pMemory+cbArrayClass+offsetOfUnsharedVtableChunks));
                 offsetOfUnsharedVtableChunks += it.GetSize();
             }
         }

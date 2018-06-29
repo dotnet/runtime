@@ -563,7 +563,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
     return GetMethodTable_NoLogging()->GetSlot(GetSlot());
 }
 
-PTR_PCODE MethodDesc::GetAddrOfSlot()
+TADDR MethodDesc::GetAddrOfSlot()
 {
     CONTRACTL
     {
@@ -584,7 +584,7 @@ PTR_PCODE MethodDesc::GetAddrOfSlot()
 
         SIZE_T size = GetBaseSize();
 
-        return PTR_PCODE(dac_cast<TADDR>(this) + size);
+        return dac_cast<TADDR>(this) + size;
     }
 
     _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
@@ -2342,7 +2342,15 @@ void MethodDesc::Reset()
 
         InterlockedUpdateFlags2(enum_flag2_HasStableEntryPoint | enum_flag2_HasPrecode, FALSE);
 
-        *GetAddrOfSlot() = GetTemporaryEntryPoint();
+        TADDR slot = GetAddrOfSlot();
+        if (IsVtableSlot())
+        {
+            ((MethodTable::VTableIndir2_t *) slot)->SetValue(GetTemporaryEntryPoint());
+        }
+        else
+        {
+            *((PCODE *) slot) = GetTemporaryEntryPoint();
+        }
     }
 
     if (HasNativeCodeSlot())
@@ -4711,9 +4719,19 @@ void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, Alloc
 
     GetMethodDescChunk()->EnsureTemporaryEntryPointsCreated(pLoaderAllocator, pamTracker);
 
-    PTR_PCODE pSlot = GetAddrOfSlot();
-    _ASSERTE(*pSlot == NULL);
-    *pSlot = GetTemporaryEntryPoint();
+    TADDR slot = GetAddrOfSlot();
+    if (IsVtableSlot())
+    {
+        MethodTable::VTableIndir2_t *slotPtr = ((MethodTable::VTableIndir2_t *) slot);
+        _ASSERTE(slotPtr->IsNull());
+        slotPtr->SetValue(GetTemporaryEntryPoint());
+    }
+    else
+    {
+        PCODE *slotPtr = (PCODE *) slot;
+        _ASSERTE(*slotPtr == NULL);
+        *slotPtr = GetTemporaryEntryPoint();
+    }
 
     if (RequiresStableEntryPoint())
     {
@@ -4776,7 +4794,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
         return GetPrecode();
     }
 
-    PTR_PCODE pSlot = GetAddrOfSlot();
+    TADDR pSlot = GetAddrOfSlot();
     PCODE tempEntry = GetTemporaryEntryPoint();
 
     PrecodeType requiredType = GetPrecodeType();
@@ -4796,14 +4814,40 @@ Precode* MethodDesc::GetOrCreatePrecode()
 
         AllocMemTracker amt;
         Precode* pPrecode = Precode::Allocate(requiredType, this, GetLoaderAllocator(), &amt);
-        if (FastInterlockCompareExchangePointer(EnsureWritablePages(pSlot), pPrecode->GetEntryPoint(), tempEntry) == tempEntry)
+        PCODE newVal;
+        PCODE oldVal;
+        TADDR *slotAddr;
+
+        if (IsVtableSlot())
+        {
+            newVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, pPrecode->GetEntryPoint());
+            oldVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, tempEntry);
+            slotAddr = (TADDR *) EnsureWritablePages((MethodTable::VTableIndir2_t *) pSlot);
+        }
+        else
+        {
+            newVal = pPrecode->GetEntryPoint();
+            oldVal = tempEntry;
+            slotAddr = (TADDR *) EnsureWritablePages((PCODE *) pSlot);
+        }
+
+        if (FastInterlockCompareExchangePointer(slotAddr, (TADDR) newVal, (TADDR) oldVal) == oldVal)
             amt.SuppressRelease();
     }
 
     // Set the flags atomically
     InterlockedUpdateFlags2(enum_flag2_HasStableEntryPoint | enum_flag2_HasPrecode, TRUE);
 
-    return Precode::GetPrecodeFromEntryPoint(*pSlot);
+    PCODE addr;
+    if (IsVtableSlot())
+    {
+        addr = ((MethodTable::VTableIndir2_t *)pSlot)->GetValue();
+    }
+    else
+    {
+        addr = *((PCODE *)pSlot);
+    }
+    return Precode::GetPrecodeFromEntryPoint(addr);
 }
 
 //*******************************************************************************
@@ -4857,10 +4901,28 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     _ASSERTE(!HasPrecode());
 
     PCODE pExpected = GetTemporaryEntryPoint();
-    PTR_PCODE pSlot = GetAddrOfSlot();
-    EnsureWritablePages(pSlot);
+    TADDR pSlot = GetAddrOfSlot();
 
-    BOOL fResult = FastInterlockCompareExchangePointer(pSlot, addr, pExpected) == pExpected;
+    BOOL fResult;
+
+    TADDR *slotAddr;
+    PCODE newVal;
+    PCODE oldVal;
+
+    if (IsVtableSlot())
+    {
+        newVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, addr);
+        oldVal = MethodTable::VTableIndir2_t::GetRelative(pSlot, pExpected);
+        slotAddr = (TADDR *) EnsureWritablePages((MethodTable::VTableIndir2_t *) pSlot);
+    }
+    else
+    {
+        newVal = addr;
+        oldVal = pExpected;
+        slotAddr = (TADDR *) EnsureWritablePages((PCODE *) pSlot);
+    }
+
+    fResult = FastInterlockCompareExchangePointer(slotAddr, (TADDR) newVal, (TADDR) oldVal) == oldVal;
 
     InterlockedUpdateFlags2(enum_flag2_HasStableEntryPoint, TRUE);
 

@@ -324,7 +324,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // If none, we need to allocate space for the slots
     if (!canShareVtableChunks)
     {
-        allocSize += S_SIZE_T( cSlots ) * S_SIZE_T( sizeof(PCODE) );
+        allocSize += S_SIZE_T( cSlots ) * S_SIZE_T( sizeof(MethodTable::VTableIndir2_t) );
     }
 
     if (allocSize.IsOverflow())
@@ -446,7 +446,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         else
         {
             // Use the locally allocated chunk
-            it.SetIndirectionSlot((PTR_PCODE)(pMemory+offsetOfUnsharedVtableChunks));
+            it.SetIndirectionSlot((MethodTable::VTableIndir2_t *)(pMemory+offsetOfUnsharedVtableChunks));
             offsetOfUnsharedVtableChunks += it.GetSize();
         }
     }

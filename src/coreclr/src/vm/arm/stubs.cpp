@@ -1680,6 +1680,13 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
 void StubLinkerCPU::ThumbEmitCallManagedMethod(MethodDesc *pMD, bool fTailcall)
 {
+    bool isRelative = MethodTable::VTableIndir2_t::isRelative
+                      && pMD->IsVtableSlot();
+
+#ifndef FEATURE_NGEN_RELOCS_OPTIMIZATIONS
+    _ASSERTE(!isRelative);
+#endif
+
     // Use direct call if possible.
     if (pMD->HasStableEntryPoint())
     {
@@ -1691,14 +1698,47 @@ void StubLinkerCPU::ThumbEmitCallManagedMethod(MethodDesc *pMD, bool fTailcall)
         // mov r12, #slotaddress
         ThumbEmitMovConstant(ThumbReg(12), (TADDR)pMD->GetAddrOfSlot());
 
+        if (isRelative)
+        {
+            if (!fTailcall)
+            {
+                // str r4, [sp, 0]
+                ThumbEmitStoreRegIndirect(ThumbReg(4), thumbRegSp, 0);
+            }
+
+            // mov r4, r12
+            ThumbEmitMovRegReg(ThumbReg(4), ThumbReg(12));
+        }
+
         // ldr r12, [r12]
         ThumbEmitLoadRegIndirect(ThumbReg(12), ThumbReg(12), 0);
+
+        if (isRelative)
+        {
+            // add r12, r4
+            ThumbEmitAddReg(ThumbReg(12), ThumbReg(4));
+
+            if (!fTailcall)
+            {
+                // ldr r4, [sp, 0]
+                ThumbEmitLoadRegIndirect(ThumbReg(4), thumbRegSp, 0);
+            }
+        }
     }
 
     if (fTailcall)
     {
-        // bx r12
-        ThumbEmitJumpRegister(ThumbReg(12));
+        if (!isRelative)
+        {
+            // bx r12
+            ThumbEmitJumpRegister(ThumbReg(12));
+        }
+        else
+        {
+            // Replace LR with R12 on stack: hybrid-tail call, same as for EmitShuffleThunk
+            // str r12, [sp, 4]
+            ThumbEmitStoreRegIndirect(ThumbReg(12), thumbRegSp, 4);
+        }
     }
     else
     {
@@ -1835,6 +1875,13 @@ void StubLinkerCPU::ThumbEmitCallWithGenericInstantiationParameter(MethodDesc *p
         }
     }
 
+    bool isRelative = MethodTable::VTableIndir2_t::isRelative
+                      && pMD->IsVtableSlot();
+
+#ifndef FEATURE_NGEN_RELOCS_OPTIMIZATIONS
+    _ASSERTE(!isRelative);
+#endif
+
     // Update descriptor count to the actual number used.
     cArgDescriptors = idxCurrentDesc;
 
@@ -1927,7 +1974,17 @@ void StubLinkerCPU::ThumbEmitCallWithGenericInstantiationParameter(MethodDesc *p
         }
 
         // Emit a tail call to the target method.
+        if (isRelative)
+        {
+            ThumbEmitProlog(1, 0, FALSE);
+        }
+
         ThumbEmitCallManagedMethod(pMD, true);
+
+        if (isRelative)
+        {
+            ThumbEmitEpilog();
+        }
     }
     else
     {
@@ -1936,7 +1993,9 @@ void StubLinkerCPU::ThumbEmitCallWithGenericInstantiationParameter(MethodDesc *p
         // Calculate the size of the new stack frame:
         //
         //            +------------+
-        //      SP -> |            | <-+
+        //      SP -> |            | <-- Space for helper arg, if isRelative is true
+        //            +------------+
+        //            |            | <-+
         //            :            :   | Outgoing arguments
         //            |            | <-+
         //            +------------+
@@ -1967,6 +2026,12 @@ void StubLinkerCPU::ThumbEmitCallWithGenericInstantiationParameter(MethodDesc *p
         DWORD cbStackArgs = (pLastArg->m_idxDst + 1) * 4;
         DWORD cbStackFrame = cbStackArgs + sizeof(GSCookie) + sizeof(StubHelperFrame);
         cbStackFrame = ALIGN_UP(cbStackFrame, 8);
+
+        if (isRelative)
+        {
+            cbStackFrame += 4;
+        }
+
         DWORD cbStackFrameWithoutSavedRegs = cbStackFrame - (13 * 4); // r0-r11,lr
 
         // Prolog:
@@ -2175,8 +2240,25 @@ void StubLinkerCPU::EmitUnboxMethodStub(MethodDesc *pMD)
         //  add r0, #4
         ThumbEmitIncrement(ThumbReg(0), 4);
 
+        bool isRelative = MethodTable::VTableIndir2_t::isRelative
+                          && pMD->IsVtableSlot();
+
+#ifndef FEATURE_NGEN_RELOCS_OPTIMIZATIONS
+        _ASSERTE(!isRelative);
+#endif
+
+        if (isRelative)
+        {
+            ThumbEmitProlog(1, 0, FALSE);
+        }
+
         // Tail call the real target.
         ThumbEmitCallManagedMethod(pMD, true /* tail call */);
+
+        if (isRelative)
+        {
+            ThumbEmitEpilog();
+        }
     }
 }
 

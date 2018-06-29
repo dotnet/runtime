@@ -5907,7 +5907,9 @@ void NativeImageDumper::DumpTypes(PTR_Module module)
             
             for (COUNT_T i = 0; i < slotChunkCount; ++i)
             {
-                DumpMethodTableSlotChunk(m_discoveredSlotChunks[i].addr, m_discoveredSlotChunks[i].nSlots);
+                DumpMethodTableSlotChunk(m_discoveredSlotChunks[i].addr,
+                                         m_discoveredSlotChunks[i].nSlots,
+                                         m_discoveredSlotChunks[i].isRelative);
             }
         }
         DisplayEndArray( "Total MethodTableSlotChunks", METHODTABLES );
@@ -7172,8 +7174,9 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
         while (itIndirect.Next())
         {
             SlotChunk sc;
-            sc.addr = itIndirect.GetIndirectionSlot();
+            sc.addr = dac_cast<TADDR>(itIndirect.GetIndirectionSlot());
             sc.nSlots = (WORD)itIndirect.GetNumSlots();
+            sc.isRelative = MethodTable::VTableIndir2_t::isRelative;
             m_discoveredSlotChunks.AppendEx(sc);
         }
 
@@ -7185,7 +7188,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
                 DisplayStartElement( "Slot", ALWAYS );
                 DisplayWriteElementInt( "Index", i, ALWAYS );
                 TADDR base = dac_cast<TADDR>(&(mt->GetVtableIndirections()[i]));
-                PTR_PCODE tgt = MethodTable::VTableIndir_t::GetValueMaybeNullAtPtr(base);
+                DPTR(MethodTable::VTableIndir2_t) tgt = MethodTable::VTableIndir_t::GetValueMaybeNullAtPtr(base);
                 DisplayWriteElementPointer( "Pointer",
                                             DataPtrToDisplay(dac_cast<TADDR>(tgt)),
                                             ALWAYS );
@@ -7207,8 +7210,9 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
                 DisplayEndElement( ALWAYS ); //Slot
 
                 SlotChunk sc;
-                sc.addr = tgt;
+                sc.addr = dac_cast<TADDR>(tgt);
                 sc.nSlots = (mt->GetNumVtableSlots() - mt->GetNumVirtuals());
+                sc.isRelative = false;
                 m_discoveredSlotChunks.AppendEx(sc);
             } 
             else if (mt->HasSingleNonVirtualSlot())
@@ -7344,25 +7348,42 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
 #endif
 
 void
-NativeImageDumper::DumpMethodTableSlotChunk( PTR_PCODE slotChunk, COUNT_T numSlots )
+NativeImageDumper::DumpMethodTableSlotChunk( TADDR slotChunk, COUNT_T numSlots, bool isRelative )
 {
     IF_OPT( METHODTABLES )
     {
-        DisplayStartStructure( "MethodTableSlotChunk", DPtrToPreferredAddr(slotChunk), numSlots * sizeof(PCODE),
-                           METHODTABLES );
+        COUNT_T slotsSize;
+        if (isRelative)
+        {
+            slotsSize = numSlots * sizeof(RelativePointer<PCODE>);
+        }
+        else
+        {
+            slotsSize = numSlots * sizeof(PCODE);
+        }
+        DisplayStartStructure( "MethodTableSlotChunk", DataPtrToDisplay(slotChunk), slotsSize, METHODTABLES );
 
         IF_OPT(VERBOSE_TYPES)
         {
             DisplayStartList( W("[%-4s]: %s (%s)"), ALWAYS );
             for( unsigned i = 0; i < numSlots; ++i )
             {
-                DumpSlot(i, slotChunk[i]);
+                PCODE target;
+                if (isRelative)
+                {
+                    target = RelativePointer<PCODE>::GetValueMaybeNullAtPtr(slotChunk + i * sizeof(RelativePointer<PCODE>));
+                }
+                else
+                {
+                    target = dac_cast<PTR_PCODE>(slotChunk)[i];
+                }
+
+                DumpSlot(i, target);
             }
             DisplayEndList( ALWAYS ); //Slot list
         }
         else
-            CoverageRead( PTR_TO_TADDR(slotChunk),
-                          numSlots * sizeof(PCODE) );
+            CoverageRead( slotChunk, slotsSize );
         DisplayEndStructure(ALWAYS); //Slot chunk
     }
 }
@@ -7735,7 +7756,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
     }
     if ( md->HasNonVtableSlot() )
     {
-        DisplayWriteElementInt( "Slot", (DWORD)(PTR_TO_TADDR(md->GetAddrOfSlot()) - PTR_TO_TADDR(md)), ALWAYS);
+        DisplayWriteElementInt( "Slot", (DWORD)(md->GetAddrOfSlot() - PTR_TO_TADDR(md)), ALWAYS);
     }
     if (md->HasNativeCodeSlot())
     {
