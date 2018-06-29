@@ -3255,11 +3255,10 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			ADD_CODE(td, get_data_item_index (td, field));
 			klass = NULL;
 			if (mt == MINT_TYPE_VT) {
-				MonoClass *klass = mono_class_from_mono_type (ftype);
+				klass = mono_class_from_mono_type (ftype);
 				int size = mono_class_value_size (klass, NULL);
 				PUSH_VT(td, size);
 				WRITE32(td, &size);
-				klass = ftype->data.klass;
 			} else {
 				if (mt == MINT_TYPE_O) 
 					klass = mono_class_from_mono_type (ftype);
