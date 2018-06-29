@@ -171,7 +171,7 @@ void LIR::Use::AssertIsValid() const
 //          /--*  t18 int
 //          *  jmpTrue   void
 //
-// Elminating the now-dead compare and its operands using `LIR::Range::Remove`
+// Eliminating the now-dead compare and its operands using `LIR::Range::Remove`
 // would then give us:
 //
 //    t18 =    const     int    1

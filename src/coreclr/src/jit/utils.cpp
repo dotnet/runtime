@@ -2032,7 +2032,7 @@ const SignedMagic<int64_t>* TryGetSignedMagic(int64_t divisor)
 //
 // Notes:
 //    This code is previously from UTC where it notes it was taken from
-//   _The_PowerPC_Compiler_Writer's_Guide_, pages 57-58. The paper is is based on
+//   _The_PowerPC_Compiler_Writer's_Guide_, pages 57-58. The paper is based on
 //   is "Division by invariant integers using multiplication" by Torbjorn Granlund
 //   and Peter L. Montgomery in PLDI 94
 

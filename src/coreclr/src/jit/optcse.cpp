@@ -1683,7 +1683,7 @@ public:
     }
 #endif
 
-    // Given a CSE candidate decide whether it passes or fails the profitablity heuristic
+    // Given a CSE candidate decide whether it passes or fails the profitability heuristic
     // return true if we believe that it is profitable to promote this candidate to a CSE
     //
     bool PromotionCheck(CSE_Candidate* candidate)
@@ -1757,7 +1757,7 @@ public:
         unsigned extra_no_cost  = 0;
 
         // The 'cseRefCnt' is the RefCnt that we will have if we promote this CSE into a new LclVar
-        // Each CSE Def will contain two Refs and each CSE Use wil have one Ref of this new LclVar
+        // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
         unsigned cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
 
         if (CodeOptKind() == Compiler::SMALL_CODE)
