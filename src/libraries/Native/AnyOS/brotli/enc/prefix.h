@@ -11,7 +11,7 @@
 #define BROTLI_ENC_PREFIX_H_
 
 #include "../common/constants.h"
-#include <brotli/port.h>
+#include "../common/platform.h"
 #include <brotli/types.h>
 #include "./fast_log.h"
 
@@ -39,11 +39,10 @@ static BROTLI_INLINE void PrefixEncodeCopyDistance(size_t distance_code,
     size_t prefix = (dist >> bucket) & 1;
     size_t offset = (2 + prefix) << bucket;
     size_t nbits = bucket - postfix_bits;
-    *code = (uint16_t)(
+    *code = (uint16_t)((nbits << 10) |
         (BROTLI_NUM_DISTANCE_SHORT_CODES + num_direct_codes +
          ((2 * (nbits - 1) + prefix) << postfix_bits) + postfix));
-    *extra_bits = (uint32_t)(
-        (nbits << 24) | ((dist - offset) >> postfix_bits));
+    *extra_bits = (uint32_t)((dist - offset) >> postfix_bits);
   }
 }
 

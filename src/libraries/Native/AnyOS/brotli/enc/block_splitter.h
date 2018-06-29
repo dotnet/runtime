@@ -9,10 +9,10 @@
 #ifndef BROTLI_ENC_BLOCK_SPLITTER_H_
 #define BROTLI_ENC_BLOCK_SPLITTER_H_
 
+#include "../common/platform.h"
 #include <brotli/types.h>
 #include "./command.h"
 #include "./memory.h"
-#include "./port.h"
 #include "./quality.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)

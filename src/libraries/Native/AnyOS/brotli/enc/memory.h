@@ -9,8 +9,10 @@
 #ifndef BROTLI_ENC_MEMORY_H_
 #define BROTLI_ENC_MEMORY_H_
 
+#include <string.h>  /* memcpy */
+
+#include "../common/platform.h"
 #include <brotli/types.h>
-#include "./port.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -55,6 +57,43 @@ BROTLI_INTERNAL void BrotliFree(MemoryManager* m, void* p);
 #endif  /* BROTLI_ENCODER_EXIT_ON_OOM */
 
 BROTLI_INTERNAL void BrotliWipeOutMemoryManager(MemoryManager* m);
+
+/*
+Dynamically grows array capacity to at least the requested size
+M: MemoryManager
+T: data type
+A: array
+C: capacity
+R: requested size
+*/
+#define BROTLI_ENSURE_CAPACITY(M, T, A, C, R) {  \
+  if (C < (R)) {                                 \
+    size_t _new_size = (C == 0) ? (R) : C;       \
+    T* new_array;                                \
+    while (_new_size < (R)) _new_size *= 2;      \
+    new_array = BROTLI_ALLOC((M), T, _new_size); \
+    if (!BROTLI_IS_OOM(M) && C != 0)             \
+      memcpy(new_array, A, C * sizeof(T));       \
+    BROTLI_FREE((M), A);                         \
+    A = new_array;                               \
+    C = _new_size;                               \
+  }                                              \
+}
+
+/*
+Appends value and dynamically grows array capacity when needed
+M: MemoryManager
+T: data type
+A: array
+C: array capacity
+S: array size
+V: value to append
+*/
+#define BROTLI_ENSURE_CAPACITY_APPEND(M, T, A, C, S, V) { \
+  (S)++;                                                  \
+  BROTLI_ENSURE_CAPACITY(M, T, A, C, S);                  \
+  A[(S) - 1] = (V);                                       \
+}
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }  /* extern "C" */
