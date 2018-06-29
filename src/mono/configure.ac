@@ -1104,6 +1104,7 @@ with_wasm_default=no
 
 with_bitcode_default=no
 enable_cooperative_suspend_default=no
+enable_hybrid_suspend_default=no
 
 INVARIANT_AOT_OPTIONS=nimt-trampolines=2000,ntrampolines=10000,nrgctx-fetch-trampolines=256,ngsharedvt-trampolines=4000
 
@@ -4992,7 +4993,7 @@ AC_ARG_WITH(lazy_gc_thread_creation, [  --with-lazy-gc-thread-creation=yes|no   
 AC_ARG_WITH(cooperative_gc,        [  --with-cooperative-gc=yes|no        Enable cooperative stop-the-world garbage collection (sgen only) (defaults to no)], [AC_MSG_WARN([--with-cooperative-gc is deprecated, use --enable-cooperative-suspend instead])], [with_cooperative_gc=default])
 AC_ARG_ENABLE(cooperative_suspend, [  --enable-cooperative-suspend      Enable cooperative stop-the-world garbage collection (sgen only) (defaults to no)], [], [enable_cooperative_suspend=default])
 
-if test x$enable_cooperative_suspend = xdefault -a test x$with_cooperative_gc != xdefault; then
+if test x$enable_cooperative_suspend = xdefault -a x$with_cooperative_gc != xdefault; then
 	enable_cooperative_suspend=$with_cooperative_gc
 fi
 
@@ -5006,7 +5007,11 @@ fi
 
 AM_CONDITIONAL([ENABLE_COOP_SUSPEND], [test x$enable_cooperative_suspend != xno])
 
-AC_ARG_ENABLE(hybrid_suspend, [ --enable-hybrid-suspend     Enable hybrid stop-the-world garbage collection (sgen only) - cooperative suspend for threads running managed and runtime code, and preemptive suspend for threads running native and P/Invoke code (defaults to no)], [], [enable_hybrid_suspend=no])
+AC_ARG_ENABLE(hybrid_suspend, [ --enable-hybrid-suspend     Enable hybrid stop-the-world garbage collection (sgen only) - cooperative suspend for threads running managed and runtime code, and preemptive suspend for threads running native and P/Invoke code (defaults to no)], [], [enable_hybrid_suspend=default])
+
+if test x$enable_hybrid_suspend = xdefault; then
+   enable_hybrid_suspend=$enable_hybrid_suspend_default
+fi
 
 if test x$enable_hybrid_suspend != xno -a x$enable_cooperative_suspend != xno ; then
 	AC_MSG_ERROR([Hybrid suspend and Cooperative suspend cannot be both enabled.])
@@ -5673,6 +5678,17 @@ if test x$enable_btls = xyes; then
 	fi
 fi
 
+thread_suspend_msg=
+if test x$buildsgen = xyes; then
+	if test x$enable_cooperative_suspend = xyes; then
+		thread_suspend_msg="Suspend:       Cooperative"
+	elif test x$enable_hybrid_suspend = xyes; then
+		thread_suspend_msg="Suspend:       Hybrid"
+	else
+		thread_suspend_msg="Suspend:       Preemptive"
+	fi
+fi
+	
 echo "
         mcs source:    $mcsdir
 	C# Compiler:   $csc_compiler
@@ -5681,6 +5697,7 @@ echo "
 	Host:	       $host
 	Target:	       $target
 	GC:	       $gc_msg 
+	$thread_suspend_msg
 	TLS:           $with_tls
 	SIGALTSTACK:   $with_sigaltstack
 	Engine:        $jit_status
