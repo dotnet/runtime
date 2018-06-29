@@ -21,5 +21,14 @@ namespace Internal.Resources
         }
 
         public abstract bool SetGlobalResourceContextDefaultCulture(CultureInfo ci);
+
+        /// <summary>
+        /// Check whether CultureData exists for specified cultureName
+        /// This API is used for WindowsRuntimeResourceManager in System.Runtime.WindowsRuntime
+        /// </summary>
+        public static bool IsValidCulture(string cultureName)
+        {
+            return CultureData.GetCultureData(cultureName, /* useUserOverride */ true) != null;
+        }
     }
 }
