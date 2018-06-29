@@ -8292,7 +8292,7 @@ void emitter::emitDispIns(
             val = emitGetInsSC(id);
 #ifdef _TARGET_AMD64_
             // no 8-byte immediates allowed here!
-            assert((val >= 0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
+            assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
             if (id->idIsCnsReloc())
             {
@@ -8492,7 +8492,7 @@ void emitter::emitDispIns(
             val = cnsVal.cnsVal;
 #ifdef _TARGET_AMD64_
             // no 8-byte immediates allowed here!
-            assert((val >= 0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
+            assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
             if (id->idInsFmt() == IF_ARW_SHF)
             {
@@ -8560,7 +8560,7 @@ void emitter::emitDispIns(
             val = cnsVal.cnsVal;
 #ifdef _TARGET_AMD64_
             // no 8-byte immediates allowed here!
-            assert((val >= 0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
+            assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
             if (id->idInsFmt() == IF_SRW_SHF)
             {
@@ -8760,7 +8760,7 @@ void emitter::emitDispIns(
             val = emitGetInsSC(id);
 #ifdef _TARGET_AMD64_
             // no 8-byte immediates allowed here!
-            assert((val >= 0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
+            assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
             printf(", ");
             if (id->idIsCnsReloc())
@@ -8928,7 +8928,7 @@ void emitter::emitDispIns(
             val = cnsVal.cnsVal;
 #ifdef _TARGET_AMD64_
             // no 8-byte immediates allowed here!
-            assert((val >= 0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
+            assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
             if (cnsVal.cnsReloc)
             {
