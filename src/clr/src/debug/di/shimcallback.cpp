@@ -1384,7 +1384,7 @@ HRESULT ShimProxyCallback::AfterGarbageCollection(ICorDebugProcess* pProcess)
 //      input:
 //          pProcess - process in which the notification occurred
 // Return value: S_OK
-HRESULT ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugThread* pThread, ULONG64 dataBreakpointMask)
+HRESULT ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugThread* pThread)
 {
     m_pShim->PreDispatchEvent();
     class DataBreakpointEvent : public ManagedEvent
@@ -1392,25 +1392,23 @@ HRESULT ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugT
         // callbacks parameters. These are strong references
         RSExtSmartPtr<ICorDebugProcess> m_pProcess;
         RSExtSmartPtr<ICorDebugThread> m_pThread;
-        ULONG64 m_dataBreakpointMask;
 
     public:
         // Ctor
-        DataBreakpointEvent(ICorDebugProcess* pProcess, ICorDebugThread* pThread, ULONG64 dataBreakpointMask) :
+        DataBreakpointEvent(ICorDebugProcess* pProcess, ICorDebugThread* pThread) :
             ManagedEvent()
         {
             this->m_pProcess.Assign(pProcess);
             this->m_pThread.Assign(pThread);
-            this->m_dataBreakpointMask = dataBreakpointMask;
         }
 
         HRESULT Dispatch(DispatchArgs args)
         {
-            return args.GetCallback4()->DataBreakpoint(m_pProcess, m_pThread, m_dataBreakpointMask);
+            return args.GetCallback4()->DataBreakpoint(m_pProcess, m_pThread);
         }
     }; // end class AfterGarbageCollectionEvent
 
-    m_pShim->GetManagedEventQueue()->QueueEvent(new DataBreakpointEvent(pProcess, pThread, dataBreakpointMask));
+    m_pShim->GetManagedEventQueue()->QueueEvent(new DataBreakpointEvent(pProcess, pThread));
     return S_OK;
 }
 

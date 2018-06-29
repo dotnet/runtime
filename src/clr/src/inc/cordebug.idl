@@ -1363,7 +1363,7 @@ interface ICorDebugManagedCallback4 : IUnknown
     // TODO, databp, measure performance to see if these events need to be switched.
     HRESULT BeforeGarbageCollection([in] ICorDebugProcess* pProcess);
     HRESULT AfterGarbageCollection([in] ICorDebugProcess* pProcess);
-    HRESULT DataBreakpoint([in] ICorDebugProcess* pProcess, [in] ICorDebugThread* pThread, [in] ULONG64 dataBreakpointMask);
+    HRESULT DataBreakpoint([in] ICorDebugProcess* pProcess, [in] ICorDebugThread* pThread);
 }
 
 

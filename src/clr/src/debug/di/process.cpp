@@ -4937,7 +4937,7 @@ void CordbProcess::RawDispatchEvent(
         
             {
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                pCallback4->DataBreakpoint(static_cast<ICorDebugProcess*>(this), pThread, pEvent->DataBreakpointData.dataBreakpointMask);
+                pCallback4->DataBreakpoint(static_cast<ICorDebugProcess*>(this), pThread);
             }
             break;
         }
