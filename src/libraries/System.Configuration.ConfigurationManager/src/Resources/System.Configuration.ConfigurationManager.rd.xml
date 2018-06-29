@@ -5,6 +5,8 @@
        <!--Both types are instantiated using CreateInstance from TypeUtil.CreateInstance -->
        <Type Name="System.Configuration.ClientConfigurationHost" Dynamic="Required All" />
        <Type Name="System.Configuration.ProtectedConfigurationSection" Dynamic="Required All" />
+       <Type Name="System.Configuration.Internal.InternalConfigHost" Dynamic="Required All" />
+       <Type Name="System.Configuration.Internal.InternalConfigConfigurationFactory" Dynamic="Required All" />
     </Assembly>
   </Library>
 </Directives>
