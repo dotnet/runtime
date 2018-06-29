@@ -6,12 +6,15 @@ set(NATIVECOMPRESSION_SOURCES
     ../../AnyOS/zlib/pal_zlib.c
 )
 
+add_definitions(-DBROTLI_SHARED_COMPILATION)
+
 #Include Brotli include files
 include_directories("../../AnyOS/brotli/include")
 
 set (NATIVECOMPRESSION_SOURCES
     ${NATIVECOMPRESSION_SOURCES}
     ../../AnyOS/brotli/common/dictionary.c
+    ../../AnyOS/brotli/common/transform.c
     ../../AnyOS/brotli/dec/bit_reader.c
     ../../AnyOS/brotli/dec/decode.c
     ../../AnyOS/brotli/dec/huffman.c
@@ -26,6 +29,7 @@ set (NATIVECOMPRESSION_SOURCES
     ../../AnyOS/brotli/enc/compress_fragment_two_pass.c
     ../../AnyOS/brotli/enc/dictionary_hash.c
     ../../AnyOS/brotli/enc/encode.c
+    ../../AnyOS/brotli/enc/encoder_dict.c
     ../../AnyOS/brotli/enc/entropy_encode.c
     ../../AnyOS/brotli/enc/histogram.c
     ../../AnyOS/brotli/enc/literal_cost.c

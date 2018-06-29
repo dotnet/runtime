@@ -24,8 +24,8 @@ static BROTLI_INLINE size_t FN(StoreLookahead)(void) {
   return MAX_TREE_COMP_LENGTH;
 }
 
-static uint32_t FN(HashBytes)(const uint8_t *data) {
-  uint32_t h = BROTLI_UNALIGNED_LOAD32(data) * kHashMul32;
+static uint32_t FN(HashBytes)(const uint8_t* data) {
+  uint32_t h = BROTLI_UNALIGNED_LOAD32LE(data) * kHashMul32;
   /* The higher bits contain more mixture from the multiplication,
      so we take our results from there. */
   return h >> (32 - BUCKET_BITS);
@@ -154,12 +154,13 @@ static BROTLI_INLINE BackwardMatch* FN(StoreAndFindMatches)(
     {
       const size_t cur_len = BROTLI_MIN(size_t, best_len_left, best_len_right);
       size_t len;
-      assert(cur_len <= MAX_TREE_COMP_LENGTH);
+      BROTLI_DCHECK(cur_len <= MAX_TREE_COMP_LENGTH);
       len = cur_len +
           FindMatchLengthWithLimit(&data[cur_ix_masked + cur_len],
                                    &data[prev_ix_masked + cur_len],
                                    max_length - cur_len);
-      assert(0 == memcmp(&data[cur_ix_masked], &data[prev_ix_masked], len));
+      BROTLI_DCHECK(
+          0 == memcmp(&data[cur_ix_masked], &data[prev_ix_masked], len));
       if (matches && len > *best_len) {
         *best_len = len;
         InitBackwardMatch(matches++, backward, len);
@@ -199,7 +200,7 @@ static BROTLI_INLINE BackwardMatch* FN(StoreAndFindMatches)(
    sorted by strictly increasing length and (non-strictly) increasing
    distance. */
 static BROTLI_INLINE size_t FN(FindAllMatches)(HasherHandle handle,
-    const BrotliDictionary* dictionary, const uint8_t* data,
+    const BrotliEncoderDictionary* dictionary, const uint8_t* data,
     const size_t ring_buffer_mask, const size_t cur_ix,
     const size_t max_length, const size_t max_backward, const size_t gap,
     const BrotliEncoderParams* params, BackwardMatch* matches) {
@@ -251,7 +252,7 @@ static BROTLI_INLINE size_t FN(FindAllMatches)(HasherHandle handle,
         uint32_t dict_id = dict_matches[l];
         if (dict_id < kInvalidMatch) {
           size_t distance = max_backward + gap + (dict_id >> 5) + 1;
-          if (distance < BROTLI_MAX_DISTANCE) {
+          if (distance <= params->dist.max_distance) {
             InitDictionaryBackwardMatch(matches++, distance, l, dict_id & 31);
           }
         }
@@ -264,7 +265,7 @@ static BROTLI_INLINE size_t FN(FindAllMatches)(HasherHandle handle,
 /* Stores the hash of the next 4 bytes and re-roots the binary tree at the
    current sequence, without returning any matches.
    REQUIRES: ix + MAX_TREE_COMP_LENGTH <= end-of-current-block */
-static BROTLI_INLINE void FN(Store)(HasherHandle handle, const uint8_t *data,
+static BROTLI_INLINE void FN(Store)(HasherHandle handle, const uint8_t* data,
     const size_t mask, const size_t ix) {
   HashToBinaryTree* self = FN(Self)(handle);
   /* Maximum distance is window size - 16, see section 9.1. of the spec. */
@@ -274,7 +275,7 @@ static BROTLI_INLINE void FN(Store)(HasherHandle handle, const uint8_t *data,
 }
 
 static BROTLI_INLINE void FN(StoreRange)(HasherHandle handle,
-    const uint8_t *data, const size_t mask, const size_t ix_start,
+    const uint8_t* data, const size_t mask, const size_t ix_start,
     const size_t ix_end) {
   size_t i = ix_start;
   size_t j = ix_start;
