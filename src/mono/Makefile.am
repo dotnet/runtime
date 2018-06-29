@@ -126,6 +126,7 @@ package-inputs:
 		(echo "    <project dir=\"$$1\" library=\"$$2\">"; \
 		 read boot;   echo "      <boot>$$boot</boot>"; \
 		 read flags;  echo "      <flags>$$flags</flags>"; \
+		 read sources;echo "      <sources>$$sources</sources>"; \
 		 read output; echo "      <output>$$output</output>"; \
 		 read built;  echo "      <built_sources>`echo $$built | sed 's/\\\/\\\\/g'`</built_sources>"; \
 		 read libou;  echo "      <library_output>$$libou</library_output>"; \

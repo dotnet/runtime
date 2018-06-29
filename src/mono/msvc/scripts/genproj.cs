@@ -36,7 +36,7 @@ class SlnGenerator {
 	const string project_start = "Project(\"{0}\") = \"{1}\", \"{2}\", \"{3}\""; // Note: No need to double up on {} around {2}
 	const string project_end = "EndProject";
 
-	public List<string> profiles = new List<string> {
+	public static readonly List<string> profiles = new List<string> {
 		"net_4_x",
 		"monodroid",
 		"monotouch",
@@ -76,7 +76,7 @@ class SlnGenerator {
 		try {
 			libraries.Add (vsproj);
 		} catch (Exception ex) {
-			Console.Error.WriteLine ($"Error while adding library: {ex.Message}");
+			Console.Error.WriteLine ($"// Error while adding library: {ex.Message}");
 		}
 	}
 
@@ -127,7 +127,7 @@ class SlnGenerator {
 				continue;
 
 			var platformToBuild = profile;
-			var isBuildEnabled = true;
+			var isBuildEnabled = true;			
 
 			HashSet<string> projectProfiles;
 			if (
@@ -136,7 +136,8 @@ class SlnGenerator {
 			) {
 				fallbackProfileNames.Add (platformToBuild);
 				platformToBuild = defaultPlatform;
-				isBuildEnabled = false;
+				// HACK: Force build for C++ executables like jay ('Win32') but not for managed assemblies
+				isBuildEnabled = (defaultPlatform == "Win32");
 			}
 
 			sln.WriteLine ("\t\t{0}.Debug|{1}.ActiveCfg = Debug|{2}", guid, profile, platformToBuild);
@@ -777,6 +778,7 @@ class MsbuildGenerator {
 
 	void AppendResource (StringBuilder resources, string source, string logical)
 	{
+		source = NativeName (source);
 		resources.AppendFormat ("    <EmbeddedResource Include=\"{0}\">" + NewLine, source);
 		resources.AppendFormat ("      <LogicalName>{0}</LogicalName>" + NewLine, logical);
 		resources.AppendFormat ("    </EmbeddedResource>" + NewLine);
@@ -793,27 +795,131 @@ class MsbuildGenerator {
 		if (File.Exists(generatedProjFile))
 			File.Delete(generatedProjFile);
 	}
+
+	SourcesParser _SourcesParser = null;
+
+	private SourcesParser GetSourcesParser () {
+		if (_SourcesParser != null)
+			return _SourcesParser;
+
+		var platformsFolder = Path.GetFullPath ("../../mcs/build/platforms");
+		var profilesFolder = Path.GetFullPath ("../../mcs/build/profiles");
+
+		SourcesParser.TraceLevel = 1;
+		return _SourcesParser = new SourcesParser (platformsFolder, profilesFolder);
+	}
+
+	private ParseResult ReadSources (string sourcesFileName) {
+		var libraryDirectory = Path.GetDirectoryName (GetProjectFilename ());
+
+		// HACK: Sometimes the sources path contains a relative path like ../../x
+		if (sourcesFileName.Contains ("/") || sourcesFileName.Contains ("\\")) {
+			libraryDirectory = Path.Combine (libraryDirectory, Path.GetDirectoryName (sourcesFileName));
+			sourcesFileName = Path.GetFileName (sourcesFileName);
+		}
+
+		libraryDirectory = Path.GetFullPath (libraryDirectory);
+
+		// HACK: executable.make generates sources paths containing .sources already
+		var libraryName = sourcesFileName.Replace (".sources", "");
+
+		var parser = GetSourcesParser ();
+		var result = parser.Parse (libraryDirectory, libraryName);
+
+		if (result.SourcesFiles.Count == 0)
+			Console.Error.WriteLine ($"// No sources files found for '{sourcesFileName}', looked in '{libraryDirectory}' for {libraryName}");
+
+		return result;
+	}
+
+	private string FixupSourceName (string s) {
+		string src = s.Replace ("/", "\\");
+		if (src.StartsWith (@"Test\..\"))
+			src = src.Substring (8, src.Length - 8);
+
+		return src;
+	}
+
+	private StringBuilder GenerateSourceItemGroups (
+		string profile,
+		string sources_file_name,
+		string groupConditional
+	) {
+		var result = new StringBuilder ();
+		var parseResult = ReadSources (sources_file_name);
+
+		var hostPlatformNames = GetSourcesParser ().AllHostPlatformNames;
+
+		var nullExclusions = new SourcesFile ("null", true);
+
+		if (parseResult.TargetDictionary.Count == 0)
+			return result;
+
+		var targetFileSets = (from target in parseResult.Targets
+			where (target.Key.profile == null) || SlnGenerator.profiles.Contains (target.Key.profile)
+			let matches = parseResult.GetMatches (target)
+				.Select (m => FixupSourceName (m.RelativePath))
+				.OrderBy (s => s, StringComparer.Ordinal)
+				.Distinct ()
+			let fileNames = new HashSet<string> (matches)
+			orderby target.Key.profile, target.Key.hostPlatform
+			select (key: target.Key, fileNames: fileNames)).ToList ();
+
+		var commonFiles = targetFileSets.Aggregate (
+			(HashSet<string>)null,
+			(files, targetSet) => {
+				if (files == null)
+					files = new HashSet<string> (targetSet.fileNames, StringComparer.Ordinal);
+				else
+					files.IntersectWith (targetSet.fileNames);
+				return files;
+			}
+		).ToList ();
+
+		result.Append ($"  <ItemGroup>{NewLine}");
+		foreach (var file in commonFiles.OrderBy (f => f, StringComparer.Ordinal))
+			result.Append ($"    <Compile Include=\"{file}\" />{NewLine}");
+		result.Append ($"  </ItemGroup>{NewLine}");
+
+		foreach (var set in targetFileSets) {
+			if ((set.key.hostPlatform == null) && (set.key.profile == null)) {
+				result.Append ($"  <ItemGroup>{NewLine}");
+			} else if (set.key.hostPlatform == null) {
+				result.Append ($"  <ItemGroup Condition=\" '$(Platform)' == '{set.key.profile}' \">{NewLine}");
+			} else if (set.key.profile == null) {
+				result.Append ($"  <ItemGroup Condition=\" '$(HostPlatform)' == '{set.key.hostPlatform}' \">{NewLine}");
+			} else {
+				result.Append ($"  <ItemGroup Condition=\" '$(Platform)|$(HostPlatform)' == '{set.key.profile}|{set.key.hostPlatform}' \">{NewLine}");
+			}
+
+			set.fileNames.ExceptWith (commonFiles);
+
+			foreach (var file in set.fileNames.OrderBy (f => f, StringComparer.Ordinal))
+				result.Append ($"    <Compile Include=\"{file}\" />{NewLine}");
+
+			result.Append ($"  </ItemGroup>{NewLine}");
+		}
+
+		return result;
+	}
 	
 	public VsCsproj Generate (string library_output, Dictionary<string,MsbuildGenerator> projects, out string profile, bool showWarnings = false)
 	{
 		var generatedProjFile = GetProjectFilename();
 		var updatingExistingProject = File.Exists(generatedProjFile);
 
-		Console.WriteLine (
-			"{0}: {1}", updatingExistingProject 
-				? "Updating" 
-				: "Generating", 
-			generatedProjFile
-		);
+		if (!updatingExistingProject)
+			Console.WriteLine ($"Generating {generatedProjFile}");
 
-		string boot, flags, output_name, built_sources, response, reskey;
+		string boot, flags, output_name, built_sources, response, reskey, sources_file_name;
 
 		boot = xproject.Element ("boot").Value;
 		flags = xproject.Element ("flags").Value;
+		sources_file_name = xproject.Element ("sources").Value;
 		output_name = xproject.Element ("output").Value;
 		if (output_name.EndsWith (".exe"))
 			Target = Target.Exe;
-		built_sources = xproject.Element ("built_sources").Value;
+		built_sources = xproject.Element ("built_sources").Value.Trim ();
 		response = xproject.Element ("response").Value;
 		reskey = xproject.Element ("resources").Value;
 
@@ -841,6 +947,7 @@ class MsbuildGenerator {
 				fx_version = "4.6.2";
 				profile = "net_4_x";
 			}
+			Console.WriteLine ($"Using response fallback for {output_name}: {response}");
 		}
 		//
 		// Prebuild code, might be in inputs, check:
@@ -880,44 +987,12 @@ class MsbuildGenerator {
 			}
 		}
 
-		string [] source_files;
-		using (var reader = new StreamReader (NativeName (base_dir + "\\" + response))) {
-			source_files = reader.ReadToEnd ().Split ();
-		}
-
-		Array.Sort (source_files);
-
 		var groupConditional = $"Condition=\" '$(Platform)' == '{profile}' \"";
 
-		StringBuilder sources = new StringBuilder ();
-		sources.Append ($"  <ItemGroup {groupConditional}>{NewLine}");
-
-		foreach (string s in source_files) {
-			if (s.Length == 0)
-				continue;
-
-			string src = s.Replace ("/", "\\");
-			if (src.StartsWith (@"Test\..\"))
-				src = src.Substring (8, src.Length - 8);
-
-			sources.AppendFormat ("    <Compile Include=\"{0}\" />" + NewLine, src);
-		}
-
-		source_files = built_sources.Split ();
-		Array.Sort (source_files);
-
-		foreach (string s in source_files) {
-			if (s.Length == 0)
-				continue;
-
-			string src = s.Replace ("/", "\\");
-			if (src.StartsWith (@"Test\..\"))
-				src = src.Substring (8, src.Length - 8);
-
-			sources.AppendFormat ("    <Compile Include=\"{0}\" />" + NewLine, src);
-		}
-
-		sources.Append ("  </ItemGroup>");
+		var sources = 
+			updatingExistingProject 
+				? new StringBuilder ()
+				: GenerateSourceItemGroups (profile, sources_file_name, groupConditional);
 
 		//if (library == "corlib-build") // otherwise, does not compile on fx_version == 4.0
 		//{
@@ -1112,6 +1187,16 @@ class MsbuildGenerator {
 			prebuild_postbuild.Append ($"  </PropertyGroup>{NewLine}");
 		}
 
+		var builtSources = new StringBuilder ();
+		if (built_sources.Length > 0) {
+			builtSources.Append ($"  <ItemGroup Condition=\" '$(Platform)' == '{profile}' \">{NewLine}");
+			foreach (var fileName in built_sources.Split ()) {
+				var fixedFileName = FixupSourceName (fileName);
+				builtSources.Append ($"    <Compile Include=\"{fixedFileName}\" />{NewLine}");
+			}
+			builtSources.Append ($"  </ItemGroup>{NewLine}");
+		}
+
 		Csproj.output = textToUpdate.
 			Replace ("@OUTPUTTYPE@", Target == Target.Library ? "Library" : "Exe").
 			Replace ("@SIGNATURE@", strongNameSection).
@@ -1138,12 +1223,14 @@ class MsbuildGenerator {
 		var refsPlaceholder = "<!-- @ALL_REFERENCES@ -->";
 		var resourcesPlaceholder = "<!-- @ALL_RESOURCES@ -->";
 		var sourcesPlaceholder = "<!-- @ALL_SOURCES@ -->";
+		var builtSourcesPlaceholder = "<!-- @BUILT_SOURCES@ -->";
 
 		Csproj.output = Csproj.output.
 			Replace (propertiesPlaceholder, properties.ToString () + NewLine + propertiesPlaceholder).
 			Replace (refsPlaceholder, refs.ToString () + NewLine + refsPlaceholder).
 			Replace (resourcesPlaceholder, resources.ToString () + NewLine + resourcesPlaceholder).
-			Replace (sourcesPlaceholder, sources.ToString () + NewLine + sourcesPlaceholder);
+			Replace (sourcesPlaceholder, sources.ToString () + NewLine + sourcesPlaceholder).
+			Replace (builtSourcesPlaceholder, builtSources.ToString () + NewLine + builtSourcesPlaceholder);
 
 		Csproj.preBuildEvent = prebuild;
 		Csproj.postBuildEvent = postbuild;
@@ -1244,7 +1331,7 @@ class MsbuildGenerator {
 
 		}
 		var ljoined = String.Join (", ", libs);
-		Console.Error.WriteLine ($"{library_output}: did not find referenced {dllReferenceName} with libs={ljoined}");
+		Console.Error.WriteLine ($"// {library_output}: did not find referenced {dllReferenceName} with libs={ljoined}");
 
 		// FIXME: This is incredibly noisy and generates a billion lines of output
 		if (false)
@@ -1257,8 +1344,7 @@ class MsbuildGenerator {
 
 }
 
-public class Driver {
-
+public static class Driver {
 	static IEnumerable<XElement> GetProjects (bool withTests = false)
 	{
 		XDocument doc = XDocument.Load ("order.xml");
@@ -1290,24 +1376,30 @@ public class Driver {
 		}
 	}
 
-	static void Main (string [] args)
+	public static void Main (string [] args)
 	{
 		if (!File.Exists ("genproj.cs")) {
 			Console.Error.WriteLine ("This command must be executed from mono/msvc/scripts");
 			Environment.Exit (1);
 		}
 
-		if (args.Length == 1 && args [0].ToLower ().Contains ("-h")) {
-			Console.Error.WriteLine ("Usage:");
-			Console.Error.WriteLine ("genproj.exe [visual_studio_release] [output_full_solutions] [with_tests]");
-			Console.Error.WriteLine ("If output_full_solutions is false, only the main System*.dll");
-			Console.Error.WriteLine (" assemblies (and dependencies) is included in the solution.");
-			Console.Error.WriteLine ("Example:");
-			Console.Error.WriteLine ("genproj.exe 2012 false false");
-			Console.Error.WriteLine ("genproj.exe with no arguments is equivalent to 'genproj.exe 2012 true false'\n\n");
-			Console.Error.WriteLine ("genproj.exe deps");
-			Console.Error.WriteLine ("Generates a Makefile dependency file from the projects input");
-			Environment.Exit (0);
+		if (args.Length == 1) {
+			switch (args[0].ToLower()) {
+				case "-h":
+				case "--help":
+				case "-?":
+					Console.Error.WriteLine ("Usage:");
+					Console.Error.WriteLine ("genproj.exe [visual_studio_release] [output_full_solutions] [with_tests]");
+					Console.Error.WriteLine ("If output_full_solutions is false, only the main System*.dll");
+					Console.Error.WriteLine (" assemblies (and dependencies) is included in the solution.");
+					Console.Error.WriteLine ("Example:");
+					Console.Error.WriteLine (" genproj.exe 2012 false false");
+					Console.Error.WriteLine ("genproj.exe with no arguments is equivalent to 'genproj.exe 2012 true false'\n\n");
+					Console.Error.WriteLine ("genproj.exe deps");
+					Console.Error.WriteLine ("Generates a Makefile dependency file from the projects input");
+					Environment.Exit (0);
+					break;
+			}
 		}
 
 		var slnVersion = (args.Length > 0) ? args [0] : "2012";
@@ -1346,7 +1438,7 @@ public class Driver {
 				}
 				
 				if (profileName == null) {
-					Console.Error.WriteLine ($"{library_output} has no profile");
+					Console.Error.WriteLine ($"// {library_output} has no profile");
 				} else {
 					HashSet<string> profileNames;
 					if (!SlnGenerator.profilesByGuid.TryGetValue (csproj.projectGuid, out profileNames))
@@ -1360,10 +1452,12 @@ public class Driver {
 			}
 		}
 
+		Console.WriteLine ("Deduplicating project references");
+
 		foreach (var csprojFile in projects.Values.Select (x => x.GetProjectFilename ()).Distinct ())
 		{
-			Console.WriteLine ("Deduplicating: " + csprojFile);
-			DeduplicateSourcesAndProjectReferences (csprojFile);
+			// Console.WriteLine ("Deduplicating: " + csprojFile);
+			DeduplicateProjectReferences (csprojFile);
 		}
 
 		Func<MsbuildGenerator.VsCsproj, bool> additionalFilter;
@@ -1411,7 +1505,7 @@ public class Driver {
 		//WriteSolution (build_sln_gen, "mcs_build.sln");
 	}
 
-	static void DeduplicateSourcesAndProjectReferences (string csprojFilename)
+	static void DeduplicateProjectReferences (string csprojFilename)
 	{
 		XmlDocument doc = new XmlDocument ();
 		doc.Load (csprojFilename);
@@ -1419,17 +1513,10 @@ public class Driver {
 		mgr.AddNamespace ("x", "http://schemas.microsoft.com/developer/msbuild/2003");
 
 		XmlNode root = doc.DocumentElement;
-		var allSources = new Dictionary<string, List<string>> ();
 		var allProjectReferences = new Dictionary<string, List<string>> ();
 
 		ProcessCompileOrProjectReferenceItems (mgr, root,
-		// grab all sources across all platforms
-		(source, platform) =>
-		{
-			if (!allSources.ContainsKey (platform))
-				allSources[platform] = new List<string> ();
-			allSources[platform].Add (source.Attributes["Include"].Value);
-		},
+		(source, platform) => {},
 		// grab all project references across all platforms
 		(projRef, platform) =>
 		{
@@ -1437,43 +1524,6 @@ public class Driver {
 				allProjectReferences[platform] = new List<string> ();
 			allProjectReferences[platform].Add (projRef.Attributes["Include"].Value);
 		});
-
-		if (allSources.Count > 1)
-		{
-			// find the sources which are common across all platforms
-			var commonSources = allSources.Values.First ();
-			foreach (var l in allSources.Values.Skip (1))
-				commonSources = commonSources.Intersect (l).ToList ();
-
-			if (commonSources.Count > 0)
-			{
-				// remove common sources from the individual platforms
-				ProcessCompileOrProjectReferenceItems (mgr, root, (source, platform) =>
-				{
-					var parent = source.ParentNode;
-					if (commonSources.Contains (source.Attributes["Include"].Value))
-						parent.RemoveChild (source);
-
-					if (!parent.HasChildNodes)
-						parent.ParentNode.RemoveChild (parent);
-				}, null);
-
-				// add common sources as ItemGroup
-				XmlNode commonSourcesComment = root.SelectSingleNode ("//comment()[. = ' @COMMON_SOURCES@ ']");
-				XmlElement commonSourcesElement = doc.CreateElement ("ItemGroup", root.NamespaceURI);
-
-				foreach (var s in commonSources)
-				{
-					var c = doc.CreateElement ("Compile", root.NamespaceURI);
-					var v = doc.CreateAttribute ("Include");
-					v.Value = s;
-					c.Attributes.Append (v);
-
-					commonSourcesElement.AppendChild (c);
-				}
-				root.ReplaceChild (commonSourcesElement, commonSourcesComment);
-			}
-		}
 
 		if (allProjectReferences.Count > 1)
 		{
