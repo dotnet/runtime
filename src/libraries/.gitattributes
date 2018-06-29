@@ -65,3 +65,8 @@
 # Force bash scripts to always use lf line endings so that if a repo is accessed
 # in Unix via a file share from Windows, the scripts will work.
 *.sh text eol=lf
+
+# Set linguist language for .h files explicitly based on
+# https://github.com/github/linguist/issues/1626#issuecomment-401442069
+# this only affects the repo's language statistics
+*.h linguist-language=C

@@ -16,13 +16,13 @@
 #ifndef BROTLI_ENC_BROTLI_BIT_STREAM_H_
 #define BROTLI_ENC_BROTLI_BIT_STREAM_H_
 
+#include "../common/context.h"
+#include "../common/platform.h"
 #include <brotli/types.h>
 #include "./command.h"
-#include "./context.h"
 #include "./entropy_encode.h"
 #include "./memory.h"
 #include "./metablock.h"
-#include "./port.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -32,7 +32,7 @@ extern "C" {
    position for the current storage. */
 
 BROTLI_INTERNAL void BrotliStoreHuffmanTree(const uint8_t* depths, size_t num,
-    HuffmanTree* tree, size_t *storage_ix, uint8_t *storage);
+    HuffmanTree* tree, size_t* storage_ix, uint8_t* storage);
 
 BROTLI_INTERNAL void BrotliBuildAndStoreHuffmanTreeFast(
     MemoryManager* m, const uint32_t* histogram, const size_t histogram_total,
@@ -42,59 +42,40 @@ BROTLI_INTERNAL void BrotliBuildAndStoreHuffmanTreeFast(
 /* REQUIRES: length > 0 */
 /* REQUIRES: length <= (1 << 24) */
 BROTLI_INTERNAL void BrotliStoreMetaBlock(MemoryManager* m,
-                                          const uint8_t* input,
-                                          size_t start_pos,
-                                          size_t length,
-                                          size_t mask,
-                                          uint8_t prev_byte,
-                                          uint8_t prev_byte2,
-                                          BROTLI_BOOL is_final_block,
-                                          uint32_t num_direct_distance_codes,
-                                          uint32_t distance_postfix_bits,
-                                          ContextType literal_context_mode,
-                                          const Command* commands,
-                                          size_t n_commands,
-                                          const MetaBlockSplit* mb,
-                                          size_t* storage_ix,
-                                          uint8_t* storage);
+    const uint8_t* input, size_t start_pos, size_t length, size_t mask,
+    uint8_t prev_byte, uint8_t prev_byte2, BROTLI_BOOL is_last,
+    const BrotliEncoderParams* params, ContextType literal_context_mode,
+    const Command* commands, size_t n_commands, const MetaBlockSplit* mb,
+    size_t* storage_ix, uint8_t* storage);
 
 /* Stores the meta-block without doing any block splitting, just collects
    one histogram per block category and uses that for entropy coding.
    REQUIRES: length > 0
    REQUIRES: length <= (1 << 24) */
 BROTLI_INTERNAL void BrotliStoreMetaBlockTrivial(MemoryManager* m,
-                                                 const uint8_t* input,
-                                                 size_t start_pos,
-                                                 size_t length,
-                                                 size_t mask,
-                                                 BROTLI_BOOL is_last,
-                                                 const Command *commands,
-                                                 size_t n_commands,
-                                                 size_t* storage_ix,
-                                                 uint8_t* storage);
+    const uint8_t* input, size_t start_pos, size_t length, size_t mask,
+    BROTLI_BOOL is_last, const BrotliEncoderParams* params,
+    const Command* commands, size_t n_commands,
+    size_t* storage_ix, uint8_t* storage);
 
 /* Same as above, but uses static prefix codes for histograms with a only a few
    symbols, and uses static code length prefix codes for all other histograms.
    REQUIRES: length > 0
    REQUIRES: length <= (1 << 24) */
 BROTLI_INTERNAL void BrotliStoreMetaBlockFast(MemoryManager* m,
-                                              const uint8_t* input,
-                                              size_t start_pos,
-                                              size_t length,
-                                              size_t mask,
-                                              BROTLI_BOOL is_last,
-                                              const Command *commands,
-                                              size_t n_commands,
-                                              size_t* storage_ix,
-                                              uint8_t* storage);
+    const uint8_t* input, size_t start_pos, size_t length, size_t mask,
+    BROTLI_BOOL is_last, const BrotliEncoderParams* params,
+    const Command* commands, size_t n_commands,
+    size_t* storage_ix, uint8_t* storage);
 
 /* This is for storing uncompressed blocks (simple raw storage of
    bytes-as-bytes).
    REQUIRES: length > 0
    REQUIRES: length <= (1 << 24) */
 BROTLI_INTERNAL void BrotliStoreUncompressedMetaBlock(
-    BROTLI_BOOL is_final_block, const uint8_t* input, size_t position,
-    size_t mask, size_t len, size_t* storage_ix, uint8_t* storage);
+    BROTLI_BOOL is_final_block, const uint8_t* BROTLI_RESTRICT input,
+    size_t position, size_t mask, size_t len,
+    size_t* BROTLI_RESTRICT storage_ix, uint8_t* BROTLI_RESTRICT storage);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }  /* extern "C" */
